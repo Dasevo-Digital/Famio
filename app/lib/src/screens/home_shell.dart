@@ -1,0 +1,600 @@
+import 'package:famio_client/famio_client.dart';
+import 'package:flutter/material.dart';
+import '../design/app_icons.dart';
+
+import '../app_state.dart';
+import '../data/family_data.dart';
+import '../design/components.dart';
+import '../widgets/trust_certificate.dart';
+import '../design/palette.dart';
+import '../widgets/data_builder.dart';
+import 'calendar_screen.dart';
+import 'chat_screens.dart';
+import 'budget_screens.dart';
+import 'contacts_screens.dart';
+import 'documents_screen.dart';
+import 'home_screen.dart';
+import 'kids_screens.dart';
+import 'location_screens.dart';
+import 'meals_screens.dart';
+import 'settings_screen.dart';
+import 'shopping_screens.dart';
+import 'tasks_screen.dart';
+import '../environment.dart';
+
+Widget _pageFor(FamioSection section) => switch (section) {
+  FamioSection.home => const HomeScreen(),
+  FamioSection.tasks => const TasksScreen(),
+  FamioSection.shopping => const ShoppingListsScreen(),
+  FamioSection.calendar => const CalendarScreen(),
+  FamioSection.chat => const ChatListScreen(),
+  FamioSection.documents => const DocumentsScreen(),
+  FamioSection.kids => const KidsScreen(),
+  FamioSection.location => const LocationScreen(),
+  FamioSection.meals => const MealsScreen(),
+  FamioSection.budget => const BudgetScreen(),
+  FamioSection.contacts => const ContactsScreen(),
+  FamioSection.settings => const SettingsScreen(),
+};
+
+/// Sections in the phone bar; the rest sits behind "Mehr".
+const _barSections = [
+  FamioSection.home,
+  FamioSection.tasks,
+  FamioSection.shopping,
+  FamioSection.calendar,
+  FamioSection.chat,
+];
+
+/// Lets any page switch sections, e.g. the dashboard tiles.
+class FamioNav extends InheritedWidget {
+  const FamioNav({
+    super.key,
+    required this.go,
+    required this.current,
+    required super.child,
+  });
+
+  final ValueChanged<FamioSection> go;
+  final FamioSection current;
+
+  static FamioNav of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<FamioNav>()!;
+
+  @override
+  bool updateShouldNotify(FamioNav old) => old.current != current;
+}
+
+class HomeShell extends StatefulWidget {
+  const HomeShell({super.key});
+
+  @override
+  State<HomeShell> createState() => _HomeShellState();
+}
+
+class _HomeShellState extends State<HomeShell> {
+  var _section = FamioSection.home;
+
+  /// Sections are built on their first visit only, so e.g. the map does not
+  /// load tiles at every app start.
+  final _visited = {FamioSection.home};
+
+  // One navigator per section keeps each section's page stack.
+  final _navigators = {
+    for (final s in FamioSection.values) s: GlobalKey<NavigatorState>(),
+  };
+
+  void _go(FamioSection section) {
+    if (section == _section) {
+      // Tapping the current section again returns to its start page.
+      _navigators[section]!.currentState?.popUntil((r) => r.isFirst);
+    }
+    setState(() {
+      _section = section;
+      _visited.add(section);
+    });
+  }
+
+  Future<void> _showMore() async {
+    final picked = await showModalBottomSheet<FamioSection>(
+      context: context,
+      // Above the floating navigation bar.
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final s in FamioSection.values.where(
+                (s) => !_barSections.contains(s),
+              ))
+                _MoreTile(section: s, onTap: () => Navigator.pop(context, s)),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (picked != null) _go(picked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = MediaQuery.sizeOf(context).width >= 720;
+    final pages = IndexedStack(
+      index: FamioSection.values.indexOf(_section),
+      children: [
+        for (final s in FamioSection.values)
+          if (_visited.contains(s))
+            HeroControllerScope.none(
+              child: Navigator(
+                key: _navigators[s],
+                onGenerateRoute: (_) =>
+                    MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+              ),
+            )
+          else
+            const SizedBox.shrink(),
+      ],
+    );
+    final c = FamioColors.of(context);
+    final changed = AppScope.of(context).changedCertificate;
+    final body = changed == null
+        ? pages
+        : Column(
+            children: [
+              _CertificateBanner(fingerprint: changed),
+              Expanded(child: pages),
+            ],
+          );
+
+    return FamioNav(
+      go: _go,
+      current: _section,
+      child: DataBuilder(
+        collections: const {
+          Collections.chatMessages,
+          Collections.chatReads,
+          'members',
+        },
+        builder: (context, engine) {
+          final unread = engine.totalUnread;
+          if (wide) {
+            return Scaffold(
+              backgroundColor: c.background,
+              body: Row(
+                children: [
+                  _SideRail(current: _section, onSelect: _go, unread: unread),
+                  Expanded(child: body),
+                ],
+              ),
+            );
+          }
+          return Scaffold(
+            backgroundColor: c.background,
+            extendBody: true,
+            body: body,
+            bottomNavigationBar: _FloatingBar(
+              current: _section,
+              onSelect: _go,
+              onMore: _showMore,
+              unread: unread,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SideRail extends StatelessWidget {
+  const _SideRail({
+    required this.current,
+    required this.onSelect,
+    required this.unread,
+  });
+
+  final FamioSection current;
+  final ValueChanged<FamioSection> onSelect;
+  final int unread;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return Container(
+      width: 108,
+      margin: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+      decoration: BoxDecoration(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: c.softShadow,
+      ),
+      child: SafeArea(
+        right: false,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // All sections should fit without scrolling on laptops: smaller
+            // items when the window is low.
+            final compact =
+                constraints.maxHeight < 140 + FamioSection.values.length * 76;
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(vertical: compact ? 10 : 16),
+              child: Column(
+                children: [
+                  _Logo(compact: compact),
+                  SizedBox(height: compact ? 8 : 16),
+                  for (final s in FamioSection.values)
+                    _RailItem(
+                      section: s,
+                      selected: s == current,
+                      compact: compact,
+                      badge: s == FamioSection.chat ? unread : 0,
+                      onTap: () => onSelect(s),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo({this.compact = false});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      Container(
+        width: compact ? 36 : 48,
+        height: compact ? 36 : 48,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFFB38A), Color(0xFFF26B8F)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Image.asset(
+          'assets/icon/logo_glyph.png',
+          width: compact ? 28 : 36,
+          height: compact ? 28 : 36,
+        ),
+      ),
+      if (!compact) ...[
+        const SizedBox(height: 6),
+        Text(
+          AppEnv.appName,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
+        ),
+      ],
+    ],
+  );
+}
+
+class _RailItem extends StatelessWidget {
+  const _RailItem({
+    required this.section,
+    required this.selected,
+    required this.onTap,
+    this.badge = 0,
+    this.compact = false,
+  });
+
+  final FamioSection section;
+  final bool selected;
+  final bool compact;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final color = c.strong(section);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 1 : 3),
+      child: Material(
+        color: selected ? c.tint(section) : Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: compact ? 4 : 10),
+            child: Column(
+              children: [
+                _Badge(
+                  count: badge,
+                  child: Icon(
+                    section.icon,
+                    color: selected ? color : c.inkSoft,
+                    size: compact ? 22 : 28,
+                  ),
+                ),
+                SizedBox(height: compact ? 2 : 4),
+                Text(
+                  section.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: selected ? c.ink : c.inkSoft,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FloatingBar extends StatelessWidget {
+  const _FloatingBar({
+    required this.current,
+    required this.onSelect,
+    required this.onMore,
+    required this.unread,
+  });
+
+  final FamioSection current;
+  final ValueChanged<FamioSection> onSelect;
+  final VoidCallback onMore;
+  final int unread;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final inMore = !_barSections.contains(current);
+    return SafeArea(
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(34),
+          boxShadow: [
+            BoxShadow(
+              color: c.shadow,
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            for (final s in _barSections)
+              Expanded(
+                child: _BarItem(
+                  icon: s.icon,
+                  label: s.label,
+                  color: c.strong(s),
+                  tint: c.tint(s),
+                  selected: s == current,
+                  badge: s == FamioSection.chat ? unread : 0,
+                  onTap: () => onSelect(s),
+                ),
+              ),
+            Expanded(
+              child: _BarItem(
+                icon: AppIcons.dotsThreeCircle,
+                label: inMore ? current.label : 'Mehr',
+                color: inMore ? c.strong(current) : c.inkSoft,
+                tint: inMore ? c.tint(current) : c.surfaceSoft,
+                selected: inMore,
+                onTap: onMore,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BarItem extends StatelessWidget {
+  const _BarItem({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.tint,
+    required this.selected,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Color tint;
+  final bool selected;
+  final VoidCallback onTap;
+  final int badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return Tooltip(
+      message: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          height: 56,
+          decoration: BoxDecoration(
+            color: selected ? tint : Colors.transparent,
+            borderRadius: BorderRadius.circular(28),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _Badge(
+                count: badge,
+                child: Icon(
+                  icon,
+                  color: selected ? color : c.inkSoft,
+                  size: 26,
+                ),
+              ),
+              if (selected)
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.fade,
+                  softWrap: false,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: c.ink,
+                    fontSize: 10.5,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MoreTile extends StatelessWidget {
+  const _MoreTile({required this.section, required this.onTap});
+
+  final FamioSection section;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return SizedBox(
+      width: 150,
+      child: Material(
+        color: c.tint(section),
+        borderRadius: BorderRadius.circular(24),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(section.icon, color: c.strong(section), size: 32),
+                const SizedBox(height: 10),
+                Text(
+                  section.label,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.count, required this.child});
+
+  final int count;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (count == 0) return child;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        child,
+        Positioned(
+          right: -8,
+          top: -4,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            constraints: const BoxConstraints(minWidth: 18),
+            decoration: BoxDecoration(
+              color: FamioSection.kids.strong,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: FamioColors.of(context).surface,
+                width: 2,
+              ),
+            ),
+            child: Text(
+              count > 99 ? '99+' : '$count',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The server shows a key other than the confirmed one: offline until the
+/// user compares the new fingerprint.
+class _CertificateBanner extends StatelessWidget {
+  const _CertificateBanner({required this.fingerprint});
+
+  final String fingerprint;
+
+  Future<void> _check(BuildContext context) async {
+    final state = AppScope.read(context);
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await confirmCertificate(context, fingerprint)) return;
+    try {
+      await state.acceptChangedCertificate();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Verbindung wiederhergestellt')),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+        child: SoftCard(
+          color: c.tint(FamioSection.home),
+          child: Row(
+            children: [
+              Icon(AppIcons.shield, color: c.strong(FamioSection.home)),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Das Zertifikat des Servers hat sich geändert. Bis zur '
+                  'Prüfung bleibt Famio offline.',
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => _check(context),
+                child: const Text('Prüfen'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

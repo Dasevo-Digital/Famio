@@ -1,0 +1,30 @@
+// Application-level settings for the Runner target.
+//
+// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
+// future. If not, the values below would default to using the project name when this becomes a
+// 'flutter create' template.
+
+// Name, bundle identifier and icon of the app. tool/mac_install.sh dev
+// overrides the FAMIO_* values ("Famio Dev", own data and keychain) through
+// FLUTTER_XCODE_FAMIO_*, which – unlike PRODUCT_NAME – leaves the plugin
+// targets alone.
+FAMIO_APP_NAME = Famio
+FAMIO_BUNDLE_ID = de.status403.famio
+FAMIO_APP_ICON = AppIcon
+
+// The application's name. By default this is also the title of the Flutter window.
+PRODUCT_NAME = $(FAMIO_APP_NAME)
+
+// The application's bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = $(FAMIO_BUNDLE_ID)
+
+// The copyright displayed in application information
+PRODUCT_COPYRIGHT = Copyright © 2026 de.status403. All rights reserved.
+
+// Signing of this Mac's builds (also debug and test builds), e.g. with a
+// free Apple ID's "Apple Development" certificate, so the Keychain keeps
+// "Immer erlauben" across builds. Optional and not part of the repository:
+//   CODE_SIGN_STYLE = Manual
+//   CODE_SIGN_IDENTITY = Apple Development
+//   DEVELOPMENT_TEAM = <team id>
+#include? "Signing.xcconfig"

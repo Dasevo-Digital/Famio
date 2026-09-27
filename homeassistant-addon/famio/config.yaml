@@ -1,0 +1,27 @@
+name: Famio
+version: "0.12.1"
+slug: famio
+description: Familien-Organizer – Kalender, Aufgaben, Einkaufslisten und mehr, synchron auf allen Geräten.
+url: https://gitea.status403.de/superkuh/Famio
+arch:
+  - aarch64
+  - amd64
+# Prebuilt by .github/workflows/server-image.yml; the add-on folder itself
+# has no sources, so Home Assistant cannot build it locally.
+image: ghcr.io/YOUR_GITHUB_USER/famio-{arch}
+init: false
+startup: application
+ingress: true
+ingress_port: 8765
+panel_icon: mdi:home-heart
+panel_title: Famio
+ports:
+  8765/tcp: 8765
+  8766/tcp: 8766
+ports_description:
+  8765/tcp: Famio-Server für die Apps (unverschlüsselt, nur Heimnetz)
+  8766/tcp: Famio-Server für die Apps (HTTPS mit eigenem Zertifikat)
+options:
+  ingress_auth: true
+schema:
+  ingress_auth: bool

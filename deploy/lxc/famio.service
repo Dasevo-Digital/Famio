@@ -1,0 +1,40 @@
+[Unit]
+Description=Famio family organizer server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=famio
+Group=famio
+EnvironmentFile=/etc/famio/famio.env
+ExecStart=/opt/famio/bin/server
+Restart=on-failure
+RestartSec=5
+
+# Hardening: the server only needs its data directory.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/famio
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+PrivateDevices=true
+RestrictSUIDSGID=true
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+# Family and health data: files readable by the famio user only.
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

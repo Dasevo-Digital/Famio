@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Mit Famio verbinden",
+        "description": "Adresse des Famio-Servers (z. B. 192.168.1.50 – dann wird HTTPS auf Port 8766 genutzt – oder https://famio.example.de) und ein Famio-Konto. Home Assistant sieht, was dieses Mitglied sieht; am besten ein eigenes Konto „Home Assistant“ anlegen.",
+        "data": {
+          "url": "Server-Adresse",
+          "username": "Benutzername",
+          "password": "Passwort"
+        }
+      },
+      "certificate": {
+        "title": "Zertifikat des Servers prüfen",
+        "description": "{url} verwendet ein eigenes Zertifikat. Vergleiche den Fingerabdruck mit dem Server-Log (z. B. `journalctl -u famio` oder `docker logs famio`) bzw. der Anzeige in der Famio-App:\n\n`{fingerprint}`\n\nNur bestätigen, wenn er übereinstimmt."
+      },
+      "reauth_confirm": {
+        "title": "Famio neu anmelden",
+        "description": "Die Sitzung von {username} wurde beendet (z. B. in der App abgemeldet). Bitte das Passwort erneut eingeben.",
+        "data": {
+          "password": "Passwort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Server nicht erreichbar.",
+      "invalid_auth": "Benutzername oder Passwort falsch.",
+      "invalid_cert": "Das Zertifikat des Servers passt nicht zum bestätigten Fingerabdruck.",
+      "invalid_url": "Ungültige Adresse.",
+      "unknown": "Unerwarteter Fehler."
+    },
+    "abort": {
+      "already_configured": "Dieses Famio-Konto ist bereits verbunden.",
+      "reauth_successful": "Erneut angemeldet."
+    }
+  },
+  "entity": {
+    "calendar": {
+      "calendar": {
+        "name": "Kalender"
+      }
+    },
+    "todo": {
+      "tasks": {
+        "name": "Aufgaben"
+      }
+    },
+    "sensor": {
+      "open_tasks": {
+        "name": "Offene Aufgaben"
+      },
+      "my_tasks": {
+        "name": "Meine Aufgaben"
+      },
+      "shopping": {
+        "name": "Einkauf offen"
+      },
+      "next_event": {
+        "name": "Nächster Termin"
+      }
+    }
+  }
+}

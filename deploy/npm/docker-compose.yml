@@ -1,0 +1,46 @@
+# Famio behind Nginx Proxy Manager (NPM) on the same Docker host.
+#
+# Famio joins NPM's Docker network and publishes no port of its own: only NPM
+# can reach it, which is why trusting X-Forwarded-For is safe here.
+#
+#   1. Adjust FAMIO_PUBLIC_URL and the network name below.
+#   2. docker compose up -d
+#   3. docker logs famio   -> shows the setup code for the first account
+#   4. In NPM add a proxy host (see deploy/npm/README.md).
+services:
+  famio:
+    build: ../..
+    # image: ghcr.io/YOUR_GITHUB_USER/famio-amd64:latest
+    container_name: famio
+    restart: unless-stopped
+    # Hardening: read-only image, no Linux capabilities, no privilege gain.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      # Apps in the home network may also use Famio's own HTTPS directly.
+      - "8766:8766"
+    volumes:
+      - ./data:/data
+      # Encryption key, apart from the data (back it up separately).
+      - ./keys:/keys
+    environment:
+      TZ: Europe/Berlin
+      FAMIO_PUBLIC_URL: https://famio.example.de/
+      FAMIO_TRUST_PROXY: "true"
+      FAMIO_KEY_FILE: /keys/famio.key
+      # Only NPM (HTTPS) and port 8766 – no plain HTTP from the network.
+      FAMIO_REQUIRE_TLS: "true"
+      FAMIO_MAX_UPLOAD_MB: "100"
+    networks:
+      - npm
+
+networks:
+  npm:
+    external: true
+    # `docker network ls` shows it, often "<npm-folder>_default".
+    name: nginx-proxy-manager_default

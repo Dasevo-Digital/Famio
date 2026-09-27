@@ -1,0 +1,13 @@
+{
+  "domain": "famio",
+  "name": "Famio",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://gitea.status403.de/superkuh/Famio/src/branch/main/homeassistant-integration",
+  "integration_type": "service",
+  "iot_class": "local_push",
+  "issue_tracker": "https://gitea.status403.de/superkuh/Famio/issues",
+  "requirements": [],
+  "version": "0.12.1"
+}

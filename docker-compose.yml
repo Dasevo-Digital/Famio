@@ -1,0 +1,40 @@
+# Standalone server (NAS, Raspberry Pi, any Docker host): docker compose up -d
+services:
+  famio:
+    build: .
+    container_name: famio
+    restart: unless-stopped
+    # Hardening: read-only image, no Linux capabilities, no privilege gain.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      # Home network access for the apps. Behind a reverse proxy on the same
+      # host use "127.0.0.1:8765:8765" (or deploy/npm/docker-compose.yml), so
+      # nothing bypasses HTTPS.
+      - "8765:8765"
+      # HTTPS with Famio's own certificate for apps in the home network.
+      - "8766:8766"
+    volumes:
+      - ./data:/data
+      # Encryption key for database and files. Kept apart from ./data so a
+      # backup of the data alone is useless – back it up separately!
+      - ./keys:/keys
+    environment:
+      # Time zone of the family: calendar feeds and imported calendars.
+      TZ: Europe/Berlin
+      FAMIO_KEY_FILE: /keys/famio.key
+      # Address under which Famio is reachable from the internet (HTTPS via a
+      # reverse proxy). Needed for Google Calendar to subscribe to Famio feeds;
+      # Apple Calendar in the home network works without it.
+      # FAMIO_PUBLIC_URL: https://famio.example.org/
+      # Behind a reverse proxy only (see deploy/npm/README.md):
+      # FAMIO_TRUST_PROXY: "true"
+      # FAMIO_MAX_UPLOAD_MB: "100"
+      # Once every app connects via HTTPS (proxy or port 8766), refuse plain
+      # HTTP from the network:
+      # FAMIO_REQUIRE_TLS: "true"

@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Famio",
+        "description": "Address of the Famio server (e.g. 192.168.1.50 – HTTPS on port 8766 is used – or https://famio.example.org) and a Famio account. Home Assistant sees what this member sees; best create a separate account \"Home Assistant\".",
+        "data": {
+          "url": "Server address",
+          "username": "Username",
+          "password": "Password"
+        }
+      },
+      "certificate": {
+        "title": "Check the server's certificate",
+        "description": "{url} uses its own certificate. Compare the fingerprint with the server log (e.g. `journalctl -u famio` or `docker logs famio`) or the Famio app:\n\n`{fingerprint}`\n\nOnly confirm if it matches."
+      },
+      "reauth_confirm": {
+        "title": "Sign in to Famio again",
+        "description": "The session of {username} was ended (e.g. signed out in the app). Please enter the password again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Server not reachable.",
+      "invalid_auth": "Wrong username or password.",
+      "invalid_cert": "The server's certificate does not match the confirmed fingerprint.",
+      "invalid_url": "Invalid address.",
+      "unknown": "Unexpected error."
+    },
+    "abort": {
+      "already_configured": "This Famio account is already connected.",
+      "reauth_successful": "Signed in again."
+    }
+  },
+  "entity": {
+    "calendar": {
+      "calendar": {
+        "name": "Calendar"
+      }
+    },
+    "todo": {
+      "tasks": {
+        "name": "Tasks"
+      }
+    },
+    "sensor": {
+      "open_tasks": {
+        "name": "Open tasks"
+      },
+      "my_tasks": {
+        "name": "My tasks"
+      },
+      "shopping": {
+        "name": "Shopping open"
+      },
+      "next_event": {
+        "name": "Next event"
+      }
+    }
+  }
+}
