@@ -1,0 +1,37 @@
+name: famio_server
+description: Famio sync server (standalone or Home Assistant add-on).
+version: 0.4.0
+publish_to: none
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.12.2
+
+# Add regular dependencies here.
+dependencies:
+  args: ^2.7.0
+  basic_utils: ^5.8.2
+  crypto: ^3.0.7
+  famio_shared:
+    path: ../packages/famio_shared
+  http: ^1.6.0
+  image: ^4.10.1
+  path: ^1.9.1
+  rrule: ^0.2.18
+  shelf: ^1.4.2
+  shelf_router: ^1.1.4
+  shelf_web_socket: ^3.0.0
+  sqlite3: ^3.5.0
+  timezone: ^0.11.1
+  web_socket_channel: ^3.0.3
+  xml: ^7.0.1
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
+
+# Encrypted databases (SQLite3MultipleCiphers, MIT licensed).
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

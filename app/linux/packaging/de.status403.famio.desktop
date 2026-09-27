@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Famio
+GenericName=Familien-Organizer
+Comment=Kalender, Aufgaben, Einkauf, Chat und mehr für die ganze Familie
+Exec=famio
+Icon=de.status403.famio
+Terminal=false
+Categories=Office;Calendar;Utility;
+StartupWMClass=de.status403.famio

@@ -1,0 +1,125 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:args/args.dart';
+
+class ServerConfig {
+  const ServerConfig({
+    this.port = 8765,
+    this.dataDir = 'data',
+    this.ingressAuth = false,
+    this.healthcheck = false,
+    this.timeZone = 'Europe/Berlin',
+    this.publicUrl,
+    this.trustProxy = false,
+    this.maxUploadMb = 100,
+    this.keyFile,
+    this.tlsPort = 8766,
+    this.requireTls = false,
+    this.tlsNames = const [],
+  });
+
+  /// Reads configuration from CLI args, environment and, when running as a
+  /// Home Assistant add-on, `/data/options.json`.
+  factory ServerConfig.load(List<String> args) {
+    final parser = ArgParser()
+      ..addOption('port', abbr: 'p')
+      ..addOption('data-dir', abbr: 'd')
+      ..addFlag(
+        'healthcheck',
+        negatable: false,
+        help: 'Check that a server on --port answers, then exit (for Docker).',
+      )
+      ..addFlag('help', abbr: 'h', negatable: false);
+    final parsed = parser.parse(args);
+    if (parsed.flag('help')) {
+      stdout.writeln('famio_server [options]\n${parser.usage}');
+      exit(0);
+    }
+
+    final env = Platform.environment;
+    final isAddon = env.containsKey('SUPERVISOR_TOKEN');
+    var options = <String, Object?>{};
+    final optionsFile = File('/data/options.json');
+    if (isAddon && optionsFile.existsSync()) {
+      options = (jsonDecode(optionsFile.readAsStringSync()) as Map).cast();
+    }
+
+    return ServerConfig(
+      port: int.parse(parsed.option('port') ?? env['FAMIO_PORT'] ?? '8765'),
+      dataDir:
+          parsed.option('data-dir') ??
+          env['FAMIO_DATA_DIR'] ??
+          (isAddon ? '/data' : 'data'),
+      ingressAuth: isAddon && (options['ingress_auth'] as bool? ?? true),
+      healthcheck: parsed.flag('healthcheck'),
+      timeZone:
+          env['FAMIO_TIMEZONE'] ??
+          options['timezone'] as String? ??
+          _ianaZone(env['TZ']) ??
+          'Europe/Berlin',
+      publicUrl: _nonEmpty(env['FAMIO_PUBLIC_URL']),
+      trustProxy: _flag(env['FAMIO_TRUST_PROXY']),
+      maxUploadMb: int.tryParse(env['FAMIO_MAX_UPLOAD_MB'] ?? '') ?? 100,
+      keyFile: _nonEmpty(env['FAMIO_KEY_FILE']),
+      tlsPort: int.tryParse(env['FAMIO_TLS_PORT'] ?? '') ?? 8766,
+      requireTls: _flag(env['FAMIO_REQUIRE_TLS']),
+      tlsNames: [
+        for (final n in (env['FAMIO_TLS_NAMES'] ?? '').split(RegExp(r'[,\s]+')))
+          if (n.trim().isNotEmpty) n.trim().toLowerCase(),
+      ],
+    );
+  }
+
+  final int port;
+  final String dataDir;
+
+  /// Trust Home Assistant ingress user headers from the supervisor proxy.
+  final bool ingressAuth;
+
+  /// Only probe a running server instead of starting one.
+  final bool healthcheck;
+
+  /// IANA zone of the family, used for calendar feeds (series times) and
+  /// imported events without an explicit zone.
+  final String timeZone;
+
+  /// Address under which the server is reachable from the internet, e.g.
+  /// `https://famio.example.org/`. Google Calendar fetches subscriptions
+  /// from Google's servers, so feed links must use this address to work there.
+  final String? publicUrl;
+
+  /// Behind a reverse proxy: take the client address from X-Forwarded-For
+  /// (for login throttling). Only enable if the port is not reachable
+  /// directly, otherwise clients could fake their address.
+  final bool trustProxy;
+
+  /// Maximum upload size (documents, photos).
+  final int maxUploadMb;
+
+  /// Key for encrypting database and files at rest. Keep it outside the
+  /// data directory (and its backups); defaults to `<dataDir>/famio.key`.
+  final String? keyFile;
+
+  /// HTTPS port with the server's own certificate, for apps in the home
+  /// network (0 disables it).
+  final int tlsPort;
+
+  /// Refuse unencrypted API access except through a TLS-terminating proxy,
+  /// Home Assistant ingress or localhost.
+  final bool requireTls;
+
+  /// Extra host names and IP addresses for the HTTPS certificate, e.g. the
+  /// server's address in the home network (`FAMIO_TLS_NAMES=192.168.1.5`).
+  /// Apple devices only connect to names listed in the certificate.
+  final List<String> tlsNames;
+}
+
+bool _flag(String? v) =>
+    const {'1', 'true', 'yes', 'on'}.contains(v?.trim().toLowerCase());
+
+String? _nonEmpty(String? v) => v == null || v.trim().isEmpty ? null : v.trim();
+
+/// `TZ` may also hold POSIX strings like `CET-1CEST`; only accept IANA names.
+String? _ianaZone(String? tz) =>
+    tz != null && tz.contains('/') && !tz.startsWith(':') ? tz : null;

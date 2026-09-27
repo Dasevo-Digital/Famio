@@ -1,0 +1,7 @@
+**/.dart_tool
+**/build
+**/data
+app
+.github
+keys
+**/keys

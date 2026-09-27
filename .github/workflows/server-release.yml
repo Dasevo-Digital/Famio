@@ -1,0 +1,38 @@
+name: Server release (Linux binaries for LXC)
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Test
+        working-directory: server
+        run: dart pub get && dart test
+      - name: Build bundle
+        working-directory: server
+        run: dart build cli -t bin/server.dart -o ../out
+      - name: Package
+        run: tar -czf famio-server-linux-${{ matrix.arch }}.tar.gz -C out bundle
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: famio-server-linux-${{ matrix.arch }}.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: famio-server-linux-${{ matrix.arch }}
+          path: famio-server-linux-${{ matrix.arch }}.tar.gz
