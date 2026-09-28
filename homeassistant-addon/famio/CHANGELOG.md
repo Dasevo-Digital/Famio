@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.15.1 – Feinschliff: Akku, Sicherheit, Bedienbarkeit
+
+- **Weniger Akku und Datenverkehr:**
+  - Solange die Live-Verbindung steht, gleicht die App nur noch alle
+    10 Minuten zur Sicherheit ab statt jede Minute.
+  - Beim Öffnen der App wird sofort abgeglichen.
+  - Das Baby-Protokoll baut bei laufendem Schlaf- oder Still-Timer nur
+    noch die Stoppuhr sekündlich neu auf.
+  - Vorschaubilder werden nicht mehr bei jedem Neuaufbau erneut geladen
+    und dekodiert.
+- **Server:**
+  - Weniger Schreibzugriffe: Sitzungen werden höchstens einmal pro Minute
+    aktualisiert, SQLite läuft mit `synchronous=NORMAL`.
+  - Große Anfragen brauchen ein Achtel des Speichers.
+  - Kein `X-Powered-By` mehr.
+  - Strengere Content-Security-Policy für die Startseite (Skript per
+    Hash) und die SSO-Seiten, dazu eine Permissions-Policy.
+  - Fehlermeldungen verraten keine Server-Interna mehr.
+- **Bedienbarkeit:**
+  - Grauer Nebentext mit ausreichendem Kontrast (WCAG AA).
+  - Runde Knöpfe und Abhak-Kreise mit mindestens 48 × 48 Tippfläche.
+  - Abhak-Kreise nennen dem Screenreader, was abgehakt wird.
+  - Untertitel dürfen zweizeilig sein, z. B. das Geburtsdatum.
+
 ## 0.15.0 – Zwei-Faktor & Single Sign-On
 
 - **Zwei-Faktor-Anmeldung:** Einstellungen → Anmeldung & Sicherheit:

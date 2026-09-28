@@ -57,12 +57,19 @@ Future<void> main(List<String> args) async {
   final handler = const Pipeline()
       .addMiddleware(logRequests(logger: _redactedLog))
       .addHandler(app.handler);
-  final server = await io.serve(handler, InternetAddress.anyIPv4, config.port);
+  // No "X-Powered-By" header: it only tells attackers what runs here.
+  final server = await io.serve(
+    handler,
+    InternetAddress.anyIPv4,
+    config.port,
+    poweredByHeader: null,
+  );
   Future<HttpServer> serveTls(TlsIdentity identity) => io.serve(
     handler,
     InternetAddress.anyIPv4,
     config.tlsPort,
     securityContext: identity.context,
+    poweredByHeader: null,
   );
   var secure = tls == null ? null : await serveTls(tls.identity);
   if (tls != null) {

@@ -33,11 +33,12 @@ void main() {
     await server.close(force: true);
   });
 
-  SyncEngine device() {
+  SyncEngine device({Duration pollInterval = const Duration(minutes: 1)}) {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),
       api: FamioApiClient(url, token: token),
       memberId: memberId,
+      pollInterval: pollInterval,
     );
     engines.add(engine);
     return engine;
@@ -102,6 +103,27 @@ void main() {
     await arrived.timeout(const Duration(seconds: 5));
     expect(b.record(Collections.tasks, 'live')?.data['title'], 'Live');
   });
+
+  test(
+    'polls rarely while the websocket is up, catches up on resume',
+    () async {
+      final b = device(pollInterval: const Duration(milliseconds: 50));
+      var syncs = 0;
+      b.statusChanges.listen((s) {
+        if (s.state == SyncState.syncing) syncs++;
+      });
+      b.start();
+      await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      // The first sync and at most the one of the websocket's greeting.
+      expect(syncs, lessThanOrEqualTo(2));
+
+      final before = syncs;
+      b.resumed();
+      await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+      expect(syncs, before + 1);
+    },
+  );
 
   test('invalid token reports unauthorized', () async {
     final engine = SyncEngine(

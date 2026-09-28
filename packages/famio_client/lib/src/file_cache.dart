@@ -38,24 +38,49 @@ class FileCache {
   final Directory tempDir;
   final _pending = <String, Future<Uint8List>>{};
 
+  /// Recently shown previews, most recent last. Handing out the same bytes
+  /// again spares the database read and lets Flutter's image cache reuse
+  /// the decoded picture instead of decoding it on every rebuild.
+  final _recent = <String, Uint8List>{};
+  var _recentBytes = 0;
+
+  /// Upper bound for [_recent].
+  static const recentLimit = 16 * 1024 * 1024;
+
   static const _chunk = 1024 * 1024;
 
   /// The contents of [ref] (or its [thumb] preview), downloading them once.
   Future<Uint8List> bytes(FileRef ref, {int? thumb}) {
     final key = thumb == null ? ref.id : '${ref.id}_t$thumb';
+    if (_recent.remove(key) case final data?) {
+      _recent[key] = data;
+      return Future.value(data);
+    }
     final cached = _read(key);
-    if (cached != null) return Future.value(cached);
+    if (cached != null) return Future.value(_remember(key, cached, thumb));
     return _pending[key] ??= () async {
       try {
         final data = Uint8List.fromList(
           await api.downloadFile(ref.id, thumb: thumb),
         );
         _write(key, data);
-        return data;
+        return _remember(key, data, thumb);
       } finally {
         _pending.remove(key);
       }
     }();
+  }
+
+  /// Keeps previews (not whole documents) in [_recent].
+  Uint8List _remember(String key, Uint8List data, int? thumb) {
+    if (thumb == null || data.length > recentLimit ~/ 8) return data;
+    _recent[key] = data;
+    _recentBytes += data.length;
+    while (_recentBytes > recentLimit) {
+      final oldest = _recent.keys.first;
+      _recentBytes -= _recent.remove(oldest)!.length;
+    }
+    return data;
   }
 
   /// A plain copy of [ref] for opening it with another app.

@@ -1,8 +1,29 @@
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
 
 const _escape = HtmlEscape();
+
+/// The page's only script (password form); allowed by its hash, so no
+/// other script could run even if some text slipped through unescaped.
+const _script = """
+      document.getElementById('pw').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const body = Object.fromEntries(new FormData(e.target));
+        const res = await fetch('api/me/password', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
+        const data = await res.json();
+        document.getElementById('msg').textContent = res.ok ? 'Gespeichert.' : data.message;
+        if (res.ok) e.target.reset();
+      });
+    """;
+
+/// Content-Security-Policy for the pages of this file.
+final landingPagePolicy =
+    "default-src 'none'; style-src 'unsafe-inline'; "
+    "script-src 'sha256-${base64.encode(sha256.convert(utf8.encode(_script)).bytes)}'; "
+    "connect-src 'self'; base-uri 'none'; form-action 'none'; "
+    "frame-ancestors 'self'";
 
 /// The page shown at `/`, mainly inside the Home Assistant sidebar (ingress).
 /// It tells members how to connect the apps and lets HA users set a password
@@ -31,16 +52,7 @@ String landingPage({
       <button>Speichern</button>
       <p id="msg"></p>
     </form>
-    <script>
-      document.getElementById('pw').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const body = Object.fromEntries(new FormData(e.target));
-        const res = await fetch('api/me/password', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
-        const data = await res.json();
-        document.getElementById('msg').textContent = res.ok ? 'Gespeichert.' : data.message;
-        if (res.ok) e.target.reset();
-      });
-    </script>''';
+    <script>$_script</script>''';
 
   return '''<!doctype html>
 <html lang="de">

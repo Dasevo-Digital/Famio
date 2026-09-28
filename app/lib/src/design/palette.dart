@@ -75,7 +75,8 @@ class FamioColors extends ThemeExtension<FamioColors> {
     surface: Colors.white,
     surfaceSoft: Color(0xFFFFF0E3),
     ink: Color(0xFF2D3150),
-    inkSoft: Color(0xFF6E7393),
+    // Darker than it looks necessary: 4.5:1 even on grey cards (WCAG AA).
+    inkSoft: Color(0xFF646988),
     line: Color(0xFFF0E5DA),
     shadow: Color(0x1A8A5A3C),
     dark: false,

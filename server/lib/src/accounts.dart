@@ -349,15 +349,21 @@ class Accounts {
   FamilyMember? userForToken(String token, {String? scope}) {
     final hash = _tokenHash(token);
     final rows = _db.select(
-      'SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id'
+      'SELECT u.*, s.last_seen AS session_seen FROM sessions s'
+      ' JOIN users u ON u.id = s.user_id'
       ' WHERE s.token_hash = ? AND s.last_seen > ? AND s.scope IS ?',
       [hash, _idleCutoff, scope],
     );
     if (rows.isEmpty) return null;
-    _db.execute('UPDATE sessions SET last_seen = ? WHERE token_hash = ?', [
-      DateTime.now().millisecondsSinceEpoch,
-      hash,
-    ]);
+    // Not a database write on every request: minutes are precise enough
+    // for "last used" and the idle timeout of months.
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (now - (rows.first['session_seen'] as int) > 60 * 1000) {
+      _db.execute('UPDATE sessions SET last_seen = ? WHERE token_hash = ?', [
+        now,
+        hash,
+      ]);
+    }
     return _member(rows.first);
   }
 
