@@ -27,6 +27,11 @@ from .const import DEFAULT_TLS_PORT, DEVICE_NAME
 class FamioError(Exception):
     """Base error with a user-facing German message."""
 
+    def __init__(self, message: str = "", code: str | None = None) -> None:
+        super().__init__(message)
+        # The server's error code, e.g. "invalid_code".
+        self.code = code
+
 
 class FamioConnectionError(FamioError):
     """Server not reachable."""
@@ -37,8 +42,12 @@ class FamioAuthError(FamioError):
 
 
 class FamioTwoFactorError(FamioError):
-    """The account signs in with a second factor, which Home Assistant cannot
-    provide: use an own member without two-factor login."""
+    """The password was right; the code from the authenticator app follows
+    (see [FamioClient.login_two_factor])."""
+
+    def __init__(self, challenge: str) -> None:
+        super().__init__("two-factor login", "two_factor")
+        self.challenge = challenge
 
 
 class FamioCertificateError(FamioError):
@@ -201,14 +210,18 @@ class FamioClient:
                     timeout=aiohttp.ClientTimeout(total=timeout),
                 ) as response:
                     body = await response.json(content_type=None)
-                    if response.status == 401:
-                        raise FamioAuthError(
-                            (body or {}).get("message", "Nicht angemeldet")
-                        )
+                    error = body.get("error") if isinstance(body, dict) else None
+                    message = body.get("message") if isinstance(body, dict) else None
+                    # 403 two_factor_*: two-factor login became mandatory for
+                    # this member – sign in again with a code.
+                    if response.status == 401 or error in (
+                        "two_factor_required",
+                        "two_factor_setup_required",
+                    ):
+                        raise FamioAuthError(message or "Nicht angemeldet", error)
                     if response.status >= 400:
                         raise FamioError(
-                            (body or {}).get("message")
-                            or f"Fehler {response.status}"
+                            message or f"Fehler {response.status}", error
                         )
                     return body
             except aiohttp.ServerFingerprintMismatch:
@@ -262,7 +275,19 @@ class FamioClient:
             },
         )
         if answer.get("twoFactorRequired"):
-            raise FamioTwoFactorError("two-factor login")
+            raise FamioTwoFactorError(answer["challenge"])
+        self.token = answer["token"]
+        return answer["member"]
+
+    async def login_two_factor(self, challenge: str, code: str) -> dict[str, Any]:
+        """Second step: the 6-digit code from the authenticator app (or a
+        recovery code). Home Assistant then keeps the session; it only needs
+        a code again when the session is signed out."""
+        answer = await self.request(
+            "POST",
+            "api/auth/login/two-factor",
+            json={"challenge": challenge, "code": code.replace(" ", "")},
+        )
         self.token = answer["token"]
         return answer["member"]
 

@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Mit Famio verbinden",
-        "description": "Adresse des Famio-Servers (z. B. 192.168.1.50 – dann wird HTTPS auf Port 8766 genutzt – oder https://famio.example.de) und ein Famio-Konto. Home Assistant sieht, was dieses Mitglied sieht; am besten ein eigenes Konto „Home Assistant“ anlegen.",
+        "description": "Adresse des Famio-Servers (z. B. 192.168.1.50 – dann wird HTTPS auf Port 8766 genutzt – oder https://famio.example.de) und ein Famio-Konto. Home Assistant sieht, was dieses Mitglied sieht; am besten ein eigenes Konto „Home Assistant“ anlegen. Zwei-Faktor-Anmeldung wird unterstützt: der Code wird einmal abgefragt.",
         "data": {
           "url": "Server-Adresse",
           "username": "Benutzername",
@@ -13,6 +13,13 @@
       "certificate": {
         "title": "Zertifikat des Servers prüfen",
         "description": "{url} verwendet ein eigenes Zertifikat. Vergleiche den Fingerabdruck mit dem Server-Log (z. B. `journalctl -u famio` oder `docker logs famio`) bzw. der Anzeige in der Famio-App:\n\n`{fingerprint}`\n\nNur bestätigen, wenn er übereinstimmt."
+      },
+      "two_factor": {
+        "title": "Zwei-Faktor-Anmeldung",
+        "description": "{username} meldet sich mit zwei Faktoren an. Gib den 6-stelligen Code aus der Authenticator-App ein (oder einen Wiederherstellungscode). Danach bleibt Home Assistant angemeldet – ein Code wird erst wieder gebraucht, wenn die Sitzung in Famio abgemeldet wird.",
+        "data": {
+          "code": "Code"
+        }
       },
       "reauth_confirm": {
         "title": "Famio neu anmelden",
@@ -25,7 +32,9 @@
     "error": {
       "cannot_connect": "Server nicht erreichbar.",
       "invalid_auth": "Benutzername oder Passwort falsch.",
-      "two_factor": "Dieses Konto nutzt die Zwei-Faktor-Anmeldung. Bitte ein eigenes Mitglied für Home Assistant ohne Zwei-Faktor anlegen.",
+      "invalid_code": "Der Code stimmt nicht.",
+      "code_expired": "Die Anmeldung ist abgelaufen. Bitte das Passwort erneut eingeben.",
+      "two_factor_setup": "Für dieses Mitglied ist die Zwei-Faktor-Anmeldung Pflicht, aber noch nicht eingerichtet. Melde dich einmal in einer Famio-App mit diesem Mitglied an und richte sie dort ein, dann erneut versuchen.",
       "invalid_cert": "Das Zertifikat des Servers passt nicht zum bestätigten Fingerabdruck.",
       "invalid_url": "Ungültige Adresse.",
       "unknown": "Unerwarteter Fehler."

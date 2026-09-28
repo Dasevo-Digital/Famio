@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Connect to Famio",
-        "description": "Address of the Famio server (e.g. 192.168.1.50 – HTTPS on port 8766 is used – or https://famio.example.org) and a Famio account. Home Assistant sees what this member sees; best create a separate account \"Home Assistant\".",
+        "description": "Address of the Famio server (e.g. 192.168.1.50 – HTTPS on port 8766 is used – or https://famio.example.org) and a Famio account. Home Assistant sees what this member sees; best create a separate account \"Home Assistant\". Two-factor login is supported: the code is asked for once.",
         "data": {
           "url": "Server address",
           "username": "Username",
@@ -13,6 +13,13 @@
       "certificate": {
         "title": "Check the server's certificate",
         "description": "{url} uses its own certificate. Compare the fingerprint with the server log (e.g. `journalctl -u famio` or `docker logs famio`) or the Famio app:\n\n`{fingerprint}`\n\nOnly confirm if it matches."
+      },
+      "two_factor": {
+        "title": "Two-factor login",
+        "description": "{username} signs in with two-factor authentication. Enter the 6-digit code from the authenticator app (or a recovery code). Home Assistant stays signed in afterwards – a code is only needed again if the session is signed out in Famio.",
+        "data": {
+          "code": "Code"
+        }
       },
       "reauth_confirm": {
         "title": "Sign in to Famio again",
@@ -25,7 +32,9 @@
     "error": {
       "cannot_connect": "Server not reachable.",
       "invalid_auth": "Wrong username or password.",
-      "two_factor": "This account uses two-factor login. Create an own member for Home Assistant without two-factor login.",
+      "invalid_code": "The code is not correct.",
+      "code_expired": "The sign-in expired. Please enter the password again.",
+      "two_factor_setup": "Two-factor login is mandatory for this member but not set up yet. Sign in once with this member in a Famio app and set it up there, then try again.",
       "invalid_cert": "The server's certificate does not match the confirmed fingerprint.",
       "invalid_url": "Invalid address.",
       "unknown": "Unexpected error."

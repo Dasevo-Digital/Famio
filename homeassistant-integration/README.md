@@ -34,6 +34,14 @@ darf, steuern Sichtbarkeit und Kalender-Profil (Server-Verwaltung → Mitglied
 Famio unter den Geräten als „Home Assistant“ und lässt sich dort beenden;
 dann fragt Home Assistant nach dem Passwort.
 
+**Zwei-Faktor-Anmeldung:** Nutzt das Mitglied einen zweiten Faktor (oder ist er
+in der Server-Verwaltung Pflicht), fragt die Einrichtung nach dem Passwort
+einmal den 6-stelligen Code aus der Authenticator-App ab (ein
+Wiederherstellungscode geht auch). Danach bleibt Home Assistant angemeldet;
+einen neuen Code braucht es erst, wenn die Sitzung in Famio beendet wird.
+Ist der zweite Faktor Pflicht, aber noch nicht eingerichtet: einmal in einer
+Famio-App mit diesem Mitglied anmelden und ihn dort einrichten.
+
 ## Sicherheit
 
 - Anmeldung wie eine App: Das Passwort wird nicht gespeichert, nur das
