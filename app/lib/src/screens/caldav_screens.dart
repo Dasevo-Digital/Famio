@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -98,7 +99,9 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
     final api = state.engine!.api;
     final messenger = ScaffoldMessenger.of(context);
     final name = TextEditingController(
-      text: Platform.isMacOS
+      text: kIsWeb
+          ? ''
+          : Platform.isMacOS
           ? 'Mac von ${state.me!.displayName}'
           : Platform.isIOS
           ? 'iPhone von ${state.me!.displayName}'
@@ -165,12 +168,12 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
         return;
       }
       // The Mac shows downloaded profiles in the system settings.
-      if (Platform.isMacOS) await launchUrl(saved);
+      if (!kIsWeb && Platform.isMacOS) await launchUrl(saved);
       messenger.showSnackBar(
         SnackBar(
           duration: const Duration(seconds: 10),
           content: Text(
-            Platform.isMacOS
+            !kIsWeb && Platform.isMacOS
                 ? 'Systemeinstellungen → Allgemein → Geräteverwaltung → '
                       '„Famio-Kalender“ installieren, danach die Datei löschen.'
                 : 'Profil gesichert: auf dem Apple-Gerät öffnen und '

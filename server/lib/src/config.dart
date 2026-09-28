@@ -17,6 +17,10 @@ class ServerConfig {
     this.tlsPort = 8766,
     this.requireTls = false,
     this.tlsNames = const [],
+    this.webDir,
+    this.upstream,
+    this.upstreamPin,
+    this.clientMode = false,
   });
 
   /// Reads configuration from CLI args, environment and, when running as a
@@ -68,8 +72,31 @@ class ServerConfig {
         for (final n in (env['FAMIO_TLS_NAMES'] ?? '').split(RegExp(r'[,\s]+')))
           if (n.trim().isNotEmpty) n.trim().toLowerCase(),
       ],
+      webDir: _nonEmpty(env['FAMIO_WEB_DIR']),
+      // Add-on in client mode: only the sidebar, the family's server runs
+      // elsewhere.
+      upstream: options['mode'] == 'client'
+          ? _nonEmpty(options['server_url'] as String?)
+          : _nonEmpty(env['FAMIO_UPSTREAM']),
+      clientMode: options['mode'] == 'client',
+      upstreamPin: options['mode'] == 'client'
+          ? _nonEmpty(options['server_fingerprint'] as String?)
+          : _nonEmpty(env['FAMIO_UPSTREAM_FINGERPRINT']),
     );
   }
+
+  /// Folder of the web app; default `web/` next to the server's `bin/`.
+  final String? webDir;
+
+  /// Address of the family's Famio server when this one only serves the
+  /// Home Assistant sidebar (client mode); null runs the full server.
+  final String? upstream;
+
+  /// The add-on is set to client mode (then [upstream] is required).
+  final bool clientMode;
+
+  /// Fingerprint of [upstream]'s own certificate (home network server).
+  final String? upstreamPin;
 
   final int port;
   final String dataDir;

@@ -22,3 +22,6 @@ build.noindex/
 app/build
 __pycache__/
 *.pyc
+
+# Built web app (app/tool/build_web.sh), part of the server packages
+server/web/

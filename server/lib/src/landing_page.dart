@@ -34,6 +34,7 @@ String landingPage({
   required String address,
   required String version,
   bool addon = false,
+  bool webApp = false,
 }) {
   final serverUrl = const HtmlEscape(HtmlEscapeMode.element).convert(address);
   final memberSection = member == null
@@ -68,12 +69,14 @@ String landingPage({
   input, button { display: block; width: 100%; box-sizing: border-box; margin: .4rem 0; padding: .6rem; font: inherit; border-radius: .4rem; border: 1px solid #8888; }
   button { background: var(--accent); color: white; border: none; cursor: pointer; }
   small { opacity: .6; }
+  a { color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
   <h1>Famio</h1>
   <small>Server $version${addon ? ' · Port in den Add-on-Einstellungen änderbar' : ''}</small>
-  $memberSection
+  $memberSection${webApp ? '''
+  <p><a href="app/">${addon ? '← Zurück zu Famio' : 'Famio im Browser öffnen'}</a></p>''' : ''}
 </body>
 </html>''';
 }

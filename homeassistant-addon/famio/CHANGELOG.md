@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.18.0 – Famio in der Seitenleiste und im Browser
+
+- **Die ganze Famio-App in der Home-Assistant-Seitenleiste:** Startseite,
+  Kalender, Aufgaben, Einkauf, Chat, Kinder, Wandanzeige, Einstellungen …
+- **Zwei Betriebsarten** (Option `mode`):
+  - `server` – wie bisher: Famio läuft in Home Assistant; angemeldet ist der
+    Home-Assistant-Benutzer.
+  - `client` – nur die Seitenleiste, verbunden mit eurem Famio-Server woanders
+    (`server_url`, bei eigenem Zertifikat `server_fingerprint`). Jeder
+    Home-Assistant-Benutzer meldet sich einmal mit seinem Famio-Konto an
+    (auch mit Zwei-Faktor-Code); das Add-on merkt sich die Sitzung, im Browser
+    bleibt nichts.
+- **Web-App:** Jeder Famio-Server zeigt die App unter `/app/` im Browser.
+- Einstellungen → „Famio-Apps verbinden“ (Betriebsart `server`): Adresse und
+  Passwort für die Apps auf Handy und Computer.
+
 ## 0.17.2 – Home Assistant mit Zwei-Faktor-Anmeldung
 
 - **Home-Assistant-Integration:** Mitglieder mit Zwei-Faktor-Anmeldung lassen

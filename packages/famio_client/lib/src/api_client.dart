@@ -1,12 +1,10 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:famio_shared/famio_shared.dart';
 
-import 'google_login.dart';
-import 'package:crypto/crypto.dart';
+import 'google_login_result.dart';
+import 'platform/net.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/io_client.dart';
 
 /// Error returned by the server, or a connection problem ([status] 0).
 class ApiError implements Exception {
@@ -136,7 +134,7 @@ class FamioApiClient {
     this.pinnedCertificate,
     http.Client? httpClient,
   }) : baseUrl = normalizeUrl(baseUrl),
-       _http = httpClient ?? IOClient(ioClient(pinnedCertificate));
+       _http = httpClient ?? platformHttpClient(pinnedCertificate);
 
   final Uri baseUrl;
   String? token;
@@ -147,57 +145,12 @@ class FamioApiClient {
   final String? pinnedCertificate;
   final http.Client _http;
 
-  /// A `dart:io` client that trusts [pin] in addition to the system's CAs;
-  /// also used for the WebSocket.
-  static HttpClient ioClient(String? pin) => HttpClient()
-    ..connectionTimeout = const Duration(seconds: 10)
-    ..badCertificateCallback = (cert, host, port) =>
-        pin != null && pin.isNotEmpty && certificateFingerprint(cert) == pin;
-
-  /// `AB:CD:…` SHA-256 fingerprint of the certificate's key, as the server
-  /// prints it. The key stays when the server renews its certificate.
-  static String certificateFingerprint(X509Certificate cert) {
-    try {
-      return formatFingerprint(
-        sha256.convert(subjectPublicKeyInfo(cert.der)).bytes,
-      );
-    } on FormatException {
-      return '';
-    }
-  }
-
   /// Connects to [url] and returns the fingerprint of its certificate if
   /// the system does not trust it (self-signed): the app then asks the user.
   /// Returns null if the certificate is trusted or not HTTPS; throws
   /// [ApiError] if the server is not reachable.
-  static Future<String?> untrustedCertificate(Uri url) async {
-    if (url.scheme != 'https') return null;
-    String? seen;
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 8)
-      ..badCertificateCallback = (cert, host, port) {
-        seen = certificateFingerprint(cert);
-        return false;
-      };
-    try {
-      final request = await client.getUrl(url.resolve('api/health'));
-      await (await request.close()).drain<void>();
-      return null;
-    } on HandshakeException {
-      if (seen != null) return seen;
-      throw const ApiError(
-        0,
-        'tls',
-        'Verschlüsselte Verbindung fehlgeschlagen',
-      );
-    } on SocketException catch (e) {
-      throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
-    } on HttpException catch (e) {
-      throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
-    } finally {
-      client.close(force: true);
-    }
-  }
+  static Future<String?> untrustedCertificate(Uri url) =>
+      platformUntrustedCertificate(url);
 
   static const _timeout = Duration(seconds: 20);
 
@@ -208,11 +161,17 @@ class FamioApiClient {
       'Fingerabdruck mit dem Server-Log vergleichen.';
 
   /// Accepts user input like `homeassistant.local:8765` and returns a URL.
+  static const _web = bool.fromEnvironment('dart.library.js_interop');
+
   static Uri normalizeUrl(String input) {
     var text = input.trim();
     if (!text.contains('://')) text = 'http://$text';
     var uri = Uri.parse(text);
-    if (!uri.hasPort && uri.scheme == 'http') uri = uri.replace(port: 8765);
+    // A typed address without port means Famio's port; the web app gets
+    // the full address of its own page.
+    if (!uri.hasPort && uri.scheme == 'http' && !_web) {
+      uri = uri.replace(port: 8765);
+    }
     final path = uri.path.endsWith('/') ? uri.path : '${uri.path}/';
     return uri.replace(path: path, query: null, fragment: null);
   }
@@ -228,6 +187,18 @@ class FamioApiClient {
       setupCodeRequired: json['setupCodeRequired'] as bool? ?? false,
       singleSignOn: json['sso'] as String?,
     );
+  }
+
+  /// How the web app runs: `server` (inside Home Assistant, signed in by
+  /// it), `client` (Home Assistant add-on connected to another Famio
+  /// server) or `browser`; null for servers before 0.18.
+  Future<String?> panelMode() async {
+    try {
+      return (await _send('GET', 'api/panel'))['mode'] as String?;
+    } on ApiError catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
   }
 
   Future<LoginResult> setup({
@@ -906,13 +877,24 @@ class FamioApiClient {
       .resolve('api/ws')
       .replace(scheme: baseUrl.scheme == 'https' ? 'wss' : 'ws');
 
+  /// Where to open the WebSocket. Browsers cannot send the token as a
+  /// header, so they put a one-time ticket into the URL (behind Home
+  /// Assistant there is no token: its proxy signs in).
+  Future<Uri> webSocketConnectUrl() async {
+    if (!_web || token == null) return webSocketUrl;
+    final json = await _send('POST', 'api/ws/ticket', const {});
+    return webSocketUrl.replace(
+      queryParameters: {'ticket': json['ticket'] as String},
+    );
+  }
+
   /// How well the connection to [url] is protected.
   static TransportSecurity transportSecurity(Uri url) {
     if (url.scheme == 'https') return TransportSecurity.encrypted;
     final host = url.host.toLowerCase();
-    final ip = InternetAddress.tryParse(host);
+    final ip = _ipBytes(host);
     final local = ip != null
-        ? ip.isLoopback || ip.isLinkLocal || _isPrivate(ip)
+        ? _isLocalIp(ip)
         : host == 'localhost' ||
               host.endsWith('.local') ||
               host.endsWith('.lan') ||
@@ -921,15 +903,36 @@ class FamioApiClient {
     return local ? TransportSecurity.localNetwork : TransportSecurity.insecure;
   }
 
-  static bool _isPrivate(InternetAddress ip) {
-    final b = ip.rawAddress;
-    if (ip.type == InternetAddressType.IPv4) {
-      return b[0] == 10 ||
+  /// The bytes of an IPv4 or IPv6 address, or null for a host name.
+  static List<int>? _ipBytes(String host) {
+    final bare = host.startsWith('[') && host.endsWith(']')
+        ? host.substring(1, host.length - 1)
+        : host;
+    try {
+      return Uri.parseIPv4Address(bare);
+    } on FormatException {
+      try {
+        return Uri.parseIPv6Address(bare);
+      } on FormatException {
+        return null;
+      }
+    }
+  }
+
+  /// Loopback, link-local and private ranges.
+  static bool _isLocalIp(List<int> b) {
+    if (b.length == 4) {
+      return b[0] == 127 ||
+          b[0] == 10 ||
+          (b[0] == 169 && b[1] == 254) ||
           (b[0] == 172 && b[1] >= 16 && b[1] < 32) ||
           (b[0] == 192 && b[1] == 168) ||
           (b[0] == 100 && b[1] >= 64 && b[1] < 128); // CGNAT, e.g. Tailscale
     }
-    return (b[0] & 0xfe) == 0xfc; // fc00::/7
+    final loopback = b.take(15).every((x) => x == 0) && b[15] == 1;
+    return loopback ||
+        (b[0] == 0xfe && (b[1] & 0xc0) == 0x80) || // fe80::/10
+        (b[0] & 0xfe) == 0xfc; // fc00::/7
   }
 
   void close() => _http.close();
@@ -965,8 +968,6 @@ class FamioApiClient {
       response = await http.Response.fromStream(
         await _http.send(request).timeout(timeout),
       );
-    } on HandshakeException {
-      throw const ApiError(0, 'network', tlsRejected);
     } on http.ClientException catch (e) {
       throw ApiError(
         0,
@@ -976,6 +977,7 @@ class FamioApiClient {
             : 'Server nicht erreichbar (${e.message})',
       );
     } catch (e) {
+      if (isTlsFailure(e)) throw const ApiError(0, 'network', tlsRejected);
       throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
     }
 

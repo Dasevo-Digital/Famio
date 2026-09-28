@@ -1,0 +1,23 @@
+configuration:
+  mode:
+    name: Mode
+    description: >-
+      server – Famio runs in Home Assistant (data here).
+      client – only the sidebar, connected to your Famio server elsewhere
+      (enter its address).
+  ingress_auth:
+    name: Sign in with the Home Assistant user
+    description: >-
+      Mode "server" only: whoever opens Famio in the sidebar is signed in
+      with their Home Assistant user.
+  server_url:
+    name: Server address
+    description: >-
+      Mode "client" only: address of your Famio server, e.g.
+      https://famio.example.org or https://192.168.1.20:8766
+  server_fingerprint:
+    name: Certificate fingerprint
+    description: >-
+      Only for home network servers with their own certificate (port 8766):
+      the fingerprint from the server log. Leave empty with a Let's Encrypt
+      certificate.

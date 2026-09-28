@@ -11,6 +11,7 @@ import '../design/app_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
+import '../platform/browser.dart';
 import '../design/palette.dart';
 
 /// A file picked by the user, ready for upload.
@@ -104,12 +105,17 @@ Future<FileRef> uploadPicked(BuildContext context, PickedFile file) async {
 Future<void> openFileRef(BuildContext context, FileRef ref) async {
   final messenger = ScaffoldMessenger.of(context);
   try {
+    final files = AppScope.read(context).files!;
+    if (kIsWeb) {
+      downloadBytes(await files.bytes(ref), ref.name, ref.mime);
+      return;
+    }
     // A short-lived plain copy for the other app; removed on next start.
-    final file = await AppScope.read(context).files!.openable(ref);
+    final path = await files.openable(ref);
     if (Platform.isAndroid || Platform.isIOS) {
-      await OpenFilex.open(file.path, type: ref.mime);
+      await OpenFilex.open(path, type: ref.mime);
     } else {
-      await launchUrl(Uri.file(file.path));
+      await launchUrl(Uri.file(path));
     }
   } on ApiError catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.message)));

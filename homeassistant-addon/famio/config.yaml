@@ -1,7 +1,7 @@
 name: Famio
-version: "0.17.2"
+version: "0.18.0"
 slug: famio
-description: Familien-Organizer – Kalender, Aufgaben, Einkaufslisten und mehr, synchron auf allen Geräten.
+description: Familien-Organizer in der Seitenleiste – als eigener Server oder verbunden mit eurem Famio-Server.
 url: https://gitea.status403.de/superkuh/Famio
 arch:
   - aarch64
@@ -22,6 +22,12 @@ ports_description:
   8765/tcp: Famio-Server für die Apps (unverschlüsselt, nur Heimnetz)
   8766/tcp: Famio-Server für die Apps (HTTPS mit eigenem Zertifikat)
 options:
+  mode: server
   ingress_auth: true
 schema:
+  # server: Famio runs in Home Assistant. client: only the sidebar,
+  # connected to the family's Famio server elsewhere (server_url).
+  mode: list(server|client)
   ingress_auth: bool
+  server_url: url?
+  server_fingerprint: str?

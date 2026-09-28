@@ -31,12 +31,13 @@ import 'security.dart';
 import 'settings.dart';
 import 'hub.dart';
 import 'landing_page.dart';
+import 'web_app.dart';
 import 'location/location_service.dart';
 import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.17.2';
+const serverVersion = '0.18.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -75,7 +76,12 @@ class FamioApi {
     this.notices,
     required this.mfa,
     this.sso,
+    this.webApp,
   }) : throttle = throttle ?? LoginThrottle();
+
+  /// The web app below `/app/` (also the Home Assistant sidebar); null
+  /// if the server was built without it.
+  final WebApp? webApp;
 
   /// Two-factor login with an authenticator app.
   final Mfa mfa;
@@ -155,6 +161,9 @@ class FamioApi {
   Handler get handler {
     final router = Router()
       ..get('/', _landing)
+      ..get('/app', (Request _) => Response.found('app/'))
+      ..get('/app/<path|.*>', _webApp)
+      ..get('/api/panel', _panel)
       ..get('/api/health', _health)
       ..post('/api/auth/setup', _setup)
       ..post('/api/auth/login', _login)
@@ -229,6 +238,7 @@ class FamioApi {
       ..get('/api/calendar/occurrences', _occurrences)
       ..get('/ical/<file>', _icalFeed)
       ..get('/api/ws', _ws)
+      ..post('/api/ws/ticket', _wsTicket)
       ..post('/api/files', _upload)
       ..get('/api/files/<id>', _download);
 
@@ -1704,19 +1714,67 @@ class FamioApi {
     );
   }
 
-  FutureOr<Response> _ws(Request request) {
+  /// Browsers cannot send the token with a WebSocket: they fetch a ticket
+  /// first (valid once, for 30 seconds) and put it into the URL.
+  final _wsTickets = <String, ({String token, DateTime expires})>{};
+
+  Response _wsTicket(Request request) {
     _auth(request);
+    final token = _bearer(request)!;
+    final now = DateTime.now();
+    _wsTickets.removeWhere((_, t) => t.expires.isBefore(now));
+    final ticket = _randomToken();
+    _wsTickets[ticket] = (
+      token: token,
+      expires: now.add(const Duration(seconds: 30)),
+    );
+    return _json({'ticket': ticket});
+  }
+
+  FutureOr<Response> _ws(Request request) {
+    final ticket = request.url.queryParameters['ticket'];
+    if (ticket != null) {
+      final entry = _wsTickets.remove(ticket);
+      if (entry == null || entry.expires.isBefore(DateTime.now())) {
+        throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+      }
+      _auth(request, token: entry.token);
+    } else {
+      _auth(request);
+    }
     return webSocketHandler((channel, _) {
       hub.add(channel, rev: records.currentRev);
     }, pingInterval: const Duration(seconds: 30))(request);
   }
 
-  Response _landing(Request request) {
-    final member = _ingressMember(request);
+  /// Through Home Assistant's sidebar (ingress).
+  bool _viaIngress(Request request) {
     final peer =
         (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
             ?.remoteAddress;
-    final ingress = ingressAuth && peer?.address == _ingressProxy;
+    return ingressAuth && peer?.address == _ingressProxy;
+  }
+
+  Future<Response> _webApp(Request request, String path) async {
+    final app = webApp;
+    if (app == null) return Response.notFound('Not found');
+    return app.serve(path);
+  }
+
+  /// How the web app runs here: in Home Assistant's sidebar the Home
+  /// Assistant user is signed in, elsewhere the family signs in as usual.
+  Response _panel(Request request) =>
+      _json({'mode': _viaIngress(request) ? 'server' : 'browser'});
+
+  Response _landing(Request request) {
+    final member = _ingressMember(request);
+    final ingress = _viaIngress(request);
+    // The sidebar opens the web app; `?info` shows how to connect apps.
+    if (ingress &&
+        webApp != null &&
+        !request.url.queryParameters.containsKey('info')) {
+      return Response.found('app/');
+    }
     return Response.ok(
       landingPage(
         member: member,
@@ -1724,6 +1782,7 @@ class FamioApi {
         address: _appAddress(request, ingress: ingress),
         version: serverVersion,
         addon: ingress,
+        webApp: webApp != null,
       ),
       headers: {'content-type': 'text/html; charset=utf-8'},
     );
@@ -1786,9 +1845,9 @@ class FamioApi {
 
   /// The signed-in member: Home Assistant ingress or a session token (only
   /// in the Authorization header – URLs end up in proxy logs).
-  FamilyMember _auth(Request request) {
+  FamilyMember _auth(Request request, {String? token}) {
     if (_ingressMember(request) case final member?) return member;
-    final token = _bearer(request);
+    token ??= _bearer(request);
     final member = token == null ? null : accounts.userForToken(token);
     if (member == null) {
       throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
@@ -1997,7 +2056,9 @@ class FamioApi {
         if (path.startsWith('ical/')) 'cache-control': 'no-store, private',
         // Only Home Assistant (same origin through ingress) may embed it.
         if (response.mimeType == 'text/html')
-          'content-security-policy': landingPagePolicy,
+          'content-security-policy': path == 'app' || path.startsWith('app/')
+              ? WebApp.policy
+              : landingPagePolicy,
         'permissions-policy': 'camera=(), microphone=(), geolocation=()',
         if (https) 'strict-transport-security': 'max-age=31536000',
       },

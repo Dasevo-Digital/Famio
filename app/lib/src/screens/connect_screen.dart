@@ -37,6 +37,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
     final state = AppScope.read(context);
     _url.text = state.serverUrl ?? '';
     _error = state.notice;
+    // Web app: the server is where the page came from.
+    _resolved = state.webServer;
   }
 
   @override
@@ -136,6 +138,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = FamioColors.of(context);
+    final state = AppScope.of(context);
     final server = _server;
     final setup = server?.setupRequired ?? false;
     final accent = c.strong(FamioSection.calendar);
@@ -207,33 +210,35 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        TextFormField(
-                          controller: _url,
-                          enabled: server == null && !_busy,
-                          keyboardType: TextInputType.url,
-                          autocorrect: false,
-                          decoration: InputDecoration(
-                            labelText: 'Server-Adresse',
-                            hintText: 'famio.example.de oder 192.168.1.10',
-                            prefixIcon: const Icon(AppIcons.hardDrives),
-                            suffixIcon: server == null
-                                ? null
-                                : IconButton(
-                                    icon: const Icon(
-                                      AppIcons.pencilSimple,
-                                      size: 18,
+                        if (state.webServer == null)
+                          TextFormField(
+                            controller: _url,
+                            enabled: server == null && !_busy,
+                            keyboardType: TextInputType.url,
+                            autocorrect: false,
+                            decoration: InputDecoration(
+                              labelText: 'Server-Adresse',
+                              hintText: 'famio.example.de oder 192.168.1.10',
+                              prefixIcon: const Icon(AppIcons.hardDrives),
+                              suffixIcon: server == null
+                                  ? null
+                                  : IconButton(
+                                      icon: const Icon(
+                                        AppIcons.pencilSimple,
+                                        size: 18,
+                                      ),
+                                      tooltip: 'Server ändern',
+                                      onPressed: () =>
+                                          setState(() => _resolved = null),
                                     ),
-                                    tooltip: 'Server ändern',
-                                    onPressed: () =>
-                                        setState(() => _resolved = null),
-                                  ),
+                            ),
+                            validator: (v) => (v ?? '').trim().isEmpty
+                                ? 'Bitte Adresse eingeben'
+                                : null,
+                            onFieldSubmitted: (_) => _submit(),
                           ),
-                          validator: (v) => (v ?? '').trim().isEmpty
-                              ? 'Bitte Adresse eingeben'
-                              : null,
-                          onFieldSubmitted: (_) => _submit(),
-                        ),
-                        if (_resolved case final resolved?)
+                        if (_resolved case final resolved?
+                            when state.webServer == null)
                           _ConnectionHint(resolved),
                         if (setup && server!.setupCodeRequired) ...[
                           const SizedBox(height: 12),
@@ -342,8 +347,13 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         if (server != null && !setup) ...[
                           const SizedBox(height: 16),
                           Text(
-                            'Mit Home Assistant? Öffne Famio in der Seitenleiste, '
-                            'um ein Passwort für die App festzulegen.',
+                            state.panelMode == 'client'
+                                ? 'Mit deinem Famio-Konto anmelden – Home '
+                                      'Assistant merkt sich die Anmeldung für '
+                                      'deinen Benutzer.'
+                                : 'Mit Home Assistant? Öffne Famio in der '
+                                      'Seitenleiste, um ein Passwort für die '
+                                      'App festzulegen.',
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),

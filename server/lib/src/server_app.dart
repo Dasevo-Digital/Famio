@@ -12,6 +12,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'accounts.dart';
 import 'crypto/tls.dart';
 import 'api.dart';
+import 'web_app.dart';
 import 'auth/mfa.dart';
 import 'auth/sso.dart';
 import 'calendar/calendar_access.dart';
@@ -50,6 +51,7 @@ class FamioServerApp {
     int? tlsPort,
     ServerTls? tls,
     Uri? googleBase,
+    WebApp? webApp,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -163,12 +165,17 @@ class FamioServerApp {
       notices: notices,
       mfa: mfa,
       sso: sso,
+      webApp: webApp,
       onEventsChanged: caldav.eventsChanged,
     );
   }
 
   /// In-memory server in the Europe/Berlin zone, for tests.
-  factory FamioServerApp.inMemory({http.Client? httpClient, Uri? googleBase}) {
+  factory FamioServerApp.inMemory({
+    http.Client? httpClient,
+    Uri? googleBase,
+    WebApp? webApp,
+  }) {
     initTimeZones();
     return FamioServerApp(
       db: openFamioDatabase(':memory:'),
@@ -176,6 +183,7 @@ class FamioServerApp {
       dataDir: Directory.systemTemp.createTempSync('famio_test_').path,
       httpClient: httpClient,
       googleBase: googleBase,
+      webApp: webApp,
     );
   }
 

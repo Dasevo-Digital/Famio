@@ -14,6 +14,7 @@ rm -rf "$OUT/famio" && mkdir -p "$OUT/famio"
 grep -v '^image:\|^# Prebuilt by\|^# has no sources' "$ADDON/config.yaml" |
   sed "s/^version: .*/version: \"$V\"/" > "$OUT/famio/config.yaml"
 cp "$ADDON/DOCS.md" "$ADDON/CHANGELOG.md" "$HERE/Dockerfile" "$OUT/famio/"
+cp -R "$ADDON/translations" "$OUT/famio/"
 [ -f "$ADDON/icon.png" ] && cp "$ADDON/icon.png" "$OUT/famio/" || true
 [ -f "$ADDON/logo.png" ] && cp "$ADDON/logo.png" "$OUT/famio/" || true
 cp "$X64" "$OUT/famio/famio-server-amd64.tar.gz"

@@ -6,19 +6,9 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 
 import 'api_client.dart';
+import 'google_login_result.dart';
 
-/// What Google's login page hands back; the Famio server exchanges it.
-class GoogleLoginResult {
-  const GoogleLoginResult({
-    required this.code,
-    required this.codeVerifier,
-    required this.redirectUri,
-  });
-
-  final String code;
-  final String codeVerifier;
-  final String redirectUri;
-}
+export 'google_login_result.dart';
 
 /// Google sign-in for installed apps (OAuth 2.0 with PKCE and a loopback
 /// redirect): the browser shows Google's page, which then calls back a

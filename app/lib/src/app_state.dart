@@ -15,6 +15,7 @@ import 'push/own_push.dart';
 import 'secure_vault.dart';
 import 'reminders/reminder_service.dart';
 import 'environment.dart';
+import 'platform/browser.dart';
 
 /// A server address checked by [AppState.resolveServer]: what to connect
 /// to, the certificate to pin and what the server reported.
@@ -89,10 +90,23 @@ class AppState extends ChangeNotifier {
     onResume: () => engine?.resumed(),
   );
 
+  /// Web app: the Famio server (or Home Assistant's proxy for it) the page
+  /// came from; the sign-in screen needs no address then.
+  ResolvedServer? webServer;
+
+  /// Web app inside Home Assistant: `server` (Famio runs in Home Assistant,
+  /// signed in as the Home Assistant user) or `client` (connects to another
+  /// Famio server); null in a plain browser.
+  String? panelMode;
+
+  /// Signing out makes no sense where Home Assistant signs in.
+  bool get canSignOut => panelMode != 'server';
+
   Future<void> init() async {
     _lifecycle;
     _prefs = await SharedPreferences.getInstance();
     highContrast.value = _prefs.getBool('highContrast') ?? false;
+    if (kIsWeb) return _initWeb();
     vault = await SecureVault.open(_prefs);
     serverUrl = _prefs.getString('serverUrl');
     mapTileUrl = _prefs.getString('mapTileUrl');
@@ -108,6 +122,32 @@ class AppState extends ChangeNotifier {
         pin: await vault.read('certPin'),
       );
     }
+  }
+
+  /// The web app belongs to the server it was loaded from (`<server>/app/`).
+  Future<void> _initWeb() async {
+    vault = SecureVault.memory(_prefs);
+    final page = pageUrl ?? Uri.base;
+    final url = page
+        .replace(query: '', fragment: '')
+        .resolve('../')
+        .toString()
+        .replaceAll('?', '');
+    serverUrl = url;
+    final api = FamioApiClient(url);
+    try {
+      webServer = ResolvedServer(url, await api.health());
+      panelMode = await api.panelMode();
+      // Home Assistant signs in (ingress) or keeps the session (client
+      // mode): no token in the browser.
+      final member = await api.me();
+      await _startSession(url, null, member);
+    } on ApiError catch (e) {
+      if (e.status != 401) notice = e.message;
+    } finally {
+      api.close();
+    }
+    notifyListeners();
   }
 
   /// Finds the best way to reach the server at [input]:
@@ -162,7 +202,9 @@ class AppState extends ChangeNotifier {
   /// plain HTTP is only allowed to addresses in the home network.
   static FamioApiClient _client(String url, String? pin, {String? token}) {
     final uri = FamioApiClient.normalizeUrl(url);
-    if (FamioApiClient.transportSecurity(uri) == TransportSecurity.insecure) {
+    // The web app uses the connection of its own page.
+    if (!kIsWeb &&
+        FamioApiClient.transportSecurity(uri) == TransportSecurity.insecure) {
       throw const ApiError(
         0,
         'insecure',
@@ -389,7 +431,7 @@ class AppState extends ChangeNotifier {
       }
     }
     await _reminders?.clear();
-    await HomeWidgetSync.clear();
+    if (!kIsWeb) await HomeWidgetSync.clear();
     // Also the phone's notification service and its token.
     try {
       await ownPush?.detach();
@@ -398,12 +440,12 @@ class AppState extends ChangeNotifier {
     }
     // Signing out ends location sharing on this phone as well.
     try {
-      await LocationSharing.disable(api: engine.api);
+      if (!kIsWeb) await LocationSharing.disable(api: engine.api);
     } catch (_) {
       // Not available on this platform.
     }
     await _stopSession();
-    if (member != null) {
+    if (member != null && !kIsWeb) {
       final support = await _supportDir();
       for (final name in ['famio_${member.id}.db', 'files_${member.id}.db']) {
         for (final suffix in ['', '-journal', '-wal', '-shm']) {
@@ -437,22 +479,28 @@ class AppState extends ChangeNotifier {
 
   Future<void> _startSession(
     String url,
-    String token,
+    String? token,
     FamilyMember member, {
     String? pin,
   }) async {
-    final normalized = FamioApiClient.normalizeUrl(url).toString();
-    await _prefs.setString('serverUrl', normalized);
-    await _prefs.setString('me', jsonEncode(member.toJson()));
+    final normalized = kIsWeb
+        ? url
+        : FamioApiClient.normalizeUrl(url).toString();
+    if (!kIsWeb) {
+      await _prefs.setString('serverUrl', normalized);
+      await _prefs.setString('me', jsonEncode(member.toJson()));
+    }
     await vault.write('token', token);
     await vault.write('certPin', pin);
 
-    // Local copy and file cache are encrypted with a key from the keystore.
-    final key = await vault.deviceKey();
-    final support = await _supportDir();
+    // Local copy and file cache are encrypted with a key from the keystore
+    // (the web app keeps them in memory).
+    final key = kIsWeb ? null : await vault.deviceKey();
+    final support = kIsWeb ? '' : await _supportDir();
     final api = FamioApiClient(
       normalized,
-      token: token,
+      // "panel": Home Assistant's proxy holds the real session.
+      token: token == 'panel' ? null : token,
       pinnedCertificate: pin,
     );
     final engine = SyncEngine(
@@ -484,15 +532,17 @@ class AppState extends ChangeNotifier {
     });
 
     // Plain cache folder of version 0.5: now an encrypted database.
-    final legacyCache = Directory(p.join(support, 'files_${member.id}'));
-    if (legacyCache.existsSync()) legacyCache.deleteSync(recursive: true);
+    if (!kIsWeb) {
+      final legacyCache = Directory(p.join(support, 'files_${member.id}'));
+      if (legacyCache.existsSync()) legacyCache.deleteSync(recursive: true);
+    }
     files = FileCache.open(
       p.join(support, 'files_${member.id}.db'),
       api,
       hexKey: key,
-      tempDir: Directory(
-        p.join((await getTemporaryDirectory()).path, 'famio_open'),
-      ),
+      tempDir: kIsWeb
+          ? ''
+          : p.join((await getTemporaryDirectory()).path, 'famio_open'),
     )..clearTemp();
     serverUrl = normalized;
     certificatePin = pin;
@@ -507,6 +557,13 @@ class AppState extends ChangeNotifier {
           if (this.engine == engine) engine.applyChildVisibility();
         })
         .catchError((Object _) {});
+
+    if (kIsWeb) {
+      // No notifications, widgets or location sharing in the browser.
+      _loadConfig(api);
+      refreshTwoFactor();
+      return;
+    }
 
     // Before the reminders: creating those may wait for Android's
     // notification permission dialog.
@@ -557,7 +614,7 @@ class AppState extends ChangeNotifier {
     final fresh = engine.members.where((m) => m.id == me?.id).firstOrNull;
     if (fresh == null) return;
     me = fresh;
-    _prefs.setString('me', jsonEncode(fresh.toJson()));
+    if (!kIsWeb) _prefs.setString('me', jsonEncode(fresh.toJson()));
     notifyListeners();
   }
 

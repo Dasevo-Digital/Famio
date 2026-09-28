@@ -1,0 +1,23 @@
+configuration:
+  mode:
+    name: Betriebsart
+    description: >-
+      server – Famio läuft in Home Assistant (Daten hier).
+      client – nur die Seitenleiste, verbunden mit eurem Famio-Server
+      woanders (Server-Adresse eintragen).
+  ingress_auth:
+    name: Mit Home-Assistant-Benutzer anmelden
+    description: >-
+      Nur Betriebsart „server“: Wer Famio in der Seitenleiste öffnet, ist mit
+      seinem Home-Assistant-Benutzer angemeldet.
+  server_url:
+    name: Server-Adresse
+    description: >-
+      Nur Betriebsart „client“: Adresse eures Famio-Servers, z. B.
+      https://famio.example.de oder https://192.168.1.20:8766
+  server_fingerprint:
+    name: Zertifikat-Fingerabdruck
+    description: >-
+      Nur für Server im Heimnetz mit eigenem Zertifikat (Port 8766): der
+      Fingerabdruck aus dem Server-Log. Mit Let's-Encrypt-Zertifikat leer
+      lassen.
