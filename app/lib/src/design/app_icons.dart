@@ -92,6 +92,7 @@ abstract final class AppIcons {
   static const IconData battery = LucideIcons.batteryMedium;
   static const IconData history = LucideIcons.history;
   static const IconData monitor = LucideIcons.monitor;
+  static const IconData contrast = LucideIcons.contrast;
   static const IconData note = LucideIcons.stickyNote;
   static const IconData paperclip = LucideIcons.paperclip;
   static const IconData paperPlaneRight = LucideIcons.send;

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'app_icons.dart';
 
@@ -68,6 +70,7 @@ class FamioColors extends ThemeExtension<FamioColors> {
     required this.line,
     required this.shadow,
     required this.dark,
+    this.highContrast = false,
   });
 
   static const light = FamioColors(
@@ -102,6 +105,23 @@ class FamioColors extends ThemeExtension<FamioColors> {
   final Color shadow;
   final bool dark;
 
+  /// "Hoher Kontrast" (setting or system): accents and grey text are
+  /// darkened (light) or brightened (dark) until text reaches 4.5:1.
+  final bool highContrast;
+
+  /// These colors with [highContrast] switched on.
+  FamioColors withHighContrast() => FamioColors(
+    background: background,
+    surface: surface,
+    surfaceSoft: surfaceSoft,
+    ink: ink,
+    inkSoft: dark ? const Color(0xFFD0D3E4) : const Color(0xFF4A4E68),
+    line: dark ? const Color(0xFF5A6184) : const Color(0xFFD9C9B8),
+    shadow: shadow,
+    dark: dark,
+    highContrast: true,
+  );
+
   static FamioColors of(BuildContext context) =>
       Theme.of(context).extension<FamioColors>()!;
 
@@ -111,11 +131,43 @@ class FamioColors extends ThemeExtension<FamioColors> {
       : section.tint;
 
   /// Accent of [section], slightly brighter in dark mode for contrast.
-  Color strong(FamioSection section) =>
-      dark ? Color.lerp(section.strong, Colors.white, 0.18)! : section.strong;
+  Color strong(FamioSection section) => readable(
+    dark ? Color.lerp(section.strong, Colors.white, 0.18)! : section.strong,
+    on: tint(section),
+  );
 
   /// Destructive actions and errors, in a friendly red.
-  Color get danger => dark ? const Color(0xFFFF8F8F) : const Color(0xFFD64545);
+  Color get danger =>
+      readable(dark ? const Color(0xFFFF8F8F) : const Color(0xFFD64545));
+
+  /// [color] as text or icon: unchanged normally; with [highContrast]
+  /// darkened (or brightened in dark mode) until it reaches 4.5:1 on the
+  /// page, on cards and on [on] – and white text on it does too.
+  Color readable(Color color, {Color? on}) {
+    if (!highContrast) return color;
+    final grounds = [background, surface, surfaceSoft, ?on];
+    final target = dark ? Colors.white : Colors.black;
+    var result = color;
+    for (var t = 0.0; t <= 1; t += 0.04) {
+      result = Color.lerp(color, target, t)!;
+      if (grounds.every((g) => contrast(result, g) >= 4.5) &&
+          (dark || contrast(result, Colors.white) >= 4.5)) {
+        break;
+      }
+    }
+    return result;
+  }
+
+  /// Text and icons on a [strong] fill: white, but near-black in dark
+  /// mode with [highContrast], where the fills are bright.
+  Color get onStrong =>
+      highContrast && dark ? const Color(0xFF12131C) : Colors.white;
+
+  /// WCAG contrast ratio of two colors (1 … 21).
+  static double contrast(Color a, Color b) {
+    final la = a.computeLuminance(), lb = b.computeLuminance();
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05);
+  }
 
   List<BoxShadow> get softShadow => [
     BoxShadow(color: shadow, blurRadius: 24, offset: const Offset(0, 8)),

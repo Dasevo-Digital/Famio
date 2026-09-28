@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.2 – Hoher Kontrast
+
+- **Neuer Schalter „Hoher Kontrast“** unter Einstellungen → Dieses Gerät:
+  - Kräftigere Bereichsfarben und dunklere Schrift statt Pastell; jeder
+    Text erreicht mindestens 4,5:1 (WCAG AA).
+  - Im Dunkelmodus werden die Farben aufgehellt, die Schrift auf farbigen
+    Flächen wird dunkel.
+  - Die Einstellung gilt pro Gerät.
+  - Ist „Kontrast erhöhen“ im Betriebssystem an (iOS, macOS), ist er
+    automatisch aktiv.
+- Ohne Schalter bleibt der Pastell-Look unverändert.
+
 ## 0.15.1 – Feinschliff: Akku, Sicherheit, Bedienbarkeit
 
 - **Weniger Akku und Datenverkehr:**

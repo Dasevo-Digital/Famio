@@ -179,6 +179,17 @@ class SettingsScreen extends StatelessWidget {
             value: state.kioskAutostart,
             onChanged: state.setKioskAutostart,
           ),
+          SwitchListTile(
+            secondary: const Icon(AppIcons.contrast),
+            title: const Text('Hoher Kontrast'),
+            subtitle: const Text(
+              'Kräftigere Farben und dunklere Schrift statt Pastell – '
+              'leichter lesbar bei Sonne, kleiner Schrift oder schwachen '
+              'Augen. Gilt nur für dieses Gerät.',
+            ),
+            value: state.highContrast.value,
+            onChanged: state.setHighContrast,
+          ),
           ListHeading('Synchronisation', color: accent),
           ListTile(
             leading: const Icon(AppIcons.hardDrives),

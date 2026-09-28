@@ -38,6 +38,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// "Hoher Kontrast" on this device; the theme listens to it alone.
+  final highContrast = ValueNotifier(false);
+
+  Future<void> setHighContrast(bool value) async {
+    highContrast.value = value;
+    await _prefs.setBool('highContrast', value);
+    notifyListeners();
+  }
+
   late SharedPreferences _prefs;
   late SecureVault vault;
   ReminderService? _reminders;
@@ -76,6 +85,7 @@ class AppState extends ChangeNotifier {
   Future<void> init() async {
     _lifecycle;
     _prefs = await SharedPreferences.getInstance();
+    highContrast.value = _prefs.getBool('highContrast') ?? false;
     vault = await SecureVault.open(_prefs);
     serverUrl = _prefs.getString('serverUrl');
     mapTileUrl = _prefs.getString('mapTileUrl');

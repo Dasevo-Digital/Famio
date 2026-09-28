@@ -577,7 +577,7 @@ class _Badge extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             constraints: const BoxConstraints(minWidth: 18),
             decoration: BoxDecoration(
-              color: FamioSection.kids.strong,
+              color: FamioColors.of(context).strong(FamioSection.kids),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: FamioColors.of(context).surface,
@@ -587,8 +587,8 @@ class _Badge extends StatelessWidget {
             child: Text(
               count > 99 ? '99+' : '$count',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: FamioColors.of(context).onStrong,
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
               ),
