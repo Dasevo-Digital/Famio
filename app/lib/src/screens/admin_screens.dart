@@ -169,6 +169,7 @@ class _AdminScreenState extends State<AdminScreen> {
             builder: (_, obscure, toggle) => TextField(
               controller: password,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
                 labelText: 'Startpasswort (min. 8 Zeichen)',
@@ -624,6 +625,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             builder: (_, obscure, toggle) => TextField(
               controller: password,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
@@ -800,6 +802,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             builder: (_, obscure, toggle) => TextField(
               controller: code,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
@@ -811,6 +814,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             builder: (_, obscure, toggle) => TextField(
               controller: repeat,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
                 labelText: 'Code wiederholen',
@@ -918,6 +922,7 @@ class _SettingsFormState extends State<_SettingsForm> {
               builder: (_, obscure, toggle) => TextField(
                 controller: password,
                 obscureText: obscure,
+                contextMenuBuilder: PasswordReveal.contextMenu,
                 decoration: InputDecoration(
                   suffixIcon: toggle,
                   labelText: 'Dein Passwort',

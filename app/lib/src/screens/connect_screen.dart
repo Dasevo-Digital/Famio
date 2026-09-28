@@ -238,6 +238,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                               controller: _password,
                               enabled: !_busy,
                               obscureText: obscure,
+                              contextMenuBuilder: PasswordReveal.contextMenu,
                               autofillHints: [
                                 setup
                                     ? AutofillHints.newPassword
