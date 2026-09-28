@@ -21,6 +21,30 @@ fi
 mkdir -p build.noindex
 [ -L build ] || ln -s build.noindex build
 
+# Replaces the app in /Applications. A running copy is quit first: it would
+# otherwise load libraries from the new files next to the old ones already
+# in memory and crash (seen with sqlite3mc). Started again afterwards.
+replace_app() { # <source .app> <target .app>
+  was_running=0
+  if pgrep -f "$2/Contents/MacOS/" >/dev/null 2>&1; then
+    was_running=1
+    echo "Beende laufendes $(basename "$2") …"
+    osascript -e "tell application \"$2\" to quit" >/dev/null 2>&1 || true
+    i=0
+    while pgrep -f "$2/Contents/MacOS/" >/dev/null 2>&1; do
+      i=$((i + 1))
+      if [ $i -gt 30 ]; then
+        echo "$(basename "$2") läuft noch – bitte beenden und erneut aufrufen." >&2
+        exit 1
+      fi
+      sleep 1
+    done
+  fi
+  rm -rf "$2"
+  ditto "$1" "$2"
+  [ $was_running -eq 0 ] || open "$2"
+}
+
 case "${1:-}" in
 dev)
   FLUTTER_XCODE_FAMIO_APP_NAME="Famio Dev" \
@@ -29,8 +53,7 @@ dev)
     flutter build macos --release --dart-define=FAMIO_ENV=dev
   APP="build/macos/Build/Products/Release/Famio Dev.app"
   tool/sign_macos.sh "$APP"
-  rm -rf "/Applications/Famio Dev.app"
-  ditto "$APP" "/Applications/Famio Dev.app"
+  replace_app "$APP" "/Applications/Famio Dev.app"
   echo "Installiert: /Applications/Famio Dev.app"
   ;;
 prod)
@@ -47,8 +70,7 @@ prod)
   TMP="$(mktemp -d)"
   ditto -x -k "$ZIP" "$TMP"
   codesign --verify --deep --strict "$TMP/Famio.app"
-  rm -rf /Applications/Famio.app
-  ditto "$TMP/Famio.app" /Applications/Famio.app
+  replace_app "$TMP/Famio.app" /Applications/Famio.app
   rm -rf "$TMP"
   echo "Installiert: /Applications/Famio.app aus $ZIP"
   ;;
