@@ -3,11 +3,13 @@ import 'push_settings_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../design/app_icons.dart';
 
 import 'package:home_widget/home_widget.dart';
 
 import '../app_state.dart';
+import '../environment.dart';
 import '../home_widget/widget_sync.dart';
 import '../data/family_data.dart';
 import '../design/components.dart';
@@ -238,6 +240,8 @@ class SettingsScreen extends StatelessWidget {
               await state.signOut();
             },
           ),
+          ListHeading('Über Famio', color: accent),
+          VersionTile(api: engine.api),
         ],
       ),
     );
@@ -581,4 +585,47 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
       ],
     );
   }
+}
+
+/// Versions of this app and of the server, e.g. to check an update arrived.
+class VersionTile extends StatefulWidget {
+  const VersionTile({super.key, required this.api});
+
+  final FamioApiClient api;
+
+  @override
+  State<VersionTile> createState() => VersionTileState();
+}
+
+class VersionTileState extends State<VersionTile> {
+  late final Future<PackageInfo?> _app = PackageInfo.fromPlatform()
+      .then<PackageInfo?>((info) => info)
+      .catchError((Object _) => null);
+  late final Future<String?> _server = widget.api
+      .health()
+      .then<String?>((info) => info.version)
+      .catchError((Object _) => null);
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder(
+    future: Future.wait([_app, _server]),
+    builder: (context, snapshot) {
+      final app = snapshot.data?[0] as PackageInfo?;
+      final server = snapshot.data?[1] as String?;
+      return ListTile(
+        leading: const Icon(AppIcons.info),
+        title: Text(
+          app == null
+              ? 'Version'
+              : '${AppEnv.appName} ${app.version}'
+                    '${app.buildNumber.isEmpty ? '' : ' (${app.buildNumber})'}',
+        ),
+        subtitle: Text(
+          snapshot.connectionState != ConnectionState.done
+              ? 'Server-Version wird abgefragt …'
+              : 'Server ${server ?? 'nicht erreichbar'}',
+        ),
+      );
+    },
+  );
 }

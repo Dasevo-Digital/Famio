@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2
+
+- Einstellungen → „Über Famio“ zeigt die Version der App und des Servers.
+
 ## 0.14.1
 
 - Passwortfelder: Rechtsklick (bzw. langes Drücken) bietet „Einfügen“,
