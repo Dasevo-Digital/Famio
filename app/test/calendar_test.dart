@@ -97,6 +97,12 @@ void main() {
 
     await tester.tap(find.text('Training').last); // Agenda entry for today.
     await tester.pumpAndSettle();
+    // Below the comments.
+    await tester.dragUntilVisible(
+      find.text('Termin löschen'),
+      find.byType(ListView).last,
+      const Offset(0, -300),
+    );
     await tester.tap(find.text('Termin löschen'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Nur dieser Termin'));

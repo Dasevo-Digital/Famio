@@ -9,6 +9,9 @@
 	<!-- Google sign-in returns to a short-lived server on 127.0.0.1. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Barcode scanner for the pantry. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
 	<key>com.apple.security.app-sandbox</key>
 	<true/>
 </dict>

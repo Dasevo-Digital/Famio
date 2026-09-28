@@ -141,6 +141,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final password = TextEditingController();
     final engine = AppScope.engineOf(context);
     var isAdmin = false;
+    var role = MemberRole.adult;
     var created = false;
     await showDialog<void>(
       context: context,
@@ -171,12 +172,26 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
           ),
           StatefulBuilder(
-            builder: (context, setState) => SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('Administrator'),
-              subtitle: const Text('Darf den Server verwalten'),
-              value: isAdmin,
-              onChanged: (v) => setState(() => isAdmin = v),
+            builder: (context, setState) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _RolePicker(
+                  role: role,
+                  onChanged: (r) => setState(() {
+                    role = r;
+                    if (r == MemberRole.guest) isAdmin = false;
+                  }),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Administrator'),
+                  subtitle: const Text('Darf den Server verwalten'),
+                  value: isAdmin,
+                  onChanged: role == MemberRole.guest
+                      ? null
+                      : (v) => setState(() => isAdmin = v),
+                ),
+              ],
             ),
           ),
         ],
@@ -186,6 +201,7 @@ class _AdminScreenState extends State<AdminScreen> {
             displayName: name.text,
             password: password.text,
             isAdmin: isAdmin,
+            role: role,
           );
           created = true;
           await engine.refreshMembers();
@@ -194,6 +210,45 @@ class _AdminScreenState extends State<AdminScreen> {
     );
     if (created && mounted) _refresh();
   }
+}
+
+/// Adult, child or guest, with what it means.
+class _RolePicker extends StatelessWidget {
+  const _RolePicker({required this.role, required this.onChanged});
+
+  final MemberRole role;
+  final ValueChanged<MemberRole> onChanged;
+
+  static const _help = {
+    MemberRole.adult: 'Sieht und verwaltet alles, was für ihn freigegeben ist.',
+    MemberRole.child:
+        'Sammelt Punkte und Taschengeld; erledigte Ämter bestätigen die '
+        'Erwachsenen.',
+    MemberRole.guest:
+        'Z. B. Großeltern oder Babysitter: nur Kalender, Chat, Einkauf, '
+        'Aufgaben, Essen und Kontakte – keine Dokumente, Gesundheitsdaten, '
+        'Finanzen oder Standorte.',
+  };
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Wrap(
+        spacing: 8,
+        children: [
+          for (final r in MemberRole.values)
+            ChoiceChip(
+              label: Text(r.label),
+              selected: role == r,
+              onSelected: (_) => onChanged(r),
+            ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Text(_help[role]!, style: Theme.of(context).textTheme.bodySmall),
+    ],
+  );
 }
 
 // --- users ------------------------------------------------------------------
@@ -243,6 +298,11 @@ class _UserList extends StatelessWidget {
                       children: [
                         if (u.member.isAdmin)
                           const _Badge('Administrator', AppIcons.shieldUser),
+                        if (u.member.role != MemberRole.adult)
+                          _Badge(
+                            u.member.role.label,
+                            u.member.isGuest ? AppIcons.user : AppIcons.baby,
+                          ),
                         if (u.homeAssistant)
                           const _Badge('Home Assistant', AppIcons.house),
                         if (!u.hasPassword)
@@ -415,6 +475,13 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           ),
         ),
         ListHeading('Rolle', color: accent),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _RolePicker(
+            role: m.role,
+            onChanged: (r) => _run(() => _api.updateUser(m.id, role: r)),
+          ),
+        ),
         SwitchListTile(
           secondary: const Icon(AppIcons.shieldUser),
           title: const Text('Administrator'),

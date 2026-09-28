@@ -30,6 +30,14 @@ typedef TrustCertificate = Future<bool> Function(String fingerprint);
 
 /// Session and sync lifecycle. Screens reach it through [AppScope].
 class AppState extends ChangeNotifier {
+  /// This device opens the wall display at start (kitchen tablet).
+  bool get kioskAutostart => _prefs.getBool('kiosk.autostart') ?? false;
+
+  Future<void> setKioskAutostart(bool value) async {
+    await _prefs.setBool('kiosk.autostart', value);
+    notifyListeners();
+  }
+
   late SharedPreferences _prefs;
   late SecureVault vault;
   ReminderService? _reminders;

@@ -1,3 +1,5 @@
+import 'kiosk_screen.dart';
+import 'push_settings_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -141,6 +143,31 @@ class SettingsScreen extends StatelessWidget {
                 }
               },
             ),
+          ListTile(
+            leading: const Icon(AppIcons.bellRing),
+            title: const Text('Push-Benachrichtigungen'),
+            subtitle: const Text('Über ntfy – auch wenn Famio geschlossen ist'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PushSettingsScreen(),
+              ),
+            ),
+          ),
+          ListHeading('Dieses Gerät', color: accent),
+          ListTile(
+            leading: const Icon(AppIcons.tv),
+            title: const Text('Wandanzeige öffnen'),
+            subtitle: const Text(
+              'Großer Tagesüberblick fürs Küchen-Tablet, bleibt an',
+            ),
+            onTap: () => openKiosk(context),
+          ),
+          SwitchListTile(
+            secondary: const Icon(AppIcons.monitor),
+            title: const Text('Beim Start als Wandanzeige öffnen'),
+            value: state.kioskAutostart,
+            onChanged: state.setKioskAutostart,
+          ),
           ListHeading('Synchronisation', color: accent),
           ListTile(
             leading: const Icon(AppIcons.hardDrives),
@@ -179,7 +206,11 @@ class SettingsScreen extends StatelessWidget {
                     leading: MemberAvatar(m),
                     title: Text(m.displayName),
                     subtitle: Text(
-                      '@${m.username}${m.isAdmin ? ' · Administrator' : ''}',
+                      [
+                        '@${m.username}',
+                        if (m.role != MemberRole.adult) m.role.label,
+                        if (m.isAdmin) 'Administrator',
+                      ].join(' · '),
                     ),
                   ),
               ],

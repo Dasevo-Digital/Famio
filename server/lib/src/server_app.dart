@@ -18,7 +18,9 @@ import 'calendar/calendar_importer.dart';
 import 'database.dart';
 import 'dav/caldav_sync.dart';
 import 'dav/google_oauth.dart';
+import 'family/allowance_job.dart';
 import 'hub.dart';
+import 'push/push_service.dart';
 import 'location/location_service.dart';
 import 'files/file_store.dart';
 import 'record_store.dart';
@@ -60,6 +62,7 @@ class FamioServerApp {
     records = RecordStore(
       db,
       memberIds: () => [for (final m in accounts.members()) m.id],
+      roleOf: accounts.roleOf,
     );
     calendarAccess = CalendarAccess(
       db,
@@ -104,6 +107,22 @@ class FamioServerApp {
       records: records,
       maxBytes: () => settings.maxUploadBytes,
     );
+    push = PushService(
+      db: db,
+      records: records,
+      accounts: accounts,
+      location: () => settings.location,
+      client: httpClient,
+    );
+    records
+      ..onStored = push.stored
+      ..onServerStored = push.serverStored;
+    allowances = AllowanceJob(
+      records: records,
+      accounts: accounts,
+      location: () => settings.location,
+      onChanged: () => hub.notifyRev(records.currentRev),
+    );
     // A fresh server over the internet may only be claimed with this code.
     setupCode = accounts.hasUsers ? null : newSetupCode();
     api = FamioApi(
@@ -128,6 +147,7 @@ class FamioServerApp {
       caldav: caldav,
       calendarAccess: calendarAccess,
       locations: locations,
+      push: push,
       onEventsChanged: caldav.eventsChanged,
     );
   }
@@ -165,6 +185,8 @@ class FamioServerApp {
   late final CalDavSync caldav;
   late final LocationService locations;
   late final FileStore files;
+  late final PushService push;
+  late final AllowanceJob allowances;
   late final String? setupCode;
   Timer? _gc;
   late final FamioApi api;
@@ -184,6 +206,7 @@ class FamioServerApp {
   void startBackgroundJobs() {
     importer.start();
     caldav.start();
+    allowances.start();
     accounts.deleteExpiredSessions();
     locations.collectGarbage();
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
@@ -197,6 +220,7 @@ class FamioServerApp {
     _gc?.cancel();
     importer.stop();
     caldav.stop();
+    allowances.stop();
     await hub.close();
     files.blobs.close();
     db.close();

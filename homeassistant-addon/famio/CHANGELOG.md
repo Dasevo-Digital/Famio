@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.13.0 – Ämter, Routinen, Push und mehr
+
+- **Ämter & Punkte:** Haushaltsaufgaben mit Emoji und Punkten – täglich, an
+  bestimmten Wochentagen, wöchentlich oder einmalig; auf Wunsch reihum
+  („heute ist Lena dran“). Kinder haken ab, Erwachsene bestätigen.
+- **Belohnungen & Taschengeld:** Punkte gegen Belohnungen eintauschen
+  (Kinder wünschen, Eltern bestätigen); Taschengeld-Konto mit wöchentlicher
+  automatischer Buchung, Ausgaben, Geschenken und Punkte-Umtausch.
+- **Routinen für Kinder:** Morgen- und Abend-Checklisten mit großen Bildern,
+  Erinnerung und Punkten fürs Fertigwerden.
+- **Rollen:** Erwachsen, Kind oder **Gast** (Großeltern, Babysitter): Gäste
+  sehen nur Kalender, Chat, Einkauf, Aufgaben, Essen und Kontakte – keine
+  Dokumente, Gesundheitsdaten, Finanzen oder Standorte. Der Server setzt das
+  durch.
+- **Push-Benachrichtigungen über ntfy:** Nachrichten, zugewiesene Aufgaben,
+  Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen auch bei
+  geschlossener App. Ohne „Details“ verlässt nur „Neue Nachricht“ o. Ä. den
+  Server.
+- **Wandanzeige** fürs Küchen-Tablet: Uhr, Termine, Wetter, Ämter zum
+  Abhaken, Einkauf und Essen – bleibt an, optional beim Start.
+- **Kommentare an Terminen** und **Umfragen im Chat**.
+- **Vorlagen für Listen:** Packlisten (Urlaub, Kita, Kliniktasche …) oder
+  eigene Listen als Vorlage speichern; „Alle Haken entfernen“.
+- **Vorrat mit Barcode-Scanner:** Kühlschrank, Tiefkühler, Vorratsschrank;
+  Produktnamen aus Open Food Facts, Mindesthaltbarkeit mit Erinnerung,
+  Knappes mit einem Tipp auf die Einkaufsliste.
+- **Medikamente:** Einnahmeplan mit Erinnerungen, Abhaken, Vorrat und
+  Nachkauf-Warnung; nur für ausgewählte Mitglieder sichtbar. Famio schlägt
+  keine Dosierungen vor.
+- Home Assistant: neuer Sensor „Punkte“.
+- „Mehr“-Menü auf dem Handy kompakter (alle Bereiche passen).
+
 ## 0.12.1 – Sicherheit und Feinschliff
 
 - **Anmeldeschutz verschärft:** Fehlversuche zählen jetzt auch pro Adresse

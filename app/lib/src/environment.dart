@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 /// with its own name, data, keychain entry and server.
 abstract final class AppEnv {
   static const name = String.fromEnvironment('FAMIO_ENV', defaultValue: 'prod');
+
   /// Also the Android build variant (`--flavor dev`).
   static const isDev = name == 'dev' || appFlavor == 'dev';
   static const appName = isDev ? 'Famio Dev' : 'Famio';

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
@@ -12,6 +13,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../data/birthdays.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
 import '../format.dart';
@@ -223,6 +225,12 @@ class ReminderService {
     Collections.contacts,
     Collections.pregnancies,
     Collections.documents,
+    Collections.routines,
+    Collections.routineRuns,
+    Collections.medications,
+    Collections.medicationIntakes,
+    Collections.pantryItems,
+    'members',
   };
 
   var _chatSeen = DateTime.now();
@@ -253,7 +261,9 @@ class ReminderService {
           title: '',
         ).notificationId,
         title: ChatIds.isDirect(m.chatId) ? author : '$author · Familie',
-        body: m.text.isNotEmpty
+        body: m.poll != null
+            ? '📊 ${m.poll!.question}'
+            : m.text.isNotEmpty
             ? m.text
             : '📎 ${m.attachment?.name ?? 'Anhang'}',
         notificationDetails: _chatDetails,
@@ -434,6 +444,68 @@ List<DueReminder> familyReminders(
       'Heute: ${b.headline(day)} 🎂',
       '',
     );
+  }
+  // Routines of the member (children's checklists), until done.
+  for (var d = 0; d < to.difference(from).inDays + 1; d++) {
+    final day = DateTime(from.year, from.month, from.day + d);
+    for (final r in engine.routinesFor(engine.memberId, day)) {
+      final at = r.reminderOn(day);
+      if (at == null) continue;
+      final run = engine.routineRun(r, day, engine.memberId);
+      if (r.steps.isNotEmpty && r.steps.every((s) => run.done.contains(s.id))) {
+        continue;
+      }
+      add(
+        'routine:${r.id}:${dayKey(day)}',
+        at,
+        '${r.emoji} ${r.title}',
+        '${r.steps.length} Schritte${r.points > 0 ? ' · +${r.points} ⭐' : ''}',
+      );
+    }
+    // Doses for the members caring for them, unless already recorded.
+    for (final m in engine.medications) {
+      if (m.careIds.isNotEmpty && !m.careIds.contains(engine.memberId)) {
+        continue;
+      }
+      for (final at in m.dosesOn(day)) {
+        if (engine.intakeAt(m, at) != null) continue;
+        add(
+          'med:${m.id}:${at.toIso8601String()}',
+          at,
+          m.personName.isEmpty ? m.name : '${m.name} für ${m.personName}',
+          m.dose.isEmpty ? 'Einnahme' : m.dose,
+        );
+      }
+    }
+  }
+  for (final m in engine.medications) {
+    if (m.careIds.isNotEmpty && !m.careIds.contains(engine.memberId)) {
+      continue;
+    }
+    final days = m.daysLeft(engine.takenSinceCount(m));
+    if (days == null || m.stockAt == null) continue;
+    final early = days <= m.refillDays;
+    add(
+      'med-refill:${m.id}:${m.stockAt!.millisecondsSinceEpoch}',
+      early
+          ? nineOn(from.add(const Duration(days: 1)))
+          : nineOn(from.add(Duration(days: days - m.refillDays))),
+      '${m.name} bald nachkaufen',
+      'Der Vorrat reicht noch etwa ${early ? max(0, days - 1) : m.refillDays} Tage.',
+    );
+  }
+  // Best-before dates, for the adults.
+  if (engine.iAmAdult) {
+    for (final item in engine.pantryItems) {
+      final best = item.bestBefore;
+      if (best == null || item.amount <= 0) continue;
+      add(
+        'pantry:${item.id}:${dayKey(best)}',
+        DateTime(best.year, best.month, best.day - 1, 17),
+        '${item.name} bald verbrauchen',
+        'Mindestens haltbar bis morgen.',
+      );
+    }
   }
   for (final doc in engine.documents) {
     final expires = doc.expiresAt;

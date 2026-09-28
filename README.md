@@ -23,6 +23,14 @@ eigenständig per Docker.
 | Essen: Rezepte (Import von Webseiten), Wochenplan, Zutaten auf die Einkaufsliste | ✅ |
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder | ✅ |
 | Stundenplan pro Schulkind | ✅ |
+| Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |
+| Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
+| Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
+| Push-Benachrichtigungen über ntfy (auch bei geschlossener App) | ✅ |
+| Wandanzeige fürs Küchen-Tablet | ✅ |
+| Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
+| Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
+| Medikamentenplan mit Erinnerung und Vorrat | ✅ |
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 
@@ -162,6 +170,29 @@ deinstallieren, Berechtigung entziehen); Famio zeigt den Eltern aber an,
 wenn ein Handy keine Positionen mehr schickt, die Berechtigung fehlt oder
 GPS aus ist. Kartenkacheln kommen von OpenStreetMap oder von einem eigenen
 Kachelserver (Server-Verwaltung → Einstellungen → Kartenserver).
+
+### Rollen
+
+Neben der Admin-Rolle hat jedes Mitglied eine Rolle, die der Server bei
+jedem Sync durchsetzt:
+
+- **Erwachsen:** alles, was für das Mitglied sichtbar ist.
+- **Kind:** darf Ämter, Belohnungen, Routinen und Taschengeld nicht
+  verwalten; erledigte Ämter und Belohnungswünsche sind Anfragen, die ein
+  Erwachsener bestätigt.
+- **Gast:** bekommt nur Kalender, Termin-Kommentare, Chat, Einkauf,
+  Aufgaben, Essen, Kontakte, Ämter und Vorrat; schreiben darf er nur Chat,
+  Einkaufsartikel, Aufgaben, Kommentare und Umfrage-Stimmen. Standort und
+  Kalender-Verbindungen sind für Gäste gesperrt.
+
+### Push-Benachrichtigungen
+
+Jedes Mitglied kann in den Einstellungen Geräte mit einem ntfy-Thema
+eintragen (`https://ntfy.sh/<geheimer-name>` oder ein eigener ntfy-Server,
+optional mit Token). Der Server meldet dort neue Nachrichten, zugewiesene
+Aufgaben, Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen. Ohne
+„Details“ enthält die Meldung nur einen Hinweis wie „Neue Nachricht“ –
+Namen und Inhalte verlassen den Server dann nicht.
 
 ### Sichtbarkeit und Dateien
 

@@ -9,6 +9,8 @@ import 'dart:ui' as ui;
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/data/family_extras.dart';
+import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio_client/famio_client.dart';
@@ -97,8 +99,272 @@ const _members = [
     username: 'lena',
     displayName: 'Lena',
     color: 0xFF2A9D6E,
+    role: MemberRole.child,
+  ),
+  FamilyMember(
+    id: 'ben',
+    username: 'ben',
+    displayName: 'Ben',
+    color: 0xFFE8703A,
+    role: MemberRole.child,
   ),
 ];
+
+/// Chores, routines, rewards, medication and the pantry.
+void _seedExtras(SyncEngine e) {
+  final now = DateTime.now();
+  final today = DateUtils.dateOnly(now);
+  final start = today.subtract(const Duration(days: 30));
+  final chores = [
+    Chore(
+      id: 'ch1',
+      title: 'Tisch decken',
+      emoji: '🍽️',
+      points: 2,
+      memberIds: const ['lena', 'ben'],
+      rotate: true,
+      start: start,
+    ),
+    Chore(
+      id: 'ch2',
+      title: 'Müll rausbringen',
+      emoji: '🗑️',
+      points: 3,
+      memberIds: const ['lena'],
+      start: start,
+    ),
+    Chore(
+      id: 'ch3',
+      title: 'Hund füttern',
+      emoji: '🐶',
+      points: 1,
+      memberIds: const ['ben'],
+      start: start,
+    ),
+    Chore(
+      id: 'ch4',
+      title: 'Zimmer aufräumen',
+      emoji: '🧸',
+      points: 5,
+      memberIds: const ['lena', 'ben'],
+      repeat: ChoreRepeat.weekly,
+      start: start,
+    ),
+    Chore(
+      id: 'ch5',
+      title: 'Blumen gießen',
+      emoji: '🪴',
+      points: 1,
+      start: start,
+    ),
+  ];
+  for (final c in chores) {
+    e.saveChore(c);
+  }
+  e.completeChore(chores[2], today, 'ben');
+  e.savePointEntry(
+    PointEntry(
+      id: 'req',
+      memberId: 'lena',
+      points: 3,
+      title: 'Müll rausbringen',
+      kind: PointKind.chore,
+      at: now,
+      status: PointStatus.pending,
+      refId: 'ch2',
+    ),
+  );
+  e.savePointEntry(
+    PointEntry(
+      id: 'b1',
+      memberId: 'lena',
+      points: 34,
+      title: 'Letzte Woche',
+      kind: PointKind.bonus,
+      at: now.subtract(const Duration(days: 7)),
+    ),
+  );
+  e.savePointEntry(
+    PointEntry(
+      id: 'b2',
+      memberId: 'ben',
+      points: 21,
+      title: 'Letzte Woche',
+      kind: PointKind.bonus,
+      at: now.subtract(const Duration(days: 7)),
+    ),
+  );
+  e.saveRoutine(
+    Routine(
+      id: 'r1',
+      title: 'Morgenroutine',
+      emoji: '☀️',
+      memberId: 'ben',
+      time: '07:00',
+      points: 2,
+      steps: [
+        for (final (emoji, t) in [
+          ('🛏️', 'Aufstehen'),
+          ('👕', 'Anziehen'),
+          ('🥣', 'Frühstücken'),
+          ('🪥', 'Zähne putzen'),
+          ('🎒', 'Ranzen packen'),
+        ])
+          RoutineStep(id: t, title: t, emoji: emoji),
+      ],
+    ),
+  );
+  final routine = e.routines.single;
+  e.toggleRoutineStep(routine, today, 'ben', 'Aufstehen');
+  e.toggleRoutineStep(routine, today, 'ben', 'Anziehen');
+  for (final (emoji, t, cost) in [
+    ('📱', '30 Minuten Tablet', 10),
+    ('🍦', 'Eis essen', 15),
+    ('🎬', 'Kinobesuch', 50),
+  ]) {
+    e.saveReward(Reward(id: t, title: t, emoji: emoji, cost: cost));
+  }
+  e.saveAllowance(
+    Allowance(
+      memberId: 'lena',
+      weeklyCents: 300,
+      since: start,
+      centsPerPoint: 10,
+    ),
+  );
+  e.saveMoneyEntry(
+    MoneyEntry(
+      id: 'mo1',
+      memberId: 'lena',
+      cents: 300,
+      at: now.subtract(const Duration(days: 2)),
+      kind: MoneyKind.allowance,
+      note: 'Taschengeld',
+    ),
+  );
+  e.saveMoneyEntry(
+    MoneyEntry(
+      id: 'mo2',
+      memberId: 'lena',
+      cents: -450,
+      at: now.subtract(const Duration(days: 1)),
+      kind: MoneyKind.spent,
+      note: 'Comic',
+    ),
+  );
+  e.saveMoneyEntry(
+    MoneyEntry(
+      id: 'mo3',
+      memberId: 'lena',
+      cents: 1200,
+      at: now.subtract(const Duration(days: 20)),
+      kind: MoneyKind.gift,
+      note: 'Von Oma',
+    ),
+  );
+  e.saveMedication(
+    Medication(
+      id: 'med1',
+      name: 'Ibuprofen-Saft',
+      personName: 'Ben',
+      dose: '5 ml laut Kinderarzt',
+      times: const ['08:00', '20:00'],
+      start: today.subtract(const Duration(days: 2)),
+      end: today.add(const Duration(days: 3)),
+      stock: 12,
+      stockAt: now.subtract(const Duration(days: 2)),
+      careIds: const ['mama', 'papa'],
+    ),
+  );
+  e.saveMedication(
+    Medication(
+      id: 'med2',
+      name: 'L-Thyroxin',
+      personName: 'Sarah',
+      dose: '1 Tablette',
+      times: const ['07:00'],
+      start: start,
+      stock: 9,
+      stockAt: now.subtract(const Duration(days: 1)),
+      careIds: const ['mama'],
+    ),
+  );
+  e.recordIntake(
+    e.medication('med1')!,
+    scheduled: DateTime(today.year, today.month, today.day, 8),
+  );
+  for (final (i, item) in [
+    PantryItem(
+      id: 'p',
+      name: 'Vollmilch (1 l)',
+      brand: 'Hofmolkerei',
+      amount: 1,
+      minAmount: 2,
+      place: PantryPlace.fridge,
+      bestBefore: today.add(const Duration(days: 1)),
+    ),
+    PantryItem(
+      id: 'p',
+      name: 'Joghurt',
+      amount: 4,
+      place: PantryPlace.fridge,
+      bestBefore: today.add(const Duration(days: 6)),
+    ),
+    PantryItem(
+      id: 'p',
+      name: 'Spaghetti',
+      amount: 3,
+      unit: 'Packungen',
+      minAmount: 1,
+    ),
+    PantryItem(id: 'p', name: 'Tomaten, passiert', amount: 0, minAmount: 1),
+    PantryItem(id: 'p', name: 'Erbsen', amount: 2, place: PantryPlace.freezer),
+  ].indexed) {
+    e.savePantryItem(
+      PantryItem(
+        id: 'p$i',
+        name: item.name,
+        brand: item.brand,
+        amount: item.amount,
+        unit: item.unit,
+        minAmount: item.minAmount,
+        place: item.place,
+        bestBefore: item.bestBefore,
+      ),
+    );
+  }
+  e.sendPoll(
+    ChatIds.family,
+    const Poll(
+      question: 'Ausflug am Sonntag?',
+      options: [
+        PollOption(id: 'o0', text: 'Zoo 🦒'),
+        PollOption(id: 'o1', text: 'Schwimmbad 🏊'),
+        PollOption(id: 'o2', text: 'Wald & Picknick'),
+      ],
+    ),
+  );
+  final poll = e.chatMessages(ChatIds.family).last;
+  for (final (who, option) in [('papa', 'o0'), ('lena', 'o1'), ('ben', 'o0')]) {
+    e.put(
+      Collections.pollVotes,
+      PollVote.idFor(poll.id, who),
+      PollVote(messageId: poll.id, memberId: who, optionIds: [option]).toData(),
+    );
+  }
+  final event = e.events.first;
+  e.put(
+    Collections.eventComments,
+    'ec1',
+    EventComment(
+      id: 'ec1',
+      eventId: event.id,
+      authorId: 'papa',
+      at: now.subtract(const Duration(hours: 2)),
+      text: 'Ich bringe Kuchen mit 🎂',
+    ).toData(),
+  );
+}
 
 final _membersJson = jsonEncode([for (final m in _members) m.toJson()]);
 
@@ -765,6 +1031,7 @@ void main() {
         memberId: 'mama',
       );
       _seed(engine);
+      _seedExtras(engine);
       state
         ..me = _members.first
         ..engine = engine;
@@ -906,6 +1173,50 @@ void main() {
     await go(tester, 'Stundenplan');
     await _shot(tester, key, 'desktop_24_stundenplan');
     await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('chores and more', (tester) async {
+    var key = await start(tester, desktop);
+    await go(tester, 'Ämter');
+    await _shot(tester, key, 'desktop_25_aemter_heute');
+    await go(tester, 'Belohnungen');
+    await _shot(tester, key, 'desktop_26_belohnungen');
+    await go(tester, 'Konto');
+    await go(tester, 'Lena');
+    await _shot(tester, key, 'desktop_27_konto');
+    await go(tester, 'Medizin');
+    await _shot(tester, key, 'desktop_28_medikamente');
+    await go(tester, 'Einkauf');
+    await _shot(tester, key, 'desktop_29_einkauf');
+    await go(tester, 'Vorrat');
+    await _shot(tester, key, 'desktop_30_vorrat');
+    openKiosk(tester.element(find.byType(Scaffold).first));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_31_wandanzeige');
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('chores phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_10_mehr');
+    await tester.tap(find.text('Ämter').last);
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_10_aemter');
+    await go(tester, 'Routinen');
+    await go(tester, 'Morgenroutine');
+    await _shot(tester, key, 'phone_11_routine');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('poll phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byTooltip('Chat').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Familie');
+    await _shot(tester, key, 'phone_12_umfrage');
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('phone dark', (tester) async {

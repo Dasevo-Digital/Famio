@@ -155,6 +155,21 @@ const _migrations = [
     PRIMARY KEY (member_id, source)
   );
   ''',
+  '''
+  -- adult, child or guest (see MemberRole).
+  ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'adult';
+  -- Push notifications via ntfy (or compatible), per member and device.
+  CREATE TABLE push_targets (
+    id TEXT PRIMARY KEY,
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    token TEXT,
+    details INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    last_error TEXT
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

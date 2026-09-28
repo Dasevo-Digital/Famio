@@ -1,5 +1,26 @@
 import 'models/birthday.dart';
 
+/// What a member may do besides the data's own visibility rules.
+enum MemberRole {
+  /// Full member (parents, older children).
+  adult('Erwachsen'),
+
+  /// Earns points and pocket money; chores, rewards and allowances are
+  /// managed by adults, and their completed chores need an adult's okay.
+  child('Kind'),
+
+  /// Grandparents, babysitters …: calendar, chat, shopping and tasks only –
+  /// no documents, health data, finances or locations.
+  guest('Gast');
+
+  const MemberRole(this.label);
+
+  final String label;
+
+  static MemberRole parse(Object? name) =>
+      values.where((r) => r.name == name).firstOrNull ?? adult;
+}
+
 /// A family member (user account on the server).
 class FamilyMember {
   const FamilyMember({
@@ -9,6 +30,7 @@ class FamilyMember {
     this.isAdmin = false,
     this.color,
     this.birthday,
+    this.role = MemberRole.adult,
   });
 
   factory FamilyMember.fromJson(Map<String, Object?> json) => FamilyMember(
@@ -18,6 +40,7 @@ class FamilyMember {
     isAdmin: json['isAdmin'] as bool? ?? false,
     color: json['color'] as int?,
     birthday: Birthday.tryParse(json['birthday']),
+    role: MemberRole.parse(json['role']),
   );
 
   final String id;
@@ -31,6 +54,14 @@ class FamilyMember {
   /// Shown in the calendar and reminded of.
   final Birthday? birthday;
 
+  final MemberRole role;
+
+  bool get isGuest => role == MemberRole.guest;
+  bool get isChild => role == MemberRole.child;
+
+  /// Adults manage chores, rewards and pocket money.
+  bool get isAdult => role == MemberRole.adult;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'username': username,
@@ -38,5 +69,6 @@ class FamilyMember {
     'isAdmin': isAdmin,
     'color': color,
     'birthday': ?birthday?.toString(),
+    'role': role.name,
   };
 }

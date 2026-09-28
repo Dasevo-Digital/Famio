@@ -32,8 +32,10 @@ enum FamioSection {
     Color(0xFFCCEFEA),
     Color(0xFF16927F),
   ),
+  chores('Ämter', AppIcons.trophy, Color(0xFFFFE2B5), Color(0xFFD9820B)),
   meals('Essen', AppIcons.cookingPot, Color(0xFFE6F2C4), Color(0xFF6E8F12)),
   budget('Finanzen', AppIcons.wallet, Color(0xFFD9F0E4), Color(0xFF1F8A5B)),
+  health('Medizin', AppIcons.pill, Color(0xFFFFDADA), Color(0xFFD2475A)),
   contacts('Kontakte', AppIcons.bookUser, Color(0xFFDDE3FF), Color(0xFF4F5BD5)),
   settings(
     'Einstellungen',

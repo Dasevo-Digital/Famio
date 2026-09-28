@@ -34,10 +34,7 @@ void main() {
 
     await state.moveServer(_newUrl, trust: (_) async => true);
     expect(state.serverUrl, isNot(before));
-    expect(
-      Uri.parse(state.serverUrl!).port,
-      isNot(Uri.parse(before).port),
-    );
+    expect(Uri.parse(state.serverUrl!).port, isNot(Uri.parse(before).port));
     expect(state.me!.id, me.id);
     expect(state.certificatePin, isNotNull);
     await state.engine!.sync();

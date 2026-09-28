@@ -5,6 +5,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/birthdays.dart';
 import '../data/health_logic.dart';
 import '../data/kids_logic.dart';
@@ -16,6 +17,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'home_shell.dart';
+import 'kiosk_screen.dart';
 import 'budget_screens.dart';
 import 'location_screens.dart';
 import '../weather/weather_tile.dart';
@@ -40,7 +42,15 @@ class HomeScreen extends StatelessWidget {
       section: FamioSection.home,
       title: '${_greeting(now)}, ${me.displayName}!',
       subtitle: DateFormat('EEEE, d. MMMM', 'de').format(now),
-      actions: [const SyncStatusIcon(), MemberAvatar(me, radius: 22)],
+      actions: [
+        BubbleButton(
+          icon: AppIcons.tv,
+          tooltip: 'Wandanzeige',
+          onPressed: () => openKiosk(context),
+        ),
+        const SyncStatusIcon(),
+        MemberAvatar(me, radius: 22),
+      ],
       body: DataBuilder(
         collections: const {
           Collections.events,
@@ -63,10 +73,17 @@ class HomeScreen extends StatelessWidget {
           Collections.documents,
           Collections.places,
           Collections.memberLocations,
+          Collections.chores,
+          Collections.routines,
+          Collections.routineRuns,
+          Collections.pointEntries,
+          Collections.medications,
+          Collections.medicationIntakes,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
           builder: (context, constraints) {
+            final guest = engine.iAmGuest;
             final columns = constraints.maxWidth >= 1100
                 ? 3
                 : (constraints.maxWidth >= 640 ? 2 : 1);
@@ -82,12 +99,15 @@ class HomeScreen extends StatelessWidget {
                   )
                   .isNotEmpty)
                 _MealsTile(engine: engine),
+              if (engine.chores.isNotEmpty || engine.routines.isNotEmpty)
+                _ChoresTile(engine: engine),
               _ChatTile(engine: engine),
-              _WhereTile(engine: engine),
-              _KidsTile(engine: engine),
+              if (!guest) _WhereTile(engine: engine),
+              if (engine.medications.isNotEmpty) _MedsTile(engine: engine),
+              if (!guest) _KidsTile(engine: engine),
               if (upcomingBirthdays(engine, now).isNotEmpty)
                 _BirthdaysTile(engine: engine),
-              _DocumentsTile(engine: engine),
+              if (!guest) _DocumentsTile(engine: engine),
               if (engine.budgetEntries.isNotEmpty) _BudgetTile(engine: engine),
             ];
             const gap = 16.0;
@@ -108,6 +128,85 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _ChoresTile extends StatelessWidget {
+  const _ChoresTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final me = engine.me;
+    final people = me != null && me.isChild ? [me] : engine.pointCollectors;
+    final pending = engine.iAmAdult ? engine.pendingPoints.length : 0;
+    return _Tile(
+      section: FamioSection.chores,
+      title: 'Ämter',
+      badge: pending > 0 ? '$pending offen' : null,
+      child: Column(
+        children: [
+          for (final p in people.take(4))
+            () {
+              final open = [
+                for (final ch in engine.chores)
+                  if (ch.dueOn(today) &&
+                      ch.isFor(p.id, today) &&
+                      ch.memberIds.isNotEmpty &&
+                      engine.choreCompletion(ch, today) == null)
+                    ch,
+              ];
+              return _Line(
+                open.isEmpty
+                    ? '${p.displayName}: alles erledigt 🎉'
+                    : '${p.displayName}: ${open.map((c) => '${c.emoji} ${c.title}').join(', ')}',
+                leading: MemberAvatar(p, radius: 11),
+                trailing: '⭐ ${engine.pointBalance(p.id)}',
+              );
+            }(),
+        ],
+      ),
+    );
+  }
+}
+
+class _MedsTile extends StatelessWidget {
+  const _MedsTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final doses = [
+      for (final m in engine.medications)
+        for (final at in m.dosesOn(now))
+          if (engine.intakeAt(m, at) == null) (m, at),
+    ]..sort((a, b) => a.$2.compareTo(b.$2));
+    final low = [
+      for (final m in engine.medications)
+        if (m.daysLeft(engine.takenSinceCount(m)) case final d?
+            when d <= m.refillDays)
+          m,
+    ];
+    return _Tile(
+      section: FamioSection.health,
+      title: 'Medikamente',
+      badge: doses.isEmpty ? null : '${doses.length} offen',
+      child: Column(
+        children: [
+          if (doses.isEmpty) const _Line('Heute alles genommen ✓', dim: true),
+          for (final (m, at) in doses.take(3))
+            _Line(
+              [m.name, if (m.personName.isNotEmpty) m.personName].join(' · '),
+              trailing: timeLabel(at),
+            ),
+          for (final m in low.take(2)) _Line('${m.name}: bald nachkaufen'),
+        ],
       ),
     );
   }
