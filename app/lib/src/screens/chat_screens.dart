@@ -163,8 +163,8 @@ class _ChatTile extends StatelessWidget {
                   ),
                   child: Text(
                     '$unread',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: c.onStrong,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -439,7 +439,7 @@ class _Bubble extends StatelessWidget {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     final background = mine ? c.strong(FamioSection.chat) : c.surface;
-    final foreground = mine ? Colors.white : c.ink;
+    final foreground = mine ? c.onStrong : c.ink;
     final attachment = message.attachment;
     final maxWidth =
         MediaQuery.sizeOf(context).width *
@@ -700,7 +700,7 @@ class _PollView extends StatelessWidget {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     final mine = message.authorId == engine.memberId;
-    final fg = mine ? Colors.white : c.ink;
+    final fg = mine ? c.onStrong : c.ink;
     final votes = engine.pollVotes(message.id);
     final myVote = votes
         .where((v) => v.memberId == engine.memberId)

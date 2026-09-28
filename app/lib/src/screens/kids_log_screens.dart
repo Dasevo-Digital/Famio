@@ -509,6 +509,12 @@ class _QuickButtons extends StatelessWidget {
             null,
           ),
         ];
+    final c = FamioColors.of(context);
+    // Readable on the tile's own tint with "Hoher Kontrast".
+    Color ink(Color color) => c.readable(
+      color,
+      on: Color.alphaBlend(color.withValues(alpha: 0.13), c.background),
+    );
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns = math.max(3, (constraints.maxWidth / 110).floor());
@@ -531,14 +537,13 @@ class _QuickButtons extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Column(
                         children: [
-                          Icon(icon, color: color, size: 26),
+                          Icon(icon, color: ink(color), size: 26),
                           const SizedBox(height: 4),
                           Text(
                             label,
                             textAlign: TextAlign.center,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.labelMedium?.copyWith(color: color),
+                            style: Theme.of(context).textTheme.labelMedium
+                                ?.copyWith(color: ink(color)),
                           ),
                         ],
                       ),

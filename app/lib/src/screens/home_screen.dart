@@ -260,7 +260,7 @@ class _Tile extends StatelessWidget {
                   child: Text(
                     badge!,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
+                      color: c.onStrong,
                     ),
                   ),
                 ),

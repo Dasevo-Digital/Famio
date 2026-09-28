@@ -17,25 +17,34 @@ class FamioApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScope(
       state: state,
-      child: MaterialApp(
-        title: AppEnv.appName,
-        debugShowCheckedModeBanner: false,
-        theme: famioTheme(Brightness.light),
-        darkTheme: famioTheme(Brightness.dark),
-        scrollBehavior: const FamioScrollBehavior(),
-        locale: const Locale('de'),
-        supportedLocales: const [Locale('de')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        // The development build says so on every screen.
-        builder: AppEnv.isDev
-            ? (context, child) => Banner(
-                message: 'DEV',
-                location: BannerLocation.topEnd,
-                color: const Color(0xFFE8703A),
-                child: child!,
-              )
-            : null,
-        home: const _Root(),
+      child: ValueListenableBuilder(
+        valueListenable: state.highContrast,
+        builder: (context, highContrast, _) => MaterialApp(
+          title: AppEnv.appName,
+          debugShowCheckedModeBanner: false,
+          theme: famioTheme(Brightness.light, highContrast: highContrast),
+          darkTheme: famioTheme(Brightness.dark, highContrast: highContrast),
+          // "Kontrast erhöhen" in the system settings (iOS, macOS) as well.
+          highContrastTheme: famioTheme(Brightness.light, highContrast: true),
+          highContrastDarkTheme: famioTheme(
+            Brightness.dark,
+            highContrast: true,
+          ),
+          scrollBehavior: const FamioScrollBehavior(),
+          locale: const Locale('de'),
+          supportedLocales: const [Locale('de')],
+          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          // The development build says so on every screen.
+          builder: AppEnv.isDev
+              ? (context, child) => Banner(
+                  message: 'DEV',
+                  location: BannerLocation.topEnd,
+                  color: const Color(0xFFE8703A),
+                  child: child!,
+                )
+              : null,
+          home: const _Root(),
+        ),
       ),
     );
   }

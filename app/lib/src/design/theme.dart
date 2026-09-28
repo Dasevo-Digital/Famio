@@ -7,24 +7,27 @@ const displayFont = 'Fredoka';
 
 /// The Famio look: warm pastel surfaces, rounded shapes, playful headings.
 /// Deliberately avoids stock Material cues (ripples, Roboto, sharp app bars).
-ThemeData famioTheme(Brightness brightness) {
-  final c = brightness == Brightness.dark
+///
+/// [highContrast] keeps the look but makes all text reach WCAG AA contrast.
+ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
+  final base = brightness == Brightness.dark
       ? FamioColors.darkColors
       : FamioColors.light;
+  final c = highContrast ? base.withHighContrast() : base;
   final accent = c.strong(FamioSection.calendar);
   final scheme = ColorScheme(
     brightness: brightness,
     primary: accent,
-    onPrimary: Colors.white,
+    onPrimary: c.onStrong,
     primaryContainer: c.tint(FamioSection.calendar),
     onPrimaryContainer: c.ink,
     secondary: c.strong(FamioSection.tasks),
-    onSecondary: Colors.white,
+    onSecondary: c.onStrong,
     secondaryContainer: c.tint(FamioSection.tasks),
     onSecondaryContainer: c.ink,
     tertiary: c.strong(FamioSection.kids),
-    onTertiary: Colors.white,
-    error: const Color(0xFFE0485B),
+    onTertiary: c.onStrong,
+    error: c.readable(const Color(0xFFE0485B), on: const Color(0xFFFBE7EA)),
     onError: Colors.white,
     errorContainer: const Color(0xFFFFDDE1),
     onErrorContainer: const Color(0xFF7A1422),

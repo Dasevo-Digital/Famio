@@ -1077,6 +1077,8 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
     final state = AppState();
     await state.init();
+    // FAMIO_HC=1 renders everything with "Hoher Kontrast".
+    state.highContrast.value = Platform.environment.containsKey('FAMIO_HC');
     if (signedIn) {
       final store = LocalStore.open(':memory:')
         ..setMeta('members', _membersJson);
@@ -1277,6 +1279,19 @@ void main() {
   testWidgets('phone dark', (tester) async {
     final key = await start(tester, phone, brightness: Brightness.dark);
     await _shot(tester, key, 'phone_4_start_dunkel');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('desktop dark', (tester) async {
+    final key = await start(tester, desktop, brightness: Brightness.dark);
+    await _shot(tester, key, 'desktop_40_start_dunkel');
+    await go(tester, 'Chat');
+    await _shot(tester, key, 'desktop_41_chat_dunkel');
+    await go(tester, 'Ämter');
+    await _shot(tester, key, 'desktop_42_aemter_dunkel');
+    await go(tester, 'Kinder');
+    await go(tester, 'Mia');
+    await _shot(tester, key, 'desktop_43_kind_dunkel');
     await tester.pump(const Duration(seconds: 1));
   });
 

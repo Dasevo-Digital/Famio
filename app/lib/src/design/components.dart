@@ -165,7 +165,14 @@ class BubbleButton extends StatelessWidget {
         onTap: onPressed,
         child: SizedBox.square(
           dimension: size,
-          child: Icon(icon, size: size * 0.48, color: color ?? c.ink),
+          child: Icon(
+            icon,
+            size: size * 0.48,
+            // White on a colored bubble follows the high-contrast mode.
+            color: color == Colors.white && background != null
+                ? c.onStrong
+                : color ?? c.ink,
+          ),
         ),
       ),
     );
@@ -260,6 +267,7 @@ class RoundCheck extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
+    final color = c.readable(this.color);
     final onChanged = this.onChanged;
     return Semantics(
       checked: value,
@@ -292,7 +300,7 @@ class RoundCheck extends StatelessWidget {
               child: Icon(
                 AppIcons.check,
                 size: size * 0.55,
-                color: Colors.white,
+                color: c.onStrong,
               ),
             ),
           ),
@@ -379,14 +387,14 @@ class PillTabs<T> extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: v == selected ? color : c.surface,
+                      color: v == selected ? c.readable(color) : c.surface,
                       borderRadius: BorderRadius.circular(40),
                       boxShadow: v == selected ? null : c.softShadow,
                     ),
                     child: Text(
                       label(v),
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        color: v == selected ? Colors.white : c.ink,
+                        color: v == selected ? c.onStrong : c.ink,
                       ),
                     ),
                   ),
@@ -416,7 +424,9 @@ class ListHeading extends StatelessWidget {
           child: Text(
             text,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: color ?? FamioColors.of(context).inkSoft,
+              color: FamioColors.of(
+                context,
+              ).readable(color ?? FamioColors.of(context).inkSoft),
               letterSpacing: 0.3,
             ),
           ),
@@ -445,8 +455,8 @@ class ColorButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = FilledButton.styleFrom(
-      backgroundColor: color,
-      foregroundColor: Colors.white,
+      backgroundColor: FamioColors.of(context).readable(color),
+      foregroundColor: FamioColors.of(context).onStrong,
     );
     return icon == null
         ? FilledButton(style: style, onPressed: onPressed, child: Text(label))
@@ -483,8 +493,8 @@ class AddButton extends StatelessWidget {
     child: FloatingActionButton(
       heroTag: null,
       tooltip: tooltip,
-      backgroundColor: color,
-      foregroundColor: Colors.white,
+      backgroundColor: FamioColors.of(context).readable(color),
+      foregroundColor: FamioColors.of(context).onStrong,
       onPressed: onPressed,
       child: Icon(icon, size: 28),
     ),

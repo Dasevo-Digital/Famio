@@ -35,7 +35,7 @@ import 'location/location_service.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.15.1';
+const serverVersion = '0.15.2';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
