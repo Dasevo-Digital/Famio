@@ -121,18 +121,33 @@ class HomeScreen extends StatelessWidget {
                 _BudgetTile(engine: engine),
             ];
             const gap = 16.0;
-            final width =
-                (constraints.maxWidth - gap * (columns - 1)) / columns;
+            // Tiles of a row share its height, so the grid has no holes.
             return SingleChildScrollView(
               padding: EdgeInsets.only(
                 top: 8,
                 bottom: listBottomPadding(context),
               ),
-              child: Wrap(
-                spacing: gap,
-                runSpacing: gap,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  for (final t in tiles) SizedBox(width: width, child: t),
+                  for (var i = 0; i < tiles.length; i += columns) ...[
+                    if (i > 0) const SizedBox(height: gap),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var j = i; j < i + columns; j++) ...[
+                            if (j > i) const SizedBox(width: gap),
+                            Expanded(
+                              child: j < tiles.length
+                                  ? tiles[j]
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );

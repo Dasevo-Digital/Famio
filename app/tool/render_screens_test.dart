@@ -68,14 +68,14 @@ String _weatherCache() {
         'uv_index': 1.0,
       },
       'hourly': {
-        'time': [for (var h = 0; h < 12; h++) hour(h)],
-        'temperature_2m': [for (var h = 0; h < 12; h++) 9.4 - h * 0.3],
-        'apparent_temperature': [for (var h = 0; h < 12; h++) 6.8 - h * 0.3],
+        'time': [for (var h = 0; h < 24; h++) hour(h)],
+        'temperature_2m': [for (var h = 0; h < 24; h++) 9.4 - h * 0.3],
+        'apparent_temperature': [for (var h = 0; h < 24; h++) 6.8 - h * 0.3],
         'precipitation_probability': [
-          for (var h = 0; h < 12; h++) h < 4 ? 70 : 20,
+          for (var h = 0; h < 24; h++) h < 4 ? 70 : 20,
         ],
-        'weather_code': [for (var h = 0; h < 12; h++) h < 4 ? 61 : 3],
-        'uv_index': [for (var h = 0; h < 12; h++) 1.0],
+        'weather_code': [for (var h = 0; h < 24; h++) h < 4 ? 61 : 3],
+        'uv_index': [for (var h = 0; h < 24; h++) 1.0],
       },
     },
   });
@@ -1310,6 +1310,19 @@ void main() {
     await go(tester, 'Kinder');
     await go(tester, 'Mia');
     await _shot(tester, key, 'desktop_43_kind_dunkel');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('wide dark', (tester) async {
+    final key = await start(
+      tester,
+      const Size(1920, 1000),
+      brightness: Brightness.dark,
+    );
+    await _shot(tester, key, 'desktop_44_start_breit_dunkel');
+    await tester.tap(find.textContaining('Wetter').first);
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_45_wetter_details');
     await tester.pump(const Duration(seconds: 1));
   });
 

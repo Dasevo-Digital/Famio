@@ -203,7 +203,8 @@ class WeatherService {
                 'hourly':
                     'temperature_2m,apparent_temperature,'
                     'precipitation_probability,weather_code,uv_index',
-                'forecast_hours': '12',
+                // Up to tomorrow morning, for the night advice.
+                'forecast_hours': '24',
                 'timezone': 'auto',
               },
             ),
@@ -361,4 +362,120 @@ ClothingAdvice clothingAdvice(
       'Babys: eine Schicht mehr als du – Nacken fühlen, nicht die Hände',
   ];
   return ClothingAdvice(summary: summary, items: items, extras: extras);
+}
+
+/// What a child should sleep in tonight.
+class NightAdvice {
+  const NightAdvice({
+    required this.low,
+    required this.summary,
+    required this.items,
+    this.hints = const [],
+  });
+
+  /// Lowest outside temperature of the night.
+  final double low;
+  final String summary;
+  final List<String> items;
+  final List<String> hints;
+}
+
+/// The night from 20 to 6 o'clock – tonight, or the current one after
+/// midnight.
+(DateTime, DateTime) nightOf(DateTime now) {
+  final day = DateTime(now.year, now.month, now.day);
+  return now.hour < 6
+      ? (
+          day.subtract(const Duration(hours: 4)),
+          day.add(const Duration(hours: 6)),
+        )
+      : (
+          day.add(const Duration(hours: 20)),
+          day.add(const Duration(hours: 30)),
+        );
+}
+
+/// Rules of thumb for sleeping: the outside low decides how warm the
+/// bedroom gets (ideal 16–20 °C). Babies sleep in a sleeping bag without
+/// blanket, pillow or hat.
+NightAdvice? nightAdvice(Child child, WeatherForecast w, {DateTime? at}) {
+  final now = at ?? DateTime.now();
+  final (start, end) = nightOf(now);
+  final from = start.isAfter(now)
+      ? start
+      : now.subtract(const Duration(hours: 1));
+  final night = [
+    for (final h in w.hours)
+      if (!h.time.isBefore(from) && h.time.isBefore(end)) h,
+  ];
+  // Only with the coldest hours (e.g. not from an older, shorter forecast).
+  if (night.isEmpty ||
+      night.last.time.isBefore(end.subtract(const Duration(hours: 2)))) {
+    return null;
+  }
+  final low = night.map((h) => h.temperature).reduce((a, b) => a < b ? a : b);
+  final months = child.ageInMonths(now);
+  final bag = months < 36;
+  final baby = months < 12;
+  final (summary, items) = switch (low) {
+    >= 20 => (
+      'sehr warm',
+      [
+        if (bag) ...[
+          'Kurzarm-Body',
+          'höchstens Schlafsack 0,5 TOG – bei über 26 °C im Zimmer nur Body',
+        ] else ...[
+          'kurzer Schlafanzug',
+          'Laken statt Bettdecke',
+        ],
+      ],
+    ),
+    >= 15 => (
+      'mild',
+      [
+        if (bag) ...[
+          baby ? 'Langarm-Body' : 'dünner Schlafanzug',
+          'Schlafsack 1,0 TOG',
+        ] else ...[
+          'dünner Schlafanzug',
+          'leichte Sommerdecke',
+        ],
+      ],
+    ),
+    >= 8 => (
+      'kühl',
+      [
+        if (bag) ...[
+          baby ? 'Langarm-Body + Schlafanzug' : 'langer Schlafanzug',
+          'Schlafsack 2,5 TOG',
+        ] else ...[
+          'langer Schlafanzug',
+          'normale Bettdecke',
+        ],
+      ],
+    ),
+    _ => (
+      'kalt',
+      [
+        if (bag) ...[
+          baby ? 'Langarm-Body + warmer Schlafanzug' : 'warmer Schlafanzug',
+          'Schlafsack 2,5–3,5 TOG',
+        ] else ...[
+          'warmer langer Schlafanzug',
+          'Socken',
+          'warme Bettdecke',
+        ],
+      ],
+    ),
+  };
+  return NightAdvice(
+    low: low,
+    summary: summary,
+    items: items,
+    hints: [
+      if (baby) 'Babys: ohne Decke, Kissen und Mütze schlafen lassen',
+      'Warm genug? Nacken fühlen, nicht die Hände – Schlafzimmer ideal 16–20 °C',
+      if (low >= 20) 'Warme Nacht: lüften, Zimmer abdunkeln',
+    ],
+  );
 }
