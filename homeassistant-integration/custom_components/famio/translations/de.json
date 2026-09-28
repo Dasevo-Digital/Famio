@@ -57,6 +57,9 @@
       },
       "next_event": {
         "name": "Nächster Termin"
+      },
+      "points": {
+        "name": "Punkte"
       }
     }
   }

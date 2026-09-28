@@ -204,12 +204,14 @@ class FamioApiClient {
     required String displayName,
     required String password,
     bool isAdmin = false,
+    MemberRole role = MemberRole.adult,
   }) async => FamilyMember.fromJson(
     await _send('POST', 'api/members', {
       'username': username,
       'displayName': displayName,
       'password': password,
       'isAdmin': isAdmin,
+      'role': role.name,
     }),
   );
 
@@ -297,12 +299,14 @@ class FamioApiClient {
     int? color,
     Birthday? birthday,
     bool clearBirthday = false,
+    MemberRole? role,
   }) async => FamilyMember.fromJson(
     await _send('PATCH', 'api/admin/users/$id', {
       'username': ?username,
       'displayName': ?displayName,
       'isAdmin': ?isAdmin,
       'color': ?color,
+      'role': ?role?.name,
       if (birthday != null || clearBirthday) 'birthday': birthday?.toString(),
     }),
   );
@@ -376,6 +380,39 @@ class FamioApiClient {
   // --- CalDAV ---------------------------------------------------------------
 
   /// Passwords of calendar apps connected to Famio's CalDAV server.
+  // --- push notifications (ntfy) ------------------------------------------
+
+  Future<List<PushTarget>> pushTargets() async {
+    final json = await _send('GET', 'api/me/push');
+    return [
+      for (final t in json['targets'] as List)
+        PushTarget.fromJson((t as Map).cast()),
+    ];
+  }
+
+  /// Adds a device; the server sends a test message right away (see
+  /// [PushTarget.lastError]).
+  Future<PushTarget> addPushTarget({
+    required String name,
+    required String url,
+    String? token,
+    bool details = false,
+  }) async => PushTarget.fromJson(
+    await _send('POST', 'api/me/push', {
+      'name': name,
+      'url': url,
+      'token': ?token,
+      'details': details,
+    }),
+  );
+
+  Future<void> deletePushTarget(String id) =>
+      _send('DELETE', 'api/me/push/$id');
+
+  /// Returns the error, or null if the test message went out.
+  Future<String?> testPushTarget(String id) async =>
+      (await _send('POST', 'api/me/push/$id/test'))['error'] as String?;
+
   Future<List<AppPassword>> appPasswords() async {
     final json = await _send('GET', 'api/me/app-passwords');
     return [

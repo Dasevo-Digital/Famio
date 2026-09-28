@@ -154,4 +154,22 @@ abstract final class AppIcons {
   static const IconData cookingPot = LucideIcons.cookingPot;
   static const IconData notebookPen = LucideIcons.notebookPen;
   static const IconData wallet = LucideIcons.wallet;
+  static const IconData trophy = LucideIcons.trophy;
+  static const IconData gift = LucideIcons.gift;
+  static const IconData scanBarcode = LucideIcons.scanBarcode;
+  static const IconData package = LucideIcons.package;
+  static const IconData listChecks = LucideIcons.listChecks;
+  static const IconData vote = LucideIcons.vote;
+  static const IconData minus = LucideIcons.minus;
+  static const IconData refrigerator = LucideIcons.refrigerator;
+  static const IconData sunrise = LucideIcons.sunrise;
+  static const IconData moonStar = LucideIcons.moonStar;
+  static const IconData comment = LucideIcons.messageSquareText;
+  static const IconData tv = LucideIcons.tv;
+  static const IconData medal = LucideIcons.medal;
+  static const IconData pillBottle = LucideIcons.pillBottle;
+  static const IconData handCoins = LucideIcons.handCoins;
+  static const IconData bellRing = LucideIcons.bellRing;
+  static const IconData template = LucideIcons.layoutTemplate;
+  static const IconData poll = LucideIcons.chartNoAxesColumn;
 }

@@ -11,7 +11,7 @@
 		<string>location</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Für Fotos im Chat, bei Dokumenten und Erinnerungen.</string>
+	<string>Für Fotos im Chat, bei Dokumenten und Erinnerungen sowie zum Scannen von Barcodes für den Vorrat.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Zum Teilen von Fotos im Chat und bei Dokumenten.</string>
 	<key>NSLocalNetworkUsageDescription</key>

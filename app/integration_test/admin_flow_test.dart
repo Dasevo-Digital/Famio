@@ -143,7 +143,18 @@ void main() {
     }
     await openSettings(tester);
     if (_fingerprint.isNotEmpty) {
-      await waitFor(tester, find.text('Verbindung verschlüsselt'));
+      // Further down the settings list.
+      await waitFor(tester, find.text('Passwort ändern'));
+      await tester.dragUntilVisible(
+        find.text('Verbindung verschlüsselt'),
+        find.byType(ListView).first,
+        const Offset(0, -200),
+      );
+      await tester.dragUntilVisible(
+        find.text('Server-Verwaltung'),
+        find.byType(ListView).first,
+        const Offset(0, 200),
+      );
     }
     await tap(tester, find.text('Server-Verwaltung'));
     await waitFor(tester, find.textContaining('@$_user'));

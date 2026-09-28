@@ -8,6 +8,7 @@ import '../data/family_data.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
+import '../widgets/event_comments.dart';
 import '../widgets/member_avatar.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
@@ -564,6 +565,8 @@ class _EventEditorState extends State<_EventEditor> {
                 ),
               ),
               if (_original != null) ...[
+                const SizedBox(height: 8),
+                EventComments(eventId: _original.id),
                 const SizedBox(height: 24),
                 Align(
                   alignment: Alignment.centerLeft,

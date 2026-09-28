@@ -8,13 +8,17 @@ import '../design/components.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../data/family_extras.dart';
 import 'calendar_screen.dart';
+import 'chores_screens.dart';
+import 'medication_screens.dart';
 import 'chat_screens.dart';
 import 'budget_screens.dart';
 import 'contacts_screens.dart';
 import 'documents_screen.dart';
 import 'home_screen.dart';
 import 'kids_screens.dart';
+import 'kiosk_screen.dart';
 import 'location_screens.dart';
 import 'meals_screens.dart';
 import 'settings_screen.dart';
@@ -31,8 +35,10 @@ Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.documents => const DocumentsScreen(),
   FamioSection.kids => const KidsScreen(),
   FamioSection.location => const LocationScreen(),
+  FamioSection.chores => const ChoresScreen(),
   FamioSection.meals => const MealsScreen(),
   FamioSection.budget => const BudgetScreen(),
+  FamioSection.health => const MedicationScreen(),
   FamioSection.contacts => const ContactsScreen(),
   FamioSection.settings => const SettingsScreen(),
 };
@@ -44,6 +50,21 @@ const _barSections = [
   FamioSection.shopping,
   FamioSection.calendar,
   FamioSection.chat,
+];
+
+/// Guests (grandparents, babysitters) see no documents, health data,
+/// finances or locations – the server does not send them anyway.
+const _guestHidden = {
+  FamioSection.documents,
+  FamioSection.kids,
+  FamioSection.location,
+  FamioSection.budget,
+  FamioSection.health,
+};
+
+List<FamioSection> sectionsFor(MemberRole role) => [
+  for (final s in FamioSection.values)
+    if (role != MemberRole.guest || !_guestHidden.contains(s)) s,
 ];
 
 /// Lets any page switch sections, e.g. the dashboard tiles.
@@ -75,6 +96,9 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   var _section = FamioSection.home;
 
+  /// Sections for the member's role, updated with the member list.
+  var _sections = FamioSection.values;
+
   /// Sections are built on their first visit only, so e.g. the map does not
   /// load tiles at every app start.
   final _visited = {FamioSection.home};
@@ -83,6 +107,15 @@ class _HomeShellState extends State<HomeShell> {
   final _navigators = {
     for (final s in FamioSection.values) s: GlobalKey<NavigatorState>(),
   };
+
+  @override
+  void initState() {
+    super.initState();
+    // Kitchen tablet: straight to the wall display.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && AppScope.read(context).kioskAutostart) openKiosk(context);
+    });
+  }
 
   void _go(FamioSection section) {
     if (section == _section) {
@@ -100,19 +133,33 @@ class _HomeShellState extends State<HomeShell> {
       context: context,
       // Above the floating navigation bar.
       useRootNavigator: true,
+      isScrollControlled: true,
       builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              for (final s in FamioSection.values.where(
-                (s) => !_barSections.contains(s),
-              ))
-                _MoreTile(section: s, onTap: () => Navigator.pop(context, s)),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Three per row: all sections fit on small phones.
+            const gap = 10.0;
+            final width = (constraints.maxWidth - 32 - gap * 2) / 3;
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: [
+                  for (final s in _sections.where(
+                    (s) => !_barSections.contains(s),
+                  ))
+                    SizedBox(
+                      width: width,
+                      child: _MoreTile(
+                        section: s,
+                        onTap: () => Navigator.pop(context, s),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -160,12 +207,18 @@ class _HomeShellState extends State<HomeShell> {
         },
         builder: (context, engine) {
           final unread = engine.totalUnread;
+          _sections = sectionsFor(engine.myRole);
           if (wide) {
             return Scaffold(
               backgroundColor: c.background,
               body: Row(
                 children: [
-                  _SideRail(current: _section, onSelect: _go, unread: unread),
+                  _SideRail(
+                    sections: _sections,
+                    current: _section,
+                    onSelect: _go,
+                    unread: unread,
+                  ),
                   Expanded(child: body),
                 ],
               ),
@@ -190,11 +243,13 @@ class _HomeShellState extends State<HomeShell> {
 
 class _SideRail extends StatelessWidget {
   const _SideRail({
+    required this.sections,
     required this.current,
     required this.onSelect,
     required this.unread,
   });
 
+  final List<FamioSection> sections;
   final FamioSection current;
   final ValueChanged<FamioSection> onSelect;
   final int unread;
@@ -216,15 +271,14 @@ class _SideRail extends StatelessWidget {
           builder: (context, constraints) {
             // All sections should fit without scrolling on laptops: smaller
             // items when the window is low.
-            final compact =
-                constraints.maxHeight < 140 + FamioSection.values.length * 76;
+            final compact = constraints.maxHeight < 140 + sections.length * 76;
             return SingleChildScrollView(
               padding: EdgeInsets.symmetric(vertical: compact ? 10 : 16),
               child: Column(
                 children: [
                   _Logo(compact: compact),
                   SizedBox(height: compact ? 8 : 16),
-                  for (final s in FamioSection.values)
+                  for (final s in sections)
                     _RailItem(
                       section: s,
                       selected: s == current,
@@ -475,27 +529,27 @@ class _MoreTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    return SizedBox(
-      width: 150,
-      child: Material(
-        color: c.tint(section),
-        borderRadius: BorderRadius.circular(24),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(section.icon, color: c.strong(section), size: 32),
-                const SizedBox(height: 10),
-                Text(
+    return Material(
+      color: c.tint(section),
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+          child: Column(
+            children: [
+              Icon(section.icon, color: c.strong(section), size: 28),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
                   section.label,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  maxLines: 1,
+                  style: Theme.of(context).textTheme.labelLarge,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -47,7 +47,14 @@ class Accounts {
     String? passwordHash,
     bool isAdmin = false,
     String? haUserId,
+    MemberRole role = MemberRole.adult,
   }) {
+    if (role == MemberRole.guest && isAdmin) {
+      throw ApiException.badRequest(
+        'guest_admin',
+        'Gäste können keine Administratoren sein',
+      );
+    }
     username = username.trim();
     displayName = displayName.trim();
     _checkUsername(username);
@@ -60,7 +67,7 @@ class Accounts {
     final id = newId();
     _db.execute(
       'INSERT INTO users (id, username, display_name, password_hash, is_admin,'
-      ' color, ha_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ' color, ha_user_id, created_at, role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         id,
         username,
@@ -70,6 +77,7 @@ class Accounts {
         _palette[members().length % _palette.length],
         haUserId,
         DateTime.now().millisecondsSinceEpoch,
+        role.name,
       ],
     );
     return byId(id)!;
@@ -109,6 +117,7 @@ class Accounts {
     bool? isAdmin,
     int? color,
     Object? birthday = _keep,
+    MemberRole? role,
   }) {
     final current = byId(userId);
     if (current == null) {
@@ -126,6 +135,13 @@ class Accounts {
     }
     if (displayName != null && displayName.trim().isEmpty) {
       throw ApiException.badRequest('invalid_name', 'Der Name fehlt');
+    }
+    if ((isAdmin ?? current.isAdmin) &&
+        (role ?? current.role) == MemberRole.guest) {
+      throw ApiException.badRequest(
+        'guest_admin',
+        'Gäste können keine Administratoren sein',
+      );
     }
     if (isAdmin == false && current.isAdmin && adminCount <= 1) {
       throw ApiException.badRequest(
@@ -151,18 +167,36 @@ class Accounts {
     _db.execute(
       'UPDATE users SET username = COALESCE(?, username),'
       ' display_name = COALESCE(?, display_name),'
-      ' is_admin = COALESCE(?, is_admin), color = COALESCE(?, color)'
+      ' is_admin = COALESCE(?, is_admin), color = COALESCE(?, color),'
+      ' role = COALESCE(?, role)'
       ' WHERE id = ?',
       [
         username,
         displayName?.trim(),
         isAdmin == null ? null : (isAdmin ? 1 : 0),
         color,
+        role?.name,
         userId,
       ],
     );
     return byId(userId)!;
   }
+
+  /// The member's role; adult for unknown ids (e.g. the server itself).
+  MemberRole roleOf(String userId) {
+    final rows = _db.select('SELECT role FROM users WHERE id = ?', [userId]);
+    return rows.isEmpty
+        ? MemberRole.adult
+        : MemberRole.parse(rows.first.columnAt(0));
+  }
+
+  /// Ids of the adults (managing chores and pocket money).
+  List<String> adultIds() => [
+    for (final row in _db.select(
+      "SELECT id FROM users WHERE role = 'adult' ORDER BY created_at",
+    ))
+      row.columnAt(0) as String,
+  ];
 
   int get adminCount =>
       _db
@@ -507,6 +541,7 @@ class Accounts {
     isAdmin: row['is_admin'] == 1,
     color: row['color'] as int?,
     birthday: Birthday.tryParse(row['birthday']),
+    role: MemberRole.parse(row['role']),
   );
 
   /// Default of [update]'s birthday: leave it as it is.

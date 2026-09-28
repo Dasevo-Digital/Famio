@@ -30,6 +30,7 @@ class ChatMessage {
     this.text = '',
     this.attachment,
     this.visibleTo,
+    this.poll,
   });
 
   factory ChatMessage.fromRecord(SyncRecord r) => ChatMessage(
@@ -42,6 +43,7 @@ class ChatMessage {
     text: r.data['text'] as String? ?? '',
     attachment: FileRef.fromJson(r.data['attachment']),
     visibleTo: r.visibleTo,
+    poll: Poll.fromJson(r.data['poll']),
   );
 
   final String id;
@@ -52,12 +54,108 @@ class ChatMessage {
   final FileRef? attachment;
   final List<String>? visibleTo;
 
+  /// Set for polls ("Wohin am Wochenende?").
+  final Poll? poll;
+
   Map<String, Object?> toData() => {
     'chatId': chatId,
     'authorId': authorId,
     'sentAt': sentAt.toUtc().toIso8601String(),
     'text': text,
     'attachment': attachment?.toJson(),
+    'poll': ?poll?.toJson(),
+    SyncRecord.visibilityKey: visibleTo,
+  };
+}
+
+/// A question with answers to pick, sent as a chat message.
+class Poll {
+  const Poll({
+    required this.question,
+    required this.options,
+    this.multiple = false,
+    this.closed = false,
+  });
+
+  static Poll? fromJson(Object? json) {
+    if (json is! Map) return null;
+    return Poll(
+      question: json['question'] as String? ?? '',
+      options: [
+        for (final o in json['options'] as List? ?? [])
+          PollOption.fromJson((o as Map).cast()),
+      ],
+      multiple: json['multiple'] as bool? ?? false,
+      closed: json['closed'] as bool? ?? false,
+    );
+  }
+
+  final String question;
+  final List<PollOption> options;
+
+  /// Several answers per member.
+  final bool multiple;
+
+  /// No more votes (closed by the author).
+  final bool closed;
+
+  Poll close() => Poll(
+    question: question,
+    options: options,
+    multiple: multiple,
+    closed: true,
+  );
+
+  Map<String, Object?> toJson() => {
+    'question': question,
+    'options': [for (final o in options) o.toJson()],
+    'multiple': multiple,
+    'closed': closed,
+  };
+}
+
+class PollOption {
+  const PollOption({required this.id, required this.text});
+
+  factory PollOption.fromJson(Map<String, Object?> json) => PollOption(
+    id: json['id'] as String? ?? '',
+    text: json['text'] as String? ?? '',
+  );
+
+  final String id;
+  final String text;
+
+  Map<String, Object?> toJson() => {'id': id, 'text': text};
+}
+
+/// A member's answer to a poll (`Collections.pollVotes`, id from [idFor]),
+/// with the chat's audience.
+class PollVote {
+  const PollVote({
+    required this.messageId,
+    required this.memberId,
+    required this.optionIds,
+  });
+
+  factory PollVote.fromRecord(SyncRecord r) => PollVote(
+    messageId: r.data['messageId'] as String? ?? '',
+    memberId: r.data['memberId'] as String? ?? '',
+    optionIds: [
+      for (final o in r.data['optionIds'] as List? ?? []) o as String,
+    ],
+  );
+
+  final String messageId;
+  final String memberId;
+  final List<String> optionIds;
+
+  static String idFor(String messageId, String memberId) =>
+      'v-$messageId-${ChatIds._short(memberId)}';
+
+  Map<String, Object?> toData({List<String>? visibleTo}) => {
+    'messageId': messageId,
+    'memberId': memberId,
+    'optionIds': optionIds,
     SyncRecord.visibilityKey: visibleTo,
   };
 }

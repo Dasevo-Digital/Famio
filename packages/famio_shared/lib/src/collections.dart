@@ -54,7 +54,54 @@ abstract final class Collections {
   /// Arrival/departure notices per recipient; written by the server.
   static const locationAlerts = 'location_alerts';
 
+  /// Chores (Ämter) with rotation and points.
+  static const chores = 'chores';
+
+  /// Kids' routines (morning, evening …) and their daily progress.
+  static const routines = 'routines';
+  static const routineRuns = 'routine_runs';
+
+  /// Rewards that points can be exchanged for.
+  static const rewards = 'rewards';
+
+  /// Points earned (chores, routines, bonus) or spent (rewards).
+  static const pointEntries = 'point_entries';
+
+  /// Pocket money settings per child (id = member id) and the money
+  /// account's bookings; weekly payments are booked by the server.
+  static const allowances = 'allowances';
+  static const moneyEntries = 'money_entries';
+
+  /// Comments on calendar events.
+  static const eventComments = 'event_comments';
+
+  /// Votes in chat polls (id = message id + member).
+  static const pollVotes = 'poll_votes';
+
+  /// Reusable lists (packing lists …).
+  static const listTemplates = 'list_templates';
+
+  /// Supplies at home (fridge, freezer, pantry).
+  static const pantryItems = 'pantry_items';
+
+  /// Medication plans and taken doses; health data, chosen members only.
+  static const medications = 'medications';
+  static const medicationIntakes = 'medication_intakes';
+
   static const all = {
+    chores,
+    routines,
+    routineRuns,
+    rewards,
+    pointEntries,
+    allowances,
+    moneyEntries,
+    eventComments,
+    pollVotes,
+    listTemplates,
+    pantryItems,
+    medications,
+    medicationIntakes,
     chatMessages,
     chatReads,
     documents,
@@ -78,6 +125,47 @@ abstract final class Collections {
     places,
     memberLocations,
     locationAlerts,
+  };
+
+  /// What guests (grandparents, babysitters …) receive at all.
+  static const guestReadable = {
+    tasks,
+    shoppingLists,
+    shoppingItems,
+    events,
+    eventComments,
+    chatMessages,
+    chatReads,
+    pollVotes,
+    recipes,
+    mealPlan,
+    contacts,
+    chores,
+    routines,
+    routineRuns,
+    listTemplates,
+    pantryItems,
+  };
+
+  /// What guests may change: chatting, ticking off and commenting.
+  static const guestWritable = {
+    tasks,
+    shoppingItems,
+    eventComments,
+    chatMessages,
+    chatReads,
+    pollVotes,
+    routineRuns,
+  };
+
+  /// Managed by adults only; children earn points through [pointEntries]
+  /// (as requests an adult confirms).
+  static const adultOnly = {
+    chores,
+    rewards,
+    allowances,
+    moneyEntries,
+    routines,
   };
 
   /// Collections clients may read but never write.

@@ -27,9 +27,10 @@ import 'settings.dart';
 import 'hub.dart';
 import 'landing_page.dart';
 import 'location/location_service.dart';
+import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.12.1';
+const serverVersion = '0.13.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -63,6 +64,7 @@ class FamioApi {
     this.caldav,
     this.calendarAccess,
     this.locations,
+    this.push,
   }) : throttle = throttle ?? LoginThrottle();
 
   final Accounts accounts;
@@ -93,6 +95,9 @@ class FamioApi {
   String? get tlsFingerprint => tls?.fingerprint;
   final bool encryptedAtRest;
   final bool keySeparate;
+
+  /// Push notifications through ntfy; null in some tests.
+  final PushService? push;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -134,6 +139,10 @@ class FamioApi {
       ..post('/api/me/app-passwords', _createAppPassword)
       ..delete('/api/me/app-passwords/<id>', _deleteAppPassword)
       ..post('/api/me/apple-profile', _appleProfile)
+      ..get('/api/me/push', _pushTargets)
+      ..post('/api/me/push', _addPushTarget)
+      ..delete('/api/me/push/<id>', _deletePushTarget)
+      ..post('/api/me/push/<id>/test', _testPushTarget)
       ..get('/api/config', _config)
       ..get('/api/members', _members)
       ..post('/api/members', _createMember)
@@ -280,6 +289,43 @@ class FamioApi {
     final member = _auth(request);
     accounts.deleteAppPassword(member.id, id);
     return _json({'ok': true});
+  }
+
+  PushService get _push =>
+      push ?? (throw ApiException(404, 'not_found', 'Push nicht verfügbar'));
+
+  Response _pushTargets(Request request) {
+    final member = _auth(request);
+    return _json({
+      'targets': [for (final t in _push.targets(member.id)) t.toJson()],
+    });
+  }
+
+  /// Adds a device and sends it a test message right away.
+  Future<Response> _addPushTarget(Request request) async {
+    final member = _auth(request);
+    final body = await _body(request);
+    final target = _push.add(
+      member.id,
+      name: body['name'] as String? ?? '',
+      url: body['url'] as String? ?? '',
+      token: body['token'] as String?,
+      details: body['details'] as bool? ?? false,
+    );
+    final error = await _push.test(member.id, target.id);
+    return _json({...target.toJson(), 'lastError': error}, status: 201);
+  }
+
+  Response _deletePushTarget(Request request, String id) {
+    final member = _auth(request);
+    _push.remove(member.id, id);
+    return _json({'ok': true});
+  }
+
+  Future<Response> _testPushTarget(Request request, String id) async {
+    final member = _auth(request);
+    final error = await _push.test(member.id, id);
+    return _json({'ok': error == null, 'error': error});
   }
 
   Response _health(Request request) => _json({
@@ -464,7 +510,14 @@ class FamioApi {
       isAdmin: body['isAdmin'] as bool?,
       color: body['color'] as int?,
       birthday: body.containsKey('birthday') ? body['birthday'] : _unchanged,
+      role: body['role'] == null ? null : MemberRole.parse(body['role']),
     );
+    if (before != null && before.role != updated.role) {
+      _audit(
+        admin,
+        'hat ${_who(updated)} die Rolle ${updated.role.label} gegeben',
+      );
+    }
     if (before != null && before.isAdmin != updated.isAdmin) {
       _audit(
         admin,
@@ -562,6 +615,7 @@ class FamioApi {
         body['password'] as String? ?? '',
       ),
       isAdmin: body['isAdmin'] as bool? ?? false,
+      role: MemberRole.parse(body['role']),
     );
     _audit(
       admin,
@@ -619,7 +673,7 @@ class FamioApi {
   }
 
   Future<Response> _createFeed(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final scope = FeedScope.values
         .where((s) => s.name == body['scope'])
@@ -643,7 +697,7 @@ class FamioApi {
   }
 
   Future<Response> _refreshSubscription(Request request, String id) async {
-    _auth(request);
+    _member(request);
     final status = await importer?.refresh(id);
     if (status == null) {
       throw ApiException(404, 'not_found', 'Abo nicht gefunden');
@@ -667,6 +721,9 @@ class FamioApi {
                   accounts.userForToken(token, scope: _locationScope));
     if (member == null) {
       throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+    }
+    if (member.isGuest) {
+      throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
     }
     final body = await _body(request);
     final fixes = [
@@ -718,7 +775,7 @@ class FamioApi {
   /// A token that can only report positions, for the phone's background
   /// service: it never unlocks family data if the phone is compromised.
   Future<Response> _locationDeviceToken(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final device = (body['device'] as String? ?? 'Telefon').trim();
     final token = accounts.createSession(
@@ -731,7 +788,7 @@ class FamioApi {
 
   /// Pausing needs the parents' code, whoever asks.
   Future<Response> _locationPause(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final target = body['memberId'] as String? ?? member.id;
     if (accounts.byId(target) == null) {
@@ -760,7 +817,7 @@ class FamioApi {
 
   /// Sharing again needs no code; others than the member need to be admins.
   Future<Response> _locationResume(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final target = body['memberId'] as String? ?? member.id;
     if (target != member.id && !member.isAdmin) {
@@ -772,7 +829,7 @@ class FamioApi {
 
   /// The way of the last days: only for parents and the member themselves.
   Response _locationHistory(Request request) {
-    final member = _auth(request);
+    final member = _member(request);
     final query = request.url.queryParameters;
     final target = query['member'] ?? member.id;
     if (target != member.id && !member.isAdmin) {
@@ -804,7 +861,7 @@ class FamioApi {
       (throw ApiException(404, 'not_found', 'CalDAV nicht verfügbar'));
 
   Future<Response> _caldavDiscover(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final address = clientAddress.of(request);
     // Password guessing against other servers through Famio is throttled.
@@ -827,7 +884,7 @@ class FamioApi {
   /// Completes a Google login: the app sends the code from Google's page,
   /// the server keeps the tokens and lists the calendars to choose from.
   Future<Response> _googleConnect(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     try {
       final grant = await _caldav.google.exchange(
@@ -861,14 +918,14 @@ class FamioApi {
   }
 
   Response _caldavAccounts(Request request) {
-    final member = _auth(request);
+    final member = _member(request);
     return _json({
       'accounts': [for (final a in _caldav.forUser(member.id)) a.toJson()],
     });
   }
 
   Future<Response> _caldavCreate(Request request) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     final account = _caldav.create(
       member.id,
@@ -890,7 +947,7 @@ class FamioApi {
   }
 
   Future<Response> _caldavUpdate(Request request, String id) async {
-    final member = _auth(request);
+    final member = _member(request);
     final body = await _body(request);
     _caldav.update(
       member.id,
@@ -1028,13 +1085,13 @@ class FamioApi {
   }
 
   Future<Response> _caldavDelete(Request request, String id) async {
-    final member = _auth(request);
+    final member = _member(request);
     await _caldav.delete(member.id, id);
     return _json({'ok': true});
   }
 
   Future<Response> _caldavSync(Request request, String id) async {
-    final member = _auth(request);
+    final member = _member(request);
     return _json((await _caldav.syncNow(member.id, id)).toJson());
   }
 
@@ -1170,6 +1227,15 @@ class FamioApi {
     final member = _ingressMember(request) ?? _tokenMember(request);
     if (member == null) {
       throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+    }
+    return member;
+  }
+
+  /// Guests have no locations, calendar accounts or pocket money.
+  FamilyMember _member(Request request) {
+    final member = _auth(request);
+    if (member.isGuest) {
+      throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
     }
     return member;
   }

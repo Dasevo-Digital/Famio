@@ -1,4 +1,4 @@
-"""Famio sensors: open tasks, shopping and the next event."""
+"""Famio sensors: open tasks, shopping, the next event and chore points."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from homeassistant.components.sensor import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
+from .const import POINT_ENTRIES, SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
 from .coordinator import FamioConfigEntry, FamioCoordinator, parse_start
 from .entity import FamioEntity
 
@@ -31,6 +31,25 @@ def _open_items(c: FamioCoordinator) -> list[dict[str, Any]]:
 
 def _mine(c: FamioCoordinator) -> list[dict[str, Any]]:
     return [t for t in _open_tasks(c) if t.get("assigneeId") == c.member_id]
+
+
+def _points(c: FamioCoordinator) -> dict[str, int]:
+    """Confirmed points per member id."""
+    balances: dict[str, int] = {}
+    for e in c.data.collection(POINT_ENTRIES).values():
+        if e.get("status", "approved") != "approved":
+            continue
+        member = e.get("memberId") or ""
+        balances[member] = balances.get(member, 0) + int(e.get("points") or 0)
+    return balances
+
+
+def _pending(c: FamioCoordinator) -> int:
+    return sum(
+        1
+        for e in c.data.collection(POINT_ENTRIES).values()
+        if e.get("status") == "pending"
+    )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -70,6 +89,18 @@ SENSORS = (
                 ]
                 for list_id, l in c.data.collection(SHOPPING_LISTS).items()
             }
+        },
+    ),
+    FamioSensorDescription(
+        key="points",
+        translation_key="points",
+        state_class="measurement",
+        value=lambda c: _points(c).get(c.member_id or "", 0),
+        attributes=lambda c: {
+            "punkte": {
+                (c.data.member_name(m) or m): p for m, p in _points(c).items()
+            },
+            "offene_anfragen": _pending(c),
         },
     ),
     FamioSensorDescription(

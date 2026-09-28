@@ -9,9 +9,56 @@ import 'api_exception.dart';
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
 class RecordStore {
-  RecordStore(this._db, {required this.memberIds});
+  RecordStore(this._db, {required this.memberIds, this.roleOf});
 
   final Database _db;
+
+  /// Roles limit guests to some collections and keep children from
+  /// managing chores and pocket money (see [Collections.guestReadable]).
+  final MemberRole Function(String userId)? roleOf;
+
+  MemberRole _role(String userId) => roleOf?.call(userId) ?? MemberRole.adult;
+
+  /// Called after changes were stored by [sync] (not by [writeAsServer]),
+  /// with the previous versions, e.g. for push notifications.
+  void Function(String userId, List<(SyncRecord, SyncRecord?)> stored)?
+  onStored;
+
+  /// Called after [writeAsServer] stored changes.
+  void Function(List<SyncRecord> stored)? onServerStored;
+
+  /// Whether [userId] may receive [r]: its audience and the member's role.
+  bool canAccess(SyncRecord r, String userId) =>
+      _canSee(r, userId) &&
+      (_role(userId) != MemberRole.guest ||
+          Collections.guestReadable.contains(r.collection));
+
+  /// Whether [role] may store [incoming] (over [existing]).
+  static bool mayWrite(
+    MemberRole role,
+    String userId,
+    SyncRecord incoming,
+    SyncRecord? existing,
+  ) {
+    final collection = incoming.collection;
+    switch (role) {
+      case MemberRole.adult:
+        return true;
+      case MemberRole.guest:
+        return Collections.guestWritable.contains(collection);
+      case MemberRole.child:
+        if (Collections.adultOnly.contains(collection)) return false;
+        if (collection != Collections.pointEntries) return true;
+        // Children ask for points (done chores, wished rewards); adults
+        // decide. Their own open requests they may change or withdraw.
+        bool ownPending(SyncRecord r) =>
+            r.data['memberId'] == userId && r.data['status'] == 'pending';
+        if (existing != null && !existing.deleted && !ownPending(existing)) {
+          return false;
+        }
+        return incoming.deleted || ownPending(incoming);
+    }
+  }
 
   /// Ids of all family members; needed when a record visible to everyone
   /// becomes restricted, to know who loses access.
@@ -48,6 +95,8 @@ class RecordStore {
   /// Runs synchronously, so concurrent requests cannot interleave.
   SyncResponse sync(SyncRequest request, String userId) {
     final now = DateTime.now().millisecondsSinceEpoch;
+    final role = _role(userId);
+    final stored = <(SyncRecord, SyncRecord?)>[];
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     // A client ahead of the server means the server database was reset:
@@ -60,7 +109,7 @@ class RecordStore {
       if (Collections.serverOwned.contains(change.collection)) {
         // Read-only for clients: answer with the server's version, if any.
         final existing = _get(change.collection, change.id);
-        if (existing != null && _canSee(existing, userId)) {
+        if (existing != null && canAccess(existing, userId)) {
           rejected.add(existing);
         }
       } else if (Collections.all.contains(change.collection)) {
@@ -78,9 +127,25 @@ class RecordStore {
           updatedAt: min(change.updatedAt, now + _maxClockSkew.inMilliseconds),
         );
         final existing = _get(change.collection, change.id);
-        if (existing != null && !_canSee(existing, userId)) {
+        if (existing != null && !canAccess(existing, userId)) {
           // Not theirs to change. Stay silent so nothing leaks; if they lost
           // access recently, their revocation tombstone removes the copy.
+          continue;
+        }
+        if (!mayWrite(role, userId, incoming, existing)) {
+          // Undo the change on the device: the stored version, or a
+          // tombstone for something that must not exist.
+          rejected.add(
+            existing ??
+                SyncRecord(
+                  collection: change.collection,
+                  id: change.id,
+                  data: const {},
+                  deleted: true,
+                  updatedAt: revokedAt,
+                  updatedBy: serverMemberId,
+                ),
+          );
           continue;
         }
         if (existing != null &&
@@ -127,10 +192,12 @@ class RecordStore {
           );
         }
         _put(incoming, previous: existing);
+        stored.add((incoming, existing));
       }
     });
 
-    return _pull(userId, since, now, rejected, unsupported);
+    if (stored.isNotEmpty) onStored?.call(userId, stored);
+    return _pull(userId, since, now, rejected, unsupported, role);
   }
 
   SyncResponse _pull(
@@ -139,18 +206,23 @@ class RecordStore {
     int now,
     List<SyncRecord> rejected,
     Set<String> unsupported,
+    MemberRole role,
   ) {
+    // Guests only get their collections (names are constants, no input).
+    final only = role == MemberRole.guest
+        ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
+        : '';
     final rows = _db.select(
       '''
       SELECT collection, id, data, deleted, updated_at, updated_by, rev
         FROM records
-       WHERE rev > ?1
+       WHERE rev > ?1 $only
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
       UNION ALL
       SELECT collection, id, '{}', 1, $revokedAt, '$serverMemberId', rev
         FROM revocations
-       WHERE member_id = ?2 AND rev > ?1
+       WHERE member_id = ?2 AND rev > ?1 $only
       ORDER BY rev
       LIMIT ?3
       ''',
@@ -228,22 +300,32 @@ class RecordStore {
 
   /// Live (non-deleted) records of [collection], optionally only those
   /// [visibleToMember].
-  List<SyncRecord> all(String collection, {String? visibleToMember}) => [
-    for (final row in _db.select(
-      'SELECT * FROM records WHERE collection = ? AND deleted = 0',
-      [collection],
-    ))
-      if (visibleToMember == null || _canSee(_record(row), visibleToMember))
-        _record(row),
-  ];
+  List<SyncRecord> all(String collection, {String? visibleToMember}) {
+    if (visibleToMember != null &&
+        _role(visibleToMember) == MemberRole.guest &&
+        !Collections.guestReadable.contains(collection)) {
+      return const [];
+    }
+    return [
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE collection = ? AND deleted = 0',
+        [collection],
+      ))
+        if (visibleToMember == null || _canSee(_record(row), visibleToMember))
+          _record(row),
+    ];
+  }
 
   /// Whether a live record visible to [memberId] mentions [text] (e.g. a
   /// file id) in its data. Used to authorise file downloads.
   bool referencedFor(String text, String memberId) {
+    final only = _role(memberId) == MemberRole.guest
+        ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
+        : '';
     final rows = _db.select(
       '''
       SELECT 1 FROM records
-       WHERE deleted = 0 AND instr(data, ?1) > 0
+       WHERE deleted = 0 AND instr(data, ?1) > 0 $only
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
        LIMIT 1
@@ -313,6 +395,7 @@ class RecordStore {
   /// events), bypassing conflict resolution. Returns true if anything changed.
   bool writeAsServer(Iterable<SyncRecord> records) {
     var changed = false;
+    final stored = <SyncRecord>[];
     final now = DateTime.now().millisecondsSinceEpoch;
     _transaction(() {
       for (final r in records) {
@@ -324,18 +407,18 @@ class RecordStore {
           continue;
         }
         if (existing == null && r.deleted) continue;
-        _put(
-          r.copyWith(
-            data: data,
-            // Ahead of any client edit, so server data always wins.
-            updatedAt: max(now, (existing?.updatedAt ?? 0) + 1),
-            updatedBy: serverMemberId,
-          ),
-          previous: existing,
+        final record = r.copyWith(
+          data: data,
+          // Ahead of any client edit, so server data always wins.
+          updatedAt: max(now, (existing?.updatedAt ?? 0) + 1),
+          updatedBy: serverMemberId,
         );
+        _put(record, previous: existing);
+        if (existing == null || existing.deleted) stored.add(record);
         changed = true;
       }
     });
+    if (stored.isNotEmpty) onServerStored?.call(stored);
     return changed;
   }
 

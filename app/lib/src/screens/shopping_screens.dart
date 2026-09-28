@@ -4,13 +4,20 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
+import 'list_templates.dart';
+import 'pantry_screens.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/sync_status_icon.dart';
 
-const _shopping = {Collections.shoppingLists, Collections.shoppingItems};
+const _shopping = {
+  Collections.shoppingLists,
+  Collections.shoppingItems,
+  Collections.pantryItems,
+};
 
 class ShoppingListsScreen extends StatelessWidget {
   const ShoppingListsScreen({super.key});
@@ -41,7 +48,14 @@ class ShoppingListsScreen extends StatelessWidget {
       section: FamioSection.shopping,
       title: 'Einkauf',
       subtitle: 'Was brauchen wir?',
-      actions: const [SyncStatusIcon()],
+      actions: [
+        BubbleButton(
+          icon: AppIcons.template,
+          tooltip: 'Liste aus Vorlage',
+          onPressed: () => showTemplatePicker(context),
+        ),
+        const SyncStatusIcon(),
+      ],
       floating: AddButton(
         color: color,
         tooltip: 'Neue Liste',
@@ -52,15 +66,23 @@ class ShoppingListsScreen extends StatelessWidget {
         builder: (context, engine) {
           final lists = engine.shoppingLists;
           if (lists.isEmpty) {
-            return EmptyHint(
-              icon: AppIcons.basket,
-              color: color,
-              text: 'Noch keine Einkaufsliste.',
-              action: ColorButton(
-                label: 'Erste Liste anlegen',
-                color: color,
-                onPressed: () => _create(context),
-              ),
+            return ListView(
+              children: [
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
+                  child: PantryCard(),
+                ),
+                EmptyHint(
+                  icon: AppIcons.basket,
+                  color: color,
+                  text: 'Noch keine Einkaufsliste.',
+                  action: ColorButton(
+                    label: 'Erste Liste anlegen',
+                    color: color,
+                    onPressed: () => _create(context),
+                  ),
+                ),
+              ],
             );
           }
           return ListView.separated(
@@ -68,10 +90,11 @@ class ShoppingListsScreen extends StatelessWidget {
               top: 8,
               bottom: listBottomPadding(context),
             ),
-            itemCount: lists.length,
+            itemCount: lists.length + 1,
             separatorBuilder: (_, _) => const SizedBox(height: 12),
             itemBuilder: (context, i) {
-              final list = lists[i];
+              if (i == 0) return const PantryCard();
+              final list = lists[i - 1];
               final items = engine.shoppingItems(list.id);
               final open = items.where((i) => !i.checked).length;
               return SoftCard(
@@ -175,6 +198,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     if (name != null) engine.saveShoppingList(list.copyWith(name: name));
   }
 
+  void _saveTemplate(SyncEngine engine, ShoppingList list) {
+    engine.templateFromList(list);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('„${list.name}“ als Vorlage gespeichert')),
+    );
+  }
+
   Future<void> _deleteList(SyncEngine engine, ShoppingList list) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -232,6 +262,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 'clear' => [
                   for (final i in done) engine.deleteShoppingItem(i.id),
                 ],
+                'uncheck' => [
+                  for (final i in done)
+                    engine.saveShoppingItem(i.copyWith(checked: false)),
+                ],
+                'template' => _saveTemplate(engine, list),
                 'rename' => _rename(engine, list),
                 'delete' => _deleteList(engine, list),
                 _ => null,
@@ -241,6 +276,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   value: 'clear',
                   enabled: done.isNotEmpty,
                   child: const Text('Erledigte entfernen'),
+                ),
+                PopupMenuItem(
+                  value: 'uncheck',
+                  enabled: done.isNotEmpty,
+                  child: const Text('Alle Haken entfernen'),
+                ),
+                PopupMenuItem(
+                  value: 'template',
+                  enabled: items.isNotEmpty,
+                  child: const Text('Als Vorlage speichern'),
                 ),
                 const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
                 const PopupMenuItem(

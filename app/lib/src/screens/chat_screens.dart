@@ -6,6 +6,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
@@ -17,6 +18,7 @@ import '../widgets/sync_status_icon.dart';
 const _chatCollections = {
   Collections.chatMessages,
   Collections.chatReads,
+  Collections.pollVotes,
   'members',
 };
 
@@ -105,7 +107,11 @@ class _ChatTile extends StatelessWidget {
     final preview = last == null
         ? 'Noch keine Nachrichten – sag Hallo! 👋'
         : '${last.authorId == engine.memberId ? 'Du: ' : (ChatIds.isDirect(chatId) ? '' : '${author?.displayName ?? '?'}: ')}'
-              '${last.text.isNotEmpty ? last.text : '📎 ${last.attachment?.name ?? 'Anhang'}'}';
+              '${last.poll != null
+                  ? '📊 ${last.poll!.question}'
+                  : last.text.isNotEmpty
+                  ? last.text
+                  : '📎 ${last.attachment?.name ?? 'Anhang'}'}';
     return SoftCard(
       padding: const EdgeInsets.all(14),
       onTap: () => Navigator.of(context).push(
@@ -244,6 +250,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<void> _createPoll() async {
+    final poll = await showPollEditor(context);
+    if (poll == null || !mounted) return;
+    AppScope.engineOf(context).sendPoll(widget.chatId, poll);
+  }
+
   Future<void> _deleteMessage(ChatMessage m) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -341,6 +353,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                 onLongPress: m.authorId == engine.memberId
                                     ? () => _deleteMessage(m)
                                     : null,
+                                poll: m.poll == null
+                                    ? null
+                                    : _PollView(message: m, engine: engine),
                               ),
                             ],
                           );
@@ -354,6 +369,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 uploading: _uploading,
                 onSend: _send,
                 onAttach: _attach,
+                onPoll: _createPoll,
               ),
             ],
           );
@@ -407,8 +423,10 @@ class _Bubble extends StatelessWidget {
     required this.showAuthor,
     required this.read,
     this.onLongPress,
+    this.poll,
   });
 
+  final Widget? poll;
   final ChatMessage message;
   final bool mine;
   final FamilyMember? author;
@@ -475,6 +493,7 @@ class _Bubble extends StatelessWidget {
                       )
                     : _FileChip(ref: attachment, onColor: mine),
               ),
+            ?poll,
             if (message.text.isNotEmpty)
               Text(
                 message.text,
@@ -578,6 +597,7 @@ class _Composer extends StatelessWidget {
     required this.uploading,
     required this.onSend,
     required this.onAttach,
+    required this.onPoll,
   });
 
   final TextEditingController controller;
@@ -586,6 +606,7 @@ class _Composer extends StatelessWidget {
   final bool uploading;
   final VoidCallback onSend;
   final VoidCallback onAttach;
+  final VoidCallback onPoll;
 
   @override
   Widget build(BuildContext context) {
@@ -622,6 +643,13 @@ class _Composer extends StatelessWidget {
                     background: c.surfaceSoft,
                     onPressed: onAttach,
                   ),
+            const SizedBox(width: 4),
+            BubbleButton(
+              icon: AppIcons.poll,
+              tooltip: 'Umfrage',
+              background: c.surfaceSoft,
+              onPressed: onPoll,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: TextField(
@@ -657,4 +685,268 @@ class _Composer extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Votes of a chat poll, tappable while open.
+class _PollView extends StatelessWidget {
+  const _PollView({required this.message, required this.engine});
+
+  final ChatMessage message;
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final poll = message.poll!;
+    final c = FamioColors.of(context);
+    final theme = Theme.of(context);
+    final mine = message.authorId == engine.memberId;
+    final fg = mine ? Colors.white : c.ink;
+    final votes = engine.pollVotes(message.id);
+    final myVote = votes
+        .where((v) => v.memberId == engine.memberId)
+        .firstOrNull;
+    final chosen = {...?myVote?.optionIds};
+    final voters = votes.length;
+    final canVote = !poll.closed;
+
+    void toggle(String optionId) {
+      if (!canVote) return;
+      final next = poll.multiple
+          ? (chosen.contains(optionId)
+                ? (chosen..remove(optionId))
+                : (chosen..add(optionId)))
+          : (chosen.contains(optionId) ? <String>{} : {optionId});
+      engine.vote(message, next.toList());
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(AppIcons.poll, size: 18, color: fg),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  poll.question,
+                  style: theme.textTheme.titleMedium?.copyWith(color: fg),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final o in poll.options) ...[
+            () {
+              final count = votes
+                  .where((v) => v.optionIds.contains(o.id))
+                  .length;
+              final names = [
+                for (final v in votes)
+                  if (v.optionIds.contains(o.id))
+                    engine.member(v.memberId)?.displayName ?? '?',
+              ];
+              return InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: canVote ? () => toggle(o.id) : null,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                  decoration: BoxDecoration(
+                    color: mine
+                        ? Colors.white.withValues(alpha: 0.16)
+                        : c.surfaceSoft,
+                    borderRadius: BorderRadius.circular(12),
+                    border: chosen.contains(o.id)
+                        ? Border.all(color: fg, width: 2)
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              o.text,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: fg,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '$count',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: fg,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: voters == 0 ? 0 : count / voters,
+                          minHeight: 5,
+                          color: mine
+                              ? Colors.white
+                              : c.strong(FamioSection.chat),
+                          backgroundColor: mine
+                              ? Colors.white.withValues(alpha: 0.25)
+                              : c.line,
+                        ),
+                      ),
+                      if (names.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Text(
+                            names.join(', '),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: fg.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }(),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  [
+                    '$voters ${voters == 1 ? 'Stimme' : 'Stimmen'}',
+                    if (poll.multiple) 'mehrere Antworten möglich',
+                    if (poll.closed) 'beendet',
+                  ].join(' · '),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: fg.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              if (mine && !poll.closed)
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: fg,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  onPressed: () => engine.closePoll(message),
+                  child: const Text('Beenden'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Asks for question and answers of a new poll.
+Future<Poll?> showPollEditor(BuildContext context) =>
+    showDialog<Poll>(context: context, builder: (_) => const _PollEditor());
+
+class _PollEditor extends StatefulWidget {
+  const _PollEditor();
+
+  @override
+  State<_PollEditor> createState() => _PollEditorState();
+}
+
+class _PollEditorState extends State<_PollEditor> {
+  final _question = TextEditingController();
+  final _options = [TextEditingController(), TextEditingController()];
+  var _multiple = false;
+
+  @override
+  void dispose() {
+    _question.dispose();
+    for (final o in _options) {
+      o.dispose();
+    }
+    super.dispose();
+  }
+
+  void _send() {
+    final question = _question.text.trim();
+    final options = [
+      for (final o in _options)
+        if (o.text.trim().isNotEmpty) o.text.trim(),
+    ];
+    if (question.isEmpty || options.length < 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Frage und mindestens zwei Antworten')),
+      );
+      return;
+    }
+    Navigator.pop(
+      context,
+      Poll(
+        question: question,
+        multiple: _multiple,
+        options: [
+          for (final (i, text) in options.indexed)
+            PollOption(id: 'o$i', text: text),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    scrollable: true,
+    title: const Text('Umfrage'),
+    content: SizedBox(
+      width: 380,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _question,
+            autofocus: true,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Frage',
+              hintText: 'z. B. Wohin am Sonntag?',
+            ),
+          ),
+          const SizedBox(height: 12),
+          for (final (i, o) in _options.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TextField(
+                controller: o,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(labelText: 'Antwort ${i + 1}'),
+              ),
+            ),
+          if (_options.length < 10)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(AppIcons.plus),
+                label: const Text('Antwort'),
+                onPressed: () =>
+                    setState(() => _options.add(TextEditingController())),
+              ),
+            ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Mehrere Antworten erlauben'),
+            value: _multiple,
+            onChanged: (v) => setState(() => _multiple = v),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Abbrechen'),
+      ),
+      FilledButton(onPressed: _send, child: const Text('Senden')),
+    ],
+  );
 }

@@ -101,7 +101,9 @@ class CalendarAccess {
     final hidden = hiddenFor(memberId);
     bool reaches(String? owner, CalendarSharing sharing) =>
         owner != memberId &&
-        (sharing.family || owner == null || sharing.members!.contains(memberId));
+        (sharing.family ||
+            owner == null ||
+            sharing.members!.contains(memberId));
     return [
       for (final r in records.all(Collections.calendarSubscriptions))
         if (CalendarSubscription.fromRecord(r) case final sub
