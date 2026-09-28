@@ -9,8 +9,10 @@ import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../push/own_push.dart';
 
-/// Push notifications through ntfy: arrive even when Famio is closed.
+/// Push notifications: directly from the Famio server (own push) or
+/// through ntfy.
 class PushSettingsScreen extends StatefulWidget {
   const PushSettingsScreen({super.key});
 
@@ -71,13 +73,9 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
     return SectionPage(
       maxBodyWidth: 720,
       section: FamioSection.settings,
-      title: 'Push-Benachrichtigungen',
-      subtitle: 'Auch wenn Famio geschlossen ist',
-      floating: AddButton(
-        color: accent,
-        tooltip: 'Gerät hinzufügen',
-        onPressed: _add,
-      ),
+      title: 'Benachrichtigungen',
+      subtitle: 'Nachrichten, Aufgaben, Termine & Anfragen',
+
       body: FutureBuilder<List<PushTarget>>(
         future: _targets,
         builder: (context, snapshot) {
@@ -85,13 +83,23 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
           return ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
+              const _OwnPushCard(),
+              ListHeading(
+                'Alternativ: über ntfy',
+                color: accent,
+                trailing: TextButton.icon(
+                  icon: const Icon(AppIcons.plus, size: 18),
+                  label: const Text('Gerät hinzufügen'),
+                  onPressed: _add,
+                ),
+              ),
               SoftCard(
                 color: c.tint(FamioSection.settings),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'So funktioniert es',
+                      'Für iPhones oder wenn du ntfy schon nutzt',
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 6),
@@ -134,12 +142,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                   padding: EdgeInsets.all(24),
                   child: Center(child: CircularProgressIndicator()),
                 ),
-              if (snapshot.hasData && targets.isEmpty)
-                EmptyHint(
-                  icon: AppIcons.bellRing,
-                  color: accent,
-                  text: 'Noch kein Gerät eingerichtet.',
-                ),
+
               for (final t in targets)
                 ListTile(
                   leading: Icon(
@@ -178,6 +181,202 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
       ),
     );
   }
+}
+
+/// Famio's own push on this device: switch, details, test.
+class _OwnPushCard extends StatefulWidget {
+  const _OwnPushCard();
+
+  @override
+  State<_OwnPushCard> createState() => _OwnPushCardState();
+}
+
+class _OwnPushCardState extends State<_OwnPushCard>
+    with WidgetsBindingObserver {
+  OwnPushStatus? _status;
+  var _busy = false;
+
+  OwnPush? get _push => AppScope.read(context).ownPush;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Back from Android's settings (notifications, battery).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _load();
+  }
+
+  Future<void> _load() async {
+    final status = await _push?.status();
+    if (mounted) setState(() => _status = status);
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await action();
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } on PlatformException catch (e) {
+      messenger.showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Nicht möglich')),
+      );
+    } finally {
+      await _load();
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final push = _push;
+    final status = _status;
+    final c = FamioColors.of(context);
+    final theme = Theme.of(context);
+    if (push == null) {
+      return const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text(
+          'Benachrichtigungen sind auf diesem Gerät nicht verfügbar.',
+        ),
+      );
+    }
+    final enabled = status?.enabled ?? push.active;
+    return SoftCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Direkt über Famio', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            OwnPush.native
+                ? 'Famio hält im Hintergrund eine Verbindung zu deinem '
+                      'Server – auch wenn die App geschlossen ist. Ohne ntfy, '
+                      'ohne Google; alles bleibt auf deinem Server. Android '
+                      'zeigt dafür dauerhaft „Famio ist bereit“ an – gedrückt '
+                      'halten, um es auszublenden.'
+                : 'Solange Famio läuft, meldet es Neues, auch im '
+                      'Hintergrund. Ohne ntfy – alles bleibt auf deinem '
+                      'Server.',
+            style: theme.textTheme.bodySmall,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              OwnPush.native ? 'Auf diesem Handy' : 'Auf diesem Gerät',
+            ),
+            value: enabled,
+            onChanged: _busy || status == null
+                ? null
+                : (v) => _run(() => push.setEnabled(v)),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Inhalte anzeigen'),
+            subtitle: Text(
+              'Namen und Texte, z. B. die Chat-Nachricht. Aus: nur „Neue '
+              'Nachricht“ o. Ä.'
+              '${OwnPush.native ? ' Der Sperrbildschirm zeigt nie Inhalte.' : ''}',
+            ),
+            value: status?.details ?? true,
+            onChanged: _busy || status == null
+                ? null
+                : (v) => _run(() => push.setDetails(v)),
+          ),
+          if (enabled && OwnPush.native && status != null) ...[
+            if (!status.notifications)
+              _Hint(
+                icon: AppIcons.warningCircle,
+                color: c.danger,
+                text: 'Android erlaubt Famio keine Benachrichtigungen.',
+                action: 'Einstellungen',
+                onPressed: () => _run(
+                  () => const MethodChannel(
+                    'famio/location',
+                  ).invokeMethod('openAppSettings'),
+                ),
+              ),
+            if (!status.batteryUnrestricted)
+              _Hint(
+                icon: AppIcons.warningCircle,
+                color: c.danger,
+                text:
+                    'Akku-Optimierung ist an – Android kann die Verbindung '
+                    'dann trennen.',
+                action: 'Ausnehmen',
+                onPressed: () => _run(
+                  () => const MethodChannel(
+                    'famio/location',
+                  ).invokeMethod('openBatterySettings'),
+                ),
+              ),
+          ],
+          if (enabled)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(AppIcons.paperPlaneRight, size: 18),
+                label: const Text('Test senden'),
+                onPressed: _busy
+                    ? null
+                    : () => _run(() async {
+                        await push.test();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Testnachricht unterwegs'),
+                            ),
+                          );
+                        }
+                      }),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Hint extends StatelessWidget {
+  const _Hint({
+    required this.icon,
+    required this.color,
+    required this.text,
+    required this.action,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String text;
+  final String action;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 4),
+    child: Row(
+      children: [
+        Icon(icon, color: color, size: 20),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
+        TextButton(onPressed: onPressed, child: Text(action)),
+      ],
+    ),
+  );
 }
 
 class _AddTargetDialog extends StatefulWidget {

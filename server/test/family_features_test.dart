@@ -384,4 +384,112 @@ void main() {
       expect(pushed.single['message'], 'kind: Müll rausgebracht erledigt (+3)');
     });
   });
+
+  group('own push', () {
+    Map<String, Object?> chat(String id, String chatId, String text) => {
+      'chatId': chatId,
+      'authorId': mama.id,
+      'text': text,
+    };
+
+    test('a device token only fetches notifications', () async {
+      final created = await kind.call(
+        'POST',
+        'api/notifications/device-token',
+        {'device': 'Handy'},
+      );
+      expect(created['_status'], 201);
+      final device = _Member(base, created['token'] as String, kind.id);
+      // A new device starts at the newest notification.
+      final start = await device.call('GET', 'api/notifications');
+      expect(start['notices'], isEmpty);
+      final last = start['last'] as int;
+
+      await mama.sync([
+        _record(
+          Collections.chatMessages,
+          'n1',
+          chat('n1', ChatIds.family, 'Essen ist fertig'),
+        ),
+      ]);
+      await app.push.idle;
+      final got = await device.call('GET', 'api/notifications?after=$last');
+      final notices = (got['notices'] as List).cast<Map>();
+      expect(notices.single['body'], 'Essen ist fertig');
+      expect(notices.single['brief'], 'Neue Nachricht');
+      expect(got['last'], notices.single['id']);
+      // The author gets nothing, and the token can do nothing else.
+      final author = await mama.call('GET', 'api/notifications?after=0');
+      expect(author['notices'], isEmpty);
+      expect((await device.call('POST', 'api/sync', {}))['_status'], 401);
+      expect((await device.call('GET', 'api/me'))['_status'], 401);
+    });
+
+    test('a waiting request returns as soon as something arrives', () async {
+      final last = (await kind.call('GET', 'api/notifications'))['last'] as int;
+      final watch = Stopwatch()..start();
+      final waiting = kind.call('GET', 'api/notifications?after=$last&wait=20');
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      expect(app.notices.waiting, 1);
+      await mama.sync([
+        _record(
+          Collections.chatMessages,
+          'n2',
+          chat('n2', ChatIds.family, 'Kommst du?'),
+        ),
+      ]);
+      final got = await waiting;
+      expect(watch.elapsed, lessThan(const Duration(seconds: 10)));
+      expect((got['notices'] as List).single['body'], 'Kommst du?');
+      expect(app.notices.waiting, 0);
+    });
+
+    test('only members who may see the record get it', () async {
+      final last = (await oma.call('GET', 'api/notifications'))['last'] as int;
+      await mama.sync([
+        _record(Collections.chatMessages, 'n3', {
+          ...chat('n3', ChatIds.direct(mama.id, kind.id), 'Nur für dich'),
+          'visibleTo': [mama.id, kind.id],
+        }),
+      ]);
+      await app.push.idle;
+      final kindGot = await kind.call('GET', 'api/notifications?after=0');
+      expect(jsonEncode(kindGot), contains('Nur für dich'));
+      final omaGot = await oma.call('GET', 'api/notifications?after=$last');
+      expect(omaGot['notices'], isEmpty);
+    });
+
+    test('events for unknown members still sync', () async {
+      final response = await mama.call('POST', 'api/sync', {
+        'since': 0,
+        'changes': [
+          _record(Collections.events, 'e1', {
+            'title': 'Für jemand Unbekanntes',
+            'start': DateTime.now().toUtc().toIso8601String(),
+            'end': DateTime.now().toUtc().toIso8601String(),
+            'memberIds': ['someone-gone', kind.id],
+          }).toJson(),
+        ],
+      });
+      expect(response['_status'], 200);
+      final got = await kind.call('GET', 'api/notifications?after=0');
+      expect(jsonEncode(got), contains('Für jemand Unbekanntes'));
+    });
+
+    test('test message and wipe', () async {
+      expect(
+        (await kind.call('POST', 'api/notifications/test'))['_status'],
+        200,
+      );
+      final got = await kind.call('GET', 'api/notifications?after=0');
+      expect((got['notices'] as List).single['title'], 'Famio');
+      app.notices.deleteAll();
+      // Position beyond the newest (wiped): back to the start.
+      final after = await kind.call(
+        'GET',
+        'api/notifications?after=${got['last']}&wait=5',
+      );
+      expect(after['last'], 0);
+    });
+  });
 }

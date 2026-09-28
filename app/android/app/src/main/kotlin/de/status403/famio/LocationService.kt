@@ -487,7 +487,7 @@ class LocationService : Service(), LocationListener {
  * certificate's SubjectPublicKeyInfo; it stays when the server renews its
  * certificate), as the Dart client does.
  */
-private class PinnedTrust(pin: String) : X509TrustManager {
+internal class PinnedTrust(pin: String) : X509TrustManager {
     private val expected = pin.replace(":", "").uppercase()
 
     override fun checkServerTrusted(chain: Array<out X509Certificate>, authType: String?) {

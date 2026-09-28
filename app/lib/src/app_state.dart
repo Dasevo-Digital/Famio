@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/family_data.dart';
 import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
+import 'push/own_push.dart';
 import 'secure_vault.dart';
 import 'reminders/reminder_service.dart';
 import 'environment.dart';
@@ -50,6 +51,9 @@ class AppState extends ChangeNotifier {
   late SharedPreferences _prefs;
   late SecureVault vault;
   ReminderService? _reminders;
+
+  /// Famio's own push notifications (without ntfy).
+  OwnPush? ownPush;
 
   String? serverUrl;
 
@@ -382,6 +386,12 @@ class AppState extends ChangeNotifier {
     }
     await _reminders?.clear();
     await HomeWidgetSync.clear();
+    // Also the phone's notification service and its token.
+    try {
+      await ownPush?.detach();
+    } catch (_) {
+      // Not available on this platform.
+    }
     // Signing out ends location sharing on this phone as well.
     try {
       await LocationSharing.disable(api: engine.api);
@@ -490,7 +500,18 @@ class AppState extends ChangeNotifier {
         })
         .catchError((Object _) {});
 
+    // Before the reminders: creating those may wait for Android's
+    // notification permission dialog.
+    final push = ownPush ??= OwnPush(
+      _prefs,
+      show: (notice, {required details}) async =>
+          _reminders?.showNotice(notice, details: details),
+    );
+    push
+        .attach(api, serverUrl: normalized, pin: pin, device: deviceName)
+        .catchError((Object _) {});
     _reminders ??= await ReminderService.create(_prefs);
+    _reminders?.ownPushActive = () => push.active;
     if (this.engine == engine) _reminders?.attach(engine);
     _loadConfig(api);
     refreshTwoFactor();

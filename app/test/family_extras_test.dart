@@ -158,10 +158,9 @@ void main() {
     engine.recordIntake(m, scheduled: DateTime(2026, 9, 29, 8), skipped: true);
     expect(engine.takenSinceCount(m), 1);
     expect(engine.intakeAt(m, DateTime(2026, 9, 28, 8)), isNotNull);
-    expect(
-      engine.records(Collections.medicationIntakes).first.visibleTo,
-      ['m1'],
-    );
+    expect(engine.records(Collections.medicationIntakes).first.visibleTo, [
+      'm1',
+    ]);
   });
 
   test('Open Food Facts lookup', () async {

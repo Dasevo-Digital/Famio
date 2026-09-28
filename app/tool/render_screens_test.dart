@@ -10,6 +10,7 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
+import 'package:famio/src/push/own_push.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
@@ -1012,6 +1013,17 @@ http.Client _adminApi() {
         'users': [for (final u in users) u.toJson()],
       },
       '/api/admin/overview' => overview.toJson(),
+      '/api/me/push' => {
+        'targets': [
+          {
+            'id': 't1',
+            'name': 'iPhone Oma',
+            'url': 'https://ntfy.example.org/famio-oma',
+            'details': false,
+            'hasToken': false,
+          },
+        ],
+      },
       '/api/me/two-factor' => {
         'twoFactor': false,
         'recoveryCodesLeft': 0,
@@ -1091,7 +1103,11 @@ void main() {
       _seedExtras(engine);
       state
         ..me = _members.first
-        ..engine = engine;
+        ..engine = engine
+        ..ownPush = OwnPush(
+          await SharedPreferences.getInstance(),
+          show: (_, {required details}) async {},
+        );
     }
     final key = GlobalKey();
     await tester.pumpWidget(
@@ -1305,6 +1321,22 @@ void main() {
     await _shot(tester, key, 'phone_13_sicherheit');
     await go(tester, 'Einrichten');
     await _shot(tester, key, 'phone_14_zwei_faktor_einrichten');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('push phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Einstellungen').last);
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Push-Benachrichtigungen'),
+      find.byType(ListView).first,
+      const Offset(0, -200),
+    );
+    await go(tester, 'Push-Benachrichtigungen');
+    await _shot(tester, key, 'phone_15_push');
     await tester.pump(const Duration(seconds: 1));
   });
 

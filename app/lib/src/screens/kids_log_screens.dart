@@ -631,7 +631,11 @@ class _StatusCard extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
-                  Icon(icon, size: 18, color: color),
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: FamioColors.of(context).readable(color),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(text, style: theme.textTheme.bodyMedium),

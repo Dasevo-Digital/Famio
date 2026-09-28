@@ -23,22 +23,35 @@ void main() {
         for (final ground in [c.background, c.surface, c.tint(s)]) {
           expect(
             FamioColors.contrast(strong, ground),
-            greaterThanOrEqualTo(4.5),
+            greaterThanOrEqualTo(FamioColors.contrastTarget),
             reason: '${s.label} on $ground',
           );
         }
         expect(
           FamioColors.contrast(c.onStrong, strong),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(FamioColors.contrastTarget),
           reason: 'text on ${s.label}',
         );
       }
       for (final ground in [c.background, c.surface, c.surfaceSoft]) {
         expect(
           FamioColors.contrast(c.inkSoft, ground),
-          greaterThanOrEqualTo(4.5),
+          greaterThanOrEqualTo(FamioColors.contrastTarget),
         );
       }
     });
   }
+
+  test('outlines only with high contrast, at least 3:1', () {
+    expect(FamioColors.light.outline, isNull);
+    for (final c in [
+      FamioColors.light.withHighContrast(),
+      FamioColors.darkColors.withHighContrast(),
+    ]) {
+      expect(
+        FamioColors.contrast(c.outline!.color, c.background),
+        greaterThanOrEqualTo(3),
+      );
+    }
+  });
 }

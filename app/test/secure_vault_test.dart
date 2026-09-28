@@ -30,9 +30,9 @@ void main() {
     final again = await SecureVault.open(prefs);
     expect(await again.read('token'), isNull);
     expect(await again.read('certPin'), 'p2');
-    expect(
-      jsonDecode((await storage.read(key: 'famio'))!),
-      {'deviceKey': 'k1', 'certPin': 'p2'},
-    );
+    expect(jsonDecode((await storage.read(key: 'famio'))!), {
+      'deviceKey': 'k1',
+      'certPin': 'p2',
+    });
   });
 }

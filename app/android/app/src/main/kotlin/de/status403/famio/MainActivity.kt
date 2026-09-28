@@ -13,7 +13,10 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-/** Hosts Flutter and the `famio/location` channel for location sharing. */
+/**
+ * Hosts Flutter and the channels `famio/location` (location sharing) and
+ * `famio/notify` (Famio's own push).
+ */
 class MainActivity : FlutterActivity() {
     private var permissionResult: MethodChannel.Result? = null
 
@@ -56,6 +59,52 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(null)
                     }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/notify")
+            .setMethodCallHandler { call, result ->
+                val notify = getSharedPreferences(NotifyService.PREFS, Context.MODE_PRIVATE)
+                when (call.method) {
+                    "status" -> result.success(
+                        mapOf(
+                            "enabled" to notify.getBoolean("enabled", false),
+                            "notifications" to (Build.VERSION.SDK_INT < 33 ||
+                                granted(Manifest.permission.POST_NOTIFICATIONS)),
+                            "batteryUnrestricted" to (getSystemService(Context.POWER_SERVICE) as PowerManager)
+                                .isIgnoringBatteryOptimizations(packageName),
+                        ),
+                    )
+                    "requestPermission" -> {
+                        if (Build.VERSION.SDK_INT >= 33 &&
+                            !granted(Manifest.permission.POST_NOTIFICATIONS)
+                        ) {
+                            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 4712)
+                        }
+                        result.success(null)
+                    }
+                    "start" -> {
+                        val sameServer = notify.getString("url", null) == call.argument<String>("url")
+                        notify.edit()
+                            .putBoolean("enabled", true)
+                            .putString("url", call.argument<String>("url"))
+                            .putString("token", call.argument<String>("token"))
+                            .putString("pin", call.argument<String>("pin"))
+                            .putBoolean("details", call.argument<Boolean>("details") ?: true)
+                            .apply {
+                                // Another server: start at its newest notification.
+                                if (!sameServer) remove("last")
+                            }
+                            .apply()
+                        NotifyService.start(this)
+                        result.success(null)
+                    }
+                    "stop" -> {
+                        notify.edit().clear().apply()
+                        NotifyService.stop(this)
+                        result.success(null)
+                    }
+                    "token" -> result.success(notify.getString("token", null))
                     else -> result.notImplemented()
                 }
             }

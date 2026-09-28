@@ -157,7 +157,7 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(AppIcons.bellRing),
             title: const Text('Push-Benachrichtigungen'),
-            subtitle: const Text('Über ntfy – auch wenn Famio geschlossen ist'),
+            subtitle: const Text('Direkt über Famio oder über ntfy'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const PushSettingsScreen(),
