@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Draws the Famio app icon and writes it in the native shape of every
-platform (macOS, Windows, Linux, Android incl. adaptive/themed icons).
+platform (iOS, macOS, Windows, Linux, Android incl. adaptive/themed icons).
 
     python3 tool/make_icons.py      # from the app/ directory; needs Pillow
 """
+import json
 import math
 import os
 
@@ -145,6 +146,15 @@ def android_monochrome(px):
     return render(px, lambda s: glyph(s, 0.42, knockout=True))
 
 
+def ios(px):
+    """Full square without transparency: iOS rounds the corners itself."""
+    def draw(s):
+        tile = gradient(s)
+        tile.alpha_composite(glyph(s, 0.62))
+        return tile
+    return render(px, draw).convert("RGB")
+
+
 def save_ico(file, sizes):
     images = [tile(s, 0.0 if s <= 32 else 0.04) for s in sizes]
     images[-1].save(file, format="ICO", sizes=[(s, s) for s in sizes], append_images=images[:-1])
@@ -160,6 +170,15 @@ def main():
     # macOS
     for s in (16, 32, 64, 128, 256, 512, 1024):
         macos(s).save(path(f"macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_{s}.png"))
+
+    # iOS: every size the asset catalog lists.
+    catalog = path("ios/Runner/Assets.xcassets/AppIcon.appiconset")
+    with open(os.path.join(catalog, "Contents.json")) as f:
+        for entry in json.load(f)["images"]:
+            if "filename" not in entry:
+                continue
+            px = round(float(entry["size"].split("x")[0]) * int(entry["scale"][0]))
+            ios(px).save(os.path.join(catalog, entry["filename"]))
 
     # Windows: all sizes Explorer and the taskbar ask for.
     save_ico(path("windows/runner/resources/app_icon.ico"), [16, 20, 24, 32, 40, 48, 64, 96, 128, 256])
