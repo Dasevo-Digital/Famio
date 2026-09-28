@@ -257,6 +257,7 @@ class SettingsScreen extends StatelessWidget {
             builder: (_, obscure, toggle) => TextField(
               controller: current,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
                 labelText: 'Aktuelles Passwort',
@@ -267,6 +268,7 @@ class SettingsScreen extends StatelessWidget {
             builder: (_, obscure, toggle) => TextField(
               controller: next,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
                 labelText: 'Neues Passwort (min. 8 Zeichen)',

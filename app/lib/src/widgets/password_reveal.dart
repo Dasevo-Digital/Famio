@@ -10,6 +10,7 @@ import '../design/app_icons.dart';
 ///     PasswordReveal(
 ///       builder: (context, obscure, toggle) => TextField(
 ///         obscureText: obscure,
+///         contextMenuBuilder: PasswordReveal.contextMenu,
 ///         decoration: InputDecoration(suffixIcon: toggle),
 ///       ),
 ///     )
@@ -21,6 +22,32 @@ class PasswordReveal extends StatefulWidget {
 
   /// How long the password stays visible.
   static const visibleFor = Duration(seconds: 5);
+
+  /// Context menu of password fields (right click, long press): always
+  /// offers "Einfügen", e.g. from a password manager. Copying stays off.
+  ///
+  ///     TextField(obscureText: obscure,
+  ///         contextMenuBuilder: PasswordReveal.contextMenu)
+  static Widget contextMenu(BuildContext context, EditableTextState field) {
+    final value = field.textEditingValue;
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: field.contextMenuAnchors,
+      buttonItems: [
+        ContextMenuButtonItem(
+          type: ContextMenuButtonType.paste,
+          label: 'Einfügen',
+          onPressed: () => field.pasteText(SelectionChangedCause.toolbar),
+        ),
+        if (value.text.isNotEmpty &&
+            value.selection.end - value.selection.start < value.text.length)
+          ContextMenuButtonItem(
+            type: ContextMenuButtonType.selectAll,
+            label: 'Alles auswählen',
+            onPressed: () => field.selectAll(SelectionChangedCause.toolbar),
+          ),
+      ],
+    );
+  }
 
   @override
   State<PasswordReveal> createState() => _PasswordRevealState();

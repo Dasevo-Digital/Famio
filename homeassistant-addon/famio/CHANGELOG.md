@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.1
+
+- Passwortfelder: Rechtsklick (bzw. langes Drücken) bietet „Einfügen“,
+  z. B. aus dem Passwortmanager. Kopieren bleibt gesperrt.
+
 ## 0.14.0 – Zurücksetzen
 
 - **Server-Verwaltung → Einstellungen → Zurücksetzen:**

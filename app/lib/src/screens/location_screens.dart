@@ -577,6 +577,7 @@ Future<bool> showPauseDialog(
               controller: code,
               autofocus: true,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               keyboardType: TextInputType.visiblePassword,
               decoration: InputDecoration(
                 suffixIcon: toggle,

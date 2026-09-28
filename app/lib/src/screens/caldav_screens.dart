@@ -490,6 +490,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
             builder: (_, obscure, toggle) => TextField(
               controller: password,
               obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
@@ -904,6 +905,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                   builder: (_, obscure, toggle) => TextField(
                     controller: _clientSecret,
                     obscureText: obscure,
+                    contextMenuBuilder: PasswordReveal.contextMenu,
                     autocorrect: false,
                     decoration: InputDecoration(
                       suffixIcon: toggle,
@@ -945,6 +947,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                   builder: (_, obscure, toggle) => TextField(
                     controller: _password,
                     obscureText: obscure,
+                    contextMenuBuilder: PasswordReveal.contextMenu,
                     decoration: InputDecoration(
                       suffixIcon: toggle,
                       labelText: 'Passwort',
