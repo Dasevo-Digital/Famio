@@ -9,7 +9,13 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_PASSWORD, CONF_TOKEN, CONF_URL, CONF_USERNAME
+from homeassistant.const import (
+    CONF_CODE,
+    CONF_PASSWORD,
+    CONF_TOKEN,
+    CONF_URL,
+    CONF_USERNAME,
+)
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
@@ -35,6 +41,21 @@ USER_SCHEMA = vol.Schema(
 )
 
 
+def _error(err: FamioError) -> str:
+    """The form error for a failed sign-in."""
+    if isinstance(err, FamioCertificateError):
+        return "invalid_cert"
+    if isinstance(err, FamioConnectionError):
+        return "cannot_connect"
+    if err.code == "two_factor_setup_required":
+        return "two_factor_setup"
+    if err.code == "challenge_expired":
+        return "code_expired"
+    if isinstance(err, FamioAuthError):
+        return "invalid_auth"
+    return "unknown"
+
+
 class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
     """Connects Home Assistant to a Famio server as one member."""
 
@@ -45,6 +66,8 @@ class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
         self._url = ""
         self._pin: str | None = None
         self._cert_sha256: str | None = None
+        self._client: FamioClient
+        self._challenge = ""
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -97,35 +120,62 @@ class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
         return await self._sign_in()
 
     async def _sign_in(self) -> ConfigFlowResult:
-        client = FamioClient(
+        self._client = FamioClient(
             async_get_clientsession(self.hass),
             self._url,
             pin=self._pin,
             cert_sha256=self._cert_sha256,
         )
-        errors: dict[str, str] = {}
         try:
-            member = await client.login(
+            member = await self._client.login(
                 self._input[CONF_USERNAME], self._input[CONF_PASSWORD]
             )
-        except FamioTwoFactorError:
-            errors["base"] = "two_factor"
-        except FamioAuthError:
-            errors["base"] = "invalid_auth"
-        except FamioCertificateError:
-            errors["base"] = "invalid_cert"
-        except FamioConnectionError:
-            errors["base"] = "cannot_connect"
-        except FamioError:
-            errors["base"] = "unknown"
-        if errors:
-            return self.async_show_form(
-                step_id="user",
-                data_schema=self.add_suggested_values_to_schema(
-                    USER_SCHEMA, {**self._input, CONF_PASSWORD: ""}
-                ),
-                errors=errors,
-            )
+        except FamioTwoFactorError as err:
+            # Password right: now the code from the authenticator app.
+            self._challenge = err.challenge
+            return await self.async_step_two_factor()
+        except FamioError as err:
+            return self._password_form(_error(err))
+        return await self._finish(member)
+
+    async def async_step_two_factor(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Two-factor login: asked once, Home Assistant keeps the session."""
+        errors: dict[str, str] = {}
+        if user_input is not None:
+            try:
+                member = await self._client.login_two_factor(
+                    self._challenge, user_input[CONF_CODE]
+                )
+            except FamioError as err:
+                if err.code != "invalid_code":
+                    # Expired or too many tries: start with the password.
+                    return self._password_form(_error(err))
+                errors["base"] = "invalid_code"
+            else:
+                return await self._finish(member)
+        return self.async_show_form(
+            step_id="two_factor",
+            data_schema=vol.Schema({vol.Required(CONF_CODE): str}),
+            description_placeholders={"username": self._input[CONF_USERNAME]},
+            errors=errors,
+        )
+
+    async def _finish(self, member: dict[str, Any]) -> ConfigFlowResult:
+        client = self._client
+        # Two-factor login is mandatory for this member but not set up yet:
+        # the session could not read anything.
+        try:
+            await client.members()
+        except FamioAuthError as err:
+            try:
+                await client.logout()
+            except FamioError:
+                pass
+            return self._password_form(_error(err))
+        except FamioError as err:
+            return self._password_form(_error(err))
 
         data = {
             CONF_URL: self._url,
@@ -144,6 +194,23 @@ class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_create_entry(
             title=f"Famio ({member.get('displayName') or member['username']})",
             data=data,
+        )
+
+    def _password_form(self, error: str) -> ConfigFlowResult:
+        """Back to the password, with what went wrong."""
+        if self.source == "reauth":
+            return self.async_show_form(
+                step_id="reauth_confirm",
+                data_schema=vol.Schema({vol.Required(CONF_PASSWORD): str}),
+                description_placeholders={"username": self._input[CONF_USERNAME]},
+                errors={"base": error},
+            )
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self.add_suggested_values_to_schema(
+                USER_SCHEMA, {**self._input, CONF_PASSWORD: ""}
+            ),
+            errors={"base": error},
         )
 
     # --- the session was revoked (e.g. signed out in the app) ---------------

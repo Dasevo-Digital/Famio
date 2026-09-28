@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.17.2 – Home Assistant mit Zwei-Faktor-Anmeldung
+
+- **Home-Assistant-Integration:** Mitglieder mit Zwei-Faktor-Anmeldung lassen
+  sich verbinden – der Code aus der Authenticator-App wird bei der Einrichtung
+  einmal abgefragt, danach bleibt Home Assistant angemeldet.
+- Wird die Zwei-Faktor-Anmeldung später Pflicht oder die Sitzung in Famio
+  beendet, fragt Home Assistant nach Passwort und Code.
+- Klarer Hinweis, wenn der zweite Faktor Pflicht, aber noch nicht eingerichtet ist.
+
 ## 0.17.1 – Kleidung für die Nacht, ruhigere Startseite
 
 - **Wetter & Kleidung: für die Nacht.** Ab 17 Uhr zeigt die Kachel, worin die

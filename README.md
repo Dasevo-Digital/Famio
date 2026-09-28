@@ -239,8 +239,9 @@ Code. In der Server-Verwaltung lässt sich die Zwei-Faktor-Anmeldung **für
 Administratoren oder alle** verlangen: Betroffene sehen dann nur die
 Einrichtung bzw. eine Code-Abfrage, bis sie erledigt ist. Administratoren können
 sie für ein Mitglied zurücksetzen (Handy verloren). CalDAV-App-Passwörter und
-die Standort-Tokens der Handys sind davon nicht betroffen; für die
-Home-Assistant-Integration ein eigenes Mitglied ohne Zwei-Faktor anlegen.
+die Standort-Tokens der Handys sind davon nicht betroffen. Die
+Home-Assistant-Integration fragt den Code bei der Einrichtung einmal ab und
+bleibt dann angemeldet.
 
 **Single Sign-On (OpenID Connect):** Server-Verwaltung → Einstellungen →
 Single Sign-On: Anbieter-Adresse (Issuer), Client-ID und -Secret eintragen,
