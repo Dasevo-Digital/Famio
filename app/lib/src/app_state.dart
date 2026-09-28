@@ -166,6 +166,84 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  /// Second login step after [TwoFactorRequired]: the code from the
+  /// authenticator app or a recovery code.
+  Future<void> signInTwoFactor(
+    ResolvedServer server,
+    String challenge,
+    String code,
+  ) async {
+    final result = await _client(
+      server.url,
+      server.pin,
+    ).loginTwoFactor(challenge: challenge, code: code);
+    await _startSession(
+      server.url,
+      result.token,
+      result.member,
+      pin: server.pin,
+    );
+  }
+
+  /// Signs in with the single sign-on provider in the browser: [open]
+  /// shows its page; Famio is polled until the browser part is done,
+  /// [cancelled] returns true or ten minutes pass.
+  Future<void> signInSso(
+    ResolvedServer server, {
+    required Future<void> Function(Uri url) open,
+    required bool Function() cancelled,
+  }) async {
+    final api = _client(server.url, server.pin);
+    final flow = await api.startSso(device: deviceName);
+    await open(flow.url);
+    final end = DateTime.now().add(const Duration(minutes: 10));
+    while (!cancelled() && DateTime.now().isBefore(end)) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      if (cancelled()) return;
+      final result = await api.pollSso(flow);
+      if (result != null) {
+        await _startSession(
+          server.url,
+          result.token,
+          result.member,
+          pin: server.pin,
+        );
+        return;
+      }
+    }
+    if (!cancelled()) {
+      throw const ApiError(
+        0,
+        'sso_timeout',
+        'Die Anmeldung im Browser wurde nicht abgeschlossen.',
+      );
+    }
+  }
+
+  /// Set when an admin made two-factor login mandatory and this device
+  /// still has to set it up or confirm a code; the app shows nothing else.
+  TwoFactorStatus? twoFactorGate;
+
+  /// Asks the server whether this session may be used without a second
+  /// factor (offline: keeps the current state).
+  Future<void> refreshTwoFactor() async {
+    final engine = this.engine;
+    if (engine == null) return;
+    try {
+      final status = await engine.api.twoFactorStatus();
+      final gate = status.setupNeeded || status.verifyNeeded ? status : null;
+      if (this.engine != engine) return;
+      final changed = (gate == null) != (twoFactorGate == null);
+      twoFactorGate = gate;
+      if (changed) {
+        notifyListeners();
+        if (gate == null) engine.sync();
+      }
+    } on ApiError {
+      // Offline or an older server without two-factor login.
+    }
+  }
+
   /// First start of a fresh server: creates the admin account.
   Future<void> setupServer(
     ResolvedServer server, {
@@ -310,6 +388,7 @@ class AppState extends ChangeNotifier {
     me = null;
     certificatePin = null;
     changedCertificate = null;
+    twoFactorGate = null;
     notifyListeners();
   }
 
@@ -361,6 +440,10 @@ class AppState extends ChangeNotifier {
       if (status.state == SyncState.offline && pin != null) {
         _checkCertificate(normalized, pin);
       }
+      if (status.state == SyncState.offline &&
+          (engine.lastError?.code.startsWith('two_factor') ?? false)) {
+        refreshTwoFactor();
+      }
     });
     engine.changes.listen((changed) {
       if (changed.contains('members')) _refreshMe();
@@ -394,6 +477,7 @@ class AppState extends ChangeNotifier {
     _reminders ??= await ReminderService.create(_prefs);
     if (this.engine == engine) _reminders?.attach(engine);
     _loadConfig(api);
+    refreshTwoFactor();
     HomeWidgetSync.attach(engine);
     // A sharing phone follows the server address (e.g. after "encrypt").
     LocationSharing.refresh(

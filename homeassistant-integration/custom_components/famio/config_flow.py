@@ -14,6 +14,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import (
     FamioAuthError,
+    FamioTwoFactorError,
     FamioCertificateError,
     FamioClient,
     FamioConnectionError,
@@ -107,6 +108,8 @@ class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
             member = await client.login(
                 self._input[CONF_USERNAME], self._input[CONF_PASSWORD]
             )
+        except FamioTwoFactorError:
+            errors["base"] = "two_factor"
         except FamioAuthError:
             errors["base"] = "invalid_auth"
         except FamioCertificateError:

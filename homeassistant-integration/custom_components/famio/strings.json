@@ -25,6 +25,7 @@
     "error": {
       "cannot_connect": "Server not reachable.",
       "invalid_auth": "Wrong username or password.",
+      "two_factor": "This account uses two-factor login. Create an own member for Home Assistant without two-factor login.",
       "invalid_cert": "The server's certificate does not match the confirmed fingerprint.",
       "invalid_url": "Invalid address.",
       "unknown": "Unexpected error."

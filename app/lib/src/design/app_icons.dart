@@ -104,6 +104,10 @@ abstract final class AppIcons {
   static const IconData rotateCcw = LucideIcons.rotateCcw;
   static const IconData ruler = LucideIcons.ruler;
   static const IconData shieldUser = LucideIcons.shieldUser;
+  static const IconData shieldCheck = LucideIcons.shieldCheck;
+  static const IconData qrCode = LucideIcons.qrCode;
+  static const IconData logIn = LucideIcons.logIn;
+  static const IconData unlink = LucideIcons.unlink;
   static const IconData shoppingCartSimple = LucideIcons.shoppingCart;
   static const IconData signature = LucideIcons.signature;
   static const IconData signOut = LucideIcons.logOut;

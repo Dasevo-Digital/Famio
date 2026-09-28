@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_state.dart';
 import 'design/theme.dart';
+import 'screens/security_screens.dart';
 import 'screens/connect_screen.dart';
 import 'screens/home_shell.dart';
 import 'environment.dart';
@@ -45,12 +46,15 @@ class _Root extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final signedIn = AppScope.of(context).signedIn;
+    final state = AppScope.of(context);
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 350),
-      child: signedIn
-          ? const HomeShell(key: ValueKey('home'))
-          : const ConnectScreen(key: ValueKey('connect')),
+      child: !state.signedIn
+          ? const ConnectScreen(key: ValueKey('connect'))
+          : state.twoFactorGate != null
+          // An admin made two-factor login mandatory: nothing else first.
+          ? const TwoFactorGateScreen(key: ValueKey('two-factor'))
+          : const HomeShell(key: ValueKey('home')),
     );
   }
 }

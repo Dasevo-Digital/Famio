@@ -25,6 +25,7 @@
     "error": {
       "cannot_connect": "Server nicht erreichbar.",
       "invalid_auth": "Benutzername oder Passwort falsch.",
+      "two_factor": "Dieses Konto nutzt die Zwei-Faktor-Anmeldung. Bitte ein eigenes Mitglied für Home Assistant ohne Zwei-Faktor anlegen.",
       "invalid_cert": "Das Zertifikat des Servers passt nicht zum bestätigten Fingerabdruck.",
       "invalid_url": "Ungültige Adresse.",
       "unknown": "Unerwarteter Fehler."

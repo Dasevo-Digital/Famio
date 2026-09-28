@@ -44,6 +44,8 @@ class AdminUser {
     this.hasPassword = true,
     this.homeAssistant = false,
     this.sessions = const [],
+    this.twoFactor = false,
+    this.singleSignOn = false,
   });
 
   factory AdminUser.fromJson(Map<String, Object?> json) => AdminUser(
@@ -51,6 +53,8 @@ class AdminUser {
     createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int),
     hasPassword: json['hasPassword'] as bool? ?? true,
     homeAssistant: json['homeAssistant'] as bool? ?? false,
+    twoFactor: json['twoFactor'] as bool? ?? false,
+    singleSignOn: json['singleSignOn'] as bool? ?? false,
     sessions: [
       for (final s in json['sessions'] as List? ?? const [])
         DeviceSession.fromJson((s as Map).cast()),
@@ -65,6 +69,12 @@ class AdminUser {
   final bool homeAssistant;
   final List<DeviceSession> sessions;
 
+  /// Signs in with an authenticator app as second factor.
+  final bool twoFactor;
+
+  /// Linked to the single sign-on provider.
+  final bool singleSignOn;
+
   DateTime? get lastSeen => sessions.isEmpty
       ? null
       : sessions.map((s) => s.lastSeen).reduce((a, b) => a.isAfter(b) ? a : b);
@@ -74,6 +84,8 @@ class AdminUser {
     'createdAt': createdAt.millisecondsSinceEpoch,
     'hasPassword': hasPassword,
     'homeAssistant': homeAssistant,
+    'twoFactor': twoFactor,
+    'singleSignOn': singleSignOn,
     'sessions': [for (final s in sessions) s.toJson()],
   };
 }
@@ -87,6 +99,7 @@ class ServerSettings {
     this.timeZone,
     this.maxUploadMb,
     this.mapTileUrl,
+    this.twoFactorRequired,
   });
 
   factory ServerSettings.fromJson(Map<String, Object?> json) => ServerSettings(
@@ -94,6 +107,7 @@ class ServerSettings {
     timeZone: json['timeZone'] as String?,
     maxUploadMb: json['maxUploadMb'] as int?,
     mapTileUrl: json['mapTileUrl'] as String?,
+    twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
   );
 
   /// Address under which the server is reachable from the internet.
@@ -107,14 +121,40 @@ class ServerSettings {
   /// null uses OpenStreetMap.
   final String? mapTileUrl;
 
-  static const keys = ['publicUrl', 'timeZone', 'maxUploadMb', 'mapTileUrl'];
+  /// Who must sign in with a second factor; null: nobody.
+  final TwoFactorPolicy? twoFactorRequired;
+
+  static const keys = [
+    'publicUrl',
+    'timeZone',
+    'maxUploadMb',
+    'mapTileUrl',
+    'twoFactorRequired',
+  ];
 
   Map<String, Object?> toJson() => {
     'publicUrl': publicUrl,
     'timeZone': timeZone,
     'maxUploadMb': maxUploadMb,
     'mapTileUrl': mapTileUrl,
+    'twoFactorRequired': twoFactorRequired?.name,
   };
+}
+
+/// Members who must use two-factor login (or single sign-on).
+enum TwoFactorPolicy {
+  admins('Administratoren'),
+  all('Alle Mitglieder');
+
+  const TwoFactorPolicy(this.label);
+
+  final String label;
+
+  static TwoFactorPolicy? parse(Object? value) =>
+      values.where((p) => p.name == value).firstOrNull;
+
+  bool appliesTo(FamilyMember member) =>
+      this == all || (this == admins && member.isAdmin);
 }
 
 /// Status and configuration of the server, for admins.

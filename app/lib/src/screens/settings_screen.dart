@@ -24,6 +24,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/trust_certificate.dart';
 import '../widgets/password_reveal.dart';
 import 'admin_screens.dart';
+import 'security_screens.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -113,6 +114,14 @@ class SettingsScreen extends StatelessWidget {
             leading: const Icon(AppIcons.password),
             title: const Text('Passwort ändern'),
             onTap: () => _changePassword(context),
+          ),
+          ListTile(
+            leading: const Icon(AppIcons.shieldCheck),
+            title: const Text('Anmeldung & Sicherheit'),
+            subtitle: const Text('Zwei-Faktor-Anmeldung, Single Sign-On'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const SecurityScreen()),
+            ),
           ),
           ListTile(
             leading: const Icon(AppIcons.devices),

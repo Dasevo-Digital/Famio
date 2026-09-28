@@ -30,6 +30,7 @@ class SettingsStore {
     timeZone: _location.name,
     maxUploadMb: _stored.maxUploadMb ?? defaults.maxUploadMb ?? 100,
     mapTileUrl: _stored.mapTileUrl ?? defaults.mapTileUrl,
+    twoFactorRequired: _stored.twoFactorRequired,
   );
 
   tz.Location get location => _location;
@@ -53,6 +54,7 @@ class SettingsStore {
         'timeZone' => _timeZone(value),
         'maxUploadMb' => _maxUpload(value),
         'mapTileUrl' => _mapTileUrl(value),
+        'twoFactorRequired' => _policy(value),
         _ => null,
       };
     }
@@ -143,6 +145,18 @@ class SettingsStore {
       );
     }
     return text;
+  }
+
+  static String? _policy(Object? value) {
+    if (value == null || value == '' || value == 'off') return null;
+    final policy = TwoFactorPolicy.parse(value);
+    if (policy == null) {
+      throw ApiException.badRequest(
+        'invalid_policy',
+        'Zwei-Faktor-Pflicht: off, admins oder all',
+      );
+    }
+    return policy.name;
   }
 
   static int? _maxUpload(Object? value) {

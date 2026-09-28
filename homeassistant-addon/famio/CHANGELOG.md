@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.15.0 – Zwei-Faktor & Single Sign-On
+
+- **Zwei-Faktor-Anmeldung:** Einstellungen → Anmeldung & Sicherheit:
+  Authenticator-App per QR-Code einrichten, 10 Wiederherstellungscodes. Beim
+  Anmelden fragt Famio dann nach dem Code.
+- **Pflicht per Server-Verwaltung** für Administratoren oder alle; Admins
+  können die Zwei-Faktor-Anmeldung eines Mitglieds zurücksetzen.
+- **Single Sign-On (OpenID Connect):** Anmelden mit Authentik, Keycloak,
+  Authelia, Google, Microsoft & Co. – „Mit … anmelden“ auf dem
+  Anmeldebildschirm, Konto einmal in den Einstellungen verknüpfen.
+- Home-Assistant-Integration: klare Meldung bei Konten mit Zwei-Faktor.
+
 ## 0.14.3
 
 - Startseite des Servers: zeigt hinter einem Reverse-Proxy (z. B. Nginx Proxy
