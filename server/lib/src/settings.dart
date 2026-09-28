@@ -77,6 +77,9 @@ class SettingsStore {
     _load();
   }
 
+  /// Removes every value set in the app, so the defaults apply again.
+  void reset() => update({for (final key in ServerSettings.keys) key: null});
+
   void _load() {
     final json = {
       for (final row in _db.select('SELECT key, value FROM settings'))

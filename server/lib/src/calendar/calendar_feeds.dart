@@ -63,6 +63,9 @@ class CalendarFeeds {
     ]);
   }
 
+  /// Removes every feed; their links stop working.
+  void deleteAll() => _db.execute('DELETE FROM calendar_feeds');
+
   /// The feed (and its owner) for a token from a feed URL.
   (CalendarFeed, String userId)? byToken(String token) {
     final rows = _db.select('SELECT * FROM calendar_feeds WHERE token = ?', [

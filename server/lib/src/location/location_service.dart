@@ -487,6 +487,12 @@ class LocationService {
     return changed;
   }
 
+  /// Deletes all positions and places reached (all data is deleted).
+  void deleteAll() {
+    db.execute('DELETE FROM location_points');
+    db.execute('DELETE FROM location_state');
+  }
+
   /// Removes everything about a deleted member.
   void memberDeleted(String memberId) {
     db.execute('DELETE FROM location_points WHERE member_id = ?', [memberId]);

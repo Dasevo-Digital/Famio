@@ -266,6 +266,18 @@ Administratoren verwalten den Server aus jeder angemeldeten App heraus
   gelten sofort und überschreiben die Umgebungsvariablen bzw. Add-on-Optionen;
   ein leeres Feld stellt den Standard wieder her. `FAMIO_TRUST_PROXY` und die
   Home-Assistant-Anmeldung bleiben bewusst nur auf dem Host änderbar.
+- **Zurücksetzen** (unten in den Einstellungen):
+  - *Einstellungen auf Standard* entfernt alle in der App gesetzten Werte;
+    Daten, Mitglieder und Eltern-Code bleiben.
+  - *Alle Daten löschen* entfernt Termine, Chats, Listen, Aufgaben, Ämter,
+    Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, verbundene
+    Kalender (die fremden Kalender bei iCloud & Co. bleiben unberührt) und
+    Kalender-Links – auf dem Server und beim nächsten Abgleich auf allen
+    Geräten, auch was dort offline geändert wurde. Konten, Einstellungen und
+    Zertifikat bleiben; auf Wunsch werden auch alle anderen Mitglieder
+    entfernt. Braucht das eigene Passwort und die Eingabe „LÖSCHEN“, steht im
+    Audit-Log und lässt sich nicht rückgängig machen – vorher den
+    Datenordner sichern.
 - **Status:** Version, Laufzeit, Datenbank- und Dateigröße, Einträge,
   angemeldete und gerade verbundene Geräte.
 

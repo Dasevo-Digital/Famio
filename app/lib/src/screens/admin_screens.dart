@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -113,6 +115,8 @@ class _AdminScreenState extends State<AdminScreen> {
                   snapshot: snapshot,
                   onRetry: _refresh,
                   builder: (o) => _SettingsForm(
+                    // Fresh fields after a reset.
+                    key: ObjectKey(o),
                     overview: o,
                     onSaved: (fresh) => setState(() {
                       _overview = Future.value(fresh);
@@ -697,7 +701,11 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
 // --- settings ---------------------------------------------------------------
 
 class _SettingsForm extends StatefulWidget {
-  const _SettingsForm({required this.overview, required this.onSaved});
+  const _SettingsForm({
+    super.key,
+    required this.overview,
+    required this.onSaved,
+  });
 
   final ServerOverview overview;
   final ValueChanged<ServerOverview> onSaved;
@@ -825,6 +833,141 @@ class _SettingsFormState extends State<_SettingsForm> {
     );
     if (!saved || !mounted) return;
     widget.onSaved(await api.adminOverview());
+  }
+
+  Future<void> _resetSettings() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Einstellungen zurücksetzen?'),
+        content: const Text(
+          'Öffentliche Adresse, Zeitzone, maximale Dateigröße und '
+          'Kartenserver gelten wieder so, wie sie in der Server-Konfiguration '
+          '(Umgebungsvariablen bzw. Add-on-Optionen) stehen. Daten, '
+          'Mitglieder und der Eltern-Code bleiben unverändert.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Zurücksetzen'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final fresh = await AppScope.read(
+        context,
+      ).engine!.api.resetServerSettings();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Einstellungen auf Standard gesetzt')),
+      );
+      widget.onSaved(fresh);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _wipe() async {
+    final engine = AppScope.read(context).engine!;
+    final messenger = ScaffoldMessenger.of(context);
+    final password = TextEditingController();
+    final confirm = TextEditingController();
+    var removeMembers = false;
+    ({int records, int files, int members})? result;
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        final c = FamioColors.of(context);
+        return FormDialog(
+          title: 'Alle Daten löschen?',
+          submitLabel: 'Endgültig löschen',
+          controllers: [password, confirm],
+          fields: [
+            Text(
+              'Gelöscht werden alle Termine, Chats, Listen, Aufgaben, Ämter, '
+              'Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, '
+              'verbundene Kalender und Kalender-Links – auf dem Server und '
+              'beim nächsten Abgleich auf allen Geräten. Das lässt sich nicht '
+              'rückgängig machen; vorher eine Sicherung des Datenordners '
+              'anlegen.\n\nErhalten bleiben die Konten, Server-Einstellungen '
+              'und das HTTPS-Zertifikat.',
+              style: TextStyle(color: c.inkSoft),
+            ),
+            StatefulBuilder(
+              builder: (context, setState) => CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Auch alle anderen Mitglieder entfernen'),
+                subtitle: const Text('Nur dein Konto bleibt bestehen'),
+                value: removeMembers,
+                onChanged: (v) => setState(() => removeMembers = v ?? false),
+              ),
+            ),
+            PasswordReveal(
+              builder: (_, obscure, toggle) => TextField(
+                controller: password,
+                obscureText: obscure,
+                decoration: InputDecoration(
+                  suffixIcon: toggle,
+                  labelText: 'Dein Passwort',
+                  helperText:
+                      'Leer lassen, wenn du dich nur über Home Assistant '
+                      'anmeldest.',
+                  helperMaxLines: 2,
+                ),
+              ),
+            ),
+            TextField(
+              controller: confirm,
+              autocorrect: false,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(
+                labelText: 'Zur Bestätigung LÖSCHEN eingeben',
+              ),
+            ),
+          ],
+          onSubmit: () async {
+            if (confirm.text.trim().toUpperCase() != 'LÖSCHEN') {
+              throw const ApiError(
+                0,
+                'confirmation_required',
+                'Bitte zur Bestätigung LÖSCHEN eingeben',
+              );
+            }
+            result = await engine.api.wipeServerData(
+              password: password.text,
+              confirm: 'LÖSCHEN',
+              removeMembers: removeMembers,
+            );
+          },
+        );
+      },
+    );
+    final done = result;
+    if (done == null) return;
+    // Pull the deletions right away; other devices follow on their next sync.
+    unawaited(engine.sync());
+    if (done.members > 0) unawaited(engine.refreshMembers());
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Gelöscht: ${done.records} Einträge, ${done.files} Dateien'
+          '${done.members > 0 ? ', ${done.members} Mitglieder' : ''}',
+        ),
+      ),
+    );
+    if (mounted) widget.onSaved(await engine.api.adminOverview());
   }
 
   @override
@@ -957,6 +1100,37 @@ class _SettingsFormState extends State<_SettingsForm> {
               label: 'Home-Assistant-Anmeldung',
               value: o.ingressAuth ? 'an' : 'aus',
               note: 'Add-on-Option ingress_auth',
+            ),
+            ListHeading('Zurücksetzen', color: c.danger),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.arrowsClockwise),
+              title: const Text('Einstellungen auf Standard'),
+              subtitle: const Text(
+                'Adresse, Zeitzone, Dateigröße und Kartenserver wieder aus der '
+                'Server-Konfiguration nehmen. Daten und Eltern-Code bleiben.',
+              ),
+              trailing: TextButton(
+                onPressed: _busy ? null : _resetSettings,
+                child: const Text('Zurücksetzen'),
+              ),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(AppIcons.trash, color: c.danger),
+              title: Text(
+                'Alle Daten löschen',
+                style: TextStyle(color: c.danger),
+              ),
+              subtitle: const Text(
+                'Termine, Chat, Listen, Dokumente, Fotos und alles Weitere '
+                'endgültig löschen – auf dem Server und allen Geräten.',
+              ),
+              trailing: TextButton(
+                style: TextButton.styleFrom(foregroundColor: c.danger),
+                onPressed: _busy ? null : _wipe,
+                child: const Text('Löschen …'),
+              ),
             ),
           ],
         ),

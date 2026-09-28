@@ -53,6 +53,9 @@ class CalendarAccess {
     }
   }
 
+  /// Forgets all calendar profiles (their calendars are gone).
+  void clearHidden() => db.execute('DELETE FROM calendar_hidden');
+
   /// Owner and sharing of [source], or null if it no longer exists.
   (String? owner, CalendarSharing sharing)? _sourceInfo(String source) {
     if (source.startsWith('caldav:')) {

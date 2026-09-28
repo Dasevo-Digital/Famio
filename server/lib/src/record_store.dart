@@ -91,6 +91,63 @@ class RecordStore {
       _db.select('SELECT COALESCE(MAX(rev), 0) FROM records').first.columnAt(0)
           as int;
 
+  static const _resetKey = 'dataResetAt';
+
+  /// When an admin last deleted all data (ms since epoch, 0: never).
+  late int resetAt =
+      int.tryParse(
+        _db
+                    .select('SELECT value FROM settings WHERE key = ?', [
+                      _resetKey,
+                    ])
+                    .firstOrNull
+                    ?.columnAt(0)
+                as String? ??
+            '',
+      ) ??
+      0;
+
+  /// Deletes every record, e.g. before a family starts over. Each one
+  /// becomes an empty tombstone, so the apps delete their copies as well;
+  /// changes made offline before now lose against it (see [resetAt]).
+  /// Returns the number of records deleted.
+  int wipe() {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    var count = 0;
+    _transaction(() {
+      final rows = _db.select(
+        'SELECT collection, id, visible_to FROM records WHERE deleted = 0'
+        ' ORDER BY rev',
+      );
+      var rev = currentRev;
+      final update = _db.prepare(
+        'UPDATE records SET data = ?, deleted = 1, updated_at = ?,'
+        ' updated_by = ?, rev = ? WHERE collection = ? AND id = ?',
+      );
+      for (final row in rows) {
+        final audience = row['visible_to'] as String?;
+        update.execute([
+          // Tombstones keep their audience (see [sync]).
+          audience == null ? '{}' : '{"${SyncRecord.visibilityKey}":$audience}',
+          now + _maxClockSkew.inMilliseconds,
+          serverMemberId,
+          ++rev,
+          row['collection'],
+          row['id'],
+        ]);
+      }
+      update.close();
+      _db.execute(
+        'INSERT INTO settings (key, value) VALUES (?, ?)'
+        ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        [_resetKey, '$now'],
+      );
+      count = rows.length;
+    });
+    resetAt = now;
+    return count;
+  }
+
   /// Applies [request] for [userId] and returns the pull part of the answer.
   /// Runs synchronously, so concurrent requests cannot interleave.
   SyncResponse sync(SyncRequest request, String userId) {
@@ -145,6 +202,21 @@ class RecordStore {
                   updatedAt: revokedAt,
                   updatedBy: serverMemberId,
                 ),
+          );
+          continue;
+        }
+        if ((existing == null || existing.deleted) &&
+            incoming.updatedAt < resetAt) {
+          // Written offline before an admin deleted all data: gone too.
+          rejected.add(
+            SyncRecord(
+              collection: change.collection,
+              id: change.id,
+              data: const {},
+              deleted: true,
+              updatedAt: revokedAt,
+              updatedBy: serverMemberId,
+            ),
           );
           continue;
         }
