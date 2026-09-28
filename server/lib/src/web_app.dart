@@ -57,30 +57,47 @@ class WebApp {
   };
 
   /// [path] below `app/` ('' for the start page).
-  Future<Response> serve(String path) async {
+  ///
+  /// Nothing is cached blindly: an add-on or server update replaces the
+  /// files under the same names. The browser asks again each time and gets
+  /// "304 unchanged" for files it has, compressed files where it can.
+  Future<Response> serve(Request request, String path) async {
     final relative = path.isEmpty ? 'index.html' : path;
     final file = p.normalize(p.join(dir, relative));
     // Nothing outside the web app's folder.
     if (!p.isWithin(dir, file)) return Response.notFound('Not found');
     final type = _types[p.extension(file).toLowerCase()];
-    final handle = File(file);
-    if (type == null || !await handle.exists()) {
+    final plain = File(file);
+    if (type == null || !await plain.exists()) {
       return Response.notFound('Not found');
     }
-    // The start files change with every version; the rest is loaded by
-    // them and can stay in the cache for a while.
-    final fresh =
-        relative == 'index.html' ||
-        relative.startsWith('flutter') ||
-        relative == 'main.dart.js' ||
-        relative == 'version.json' ||
-        relative == 'manifest.json';
+    final stat = await plain.stat();
+    final etag =
+        '"${stat.size.toRadixString(36)}-'
+        '${stat.modified.millisecondsSinceEpoch.toRadixString(36)}"';
+    final headers = {
+      'content-type': type,
+      'cache-control': 'no-cache',
+      'etag': etag,
+      'vary': 'accept-encoding',
+    };
+    final match = request.headers['if-none-match'];
+    if (match != null && match.split(',').any((t) => t.trim() == etag)) {
+      return Response.notModified(headers: headers);
+    }
+    final packed = File('$file.gz');
+    // Home Assistant's ingress compresses for the browser itself (and would
+    // have to unpack ours first).
+    final gzip =
+        (request.headers['accept-encoding'] ?? '').contains('gzip') &&
+        !request.headers.containsKey('x-ingress-path');
+    final send = gzip && await packed.exists() ? packed : plain;
     return Response.ok(
-      handle.openRead(),
+      send.openRead(),
       headers: {
-        'content-type': type,
-        'content-length': '${await handle.length()}',
-        'cache-control': fresh ? 'no-cache' : 'public, max-age=86400',
+        ...headers,
+        if (send == packed) 'content-encoding': 'gzip',
+        'content-length': '${await send.length()}',
       },
     );
   }

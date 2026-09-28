@@ -25,3 +25,22 @@ void downloadBytes(List<int> bytes, String name, String mime) {
 
 /// The address the web app was loaded from.
 Uri? get pageUrl => Uri.parse(web.window.location.href);
+
+/// Per-tab storage (survives a reload, gone when the tab closes).
+String? tabValue(String key) {
+  try {
+    return web.window.sessionStorage.getItem(key);
+  } catch (_) {
+    return null;
+  }
+}
+
+void setTabValue(String key, String? value) {
+  try {
+    value == null
+        ? web.window.sessionStorage.removeItem(key)
+        : web.window.sessionStorage.setItem(key, value);
+  } catch (_) {
+    // Storage blocked: sign in again after a reload.
+  }
+}

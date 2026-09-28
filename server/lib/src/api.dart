@@ -37,7 +37,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.18.0';
+const serverVersion = '0.18.1';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -251,6 +251,7 @@ class FamioApi {
       onChanged: _eventsChanged,
     );
     return const Pipeline()
+        .addMiddleware(_compressJson)
         .addMiddleware(_securityHeaders)
         .addMiddleware(_errors)
         .addMiddleware(_tlsGuard)
@@ -1720,7 +1721,11 @@ class FamioApi {
 
   Response _wsTicket(Request request) {
     _auth(request);
-    final token = _bearer(request)!;
+    // Home Assistant's sidebar signs the WebSocket in itself.
+    final token = _bearer(request);
+    if (token == null) {
+      throw ApiException.badRequest('no_token', 'Keine Sitzung zum Anmelden');
+    }
     final now = DateTime.now();
     _wsTickets.removeWhere((_, t) => t.expires.isBefore(now));
     final ticket = _randomToken();
@@ -1758,7 +1763,7 @@ class FamioApi {
   Future<Response> _webApp(Request request, String path) async {
     final app = webApp;
     if (app == null) return Response.notFound('Not found');
-    return app.serve(path);
+    return app.serve(request, path);
   }
 
   /// How the web app runs here: in Home Assistant's sidebar the Home
@@ -2061,6 +2066,32 @@ class FamioApi {
               : landingPagePolicy,
         'permissions-policy': 'camera=(), microphone=(), geolocation=()',
         if (https) 'strict-transport-security': 'max-age=31536000',
+      },
+    );
+  };
+
+  /// Sync answers of a real family are hundreds of KB of JSON; gzip makes
+  /// them about five times smaller for apps and browsers on the go. Home
+  /// Assistant's ingress compresses for the browser itself.
+  static Handler _compressJson(Handler inner) => (request) async {
+    final response = await inner(request);
+    if (response.mimeType != 'application/json' ||
+        response.headers.containsKey('content-encoding') ||
+        request.headers.containsKey('x-ingress-path') ||
+        !(request.headers['accept-encoding'] ?? '').contains('gzip')) {
+      return response;
+    }
+    final body = BytesBuilder(copy: false);
+    await response.read().forEach(body.add);
+    final bytes = body.takeBytes();
+    if (bytes.length < 1024) return response.change(body: bytes);
+    final packed = gzip.encode(bytes);
+    return response.change(
+      body: packed,
+      headers: {
+        'content-encoding': 'gzip',
+        'content-length': '${packed.length}',
+        'vary': 'accept-encoding',
       },
     );
   };

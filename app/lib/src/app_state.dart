@@ -139,11 +139,18 @@ class AppState extends ChangeNotifier {
       webServer = ResolvedServer(url, await api.health());
       panelMode = await api.panelMode();
       // Home Assistant signs in (ingress) or keeps the session (client
-      // mode): no token in the browser.
+      // mode): no token in the browser. In a plain browser the session of
+      // this tab survives a reload.
+      final token = panelMode == 'browser' ? tabValue('famio.token') : null;
+      api.token = token;
       final member = await api.me();
-      await _startSession(url, null, member);
+      await _startSession(url, token, member);
     } on ApiError catch (e) {
-      if (e.status != 401) notice = e.message;
+      if (e.status == 401) {
+        setTabValue('famio.token', null);
+      } else {
+        notice = e.message;
+      }
     } finally {
       api.close();
     }
@@ -456,6 +463,7 @@ class AppState extends ChangeNotifier {
     }
     await vault.write('token', null);
     await vault.write('certPin', null);
+    if (kIsWeb) setTabValue('famio.token', null);
     await _prefs.remove('me');
     me = null;
     certificatePin = null;
@@ -492,6 +500,7 @@ class AppState extends ChangeNotifier {
     }
     await vault.write('token', token);
     await vault.write('certPin', pin);
+    if (kIsWeb && panelMode == 'browser') setTabValue('famio.token', token);
 
     // Local copy and file cache are encrypted with a key from the keystore
     // (the web app keeps them in memory).
