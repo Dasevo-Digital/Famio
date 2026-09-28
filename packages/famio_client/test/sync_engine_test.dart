@@ -125,6 +125,37 @@ void main() {
     },
   );
 
+  test('own push: a waiting fetch gets the next message', () async {
+    // A second member, who is notified about the first one's message.
+    final admin = FamioApiClient(url, token: token);
+    await admin.createMember(
+      username: 'oma',
+      displayName: 'Oma',
+      password: 'geheim123',
+    );
+    final oma = FamioApiClient(url);
+    await oma.login(username: 'oma', password: 'geheim123');
+    final start = await oma.notices();
+    expect(start.notices, isEmpty);
+
+    final waiting = oma.notices(
+      after: start.last,
+      wait: const Duration(seconds: 20),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    final a = device();
+    a.put(Collections.chatMessages, 'hi', {
+      'chatId': ChatIds.family,
+      'authorId': memberId,
+      'text': 'Hallo Oma',
+    });
+    await a.sync();
+    final batch = await waiting.timeout(const Duration(seconds: 10));
+    expect(batch.notices.single.body, 'Hallo Oma');
+    expect(batch.notices.single.title, 'Papa · Familie');
+    expect(batch.last, batch.notices.single.id);
+  });
+
   test('invalid token reports unauthorized', () async {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),

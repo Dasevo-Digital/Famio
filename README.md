@@ -26,7 +26,7 @@ eigenständig per Docker.
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
-| Push-Benachrichtigungen über ntfy (auch bei geschlossener App) | ✅ |
+| Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), alternativ über ntfy | ✅ |
 | Wandanzeige fürs Küchen-Tablet | ✅ |
 | Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
 | Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
@@ -187,7 +187,24 @@ jedem Sync durchsetzt:
 
 ### Push-Benachrichtigungen
 
-Jedes Mitglied kann in den Einstellungen Geräte mit einem ntfy-Thema
+**Direkt über Famio (ohne ntfy, ohne Google):** Der Server legt jede
+Benachrichtigung drei Tage lang für die betroffenen Mitglieder ab
+(`notices`-Tabelle in der verschlüsselten Datenbank). Geräte holen sie mit
+`GET /api/notifications?after=<id>&wait=<s>`; der Server hält die Anfrage
+offen (höchstens 300 s), bis etwas Neues kommt (Long-Polling).
+
+- Android: Ein Vordergrund-Dienst (`NotifyService`, Typ `remoteMessaging`)
+  holt sie mit einem eigenen Token, das nur Benachrichtigungen lesen kann
+  (`POST /api/notifications/device-token`) – auch bei geschlossener App und
+  nach einem Neustart. Der Sperrbildschirm zeigt nur den kurzen Hinweis.
+- macOS, Windows, Linux: Die laufende App fragt ebenso ab und zeigt Neues,
+  wenn sie nicht im Vordergrund ist (standardmäßig an).
+- iPhone: Ohne Apples Push-Dienst (kostenpflichtiges Entwicklerkonto) nur bei
+  offener App – dort bleibt ntfy der Weg.
+
+Pro Gerät lässt sich einstellen, ob Namen und Texte angezeigt werden.
+
+**Alternativ über ntfy:** Jedes Mitglied kann in den Einstellungen Geräte mit einem ntfy-Thema
 eintragen (`https://ntfy.sh/<geheimer-name>` oder ein eigener ntfy-Server,
 optional mit Token). Der Server meldet dort neue Nachrichten, zugewiesene
 Aufgaben, Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen. Ohne

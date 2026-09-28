@@ -22,6 +22,7 @@ import 'dav/caldav_sync.dart';
 import 'dav/google_oauth.dart';
 import 'family/allowance_job.dart';
 import 'hub.dart';
+import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'location/location_service.dart';
 import 'files/file_store.dart';
@@ -116,6 +117,8 @@ class FamioServerApp {
       location: () => settings.location,
       client: httpClient,
     );
+    notices = NoticeBox(db);
+    push.onNotice = notices.add;
     records
       ..onStored = push.stored
       ..onServerStored = push.serverStored;
@@ -157,6 +160,7 @@ class FamioServerApp {
       calendarAccess: calendarAccess,
       locations: locations,
       push: push,
+      notices: notices,
       mfa: mfa,
       sso: sso,
       onEventsChanged: caldav.eventsChanged,
@@ -197,6 +201,7 @@ class FamioServerApp {
   late final LocationService locations;
   late final FileStore files;
   late final PushService push;
+  late final NoticeBox notices;
   late final AllowanceJob allowances;
   late final Mfa mfa;
   late final SsoService sso;
@@ -228,7 +233,9 @@ class FamioServerApp {
     allowances.start();
     accounts.deleteExpiredSessions();
     locations.collectGarbage();
+    notices.collectGarbage();
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
+      notices.collectGarbage();
       files.collectGarbage();
       accounts.deleteExpiredSessions();
       locations.collectGarbage();
@@ -240,6 +247,7 @@ class FamioServerApp {
     importer.stop();
     caldav.stop();
     allowances.stop();
+    notices.close();
     await hub.close();
     files.blobs.close();
     db.close();

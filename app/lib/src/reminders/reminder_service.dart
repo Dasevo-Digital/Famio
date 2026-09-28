@@ -84,6 +84,18 @@ class ReminderService {
     windows: WindowsNotificationDetails(),
   );
 
+  /// True while this device gets Famio's own push notifications.
+  bool Function()? ownPushActive;
+
+  /// A notification of Famio's own push (see OwnPush).
+  Future<void> showNotice(Notice notice, {required bool details}) =>
+      _plugin.show(
+        id: 800000 + notice.id % 100000,
+        title: details ? notice.title : AppEnv.appName,
+        body: details ? notice.body : notice.brief,
+        notificationDetails: _chatDetails,
+      );
+
   SyncEngine? _engine;
   StreamSubscription<Set<String>>? _sub;
   Timer? _debounce;
@@ -100,8 +112,14 @@ class ReminderService {
     _chatSeen = DateTime.now();
     _placesSeen = DateTime.now();
     _sub = engine.changes.listen((changed) {
-      if (changed.contains(Collections.chatMessages)) _notifyChat(engine);
-      if (changed.contains(Collections.locationAlerts)) _notifyPlaces(engine);
+      // With Famio's own push the server tells about these (see OwnPush).
+      final ownPush = ownPushActive?.call() ?? false;
+      if (changed.contains(Collections.chatMessages) && !ownPush) {
+        _notifyChat(engine);
+      }
+      if (changed.contains(Collections.locationAlerts) && !ownPush) {
+        _notifyPlaces(engine);
+      }
       if (changed.any(_scheduledCollections.contains)) {
         _debounce?.cancel();
         _debounce = Timer(const Duration(seconds: 2), _reschedule);

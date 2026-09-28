@@ -32,10 +32,11 @@ import 'settings.dart';
 import 'hub.dart';
 import 'landing_page.dart';
 import 'location/location_service.dart';
+import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.15.2';
+const serverVersion = '0.16.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -71,6 +72,7 @@ class FamioApi {
     this.calendarAccess,
     this.locations,
     this.push,
+    this.notices,
     required this.mfa,
     this.sso,
   }) : throttle = throttle ?? LoginThrottle();
@@ -119,6 +121,9 @@ class FamioApi {
 
   /// Push notifications through ntfy; null in some tests.
   final PushService? push;
+
+  /// Famio's own push notifications; null in some tests.
+  final NoticeBox? notices;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -178,6 +183,9 @@ class FamioApi {
       ..post('/api/me/push', _addPushTarget)
       ..delete('/api/me/push/<id>', _deletePushTarget)
       ..post('/api/me/push/<id>/test', _testPushTarget)
+      ..get('/api/notifications', _notices)
+      ..post('/api/notifications/device-token', _noticeDeviceToken)
+      ..post('/api/notifications/test', _testNotice)
       ..get('/api/config', _config)
       ..get('/api/members', _members)
       ..post('/api/members', _createMember)
@@ -368,6 +376,78 @@ class FamioApi {
     final member = _auth(request);
     final error = await _push.test(member.id, id);
     return _json({'ok': error == null, 'error': error});
+  }
+
+  // --- Famio's own push -------------------------------------------------------
+
+  NoticeBox get _box =>
+      notices ??
+      (throw ApiException(404, 'not_found', 'Benachrichtigungen fehlen'));
+
+  static const _noticeScope = 'notify';
+
+  /// Signed in normally or with a phone's notification-only token.
+  FamilyMember _noticeMember(Request request) {
+    final token = _bearer(request);
+    if (token != null) {
+      if (accounts.userForToken(token, scope: _noticeScope) case final m?) {
+        return m;
+      }
+    }
+    return _auth(request);
+  }
+
+  /// New notifications after `after`; with `wait` (seconds, at most 300)
+  /// the request stays open until one arrives. Without `after` only the
+  /// current position is returned, so a new device starts fresh.
+  Future<Response> _notices(Request request) async {
+    final member = _noticeMember(request);
+    final query = request.url.queryParameters;
+    final latest = _box.latest(member.id);
+    final after = int.tryParse(query['after'] ?? '');
+    // Unknown position (new device, data wiped): start at the newest.
+    if (after == null || after > latest) {
+      return _json({'notices': const [], 'last': latest});
+    }
+    final wait = (int.tryParse(query['wait'] ?? '') ?? 0).clamp(0, 300);
+    final found = await _box.wait(
+      member.id,
+      after,
+      timeout: Duration(seconds: wait),
+    );
+    return _json({
+      'notices': found,
+      'last': found.isEmpty ? after : found.last['id'],
+    });
+  }
+
+  /// A token that can only fetch notifications, for the phone's
+  /// background service (it never sees the app's login).
+  Future<Response> _noticeDeviceToken(Request request) async {
+    final member = _auth(request);
+    final body = await _body(request);
+    final device = (body['device'] as String? ?? 'Telefon').trim();
+    final token = accounts.createSession(
+      member.id,
+      device: '${device.isEmpty ? 'Telefon' : device} · Benachrichtigungen',
+      scope: _noticeScope,
+    );
+    return _json({'token': token}, status: 201);
+  }
+
+  Response _testNotice(Request request) {
+    final member = _noticeMember(request);
+    _box.add(
+      [member.id],
+      const PushNotice(
+        to: {},
+        title: 'Famio',
+        body: 'Benachrichtigungen funktionieren 🎉',
+        brief: 'Benachrichtigungen funktionieren 🎉',
+        tag: 'tada',
+      ),
+    );
+    return _json({'ok': true});
   }
 
   Response _health(Request request) => _json({
@@ -902,6 +982,7 @@ class FamioApi {
     final fileCount = files.deleteAll();
     locations?.deleteAll();
     feeds.deleteAll();
+    notices?.deleteAll();
     calendarAccess?.clearHidden();
     var memberCount = 0;
     if (removeMembers) {

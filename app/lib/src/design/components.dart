@@ -157,7 +157,11 @@ class BubbleButton extends StatelessWidget {
     final c = FamioColors.of(context);
     final button = Material(
       color: background ?? c.surface,
-      shape: const CircleBorder(),
+      shape: CircleBorder(
+        side: background == null
+            ? c.outline ?? BorderSide.none
+            : BorderSide.none,
+      ),
       shadowColor: c.shadow,
       elevation: background == null ? 2 : 0,
       child: InkWell(
@@ -207,7 +211,10 @@ class SoftCard extends StatelessWidget {
       ),
       child: Material(
         color: color ?? c.surface,
-        borderRadius: BorderRadius.circular(radius),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radius),
+          side: c.outline ?? BorderSide.none,
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
@@ -289,7 +296,9 @@ class RoundCheck extends StatelessWidget {
               color: value ? color : Colors.transparent,
               shape: BoxShape.circle,
               border: Border.all(
-                color: value ? color : c.inkSoft.withValues(alpha: 0.45),
+                color: value
+                    ? color
+                    : c.inkSoft.withValues(alpha: c.highContrast ? 1 : 0.45),
                 width: 2.5,
               ),
             ),
@@ -297,11 +306,7 @@ class RoundCheck extends StatelessWidget {
               scale: value ? 1 : 0,
               duration: const Duration(milliseconds: 220),
               curve: Curves.easeOutBack,
-              child: Icon(
-                AppIcons.check,
-                size: size * 0.55,
-                color: c.onStrong,
-              ),
+              child: Icon(AppIcons.check, size: size * 0.55, color: c.onStrong),
             ),
           ),
         ),
@@ -389,6 +394,9 @@ class PillTabs<T> extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: v == selected ? c.readable(color) : c.surface,
                       borderRadius: BorderRadius.circular(40),
+                      border: v == selected || c.outline == null
+                          ? null
+                          : Border.fromBorderSide(c.outline!),
                       boxShadow: v == selected ? null : c.softShadow,
                     ),
                     child: Text(

@@ -106,7 +106,8 @@ class FamioColors extends ThemeExtension<FamioColors> {
   final bool dark;
 
   /// "Hoher Kontrast" (setting or system): accents and grey text are
-  /// darkened (light) or brightened (dark) until text reaches 4.5:1.
+  /// darkened (light) or brightened (dark) until text reaches
+  /// [contrastTarget] (WCAG AAA), and cards get visible outlines.
   final bool highContrast;
 
   /// These colors with [highContrast] switched on.
@@ -115,8 +116,9 @@ class FamioColors extends ThemeExtension<FamioColors> {
     surface: surface,
     surfaceSoft: surfaceSoft,
     ink: ink,
-    inkSoft: dark ? const Color(0xFFD0D3E4) : const Color(0xFF4A4E68),
-    line: dark ? const Color(0xFF5A6184) : const Color(0xFFD9C9B8),
+    inkSoft: dark ? const Color(0xFFD0D3E4) : const Color(0xFF3E4259),
+    // Outlines instead of soft shadows: at least 3:1 to the page.
+    line: dark ? const Color(0xFF8E94B8) : const Color(0xFF7D8199),
     shadow: shadow,
     dark: dark,
     highContrast: true,
@@ -140,9 +142,17 @@ class FamioColors extends ThemeExtension<FamioColors> {
   Color get danger =>
       readable(dark ? const Color(0xFFFF8F8F) : const Color(0xFFD64545));
 
+  /// Contrast of text in [highContrast] mode (WCAG AAA; AA would be 4.5).
+  static const contrastTarget = 7.0;
+
+  /// Outline for cards, chips and round buttons in [highContrast] mode.
+  BorderSide? get outline =>
+      highContrast ? BorderSide(color: line, width: 1.5) : null;
+
   /// [color] as text or icon: unchanged normally; with [highContrast]
-  /// darkened (or brightened in dark mode) until it reaches 4.5:1 on the
-  /// page, on cards and on [on] – and white text on it does too.
+  /// darkened (or brightened in dark mode) until it reaches
+  /// [contrastTarget] on the page, on cards and on [on] – and white text
+  /// on it does too.
   Color readable(Color color, {Color? on}) {
     if (!highContrast) return color;
     final grounds = [background, surface, surfaceSoft, ?on];
@@ -150,8 +160,8 @@ class FamioColors extends ThemeExtension<FamioColors> {
     var result = color;
     for (var t = 0.0; t <= 1; t += 0.04) {
       result = Color.lerp(color, target, t)!;
-      if (grounds.every((g) => contrast(result, g) >= 4.5) &&
-          (dark || contrast(result, Colors.white) >= 4.5)) {
+      if (grounds.every((g) => contrast(result, g) >= contrastTarget) &&
+          (dark || contrast(result, Colors.white) >= contrastTarget)) {
         break;
       }
     }

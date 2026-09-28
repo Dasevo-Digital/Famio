@@ -51,6 +51,10 @@ class PushService {
   final tz.Location Function() location;
   final http.Client _client;
 
+  /// Famio's own push (see NoticeBox): gets every notice for the members
+  /// allowed to see it, whether or not they use ntfy.
+  void Function(List<String> memberIds, PushNotice notice)? onNotice;
+
   /// Sends still running (tests wait for them).
   final _pending = <Future<void>>{};
 
@@ -325,6 +329,12 @@ class PushService {
         if (records.canAccess(about, id)) id,
     ];
     if (allowed.isEmpty) return;
+    try {
+      onNotice?.call(allowed, notice);
+    } catch (e) {
+      // A notification must never make the sync that caused it fail.
+      print('Benachrichtigung nicht gespeichert: $e');
+    }
     final rows = _db.select(
       'SELECT * FROM push_targets WHERE member_id IN '
       '(${List.filled(allowed.length, '?').join(', ')})',

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.16.0 – Eigene Benachrichtigungen, stärkerer Kontrast
+
+- **Benachrichtigungen direkt über Famio**, ohne ntfy und ohne Google:
+  - Einstellungen → Benachrichtigungen → „Direkt über Famio“.
+  - Android: Auch bei geschlossener App und nach einem Neustart. Die App
+    hält dafür eine Verbindung zu deinem Server; Android zeigt dazu dezent
+    „Famio ist bereit“ an.
+  - Mac, Windows, Linux: Solange Famio läuft.
+  - Pro Gerät „Inhalte anzeigen“ an oder aus; der Android-Sperrbildschirm
+    zeigt nie Inhalte.
+  - ntfy bleibt als Alternative, etwa fürs iPhone.
+- **Hoher Kontrast verstärkt:** Text jetzt mindestens 7:1 (WCAG AAA), dazu
+  sichtbare Ränder um Karten, Reiter und Knöpfe.
+- Server: Ein Termin für ein nicht mehr vorhandenes Mitglied kann den Sync
+  nicht mehr stören.
+
 ## 0.15.2 – Hoher Kontrast
 
 - **Neuer Schalter „Hoher Kontrast“** unter Einstellungen → Dieses Gerät:

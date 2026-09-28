@@ -761,6 +761,34 @@ class FamioApiClient {
 
   /// A token that can only report positions, for a phone's background
   /// service.
+  // --- Famio's own push ------------------------------------------------------
+
+  /// Notifications after [after] (null: only the current position). With
+  /// [wait] the server holds the request until one arrives.
+  Future<NoticeBatch> notices({
+    int? after,
+    Duration wait = Duration.zero,
+  }) async => NoticeBatch.fromJson(
+    await _send(
+      'GET',
+      after == null
+          ? 'api/notifications'
+          : 'api/notifications?after=$after&wait=${wait.inSeconds}',
+      null,
+      wait + _timeout,
+    ),
+  );
+
+  /// A token for a phone's background service that can only fetch
+  /// notifications.
+  Future<String> noticeDeviceToken(String device) async =>
+      (await _send('POST', 'api/notifications/device-token', {
+            'device': device,
+          }))['token']
+          as String;
+
+  Future<void> testNotice() => _send('POST', 'api/notifications/test');
+
   Future<String> locationDeviceToken(String device) async =>
       (await _send('POST', 'api/location/device-token', {
             'device': device,
@@ -974,4 +1002,48 @@ class FamioApiClient {
     }
     return json;
   }
+}
+
+/// One notification of Famio's own push.
+class Notice {
+  const Notice({
+    required this.id,
+    required this.at,
+    required this.title,
+    required this.body,
+    required this.brief,
+    required this.tag,
+  });
+
+  factory Notice.fromJson(Map<String, Object?> json) => Notice(
+    id: json['id'] as int,
+    at: DateTime.parse(json['at'] as String),
+    title: json['title'] as String? ?? 'Famio',
+    body: json['body'] as String? ?? '',
+    brief: json['brief'] as String? ?? '',
+    tag: json['tag'] as String? ?? '',
+  );
+
+  final int id;
+  final DateTime at;
+  final String title;
+  final String body;
+
+  /// Instead of title and body when the device shows no details.
+  final String brief;
+  final String tag;
+}
+
+class NoticeBatch {
+  const NoticeBatch(this.notices, this.last);
+
+  factory NoticeBatch.fromJson(Map<String, Object?> json) => NoticeBatch([
+    for (final n in json['notices'] as List? ?? const [])
+      Notice.fromJson((n as Map).cast()),
+  ], json['last'] as int? ?? 0);
+
+  final List<Notice> notices;
+
+  /// Where to continue next time.
+  final int last;
 }
