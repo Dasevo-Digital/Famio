@@ -936,6 +936,8 @@ http.Client _adminApi() {
         member: m,
         createdAt: now.subtract(const Duration(days: 60)),
         homeAssistant: m.id == 'papa',
+        twoFactor: m.id == 'mama',
+        singleSignOn: m.id == 'tom',
         sessions: switch (m.id) {
           'mama' => [
             session('macos (Mamas-MacBook)', Duration.zero, current: true),
@@ -981,6 +983,30 @@ http.Client _adminApi() {
         'users': [for (final u in users) u.toJson()],
       },
       '/api/admin/overview' => overview.toJson(),
+      '/api/me/two-factor' => {
+        'twoFactor': false,
+        'recoveryCodesLeft': 0,
+        'required': false,
+        'sessionVerified': false,
+        'singleSignOn': true,
+        'singleSignOnName': 'mama@example.org',
+        'singleSignOnLabel': 'Authentik',
+      },
+      '/api/me/two-factor/totp' => {
+        'secret': 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',
+        'uri':
+            'otpauth://totp/Famio:mama?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
+            '&issuer=Famio',
+      },
+      '/api/admin/sso' => {
+        'configured': true,
+        'issuer': 'https://auth.example.org/application/o/famio/',
+        'clientId': 'famio',
+        'secretSet': true,
+        'label': 'Authentik',
+        'matchUsername': false,
+        'redirectUri': 'https://famio.example.org/api/auth/sso/callback',
+      },
       _ => null,
     };
     return body == null
@@ -1222,6 +1248,34 @@ void main() {
   testWidgets('phone dark', (tester) async {
     final key = await start(tester, phone, brightness: Brightness.dark);
     await _shot(tester, key, 'phone_4_start_dunkel');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('security phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Einstellungen').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Anmeldung & Sicherheit');
+    await _shot(tester, key, 'phone_13_sicherheit');
+    await go(tester, 'Einrichten');
+    await _shot(tester, key, 'phone_14_zwei_faktor_einrichten');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('sso admin', (tester) async {
+    final key = await start(tester, desktop);
+    await go(tester, 'Einstellungen');
+    await go(tester, 'Server-Verwaltung');
+    await tester.tap(find.text('Einstellungen').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_32_anmeldung');
+    await tester.tap(find.widgetWithText(TextButton, 'Einrichten'));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_33_sso');
     await tester.pump(const Duration(seconds: 1));
   });
 

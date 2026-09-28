@@ -12,6 +12,8 @@ import 'package:timezone/timezone.dart' as tz;
 import 'accounts.dart';
 import 'crypto/tls.dart';
 import 'api.dart';
+import 'auth/mfa.dart';
+import 'auth/sso.dart';
 import 'calendar/calendar_access.dart';
 import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
@@ -123,6 +125,12 @@ class FamioServerApp {
       location: () => settings.location,
       onChanged: () => hub.notifyRev(records.currentRev),
     );
+    mfa = Mfa(db);
+    sso = SsoService(
+      db,
+      publicUrl: () => settings.publicUrl,
+      client: httpClient,
+    );
     // A fresh server over the internet may only be claimed with this code.
     setupCode = accounts.hasUsers ? null : newSetupCode();
     api = FamioApi(
@@ -149,6 +157,8 @@ class FamioServerApp {
       calendarAccess: calendarAccess,
       locations: locations,
       push: push,
+      mfa: mfa,
+      sso: sso,
       onEventsChanged: caldav.eventsChanged,
     );
   }
@@ -188,6 +198,8 @@ class FamioServerApp {
   late final FileStore files;
   late final PushService push;
   late final AllowanceJob allowances;
+  late final Mfa mfa;
+  late final SsoService sso;
   late final String? setupCode;
   Timer? _gc;
   late final FamioApi api;

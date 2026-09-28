@@ -65,3 +65,25 @@ String landingPage({
 </body>
 </html>''';
 }
+
+/// Shown in the browser after signing in with the single sign-on provider.
+String ssoResultPage({required bool ok, required String message}) =>
+    '''<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famio</title>
+<style>
+  :root { color-scheme: light dark; --accent: #3f7d6e; }
+  body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; text-align: center; }
+  h1 { color: var(--accent); }
+  .icon { font-size: 3rem; }
+</style>
+</head>
+<body>
+  <div class="icon">${ok ? '✅' : '⚠️'}</div>
+  <h1>Famio</h1>
+  <p>${_escape.convert(message)}</p>
+</body>
+</html>''';

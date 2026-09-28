@@ -213,6 +213,32 @@ Famio über die Seitenleiste (Ingress) öffnen, automatisch angelegt und können
 dort ein Passwort für die App setzen. Die Ingress-Header werden nur von der
 Supervisor-Adresse `172.30.32.2` akzeptiert.
 
+**Zwei-Faktor-Anmeldung (TOTP):** Unter Einstellungen → Anmeldung & Sicherheit
+richtet jedes Mitglied eine Authenticator-App ein (QR-Code, RFC 6238, 30 s,
+6 Stellen) und bekommt 10 Wiederherstellungscodes, die je einmal gelten. Ein
+Code gilt nur einmal (auch nicht innerhalb seiner 30 Sekunden erneut),
+Fehlversuche werden wie Passwörter gedrosselt. Ausschalten braucht Passwort und
+Code. In der Server-Verwaltung lässt sich die Zwei-Faktor-Anmeldung **für
+Administratoren oder alle** verlangen: Betroffene sehen dann nur die
+Einrichtung bzw. eine Code-Abfrage, bis sie erledigt ist. Administratoren können
+sie für ein Mitglied zurücksetzen (Handy verloren). CalDAV-App-Passwörter und
+die Standort-Tokens der Handys sind davon nicht betroffen; für die
+Home-Assistant-Integration ein eigenes Mitglied ohne Zwei-Faktor anlegen.
+
+**Single Sign-On (OpenID Connect):** Server-Verwaltung → Einstellungen →
+Single Sign-On: Anbieter-Adresse (Issuer), Client-ID und -Secret eintragen,
+beim Anbieter die angezeigte Weiterleitungs-Adresse
+(`https://<öffentliche Adresse>/api/auth/sso/callback`) registrieren. Geht mit
+Authentik, Keycloak, Authelia, Zitadel, Google, Microsoft Entra u. a.; braucht
+die öffentliche Adresse. Mitglieder verknüpfen ihr Konto einmal unter
+Anmeldung & Sicherheit (oder, wenn eingeschaltet, über gleiche Benutzernamen)
+und melden sich dann mit „Mit … anmelden“ an: Die App öffnet den Browser und
+wartet, bis die Anmeldung dort fertig ist – ohne App-Links, auf allen
+Plattformen. Famio ist vertraulicher Client (Code-Austausch mit Secret und
+PKCE, `state`, `nonce`; Aussteller, Empfänger und Ablauf des ID-Tokens werden
+geprüft). Eine SSO-Anmeldung erfüllt auch die Zwei-Faktor-Pflicht – die
+übernimmt dann der Anbieter.
+
 ### Sicherheit und Datenschutz
 
 Famio speichert auch Gesundheitsdaten (Vorsorge, Impfungen, Wachstum,
@@ -221,7 +247,7 @@ Dokumente). Umgesetzt ist:
 | Bereich | Schutz |
 |---|---|
 | Transport | Über das Internet nur HTTPS (die App lehnt `http://` zu öffentlichen Adressen ab); im Heimnetz HTTPS auf Port 8766 mit eigener Zertifizierungsstelle; die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers (bleibt bei der automatischen Erneuerung gleich); optional `FAMIO_REQUIRE_TLS`; HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
-| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen, Einrichtungscode für den ersten Admin über das Internet |
+| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen, Einrichtungscode für den ersten Admin über das Internet; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store` |

@@ -8,6 +8,7 @@ import '../design/palette.dart';
 import '../widgets/trust_certificate.dart';
 import '../environment.dart';
 import '../widgets/password_reveal.dart';
+import 'security_screens.dart';
 
 /// Server address, then login – or the admin setup on a fresh server.
 class ConnectScreen extends StatefulWidget {
@@ -73,12 +74,59 @@ class _ConnectScreenState extends State<ConnectScreen> {
           setupCode: server.setupCodeRequired ? _setupCode.text : null,
         );
       } else {
-        await state.signIn(resolved, _username.text, _password.text);
+        try {
+          await state.signIn(resolved, _username.text, _password.text);
+        } on TwoFactorRequired catch (challenge) {
+          await _secondFactor(resolved, challenge.challenge);
+        }
       }
     } on ApiError catch (e) {
       setState(() => _error = e.message);
     } on FormatException {
       setState(() => _error = 'Ungültige Server-Adresse');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Asks for the authenticator code until it is right or cancelled.
+  Future<void> _secondFactor(ResolvedServer server, String challenge) async {
+    final state = AppScope.read(context);
+    String? error;
+    while (true) {
+      if (!mounted) return;
+      final code = await askTwoFactorCode(
+        context,
+        title: 'Zwei-Faktor-Anmeldung',
+        error: error,
+      );
+      if (code == null) return;
+      try {
+        await state.signInTwoFactor(server, challenge, code);
+        return;
+      } on ApiError catch (e) {
+        // A new password login is needed once the challenge is used up.
+        if (e.code != 'invalid_code') rethrow;
+        error = e.message;
+      }
+    }
+  }
+
+  Future<void> _singleSignOn(ResolvedServer server, String label) async {
+    final state = AppScope.read(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await runSsoInBrowser(
+        context,
+        label: label,
+        run: (open, cancelled) =>
+            state.signInSso(server, open: open, cancelled: cancelled),
+      );
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -282,6 +330,15 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                 color: accent,
                                 onPressed: _submit,
                               ),
+                        if (server?.singleSignOn case final label?
+                            when !setup && !_busy) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            icon: const Icon(AppIcons.logIn, size: 18),
+                            label: Text('Mit $label anmelden'),
+                            onPressed: () => _singleSignOn(_resolved!, label),
+                          ),
+                        ],
                         if (server != null && !setup) ...[
                           const SizedBox(height: 16),
                           Text(

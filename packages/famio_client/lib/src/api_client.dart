@@ -28,10 +28,15 @@ class ServerInfo {
     required this.version,
     required this.setupRequired,
     this.setupCodeRequired = false,
+    this.singleSignOn,
   });
 
   final String version;
   final bool setupRequired;
+
+  /// Button text for signing in with the single sign-on provider, if the
+  /// server offers it.
+  final String? singleSignOn;
 
   /// The first account can only be created with the code from the server
   /// log (setup through a reverse proxy or the internet).
@@ -48,6 +53,71 @@ enum TransportSecurity {
 
   /// Plain HTTP to an internet address: refused by the app.
   insecure,
+}
+
+/// The password was right; the server now asks for the code of the
+/// authenticator app (or a recovery code): see [FamioApiClient.loginTwoFactor].
+class TwoFactorRequired implements Exception {
+  const TwoFactorRequired(this.challenge);
+
+  final String challenge;
+}
+
+/// Two-factor and single sign-on state of the signed-in member.
+class TwoFactorStatus {
+  const TwoFactorStatus({
+    required this.enabled,
+    required this.recoveryCodesLeft,
+    required this.required,
+    required this.sessionVerified,
+    required this.singleSignOn,
+    this.singleSignOnName,
+    this.singleSignOnLabel,
+  });
+
+  factory TwoFactorStatus.fromJson(Map<String, Object?> json) =>
+      TwoFactorStatus(
+        enabled: json['twoFactor'] as bool? ?? false,
+        recoveryCodesLeft: (json['recoveryCodesLeft'] as num?)?.toInt() ?? 0,
+        required: json['required'] as bool? ?? false,
+        sessionVerified: json['sessionVerified'] as bool? ?? false,
+        singleSignOn: json['singleSignOn'] as bool? ?? false,
+        singleSignOnName: json['singleSignOnName'] as String?,
+        singleSignOnLabel: json['singleSignOnLabel'] as String?,
+      );
+
+  /// Authenticator app set up.
+  final bool enabled;
+  final int recoveryCodesLeft;
+
+  /// An admin made two-factor login mandatory for this member.
+  final bool required;
+
+  /// This device signed in with a second factor (or single sign-on).
+  final bool sessionVerified;
+
+  /// Linked to the provider; [singleSignOnName] is the account there.
+  final bool singleSignOn;
+  final String? singleSignOnName;
+
+  /// The server offers single sign-on under this name.
+  final String? singleSignOnLabel;
+
+  /// Must set up two-factor login before using the app.
+  bool get setupNeeded => required && !enabled && !sessionVerified;
+
+  /// Must confirm a code on this device before using the app.
+  bool get verifyNeeded => required && enabled && !sessionVerified;
+}
+
+/// A sign-in in the browser at the single sign-on provider: open [url],
+/// then poll with [flow] and [secret].
+class SsoFlow {
+  const SsoFlow({required this.url, required this.flow, required this.secret});
+
+  final Uri url;
+  final String flow;
+  final String secret;
 }
 
 /// Result of a successful login or first setup.
@@ -156,6 +226,7 @@ class FamioApiClient {
       version: json['version'] as String,
       setupRequired: json['setupRequired'] as bool,
       setupCodeRequired: json['setupCodeRequired'] as bool? ?? false,
+      singleSignOn: json['sso'] as String?,
     );
   }
 
@@ -183,7 +254,87 @@ class FamioApiClient {
     'device': device,
   });
 
+  /// Second step after [TwoFactorRequired]: the code from the
+  /// authenticator app or a recovery code.
+  Future<LoginResult> loginTwoFactor({
+    required String challenge,
+    required String code,
+  }) => _login('api/auth/login/two-factor', {
+    'challenge': challenge,
+    'code': code,
+  });
+
   Future<void> logout() => _send('POST', 'api/auth/logout');
+
+  // --- two-factor ------------------------------------------------------------
+
+  Future<TwoFactorStatus> twoFactorStatus() async =>
+      TwoFactorStatus.fromJson(await _send('GET', 'api/me/two-factor'));
+
+  /// Starts the setup: the secret and the `otpauth://` link for the QR code.
+  Future<({String secret, String uri})> beginTotp() async {
+    final json = await _send('POST', 'api/me/two-factor/totp');
+    return (secret: json['secret'] as String, uri: json['uri'] as String);
+  }
+
+  /// Activates two-factor login; returns the recovery codes (shown once).
+  Future<List<String>> confirmTotp(String code) async {
+    final json = await _send('POST', 'api/me/two-factor/totp/confirm', {
+      'code': code,
+    });
+    return (json['recoveryCodes'] as List).cast();
+  }
+
+  Future<void> disableTotp({required String password, required String code}) =>
+      _send('POST', 'api/me/two-factor/totp/disable', {
+        'password': password,
+        'code': code,
+      });
+
+  Future<List<String>> newRecoveryCodes(String code) async {
+    final json = await _send('POST', 'api/me/two-factor/recovery-codes', {
+      'code': code,
+    });
+    return (json['recoveryCodes'] as List).cast();
+  }
+
+  /// Confirms the second factor for this session.
+  Future<void> verifyTwoFactor(String code) =>
+      _send('POST', 'api/me/two-factor/verify', {'code': code});
+
+  // --- single sign-on ----------------------------------------------------------
+
+  /// Starts signing in ([link] false) or linking the own account in the
+  /// browser.
+  Future<SsoFlow> startSso({bool link = false, String? device}) async {
+    final json = await _send('POST', 'api/auth/sso/start', {
+      'mode': link ? 'link' : 'login',
+      'device': device,
+    });
+    return SsoFlow(
+      url: Uri.parse(json['url'] as String),
+      flow: json['flow'] as String,
+      secret: json['secret'] as String,
+    );
+  }
+
+  /// Null while the browser part is still open; the session once done (for
+  /// linking: the own member, [LoginResult.token] empty).
+  Future<LoginResult?> pollSso(SsoFlow flow) async {
+    final json = await _send('POST', 'api/auth/sso/poll', {
+      'flow': flow.flow,
+      'secret': flow.secret,
+    });
+    if (json['status'] != 'done') return null;
+    final result = LoginResult(
+      token: json['token'] as String? ?? '',
+      member: FamilyMember.fromJson((json['member'] as Map).cast()),
+    );
+    if (result.token.isNotEmpty) token = result.token;
+    return result;
+  }
+
+  Future<void> unlinkSso() => _send('DELETE', 'api/me/sso');
 
   Future<FamilyMember> me() async =>
       FamilyMember.fromJson(await _send('GET', 'api/me'));
@@ -349,6 +500,34 @@ class FamioApiClient {
   }
 
   /// Signs a member out on one device, or on all (except this one).
+  /// Switches off two-factor login of member [id] (lost phone).
+  Future<void> resetTwoFactor(String id) =>
+      _send('DELETE', 'api/admin/users/$id/two-factor');
+
+  Future<void> unlinkUserSso(String id) =>
+      _send('DELETE', 'api/admin/users/$id/sso');
+
+  /// The single sign-on provider (without its secret) and the address to
+  /// register there as redirect URI.
+  Future<Map<String, Object?>> ssoConfig() => _send('GET', 'api/admin/sso');
+
+  /// An empty [clientSecret] keeps the stored one.
+  Future<Map<String, Object?>> saveSsoConfig({
+    required String issuer,
+    required String clientId,
+    required String clientSecret,
+    required String label,
+    required bool matchUsername,
+  }) => _send('PUT', 'api/admin/sso', {
+    'issuer': issuer,
+    'clientId': clientId,
+    'clientSecret': clientSecret,
+    'label': label,
+    'matchUsername': matchUsername,
+  });
+
+  Future<void> deleteSsoConfig() => _send('DELETE', 'api/admin/sso');
+
   Future<void> signOutUser(String id, {String? sessionId}) => _send(
     'DELETE',
     sessionId == null
@@ -729,6 +908,9 @@ class FamioApiClient {
 
   Future<LoginResult> _login(String path, Map<String, Object?> body) async {
     final json = await _send('POST', path, body);
+    if (json['twoFactorRequired'] == true) {
+      throw TwoFactorRequired(json['challenge'] as String);
+    }
     token = json['token'] as String;
     return LoginResult(
       token: token!,

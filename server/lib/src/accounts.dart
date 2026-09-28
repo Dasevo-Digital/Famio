@@ -228,6 +228,10 @@ class Accounts {
         ),
       );
     }
+    final linked = {
+      for (final row in _db.select('SELECT DISTINCT user_id FROM sso_links'))
+        row.columnAt(0) as String,
+    };
     return [
       for (final row in _db.select(
         'SELECT * FROM users ORDER BY display_name COLLATE NOCASE',
@@ -239,6 +243,8 @@ class Accounts {
           ),
           hasPassword: row['password_hash'] != null,
           homeAssistant: row['ha_user_id'] != null,
+          twoFactor: row['totp_secret'] != null,
+          singleSignOn: linked.contains(row['id']),
           sessions: sessions[row['id']] ?? const [],
         ),
     ];
@@ -318,16 +324,22 @@ class Accounts {
 
   /// Creates a session and returns its bearer token (only stored hashed).
   /// A [scope] limits the session to one purpose, see [userForToken].
-  String createSession(String userId, {String? device, String? scope}) {
+  /// [method] tells how the member signed in: password, totp or sso.
+  String createSession(
+    String userId, {
+    String? device,
+    String? scope,
+    String? method,
+  }) {
     final token = base64Url
         .encode(List<int>.generate(32, (_) => _random.nextInt(256)))
         .replaceAll('=', '');
     final now = DateTime.now().millisecondsSinceEpoch;
     _db.execute(
       'INSERT INTO sessions'
-      ' (token_hash, user_id, device, created_at, last_seen, scope)'
-      ' VALUES (?, ?, ?, ?, ?, ?)',
-      [_tokenHash(token), userId, device, now, now, scope],
+      ' (token_hash, user_id, device, created_at, last_seen, scope, method)'
+      ' VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [_tokenHash(token), userId, device, now, now, scope, method],
     );
     return token;
   }
@@ -348,6 +360,20 @@ class Accounts {
     ]);
     return _member(rows.first);
   }
+
+  /// How the session of [token] signed in (password, totp, sso or null
+  /// for sessions of older versions).
+  String? sessionMethod(String token) =>
+      _db.select('SELECT method FROM sessions WHERE token_hash = ?', [
+            _tokenHash(token),
+          ]).firstOrNull?['method']
+          as String?;
+
+  /// The session proved a second factor (e.g. after setting it up).
+  void setSessionMethod(String token, String method) => _db.execute(
+    'UPDATE sessions SET method = ? WHERE token_hash = ?',
+    [method, _tokenHash(token)],
+  );
 
   /// Removes sessions past [sessionIdleTimeout]; returns how many.
   int deleteExpiredSessions() {

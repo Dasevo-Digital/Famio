@@ -200,14 +200,19 @@ class SyncEngine {
         _unsupported.addAll(response.unsupported);
         more = response.hasMore || _pushable.isNotEmpty;
       } while (more);
+      lastError = null;
       _setStatus(SyncState.idle, null, DateTime.now());
     } on ApiError catch (e) {
+      lastError = e;
       _setStatus(
         e.isUnauthorized ? SyncState.unauthorized : SyncState.offline,
         e.message,
       );
     }
   }
+
+  /// Why the last sync failed, e.g. `two_factor_required`.
+  ApiError? lastError;
 
   Iterable<SyncRecord> get _pushable => store.dirty
       .map((r) => r.record)

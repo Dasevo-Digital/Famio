@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -312,6 +313,9 @@ class _UserList extends StatelessWidget {
                           const _Badge('Home Assistant', AppIcons.house),
                         if (!u.hasPassword)
                           const _Badge('ohne Passwort', AppIcons.key),
+                        if (u.twoFactor)
+                          const _Badge('Zwei-Faktor', AppIcons.shieldCheck),
+                        if (u.singleSignOn) const _Badge('SSO', AppIcons.logIn),
                       ],
                     ),
                   ],
@@ -511,6 +515,51 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           ),
           onTap: () => _resetPassword(u, isMe: isMe),
         ),
+        ListTile(
+          leading: Icon(
+            u.twoFactor ? AppIcons.shieldCheck : AppIcons.shield,
+            color: u.twoFactor ? c.strong(FamioSection.tasks) : null,
+          ),
+          title: Text(
+            u.twoFactor ? 'Zwei-Faktor eingeschaltet' : 'Zwei-Faktor aus',
+          ),
+          subtitle: Text(
+            u.twoFactor
+                ? 'Handy verloren und keine Wiederherstellungscodes? '
+                      'Zurücksetzen, dann reicht wieder das Passwort.'
+                : isMe
+                ? 'Einschalten unter Einstellungen → Anmeldung & Sicherheit'
+                : '${m.displayName} kann sie in den eigenen Einstellungen '
+                      'einschalten.',
+          ),
+          trailing: u.twoFactor
+              ? TextButton(
+                  onPressed: () => _confirmThen(
+                    'Zwei-Faktor von ${m.displayName} zurücksetzen?',
+                    'Danach reicht zum Anmelden wieder das Passwort, bis '
+                        '${m.displayName} sie neu einrichtet.',
+                    'Zurücksetzen',
+                    () => _run(
+                      () => _api.resetTwoFactor(m.id),
+                      done: 'Zwei-Faktor zurückgesetzt',
+                    ),
+                  ),
+                  child: const Text('Zurücksetzen'),
+                )
+              : null,
+        ),
+        if (u.singleSignOn)
+          ListTile(
+            leading: const Icon(AppIcons.logIn),
+            title: const Text('Mit Single Sign-On verknüpft'),
+            trailing: TextButton(
+              onPressed: () => _run(
+                () => _api.unlinkUserSso(m.id),
+                done: 'Verknüpfung gelöst',
+              ),
+              child: const Text('Lösen'),
+            ),
+          ),
         ListHeading(
           'Geräte (${u.sessions.length})',
           color: accent,
@@ -557,6 +606,32 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         ],
       ],
     );
+  }
+
+  Future<void> _confirmThen(
+    String title,
+    String text,
+    String action,
+    Future<void> Function() then,
+  ) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Abbrechen'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(action),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) await then();
   }
 
   Future<void> _edit(AdminUser u) async {
@@ -727,6 +802,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     text: widget.overview.settings.mapTileUrl ?? '',
   );
   late String _zone = widget.overview.settings.timeZone ?? '';
+  late TwoFactorPolicy? _policy = widget.overview.settings.twoFactorRequired;
   var _busy = false;
   String? _error;
 
@@ -769,6 +845,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             'mapTileUrl': _tiles.text.trim().isEmpty
                 ? null
                 : _tiles.text.trim(),
+            'twoFactorRequired': _policy?.name,
           });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1062,6 +1139,28 @@ class _SettingsFormState extends State<_SettingsForm> {
                 prefixIcon: Icon(AppIcons.map),
               ),
             ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<TwoFactorPolicy?>(
+              initialValue: _policy,
+              decoration: const InputDecoration(
+                labelText: 'Zwei-Faktor-Anmeldung verlangen',
+                helperText:
+                    'Betroffene richten beim nächsten Öffnen der App eine '
+                    'Authenticator-App ein; Single Sign-On zählt auch. Für '
+                    'Home Assistant ein eigenes Mitglied ohne Pflicht nutzen.',
+                helperMaxLines: 3,
+                prefixIcon: Icon(AppIcons.shieldCheck),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Nicht verlangt'),
+                ),
+                for (final p in TwoFactorPolicy.values)
+                  DropdownMenuItem(value: p, child: Text('Für ${p.label}')),
+              ],
+              onChanged: (p) => setState(() => _policy = p),
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(_error!, style: TextStyle(color: c.danger)),
@@ -1074,6 +1173,19 @@ class _SettingsFormState extends State<_SettingsForm> {
                 icon: AppIcons.check,
                 color: accent,
                 onPressed: _busy ? null : _save,
+              ),
+            ),
+            ListHeading('Anmeldung', color: accent),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.logIn),
+              title: const Text('Single Sign-On (OpenID Connect)'),
+              subtitle: const Text(
+                'Anmelden mit Authentik, Keycloak, Authelia, Google, Microsoft …',
+              ),
+              trailing: TextButton(
+                onPressed: _busy ? null : () => showSsoDialog(context),
+                child: const Text('Einrichten'),
               ),
             ),
             ListHeading('Standort', color: accent),
@@ -1653,6 +1765,234 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Admins set up the single sign-on provider.
+Future<void> showSsoDialog(BuildContext context) =>
+    showDialog<void>(context: context, builder: (_) => const _SsoDialog());
+
+class _SsoDialog extends StatefulWidget {
+  const _SsoDialog();
+
+  @override
+  State<_SsoDialog> createState() => _SsoDialogState();
+}
+
+class _SsoDialogState extends State<_SsoDialog> {
+  final _issuer = TextEditingController();
+  final _clientId = TextEditingController();
+  final _secret = TextEditingController();
+  final _label = TextEditingController();
+  var _match = false;
+  var _configured = false;
+  var _secretSet = false;
+  String? _redirect;
+  String? _error;
+  var _loading = true;
+  var _busy = false;
+
+  FamioApiClient get _api => AppScope.read(context).engine!.api;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_issuer, _clientId, _secret, _label]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _apply(Map<String, Object?> json) {
+    _issuer.text = json['issuer'] as String? ?? '';
+    _clientId.text = json['clientId'] as String? ?? '';
+    _label.text = json['label'] as String? ?? '';
+    _match = json['matchUsername'] as bool? ?? false;
+    _configured = json['configured'] as bool? ?? false;
+    _secretSet = json['secretSet'] as bool? ?? false;
+    _redirect = json['redirectUri'] as String?;
+  }
+
+  Future<void> _load() async {
+    try {
+      final json = await _api.ssoConfig();
+      if (mounted) setState(() => _apply(json));
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final json = await _api.saveSsoConfig(
+        issuer: _issuer.text.trim(),
+        clientId: _clientId.text.trim(),
+        clientSecret: _secret.text,
+        label: _label.text.trim(),
+        matchUsername: _match,
+      );
+      if (!mounted) return;
+      setState(() => _apply(json));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Single Sign-On gespeichert')),
+      );
+      Navigator.pop(context);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _remove() async {
+    try {
+      await _api.deleteSsoConfig();
+      if (mounted) Navigator.pop(context);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return AlertDialog(
+      title: const Text('Single Sign-On'),
+      content: SizedBox(
+        width: 480,
+        child: _loading
+            ? const SizedBox(
+                height: 120,
+                child: Center(child: CircularProgressIndicator()),
+              )
+            : SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Beim Anbieter (z. B. Authentik: „Anwendungen → OAuth2/'
+                      'OpenID-Provider“) eine vertrauliche Anwendung anlegen '
+                      'und diese Weiterleitungs-Adresse eintragen:',
+                      style: TextStyle(color: c.inkSoft),
+                    ),
+                    const SizedBox(height: 6),
+                    if (_redirect case final redirect?)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              redirect,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Kopieren',
+                            icon: const Icon(AppIcons.copy, size: 18),
+                            onPressed: () => Clipboard.setData(
+                              ClipboardData(text: redirect),
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Text(
+                        'Zuerst unter Einstellungen die öffentliche Adresse '
+                        'eintragen und speichern.',
+                        style: TextStyle(color: c.danger),
+                      ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _issuer,
+                      keyboardType: TextInputType.url,
+                      autocorrect: false,
+                      decoration: const InputDecoration(
+                        labelText: 'Anbieter-Adresse (Issuer)',
+                        hintText:
+                            'https://auth.example.de/application/o/famio/',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _clientId,
+                      autocorrect: false,
+                      decoration: const InputDecoration(labelText: 'Client-ID'),
+                    ),
+                    const SizedBox(height: 12),
+                    PasswordReveal(
+                      builder: (_, obscure, toggle) => TextField(
+                        controller: _secret,
+                        obscureText: obscure,
+                        contextMenuBuilder: PasswordReveal.contextMenu,
+                        decoration: InputDecoration(
+                          labelText: 'Client-Secret',
+                          helperText: _secretSet
+                              ? 'Gespeichert – leer lassen, um es zu behalten'
+                              : null,
+                          suffixIcon: toggle,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _label,
+                      decoration: const InputDecoration(
+                        labelText: 'Name auf dem Knopf',
+                        hintText: 'Authentik',
+                        helperText:
+                            '„Mit … anmelden“ auf dem Anmeldebildschirm',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Gleiche Benutzernamen zuordnen'),
+                      subtitle: const Text(
+                        'Wer beim Anbieter denselben Benutzernamen hat, wird '
+                        'ohne vorheriges Verknüpfen angemeldet. Nur einschalten, '
+                        'wenn dort niemand Fremdes Konten anlegen kann.',
+                      ),
+                      value: _match,
+                      onChanged: (v) => setState(() => _match = v),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Text(_error!, style: TextStyle(color: c.danger)),
+                    ],
+                  ],
+                ),
+              ),
+      ),
+      actions: [
+        if (_configured)
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
+            onPressed: _busy ? null : _remove,
+            child: const Text('Entfernen'),
+          ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Abbrechen'),
+        ),
+        FilledButton(
+          onPressed: _busy || _loading || _redirect == null ? null : _save,
+          child: const Text('Speichern'),
+        ),
+      ],
     );
   }
 }

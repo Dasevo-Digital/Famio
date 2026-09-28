@@ -3,6 +3,9 @@ library;
 
 export 'src/accounts.dart';
 export 'src/api.dart';
+export 'src/auth/mfa.dart';
+export 'src/auth/sso.dart';
+export 'src/auth/totp.dart';
 export 'src/calendar/calendar_access.dart';
 export 'src/calendar/calendar_feeds.dart';
 export 'src/calendar/calendar_importer.dart';

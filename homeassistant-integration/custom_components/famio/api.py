@@ -36,6 +36,11 @@ class FamioAuthError(FamioError):
     """Login rejected or session revoked."""
 
 
+class FamioTwoFactorError(FamioError):
+    """The account signs in with a second factor, which Home Assistant cannot
+    provide: use an own member without two-factor login."""
+
+
 class FamioCertificateError(FamioError):
     """The server shows another key than the confirmed one."""
 
@@ -256,6 +261,8 @@ class FamioClient:
                 "device": DEVICE_NAME,
             },
         )
+        if answer.get("twoFactorRequired"):
+            raise FamioTwoFactorError("two-factor login")
         self.token = answer["token"]
         return answer["member"]
 

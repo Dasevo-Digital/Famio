@@ -170,6 +170,30 @@ const _migrations = [
     last_error TEXT
   );
   ''',
+  '''
+  -- Two-factor login with an authenticator app (TOTP, RFC 6238).
+  ALTER TABLE users ADD COLUMN totp_secret TEXT;
+  -- Secret shown during setup, active once a code was confirmed.
+  ALTER TABLE users ADD COLUMN totp_pending TEXT;
+  -- Last time step used: a code works only once.
+  ALTER TABLE users ADD COLUMN totp_last_step INTEGER;
+  CREATE TABLE recovery_codes (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code_hash TEXT NOT NULL,
+    PRIMARY KEY (user_id, code_hash)
+  );
+  -- Accounts at a single sign-on provider (OpenID Connect) per member.
+  CREATE TABLE sso_links (
+    issuer TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (issuer, subject)
+  );
+  -- How a session signed in: password, totp or sso (two-factor policy).
+  ALTER TABLE sessions ADD COLUMN method TEXT;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.
