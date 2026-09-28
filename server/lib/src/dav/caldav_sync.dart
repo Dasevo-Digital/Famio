@@ -242,6 +242,13 @@ class CalDavSync {
         if (changes.isNotEmpty || removed) onChanged();
       });
 
+  /// Forgets all connections without touching the other calendars (all
+  /// Famio data is about to be deleted; that must not reach them).
+  Future<void> disconnectAll() => _running = _running.then((_) {
+    db.execute('DELETE FROM caldav_links');
+    db.execute('DELETE FROM caldav_accounts');
+  });
+
   /// Syncs one account of [userId] now and returns its state.
   Future<CalDavAccount> syncNow(String userId, String id) async {
     await (_running = _running.then((_) async {

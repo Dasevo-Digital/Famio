@@ -236,6 +236,15 @@ class FileStore {
     return removed;
   }
 
+  /// Deletes every upload and gives the space back. Returns their number.
+  int deleteAll() {
+    final (count, _) = usage();
+    _db.execute('DELETE FROM files');
+    blobs.execute('DELETE FROM blobs');
+    blobs.execute('VACUUM');
+    return count;
+  }
+
   void _putBlock(
     String id,
     String kind,

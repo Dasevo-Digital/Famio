@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.14.0 – Zurücksetzen
+
+- **Server-Verwaltung → Einstellungen → Zurücksetzen:**
+  - *Einstellungen auf Standard:* öffentliche Adresse, Zeitzone,
+    Dateigröße und Kartenserver wieder aus der Server-Konfiguration.
+  - *Alle Daten löschen:* alle Inhalte der Familie auf dem Server und allen
+    Geräten, auf Wunsch auch alle anderen Mitglieder. Mit Passwort und
+    Bestätigung „LÖSCHEN“; verbundene Kalender bei iCloud & Co. bleiben
+    unberührt.
+
 ## 0.13.0 – Ämter, Routinen, Push und mehr
 
 - **Ämter & Punkte:** Haushaltsaufgaben mit Emoji und Punkten – täglich, an

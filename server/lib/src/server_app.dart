@@ -138,6 +138,7 @@ class FamioServerApp {
       ingressAuth: ingressAuth,
       trustProxy: trustProxy,
       dbSize: _dbSize,
+      compactDatabase: _compact,
       auditLog: auditLog,
       requireTls: requireTls,
       tlsPort: tlsPort,
@@ -200,6 +201,12 @@ class FamioServerApp {
     final pages = db.select('PRAGMA page_count').first.columnAt(0) as int;
     final size = db.select('PRAGMA page_size').first.columnAt(0) as int;
     return pages * size;
+  }
+
+  /// Deleted content stays in free pages of the file until it is rebuilt.
+  void _compact() {
+    db.execute('VACUUM');
+    db.execute('PRAGMA wal_checkpoint(TRUNCATE)');
   }
 
   /// Periodic jobs (calendar import); not started in tests.

@@ -264,6 +264,30 @@ class FamioApiClient {
     await _send('PATCH', 'api/admin/settings', changes),
   );
 
+  /// Sets all server settings back to their defaults.
+  Future<ServerOverview> resetServerSettings() async =>
+      ServerOverview.fromJson(await _send('POST', 'api/admin/settings/reset'));
+
+  /// Deletes all of the family's data on the server (see the server's
+  /// `/api/admin/wipe`). [confirm] must be "LÖSCHEN". Returns how many
+  /// records, files and members were removed.
+  Future<({int records, int files, int members})> wipeServerData({
+    required String password,
+    required String confirm,
+    bool removeMembers = false,
+  }) async {
+    final json = await _send('POST', 'api/admin/wipe', {
+      'password': password,
+      'confirm': confirm,
+      'removeMembers': removeMembers,
+    });
+    return (
+      records: (json['records'] as num?)?.toInt() ?? 0,
+      files: (json['files'] as num?)?.toInt() ?? 0,
+      members: (json['members'] as num?)?.toInt() ?? 0,
+    );
+  }
+
   /// Calendars shared with member [id] and which an admin switched off.
   Future<List<MemberCalendar>> memberCalendars(String id) async =>
       _memberCalendars(await _send('GET', 'api/admin/users/$id/calendars'));

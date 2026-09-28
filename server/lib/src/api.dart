@@ -30,7 +30,7 @@ import 'location/location_service.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.13.0';
+const serverVersion = '0.14.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -54,6 +54,7 @@ class FamioApi {
     this.ingressAuth = false,
     this.trustProxy = false,
     this.dbSize,
+    this.compactDatabase,
     this.auditLog,
     this.requireTls = false,
     this.tlsPort,
@@ -117,6 +118,9 @@ class FamioApi {
 
   /// Size of the database file in bytes.
   final int Function()? dbSize;
+
+  /// Rewrites the database file without deleted content.
+  final void Function()? compactDatabase;
   final _startedAt = DateTime.now();
 
   /// The family's time zone (calendar feeds, floating imported times).
@@ -149,6 +153,8 @@ class FamioApi {
       ..delete('/api/members/<id>', _deleteMember)
       ..get('/api/admin/overview', _adminOverview)
       ..patch('/api/admin/settings', _adminSettings)
+      ..post('/api/admin/settings/reset', _adminResetSettings)
+      ..post('/api/admin/wipe', _adminWipe)
       ..get('/api/admin/users', _adminUsers)
       ..post('/api/admin/users', _createMember)
       ..patch('/api/admin/users/<id>', _adminUpdateUser)
@@ -487,6 +493,77 @@ class FamioApi {
     // Imported floating times depend on the zone.
     if (location.name != zone) importer?.subscriptionsChanged();
     return _json(_overview().toJson());
+  }
+
+  /// Sets every server setting back to its default (environment variables,
+  /// add-on options). The parents' code for location sharing stays.
+  Response _adminResetSettings(Request request) {
+    final admin = _admin(request);
+    final zone = location.name;
+    settings.reset();
+    _audit(admin, 'hat die Servereinstellungen auf Standard zurückgesetzt');
+    if (location.name != zone) importer?.subscriptionsChanged();
+    return _json(_overview().toJson());
+  }
+
+  /// Word an admin types to confirm [_adminWipe].
+  static const wipeConfirmation = 'LÖSCHEN';
+
+  /// Deletes all of the family's data: every record (calendar, chat, lists,
+  /// documents …), uploaded files, positions, calendar connections and
+  /// feed links. Accounts stay, unless `removeMembers` also removes
+  /// everybody but the admin. Needs the admin's password (if they have one)
+  /// and [wipeConfirmation].
+  Future<Response> _adminWipe(Request request) async {
+    final admin = _admin(request);
+    final body = await _body(request);
+    if (body['confirm'] != wipeConfirmation) {
+      throw ApiException.badRequest(
+        'confirmation_required',
+        'Zur Bestätigung „$wipeConfirmation“ eingeben',
+      );
+    }
+    final address = clientAddress.of(request);
+    _checkThrottle(address, '#pw:${admin.id}');
+    if (accounts.hasPassword(admin.id) &&
+        !await accounts.checkPassword(
+          admin.id,
+          body['password'] as String? ?? '',
+        )) {
+      throttle.failed(address, '#pw:${admin.id}');
+      throw ApiException(403, 'invalid_credentials', 'Passwort falsch');
+    }
+    final removeMembers = body['removeMembers'] as bool? ?? false;
+    // First, so nothing of the deletion reaches iCloud, Google & Co.
+    await caldav?.disconnectAll();
+    final count = records.wipe();
+    final fileCount = files.deleteAll();
+    locations?.deleteAll();
+    feeds.deleteAll();
+    calendarAccess?.clearHidden();
+    var memberCount = 0;
+    if (removeMembers) {
+      for (final m in accounts.members()) {
+        if (m.id == admin.id) continue;
+        accounts.delete(m.id);
+        memberCount++;
+      }
+    }
+    compactDatabase?.call();
+    _audit(
+      admin,
+      'hat alle Daten gelöscht ($count Einträge, $fileCount Dateien'
+      '${removeMembers ? ', $memberCount Mitglieder' : ''})',
+    );
+    hub.notifyRev(records.currentRev);
+    if (memberCount > 0) hub.notifyMembersChanged();
+    importer?.subscriptionsChanged();
+    return _json({
+      'ok': true,
+      'records': count,
+      'files': fileCount,
+      'members': memberCount,
+    });
   }
 
   Response _adminUsers(Request request) {
