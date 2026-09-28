@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.3
+
+- Startseite des Servers: zeigt hinter einem Reverse-Proxy (z. B. Nginx Proxy
+  Manager) bzw. mit gesetzter öffentlicher Adresse die richtige
+  https-Adresse statt „http://…:8765“; ohne Proxy den HTTPS-Port 8766.
+
 ## 0.14.2
 
 - Einstellungen → „Über Famio“ zeigt die Version der App und des Servers.

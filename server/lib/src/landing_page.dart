@@ -10,10 +10,11 @@ const _escape = HtmlEscape();
 String landingPage({
   required FamilyMember? member,
   required bool hasPassword,
-  required String? host,
+  required String address,
   required String version,
+  bool addon = false,
 }) {
-  final serverUrl = 'http://${_escape.convert(host ?? '<server-ip>')}:8765';
+  final serverUrl = const HtmlEscape(HtmlEscapeMode.element).convert(address);
   final memberSection = member == null
       ? '''
     <p>Der Server läuft. Verbinde die Famio-App mit dieser Adresse:</p>
@@ -59,7 +60,7 @@ String landingPage({
 </head>
 <body>
   <h1>Famio</h1>
-  <small>Server $version · Port in den Add-on-Einstellungen änderbar</small>
+  <small>Server $version${addon ? ' · Port in den Add-on-Einstellungen änderbar' : ''}</small>
   $memberSection
 </body>
 </html>''';

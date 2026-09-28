@@ -304,57 +304,60 @@ void main() {
       }
     });
 
-    test('chat messages reach the others, without details by default', () async {
-      final added = await kind.call('POST', 'api/me/push', {
-        'name': 'Handy',
-        'url': 'https://push.example/famio-geheim',
-        'token': 'tk_123',
-      });
-      expect(added['_status'], 201);
-      expect(pushed.single['topic'], 'famio-geheim');
-      expect(pushed.single['url'], 'https://push.example/');
-      expect(pushed.single['auth'], 'Bearer tk_123');
-      pushed.clear();
+    test(
+      'chat messages reach the others, without details by default',
+      () async {
+        final added = await kind.call('POST', 'api/me/push', {
+          'name': 'Handy',
+          'url': 'https://push.example/famio-geheim',
+          'token': 'tk_123',
+        });
+        expect(added['_status'], 201);
+        expect(pushed.single['topic'], 'famio-geheim');
+        expect(pushed.single['url'], 'https://push.example/');
+        expect(pushed.single['auth'], 'Bearer tk_123');
+        pushed.clear();
 
-      await mama.sync([
-        _record(Collections.chatMessages, 'm1', {
-          'chatId': ChatIds.family,
-          'authorId': mama.id,
-          'text': 'Essen ist fertig',
-        }),
-      ]);
-      await app.push.idle;
-      expect(pushed.single['message'], 'Neue Nachricht');
-      expect(pushed.single['title'], 'Famio');
-      expect(jsonEncode(pushed), isNot(contains('Essen')));
+        await mama.sync([
+          _record(Collections.chatMessages, 'm1', {
+            'chatId': ChatIds.family,
+            'authorId': mama.id,
+            'text': 'Essen ist fertig',
+          }),
+        ]);
+        await app.push.idle;
+        expect(pushed.single['message'], 'Neue Nachricht');
+        expect(pushed.single['title'], 'Famio');
+        expect(jsonEncode(pushed), isNot(contains('Essen')));
 
-      // With details, and never to the author.
-      final targets = await kind.call('GET', 'api/me/push');
-      final id = ((targets['targets'] as List).single as Map)['id'];
-      await kind.call('DELETE', 'api/me/push/$id');
-      await kind.call('POST', 'api/me/push', {
-        'url': 'https://push.example/famio-geheim',
-        'details': true,
-      });
-      pushed.clear();
-      await kind.sync([
-        _record(Collections.chatMessages, 'm2', {
-          'chatId': ChatIds.family,
-          'authorId': kind.id,
-          'text': 'Komme gleich',
-        }),
-      ]);
-      await mama.sync([
-        _record(Collections.chatMessages, 'm3', {
-          'chatId': ChatIds.family,
-          'authorId': mama.id,
-          'text': 'Beeil dich',
-        }),
-      ]);
-      await app.push.idle;
-      expect(pushed.single['message'], 'Beeil dich');
-      expect(pushed.single['title'], 'mama · Familie');
-    });
+        // With details, and never to the author.
+        final targets = await kind.call('GET', 'api/me/push');
+        final id = ((targets['targets'] as List).single as Map)['id'];
+        await kind.call('DELETE', 'api/me/push/$id');
+        await kind.call('POST', 'api/me/push', {
+          'url': 'https://push.example/famio-geheim',
+          'details': true,
+        });
+        pushed.clear();
+        await kind.sync([
+          _record(Collections.chatMessages, 'm2', {
+            'chatId': ChatIds.family,
+            'authorId': kind.id,
+            'text': 'Komme gleich',
+          }),
+        ]);
+        await mama.sync([
+          _record(Collections.chatMessages, 'm3', {
+            'chatId': ChatIds.family,
+            'authorId': mama.id,
+            'text': 'Beeil dich',
+          }),
+        ]);
+        await app.push.idle;
+        expect(pushed.single['message'], 'Beeil dich');
+        expect(pushed.single['title'], 'mama · Familie');
+      },
+    );
 
     test('point requests go to the adults', () async {
       await mama.call('POST', 'api/me/push', {
