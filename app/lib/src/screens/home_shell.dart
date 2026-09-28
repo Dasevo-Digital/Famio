@@ -62,9 +62,16 @@ const _guestHidden = {
   FamioSection.health,
 };
 
-List<FamioSection> sectionsFor(MemberRole role) => [
+/// The sections [role] sees, without those the family switched off
+/// ([hidden], by name; see `ServerSettings.hiddenModules`).
+List<FamioSection> sectionsFor(
+  MemberRole role, {
+  Set<String> hidden = const {},
+}) => [
   for (final s in FamioSection.values)
-    if (role != MemberRole.guest || !_guestHidden.contains(s)) s,
+    if ((role != MemberRole.guest || !_guestHidden.contains(s)) &&
+        !hidden.contains(s.name))
+      s,
 ];
 
 /// Lets any page switch sections, e.g. the dashboard tiles.
@@ -98,6 +105,12 @@ class _HomeShellState extends State<HomeShell> {
 
   /// Sections for the member's role, updated with the member list.
   var _sections = FamioSection.values;
+
+  /// The phone bar: its usual sections that are switched on.
+  List<FamioSection> get _bar => [
+    for (final s in _barSections)
+      if (_sections.contains(s)) s,
+  ];
 
   /// Sections are built on their first visit only, so e.g. the map does not
   /// load tiles at every app start.
@@ -146,9 +159,7 @@ class _HomeShellState extends State<HomeShell> {
                 spacing: gap,
                 runSpacing: gap,
                 children: [
-                  for (final s in _sections.where(
-                    (s) => !_barSections.contains(s),
-                  ))
+                  for (final s in _sections.where((s) => !_bar.contains(s)))
                     SizedBox(
                       width: width,
                       child: _MoreTile(
@@ -207,7 +218,16 @@ class _HomeShellState extends State<HomeShell> {
         },
         builder: (context, engine) {
           final unread = engine.totalUnread;
-          _sections = sectionsFor(engine.myRole);
+          _sections = sectionsFor(
+            engine.myRole,
+            hidden: AppScope.of(context).hiddenModules,
+          );
+          if (!_sections.contains(_section)) {
+            // Switched off while open: back to the start page.
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => mounted ? _go(FamioSection.home) : null,
+            );
+          }
           if (wide) {
             return Scaffold(
               backgroundColor: c.background,
@@ -229,6 +249,7 @@ class _HomeShellState extends State<HomeShell> {
             extendBody: true,
             body: body,
             bottomNavigationBar: _FloatingBar(
+              bar: _bar,
               current: _section,
               onSelect: _go,
               onMore: _showMore,
@@ -394,12 +415,15 @@ class _RailItem extends StatelessWidget {
 
 class _FloatingBar extends StatelessWidget {
   const _FloatingBar({
+    required this.bar,
     required this.current,
     required this.onSelect,
     required this.onMore,
     required this.unread,
   });
 
+  /// The sections in the bar itself.
+  final List<FamioSection> bar;
   final FamioSection current;
   final ValueChanged<FamioSection> onSelect;
   final VoidCallback onMore;
@@ -408,7 +432,7 @@ class _FloatingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    final inMore = !_barSections.contains(current);
+    final inMore = !bar.contains(current);
     return SafeArea(
       child: Container(
         margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
@@ -426,7 +450,7 @@ class _FloatingBar extends StatelessWidget {
         ),
         child: Row(
           children: [
-            for (final s in _barSections)
+            for (final s in bar)
               Expanded(
                 child: _BarItem(
                   icon: s.icon,

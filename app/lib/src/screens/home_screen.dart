@@ -87,28 +87,38 @@ class HomeScreen extends StatelessWidget {
             final columns = constraints.maxWidth >= 1100
                 ? 3
                 : (constraints.maxWidth >= 640 ? 2 : 1);
+            // Areas the family switched off get no tile either.
+            final hidden = AppScope.of(context).hiddenModules;
+            bool on(FamioSection s) => !hidden.contains(s.name);
             final tiles = [
-              _TodayTile(engine: engine),
+              if (on(FamioSection.calendar)) _TodayTile(engine: engine),
               WeatherTile(engine: engine),
-              _TasksTile(engine: engine),
-              _ShoppingTile(engine: engine),
-              if (engine
-                  .plannedMeals(
-                    DateUtils.dateOnly(now),
-                    DateUtils.dateOnly(now).add(const Duration(days: 2)),
-                  )
-                  .isNotEmpty)
+              if (on(FamioSection.tasks)) _TasksTile(engine: engine),
+              if (on(FamioSection.shopping)) _ShoppingTile(engine: engine),
+              if (on(FamioSection.meals) &&
+                  engine
+                      .plannedMeals(
+                        DateUtils.dateOnly(now),
+                        DateUtils.dateOnly(now).add(const Duration(days: 2)),
+                      )
+                      .isNotEmpty)
                 _MealsTile(engine: engine),
-              if (engine.chores.isNotEmpty || engine.routines.isNotEmpty)
+              if (on(FamioSection.chores) &&
+                  (engine.chores.isNotEmpty || engine.routines.isNotEmpty))
                 _ChoresTile(engine: engine),
-              _ChatTile(engine: engine),
-              if (!guest) _WhereTile(engine: engine),
-              if (engine.medications.isNotEmpty) _MedsTile(engine: engine),
-              if (!guest) _KidsTile(engine: engine),
-              if (upcomingBirthdays(engine, now).isNotEmpty)
+              if (on(FamioSection.chat)) _ChatTile(engine: engine),
+              if (!guest && on(FamioSection.location))
+                _WhereTile(engine: engine),
+              if (on(FamioSection.health) && engine.medications.isNotEmpty)
+                _MedsTile(engine: engine),
+              if (!guest && on(FamioSection.kids)) _KidsTile(engine: engine),
+              if (on(FamioSection.calendar) &&
+                  upcomingBirthdays(engine, now).isNotEmpty)
                 _BirthdaysTile(engine: engine),
-              if (!guest) _DocumentsTile(engine: engine),
-              if (engine.budgetEntries.isNotEmpty) _BudgetTile(engine: engine),
+              if (!guest && on(FamioSection.documents))
+                _DocumentsTile(engine: engine),
+              if (on(FamioSection.budget) && engine.budgetEntries.isNotEmpty)
+                _BudgetTile(engine: engine),
             ];
             const gap = 16.0;
             final width =

@@ -36,7 +36,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.16.0';
+const serverVersion = '0.17.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -932,6 +932,8 @@ class FamioApi {
       'hat Servereinstellungen geändert: '
       '${changes.keys.join(', ')}',
     );
+    // The apps reload their configuration with the member list.
+    if (changes.containsKey('hiddenModules')) hub.notifyMembersChanged();
     // Imported floating times depend on the zone.
     if (location.name != zone) importer?.subscriptionsChanged();
     return _json(_overview().toJson());
@@ -944,6 +946,7 @@ class FamioApi {
     final zone = location.name;
     settings.reset();
     _audit(admin, 'hat die Servereinstellungen auf Standard zurückgesetzt');
+    hub.notifyMembersChanged();
     if (location.name != zone) importer?.subscriptionsChanged();
     return _json(_overview().toJson());
   }
@@ -1115,7 +1118,10 @@ class FamioApi {
   /// Settings every app needs, e.g. where map tiles come from.
   Response _config(Request request) {
     _auth(request);
-    return _json({'mapTileUrl': settings.effective.mapTileUrl});
+    return _json({
+      'mapTileUrl': settings.effective.mapTileUrl,
+      'hiddenModules': settings.effective.hiddenModules ?? const [],
+    });
   }
 
   Response _members(Request request) {

@@ -31,6 +31,7 @@ class SettingsStore {
     maxUploadMb: _stored.maxUploadMb ?? defaults.maxUploadMb ?? 100,
     mapTileUrl: _stored.mapTileUrl ?? defaults.mapTileUrl,
     twoFactorRequired: _stored.twoFactorRequired,
+    hiddenModules: _stored.hiddenModules,
   );
 
   tz.Location get location => _location;
@@ -55,6 +56,7 @@ class SettingsStore {
         'maxUploadMb' => _maxUpload(value),
         'mapTileUrl' => _mapTileUrl(value),
         'twoFactorRequired' => _policy(value),
+        'hiddenModules' => _modules(value),
         _ => null,
       };
     }
@@ -145,6 +147,20 @@ class SettingsStore {
       );
     }
     return text;
+  }
+
+  static List<String>? _modules(Object? value) {
+    if (value == null) return null;
+    final list = value is List ? value : null;
+    if (list == null ||
+        list.any((m) => !ServerSettings.optionalModules.contains(m))) {
+      throw ApiException.badRequest(
+        'invalid_modules',
+        'Ausblendbar sind: ${ServerSettings.optionalModules.join(', ')}',
+      );
+    }
+    final modules = {for (final m in list) m as String}.toList();
+    return modules.isEmpty ? null : modules;
   }
 
   static String? _policy(Object? value) {

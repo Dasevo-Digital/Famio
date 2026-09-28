@@ -100,6 +100,7 @@ class ServerSettings {
     this.maxUploadMb,
     this.mapTileUrl,
     this.twoFactorRequired,
+    this.hiddenModules,
   });
 
   factory ServerSettings.fromJson(Map<String, Object?> json) => ServerSettings(
@@ -108,6 +109,7 @@ class ServerSettings {
     maxUploadMb: json['maxUploadMb'] as int?,
     mapTileUrl: json['mapTileUrl'] as String?,
     twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
+    hiddenModules: (json['hiddenModules'] as List?)?.cast<String>(),
   );
 
   /// Address under which the server is reachable from the internet.
@@ -124,12 +126,34 @@ class ServerSettings {
   /// Who must sign in with a second factor; null: nobody.
   final TwoFactorPolicy? twoFactorRequired;
 
+  /// Areas the family does not use (e.g. `budget`): hidden in every app.
+  /// Their data stays on the server. Null or empty: all are shown.
+  final List<String>? hiddenModules;
+
+  /// Areas that can be hidden (the names of the app's sections); start and
+  /// settings always stay.
+  static const optionalModules = [
+    'tasks',
+    'shopping',
+    'calendar',
+    'chat',
+    'documents',
+    'kids',
+    'location',
+    'chores',
+    'meals',
+    'budget',
+    'health',
+    'contacts',
+  ];
+
   static const keys = [
     'publicUrl',
     'timeZone',
     'maxUploadMb',
     'mapTileUrl',
     'twoFactorRequired',
+    'hiddenModules',
   ];
 
   Map<String, Object?> toJson() => {
@@ -138,6 +162,7 @@ class ServerSettings {
     'maxUploadMb': maxUploadMb,
     'mapTileUrl': mapTileUrl,
     'twoFactorRequired': twoFactorRequired?.name,
+    'hiddenModules': hiddenModules,
   };
 }
 

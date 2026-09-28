@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+import '../app_state.dart';
 import '../data/birthdays.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
@@ -97,12 +98,18 @@ class _KioskScreenState extends State<KioskScreen> {
                   : constraints.maxWidth >= 760
                   ? 2
                   : 1;
+              // Areas the family switched off stay off here too.
+              final hidden = AppScope.of(context).hiddenModules;
+              bool on(FamioSection s) => !hidden.contains(s.name);
               final panels = [
-                _EventsPanel(engine: engine, now: _now),
-                _ChoresPanel(engine: engine, now: _now),
+                if (on(FamioSection.calendar))
+                  _EventsPanel(engine: engine, now: _now),
+                if (on(FamioSection.chores))
+                  _ChoresPanel(engine: engine, now: _now),
                 WeatherTile(engine: engine),
-                _ShoppingPanel(engine: engine),
-                _MealsPanel(engine: engine, now: _now),
+                if (on(FamioSection.shopping)) _ShoppingPanel(engine: engine),
+                if (on(FamioSection.meals))
+                  _MealsPanel(engine: engine, now: _now),
               ];
               const gap = 16.0;
               final width =
