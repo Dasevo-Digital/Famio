@@ -117,7 +117,7 @@ Future<void> openFileRef(BuildContext context, FileRef ref) async {
 }
 
 /// Image from the file cache (downloading a server-side thumbnail once).
-class CachedImage extends StatelessWidget {
+class CachedImage extends StatefulWidget {
   const CachedImage(
     this.ref, {
     super.key,
@@ -132,20 +132,47 @@ class CachedImage extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) {
+  State<CachedImage> createState() => _CachedImageState();
+}
+
+class _CachedImageState extends State<CachedImage> {
+  FileCache? _files;
+  Future<Uint8List>? _bytes;
+
+  /// Loads once per file, not on every rebuild of the screen around it.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     final files = AppScope.of(context).files;
+    if (files != _files) {
+      _files = files;
+      _load();
+    }
+  }
+
+  @override
+  void didUpdateWidget(CachedImage old) {
+    super.didUpdateWidget(old);
+    if (old.ref.id != widget.ref.id || old.thumb != widget.thumb) _load();
+  }
+
+  void _load() => _bytes = _files?.bytes(widget.ref, thumb: widget.thumb);
+
+  @override
+  Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     Widget placeholder([IconData icon = AppIcons.image]) => Container(
       color: c.surfaceSoft,
       alignment: Alignment.center,
       child: Icon(icon, color: c.inkSoft, size: 32),
     );
+    final bytes = _bytes;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
-      child: files == null
+      borderRadius: BorderRadius.circular(widget.radius),
+      child: bytes == null
           ? placeholder()
           : FutureBuilder<Uint8List>(
-              future: files.bytes(ref, thumb: thumb),
+              future: bytes,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return placeholder(AppIcons.imageBroken);
@@ -154,7 +181,7 @@ class CachedImage extends StatelessWidget {
                 return Image.memory(
                   snapshot.data!,
                   gaplessPlayback: true,
-                  fit: fit,
+                  fit: widget.fit,
                   errorBuilder: (_, _, _) => placeholder(AppIcons.imageBroken),
                 );
               },

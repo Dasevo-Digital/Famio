@@ -201,6 +201,8 @@ const _migrations = [
 Database openFamioDatabase(String path, {String? hexKey}) {
   final db = openEncrypted(path, hexKey: hexKey);
   db.execute('PRAGMA journal_mode = WAL;');
+  // Safe with WAL (a crash never corrupts the file) and far fewer fsyncs.
+  db.execute('PRAGMA synchronous = NORMAL;');
   db.execute('PRAGMA foreign_keys = ON;');
   final version = db.select('PRAGMA user_version').first.columnAt(0) as int;
   for (var i = version; i < _migrations.length; i++) {

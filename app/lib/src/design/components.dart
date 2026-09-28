@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'app_icons.dart';
 
@@ -89,7 +91,9 @@ class SectionPage extends StatelessWidget {
                                 subtitle!,
                                 style: Theme.of(context).textTheme.bodyMedium
                                     ?.copyWith(color: c.inkSoft),
-                                maxLines: 1,
+                                // Two lines on narrow phones, e.g. a
+                                // child's age and birthday.
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
                           ],
@@ -137,7 +141,8 @@ class BubbleButton extends StatelessWidget {
     this.tooltip,
     this.color,
     this.background,
-    this.size = 44,
+    // 48 × 48: the smallest comfortable tap target (Android guideline).
+    this.size = 48,
   });
 
   final IconData icon;
@@ -240,25 +245,33 @@ class RoundCheck extends StatelessWidget {
     required this.value,
     required this.onChanged,
     required this.color,
+    this.label,
     this.size = 30,
   });
 
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
   final Color color;
+
+  /// What is ticked off, read out by screen readers.
+  final String? label;
   final double size;
 
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
+    final onChanged = this.onChanged;
     return Semantics(
       checked: value,
       button: true,
+      label: label,
+      excludeSemantics: true,
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => onChanged(!value),
+        onTap: onChanged == null ? null : () => onChanged(!value),
         child: Padding(
-          padding: const EdgeInsets.all(6),
+          // At least 48 × 48 to tap, however small the circle.
+          padding: EdgeInsets.all(max(6, (48 - size) / 2)),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutBack,

@@ -278,6 +278,7 @@ class _TaskCard extends StatelessWidget {
       child: Row(
         children: [
           RoundCheck(
+            label: t.title,
             value: done,
             color: const Color(0xFF2A9D6E),
             onChanged: (v) => AppScope.engineOf(context).savePregnancy(

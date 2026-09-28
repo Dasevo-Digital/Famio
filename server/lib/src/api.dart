@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:famio_shared/famio_shared.dart';
 import 'package:shelf/shelf.dart';
@@ -34,7 +35,7 @@ import 'location/location_service.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.15.0';
+const serverVersion = '0.15.1';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -1839,15 +1840,17 @@ class FamioApi {
     if (length != null && length > maxJsonBytes) {
       throw ApiException(413, 'too_large', 'Anfrage ist zu groß');
     }
-    final bytes = <int>[];
+    // Bytes, not a List<int> of 8-byte slots: a large sync batch would
+    // otherwise take eight times its size in memory.
+    final bytes = BytesBuilder(copy: false);
     await for (final chunk in request.read()) {
-      bytes.addAll(chunk);
+      bytes.add(chunk);
       if (bytes.length > maxJsonBytes) {
         throw ApiException(413, 'too_large', 'Anfrage ist zu groß');
       }
     }
     try {
-      final decoded = jsonDecode(utf8.decode(bytes));
+      final decoded = jsonDecode(utf8.decode(bytes.takeBytes()));
       if (decoded is Map) return decoded.cast();
     } on FormatException {
       // Fall through.
@@ -1905,12 +1908,10 @@ class FamioApi {
             path.startsWith('dav'))
           'cache-control': 'no-store',
         if (path.startsWith('ical/')) 'cache-control': 'no-store, private',
-        if (path.isEmpty) ...{
-          // Only Home Assistant (same origin through ingress) may embed it.
-          'content-security-policy':
-              "default-src 'self'; style-src 'self' 'unsafe-inline'; "
-              "script-src 'self' 'unsafe-inline'; frame-ancestors 'self'",
-        },
+        // Only Home Assistant (same origin through ingress) may embed it.
+        if (response.mimeType == 'text/html')
+          'content-security-policy': landingPagePolicy,
+        'permissions-policy': 'camera=(), microphone=(), geolocation=()',
         if (https) 'strict-transport-security': 'max-age=31536000',
       },
     );
@@ -1923,8 +1924,12 @@ class FamioApi {
       return _json({'error': e.code, 'message': e.message}, status: e.status);
     } on FormatException catch (e) {
       return _json({'error': 'bad_request', 'message': e.message}, status: 400);
-    } on TypeError catch (e) {
-      return _json({'error': 'bad_request', 'message': '$e'}, status: 400);
+    } on TypeError {
+      // A field of the wrong type; the details describe server internals.
+      return _json({
+        'error': 'bad_request',
+        'message': 'Ungültige Anfrage',
+      }, status: 400);
     }
   };
 }

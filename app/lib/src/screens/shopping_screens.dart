@@ -427,6 +427,7 @@ class _ItemTile extends StatelessWidget {
           child: Row(
             children: [
               RoundCheck(
+                label: item.name,
                 value: item.checked,
                 color: c.strong(FamioSection.shopping),
                 onChanged: (checked) =>

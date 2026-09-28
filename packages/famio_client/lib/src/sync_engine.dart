@@ -28,6 +28,7 @@ class SyncEngine {
     required this.api,
     required this.memberId,
     this.pollInterval = const Duration(minutes: 1),
+    this.connectedPollInterval = const Duration(minutes: 10),
   }) {
     _clockOffset = int.tryParse(store.getMeta('clockOffset') ?? '') ?? 0;
     final cached = store.getMeta('members');
@@ -44,7 +45,12 @@ class SyncEngine {
 
   /// The logged-in member, recorded as editor of local changes.
   final String memberId;
+
+  /// How often to sync without the WebSocket (it tells about changes).
   final Duration pollInterval;
+
+  /// Safety net while the WebSocket is up; its hints normally come first.
+  final Duration connectedPollInterval;
 
   static const _pushBatch = 500;
 
@@ -65,6 +71,8 @@ class SyncEngine {
   Timer? _reconnect;
   Timer? _debounce;
   WebSocketChannel? _socket;
+  var _socketUp = false;
+  var _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
   var _reconnectDelay = const Duration(seconds: 2);
 
   /// Emits the set of collection names whose content changed.
@@ -130,9 +138,27 @@ class SyncEngine {
   void start() {
     if (_started) return;
     _started = true;
-    _poll = Timer.periodic(pollInterval, (_) => sync());
+    _poll = Timer.periodic(pollInterval, (_) {
+      if (_socketUp &&
+          DateTime.now().difference(_lastSync) < connectedPollInterval) {
+        return;
+      }
+      sync();
+    });
     _connect();
     refreshMembers();
+    sync();
+  }
+
+  /// The app is in the foreground again: the phone may have cut the
+  /// WebSocket meanwhile, so catch up now instead of on the next timer.
+  void resumed() {
+    if (!_started) return;
+    if (!_socketUp) {
+      _reconnect?.cancel();
+      _reconnectDelay = const Duration(seconds: 2);
+      if (_socket == null) _connect();
+    }
     sync();
   }
 
@@ -143,6 +169,7 @@ class SyncEngine {
     _debounce?.cancel();
     await _socket?.sink.close();
     _socket = null;
+    _socketUp = false;
     await _running;
   }
 
@@ -186,6 +213,7 @@ class SyncEngine {
 
   Future<void> _syncOnce() async {
     _setStatus(SyncState.syncing);
+    _lastSync = DateTime.now();
     try {
       bool more;
       do {
@@ -266,6 +294,9 @@ class SyncEngine {
         api.webSocketUrl,
         headers: api.authHeaders,
         customClient: FamioApiClient.ioClient(api.pinnedCertificate),
+        // Notices a dead connection (sleeping laptop, lost Wi-Fi) within a
+        // minute, so its hints can replace frequent polling.
+        pingInterval: const Duration(seconds: 30),
       );
     } catch (_) {
       _scheduleReconnect();
@@ -273,6 +304,7 @@ class SyncEngine {
     }
     _socket = socket;
     socket.ready.then((_) {
+      if (_socket == socket) _socketUp = true;
       _reconnectDelay = const Duration(seconds: 2);
     }, onError: (_) {});
     socket.stream.listen(
@@ -293,6 +325,7 @@ class SyncEngine {
 
   void _scheduleReconnect() {
     _socket = null;
+    _socketUp = false;
     if (!_started) return;
     _reconnect?.cancel();
     _reconnect = Timer(_reconnectDelay, _connect);

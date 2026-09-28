@@ -1,4 +1,9 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/landing_page.dart';
+import 'package:famio_shared/famio_shared.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
@@ -40,5 +45,32 @@ void main() {
       await page('https://192.168.1.10:8766/'),
       contains('https://192.168.1.10:8766<'),
     );
+  });
+
+  test('only the password script may run, by its hash', () async {
+    final response = await app.handler(
+      Request('GET', Uri.parse('http://192.168.1.10:8765/')),
+    );
+    final policy = response.headers['content-security-policy']!;
+    expect(policy, isNot(contains('unsafe-inline\'; frame')));
+    expect(policy, isNot(contains("script-src 'self'")));
+    expect(response.headers['x-powered-by'], isNull);
+
+    final html = landingPage(
+      member: const FamilyMember(
+        id: 'm',
+        username: 'mama',
+        displayName: 'Mama',
+      ),
+      hasPassword: true,
+      address: 'https://famio.example.org',
+      version: 'test',
+    );
+    final script = RegExp(
+      r'<script>(.*)</script>',
+      dotAll: true,
+    ).firstMatch(html)!.group(1)!;
+    final hash = base64.encode(sha256.convert(utf8.encode(script)).bytes);
+    expect(policy, contains("script-src 'sha256-$hash'"));
   });
 }

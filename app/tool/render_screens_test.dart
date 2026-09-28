@@ -904,8 +904,37 @@ void _seed(SyncEngine e) {
   e.markChatRead(ChatIds.family, at: now.subtract(const Duration(minutes: 50)));
 }
 
+/// With FAMIO_A11Y set, each screen is also checked against Flutter's
+/// accessibility guidelines; findings go to build/screens/a11y.txt.
+final _a11y = Platform.environment.containsKey('FAMIO_A11Y');
+
+Future<void> _audit(WidgetTester tester, String name) async {
+  final handle = tester.ensureSemantics();
+  final findings = <String>[];
+  for (final (label, guideline) in [
+    ('Tippfläche', androidTapTargetGuideline),
+    ('Beschriftung', labeledTapTargetGuideline),
+    ('Kontrast', textContrastGuideline),
+  ]) {
+    final result = await guideline.evaluate(tester);
+    if (!result.passed) findings.add('[$label] ${result.reason}');
+  }
+  handle.dispose();
+  final dir = Platform.environment['FAMIO_SHOTS'] ?? 'build/screens';
+  File('$dir/a11y.txt').writeAsStringSync(
+    '== $name\n${findings.isEmpty ? 'ok\n' : findings.join('\n')}\n',
+    mode: FileMode.append,
+  );
+}
+
 Future<void> _shot(WidgetTester tester, GlobalKey key, String name) async {
   await tester.pumpAndSettle();
+  if (_a11y) {
+    Directory(
+      Platform.environment['FAMIO_SHOTS'] ?? 'build/screens',
+    ).createSync(recursive: true);
+    await _audit(tester, name);
+  }
   final dir = Platform.environment['FAMIO_SHOTS'] ?? 'build/screens';
   Directory(dir).createSync(recursive: true);
   await tester.runAsync(() async {

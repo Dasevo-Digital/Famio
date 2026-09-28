@@ -256,6 +256,7 @@ class _TaskTile extends StatelessWidget {
         child: Row(
           children: [
             RoundCheck(
+              label: task.title,
               value: task.done,
               color: c.strong(FamioSection.tasks),
               onChanged: (done) => engine.saveTask(

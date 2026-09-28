@@ -435,6 +435,7 @@ class _ChoreTile extends StatelessWidget {
           ),
           if (canTick)
             RoundCheck(
+              label: chore.title,
               value: done != null && done.status != PointStatus.rejected,
               color: done?.status == PointStatus.pending
                   ? c.inkSoft
@@ -1181,6 +1182,7 @@ class RoutineRunScreen extends StatelessWidget {
                           ),
                         ),
                         RoundCheck(
+                          label: step.title,
                           value: run.done.contains(step.id),
                           color: color,
                           size: 40,

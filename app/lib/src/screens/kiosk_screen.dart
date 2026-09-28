@@ -384,6 +384,7 @@ class _ChoresPanel extends StatelessWidget {
                   '${ch.emoji} ${ch.title}',
                   dim: done != null,
                   trailing: RoundCheck(
+                    label: ch.title,
                     value: done != null,
                     size: 34,
                     color: done?.status == PointStatus.pending

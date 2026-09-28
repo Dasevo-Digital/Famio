@@ -65,47 +65,36 @@ String logText(ChildLog l, [DateTime? now]) => switch (l.kind) {
   LogKind.bath => 'Gebadet',
 };
 
-/// Rebuilds every second while [active] (running timers).
-class _SecondTicker extends StatefulWidget {
-  const _SecondTicker({required this.active, required this.builder});
+/// Rebuilds every [interval]: the stopwatch of a running timer each
+/// second, "vor 5 Min." labels each minute.
+class _Ticker extends StatefulWidget {
+  const _Ticker({
+    this.interval = const Duration(seconds: 1),
+    required this.builder,
+  });
 
-  final bool active;
+  final Duration interval;
   final WidgetBuilder builder;
 
   @override
-  State<_SecondTicker> createState() => _SecondTickerState();
+  State<_Ticker> createState() => _TickerState();
 }
 
-class _SecondTickerState extends State<_SecondTicker> {
-  Timer? _timer;
-
-  void _update() {
-    if (widget.active && _timer == null) {
-      _timer = Timer.periodic(
-        const Duration(seconds: 1),
-        (_) => setState(() {}),
-      );
-    } else if (!widget.active) {
-      _timer?.cancel();
-      _timer = null;
-    }
-  }
+class _TickerState extends State<_Ticker> {
+  late final Timer _timer = Timer.periodic(
+    widget.interval,
+    (_) => setState(() {}),
+  );
 
   @override
   void initState() {
     super.initState();
-    _update();
-  }
-
-  @override
-  void didUpdateWidget(_SecondTicker old) {
-    super.didUpdateWidget(old);
-    _update();
+    _timer;
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _timer.cancel();
     super.dispose();
   }
 
@@ -124,8 +113,10 @@ class ChildLogView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final running = logs.where((l) => l.running).toList();
-    return _SecondTicker(
-      active: running.isNotEmpty,
+    // Only the stopwatch of a running timer ticks each second (see
+    // _RunningCard); the rest of the log is refreshed once a minute.
+    return _Ticker(
+      interval: const Duration(minutes: 1),
       builder: (context) {
         final now = DateTime.now();
         final byDay = <DateTime, List<ChildLog>>{};
@@ -141,7 +132,7 @@ class ChildLogView extends StatelessWidget {
           padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
           children: [
             for (final r in running) ...[
-              _RunningCard(child: child, log: r, logs: logs, now: now),
+              _RunningCard(child: child, log: r),
               const SizedBox(height: 10),
             ],
             _QuickButtons(child: child, logs: logs),
@@ -189,27 +180,15 @@ String _dayLabel(DateTime day, DateTime now) {
 }
 
 class _RunningCard extends StatelessWidget {
-  const _RunningCard({
-    required this.child,
-    required this.log,
-    required this.logs,
-    required this.now,
-  });
+  const _RunningCard({required this.child, required this.log});
 
   final Child child;
   final ChildLog log;
-  final List<ChildLog> logs;
-  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
     final (icon, color) = logLook(log.kind);
     final engine = AppScope.engineOf(context);
-    final elapsed = log.duration(now);
-    final clock =
-        '${elapsed.inHours > 0 ? '${elapsed.inHours}:' : ''}'
-        '${(elapsed.inMinutes % 60).toString().padLeft(elapsed.inHours > 0 ? 2 : 1, '0')}:'
-        '${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}';
     return SoftCard(
       color: color.withValues(alpha: 0.14),
       child: Row(
@@ -226,12 +205,20 @@ class _RunningCard extends StatelessWidget {
                       : 'Stillen ${log.side?.label ?? ''} seit ${_time.format(log.start)}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-                Text(
-                  clock,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: color,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                _Ticker(
+                  builder: (context) {
+                    final elapsed = log.duration(DateTime.now());
+                    return Text(
+                      '${elapsed.inHours > 0 ? '${elapsed.inHours}:' : ''}'
+                      '${(elapsed.inMinutes % 60).toString().padLeft(elapsed.inHours > 0 ? 2 : 1, '0')}:'
+                      '${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: color,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                    );
+                  },
                 ),
               ],
             ),

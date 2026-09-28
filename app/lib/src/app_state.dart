@@ -68,7 +68,13 @@ class AppState extends ChangeNotifier {
   /// The server's HTTPS port for the home network (FAMIO_TLS_PORT).
   static const defaultTlsPort = AppEnv.tlsPort;
 
+  /// Back in the foreground: catch up with changes made meanwhile.
+  late final _lifecycle = AppLifecycleListener(
+    onResume: () => engine?.resumed(),
+  );
+
   Future<void> init() async {
+    _lifecycle;
     _prefs = await SharedPreferences.getInstance();
     vault = await SecureVault.open(_prefs);
     serverUrl = _prefs.getString('serverUrl');

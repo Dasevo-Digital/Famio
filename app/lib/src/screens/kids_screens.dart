@@ -837,6 +837,7 @@ class _MilestoneRow extends StatelessWidget {
         child: Row(
           children: [
             RoundCheck(
+              label: milestone.title,
               value: done,
               color: const Color(0xFFE89B1A),
               onChanged: (_) => done
@@ -1071,6 +1072,7 @@ class _DueList extends StatelessWidget {
               child: Row(
                 children: [
                   RoundCheck(
+                    label: d.title,
                     value: d.state == DueState.done,
                     color: const Color(0xFF2A9D6E),
                     onChanged: (_) => showDueActions(context, child, d),
@@ -1754,6 +1756,7 @@ class _ChildEditorState extends State<_ChildEditor> {
                     bottom: 0,
                     child: BubbleButton(
                       icon: AppIcons.camera,
+                      tooltip: 'Foto wählen',
                       onPressed: _busy ? null : _pickPhoto,
                       size: 38,
                     ),
@@ -2166,6 +2169,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                               top: 2,
                               child: BubbleButton(
                                 icon: AppIcons.x,
+                                tooltip: 'Foto entfernen',
                                 size: 26,
                                 onPressed: () =>
                                     setState(() => _photos.remove(p)),
