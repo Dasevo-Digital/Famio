@@ -80,7 +80,7 @@ class PanelProxy {
       final app = webApp;
       return app == null
           ? Response.notFound('Not found')
-          : _secured(await app.serve(path.substring(4)));
+          : _secured(await app.serve(request, path.substring(4)));
     }
     // Health checks (Docker, Home Assistant's watchdog): is the family's
     // server reachable?

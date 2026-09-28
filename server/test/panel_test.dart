@@ -31,8 +31,42 @@ void main() {
       expect(await index.readAsString(), contains('Famio'));
       expect(index.headers['content-security-policy'], WebApp.policy);
       expect(index.headers['cache-control'], 'no-cache');
+      expect(index.headers['etag'], isNotNull);
       final js = await get('/app/main.dart.js');
       expect(js.headers['content-type'], startsWith('text/javascript'));
+      // Compressed where the browser can take it; unchanged: 304.
+      File(
+        '${web.path}/main.dart.js.gz',
+      ).writeAsBytesSync(gzip.encode(utf8.encode('main();')));
+      final packed = await app.handler(
+        Request(
+          'GET',
+          Uri.parse('http://famio.local/app/main.dart.js'),
+          headers: {'accept-encoding': 'gzip, br'},
+        ),
+      );
+      expect(packed.headers['content-encoding'], 'gzip');
+      expect(
+        utf8.decode(gzip.decode(await packed.read().expand((b) => b).toList())),
+        'main();',
+      );
+      final viaHomeAssistant = await app.handler(
+        Request(
+          'GET',
+          Uri.parse('http://famio.local/app/main.dart.js'),
+          headers: {'accept-encoding': 'gzip', 'x-ingress-path': '/api/x'},
+        ),
+      );
+      expect(viaHomeAssistant.headers['content-encoding'], isNull);
+      final again = await app.handler(
+        Request(
+          'GET',
+          Uri.parse('http://famio.local/app/main.dart.js'),
+          headers: {'if-none-match': js.headers['etag']!},
+        ),
+      );
+      expect(again.statusCode, 304);
+      expect(await again.readAsString(), isEmpty);
       // Unknown types and paths outside the folder are not served.
       expect((await get('/app/secret.txt')).statusCode, 404);
       expect((await get('/app/..%2F..%2Fetc%2Fpasswd')).statusCode, 404);
@@ -190,7 +224,9 @@ void main() {
       expect((await call('GET', 'api/health', haUser: null)).$1, 200);
 
       // Kept over a restart of the add-on, not readable by the browser.
-      final stored = File('${data.path}/panel_sessions.json').readAsStringSync();
+      final stored = File(
+        '${data.path}/panel_sessions.json',
+      ).readAsStringSync();
       expect(stored, contains('ha-1'));
       final again = PanelProxy(
         upstream: proxy.upstream,
@@ -247,9 +283,9 @@ void main() {
     });
 
     test('the web app and the start page', () async {
-      final request = await http.getUrl(
-        Uri.parse('http://127.0.0.1:${panel.port}/'),
-      )..followRedirects = false;
+      final request =
+          await http.getUrl(Uri.parse('http://127.0.0.1:${panel.port}/'))
+            ..followRedirects = false;
       final response = await request.close();
       await response.drain<void>();
       expect(response.headers.value('location'), 'app/');

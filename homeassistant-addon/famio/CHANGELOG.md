@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.18.1 – schneller und robuster
+
+- **Seitenleiste und Browser laden viel weniger:** 4 statt 15 MB beim
+  ersten Öffnen, danach fast nichts mehr (unveränderte Dateien werden nicht
+  neu geladen). Ungenutzte Schriften und Grafik-Engines entfernt.
+- **Server-Antworten komprimiert:** Der Abgleich einer großen Familie ist
+  etwa fünfmal kleiner – schneller unterwegs und auf dem Handy.
+- **Behoben:** Die Web-App startete nicht, wenn der Browser auf Englisch
+  (oder eine andere Sprache) eingestellt war.
+- Im Browser (`/app/`) bleibt man beim Neuladen der Seite angemeldet (nur in
+  diesem Tab).
+
 ## 0.18.0 – Famio in der Seitenleiste und im Browser
 
 - **Die ganze Famio-App in der Home-Assistant-Seitenleiste:** Startseite,
