@@ -30,7 +30,7 @@ import 'location/location_service.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.14.2';
+const serverVersion = '0.14.3';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -1264,15 +1264,46 @@ class FamioApi {
 
   Response _landing(Request request) {
     final member = _ingressMember(request);
+    final peer =
+        (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
+            ?.remoteAddress;
+    final ingress = ingressAuth && peer?.address == _ingressProxy;
     return Response.ok(
       landingPage(
         member: member,
         hasPassword: member != null && accounts.hasPassword(member.id),
-        host: request.headers['host']?.split(':').first,
+        address: _appAddress(request, ingress: ingress),
         version: serverVersion,
+        addon: ingress,
       ),
       headers: {'content-type': 'text/html; charset=utf-8'},
     );
+  }
+
+  /// The address to enter in the apps, as seen from [request]: the public
+  /// address if set, the proxy's https address, otherwise Famio's own HTTPS
+  /// port (plain HTTP only without one). Only shown, so the forwarded
+  /// headers need no trust here.
+  String _appAddress(Request request, {required bool ingress}) {
+    final public = publicUrl;
+    if (public != null) return public.replaceFirst(RegExp(r'/+$'), '');
+    final uri = request.requestedUri;
+    final host = uri.host.contains(':') ? '[${uri.host}]' : uri.host;
+    String withPort(String scheme, int port) =>
+        '$scheme://$host${port == (scheme == 'https' ? 443 : 80) ? '' : ':$port'}';
+    if (uri.scheme == 'https') return withPort('https', uri.port);
+    final proto = request.headers['x-forwarded-proto']
+        ?.split(',')
+        .first
+        .trim()
+        .toLowerCase();
+    // In the Home Assistant sidebar the proxy is HA's, not Famio's.
+    if (!ingress && proto == 'https') {
+      final port = int.tryParse(request.headers['x-forwarded-port'] ?? '');
+      return withPort('https', port ?? 443);
+    }
+    if (tlsPort case final port?) return withPort('https', port);
+    return withPort('http', uri.port);
   }
 
   // --- helpers -------------------------------------------------------------

@@ -57,10 +57,38 @@ Im Heimnetz direkt auf Port 8765 ist kein Code nötig.
 ## 4. Prüfen
 
 ```sh
-curl https://famio.example.de/api/health
-cd packages/famio_client
-dart run tool/smoke_test.dart https://famio.example.de <benutzer> <passwort>
+curl https://famio.example.de/api/health          # Version, 200
+curl -I http://famio.example.de/                  # 301 auf https (Force SSL)
+curl https://famio.example.de/ | grep url         # zeigt https://famio.example.de
 ```
+
+Die Startseite (`/`) zeigt die Adresse, die in die Apps gehört. Die Apps
+dann überall auf `https://famio.example.de` umstellen (Einstellungen →
+„Server-Adresse ändern“) – so funktionieren Abgleich und Standort auch
+unterwegs.
+
+## LXC: Port 8765 nur für NPM
+
+Mit `FAMIO_TRUST_PROXY=true` darf Port 8765 nur von NPM erreichbar sein.
+Im Container z. B. mit nftables (`/etc/nftables.conf`, dann
+`systemctl enable --now nftables`):
+
+```nft
+flush ruleset
+table inet famio {
+  chain input {
+    type filter hook input priority filter; policy accept;
+    tcp dport 8765 ip saddr { 127.0.0.1, <NPM-IP> } accept
+    tcp dport 8765 ip6 saddr ::1 accept
+    tcp dport 8765 drop
+  }
+}
+```
+
+Dazu in `/etc/famio/famio.env`: `FAMIO_TRUST_PROXY=true`,
+`FAMIO_REQUIRE_TLS=true` und `FAMIO_PUBLIC_URL=https://famio.example.de/`,
+dann `systemctl restart famio`. Port 8766 (Famios eigenes HTTPS) bleibt fürs
+Heimnetz offen.
 
 ## Sicherheit
 
