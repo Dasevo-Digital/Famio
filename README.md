@@ -1,8 +1,9 @@
 # Famio
 
 Familien-Organizer mit eigenem Sync-Server. Die App läuft auf Android, iOS,
-macOS, Windows und Linux; der Server läuft als Home-Assistant-Add-on oder
-eigenständig per Docker.
+macOS, Windows und Linux sowie im Browser (`<server>/app/`) und in der
+Seitenleiste von Home Assistant; der Server läuft als Home-Assistant-Add-on
+oder eigenständig (Docker, Proxmox-LXC).
 
 | Modul | Stand |
 |---|---|
@@ -32,6 +33,7 @@ eigenständig per Docker.
 | Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
 | Medikamentenplan mit Erinnerung und Vorrat | ✅ |
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
+| Web-App im Browser und in der Home-Assistant-Seitenleiste (Add-on als Server oder nur als Client) | ✅ |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 
 ## Aufbau
@@ -383,10 +385,9 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
 | Docker (NAS, Server) | `docker compose up -d` im Repository, Daten in `./data` |
 | Docker hinter **Nginx Proxy Manager** | [deploy/npm/README.md](deploy/npm/README.md) |
 | **Proxmox-LXC** (empfohlen: Debian 13), auch Umzug von Docker | [deploy/lxc/README.md](deploy/lxc/README.md) – `proxmox-create.sh` |
-| Home-Assistant-**Add-on** (Server) | [homeassistant-addon/](homeassistant-addon/) – lokal: `homeassistant-addon/local/` |
+| Home-Assistant-**Add-on** (Seitenleiste; als Server oder als Client eines vorhandenen Servers) | [homeassistant-addon/famio/DOCS.md](homeassistant-addon/famio/DOCS.md) – lokal: `homeassistant-addon/local/` |
 | Home-Assistant-**Integration** (Client: Kalender, To-dos, Sensoren, Standorte) | [homeassistant-integration/README.md](homeassistant-integration/README.md) |
 | **LXC** (Proxmox) ohne Docker, systemd | [deploy/lxc/README.md](deploy/lxc/README.md) |
-| Home-Assistant-Add-on | [homeassistant-addon/famio/DOCS.md](homeassistant-addon/famio/DOCS.md) |
 
 | Variable | Bedeutung |
 |---|---|
@@ -396,6 +397,15 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
 | `FAMIO_MAX_UPLOAD_MB` | Maximale Dateigröße (Standard 100) |
 | `FAMIO_PORT`, `FAMIO_DATA_DIR` | Port (8765) und Datenverzeichnis |
 | `FAMIO_TLS_NAMES` | Zusätzliche Hostnamen/IP-Adressen für das HTTPS-Zertifikat (Port 8766), z. B. `192.168.1.5,famio.fritz.box` |
+| `FAMIO_WEB_DIR` | Ordner der Web-App (Standard: `web/` neben `bin/` im Server-Paket) |
+
+**Web-App:** Jeder Server liefert die App unter `/app/` aus (gebaut mit
+`app/tool/build_web.sh`, landet in `server/web` und damit in allen
+Server-Paketen). Im Browser gilt die normale Anmeldung inkl. Zwei-Faktor; die
+Sitzung bleibt nur im geöffneten Tab (nichts im Browser gespeichert). In der
+Home-Assistant-Seitenleiste meldet das Add-on an: als Server über den
+Home-Assistant-Benutzer, als Client (`mode: client`) mit dem Famio-Konto,
+dessen Sitzung das Add-on je Home-Assistant-Benutzer aufbewahrt.
 
 Beim ersten Start ohne Konto schreibt der Server einen **Einrichtungscode**
 ins Log. Er wird nur verlangt, wenn das erste Konto über einen Proxy oder das

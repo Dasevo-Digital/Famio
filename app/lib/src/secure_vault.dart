@@ -20,7 +20,17 @@ import 'environment.dart';
 /// signature, "Immer erlauben" only lasts until the next update, so every
 /// entry would ask again after each update – one entry asks once.
 class SecureVault {
-  SecureVault._(this._prefs, this._storage, {required this.secure});
+  SecureVault._(this._prefs, this._storage, {required this.secure})
+    : _memory = null;
+
+  /// The web app keeps secrets only in memory, for the open page: the
+  /// session belongs to Home Assistant (or is signed in again next time).
+  SecureVault.memory(this._prefs)
+    : _storage = null,
+      secure = true,
+      _memory = {};
+
+  final Map<String, String>? _memory;
 
   /// Both builds share the login keychain on macOS: separate entries keep
   /// development away from the family's secrets.
@@ -80,10 +90,17 @@ class SecureVault {
   /// The shared keystore entry, read once.
   Map<String, String> _secrets = {};
 
-  Future<String?> read(String key) async =>
-      _storage == null ? _prefs.getString('vault.$key') : _secrets[key];
+  Future<String?> read(String key) async => _memory != null
+      ? _memory[key]
+      : _storage == null
+      ? _prefs.getString('vault.$key')
+      : _secrets[key];
 
   Future<void> write(String key, String? value) async {
+    if (_memory case final memory?) {
+      value == null ? memory.remove(key) : memory[key] = value;
+      return;
+    }
     final storage = _storage;
     if (storage == null) {
       value == null

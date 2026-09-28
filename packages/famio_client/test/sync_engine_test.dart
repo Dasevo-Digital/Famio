@@ -249,7 +249,7 @@ void main() {
       '${dir.path}/cache.db',
       papa.api,
       hexKey: key,
-      tempDir: Directory('${dir.path}/tmp'),
+      tempDir: '${dir.path}/tmp',
     );
     expect(await cache.bytes(photo), [1, 2, 3, 4]);
     // Offline copy is encrypted on disk.
@@ -263,15 +263,15 @@ void main() {
       '${dir.path}/cache.db',
       papa.api,
       hexKey: key,
-      tempDir: Directory('${dir.path}/tmp'),
+      tempDir: '${dir.path}/tmp',
     );
-    final copy = await reopened.openable(photo);
+    final copy = File(await reopened.openable(photo));
     expect(await copy.readAsString(), 'Arztbrief-Klartext');
     reopened.clearTemp();
     expect(copy.existsSync(), isFalse);
 
     await expectLater(
-      FileCache.open(':memory:', kind.api, tempDir: dir).bytes(photo),
+      FileCache.open(':memory:', kind.api, tempDir: dir.path).bytes(photo),
       throwsA(isA<ApiError>().having((e) => e.status, 'status', 404)),
     );
   });

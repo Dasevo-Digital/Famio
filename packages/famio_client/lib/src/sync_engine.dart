@@ -3,11 +3,11 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:famio_shared/famio_shared.dart';
-import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import 'api_client.dart';
 import 'local_store.dart';
+import 'platform/net.dart';
 
 enum SyncState { idle, syncing, offline, unauthorized }
 
@@ -286,14 +286,25 @@ class SyncEngine {
 
   // --- websocket ------------------------------------------------------------
 
-  void _connect() {
-    if (!_started) return;
+  /// While [_connect] waits for a browser ticket.
+  var _connecting = false;
+
+  Future<void> _connect() async {
+    if (!_started || _connecting) return;
     final WebSocketChannel socket;
     try {
-      socket = IOWebSocketChannel.connect(
-        api.webSocketUrl,
+      _connecting = true;
+      final Uri url;
+      try {
+        url = await api.webSocketConnectUrl();
+      } finally {
+        _connecting = false;
+      }
+      if (!_started || _socket != null) return;
+      socket = platformWebSocket(
+        url,
         headers: api.authHeaders,
-        customClient: FamioApiClient.ioClient(api.pinnedCertificate),
+        pin: api.pinnedCertificate,
         // Notices a dead connection (sleeping laptop, lost Wi-Fi) within a
         // minute, so its hints can replace frequent polling.
         pingInterval: const Duration(seconds: 30),

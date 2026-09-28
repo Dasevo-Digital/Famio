@@ -1,5 +1,6 @@
 # Famio server image, used standalone and as Home Assistant add-on.
 # Build from the repository root: docker build -t famio-server .
+# The web app comes from server/web (app/tool/build_web.sh), if built.
 FROM dart:stable AS build
 WORKDIR /src
 COPY packages/famio_shared packages/famio_shared
@@ -8,7 +9,8 @@ WORKDIR /src/server
 RUN dart pub get
 COPY server .
 RUN dart build cli -t bin/server.dart -o /out \
-    && mkdir -p /out/data
+    && mkdir -p /out/data \
+    && if [ -f web/index.html ]; then cp -R web /out/bundle/web; fi
 
 # Distroless: glibc and CA certificates only (needed for fetching https
 # calendar subscriptions), no shell or package manager.

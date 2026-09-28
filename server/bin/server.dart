@@ -14,6 +14,17 @@ Future<void> main(List<String> args) async {
   if (config.healthcheck) exit(await _healthcheck(config.port));
   _privateFiles();
   Directory(config.dataDir).createSync(recursive: true);
+  final webApp = WebApp.locate(config.webDir);
+  if (config.clientMode && config.upstream == null) {
+    stderr.writeln(
+      'FEHLER: Betriebsart „client“ braucht die Server-Adresse (server_url) '
+      'eures Famio-Servers in den Add-on-Optionen.',
+    );
+    exit(78); // EX_CONFIG
+  }
+  if (config.upstream case final upstream?) {
+    return _runPanelProxy(config, Uri.parse(upstream), webApp);
+  }
 
   // Encryption at rest: the key should live outside the data directory, so
   // that backups of the data alone are useless to a thief.
@@ -50,6 +61,7 @@ Future<void> main(List<String> args) async {
     requireTls: config.requireTls,
     tlsPort: tls == null ? null : config.tlsPort,
     tls: tls,
+    webApp: webApp,
     auditLog: (line) =>
         stdout.writeln('${DateTime.now().toIso8601String()} $line'),
   )..startBackgroundJobs();
@@ -121,6 +133,46 @@ Future<void> main(List<String> args) async {
       await server.close();
       await secure?.close();
       await app.close();
+      exit(0);
+    });
+  }
+}
+
+/// Home Assistant add-on in client mode: only the sidebar, connected to the
+/// family's Famio server at [upstream].
+Future<void> _runPanelProxy(
+  ServerConfig config,
+  Uri upstream,
+  WebApp? webApp,
+) async {
+  final proxy = PanelProxy(
+    upstream: upstream,
+    pin: config.upstreamPin,
+    dataDir: config.dataDir,
+    webApp: webApp,
+  );
+  final handler = const Pipeline()
+      .addMiddleware(logRequests(logger: _redactedLog))
+      .addHandler(proxy.handler);
+  final server = await io.serve(
+    handler,
+    InternetAddress.anyIPv4,
+    config.port,
+    poweredByHeader: null,
+  );
+  stdout.writeln(
+    'Famio $serverVersion für die Home-Assistant-Seitenleiste auf '
+    ':${server.port}, verbunden mit $upstream'
+    '${webApp == null ? ' (WARNUNG: Web-App fehlt)' : ''}',
+  );
+  final signals = [
+    ProcessSignal.sigint,
+    if (!Platform.isWindows) ProcessSignal.sigterm,
+  ];
+  for (final signal in signals) {
+    signal.watch().listen((_) async {
+      await server.close();
+      proxy.close();
       exit(0);
     });
   }

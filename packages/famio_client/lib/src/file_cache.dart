@@ -1,11 +1,9 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:famio_shared/famio_shared.dart';
-import 'package:sqlite3/sqlite3.dart';
 
 import 'api_client.dart';
-import 'encrypted_db.dart';
+import 'platform/platform.dart';
 
 /// Keeps downloaded files on the device, so photos and documents opened once
 /// are available offline. Files never change (new upload = new id), so a
@@ -15,27 +13,22 @@ import 'encrypted_db.dart';
 /// stored in plain text, except for a short-lived copy in [tempDir] when a
 /// file is handed to another app (PDF viewer …); [clearTemp] removes those.
 class FileCache {
-  FileCache._(this._db, this.api, this.tempDir) {
-    _db.execute('PRAGMA journal_mode = WAL');
-    _db.execute(
-      'CREATE TABLE IF NOT EXISTS blobs (key TEXT NOT NULL, seq INTEGER NOT'
-      ' NULL, data BLOB NOT NULL, PRIMARY KEY (key, seq))',
-    );
-  }
+  FileCache._(this._blobs, this.api, this.tempDir);
 
-  /// Opens the cache database at [path] (`:memory:` for tests).
+  /// Opens the cache database at [path] (`:memory:` for tests; in the
+  /// browser the cache stays in memory).
   factory FileCache.open(
     String path,
     FamioApiClient api, {
     String? hexKey,
-    required Directory tempDir,
-  }) => FileCache._(openDeviceDatabase(path, hexKey: hexKey), api, tempDir);
+    required String tempDir,
+  }) => FileCache._(openBlobBackend(path, hexKey: hexKey), api, tempDir);
 
-  final Database _db;
+  final BlobBackend _blobs;
   final FamioApiClient api;
 
-  /// Where decrypted copies for other apps are written.
-  final Directory tempDir;
+  /// Folder where decrypted copies for other apps are written.
+  final String tempDir;
   final _pending = <String, Future<Uint8List>>{};
 
   /// Recently shown previews, most recent last. Handing out the same bytes
@@ -46,8 +39,6 @@ class FileCache {
 
   /// Upper bound for [_recent].
   static const recentLimit = 16 * 1024 * 1024;
-
-  static const _chunk = 1024 * 1024;
 
   /// The contents of [ref] (or its [thumb] preview), downloading them once.
   Future<Uint8List> bytes(FileRef ref, {int? thumb}) {
@@ -83,57 +74,27 @@ class FileCache {
     return data;
   }
 
-  /// A plain copy of [ref] for opening it with another app.
-  Future<File> openable(FileRef ref) async {
-    final data = await bytes(ref);
-    tempDir.createSync(recursive: true);
-    final file = File('${tempDir.path}/${ref.id}_${_safe(ref.name)}');
-    await file.writeAsBytes(data, flush: true);
-    return file;
-  }
+  /// A plain copy of [ref] for opening it with another app; returns its
+  /// path (not in the browser).
+  Future<String> openable(FileRef ref) async =>
+      writeTempFile(tempDir, '${ref.id}_${_safe(ref.name)}', await bytes(ref));
 
   /// Deletes plain copies made by [openable].
-  void clearTemp() {
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
-  }
+  void clearTemp() => clearTempFiles(tempDir);
 
   /// Puts freshly uploaded bytes into the cache, so the uploader never
   /// downloads their own file again.
   void put(FileRef ref, List<int> data) => _write(ref.id, data);
 
-  void close() => _db.close();
+  void close() => _blobs.close();
 
-  Uint8List? _read(String key) {
-    final rows = _db.select(
-      'SELECT data FROM blobs WHERE key = ? ORDER BY seq',
-      [key],
-    );
-    if (rows.isEmpty) return null;
-    final out = BytesBuilder(copy: false);
-    for (final r in rows) {
-      out.add(r.columnAt(0) as List<int>);
-    }
-    return out.takeBytes();
-  }
+  Uint8List? _read(String key) => switch (_blobs.read(key)) {
+    null => null,
+    final Uint8List data => data,
+    final data => Uint8List.fromList(data),
+  };
 
-  void _write(String key, List<int> data) {
-    _db.execute('BEGIN');
-    try {
-      _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
-      for (var o = 0, seq = 0; o < data.length || seq == 0; o += _chunk) {
-        final end = o + _chunk < data.length ? o + _chunk : data.length;
-        _db.execute('INSERT INTO blobs (key, seq, data) VALUES (?, ?, ?)', [
-          key,
-          seq++,
-          data.sublist(o, end),
-        ]);
-      }
-      _db.execute('COMMIT');
-    } catch (_) {
-      _db.execute('ROLLBACK');
-      rethrow;
-    }
-  }
+  void _write(String key, List<int> data) => _blobs.write(key, data);
 
   static String _safe(String name) => name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 }

@@ -1,7 +1,9 @@
 import 'kiosk_screen.dart';
 import 'push_settings_screen.dart';
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../design/app_icons.dart';
@@ -110,11 +112,26 @@ class SettingsScreen extends StatelessWidget {
             ),
           ],
           ListHeading('Konto', color: accent),
-          ListTile(
-            leading: const Icon(AppIcons.password),
-            title: const Text('Passwort ändern'),
-            onTap: () => _changePassword(context),
-          ),
+          if (state.panelMode == 'server')
+            // Home Assistant signs in here; the page of the add-on sets a
+            // password for the phone and computer apps.
+            ListTile(
+              leading: const Icon(AppIcons.password),
+              title: const Text('Famio-Apps verbinden'),
+              subtitle: const Text(
+                'Adresse und Passwort für die Apps auf Handy und Computer',
+              ),
+              onTap: () => launchUrl(
+                Uri.parse(state.serverUrl!).replace(query: 'info'),
+                webOnlyWindowName: '_self',
+              ),
+            )
+          else
+            ListTile(
+              leading: const Icon(AppIcons.password),
+              title: const Text('Passwort ändern'),
+              onTap: () => _changePassword(context),
+            ),
           ListTile(
             leading: const Icon(AppIcons.shieldCheck),
             title: const Text('Anmeldung & Sicherheit'),
@@ -154,16 +171,18 @@ class SettingsScreen extends StatelessWidget {
                 }
               },
             ),
-          ListTile(
-            leading: const Icon(AppIcons.bellRing),
-            title: const Text('Push-Benachrichtigungen'),
-            subtitle: const Text('Direkt über Famio oder über ntfy'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const PushSettingsScreen(),
+          // The web app shows no notifications.
+          if (!kIsWeb)
+            ListTile(
+              leading: const Icon(AppIcons.bellRing),
+              title: const Text('Push-Benachrichtigungen'),
+              subtitle: const Text('Direkt über Famio oder über ntfy'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const PushSettingsScreen(),
+                ),
               ),
             ),
-          ),
           ListHeading('Dieses Gerät', color: accent),
           ListTile(
             leading: const Icon(AppIcons.tv),
@@ -173,12 +192,13 @@ class SettingsScreen extends StatelessWidget {
             ),
             onTap: () => openKiosk(context),
           ),
-          SwitchListTile(
-            secondary: const Icon(AppIcons.monitor),
-            title: const Text('Beim Start als Wandanzeige öffnen'),
-            value: state.kioskAutostart,
-            onChanged: state.setKioskAutostart,
-          ),
+          if (!kIsWeb)
+            SwitchListTile(
+              secondary: const Icon(AppIcons.monitor),
+              title: const Text('Beim Start als Wandanzeige öffnen'),
+              value: state.kioskAutostart,
+              onChanged: state.setKioskAutostart,
+            ),
           SwitchListTile(
             secondary: const Icon(AppIcons.contrast),
             title: const Text('Hoher Kontrast'),
@@ -194,9 +214,15 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: const Icon(AppIcons.hardDrives),
             title: const Text('Server'),
-            subtitle: Text(state.serverUrl ?? ''),
+            subtitle: Text(
+              state.panelMode == 'server'
+                  ? 'Famio in Home Assistant'
+                  : state.panelMode == 'client'
+                  ? 'Über Home Assistant verbunden'
+                  : state.serverUrl ?? '',
+            ),
           ),
-          _ConnectionSecurityTile(url: state.serverUrl),
+          if (!kIsWeb) _ConnectionSecurityTile(url: state.serverUrl),
           StreamBuilder<SyncStatus>(
             stream: engine.statusChanges,
             initialData: engine.status,
@@ -239,27 +265,30 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          ListTile(
-            leading: Icon(AppIcons.signOut, color: c.danger),
-            title: Text('Abmelden', style: TextStyle(color: c.danger)),
-            subtitle: const Text(
-              'Lokale Daten auf diesem Gerät werden entfernt',
+          if (state.canSignOut)
+            ListTile(
+              leading: Icon(AppIcons.signOut, color: c.danger),
+              title: Text('Abmelden', style: TextStyle(color: c.danger)),
+              subtitle: Text(
+                state.panelMode == 'client'
+                    ? 'Home Assistant vergisst deine Anmeldung'
+                    : 'Lokale Daten auf diesem Gerät werden entfernt',
+              ),
+              onTap: () async {
+                // Signing out would end location sharing: parents' code first.
+                if (LocationSharing.supported &&
+                    (await LocationSharing.status()).enabled) {
+                  if (!context.mounted) return;
+                  final stopped = await showPauseDialog(
+                    context,
+                    member: state.me!,
+                    stopOnThisDevice: true,
+                  );
+                  if (!stopped) return;
+                }
+                await state.signOut();
+              },
             ),
-            onTap: () async {
-              // Signing out would end location sharing: parents' code first.
-              if (LocationSharing.supported &&
-                  (await LocationSharing.status()).enabled) {
-                if (!context.mounted) return;
-                final stopped = await showPauseDialog(
-                  context,
-                  member: state.me!,
-                  stopOnThisDevice: true,
-                );
-                if (!stopped) return;
-              }
-              await state.signOut();
-            },
-          ),
           ListHeading('Über Famio', color: accent),
           VersionTile(api: engine.api),
         ],
