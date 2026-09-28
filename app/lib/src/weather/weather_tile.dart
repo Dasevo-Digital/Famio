@@ -158,6 +158,12 @@ class _WeatherTileState extends State<WeatherTile> {
               ),
       );
     }
+    // In the evening the tile tells what the children sleep in; the
+    // details show both.
+    final hour = DateTime.now().hour;
+    final night = hour >= 17 || hour < 6
+        ? <String, NightAdvice>{for (final k in kids) k.id: ?nightAdvice(k, f)}
+        : const <String, NightAdvice>{};
     return frame(
       onTap: () => _showDetails(context, f, place, kids),
       badge: weatherEmoji(f.now.code),
@@ -165,8 +171,11 @@ class _WeatherTileState extends State<WeatherTile> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${_deg(f.now.temperature)} · ${weatherText(f.now.code)} · '
-            'gefühlt ${_deg(f.now.apparent)}',
+            night.isEmpty
+                ? '${_deg(f.now.temperature)} · ${weatherText(f.now.code)} · '
+                      'gefühlt ${_deg(f.now.apparent)}'
+                : '${_deg(f.now.temperature)} · ${weatherText(f.now.code)} · '
+                      '🌙 nachts bis ${_deg(night.values.first.low)}',
             style: theme.textTheme.bodyLarge,
           ),
           for (final k in kids.take(4))
@@ -176,11 +185,15 @@ class _WeatherTileState extends State<WeatherTile> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: '${k.name}: ',
+                      text: night.containsKey(k.id)
+                          ? '${k.name} heute Nacht: '
+                          : '${k.name}: ',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     TextSpan(
-                      text: clothingAdvice(k, f).items.take(3).join(', '),
+                      text:
+                          night[k.id]?.items.join(', ') ??
+                          clothingAdvice(k, f).items.take(3).join(', '),
                     ),
                   ],
                 ),
@@ -232,7 +245,7 @@ class _WeatherTileState extends State<WeatherTile> {
                   child: ListView(
                     scrollDirection: Axis.horizontal,
                     children: [
-                      for (final h in f.hours)
+                      for (final h in f.hours.take(12))
                         Container(
                           width: 58,
                           margin: const EdgeInsets.only(right: 6),
@@ -286,10 +299,40 @@ class _WeatherTileState extends State<WeatherTile> {
                     );
                   }(),
                 ],
+                if (kids.isNotEmpty && nightAdvice(kids.first, f) != null) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    '🌙 Für die Nacht · draußen bis ${_deg(nightAdvice(kids.first, f)!.low)}',
+                    style: theme.textTheme.titleLarge,
+                  ),
+                  for (final k in kids)
+                    if (nightAdvice(k, f) case final n?) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '${k.name} · ${n.summary}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      for (final item in n.items) Text('• $item'),
+                    ],
+                  const SizedBox(height: 8),
+                  for (final h in {
+                    for (final k in kids) ...?nightAdvice(k, f)?.hints,
+                  })
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        h,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 16),
                 Text(
-                  'Faustregeln für die nächsten 3 Stunden nach gefühlter '
-                  'Temperatur. Wetterdaten: Open-Meteo.com (CC BY 4.0), '
+                  'Tagsüber: Faustregeln für die nächsten 3 Stunden nach gefühlter '
+                  'Temperatur. Nachts: nach der Tiefsttemperatur draußen – '
+                  'entscheidend ist die Zimmertemperatur. Wetterdaten: Open-Meteo.com (CC BY 4.0), '
                   'Stand ${DateFormat('HH:mm', 'de').format(f.fetched)}.',
                   style: theme.textTheme.bodySmall,
                 ),

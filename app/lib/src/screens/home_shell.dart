@@ -232,6 +232,7 @@ class _HomeShellState extends State<HomeShell> {
             return Scaffold(
               backgroundColor: c.background,
               body: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _SideRail(
                     sections: _sections,

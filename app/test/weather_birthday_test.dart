@@ -69,6 +69,51 @@ void main() {
     );
   });
 
+  test('night advice follows the low of tonight and the age', () {
+    Map<String, Object?> night(double Function(int hour) temp) => {
+      'current': {
+        'time': '2026-11-02T18:00',
+        'temperature_2m': temp(18),
+        'apparent_temperature': temp(18),
+        'weather_code': 0,
+      },
+      'hourly': {
+        'time': [
+          for (var i = 0; i < 24; i++)
+            DateTime(2026, 11, 2, 18 + i).toIso8601String().substring(0, 16),
+        ],
+        'temperature_2m': [for (var i = 0; i < 24; i++) temp((18 + i) % 24)],
+        'apparent_temperature': [
+          for (var i = 0; i < 24; i++) temp((18 + i) % 24) - 3,
+        ],
+        'weather_code': List.filled(24, 0),
+      },
+    };
+    final evening = DateTime(2026, 11, 2, 19);
+    // 4 °C at 5 o'clock – the warm afternoon of tomorrow does not count.
+    final cold = WeatherForecast.fromOpenMeteo(
+      night((h) => h == 5 ? 4 : (h >= 12 && h < 18 ? 25 : 9)),
+    );
+    final forBaby = nightAdvice(baby, cold, at: evening)!;
+    expect(forBaby.low, 4);
+    expect(forBaby.summary, 'kalt');
+    expect(forBaby.items.join(), contains('Schlafsack'));
+    expect(forBaby.hints.join(), contains('ohne Decke'));
+    final forBig = nightAdvice(big, cold, at: evening)!;
+    expect(forBig.items, contains('warme Bettdecke'));
+    expect(forBig.hints.join(), isNot(contains('ohne Decke')));
+
+    final tropical = WeatherForecast.fromOpenMeteo(night((_) => 22));
+    expect(nightAdvice(big, tropical, at: evening)!.summary, 'sehr warm');
+    // After midnight it is still the same night.
+    expect(nightOf(DateTime(2026, 11, 3, 2)).$2, DateTime(2026, 11, 3, 6));
+    // No forecast for the night: no advice.
+    expect(
+      nightAdvice(big, WeatherForecast.fromOpenMeteo(_meteo()), at: at),
+      isNull,
+    );
+  });
+
   test('weather service rounds the place, caches and works offline', () async {
     SharedPreferences.setMockInitialValues({});
     final prefs = await SharedPreferences.getInstance();

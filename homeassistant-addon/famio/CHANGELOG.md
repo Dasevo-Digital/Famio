@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.1 – Kleidung für die Nacht, ruhigere Startseite
+
+- **Wetter & Kleidung: für die Nacht.** Ab 17 Uhr zeigt die Kachel, worin die
+  Kinder schlafen (Schlafanzug, Schlafsack mit TOG-Wert, Decke) – nach der
+  Tiefsttemperatur der Nacht. Die Details zeigen Tag und Nacht.
+- **Startseite:** Kacheln einer Reihe sind gleich hoch, keine Lücken mehr;
+  die Seitenleiste reicht über die ganze Höhe.
+
 ## 0.17.0 – Bereiche ein- und ausblenden
 
 - **Nicht genutzte Bereiche ausblenden**, z. B. Finanzen, Essen oder Ämter:
