@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.17.0 – Bereiche ein- und ausblenden
+
+- **Nicht genutzte Bereiche ausblenden**, z. B. Finanzen, Essen oder Ämter:
+  - Server-Verwaltung → Einstellungen → „Bereiche“.
+  - Gilt für die ganze Familie und alle Apps: Menü, Startseite und
+    Wandanzeige.
+  - Die Daten bleiben erhalten und sind nach dem Einschalten wieder da.
+  - Start und Einstellungen bleiben immer.
+- iOS: Famio-Symbol statt des Flutter-Standardsymbols.
+
 ## 0.16.0 – Eigene Benachrichtigungen, stärkerer Kontrast
 
 - **Benachrichtigungen direkt über Famio**, ohne ntfy und ohne Google:

@@ -859,6 +859,75 @@ class _SettingsFormState extends State<_SettingsForm> {
     }
   }
 
+  /// Switches areas off for the whole family (e.g. Finanzen); their data
+  /// stays on the server and comes back when switched on again.
+  Future<void> _editModules() async {
+    final hidden = {...?widget.overview.settings.hiddenModules};
+    final optional = [
+      for (final s in FamioSection.values)
+        if (ServerSettings.optionalModules.contains(s.name)) s,
+    ];
+    final save = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialog) => AlertDialog(
+          scrollable: true,
+          title: const Text('Bereiche'),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Was die Familie nicht nutzt, verschwindet aus Menü und '
+                  'Startseite – in allen Apps. Die Daten bleiben erhalten.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                for (final s in optional)
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    secondary: Icon(s.icon),
+                    title: Text(s.label),
+                    value: !hidden.contains(s.name),
+                    onChanged: (on) => setDialog(
+                      () => on ? hidden.remove(s.name) : hidden.add(s.name),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (save != true || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      final fresh = await AppScope.read(
+        context,
+      ).engine!.api.updateServerSettings({'hiddenModules': hidden.toList()});
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Bereiche gespeichert')));
+      widget.onSaved(fresh);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _setCode() async {
     final api = AppScope.read(context).engine!.api;
     final code = TextEditingController();
@@ -1186,6 +1255,22 @@ class _SettingsFormState extends State<_SettingsForm> {
               trailing: TextButton(
                 onPressed: _busy ? null : () => showSsoDialog(context),
                 child: const Text('Einrichten'),
+              ),
+            ),
+            ListHeading('Bereiche', color: accent),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.dotsThreeCircle),
+              title: const Text('Bereiche ein- und ausblenden'),
+              subtitle: Text(
+                (o.settings.hiddenModules ?? const []).isEmpty
+                    ? 'Alle Bereiche sind sichtbar'
+                    : 'Ausgeblendet: ${[for (final s in FamioSection.values)
+                        if (o.settings.hiddenModules!.contains(s.name)) s.label].join(', ')}',
+              ),
+              trailing: TextButton(
+                onPressed: _busy ? null : _editModules,
+                child: const Text('Ändern'),
               ),
             ),
             ListHeading('Standort', color: accent),

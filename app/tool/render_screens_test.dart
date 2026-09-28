@@ -1071,6 +1071,7 @@ void main() {
     Size size, {
     bool signedIn = true,
     Brightness? brightness,
+    List<String> hiddenModules = const [],
   }) async {
     tester.view.physicalSize = size * 2;
     tester.view.devicePixelRatio = 2;
@@ -1084,6 +1085,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'weather.enabled': true,
       'weather.cache': _weatherCache(),
+      'hiddenModules': hiddenModules,
     });
     // ignore: invalid_use_of_visible_for_testing_member
     FlutterSecureStorage.setMockInitialValues({});
@@ -1321,6 +1323,19 @@ void main() {
     await _shot(tester, key, 'phone_13_sicherheit');
     await go(tester, 'Einrichten');
     await _shot(tester, key, 'phone_14_zwei_faktor_einrichten');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('hidden areas phone', (tester) async {
+    final key = await start(
+      tester,
+      phone,
+      hiddenModules: ['budget', 'meals', 'chores'],
+    );
+    await _shot(tester, key, 'phone_16_bereiche_start');
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_17_bereiche_mehr');
     await tester.pump(const Duration(seconds: 1));
   });
 

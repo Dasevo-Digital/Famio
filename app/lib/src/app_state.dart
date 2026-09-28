@@ -76,6 +76,9 @@ class AppState extends ChangeNotifier {
   /// Tile server for maps set by the admins; null uses OpenStreetMap.
   String? mapTileUrl;
 
+  /// Areas the family switched off (section names, e.g. `budget`).
+  Set<String> hiddenModules = const {};
+
   bool get signedIn => engine != null;
 
   /// The server's HTTPS port for the home network (FAMIO_TLS_PORT).
@@ -93,6 +96,7 @@ class AppState extends ChangeNotifier {
     vault = await SecureVault.open(_prefs);
     serverUrl = _prefs.getString('serverUrl');
     mapTileUrl = _prefs.getString('mapTileUrl');
+    hiddenModules = {...?_prefs.getStringList('hiddenModules')};
     final token = await vault.read('token');
     final meJson = _prefs.getString('me');
     if (serverUrl != null && token != null && meJson != null) {
@@ -472,7 +476,11 @@ class AppState extends ChangeNotifier {
       }
     });
     engine.changes.listen((changed) {
-      if (changed.contains('members')) _refreshMe();
+      if (changed.contains('members')) {
+        _refreshMe();
+        // Admins may have switched areas on or off (server settings).
+        _loadConfig(api);
+      }
     });
 
     // Plain cache folder of version 0.5: now an encrypted database.
@@ -529,6 +537,8 @@ class AppState extends ChangeNotifier {
     try {
       final config = await api.config();
       mapTileUrl = config['mapTileUrl'] as String?;
+      hiddenModules = {...?(config['hiddenModules'] as List?)?.cast<String>()};
+      await _prefs.setStringList('hiddenModules', hiddenModules.toList());
       if (mapTileUrl == null) {
         await _prefs.remove('mapTileUrl');
       } else {
