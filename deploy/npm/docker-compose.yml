@@ -39,6 +39,27 @@ services:
     networks:
       - npm
 
+  # Optional own PMTiles/MBTiles service. Start with
+  # `docker compose --profile maps up -d`; NPM can reach it as `martin:3000`.
+  martin:
+    image: ghcr.io/maplibre/martin:1.16.1
+    container_name: famio-martin
+    profiles: ["maps"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./map-tiles:/tiles:ro
+      - ../maps/martin.yaml:/config/martin.yaml:ro
+    command: ["--config", "/config/martin.yaml"]
+    networks:
+      - npm
+
 networks:
   npm:
     external: true

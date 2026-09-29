@@ -1,4 +1,5 @@
 # Standalone server (NAS, Raspberry Pi, any Docker host): docker compose up -d
+# Optional own map tiles: docker compose --profile maps up -d
 services:
   famio:
     build: .
@@ -41,3 +42,26 @@ services:
       # FAMIO_MAX_UPLOAD_MB: "100"
       # Precise location history is deleted server-side after this period.
       # FAMIO_LOCATION_HISTORY_DAYS: "7"
+
+  # Optional, deliberately separated map service. It is not started by the
+  # normal `docker compose up -d`, needs no Famio credentials and sees no
+  # family data. Put licensed .pmtiles/.mbtiles archives in ./map-tiles and
+  # publish it only through the existing HTTPS reverse proxy.
+  martin:
+    image: ghcr.io/maplibre/martin:1.16.1
+    container_name: famio-martin
+    profiles: ["maps"]
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./map-tiles:/tiles:ro
+      - ./deploy/maps/martin.yaml:/config/martin.yaml:ro
+    command: ["--config", "/config/martin.yaml"]
