@@ -12,6 +12,7 @@ Famio-Mitglied sieht:
 | Sensoren „Offene Aufgaben“, „Meine Aufgaben“, „Einkauf offen“ | Anzahl, Titel als Attribute |
 | Sensor „Nächster Termin“ | Beginn des nächsten Termins, Titel/Ort als Attribute |
 | Tracker je Mitglied | Standort der Mitglieder, die ihn in Famio teilen (Akku, Famio-Ort, Pause) |
+| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“ |
 
 Änderungen kommen live über die WebSocket-Verbindung des Servers an (ohne
 Verbindung alle 5 Minuten).
@@ -43,6 +44,38 @@ Wiederherstellungscode geht auch). Danach bleibt Home Assistant angemeldet;
 einen neuen Code braucht es erst, wenn die Sitzung in Famio beendet wird.
 Ist der zweite Faktor Pflicht, aber noch nicht eingerichtet: einmal in einer
 Famio-App mit diesem Mitglied anmelden und ihn dort einrichten.
+
+## Familien-Dashboard
+
+Die Aktion **Famio: Dashboard erstellen** (`famio.dashboard`) baut aus den
+Entitäten ein fertiges Dashboard: Familienkalender, je Person nächster
+Termin, offene Aufgaben (bei Kindern Punkte) und Aufgabenliste, die
+Einkaufslisten und eine Karte der geteilten Standorte.
+
+1. Entwicklerwerkzeuge → Aktionen → „Famio: Dashboard erstellen“ →
+   **Aktion ausführen**; die Antwort enthält unter `yaml` das Dashboard.
+2. Einstellungen → Dashboards → Dashboard hinzufügen → „Neues Dashboard von
+   Grund auf“ → öffnen → ✏️ → ⋮ → **Raw-Konfigurationseditor** → den Inhalt
+   von `yaml` einfügen → Speichern.
+
+Was das Dashboard zeigt, bestimmt das verbundene Famio-Konto: Nur für
+bestimmte Personen freigegebene Einträge bleiben verborgen.
+
+## Dienstkonto und Schreibrechte
+
+Am besten verbindet sich Home Assistant mit einem eigenen Mitglied mit der
+Rolle **Dienstkonto** (Famio → Server-Verwaltung → Mitglied → Rolle). Es
+taucht dann nicht in Chats, Standorten und Auswahllisten der Familie auf.
+Unter „Darf ändern“ lässt sich einschränken, was Home Assistant ändern darf –
+der Server setzt das durch, die Entitäten passen sich an:
+
+| Einstellung | Home Assistant darf |
+|---|---|
+| Lesen und ändern | alles wie ein Erwachsener |
+| Abhaken und Einkauf | Aufgaben abhaken, Einkaufslisten führen – keine Termine, keine neuen Aufgaben |
+| Nur lesen | nichts ändern (am sichersten) |
+
+Nach einer Änderung die Integration neu laden (⋮ → Neu laden).
 
 ## Sicherheit
 

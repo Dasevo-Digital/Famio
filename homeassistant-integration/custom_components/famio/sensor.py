@@ -11,12 +11,13 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import POINT_ENTRIES, SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
 from .coordinator import FamioConfigEntry, FamioCoordinator, parse_start
-from .entity import FamioEntity
+from .entity import FamioEntity, FamioMemberEntity
 
 
 def _open_tasks(c: FamioCoordinator) -> list[dict[str, Any]]:
@@ -50,6 +51,64 @@ def _pending(c: FamioCoordinator) -> int:
         for e in c.data.collection(POINT_ENTRIES).values()
         if e.get("status") == "pending"
     )
+
+
+def _theirs(c: FamioCoordinator, member_id: str) -> list[dict[str, Any]]:
+    """Open tasks of [member_id], by due date."""
+    return sorted(
+        (t for t in _open_tasks(c) if t.get("assigneeId") == member_id),
+        key=lambda t: t.get("due") or "9999",
+    )
+
+
+def _overdue(tasks: list[dict[str, Any]]) -> int:
+    today = dt_util.now().date().isoformat()
+    return sum(1 for t in tasks if (t.get("due") or "9999")[:10] < today)
+
+
+@dataclass(frozen=True, kw_only=True)
+class FamioMemberSensorDescription(SensorEntityDescription):
+    value: Callable[[FamioCoordinator, str], Any]
+    attributes: Callable[[FamioCoordinator, str], dict[str, Any]] | None = None
+
+
+def _event_attributes(e: dict[str, Any] | None) -> dict[str, Any]:
+    if not e:
+        return {}
+    return {
+        "titel": "Belegt" if e.get("confidential") else e.get("title"),
+        "ganztaegig": e.get("allDay", False),
+        "ort": None if e.get("confidential") else e.get("location") or None,
+        "kalender": e.get("calendar"),
+    }
+
+
+# Per family member, on the member's device ("Famio Lena").
+MEMBER_SENSORS = (
+    FamioMemberSensorDescription(
+        key="open_tasks",
+        translation_key="open_tasks",
+        state_class="measurement",
+        value=lambda c, m: len(_theirs(c, m)),
+        attributes=lambda c, m: {
+            "aufgaben": [t.get("title") for t in _theirs(c, m)][:20],
+            "ueberfaellig": _overdue(_theirs(c, m)),
+        },
+    ),
+    FamioMemberSensorDescription(
+        key="next_event",
+        translation_key="next_event",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        value=lambda c, m: parse_start(e) if (e := c.next_event(member_id=m)) else None,
+        attributes=lambda c, m: _event_attributes(c.next_event(member_id=m)),
+    ),
+    FamioMemberSensorDescription(
+        key="points",
+        translation_key="points",
+        state_class="measurement",
+        value=lambda c, m: _points(c).get(m, 0),
+    ),
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -129,6 +188,23 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     async_add_entities(FamioSensor(coordinator, d) for d in SENSORS)
+    known: set[str] = set()
+
+    @callback
+    def add_members() -> None:
+        new = []
+        for member in coordinator.data.family:
+            if member["id"] not in known:
+                known.add(member["id"])
+                new.extend(
+                    FamioMemberSensor(coordinator, member["id"], d)
+                    for d in MEMBER_SENSORS
+                )
+        if new:
+            async_add_entities(new)
+
+    add_members()
+    entry.async_on_unload(coordinator.async_add_listener(add_members))
 
 
 class FamioSensor(FamioEntity, SensorEntity):
@@ -149,3 +225,26 @@ class FamioSensor(FamioEntity, SensorEntity):
         if self.entity_description.attributes is None:
             return None
         return self.entity_description.attributes(self.coordinator)
+
+
+class FamioMemberSensor(FamioMemberEntity, SensorEntity):
+    entity_description: FamioMemberSensorDescription
+
+    def __init__(
+        self,
+        coordinator: FamioCoordinator,
+        member_id: str,
+        description: FamioMemberSensorDescription,
+    ) -> None:
+        super().__init__(coordinator, member_id, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> Any:
+        return self.entity_description.value(self.coordinator, self.member_id)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        if self.entity_description.attributes is None:
+            return None
+        return self.entity_description.attributes(self.coordinator, self.member_id)

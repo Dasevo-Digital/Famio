@@ -508,6 +508,46 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             ),
           ),
         ),
+        if (m.isService) ...[
+          ListHeading('Darf ändern', color: accent),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final a in ServiceAccess.values)
+                      ChoiceChip(
+                        label: Text(a.label),
+                        selected: m.serviceAccess == a,
+                        onSelected: (_) => _run(
+                          () => _api.updateUser(m.id, serviceAccess: a),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  switch (m.serviceAccess) {
+                    ServiceAccess.full =>
+                      'Wie ein Erwachsener: Termine, Aufgaben, Listen … '
+                          'anlegen, ändern und löschen.',
+                    ServiceAccess.everyday =>
+                      'Nur Aufgaben, Ämter und Routinen abhaken und '
+                          'Einkaufslisten führen – z. B. für eine '
+                          'Wandanzeige oder Sprachbefehle.',
+                    ServiceAccess.readOnly =>
+                      'Sieht alles für die Familie Freigegebene, ändert '
+                          'nichts. Am sichersten für Home Assistant.',
+                  },
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
         SwitchListTile(
           secondary: const Icon(AppIcons.shieldUser),
           title: const Text('Administrator'),

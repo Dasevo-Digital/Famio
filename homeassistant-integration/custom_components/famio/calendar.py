@@ -11,7 +11,7 @@ from homeassistant.components.calendar import (
     CalendarEntityFeature,
     CalendarEvent,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 from .api import FamioError
 from .const import EVENTS
 from .coordinator import FamioConfigEntry, FamioCoordinator, parse_end, parse_start
-from .entity import FamioEntity
+from .entity import FamioEntity, FamioMemberEntity
 
 
 async def async_setup_entry(
@@ -27,7 +27,22 @@ async def async_setup_entry(
     entry: FamioConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    async_add_entities([FamioCalendar(entry.runtime_data)])
+    coordinator = entry.runtime_data
+    async_add_entities([FamioCalendar(coordinator)])
+    known: set[str] = set()
+
+    @callback
+    def add_members() -> None:
+        new = []
+        for member in coordinator.data.family:
+            if member["id"] not in known:
+                known.add(member["id"])
+                new.append(FamioMemberCalendar(coordinator, member["id"]))
+        if new:
+            async_add_entities(new)
+
+    add_members()
+    entry.async_on_unload(coordinator.async_add_listener(add_members))
 
 
 def to_calendar_event(occurrence: dict[str, Any]) -> CalendarEvent:
@@ -58,16 +73,27 @@ def to_calendar_event(occurrence: dict[str, Any]) -> CalendarEvent:
 
 class FamioCalendar(FamioEntity, CalendarEntity):
     _attr_translation_key = "calendar"
-    _attr_supported_features = (
-        CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.DELETE_EVENT
-    )
+
+    # None: the whole family calendar; else only this member's events.
+    _member: str | None = None
 
     def __init__(self, coordinator: FamioCoordinator) -> None:
         super().__init__(coordinator, "calendar")
 
     @property
+    def supported_features(self) -> CalendarEntityFeature:
+        if self.coordinator.data.access != "full":
+            return CalendarEntityFeature(0)
+        return CalendarEntityFeature.CREATE_EVENT | CalendarEntityFeature.DELETE_EVENT
+
+    def _mine(self, occurrence: dict[str, Any]) -> bool:
+        return self._member is None or self._member in (
+            occurrence.get("memberIds") or []
+        )
+
+    @property
     def event(self) -> CalendarEvent | None:
-        occurrence = self.coordinator.next_event()
+        occurrence = self.coordinator.next_event(member_id=self._member)
         return to_calendar_event(occurrence) if occurrence else None
 
     async def async_get_events(
@@ -83,6 +109,7 @@ class FamioCalendar(FamioEntity, CalendarEntity):
                 events.extend(
                     to_calendar_event(o)
                     for o in await self.coordinator.client.occurrences(begin, stop)
+                    if self._mine(o)
                 )
                 begin = stop
         except FamioError as err:
@@ -110,7 +137,7 @@ class FamioCalendar(FamioEntity, CalendarEntity):
             "allDay": all_day,
             "location": kwargs.get("location") or "",
             "notes": kwargs.get("description") or "",
-            "memberIds": [],
+            "memberIds": [self._member] if self._member else [],
             "recurrence": None,
             "exceptions": [],
             "reminderMinutes": None,
@@ -139,3 +166,13 @@ class FamioCalendar(FamioEntity, CalendarEntity):
             await self.coordinator.async_request_refresh()
         except FamioError as err:
             raise HomeAssistantError(str(err)) from err
+
+
+class FamioMemberCalendar(FamioMemberEntity, FamioCalendar):
+    """The events of one member ("Famio Lena – Kalender")."""
+
+    _attr_translation_key = "calendar"
+
+    def __init__(self, coordinator: FamioCoordinator, member_id: str) -> None:
+        FamioMemberEntity.__init__(self, coordinator, member_id, "calendar")
+        self._member = member_id

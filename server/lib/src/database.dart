@@ -194,6 +194,10 @@ const _migrations = [
   -- How a session signed in: password, totp or sso (two-factor policy).
   ALTER TABLE sessions ADD COLUMN method TEXT;
   ''',
+  '''
+  -- What a service account (e.g. Home Assistant) may change.
+  ALTER TABLE users ADD COLUMN service_access TEXT NOT NULL DEFAULT 'full';
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

@@ -68,6 +68,7 @@ class FamioServerApp {
       db,
       memberIds: () => [for (final m in accounts.members()) m.id],
       roleOf: accounts.roleOf,
+      accessOf: accounts.accessOf,
     );
     calendarAccess = CalendarAccess(
       db,

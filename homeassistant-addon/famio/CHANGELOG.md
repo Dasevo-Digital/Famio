@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.20.0 – Familienübersicht
+
+- **Wandanzeige „nach Personen“:** eine Spalte je Familienmitglied mit den
+  Terminen von heute, offenen Aufgaben, Ämtern und Routinen, dazu „Alle“ für
+  gemeinsame Termine und Aufgaben ohne Zuständige. Umschalten oben rechts,
+  gilt pro Gerät – auch in der Seitenleiste von Home Assistant.
+- **Home Assistant je Person:** jedes Mitglied bekommt ein eigenes Gerät
+  („Famio Lena“) mit Aufgabenliste, Kalender und Sensoren (offene Aufgaben,
+  nächster Termin, Punkte).
+- **Aktion „Famio: Dashboard erstellen“:** liefert ein fertiges
+  Familien-Dashboard zum Einfügen.
+- **Dienstkonten einschränkbar:** „Lesen und ändern“, „Abhaken und Einkauf“
+  oder „Nur lesen“ – der Server setzt es durch.
+
 ## 0.19.0 – iPad, Dienstkonten, Karte
 
 - **Neue Rolle „Dienstkonto“** (z. B. für Home Assistant): sieht, was

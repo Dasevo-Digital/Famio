@@ -20,7 +20,19 @@ from homeassistant.util import dt as dt_util
 from .api import FamioError
 from .const import SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
 from .coordinator import FamioConfigEntry, FamioCoordinator
-from .entity import FamioEntity
+from .entity import FamioEntity, FamioMemberEntity
+
+_ALL = (
+    TodoListEntityFeature.CREATE_TODO_ITEM
+    | TodoListEntityFeature.UPDATE_TODO_ITEM
+    | TodoListEntityFeature.DELETE_TODO_ITEM
+    | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
+)
+_DUE = (
+    TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
+    | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
+)
+_NONE = TodoListEntityFeature(0)
 
 
 async def async_setup_entry(
@@ -31,12 +43,19 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities([FamioTasks(coordinator)])
     known: set[str] = set()
+    known_members: set[str] = set()
 
     @callback
     def add_lists() -> None:
         lists = coordinator.data.collection(SHOPPING_LISTS)
-        new = [FamioShoppingList(coordinator, i) for i in lists if i not in known]
+        new: list[TodoListEntity] = [
+            FamioShoppingList(coordinator, i) for i in lists if i not in known
+        ]
         known.update(lists)
+        for member in coordinator.data.family:
+            if member["id"] not in known_members:
+                known_members.add(member["id"])
+                new.append(FamioMemberTasks(coordinator, member["id"]))
         if new:
             async_add_entities(new)
 
@@ -87,21 +106,30 @@ class FamioTasks(FamioEntity, TodoListEntity):
     """The family's tasks (all the member may see)."""
 
     _attr_translation_key = "tasks"
-    _attr_supported_features = (
-        TodoListEntityFeature.CREATE_TODO_ITEM
-        | TodoListEntityFeature.UPDATE_TODO_ITEM
-        | TodoListEntityFeature.DELETE_TODO_ITEM
-        | TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
-        | TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
-        | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
-    )
 
     def __init__(self, coordinator: FamioCoordinator) -> None:
         super().__init__(coordinator, "tasks")
 
+    # Service accounts may be limited to ticking off, or to reading.
+    @property
+    def supported_features(self) -> TodoListEntityFeature:
+        match self.coordinator.data.access:
+            case "readOnly":
+                return _NONE
+            case "everyday":
+                return TodoListEntityFeature.UPDATE_TODO_ITEM
+        return _ALL | _DUE
+
+    # None: everyone's tasks; else the assignee's.
+    _assignee: str | None = None
+
     @property
     def todo_items(self) -> list[TodoItem]:
-        tasks = self.coordinator.data.collection(TASKS)
+        tasks = {
+            task_id: task
+            for task_id, task in self.coordinator.data.collection(TASKS).items()
+            if self._assignee is None or task.get("assigneeId") == self._assignee
+        }
         items = [
             TodoItem(
                 uid=task_id,
@@ -136,7 +164,7 @@ class FamioTasks(FamioEntity, TodoListEntity):
                 "notes": item.description or "",
                 "done": done,
                 "due": _due_value(item.due),
-                "assigneeId": None,
+                "assigneeId": self._assignee,
                 "completedAt": now if done else None,
                 "createdAt": now,
                 "remindAt": None,
@@ -148,36 +176,44 @@ class FamioTasks(FamioEntity, TodoListEntity):
         if existing is None:
             raise HomeAssistantError("Aufgabe nicht gefunden")
         done = item.status == TodoItemStatus.COMPLETED
-        await _write(
-            self.coordinator,
-            TASKS,
-            item.uid,
-            {
-                **existing,
-                "title": item.summary or existing.get("title", ""),
-                "notes": item.description or "",
-                "done": done,
-                "due": _due_value(item.due),
-                "completedAt": (existing.get("completedAt") or datetime.now().isoformat())
-                if done
-                else None,
-            },
-        )
+        data = {
+            **existing,
+            "title": item.summary or existing.get("title", ""),
+            "done": done,
+            "completedAt": (existing.get("completedAt") or datetime.now().isoformat())
+            if done
+            else None,
+        }
+        # Only what really changed: service accounts that may just tick off
+        # would be refused over an empty note written back.
+        if (item.description or "") != (existing.get("notes") or ""):
+            data["notes"] = item.description or ""
+        if _due(existing.get("due")) != item.due:
+            data["due"] = _due_value(item.due)
+        await _write(self.coordinator, TASKS, item.uid, data)
 
     async def async_delete_todo_items(self, uids: list[str]) -> None:
         for uid in uids:
             await _write(self.coordinator, TASKS, uid, None)
 
 
+class FamioMemberTasks(FamioMemberEntity, FamioTasks):
+    """The tasks of one member ("Famio Lena – Aufgaben"); new ones are
+    assigned to them."""
+
+    _attr_translation_key = "tasks"
+
+    def __init__(self, coordinator: FamioCoordinator, member_id: str) -> None:
+        FamioMemberEntity.__init__(self, coordinator, member_id, "tasks")
+        self._assignee = member_id
+
+
 class FamioShoppingList(FamioEntity, TodoListEntity):
     """One Famio shopping list."""
 
-    _attr_supported_features = (
-        TodoListEntityFeature.CREATE_TODO_ITEM
-        | TodoListEntityFeature.UPDATE_TODO_ITEM
-        | TodoListEntityFeature.DELETE_TODO_ITEM
-        | TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
-    )
+    @property
+    def supported_features(self) -> TodoListEntityFeature:
+        return _NONE if self.coordinator.data.access == "readOnly" else _ALL
 
     def __init__(self, coordinator: FamioCoordinator, list_id: str) -> None:
         super().__init__(coordinator, f"shopping_{list_id}")

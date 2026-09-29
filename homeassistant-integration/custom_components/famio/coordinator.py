@@ -36,6 +36,23 @@ class FamioData:
     records: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
     members: dict[str, dict[str, Any]] = field(default_factory=dict)
     upcoming: list[dict[str, Any]] = field(default_factory=list)
+    # The connected account itself (role, what a service account may change).
+    me: dict[str, Any] = field(default_factory=dict)
+
+    @property
+    def family(self) -> list[dict[str, Any]]:
+        """The family members, without service accounts (Home Assistant)."""
+        return sorted(
+            (m for m in self.members.values() if m.get("role") != "service"),
+            key=lambda m: (m.get("displayName") or "").lower(),
+        )
+
+    @property
+    def access(self) -> str:
+        """full, everyday (tick off and shop) or readOnly."""
+        if self.me.get("role") != "service":
+            return "full"
+        return self.me.get("serviceAccess") or "full"
 
     def collection(self, name: str) -> dict[str, dict[str, Any]]:
         """Live records of [name] by id (their data)."""
@@ -80,6 +97,7 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
             async with self._lock:
                 await self._pull()
             members = await self.client.members()
+            me = await self.client.me()
             now = dt_util.now()
             upcoming = await self.client.occurrences(now, now + UPCOMING_WINDOW)
         except FamioAuthError as err:
@@ -87,6 +105,7 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
         except FamioError as err:
             raise UpdateFailed(str(err)) from err
         self._state.members = {m["id"]: m for m in members}
+        self._state.me = me
         self._state.upcoming = upcoming
         return self._state
 
@@ -177,10 +196,14 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
 
     # --- helpers --------------------------------------------------------------
 
-    def next_event(self, now: datetime | None = None) -> dict[str, Any] | None:
-        """The current or next upcoming occurrence."""
+    def next_event(
+        self, now: datetime | None = None, member_id: str | None = None
+    ) -> dict[str, Any] | None:
+        """The current or next upcoming occurrence (of [member_id])."""
         now = now or dt_util.now()
         for occurrence in self._state.upcoming:
+            if member_id and member_id not in (occurrence.get("memberIds") or []):
+                continue
             if parse_end(occurrence) > now:
                 return occurrence
         return None

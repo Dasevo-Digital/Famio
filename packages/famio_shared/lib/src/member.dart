@@ -26,6 +26,24 @@ enum MemberRole {
       values.where((r) => r.name == name).firstOrNull ?? adult;
 }
 
+/// What a service account may change (see [MemberRole.service]).
+enum ServiceAccess {
+  full('Lesen und ändern'),
+
+  /// Tick off tasks, chores and routines, keep the shopping lists – e.g. a
+  /// wall display or voice assistant. Nothing else.
+  everyday('Abhaken und Einkauf'),
+
+  readOnly('Nur lesen');
+
+  const ServiceAccess(this.label);
+
+  final String label;
+
+  static ServiceAccess parse(Object? name) =>
+      values.where((a) => a.name == name).firstOrNull ?? full;
+}
+
 /// A family member (user account on the server).
 class FamilyMember {
   const FamilyMember({
@@ -36,6 +54,7 @@ class FamilyMember {
     this.color,
     this.birthday,
     this.role = MemberRole.adult,
+    this.serviceAccess = ServiceAccess.full,
   });
 
   factory FamilyMember.fromJson(Map<String, Object?> json) => FamilyMember(
@@ -46,6 +65,7 @@ class FamilyMember {
     color: json['color'] as int?,
     birthday: Birthday.tryParse(json['birthday']),
     role: MemberRole.parse(json['role']),
+    serviceAccess: ServiceAccess.parse(json['serviceAccess']),
   );
 
   final String id;
@@ -60,6 +80,12 @@ class FamilyMember {
   final Birthday? birthday;
 
   final MemberRole role;
+
+  /// Only meaningful for service accounts.
+  final ServiceAccess serviceAccess;
+
+  /// A service account that may not change everything.
+  bool get isLimited => isService && serviceAccess != ServiceAccess.full;
 
   bool get isGuest => role == MemberRole.guest;
   bool get isChild => role == MemberRole.child;
@@ -76,5 +102,6 @@ class FamilyMember {
     'color': color,
     'birthday': ?birthday?.toString(),
     'role': role.name,
+    if (isService) 'serviceAccess': serviceAccess.name,
   };
 }

@@ -40,6 +40,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The wall display shows one column per member instead of topics.
+  bool get kioskByPerson => _prefs.getBool('kiosk.byPerson') ?? false;
+
+  Future<void> setKioskByPerson(bool value) async {
+    await _prefs.setBool('kiosk.byPerson', value);
+    notifyListeners();
+  }
+
   /// "Hoher Kontrast" on this device; the theme listens to it alone.
   final highContrast = ValueNotifier(false);
 
