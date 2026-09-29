@@ -1,15 +1,18 @@
 # Eigene Karten mit Martin und PMTiles/MBTiles
 
 Famio kann den öffentlichen OSM-Kachelserver durch eine eigene HTTPS-XYZ-URL
-ersetzen. Dieser Ordner startet [Martin](https://maplibre.org/martin/), einen
-schlanken MapLibre-Server für PMTiles und MBTiles. Die Kartenarchive bleiben
-auf dem eigenen Rechner; Martin erkennt neue oder ersetzte Dateien automatisch.
+ersetzen. Martin ist dafür als **optionaler Compose-Profile-Service** direkt
+in die Docker-Installation integriert. Er startet weder beim normalen
+`docker compose up -d` noch durch die Famio-App. Die Kartenarchive bleiben auf
+dem eigenen Rechner; Martin erkennt neue oder ersetzte Dateien automatisch.
 
 ## Start
 
-1. Rechtlich zulässige `*.pmtiles` oder `*.mbtiles` nach `tiles/` legen.
+1. Rechtlich zulässige `*.pmtiles` oder `*.mbtiles` nach `map-tiles/` im
+   Famio-Docker-Ordner legen.
    Die Datei ist bewusst nicht Bestandteil dieses Repositories.
-2. `docker compose up -d` in diesem Ordner ausführen.
+2. Im Repository `docker compose --profile maps up -d` ausführen. Der
+   Martin-Container hört dann nur auf `127.0.0.1:3000`.
 3. Im bestehenden HTTPS-Reverse-Proxy einen ausschließlich internen Host oder
    Pfad auf `127.0.0.1:3000` weiterleiten. Nicht direkt an Port 3000 ins
    Internet veröffentlichen.
@@ -18,6 +21,11 @@ auf dem eigenen Rechner; Martin erkennt neue oder ersetzte Dateien automatisch.
    Einstellungen → Eigener Martin-Server** die genaue XYZ-URL einer
    Rasterquelle eintragen, beispielsweise
    `https://karten.example.org/tiles/basemap/{z}/{x}/{y}`.
+
+Für die Vorlage unter `deploy/npm/` ist der gleiche Service verfügbar:
+`cd deploy/npm && docker compose --profile maps up -d`. Martin teilt dort das
+NPM-Netz und wird im Proxy als `martin:3000` eingetragen. Nicht beide Compose-
+Vorlagen gleichzeitig verwenden, weil sie denselben Container-Namen nutzen.
 
 Martin liefert Vektor-, Raster- und TileJSON-Quellen. Famio nutzt heute die
 kompatible XYZ-Ausgabe von `flutter_map`; die PMTiles/MBTiles- und

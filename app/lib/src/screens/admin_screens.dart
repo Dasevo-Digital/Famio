@@ -1305,7 +1305,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                   hintText:
                       'https://karten.example.org/tiles/basemap/{z}/{x}/{y}',
                   helperText: _mapProvider == MapTileProvider.martin
-                      ? 'Martin stellt eigene PMTiles/MBTiles bereit. Die Anleitung liegt unter deploy/maps.'
+                      ? 'Martin stellt eigene PMTiles/MBTiles bereit. Docker: docker compose --profile maps up -d; danach die HTTPS-Adresse hier eintragen.'
                       : 'HTTPS-Adresse mit {z}, {x} und {y}.',
                   helperMaxLines: 3,
                   prefixIcon: const Icon(AppIcons.map),

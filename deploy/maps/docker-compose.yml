@@ -13,7 +13,9 @@ services:
     tmpfs:
       - /tmp
     volumes:
-      - ./tiles:/tiles:ro
+      # When run from deploy/maps, use the same archive directory as the
+      # integrated root Compose profile.
+      - ../../map-tiles:/tiles:ro
       - ./martin.yaml:/config/martin.yaml:ro
     # Keep this private: expose it through the existing HTTPS reverse proxy,
     # not directly on the Internet.

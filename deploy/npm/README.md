@@ -61,6 +61,21 @@ curl -I http://famio.example.de/                  # 301 auf https (Force SSL)
 curl https://famio.example.de/ | grep url         # zeigt https://famio.example.de
 ```
 
+## Optionale eigene Karten (Martin)
+
+Die Compose-Vorlage enthält Martin als deaktiviertes Profil für PMTiles und
+MBTiles. Kartenarchive in `deploy/npm/map-tiles/` ablegen und starten:
+
+```sh
+docker compose --profile maps up -d
+```
+
+In NPM einen zusätzlichen HTTPS-Proxy-Host (z. B. `karten.example.de`) auf
+`martin`, Port `3000`, anlegen. Danach in Famio unter **Server-Verwaltung →
+Einstellungen → Eigener Martin-Server** die XYZ-Adresse eintragen, zum Beispiel
+`https://karten.example.de/tiles/basemap/{z}/{x}/{y}`. Martin wird nicht von
+der App gestartet und bekommt keine Famio-Daten oder Zugangsdaten.
+
 Die Startseite (`/`) zeigt die Adresse, die in die Apps gehört. Die Apps
 dann überall auf `https://famio.example.de` umstellen (Einstellungen →
 „Server-Adresse ändern“) – so funktionieren Abgleich und Standort auch
