@@ -9,11 +9,16 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_TOKEN, CONF_URL, Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.typing import ConfigType
 
 from .api import FamioClient, FamioError
-from .const import CONF_CERT_SHA256, CONF_PIN
+from . import dashboard
+from .const import CONF_CERT_SHA256, CONF_PIN, DOMAIN
 from .coordinator import FamioConfigEntry, FamioCoordinator
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMS = [
     Platform.CALENDAR,
@@ -38,6 +43,12 @@ def client_for(hass: HomeAssistant, entry: FamioConfigEntry) -> FamioClient:
         cert_sha256=entry.data.get(CONF_CERT_SHA256),
         on_certificate_renewed=renewed,
     )
+
+
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """The action famio.dashboard (a dashboard of the family as YAML)."""
+    dashboard.async_register(hass)
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: FamioConfigEntry) -> bool:

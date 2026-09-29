@@ -1363,6 +1363,18 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('kiosk by person', (tester) async {
+    final key = await start(tester, const Size(1366, 1024));
+    await tester.tap(find.byTooltip('Wandanzeige').first);
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_46_wandanzeige_themen');
+    await tester.tap(find.byTooltip('Nach Personen anzeigen'));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_47_wandanzeige_personen');
+    await tester.tap(find.byTooltip('Nach Themen anzeigen'));
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('security phone', (tester) async {
     final key = await start(tester, phone);
     await tester.tap(find.byTooltip('Mehr'));

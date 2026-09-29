@@ -113,6 +113,7 @@ class Accounts {
     int? color,
     Object? birthday = _keep,
     MemberRole? role,
+    ServiceAccess? serviceAccess,
   }) {
     final current = byId(userId);
     if (current == null) {
@@ -157,7 +158,8 @@ class Accounts {
       'UPDATE users SET username = COALESCE(?, username),'
       ' display_name = COALESCE(?, display_name),'
       ' is_admin = COALESCE(?, is_admin), color = COALESCE(?, color),'
-      ' role = COALESCE(?, role)'
+      ' role = COALESCE(?, role),'
+      ' service_access = COALESCE(?, service_access)'
       ' WHERE id = ?',
       [
         username,
@@ -165,6 +167,7 @@ class Accounts {
         isAdmin == null ? null : (isAdmin ? 1 : 0),
         color,
         role?.name,
+        serviceAccess?.name,
         userId,
       ],
     );
@@ -193,6 +196,18 @@ class Accounts {
     return rows.isEmpty
         ? MemberRole.adult
         : MemberRole.parse(rows.first.columnAt(0));
+  }
+
+  /// What a service account may change; full for everyone else.
+  ServiceAccess accessOf(String userId) {
+    final rows = _db.select(
+      'SELECT role, service_access FROM users WHERE id = ?',
+      [userId],
+    );
+    if (rows.isEmpty || rows.first['role'] != MemberRole.service.name) {
+      return ServiceAccess.full;
+    }
+    return ServiceAccess.parse(rows.first['service_access']);
   }
 
   /// Ids of the adults (managing chores and pocket money).
@@ -579,6 +594,7 @@ class Accounts {
     color: row['color'] as int?,
     birthday: Birthday.tryParse(row['birthday']),
     role: MemberRole.parse(row['role']),
+    serviceAccess: ServiceAccess.parse(row['service_access']),
   );
 
   /// Default of [update]'s birthday: leave it as it is.

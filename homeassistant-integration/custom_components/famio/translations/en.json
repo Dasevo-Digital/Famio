@@ -72,5 +72,22 @@
         "name": "Points"
       }
     }
+  },
+  "services": {
+    "dashboard": {
+      "name": "Create dashboard",
+      "description": "Creates a family dashboard (calendar, per person events, tasks and points, shopping lists, map) as YAML. Paste it under Settings → Dashboards → Add dashboard → New dashboard → ⋮ → Raw configuration editor.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Famio connection",
+          "description": "Only needed with several Famio connections."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "No active Famio connection."
+    }
   }
 }

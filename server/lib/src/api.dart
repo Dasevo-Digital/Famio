@@ -37,7 +37,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.19.0';
+const serverVersion = '0.20.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -1045,7 +1045,18 @@ class FamioApi {
       color: body['color'] as int?,
       birthday: body.containsKey('birthday') ? body['birthday'] : _unchanged,
       role: body['role'] == null ? null : MemberRole.parse(body['role']),
+      serviceAccess: body['serviceAccess'] == null
+          ? null
+          : ServiceAccess.parse(body['serviceAccess']),
     );
+    if (before != null &&
+        updated.isService &&
+        before.serviceAccess != updated.serviceAccess) {
+      _audit(
+        admin,
+        'hat für ${_who(updated)} „${updated.serviceAccess.label}“ eingestellt',
+      );
+    }
     if (before != null && before.role != updated.role) {
       _audit(
         admin,
@@ -1262,6 +1273,7 @@ class FamioApi {
     if (member.isGuest) {
       throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
     }
+    _checkWriter(member);
     final body = await _body(request);
     final fixes = [
       for (final f in (body['fixes'] as List? ?? const []).take(1000))
@@ -1662,6 +1674,7 @@ class FamioApi {
 
   Future<Response> _upload(Request request) async {
     final member = _auth(request);
+    _checkWriter(member);
     final length = request.contentLength;
     if (length != null && length > files.maxBytes) {
       throw ApiException(
@@ -1901,13 +1914,28 @@ class FamioApi {
 
   static final _random = Random.secure();
 
-  /// Guests have no locations, calendar accounts or pocket money.
+  /// Guests have no locations, calendar accounts or pocket money; limited
+  /// service accounts only look at them.
   FamilyMember _member(Request request) {
     final member = _auth(request);
     if (member.isGuest) {
       throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
     }
+    if (request.method != 'GET') _checkWriter(member);
     return member;
+  }
+
+  /// Service accounts set to "Nur lesen" or "Abhaken und Einkauf" change
+  /// nothing beyond what sync lets them (see RecordStore.mayWrite).
+  static void _checkWriter(FamilyMember member) {
+    if (member.isLimited) {
+      throw ApiException(
+        403,
+        'read_only',
+        'Dieses Dienstkonto darf das nicht ändern '
+            '(${member.serviceAccess.label})',
+      );
+    }
   }
 
   FamilyMember _admin(Request request) {

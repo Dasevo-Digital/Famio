@@ -72,5 +72,22 @@
         "name": "Points"
       }
     }
+  },
+  "services": {
+    "dashboard": {
+      "name": "Dashboard erstellen",
+      "description": "Erzeugt ein Dashboard der Familie (Kalender, je Person Termine, Aufgaben und Punkte, Einkaufslisten, Karte) als YAML. Einfügen unter Einstellungen → Dashboards → Dashboard hinzufügen → Neues Dashboard → ⋮ → Raw-Konfigurationseditor.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Famio-Verbindung",
+          "description": "Nur nötig bei mehreren Famio-Verbindungen."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "Keine aktive Famio-Verbindung."
+    }
   }
 }

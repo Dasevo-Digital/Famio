@@ -31,6 +31,7 @@ Future<void> openKiosk(BuildContext context) =>
     );
 
 const _collections = {
+  Collections.tasks,
   Collections.events,
   Collections.externalEvents,
   Collections.calendarSubscriptions,
@@ -48,7 +49,7 @@ const _collections = {
 
 /// The family's day at a glance, big and always on: clock, weather,
 /// appointments, chores the kids tick off right there, shopping list and
-/// meals.
+/// meals – by topic, or one column per member ("nach Personen").
 class KioskScreen extends StatefulWidget {
   const KioskScreen({super.key});
 
@@ -99,7 +100,9 @@ class _KioskScreenState extends State<KioskScreen> {
                   ? 2
                   : 1;
               // Areas the family switched off stay off here too.
-              final hidden = AppScope.of(context).hiddenModules;
+              final state = AppScope.of(context);
+              final hidden = state.hiddenModules;
+              final byPerson = state.kioskByPerson;
               bool on(FamioSection s) => !hidden.contains(s.name);
               final panels = [
                 if (on(FamioSection.calendar))
@@ -143,6 +146,16 @@ class _KioskScreenState extends State<KioskScreen> {
                           ),
                         ),
                         BubbleButton(
+                          icon: byPerson
+                              ? AppIcons.layoutGrid
+                              : AppIcons.usersThree,
+                          tooltip: byPerson
+                              ? 'Nach Themen anzeigen'
+                              : 'Nach Personen anzeigen',
+                          onPressed: () => state.setKioskByPerson(!byPerson),
+                        ),
+                        const SizedBox(width: 8),
+                        BubbleButton(
                           icon: AppIcons.x,
                           tooltip: 'Wandanzeige beenden',
                           onPressed: () => Navigator.pop(context),
@@ -166,31 +179,41 @@ class _KioskScreenState extends State<KioskScreen> {
                           ),
                         ),
                     const SizedBox(height: 8),
-                    // Columns instead of rows: no gaps under short panels.
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var col = 0; col < columns; col++) ...[
-                          if (col > 0) const SizedBox(width: gap),
-                          SizedBox(
-                            width: width,
-                            child: Column(
-                              children: [
-                                for (
-                                  var i = col;
-                                  i < panels.length;
-                                  i += columns
-                                )
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: gap),
-                                    child: panels[i],
-                                  ),
-                              ],
+                    if (byPerson)
+                      _PeopleBoard(
+                        engine: engine,
+                        now: _now,
+                        width: constraints.maxWidth - 40,
+                        hidden: hidden,
+                      )
+                    else
+                      // Columns instead of rows: no gaps under short panels.
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var col = 0; col < columns; col++) ...[
+                            if (col > 0) const SizedBox(width: gap),
+                            SizedBox(
+                              width: width,
+                              child: Column(
+                                children: [
+                                  for (
+                                    var i = col;
+                                    i < panels.length;
+                                    i += columns
+                                  )
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: gap,
+                                      ),
+                                      child: panels[i],
+                                    ),
+                                ],
+                              ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               );
@@ -474,5 +497,245 @@ class _MealsPanel extends StatelessWidget {
           ),
       ],
     );
+  }
+}
+
+/// One column per member: today's appointments, open tasks, chores and
+/// routines – plus one for the whole family (appointments without anyone,
+/// tasks without assignee). Each device shows only what its member may see,
+/// signed in as the Home Assistant service account the whole family.
+class _PeopleBoard extends StatelessWidget {
+  const _PeopleBoard({
+    required this.engine,
+    required this.now,
+    required this.width,
+    required this.hidden,
+  });
+
+  final SyncEngine engine;
+  final DateTime now;
+  final double width;
+  final Set<String> hidden;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final theme = Theme.of(context);
+    final today = DateUtils.dateOnly(now);
+    final tomorrow = today.add(const Duration(days: 1));
+    bool on(FamioSection s) => !hidden.contains(s.name);
+    final occurrences = on(FamioSection.calendar)
+        ? engine
+              .occurrences(today, tomorrow)
+              .where((o) => o.event.allDay || o.end.isAfter(now))
+              .toList()
+        : <Occurrence>[];
+    final openTasks = on(FamioSection.tasks)
+        ? (engine.tasks.where((t) => !t.done).toList()..sort((a, b) {
+            final da = a.due, db = b.due;
+            if (da == null || db == null) return da == null ? 1 : -1;
+            return da.compareTo(db);
+          }))
+        : <Task>[];
+    final members = engine.members.where((m) => !m.isService).toList();
+    final ids = {for (final m in members) m.id};
+
+    const gap = 16.0;
+    final columns = (width / 300).floor().clamp(1, 6);
+    final cardWidth = (width - gap * (columns - 1)) / columns;
+
+    Widget taskLine(Task t) {
+      final due = t.due;
+      final late = due != null && DateUtils.dateOnly(due).isBefore(today);
+      return _BigLine(
+        t.title,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (due != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  late
+                      ? 'überfällig'
+                      : DateUtils.isSameDay(due, today)
+                      ? 'heute'
+                      : DateFormat('E d.M.', 'de').format(due),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: late ? c.danger : c.inkSoft,
+                  ),
+                ),
+              ),
+            RoundCheck(
+              label: t.title,
+              value: false,
+              size: 30,
+              color: c.strong(FamioSection.tasks),
+              onChanged: (_) => engine.saveTask(
+                t.copyWith(done: true, completedAt: DateTime.now()),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget eventLine(Occurrence o) => _BigLine(
+      o.event.title,
+      leading: SizedBox(
+        width: 56,
+        child: Text(
+          o.event.allDay ? 'ganz.' : timeLabel(o.start),
+          style: theme.textTheme.titleMedium,
+        ),
+      ),
+    );
+
+    Widget card({
+      required Widget header,
+      required Color color,
+      required List<Occurrence> events,
+      required List<Task> tasks,
+      List<Widget> extra = const [],
+    }) => SizedBox(
+      width: cardWidth,
+      child: SoftCard(
+        color: color,
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            header,
+            const SizedBox(height: 8),
+            if (events.isEmpty && tasks.isEmpty && extra.isEmpty)
+              const _BigLine('Heute frei 🎈', dim: true),
+            for (final o in events.take(6)) eventLine(o),
+            if (events.isNotEmpty && (tasks.isNotEmpty || extra.isNotEmpty))
+              const Divider(height: 16),
+            ...extra,
+            for (final t in tasks.take(6)) taskLine(t),
+            if (tasks.length > 6)
+              _BigLine('… und ${tasks.length - 6} weitere', dim: true),
+          ],
+        ),
+      ),
+    );
+
+    final cards = <Widget>[
+      card(
+        color: c.tint(FamioSection.home),
+        header: Row(
+          children: [
+            IconBlob(
+              AppIcons.usersThree,
+              color: c.strong(FamioSection.home),
+              background: c.surface.withValues(alpha: 0.7),
+              size: 38,
+            ),
+            const SizedBox(width: 10),
+            Text('Alle', style: theme.textTheme.titleLarge),
+          ],
+        ),
+        events: [
+          for (final o in occurrences)
+            if (!o.event.memberIds.any(ids.contains)) o,
+        ],
+        tasks: [
+          for (final t in openTasks)
+            if (t.assigneeId == null || !ids.contains(t.assigneeId)) t,
+        ],
+      ),
+      for (final m in members)
+        card(
+          // A light wash of the member's own color.
+          color: Color.alphaBlend(
+            Color(m.color ?? 0xFF607D8B).withValues(alpha: 0.16),
+            c.surface,
+          ),
+          header: Row(
+            children: [
+              MemberAvatar(m, radius: 19),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  m.displayName,
+                  style: theme.textTheme.titleLarge,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (on(FamioSection.chores) &&
+                  engine.pointCollectors.any((p) => p.id == m.id))
+                Text(
+                  '⭐ ${engine.pointBalance(m.id)}',
+                  style: theme.textTheme.titleMedium,
+                ),
+            ],
+          ),
+          events: [
+            for (final o in occurrences)
+              if (o.event.memberIds.contains(m.id)) o,
+          ],
+          tasks: [
+            for (final t in openTasks)
+              if (t.assigneeId == m.id) t,
+          ],
+          extra: [
+            if (on(FamioSection.chores)) ...[
+              for (final r in engine.routinesFor(m.id, today))
+                () {
+                  final run = engine.routineRun(r, today, m.id);
+                  final done = r.steps
+                      .where((s) => run.done.contains(s.id))
+                      .length;
+                  return InkWell(
+                    onTap: () => openRoutine(context, r, m.id),
+                    child: _BigLine(
+                      '${r.emoji} ${r.title}',
+                      trailing: Text(
+                        done == r.steps.length
+                            ? '🎉'
+                            : '$done/${r.steps.length}',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                  );
+                }(),
+              for (final ch in engine.chores)
+                if (ch.dueOn(today) &&
+                    ch.memberIds.isNotEmpty &&
+                    ch.isFor(m.id, today))
+                  () {
+                    final done = engine.choreCompletion(ch, today);
+                    return _BigLine(
+                      '${ch.emoji} ${ch.title}',
+                      dim: done != null,
+                      trailing: RoundCheck(
+                        label: ch.title,
+                        value: done != null,
+                        size: 30,
+                        color: done?.status == PointStatus.pending
+                            ? c.inkSoft
+                            : c.strong(FamioSection.chores),
+                        onChanged: (_) {
+                          if (engine.iAmGuest) return;
+                          if (done == null) {
+                            engine.completeChore(
+                              ch,
+                              today,
+                              m.id,
+                              asRequest: true,
+                            );
+                          } else if (done.status == PointStatus.pending) {
+                            engine.undoChore(ch, today);
+                          }
+                        },
+                      ),
+                    );
+                  }(),
+            ],
+          ],
+        ),
+    ];
+    return Wrap(spacing: gap, runSpacing: gap, children: cards);
   }
 }

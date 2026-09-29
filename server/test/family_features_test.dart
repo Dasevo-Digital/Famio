@@ -203,6 +203,51 @@ void main() {
       expect(promote['_status'], 400);
       expect(promote['error'], 'service_admin');
     });
+
+    test('"Abhaken und Einkauf" ticks off and shops, nothing else', () async {
+      final ha = await addMember('homeassistant', MemberRole.service);
+      final set = await mama.call('PATCH', 'api/admin/users/${ha.id}', {
+        'serviceAccess': 'everyday',
+      });
+      expect(set['serviceAccess'], 'everyday');
+      await mama.sync([
+        _record(Collections.tasks, 't1', {'title': 'Müll', 'done': false}),
+        _record(Collections.events, 'e1', {'title': 'Fest'}),
+      ]);
+      await ha.sync();
+      final response = await ha.sync([
+        _record(Collections.tasks, 't1', {'title': 'Müll', 'done': true}),
+        _record(Collections.tasks, 't2', {'title': 'Neu'}),
+        _record(Collections.events, 'e1', {'title': 'Geändert'}),
+        _record(Collections.shoppingItems, 's1', {'name': 'Milch'}),
+      ]);
+      expect(response.rejected.map((r) => r.id).toSet(), {'t2', 'e1'});
+      await mama.sync();
+      expect(mama.seen['tasks/t1']!.data['done'], true);
+      expect(mama.seen['events/e1']!.data['title'], 'Fest');
+      expect(mama.seen['shopping_items/s1']!.data['name'], 'Milch');
+      // Renaming is more than ticking off.
+      final rename = await ha.sync([
+        _record(Collections.tasks, 't1', {'title': 'Anders', 'done': true}),
+      ]);
+      expect(rename.rejected.single.id, 't1');
+    });
+
+    test('"Nur lesen" changes nothing', () async {
+      final ha = await addMember('homeassistant', MemberRole.service);
+      await mama.call('PATCH', 'api/admin/users/${ha.id}', {
+        'serviceAccess': 'readOnly',
+      });
+      final me = await ha.call('GET', 'api/me');
+      expect((me['member'] as Map? ?? me)['serviceAccess'], 'readOnly');
+      final response = await ha.sync([
+        _record(Collections.shoppingItems, 's1', {'name': 'Milch'}),
+      ]);
+      expect(response.rejected.single.id, 's1');
+      final feed = await ha.call('POST', 'api/calendar/feeds', {});
+      expect(feed['_status'], 403);
+      expect(feed['error'], 'read_only');
+    });
   });
 
   group('children', () {

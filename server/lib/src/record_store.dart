@@ -9,7 +9,12 @@ import 'api_exception.dart';
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
 class RecordStore {
-  RecordStore(this._db, {required this.memberIds, this.roleOf});
+  RecordStore(
+    this._db, {
+    required this.memberIds,
+    this.roleOf,
+    this.accessOf,
+  });
 
   final Database _db;
 
@@ -18,6 +23,9 @@ class RecordStore {
   final MemberRole Function(String userId)? roleOf;
 
   MemberRole _role(String userId) => roleOf?.call(userId) ?? MemberRole.adult;
+
+  /// What service accounts may change (see [ServiceAccess]).
+  final ServiceAccess Function(String userId)? accessOf;
 
   /// Called after changes were stored by [sync] (not by [writeAsServer]),
   /// with the previous versions, e.g. for push notifications.
@@ -38,13 +46,19 @@ class RecordStore {
     MemberRole role,
     String userId,
     SyncRecord incoming,
-    SyncRecord? existing,
-  ) {
+    SyncRecord? existing, {
+    ServiceAccess access = ServiceAccess.full,
+  }) {
     final collection = incoming.collection;
     switch (role) {
       case MemberRole.adult:
-      case MemberRole.service:
         return true;
+      case MemberRole.service:
+        return switch (access) {
+          ServiceAccess.full => true,
+          ServiceAccess.readOnly => false,
+          ServiceAccess.everyday => _everyday(incoming, existing),
+        };
       case MemberRole.guest:
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
@@ -154,6 +168,9 @@ class RecordStore {
   SyncResponse sync(SyncRequest request, String userId) {
     final now = DateTime.now().millisecondsSinceEpoch;
     final role = _role(userId);
+    final access = role == MemberRole.service
+        ? accessOf?.call(userId) ?? ServiceAccess.full
+        : ServiceAccess.full;
     final stored = <(SyncRecord, SyncRecord?)>[];
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
@@ -190,7 +207,13 @@ class RecordStore {
           // access recently, their revocation tombstone removes the copy.
           continue;
         }
-        if (!mayWrite(role, userId, incoming, existing)) {
+        if (!mayWrite(
+          role,
+          userId,
+          incoming,
+          existing,
+          access: access,
+        )) {
           // Undo the change on the device: the stored version, or a
           // tombstone for something that must not exist.
           rejected.add(
@@ -356,6 +379,38 @@ class RecordStore {
         ' VALUES (?, ?, ?, ?)',
         [member, r.collection, r.id, rev],
       );
+    }
+  }
+
+  /// [ServiceAccess.everyday]: shopping lists' items, ticking off existing
+  /// tasks and routine steps, and asking for the points of a done chore (like
+  /// the shared wall display) – nothing else.
+  static bool _everyday(SyncRecord incoming, SyncRecord? existing) {
+    switch (incoming.collection) {
+      case Collections.shoppingItems:
+      case Collections.routineRuns:
+        return true;
+      case Collections.tasks:
+        if (existing == null || existing.deleted || incoming.deleted) {
+          return false;
+        }
+        const ticks = {'done', 'completedAt'};
+        // Missing, null and "" are the same (clients write empty fields).
+        String same(Object? v) => jsonEncode(v == '' ? null : v);
+        final keys = {...existing.data.keys, ...incoming.data.keys};
+        return keys.every(
+          (k) =>
+              ticks.contains(k) ||
+              same(existing.data[k]) == same(incoming.data[k]),
+        );
+      case Collections.pointEntries:
+        bool pending(SyncRecord r) => r.data['status'] == 'pending';
+        if (existing != null && !existing.deleted && !pending(existing)) {
+          return false;
+        }
+        return incoming.deleted || pending(incoming);
+      default:
+        return false;
     }
   }
 

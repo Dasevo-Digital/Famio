@@ -446,6 +446,7 @@ class FamioApiClient {
     Birthday? birthday,
     bool clearBirthday = false,
     MemberRole? role,
+    ServiceAccess? serviceAccess,
   }) async => FamilyMember.fromJson(
     await _send('PATCH', 'api/admin/users/$id', {
       'username': ?username,
@@ -453,6 +454,7 @@ class FamioApiClient {
       'isAdmin': ?isAdmin,
       'color': ?color,
       'role': ?role?.name,
+      'serviceAccess': ?serviceAccess?.name,
       if (birthday != null || clearBirthday) 'birthday': birthday?.toString(),
     }),
   );
