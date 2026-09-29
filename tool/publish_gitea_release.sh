@@ -31,7 +31,10 @@ if [ -z "$RELEASE" ]; then
     --data "{\"tag_name\":\"$TAG\",\"target_commitish\":\"$TAG\",\"name\":\"Famio $VERSION\"}" \
     "$API_BASE/releases")
 fi
-RELEASE_ID=$(printf '%s' "$RELEASE" | sed -nE 's/.*"id"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p' | head -n 1)
+# The response contains nested objects (for example `author.id`).  Match
+# only the root object's first field, otherwise an upload is sent to an
+# unrelated release ID and Gitea replies with 404.
+RELEASE_ID=$(printf '%s' "$RELEASE" | sed -nE 's/^[[:space:]]*\{[[:space:]]*"id"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p')
 [ -n "$RELEASE_ID" ] || { echo "Could not read Gitea release id." >&2; exit 1; }
 
 find "$RELEASE_DIR" -type f ! -name '.DS_Store' -print | while IFS= read -r FILE; do
