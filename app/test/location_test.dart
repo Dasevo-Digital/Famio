@@ -1,6 +1,7 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/location/location_sharing.dart';
 import 'package:famio/src/screens/location_screens.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -141,6 +142,22 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('new place button clears the phone navigation bar', (
+    tester,
+  ) async {
+    await open(tester);
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Orte'));
+    await tester.pumpAndSettle();
+
+    final button = find.byType(FloatingActionButton);
+    expect(button, findsOneWidget);
+    // The floating navigation bar starts around the lower 80 px on a phone.
+    // A raw Scaffold FAB would land behind it at the very bottom.
+    expect(tester.getBottomRight(button).dy, lessThan(760));
+  });
+
   test('status texts', () {
     final now = DateTime(2026, 10, 5, 12);
     expect(sharingLabel(null, null, now: now), 'Teilt keinen Standort');
@@ -157,7 +174,7 @@ void main() {
         null,
         now: now,
       ),
-      'Unterwegs · vor 2 Min.',
+      'Unterwegs · zuletzt bestätigt vor 7 Min.',
     );
     expect(
       sharingLabel(
@@ -169,7 +186,22 @@ void main() {
         null,
         now: now,
       ),
-      'Keine Verbindung seit vor 3 Std.',
+      'Noch keine Position',
+    );
+    expect(
+      sharingLabel(
+        MemberLocation(
+          memberId: 'x',
+          state: SharingState.active,
+          latitude: 1,
+          longitude: 1,
+          at: now.subtract(const Duration(hours: 3)),
+          lastContact: now.subtract(const Duration(minutes: 2)),
+        ),
+        const Place(id: 'home', name: 'Zuhause', latitude: 1, longitude: 1),
+        now: now,
+      ),
+      'Letzter Standort: „Zuhause“ · vor 3 Std. · möglicherweise veraltet',
     );
     expect(
       sharingLabel(
@@ -191,5 +223,63 @@ void main() {
       ),
       'Standort am Handy ausgeschaltet',
     );
+    expect(
+      sharingLabel(
+        const MemberLocation(memberId: 'x', state: SharingState.scheduled),
+        null,
+        now: now,
+      ),
+      'Standortfreigabe ist nach Zeitplan gerade aus',
+    );
+  });
+
+  test('location schedules handle weekdays and overnight windows', () {
+    final weekdays = LocationSchedule(
+      weekdays: [
+        DateTime.monday,
+        DateTime.tuesday,
+        DateTime.wednesday,
+        DateTime.thursday,
+        DateTime.friday,
+      ],
+      startMinute: 7 * 60,
+      endMinute: 18 * 60,
+    );
+    expect(weekdays.activeAt(DateTime(2026, 10, 5, 7)), isTrue);
+    expect(weekdays.activeAt(DateTime(2026, 10, 5, 18)), isFalse);
+    expect(weekdays.activeAt(DateTime(2026, 10, 10, 12)), isFalse);
+    expect(scheduleLabel(weekdays), 'Mo, Di, Mi, Do, Fr · 07:00–18:00 Uhr');
+
+    final overnight = LocationSchedule(
+      weekdays: [DateTime.friday],
+      startMinute: 20 * 60,
+      endMinute: 2 * 60,
+    );
+    expect(overnight.activeAt(DateTime(2026, 10, 9, 22)), isTrue);
+    expect(overnight.activeAt(DateTime(2026, 10, 10, 1, 30)), isTrue);
+    expect(overnight.activeAt(DateTime(2026, 10, 10, 2)), isFalse);
+  });
+
+  test('device diagnostics parse native timestamps', () {
+    final status = DeviceSharingStatus.fromMap({
+      'permission': 'foreground',
+      'lastFixAt': 1760000000000,
+      'lastSuccessfulUploadAt': 1760000001000,
+      'lastServerResponseAt': 1760000002000,
+      'lastServerStatus': 'HTTP 200',
+      'lastErrorAt': 1760000003000,
+      'lastError': 'Netzwerkfehler',
+    });
+
+    expect(status.permission, LocationPermission.foreground);
+    expect(status.lastFixAt?.millisecondsSinceEpoch, 1760000000000);
+    expect(
+      status.lastSuccessfulUploadAt?.millisecondsSinceEpoch,
+      1760000001000,
+    );
+    expect(status.lastServerResponseAt?.millisecondsSinceEpoch, 1760000002000);
+    expect(status.lastServerStatus, 'HTTP 200');
+    expect(status.lastErrorAt?.millisecondsSinceEpoch, 1760000003000);
+    expect(status.lastError, 'Netzwerkfehler');
   });
 }

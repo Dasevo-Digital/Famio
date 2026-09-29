@@ -82,6 +82,77 @@ enum SharingState {
 
   /// Location (GPS) is switched off on the device.
   off,
+
+  /// The owner configured a recurring time window and it is currently
+  /// outside that window. No position is retained or shown to the family.
+  scheduled,
+}
+
+/// A recurring local-time window in which location sharing is allowed.
+///
+/// Weekdays use Dart's convention: Monday is 1 and Sunday is 7. A window
+/// may span midnight, for example Friday 20:00 until Saturday 02:00.
+class LocationSchedule {
+  const LocationSchedule({
+    required this.weekdays,
+    required this.startMinute,
+    required this.endMinute,
+  }) : assert(weekdays.length > 0),
+       assert(startMinute >= 0 && startMinute < 24 * 60),
+       assert(endMinute >= 0 && endMinute < 24 * 60),
+       assert(startMinute != endMinute);
+
+  factory LocationSchedule.fromJson(Map<String, Object?> json) {
+    final weekdays = [
+      for (final day in json['weekdays'] as List? ?? const [])
+        if (day is num) day.toInt(),
+    ]..sort();
+    final start = (json['startMinute'] as num?)?.toInt();
+    final end = (json['endMinute'] as num?)?.toInt();
+    if (weekdays.isEmpty ||
+        weekdays.length > 7 ||
+        weekdays.toSet().length != weekdays.length ||
+        weekdays.any((day) => day < DateTime.monday || day > DateTime.sunday) ||
+        start == null ||
+        end == null ||
+        start < 0 ||
+        start >= 24 * 60 ||
+        end < 0 ||
+        end >= 24 * 60 ||
+        start == end) {
+      throw const FormatException('Ungültiger Standort-Zeitplan');
+    }
+    return LocationSchedule(
+      weekdays: weekdays,
+      startMinute: start,
+      endMinute: end,
+    );
+  }
+
+  /// Weekdays on which this window starts, sorted and without duplicates.
+  final List<int> weekdays;
+  final int startMinute;
+  final int endMinute;
+
+  bool activeAt(DateTime local) {
+    final minute = local.hour * 60 + local.minute;
+    if (startMinute < endMinute) {
+      return weekdays.contains(local.weekday) &&
+          minute >= startMinute &&
+          minute < endMinute;
+    }
+    if (minute >= startMinute) return weekdays.contains(local.weekday);
+    final previous = local.weekday == DateTime.monday
+        ? DateTime.sunday
+        : local.weekday - 1;
+    return minute < endMinute && weekdays.contains(previous);
+  }
+
+  Map<String, Object?> toJson() => {
+    'weekdays': weekdays,
+    'startMinute': startMinute,
+    'endMinute': endMinute,
+  };
 }
 
 /// Last known position and sharing status of a member, stored by the
@@ -148,8 +219,8 @@ class MemberLocation {
   final int? battery;
   final String? device;
 
-  /// `android` or `ios`. iPhones only report when moving, so a long silence
-  /// is normal there.
+  /// `android` or `ios`. Devices can report sparingly to save power; the UI
+  /// must therefore always show the age of the actual GPS measurement.
   final String? platform;
 
   bool get hasPosition => latitude != null && longitude != null;

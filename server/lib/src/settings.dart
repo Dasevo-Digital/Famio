@@ -109,9 +109,7 @@ class SettingsStore {
     final text = (value as String?)?.trim() ?? '';
     if (text.isEmpty) return null;
     final uri = Uri.tryParse(text);
-    if (uri == null ||
-        !(uri.isScheme('https') || uri.isScheme('http')) ||
-        uri.host.isEmpty) {
+    if (uri == null || !uri.isScheme('https') || uri.host.isEmpty) {
       throw ApiException.badRequest(
         'invalid_public_url',
         'Öffentliche Adresse muss mit https:// beginnen, '

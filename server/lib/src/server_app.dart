@@ -31,6 +31,7 @@ import 'record_store.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'crypto/encrypted_db.dart';
+import 'remote_url_policy.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
 class FamioServerApp {
@@ -42,6 +43,8 @@ class FamioServerApp {
     bool ingressAuth = false,
     bool trustProxy = false,
     int maxUploadMb = 100,
+    int maxStorageMb = 5120,
+    bool allowPrivateCalendarHosts = false,
     http.Client? httpClient,
     void Function(String line)? auditLog,
     Database? blobs,
@@ -75,12 +78,16 @@ class FamioServerApp {
       records: records,
       memberIds: () => [for (final m in accounts.members()) m.id],
     );
+    final remoteUrlPolicy = RemoteUrlPolicy(
+      allowPrivateNetwork: allowPrivateCalendarHosts,
+    );
     importer = CalendarImporter(
       records: records,
       access: calendarAccess,
       location: () => settings.location,
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
+      urlPolicy: remoteUrlPolicy,
     );
     caldav = CalDavSync(
       db: db,
@@ -89,6 +96,7 @@ class FamioServerApp {
       location: () => settings.location,
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
+      urlPolicy: remoteUrlPolicy,
       // Tests replace Google with a fake at [googleBase].
       google: googleBase == null
           ? null
@@ -104,6 +112,9 @@ class FamioServerApp {
       records: records,
       accounts: accounts,
       onChanged: () => hub.notifyRev(records.currentRev),
+      // Schedules are evaluated in the family's configured time zone, not
+      // in the container's potentially unrelated system time zone.
+      clock: () => tz.TZDateTime.now(settings.location),
     );
     files = FileStore(
       db,
@@ -112,6 +123,7 @@ class FamioServerApp {
       dataDir: dataDir,
       records: records,
       maxBytes: () => settings.maxUploadBytes,
+      maxTotalBytes: () => maxStorageMb * 1024 * 1024,
     );
     push = PushService(
       db: db,
@@ -183,6 +195,7 @@ class FamioServerApp {
       location: tz.getLocation('Europe/Berlin'),
       dataDir: Directory.systemTemp.createTempSync('famio_test_').path,
       httpClient: httpClient,
+      allowPrivateCalendarHosts: true,
       googleBase: googleBase,
       webApp: webApp,
     );

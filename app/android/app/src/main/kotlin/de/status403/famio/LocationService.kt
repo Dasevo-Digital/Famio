@@ -98,11 +98,13 @@ class LocationService : Service(), LocationListener {
     }
 
     private val prefs get() = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val secrets get() = LocationSecrets.prefs(this)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
+        LocationSecrets.migrate(this)
         locations = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
@@ -268,6 +270,7 @@ class LocationService : Service(), LocationListener {
     }
 
     override fun onLocationChanged(location: Location) {
+        prefs.edit().putLong("lastFixAt", location.time).apply()
         synchronized(pending) {
             pending.add(
                 JSONObject()
@@ -316,10 +319,10 @@ class LocationService : Service(), LocationListener {
     private fun flush() = report(state = state())
 
     private fun report(state: String) {
-        val url = prefs.getString("url", null) ?: return
-        val token = prefs.getString("token", null) ?: return
-        val pin = prefs.getString("pin", null)
-        val device = prefs.getString("device", null)
+        val url = secrets.getString("url", null) ?: return
+        val token = secrets.getString("token", null) ?: return
+        val pin = secrets.getString("pin", null)
+        val device = secrets.getString("device", null)
         val alertsSince = prefs.getLong("alertsSince", System.currentTimeMillis())
         val batch = synchronized(pending) { ArrayList(pending) }
         if (batch.isNotEmpty()) lastFixUpload = System.currentTimeMillis()
@@ -333,6 +336,7 @@ class LocationService : Service(), LocationListener {
                 .put("alertsSince", alertsSince)
             try {
                 val (status, text) = post(URL(URL(url), "api/location/report"), token, pin, body)
+                recordServerResponse(status, uploadedPosition = batch.isNotEmpty())
                 when {
                     status in 200..299 -> {
                         synchronized(pending) { pending.removeAll(batch.toSet()) }
@@ -342,10 +346,36 @@ class LocationService : Service(), LocationListener {
                 }
             } catch (e: IOException) {
                 // Offline: keep the positions for the next attempt.
+                recordTransferError("Netzwerkfehler")
             } catch (e: Exception) {
                 // Unexpected answer; try again with the next heartbeat.
+                recordTransferError("Übertragungsfehler")
             }
         }
+    }
+
+    private fun recordServerResponse(status: Int, uploadedPosition: Boolean) {
+        val now = System.currentTimeMillis()
+        prefs.edit()
+            .putLong("lastServerResponseAt", now)
+            .putString("lastServerStatus", "HTTP $status")
+            .apply {
+                if (uploadedPosition && status in 200..299) {
+                    putLong("lastSuccessfulUploadAt", now)
+                }
+                // A server response means the previous transport failure is
+                // no longer the current diagnosis.
+                remove("lastErrorAt")
+                remove("lastError")
+            }
+            .apply()
+    }
+
+    private fun recordTransferError(message: String) {
+        prefs.edit()
+            .putLong("lastErrorAt", System.currentTimeMillis())
+            .putString("lastError", message)
+            .apply()
     }
 
     private fun applyAnswer(answer: JSONObject) {
@@ -390,7 +420,8 @@ class LocationService : Service(), LocationListener {
 
     /** The token was signed out (e.g. in the device list): stop for good. */
     private fun revoked() {
-        prefs.edit().putBoolean("enabled", false).remove("token").apply()
+        prefs.edit().putBoolean("enabled", false).apply()
+        LocationSecrets.clear(this)
         val manager = getSystemService(NotificationManager::class.java)
         manager.notify(
             NOTIFICATION_ID + 1,

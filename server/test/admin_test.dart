@@ -60,6 +60,7 @@ void main() {
         'username': 'mama',
         'displayName': 'Mama',
         'password': 'geheim123',
+        'setupCode': app.setupCode,
       },
     );
     final admin = setup['token'] as String;

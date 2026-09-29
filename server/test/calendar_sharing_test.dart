@@ -135,7 +135,11 @@ void main() {
     final setup = await http.post(
       base.resolve('api/auth/setup'),
       headers: {'content-type': 'application/json'},
-      body: jsonEncode({'username': 'mama', 'password': 'geheim123'}),
+      body: jsonEncode({
+        'username': 'mama',
+        'password': 'geheim123',
+        'setupCode': app.setupCode,
+      }),
     );
     final body = jsonDecode(setup.body) as Map;
     mama = _Member(

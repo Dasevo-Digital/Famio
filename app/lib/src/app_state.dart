@@ -59,6 +59,7 @@ class AppState extends ChangeNotifier {
 
   late SharedPreferences _prefs;
   late SecureVault vault;
+  bool insecureVaultConsentRequired = false;
   ReminderService? _reminders;
 
   /// Famio's own push notifications (without ntfy).
@@ -115,7 +116,16 @@ class AppState extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     highContrast.value = _prefs.getBool('highContrast') ?? false;
     if (kIsWeb) return _initWeb();
-    vault = await SecureVault.open(_prefs);
+    try {
+      vault = await SecureVault.open(_prefs);
+    } on InsecureVaultConsentRequired {
+      insecureVaultConsentRequired = true;
+      return;
+    }
+    await _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
     serverUrl = _prefs.getString('serverUrl');
     mapTileUrl = _prefs.getString('mapTileUrl');
     hiddenModules = {...?_prefs.getStringList('hiddenModules')};
@@ -130,6 +140,16 @@ class AppState extends ChangeNotifier {
         pin: await vault.read('certPin'),
       );
     }
+  }
+
+  /// Without a system keyring: continue only after the user explicitly
+  /// accepted that the token and local database key are stored in preferences.
+  Future<void> allowInsecureVault() async {
+    await _prefs.setBool(SecureVault.insecureFallbackPreference, true);
+    vault = await SecureVault.open(_prefs);
+    insecureVaultConsentRequired = false;
+    await _restoreSession();
+    notifyListeners();
   }
 
   /// The web app belongs to the server it was loaded from (`<server>/app/`).
@@ -546,6 +566,11 @@ class AppState extends ChangeNotifier {
         // Admins may have switched areas on or off (server settings).
         _loadConfig(api);
       }
+      if (changed.contains(Collections.places) && this.engine == engine) {
+        // iOS keeps low-power geofences for the family's places. This is a
+        // no-op on Android, whose service already receives regular fixes.
+        LocationSharing.updateRegions(engine.places).catchError((Object _) {});
+      }
     });
 
     // Plain cache folder of version 0.5: now an encrypted database.
@@ -603,6 +628,7 @@ class AppState extends ChangeNotifier {
       serverUrl: normalized,
       certificatePin: pin,
       device: deviceName,
+      places: engine.places,
     ).catchError((Object _) {});
   }
 

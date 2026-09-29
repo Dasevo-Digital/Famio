@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../record_store.dart';
+import '../remote_url_policy.dart';
 import 'calendar_access.dart';
 import 'ics_import.dart';
 
@@ -21,7 +22,9 @@ class CalendarImporter {
     this.access,
     http.Client? client,
     this.interval = const Duration(minutes: 30),
-  }) : _http = client ?? http.Client();
+    RemoteUrlPolicy? urlPolicy,
+  }) : _http = client ?? http.Client(),
+       _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
 
   final RecordStore records;
 
@@ -35,6 +38,7 @@ class CalendarImporter {
   final void Function() onChanged;
   final Duration interval;
   final http.Client _http;
+  final RemoteUrlPolicy _urlPolicy;
 
   static const _maxBytes = 10 * 1024 * 1024;
   static const _pastWindow = Duration(days: 90);
@@ -111,15 +115,10 @@ class CalendarImporter {
       final full =
           now.difference(_lastFull[sub.id] ?? DateTime(0)) > _fullImportEvery;
       final cached = _etags[sub.id];
-      final request = http.Request('GET', url)
-        ..headers['accept'] = 'text/calendar, */*'
-        ..headers['user-agent'] = 'Famio calendar import';
-      if (!full && cached != null && cached.$1 == sub.url) {
-        request.headers['if-none-match'] = cached.$2;
-      }
-      final response = await _http
-          .send(request)
-          .timeout(const Duration(seconds: 30));
+      final response = await _get(
+        url,
+        etag: !full && cached?.$1 == sub.url ? cached?.$2 : null,
+      );
       if (response.statusCode == 304) {
         await response.stream.drain<void>();
       } else if (response.statusCode != 200) {
@@ -247,7 +246,9 @@ class CalendarImporter {
     if (uri.scheme == 'webcal' || uri.scheme == 'webcals') {
       uri = uri.replace(scheme: 'https');
     }
-    if (uri.scheme != 'http' && uri.scheme != 'https' || uri.host.isEmpty) {
+    if ((uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty) {
       throw _ImportError('Adresse muss mit https:// oder webcal:// beginnen');
     }
     return uri;
@@ -262,6 +263,33 @@ class CalendarImporter {
       }
     }
     return utf8.decode(bytes.takeBytes(), allowMalformed: true);
+  }
+
+  /// `package:http` follows redirects by default. Keep control here so a
+  /// public feed cannot redirect the server to its own private network.
+  Future<http.StreamedResponse> _get(Uri start, {String? etag}) async {
+    var target = start;
+    for (var hop = 0; hop < 6; hop++) {
+      await _urlPolicy.check(target);
+      final request = http.Request('GET', target)
+        ..followRedirects = false
+        ..headers['accept'] = 'text/calendar, */*'
+        ..headers['user-agent'] = 'Famio calendar import';
+      if (etag != null) request.headers['if-none-match'] = etag;
+      final response = await _http
+          .send(request)
+          .timeout(const Duration(seconds: 30));
+      final location = response.headers['location'];
+      if (response.statusCode >= 300 &&
+          response.statusCode < 400 &&
+          location != null) {
+        await response.stream.drain<void>();
+        target = target.resolve(location);
+        continue;
+      }
+      return response;
+    }
+    throw _ImportError('Zu viele Weiterleitungen beim Kalenderabruf');
   }
 }
 

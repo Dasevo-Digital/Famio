@@ -339,6 +339,11 @@ class FamioApiClient {
 
   Future<void> deleteMember(String id) => _send('DELETE', 'api/members/$id');
 
+  /// Deletes the signed-in account after a fresh password (and optional MFA)
+  /// confirmation. Shared family entries remain available to the family.
+  Future<void> deleteMyAccount({required String password, String? code}) =>
+      _send('DELETE', 'api/me', {'password': password, 'code': ?code});
+
   Future<void> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -794,6 +799,32 @@ class FamioApiClient {
 
   Future<void> resumeLocation({String? memberId}) =>
       _send('POST', 'api/location/resume', {'memberId': ?memberId});
+
+  Future<LocationSchedule?> locationSchedule({String? memberId}) async {
+    final json = await _send(
+      'GET',
+      Uri(
+        path: 'api/location/schedule',
+        queryParameters: {'member': ?memberId},
+      ).toString(),
+    );
+    final schedule = json['schedule'];
+    return schedule is Map ? LocationSchedule.fromJson(schedule.cast()) : null;
+  }
+
+  Future<LocationSchedule?> setLocationSchedule({
+    required String code,
+    LocationSchedule? schedule,
+    String? memberId,
+  }) async {
+    final json = await _send('PUT', 'api/location/schedule', {
+      'code': code,
+      'memberId': ?memberId,
+      'schedule': ?schedule?.toJson(),
+    });
+    final result = json['schedule'];
+    return result is Map ? LocationSchedule.fromJson(result.cast()) : null;
+  }
 
   Future<List<LocationFix>> locationHistory({
     String? memberId,

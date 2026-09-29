@@ -60,6 +60,7 @@ bool isPlainSqlite(File file) {
 String loadOrCreateDataKey(String path, {required String dataDir}) {
   final file = File(path);
   if (file.existsSync()) {
+    _ensureOwnerOnly(file);
     final key = file.readAsStringSync().trim();
     if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(key)) {
       throw DataKeyException('Schlüsseldatei $path ist ungültig.');
@@ -84,5 +85,19 @@ String loadOrCreateDataKey(String path, {required String dataDir}) {
   ).join();
   file.parent.createSync(recursive: true);
   file.writeAsStringSync('$key\n', flush: true);
+  _ensureOwnerOnly(file);
   return key;
+}
+
+/// The key is as sensitive as the encrypted databases. Dart has no chmod API,
+/// so server platforms use the small POSIX utility and verify the result.
+void _ensureOwnerOnly(File file) {
+  if (Platform.isWindows) return;
+  final result = Process.runSync('chmod', ['600', file.path]);
+  if (result.exitCode != 0 ||
+      (FileStat.statSync(file.path).mode & 0x1ff) != 0x180) {
+    throw DataKeyException(
+      'Schlüsseldatei ${file.path} muss die Rechte 0600 haben.',
+    );
+  }
 }

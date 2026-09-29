@@ -29,6 +29,9 @@ void main() {
     expect(containsText(path, 'Impfpass-Mia'), isTrue);
 
     final key = loadOrCreateDataKey('$dir/keys/famio.key', dataDir: dir);
+    if (!Platform.isWindows) {
+      expect(FileStat.statSync('$dir/keys/famio.key').mode & 0x1ff, 0x180);
+    }
     final db = openFamioDatabase(path, hexKey: key);
     expect(
       db.select('SELECT data FROM records').single['data'],
@@ -84,6 +87,7 @@ void main() {
                       body: jsonEncode({
                         'username': 'mama',
                         'password': 'geheim123',
+                        'setupCode': app.setupCode,
                       }),
                     )).body,
                   )

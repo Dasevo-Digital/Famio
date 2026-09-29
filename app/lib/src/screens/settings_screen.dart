@@ -289,6 +289,17 @@ class SettingsScreen extends StatelessWidget {
                 await state.signOut();
               },
             ),
+          ListTile(
+            leading: Icon(AppIcons.userMinus, color: c.danger),
+            title: Text(
+              'Mein Konto löschen',
+              style: TextStyle(color: c.danger),
+            ),
+            subtitle: const Text(
+              'Zugang und persönliche Verbindungen entfernen',
+            ),
+            onTap: () => _deleteAccount(context),
+          ),
           ListHeading('Über Famio', color: accent),
           VersionTile(api: engine.api),
         ],
@@ -335,6 +346,58 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _deleteAccount(BuildContext context) async {
+    final state = AppScope.read(context);
+    final me = state.me!;
+    final password = TextEditingController();
+    final code = TextEditingController();
+    var confirmed = false;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => FormDialog(
+        title: 'Konto wirklich löschen?',
+        submitLabel: 'Konto löschen',
+        controllers: [password, code],
+        fields: [
+          const Text(
+            'Dein Konto, Sitzungen und persönlichen Verbindungen werden entfernt. '
+            'Geteilte Familieneinträge bleiben für die anderen Mitglieder erhalten. '
+            'Als letzter Administrator musst du zuerst die Verwaltung übergeben.',
+          ),
+          PasswordReveal(
+            builder: (_, obscure, toggle) => TextField(
+              controller: password,
+              obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
+              autofocus: true,
+              decoration: InputDecoration(
+                suffixIcon: toggle,
+                labelText: 'Passwort zur Bestätigung',
+              ),
+            ),
+          ),
+          TextField(
+            controller: code,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Zwei-Faktor-Code (falls aktiviert)',
+            ),
+          ),
+        ],
+        onSubmit: () async {
+          await state.engine!.api.deleteMyAccount(
+            password: password.text,
+            code: code.text.trim().isEmpty ? null : code.text.trim(),
+          );
+          confirmed = true;
+        },
+      ),
+    );
+    if (confirmed && context.mounted) {
+      await state.signOut(notice: 'Konto ${me.displayName} wurde gelöscht.');
+    }
   }
 }
 

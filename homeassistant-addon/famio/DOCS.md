@@ -66,10 +66,10 @@ deshalb mit Passwort verschlüsseln (Standard in Home Assistant).
 
 Die Apps sprechen den Server im Heimnetz verschlüsselt über Port 8766 an
 (eigenes Zertifikat; beim ersten Verbinden den Fingerabdruck aus dem
-Add-on-Protokoll vergleichen). Port 8765 ist unverschlüsselt. Für den Zugriff außerhalb des
-Heimnetzes einen Reverse-Proxy mit HTTPS (z. B. das NGINX- oder
-Cloudflared-Add-on) oder ein VPN verwenden – Port 8765 nicht ungeschützt ins
-Internet freigeben.
+Add-on-Protokoll vergleichen). Port 8765 dient dem Home-Assistant-Ingress;
+direkte unverschlüsselte API-Anfragen aus dem Netz werden abgelehnt. Für den
+Zugriff außerhalb des Heimnetzes einen Reverse-Proxy mit HTTPS (z. B. das
+NGINX- oder Cloudflared-Add-on) oder ein VPN verwenden.
 
 ## Kalender-Apps und Standort
 
@@ -81,4 +81,3 @@ Internet freigeben.
 - **Standort:** Geteilt wird mit der Android-App. Den Eltern-Code zum
   Pausieren legt ein Administrator in der App unter Einstellungen →
   Server-Verwaltung fest.
-

@@ -67,12 +67,14 @@ class _LocationScreenState extends State<LocationScreen> {
         collections: _collections,
         builder: (context, engine) {
           final locations = engine.memberLocations;
-          final map = ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: FamilyMap(
-              controller: _map,
-              engine: engine,
-              locations: locations,
+          final map = MinuteTicker(
+            builder: (_) => ClipRRect(
+              borderRadius: BorderRadius.circular(28),
+              child: FamilyMap(
+                controller: _map,
+                engine: engine,
+                locations: locations,
+              ),
             ),
           );
           final list = MinuteTicker(
@@ -288,20 +290,42 @@ class _FamilyMapState extends State<FamilyMap> {
                 point: LatLng(l.latitude!, l.longitude!),
                 width: 46,
                 height: 46,
-                child: Opacity(
-                  opacity:
-                      l.state == SharingState.active &&
-                          now.difference(l.lastContact ?? l.at ?? now) < _stale
-                      ? 1
-                      : 0.5,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: c.softShadow,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Opacity(
+                      opacity:
+                          l.state == SharingState.active &&
+                              !_positionStale(l, now)
+                          ? 1
+                          : 0.5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: c.softShadow,
+                        ),
+                        child: MemberAvatar(members[l.memberId]!, radius: 20),
+                      ),
                     ),
-                    child: MemberAvatar(members[l.memberId]!, radius: 20),
-                  ),
+                    if (_positionStale(l, now))
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: c.surface,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            AppIcons.warningCircle,
+                            size: 15,
+                            color: c.danger,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
           ],
@@ -375,23 +399,28 @@ String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
       return 'Standortzugriff auf dem Handy fehlt';
     case SharingState.off:
       return 'Standort am Handy ausgeschaltet';
+    case SharingState.scheduled:
+      return 'Standortfreigabe ist nach Zeitplan gerade aus';
     case SharingState.active:
-      final contact = l.lastContact ?? l.at;
-      // iPhones only report when they move; hours of silence are normal.
-      final stale = l.platform == 'ios' ? const Duration(hours: 12) : _stale;
-      if (contact != null && now.difference(contact) > stale) {
-        return 'Keine Verbindung seit ${ago(contact, now: now)}';
+      final at = l.at;
+      if (at == null) return 'Noch keine Position';
+      if (_positionStale(l, now)) {
+        final suffix = place == null ? '' : ': „${place.name}“';
+        return 'Letzter Standort$suffix · ${ago(at, now: now)} · möglicherweise veraltet';
       }
       if (place != null) {
         return 'Bei „${place.name}“'
-            '${l.placeSince == null ? '' : ' seit ${time.format(l.placeSince!)}'}';
+            '${l.placeSince == null ? '' : ' seit ${time.format(l.placeSince!)}'}'
+            ' · zuletzt bestätigt ${ago(at, now: now)}';
       }
-      // Phones report movements; a recent contact means the position is
-      // still current even if it was measured a while ago.
-      if (l.at == null) return 'Noch keine Position';
-      return 'Unterwegs · ${ago(contact ?? l.at!, now: now)}';
+      return 'Unterwegs · zuletzt bestätigt ${ago(at, now: now)}';
   }
 }
+
+/// A heartbeat only proves that the phone reached the server. It must not
+/// make an older measured coordinate appear current on the family map.
+bool _positionStale(MemberLocation l, DateTime now) =>
+    l.at == null || now.difference(l.at!) >= _stale;
 
 String ago(DateTime t, {DateTime? now}) {
   final d = (now ?? DateTime.now()).difference(t);
@@ -399,6 +428,195 @@ String ago(DateTime t, {DateTime? now}) {
   if (d.inMinutes < 60) return 'vor ${d.inMinutes} Min.';
   if (d.inHours < 24) return 'vor ${d.inHours} Std.';
   return DateFormat('d.M., HH:mm', 'de').format(t);
+}
+
+String scheduleLabel(LocationSchedule? schedule) {
+  if (schedule == null) return 'Immer teilen';
+  const names = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  final days = schedule.weekdays.map((day) => names[day - 1]).join(', ');
+  String clock(int minute) =>
+      '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}';
+  return '$days · ${clock(schedule.startMinute)}–${clock(schedule.endMinute)} Uhr';
+}
+
+/// Configures a privacy-preserving recurring sharing window. The server
+/// checks the parents' code and drops positions outside the selected times.
+Future<LocationSchedule?> showLocationScheduleDialog(
+  BuildContext context, {
+  LocationSchedule? initial,
+}) async {
+  final code = TextEditingController();
+  final days = {...?initial?.weekdays};
+  var start = TimeOfDay(
+    hour: (initial?.startMinute ?? 7 * 60) ~/ 60,
+    minute: (initial?.startMinute ?? 7 * 60) % 60,
+  );
+  var end = TimeOfDay(
+    hour: (initial?.endMinute ?? 18 * 60) ~/ 60,
+    minute: (initial?.endMinute ?? 18 * 60) % 60,
+  );
+  var busy = false;
+  String? error;
+  LocationSchedule? result = initial;
+  final labels = const ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) {
+        Future<void> save(LocationSchedule? schedule) async {
+          setState(() {
+            busy = true;
+            error = null;
+          });
+          try {
+            result = await AppScope.read(context).engine!.api
+                .setLocationSchedule(code: code.text, schedule: schedule);
+            if (context.mounted) Navigator.pop(context);
+          } on ApiError catch (e) {
+            setState(() => error = e.message);
+          } finally {
+            if (context.mounted) setState(() => busy = false);
+          }
+        }
+
+        final startMinute = start.hour * 60 + start.minute;
+        final endMinute = end.hour * 60 + end.minute;
+        final valid = days.isNotEmpty && startMinute != endMinute;
+        return AlertDialog(
+          scrollable: true,
+          title: const Text('Standort-Zeitplan'),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Außerhalb dieses Zeitfensters speichert und zeigt Famio '
+                  'keine Position von diesem Handy. Nach Beginn zeigt die '
+                  'Karte erst wieder einen neu gemeldeten Standort.',
+                ),
+                const SizedBox(height: 16),
+                const Text('Tage'),
+                Wrap(
+                  spacing: 6,
+                  children: [
+                    for (var day = 1; day <= 7; day++)
+                      FilterChip(
+                        label: Text(labels[day - 1]),
+                        selected: days.contains(day),
+                        onSelected: busy
+                            ? null
+                            : (selected) => setState(() {
+                                if (selected) {
+                                  days.add(day);
+                                } else {
+                                  days.remove(day);
+                                }
+                              }),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      icon: const Icon(AppIcons.clock),
+                      label: Text('Von ${start.format(context)}'),
+                      onPressed: busy
+                          ? null
+                          : () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: start,
+                              );
+                              if (picked != null) {
+                                setState(() => start = picked);
+                              }
+                            },
+                    ),
+                    OutlinedButton.icon(
+                      icon: const Icon(AppIcons.clock),
+                      label: Text('Bis ${end.format(context)}'),
+                      onPressed: busy
+                          ? null
+                          : () async {
+                              final picked = await showTimePicker(
+                                context: context,
+                                initialTime: end,
+                              );
+                              if (picked != null) {
+                                setState(() => end = picked);
+                              }
+                            },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                PasswordReveal(
+                  builder: (_, obscure, toggle) => TextField(
+                    controller: code,
+                    autofocus: true,
+                    obscureText: obscure,
+                    contextMenuBuilder: PasswordReveal.contextMenu,
+                    decoration: InputDecoration(
+                      labelText: 'Eltern-Code',
+                      prefixIcon: const Icon(AppIcons.lockKey),
+                      suffixIcon: toggle,
+                    ),
+                  ),
+                ),
+                if (!valid)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text(
+                      'Mindestens einen Tag und unterschiedliche Zeiten wählen.',
+                    ),
+                  ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          actions: [
+            if (initial != null)
+              TextButton(
+                onPressed: busy ? null : () => save(null),
+                child: const Text('Zeitplan entfernen'),
+              ),
+            TextButton(
+              onPressed: busy ? null : () => Navigator.pop(context),
+              child: const Text('Abbrechen'),
+            ),
+            FilledButton(
+              onPressed: busy || !valid
+                  ? null
+                  : () => save(
+                      LocationSchedule(
+                        weekdays: days.toList()..sort(),
+                        startMinute: startMinute,
+                        endMinute: endMinute,
+                      ),
+                    ),
+              child: const Text('Speichern'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  code.dispose();
+  return result;
 }
 
 class _MemberList extends StatelessWidget {
@@ -483,7 +701,10 @@ class _MemberTile extends StatelessWidget {
     final l = location;
     final warn =
         l != null &&
-        (l.state == SharingState.denied || l.state == SharingState.off);
+        (l.state == SharingState.denied ||
+            l.state == SharingState.off ||
+            (l.state == SharingState.active &&
+                _positionStale(l, DateTime.now())));
     final canHistory = (isMe || canManage) && l != null;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -550,6 +771,7 @@ Future<void> _refreshService(AppState state) => LocationSharing.refresh(
   serverUrl: state.serverUrl!,
   certificatePin: state.certificatePin,
   device: AppState.deviceName,
+  places: state.engine!.places,
 );
 
 /// Asks for the parents' code and how long, then pauses [member].
@@ -648,6 +870,7 @@ class MySharingCard extends StatefulWidget {
 class _MySharingCardState extends State<MySharingCard>
     with WidgetsBindingObserver {
   DeviceSharingStatus? _device;
+  LocationSchedule? _schedule;
   var _busy = false;
 
   @override
@@ -672,7 +895,30 @@ class _MySharingCardState extends State<MySharingCard>
   Future<void> _refresh() async {
     if (!LocationSharing.supported) return;
     final status = await LocationSharing.status();
-    if (mounted) setState(() => _device = status);
+    if (!mounted) return;
+    final api = AppScope.read(context).engine?.api;
+    LocationSchedule? schedule = _schedule;
+    try {
+      schedule = await api?.locationSchedule();
+    } on ApiError {
+      // The device diagnosis remains useful when the server is offline.
+    }
+    if (mounted) {
+      setState(() {
+        _device = status;
+        _schedule = schedule;
+      });
+    }
+  }
+
+  Future<void> _editSchedule() async {
+    final schedule = await showLocationScheduleDialog(
+      context,
+      initial: _schedule,
+    );
+    if (!mounted) return;
+    setState(() => _schedule = schedule);
+    unawaited(AppScope.read(context).engine?.sync());
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -707,6 +953,7 @@ class _MySharingCardState extends State<MySharingCard>
       serverUrl: state.serverUrl!,
       certificatePin: state.certificatePin,
       device: AppState.deviceName,
+      places: state.engine!.places,
     );
     status = await LocationSharing.status();
     if (!mounted) return;
@@ -719,11 +966,11 @@ class _MySharingCardState extends State<MySharingCard>
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Auch nach einem Neustart teilen?'),
+        title: const Text('Standort auch im Hintergrund teilen?'),
         content: const Text(
-          'Damit die Freigabe nach dem Ausschalten des Handys von selbst '
-          'weiterläuft, braucht Famio den Standortzugriff „Immer zulassen“. '
-          'Android öffnet dafür gleich seine Einstellungen.',
+          'Damit Famio deinen Standort auch bei geschlossener App zuverlässig '
+          'aktualisieren kann, braucht es den Standortzugriff „Immer '
+          'zulassen“. Android öffnet dafür gleich seine Einstellungen.',
         ),
         actions: [
           TextButton(
@@ -732,7 +979,7 @@ class _MySharingCardState extends State<MySharingCard>
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Einstellungen öffnen'),
+            child: const Text('Freigabe aktivieren'),
           ),
         ],
       ),
@@ -790,6 +1037,9 @@ class _MySharingCardState extends State<MySharingCard>
     }
 
     final paused = mine?.state == SharingState.paused;
+    final scheduled = mine?.state == SharingState.scheduled;
+    final backgroundLimited =
+        device.permission == LocationPermission.foreground;
     final hints = <(String, Future<void> Function())>[
       if (device.permission == LocationPermission.none)
         (
@@ -803,8 +1053,12 @@ class _MySharingCardState extends State<MySharingCard>
             }
           },
         ),
-      if (device.permission == LocationPermission.foreground)
-        ('Nach einem Neustart pausiert – „Immer zulassen“', _askAlways),
+      if (backgroundLimited)
+        (
+          'Hintergrundortung ist nicht aktiv – der Standort wird nur bei '
+              'geöffneter App zuverlässig aktualisiert',
+          _askAlways,
+        ),
       if (!device.locationOn)
         ('Standort ist am Handy ausgeschaltet', () async {}),
       if (!device.batteryUnrestricted)
@@ -823,11 +1077,20 @@ class _MySharingCardState extends State<MySharingCard>
         children: [
           Row(
             children: [
-              Icon(paused ? AppIcons.pause : AppIcons.locate, color: accent),
+              Icon(
+                paused || scheduled ? AppIcons.pause : AppIcons.locate,
+                color: accent,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  paused ? 'Freigabe pausiert' : 'Du teilst deinen Standort',
+                  paused
+                      ? 'Freigabe pausiert'
+                      : scheduled
+                      ? 'Freigabe nach Zeitplan aus'
+                      : backgroundLimited
+                      ? 'Standortfreigabe eingeschränkt'
+                      : 'Du teilst deinen Standort',
                   style: theme.textTheme.titleMedium,
                 ),
               ),
@@ -836,6 +1099,11 @@ class _MySharingCardState extends State<MySharingCard>
           const SizedBox(height: 4),
           Text(
             sharingLabel(mine, widget.place),
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Zeitplan: ${scheduleLabel(_schedule)}',
             style: theme.textTheme.bodySmall,
           ),
           for (final (text, action) in hints)
@@ -859,6 +1127,8 @@ class _MySharingCardState extends State<MySharingCard>
                 ),
               ),
             ),
+          const SizedBox(height: 12),
+          _LocationDiagnostics(location: mine, device: device),
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -885,6 +1155,11 @@ class _MySharingCardState extends State<MySharingCard>
                       : () => showPauseDialog(context, member: me),
                 ),
               TextButton.icon(
+                icon: const Icon(AppIcons.clock),
+                label: const Text('Zeitplan'),
+                onPressed: _busy ? null : _editSchedule,
+              ),
+              TextButton.icon(
                 icon: const Icon(AppIcons.stop),
                 label: const Text('Beenden'),
                 onPressed: _busy
@@ -905,6 +1180,54 @@ class _MySharingCardState extends State<MySharingCard>
   }
 }
 
+class _LocationDiagnostics extends StatelessWidget {
+  const _LocationDiagnostics({required this.location, required this.device});
+
+  final MemberLocation? location;
+  final DeviceSharingStatus device;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final permission = switch (device.permission) {
+      LocationPermission.always => 'Immer erlaubt',
+      LocationPermission.foreground => 'Nur bei geöffneter App',
+      LocationPermission.none => 'Nicht erlaubt',
+    };
+    final rows = <String>[
+      'Berechtigung: $permission',
+      'Letzter GPS-Fix: ${_when(device.lastFixAt, now)}',
+      'Letzter erfolgreicher Positions-Upload: '
+          '${_when(device.lastSuccessfulUploadAt, now)}',
+      'Letzte Serverantwort: ${_when(device.lastServerResponseAt, now)}'
+          '${device.lastServerStatus == null ? '' : ' (${device.lastServerStatus})'}',
+      if (device.lastErrorAt != null)
+        'Letzter Übertragungsfehler: ${_when(device.lastErrorAt, now)}'
+            '${device.lastError == null ? '' : ' (${device.lastError})'}',
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Diagnose', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          for (final row in rows) Text(row, style: theme.textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  String _when(DateTime? at, DateTime now) =>
+      at == null ? 'noch nie' : ago(at, now: now);
+}
+
 // --- places -------------------------------------------------------------------
 
 class PlacesScreen extends StatelessWidget {
@@ -917,11 +1240,18 @@ class PlacesScreen extends StatelessWidget {
       section: FamioSection.location,
       title: 'Orte',
       subtitle: 'Ankommen und Losgehen melden',
-      floating: FloatingActionButton.extended(
-        heroTag: 'add-place',
-        icon: const Icon(AppIcons.plus),
-        label: const Text('Ort'),
-        onPressed: () => _edit(context, null),
+      // This is an extended FAB rather than [AddButton]; it needs the same
+      // clearance above the phone navigation bar.
+      floating: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.sizeOf(context).width < 720 ? 84 : 0,
+        ),
+        child: FloatingActionButton.extended(
+          heroTag: 'add-place',
+          icon: const Icon(AppIcons.plus),
+          label: const Text('Ort'),
+          onPressed: () => _edit(context, null),
+        ),
       ),
       body: DataBuilder(
         collections: _collections,

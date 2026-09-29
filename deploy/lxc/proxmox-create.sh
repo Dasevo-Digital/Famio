@@ -190,7 +190,7 @@ FINGERPRINT=$(pct exec "$CTID" -- bash -c "journalctl -u famio --no-pager | grep
 SETUP=$(pct exec "$CTID" -- bash -c "journalctl -u famio --no-pager | grep -o 'Einrichtungscode für die App: [A-Z0-9]*' | tail -n 1" || true)
 cat <<EOF
 Container:   $CTID ($HOSTNAME_), Debian, IP $ADDRESS
-Famio:       https://$ADDRESS:8766   (Apps im Heimnetz; http auf 8765)
+Famio:       https://$ADDRESS:8766   (Apps im Heimnetz; HTTP-API gesperrt)
 Fingerabdruck: ${FINGERPRINT:-siehe: pct exec $CTID -- journalctl -u famio}
 ${SETUP:+$SETUP}
 

@@ -8,8 +8,7 @@ import 'package:flutter/services.dart';
 enum LocationPermission {
   none,
 
-  /// Only while the app is used; sharing survives closing the app but not
-  /// a restart of the phone.
+  /// Only while the app is in use; reliable background sharing is unavailable.
   foreground,
   always,
 }
@@ -23,6 +22,12 @@ class DeviceSharingStatus {
     this.locationOn = true,
     this.batteryUnrestricted = true,
     this.notifications = true,
+    this.lastFixAt,
+    this.lastSuccessfulUploadAt,
+    this.lastServerResponseAt,
+    this.lastServerStatus,
+    this.lastErrorAt,
+    this.lastError,
   });
 
   factory DeviceSharingStatus.fromMap(Map<Object?, Object?> map) =>
@@ -36,6 +41,12 @@ class DeviceSharingStatus {
         locationOn: map['locationOn'] as bool? ?? true,
         batteryUnrestricted: map['batteryUnrestricted'] as bool? ?? true,
         notifications: map['notifications'] as bool? ?? true,
+        lastFixAt: _time(map['lastFixAt']),
+        lastSuccessfulUploadAt: _time(map['lastSuccessfulUploadAt']),
+        lastServerResponseAt: _time(map['lastServerResponseAt']),
+        lastServerStatus: map['lastServerStatus'] as String?,
+        lastErrorAt: _time(map['lastErrorAt']),
+        lastError: map['lastError'] as String?,
       );
 
   /// Sharing is switched on on this device.
@@ -49,6 +60,29 @@ class DeviceSharingStatus {
   /// Exempt from battery optimisation; otherwise some phones stop sharing.
   final bool batteryUnrestricted;
   final bool notifications;
+
+  /// Most recent GPS fix measured on this device, including a fix still
+  /// waiting for an upload.
+  final DateTime? lastFixAt;
+
+  /// Most recent successful upload containing a position.
+  final DateTime? lastSuccessfulUploadAt;
+
+  /// Most recent HTTP response from the Famio server and its status.
+  final DateTime? lastServerResponseAt;
+  final String? lastServerStatus;
+
+  /// The last failed transfer. Kept separate because no server response was
+  /// received in this case.
+  final DateTime? lastErrorAt;
+  final String? lastError;
+}
+
+DateTime? _time(Object? value) {
+  final milliseconds = (value as num?)?.toInt();
+  return milliseconds == null
+      ? null
+      : DateTime.fromMillisecondsSinceEpoch(milliseconds);
 }
 
 /// Location sharing of this phone. The positions are measured and sent by a
@@ -87,6 +121,7 @@ class LocationSharing {
     required String serverUrl,
     required String? certificatePin,
     required String device,
+    Iterable<Place> places = const [],
   }) async {
     final token = await api.locationDeviceToken(device);
     await api.resumeLocation();
@@ -96,6 +131,7 @@ class LocationSharing {
       'pin': certificatePin,
       'device': device,
     });
+    await updateRegions(places);
   }
 
   /// Makes sure a switched-on service runs with the current server address
@@ -104,6 +140,7 @@ class LocationSharing {
     required String serverUrl,
     required String? certificatePin,
     required String device,
+    Iterable<Place> places = const [],
   }) async {
     if (!supported) return;
     final token = await _channel.invokeMethod<String>('token');
@@ -113,6 +150,25 @@ class LocationSharing {
       'token': token,
       'pin': certificatePin,
       'device': device,
+    });
+    await updateRegions(places);
+  }
+
+  /// Keeps iOS geofences in sync with the family's saved places. Android
+  /// intentionally keeps its own continuous foreground-service strategy.
+  static Future<void> updateRegions(Iterable<Place> places) async {
+    if (!supported) return;
+    await _channel.invokeMethod('setRegions', {
+      // iOS supports at most 20 monitored regions per app.
+      'regions': [
+        for (final p in places.take(20))
+          {
+            'id': p.id,
+            'lat': p.latitude,
+            'lon': p.longitude,
+            'radius': p.radius,
+          },
+      ],
     });
   }
 

@@ -49,7 +49,9 @@ class FileStore {
     required String dataDir,
     required this.records,
     int Function()? maxBytes,
-  }) : _maxBytes = maxBytes ?? (() => 100 * 1024 * 1024) {
+    int Function()? maxTotalBytes,
+  }) : _maxBytes = maxBytes ?? (() => 100 * 1024 * 1024),
+       _maxTotalBytes = maxTotalBytes ?? (() => 5 * 1024 * 1024 * 1024) {
     blobs.execute('PRAGMA journal_mode = WAL');
     blobs.execute(
       'CREATE TABLE IF NOT EXISTS blobs (id TEXT NOT NULL, kind TEXT NOT NULL,'
@@ -64,9 +66,11 @@ class FileStore {
   final Database blobs;
   final RecordStore records;
   final int Function() _maxBytes;
+  final int Function() _maxTotalBytes;
 
   /// Current upload limit (admins can change it at runtime).
   int get maxBytes => _maxBytes();
+  int get maxTotalBytes => _maxTotalBytes();
 
   static const _chunk = 1024 * 1024;
   static const _original = 'f';
@@ -94,6 +98,7 @@ class FileStore {
     required Stream<List<int>> body,
   }) async {
     final id = newId();
+    final existingBytes = usage().$2;
     var size = 0;
     var seq = 0;
     final buffer = BytesBuilder(copy: false);
@@ -110,6 +115,13 @@ class FileStore {
             413,
             'too_large',
             'Datei ist größer als ${maxBytes ~/ (1024 * 1024)} MB',
+          );
+        }
+        if (existingBytes + size > maxTotalBytes) {
+          throw ApiException(
+            413,
+            'storage_quota_exceeded',
+            'Der Speicherplatz der Familie ist ausgeschöpft.',
           );
         }
         buffer.add(chunk);

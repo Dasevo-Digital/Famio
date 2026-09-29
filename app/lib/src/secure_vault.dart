@@ -13,12 +13,15 @@ import 'environment.dart';
 ///
 /// They live in the operating system's keystore (Keychain, Android
 /// Keystore, Windows DPAPI, Secret Service/KWallet on Linux). Where that is
-/// not available (e.g. Linux without a keyring, tests), the app still works
-/// with plain preferences and [secure] tells the settings screen so.
+/// not available, Famio asks before using plain preferences.
 ///
 /// All secrets share one keystore entry. On macOS without an Apple team
 /// signature, "Immer erlauben" only lasts until the next update, so every
 /// entry would ask again after each update – one entry asks once.
+class InsecureVaultConsentRequired implements Exception {
+  const InsecureVaultConsentRequired();
+}
+
 class SecureVault {
   SecureVault._(this._prefs, this._storage, {required this.secure})
     : _memory = null;
@@ -35,6 +38,7 @@ class SecureVault {
   /// Both builds share the login keychain on macOS: separate entries keep
   /// development away from the family's secrets.
   static const _entry = AppEnv.isDev ? 'famio-dev' : 'famio';
+  static const insecureFallbackPreference = 'vault.allowInsecureFallback';
 
   static Future<SecureVault> open(SharedPreferences prefs) async {
     const storage = FlutterSecureStorage(
@@ -73,6 +77,9 @@ class SecureVault {
       final phone = Platform.isIOS || Platform.isAndroid;
       if (mayFallBack || (!phone && attempt >= 360)) break;
       await Future<void>.delayed(const Duration(seconds: 5));
+    }
+    if (!(prefs.getBool(insecureFallbackPreference) ?? false)) {
+      throw const InsecureVaultConsentRequired();
     }
     final vault = SecureVault._(prefs, null, secure: false);
     await vault._migrate();

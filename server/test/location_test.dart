@@ -6,6 +6,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:test/test.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// Home and school in Hamburg, about 2 km apart.
 const home = (53.5600, 9.9800);
@@ -75,7 +76,11 @@ void main() {
               (await http.post(
                 base.resolve('api/auth/setup'),
                 headers: {'content-type': 'application/json'},
-                body: jsonEncode({'username': 'mama', 'password': 'geheim123'}),
+                body: jsonEncode({
+                  'username': 'mama',
+                  'password': 'geheim123',
+                  'setupCode': app.setupCode,
+                }),
               )).body,
             )
             as Map;
@@ -227,6 +232,74 @@ void main() {
     await ok('POST', 'api/location/resume', parentToken, {'memberId': kidId});
     expect(locationOf(kidId)!.state, SharingState.active);
   });
+
+  test(
+    'a sharing schedule hides and discards locations outside its window',
+    () async {
+      await ok('PUT', 'api/admin/location-code', parentToken, {'code': '4711'});
+      final now = DateTime.now().toUtc();
+      await ok('POST', 'api/location/report', kidToken, {
+        'fixes': [fix(home, now)],
+      });
+      expect(locationOf(kidId)!.hasPosition, isTrue);
+
+      final forbidden = await call(
+        'GET',
+        'api/location/schedule?member=$parentId',
+        kidToken,
+      );
+      expect(forbidden.statusCode, 403);
+
+      // Select a day that is not today in the server's configured time zone.
+      // This also makes the test safe on Sundays and around UTC midnight.
+      final localNow = tz.TZDateTime.now(app.location);
+      final inactiveDay = localNow.weekday == DateTime.sunday
+          ? DateTime.monday
+          : DateTime.sunday;
+      final changed = await ok('PUT', 'api/location/schedule', parentToken, {
+        'code': '4711',
+        'memberId': kidId,
+        'schedule': {
+          'weekdays': [inactiveDay],
+          'startMinute': 0,
+          'endMinute': 1439,
+        },
+      });
+      expect((changed['schedule'] as Map)['weekdays'], [inactiveDay]);
+      final hidden = locationOf(kidId)!;
+      expect(hidden.state, SharingState.scheduled);
+      expect(hidden.hasPosition, isFalse);
+
+      final response = LocationReportResult.fromJson(
+        await ok('POST', 'api/location/report', kidToken, {
+          'fixes': [fix(school, now.add(const Duration(minutes: 1)))],
+        }),
+      );
+      expect(
+        response.paused,
+        isFalse,
+        reason: 'phone keeps its low-power heartbeat',
+      );
+      expect(locationOf(kidId)!.state, SharingState.scheduled);
+      final history = await ok(
+        'GET',
+        'api/location/history?member=$kidId',
+        parentToken,
+      );
+      expect(
+        history['points'],
+        hasLength(1),
+        reason: 'the hidden report was not stored',
+      );
+
+      await ok('PUT', 'api/location/schedule', parentToken, {
+        'code': '4711',
+        'memberId': kidId,
+        'schedule': null,
+      });
+      expect(locationOf(kidId)!.state, SharingState.active);
+    },
+  );
 
   test('wrong codes are throttled', () async {
     await ok('PUT', 'api/admin/location-code', parentToken, {'code': '4711'});

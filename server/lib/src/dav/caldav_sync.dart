@@ -13,6 +13,7 @@ import '../calendar/calendar_access.dart';
 import '../calendar/event_ics.dart';
 import '../calendar/ics_import.dart';
 import '../record_store.dart';
+import '../remote_url_policy.dart';
 import 'dav_client.dart';
 import 'google_oauth.dart';
 import '../calendar/ics.dart';
@@ -36,8 +37,10 @@ class CalDavSync {
     http.Client? client,
     this.interval = const Duration(minutes: 15),
     GoogleOAuth? google,
+    RemoteUrlPolicy? urlPolicy,
   }) : _http = client ?? http.Client() {
     this.google = google ?? GoogleOAuth(_http);
+    this.urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
   }
 
   /// Google accounts use OAuth instead of a password.
@@ -54,6 +57,7 @@ class CalDavSync {
   final void Function() onChanged;
   final Duration interval;
   final http.Client _http;
+  late final RemoteUrlPolicy urlPolicy;
 
   /// Remote events that ended longer ago are not imported.
   static const _history = Duration(days: 90);
@@ -99,6 +103,7 @@ class CalDavSync {
         _http,
         username: username,
         password: password,
+        verifyUrl: urlPolicy.check,
       ).discover(start);
       if (calendars.isEmpty) {
         throw ApiException.badRequest(
@@ -247,6 +252,13 @@ class CalDavSync {
   Future<void> disconnectAll() => _running = _running.then((_) {
     db.execute('DELETE FROM caldav_links');
     db.execute('DELETE FROM caldav_accounts');
+  });
+
+  /// Stops one member's connections before their account is removed. Waiting
+  /// for the serialized queue prevents an in-flight sync from recreating
+  /// calendar data after deletion.
+  Future<void> disconnectUser(String userId) => _running = _running.then((_) {
+    db.execute('DELETE FROM caldav_accounts WHERE user_id = ?', [userId]);
   });
 
   /// Syncs one account of [userId] now and returns its state.
@@ -585,12 +597,14 @@ class CalDavSync {
         _http,
         username: row['username'] as String,
         password: row['password'] as String,
+        verifyUrl: urlPolicy.check,
       );
     }
     final grant = GoogleGrant.fromJson((jsonDecode(oauth) as Map).cast());
     final id = row['id'] as String;
     return DavClient(
       _http,
+      verifyUrl: urlPolicy.check,
       bearer: ({bool force = false}) async {
         final token = await google.accessToken(grant, force: force);
         db.execute('UPDATE caldav_accounts SET oauth = ? WHERE id = ?', [

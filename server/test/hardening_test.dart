@@ -63,7 +63,11 @@ void main() {
     final r = await send(
       'POST',
       'api/auth/setup',
-      body: {'username': 'mama', 'password': 'geheim123'},
+      body: {
+        'username': 'mama',
+        'password': 'geheim123',
+        'setupCode': app.setupCode,
+      },
     );
     token = json(r)['token'] as String;
   });

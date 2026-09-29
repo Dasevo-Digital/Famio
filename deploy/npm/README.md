@@ -8,7 +8,6 @@ Google Kalender und iCloud können die Famio-Kalender abonnieren.
 | Betrieb | Ziel für NPM | `FAMIO_TRUST_PROXY` |
 |---|---|---|
 | Docker im selben Netz wie NPM ([docker-compose.yml](docker-compose.yml)) | `famio` : `8765` | `true` |
-| Docker mit veröffentlichtem Port (Standard-`docker-compose.yml`) | `<Host-IP>` : `8765` | nur wenn Port 8765 sonst nicht erreichbar ist |
 | LXC ([../lxc/README.md](../lxc/README.md)) | `<LXC-IP>` : `8765` | wie oben |
 | Home-Assistant-Add-on | `<HA-IP>` : `8765` | – |
 
@@ -44,7 +43,7 @@ unverändert durch. Serveradresse in Apple Kalender oder DAVx⁵:
 
 ## 3. Ersteinrichtung
 
-Über den Proxy verlangt Famio für das allererste Konto einen
+Famio verlangt für das allererste Konto immer einen
 **Einrichtungscode**, damit niemand einen frisch veröffentlichten Server
 übernehmen kann:
 
@@ -52,7 +51,7 @@ unverändert durch. Serveradresse in Apple Kalender oder DAVx⁵:
 docker logs famio        # bzw. journalctl -u famio im LXC
 ```
 
-Im Heimnetz direkt auf Port 8765 ist kein Code nötig.
+Das gilt ebenso bei der Einrichtung direkt im Heimnetz.
 
 ## 4. Prüfen
 

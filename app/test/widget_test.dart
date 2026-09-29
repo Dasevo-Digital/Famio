@@ -2,6 +2,7 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/secure_vault.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +25,26 @@ void main() {
 
     expect(find.text('Euer Familien-Organizer'), findsOneWidget);
     expect(find.text('Verbinden'), findsOneWidget);
+  });
+
+  testWidgets('plain secret storage needs explicit consent', (tester) async {
+    final state = AppState();
+    await state.init();
+    state.insecureVaultConsentRequired = true;
+    await tester.pumpWidget(FamioApp(state: state));
+
+    expect(find.text('Kein System-Schlüsselbund verfügbar'), findsOneWidget);
+    expect(find.text('Ungeschützte Speicherung erlauben'), findsOneWidget);
+
+    await tester.tap(find.text('Ungeschützte Speicherung erlauben'));
+    await tester.pumpAndSettle();
+    expect(state.insecureVaultConsentRequired, isFalse);
+    expect(
+      (await SharedPreferences.getInstance()).getBool(
+        SecureVault.insecureFallbackPreference,
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('tasks can be added and completed offline', (tester) async {

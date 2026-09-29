@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -39,3 +40,13 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/famio-${{ matrix.arch }}:${{ steps.version.outputs.version }}
             ghcr.io/${{ github.repository_owner }}/famio-${{ matrix.arch }}:latest
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - run: dart tool/check_versions.dart
+      - name: Analyze and test server
+        working-directory: server
+        run: dart pub get && dart analyze && dart test

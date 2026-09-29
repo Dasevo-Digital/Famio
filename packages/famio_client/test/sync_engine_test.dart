@@ -18,9 +18,12 @@ void main() {
     final app = FamioServerApp.inMemory();
     server = await io.serve(app.handler, InternetAddress.loopbackIPv4, 0);
     url = 'localhost:${server.port}';
-    final login = await FamioApiClient(
-      url,
-    ).setup(username: 'papa', displayName: 'Papa', password: 'geheim123');
+    final login = await FamioApiClient(url).setup(
+      username: 'papa',
+      displayName: 'Papa',
+      password: 'geheim123',
+      setupCode: app.setupCode,
+    );
     token = login.token;
     memberId = login.member.id;
   });

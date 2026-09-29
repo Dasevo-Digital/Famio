@@ -37,7 +37,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.20.0';
+const serverVersion = '0.21.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -161,6 +161,7 @@ class FamioApi {
   Handler get handler {
     final router = Router()
       ..get('/', _landing)
+      ..get('/delete-account', _deleteAccountPage)
       ..get('/app', (Request _) => Response.found('app/'))
       ..get('/app/<path|.*>', _webApp)
       ..get('/api/panel', _panel)
@@ -181,6 +182,7 @@ class FamioApi {
       ..delete('/api/me/sso', _ssoUnlinkMe)
       ..get('/api/me', _me)
       ..patch('/api/me', _updateMe)
+      ..delete('/api/me', _deleteMe)
       ..put('/api/me/password', _changePassword)
       ..get('/api/me/sessions', _mySessions)
       ..delete('/api/me/sessions/<sid>', _deleteMySession)
@@ -223,6 +225,8 @@ class FamioApi {
       ..post('/api/location/pause', _locationPause)
       ..post('/api/location/resume', _locationResume)
       ..get('/api/location/history', _locationHistory)
+      ..get('/api/location/schedule', _locationSchedule)
+      ..put('/api/location/schedule', _locationSetSchedule)
       ..put('/api/admin/location-code', _adminLocationCode)
       ..get('/api/calendar/feeds', _listFeeds)
       ..post('/api/calendar/feeds', _createFeed)
@@ -465,8 +469,8 @@ class FamioApi {
     'name': 'famio',
     'version': serverVersion,
     'setupRequired': !accounts.hasUsers,
-    'setupCodeRequired':
-        !accounts.hasUsers && !clientAddress.isLocalDirect(request),
+    // The first client in a shared LAN must not be able to claim the server.
+    'setupCodeRequired': !accounts.hasUsers && setupCode != null,
     // Offered on the login screen: "Mit … anmelden".
     if (sso case final sso? when sso.enabled) 'sso': sso.config!.buttonLabel,
   });
@@ -480,11 +484,11 @@ class FamioApi {
       );
     }
     final body = await _body(request);
-    if (!clientAddress.isLocalDirect(request)) {
+    if (setupCode case final expected?) {
       final address = clientAddress.of(request);
       _checkThrottle(address, '#setup');
       final given = (body['setupCode'] as String? ?? '').trim().toUpperCase();
-      if (setupCode == null || !_constantTimeEquals(given, setupCode!)) {
+      if (!_constantTimeEquals(given, expected)) {
         throttle.failed(address, '#setup');
         throw ApiException(
           403,
@@ -884,6 +888,47 @@ class FamioApi {
     );
     hub.notifyMembersChanged();
     return _json(updated.toJson());
+  }
+
+  /// Self-service account deletion. Shared family entries deliberately stay:
+  /// removing them could erase data owned by other family members.
+  Future<Response> _deleteMe(Request request) async {
+    final member = _member(request);
+    if (member.isAdmin && accounts.adminCount <= 1) {
+      throw ApiException.badRequest(
+        'last_admin',
+        'Lege zuerst einen weiteren Administrator an oder übergib die Verwaltung.',
+      );
+    }
+    final body = await _body(request);
+    final address = clientAddress.of(request);
+    _checkThrottle(address, '#delete:${member.id}');
+    if (!accounts.hasPassword(member.id) ||
+        !await accounts.checkPassword(
+          member.id,
+          body['password'] as String? ?? '',
+        )) {
+      throttle.failed(address, '#delete:${member.id}');
+      throw ApiException(
+        403,
+        'reauth_required',
+        'Passwort zur Bestätigung falsch',
+      );
+    }
+    if (mfa.hasTotp(member.id) &&
+        !mfa.check(member.id, body['code'] as String? ?? '')) {
+      throttle.failed(address, '#delete:${member.id}');
+      throw ApiException(403, 'reauth_required', 'Bestätigungscode falsch');
+    }
+    await caldav?.disconnectUser(member.id);
+    locations?.memberDeleted(member.id);
+    accounts.delete(
+      member.id,
+    ); // cascades sessions, feeds, app passwords and SSO.
+    _audit(member, 'hat das eigene Konto gelöscht');
+    hub.notifyMembersChanged();
+    if (calendarAccess?.reapply() ?? false) hub.notifyRev(records.currentRev);
+    return _json({'ok': true});
   }
 
   Response _mySessions(Request request) {
@@ -1397,6 +1442,68 @@ class FamioApi {
     });
   }
 
+  /// A recurring time window is intentionally private to its owner and the
+  /// family's administrators: it can reveal routines even without a point.
+  Response _locationSchedule(Request request) {
+    final member = _member(request);
+    final target = request.url.queryParameters['member'] ?? member.id;
+    if (target != member.id && !member.isAdmin) {
+      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+    }
+    if (accounts.byId(target) == null) {
+      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+    }
+    return _json({'schedule': _locations.scheduleFor(target)?.toJson()});
+  }
+
+  /// Changes need the parents' code just like a manual pause, otherwise a
+  /// member could silently bypass the family-wide pause protection.
+  Future<Response> _locationSetSchedule(Request request) async {
+    final member = _member(request);
+    final body = await _body(request);
+    final target = body['memberId'] as String? ?? member.id;
+    if (target != member.id && !member.isAdmin) {
+      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+    }
+    if (accounts.byId(target) == null) {
+      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+    }
+    final address = clientAddress.of(request);
+    final key = '#loccode:${member.id}';
+    _checkThrottle(address, key);
+    if (!await _locations.checkCode(body['code'] as String? ?? '')) {
+      throttle.failed(address, key);
+      throw ApiException(403, 'wrong_code', 'Der Eltern-Code stimmt nicht');
+    }
+    throttle.succeeded(address, key);
+    final raw = body['schedule'];
+    LocationSchedule? schedule;
+    if (raw != null) {
+      if (raw is! Map) {
+        throw ApiException.badRequest(
+          'invalid_schedule',
+          'Ungültiger Zeitplan',
+        );
+      }
+      try {
+        schedule = LocationSchedule.fromJson(raw.cast());
+      } on FormatException {
+        throw ApiException.badRequest(
+          'invalid_schedule',
+          'Ungültiger Zeitplan',
+        );
+      }
+    }
+    _locations.setSchedule(target, schedule);
+    _audit(
+      member,
+      schedule == null
+          ? 'hat den Standort-Zeitplan von ${_who(accounts.byId(target))} entfernt'
+          : 'hat den Standort-Zeitplan von ${_who(accounts.byId(target))} geändert',
+    );
+    return _json({'schedule': schedule?.toJson()});
+  }
+
   Future<Response> _adminLocationCode(Request request) async {
     final admin = _admin(request);
     final body = await _body(request);
@@ -1805,6 +1912,11 @@ class FamioApi {
       headers: {'content-type': 'text/html; charset=utf-8'},
     );
   }
+
+  Response _deleteAccountPage(Request request) => Response.ok(
+    accountDeletionPage(webApp: webApp != null),
+    headers: {'content-type': 'text/html; charset=utf-8'},
+  );
 
   /// The address to enter in the apps, as seen from [request]: the public
   /// address if set, the proxy's https address, otherwise Famio's own HTTPS
