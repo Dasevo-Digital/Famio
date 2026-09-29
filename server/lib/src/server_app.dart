@@ -43,6 +43,7 @@ class FamioServerApp {
     bool ingressAuth = false,
     bool trustProxy = false,
     int maxUploadMb = 100,
+    int locationHistoryDays = 7,
     int maxStorageMb = 5120,
     bool allowPrivateCalendarHosts = false,
     http.Client? httpClient,
@@ -64,6 +65,7 @@ class FamioServerApp {
         publicUrl: publicUrl,
         timeZone: location.name,
         maxUploadMb: maxUploadMb,
+        locationHistoryDays: locationHistoryDays,
       ),
     );
     accounts = Accounts(db);
@@ -115,6 +117,8 @@ class FamioServerApp {
       // Schedules are evaluated in the family's configured time zone, not
       // in the container's potentially unrelated system time zone.
       clock: () => tz.TZDateTime.now(settings.location),
+      retention: () =>
+          Duration(days: settings.effective.locationHistoryDays ?? 7),
     );
     files = FileStore(
       db,

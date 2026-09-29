@@ -312,14 +312,11 @@ class _UserList extends StatelessWidget {
                         if (u.member.isAdmin)
                           const _Badge('Administrator', AppIcons.shieldUser),
                         if (u.member.role != MemberRole.adult)
-                          _Badge(
-                            u.member.role.label,
-                            switch (u.member.role) {
-                              MemberRole.guest => AppIcons.user,
-                              MemberRole.service => AppIcons.bot,
-                              _ => AppIcons.baby,
-                            },
-                          ),
+                          _Badge(u.member.role.label, switch (u.member.role) {
+                            MemberRole.guest => AppIcons.user,
+                            MemberRole.service => AppIcons.bot,
+                            _ => AppIcons.baby,
+                          }),
                         if (u.homeAssistant)
                           const _Badge('Home Assistant', AppIcons.house),
                         if (!u.hasPassword)
@@ -522,28 +519,24 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                       ChoiceChip(
                         label: Text(a.label),
                         selected: m.serviceAccess == a,
-                        onSelected: (_) => _run(
-                          () => _api.updateUser(m.id, serviceAccess: a),
-                        ),
+                        onSelected: (_) =>
+                            _run(() => _api.updateUser(m.id, serviceAccess: a)),
                       ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  switch (m.serviceAccess) {
-                    ServiceAccess.full =>
-                      'Wie ein Erwachsener: Termine, Aufgaben, Listen … '
-                          'anlegen, ändern und löschen.',
-                    ServiceAccess.everyday =>
-                      'Nur Aufgaben, Ämter und Routinen abhaken und '
-                          'Einkaufslisten führen – z. B. für eine '
-                          'Wandanzeige oder Sprachbefehle.',
-                    ServiceAccess.readOnly =>
-                      'Sieht alles für die Familie Freigegebene, ändert '
-                          'nichts. Am sichersten für Home Assistant.',
-                  },
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                Text(switch (m.serviceAccess) {
+                  ServiceAccess.full =>
+                    'Wie ein Erwachsener: Termine, Aufgaben, Listen … '
+                        'anlegen, ändern und löschen.',
+                  ServiceAccess.everyday =>
+                    'Nur Aufgaben, Ämter und Routinen abhaken und '
+                        'Einkaufslisten führen – z. B. für eine '
+                        'Wandanzeige oder Sprachbefehle.',
+                  ServiceAccess.readOnly =>
+                    'Sieht alles für die Familie Freigegebene, ändert '
+                        'nichts. Am sichersten für Home Assistant.',
+                }, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -860,6 +853,9 @@ class _SettingsFormState extends State<_SettingsForm> {
   late final _tiles = TextEditingController(
     text: widget.overview.settings.mapTileUrl ?? '',
   );
+  late final _locationHistory = TextEditingController(
+    text: widget.overview.settings.locationHistoryDays?.toString() ?? '',
+  );
   late String _zone = widget.overview.settings.timeZone ?? '';
   late TwoFactorPolicy? _policy = widget.overview.settings.twoFactorRequired;
   var _busy = false;
@@ -884,6 +880,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     _publicUrl.dispose();
     _upload.dispose();
     _tiles.dispose();
+    _locationHistory.dispose();
     super.dispose();
   }
 
@@ -904,6 +901,9 @@ class _SettingsFormState extends State<_SettingsForm> {
             'mapTileUrl': _tiles.text.trim().isEmpty
                 ? null
                 : _tiles.text.trim(),
+            'locationHistoryDays': _locationHistory.text.trim().isEmpty
+                ? null
+                : int.tryParse(_locationHistory.text.trim()) ?? -1,
             'twoFactorRequired': _policy?.name,
           });
       if (!mounted) return;
@@ -1265,6 +1265,21 @@ class _SettingsFormState extends State<_SettingsForm> {
                     'einziger, welche Kartenausschnitte ihr ladet.',
                 helperMaxLines: 3,
                 prefixIcon: Icon(AppIcons.map),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _locationHistory,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Standortverlauf (Tage)',
+                hintText: '7',
+                helperText:
+                    '${hint('${o.defaults.locationHistoryDays ?? 7} Tage')}. '
+                    'Alte, präzise Punkte und Ortsmeldungen werden automatisch '
+                    'gelöscht; der aktuelle Standort bleibt sichtbar.',
+                helperMaxLines: 3,
+                prefixIcon: const Icon(AppIcons.mapPin),
               ),
             ),
             const SizedBox(height: 16),

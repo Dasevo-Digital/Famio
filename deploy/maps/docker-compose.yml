@@ -1,0 +1,22 @@
+# Self-hosted map tiles for Famio. Put only licensed .pmtiles/.mbtiles files
+# in ./tiles; Martin discovers them without importing data into Famio.
+services:
+  martin:
+    image: ghcr.io/maplibre/martin:1.16.1
+    container_name: famio-martin
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./tiles:/tiles:ro
+      - ./martin.yaml:/config/martin.yaml:ro
+    # Keep this private: expose it through the existing HTTPS reverse proxy,
+    # not directly on the Internet.
+    ports:
+      - "127.0.0.1:3000:3000"
+    command: ["--config", "/config/martin.yaml"]

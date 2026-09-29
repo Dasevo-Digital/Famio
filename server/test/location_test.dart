@@ -363,6 +363,28 @@ void main() {
     expect(alertsFor(parentId), isEmpty);
   });
 
+  test('the administrator-selected retention governs history cleanup', () async {
+    app.settings.update({'locationHistoryDays': 30});
+    final now = DateTime.now().toUtc();
+    await ok('POST', 'api/location/report', parentToken, {
+      'fixes': [fix(home, now.subtract(const Duration(days: 20)))],
+    });
+    expect(
+      (await ok(
+        'GET',
+        'api/location/history?from=${now.subtract(const Duration(days: 30)).toIso8601String()}',
+        parentToken,
+      ))['points'],
+      hasLength(1),
+    );
+    app.settings.update({'locationHistoryDays': 1});
+    app.locations.collectGarbage(now: now);
+    expect(
+      (await ok('GET', 'api/location/history', parentToken))['points'],
+      isEmpty,
+    );
+  });
+
   test('clients cannot write positions or notices themselves', () async {
     final response = SyncResponse.fromJson(
       await ok('POST', 'api/sync', kidToken, {

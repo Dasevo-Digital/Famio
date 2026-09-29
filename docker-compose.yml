@@ -39,3 +39,5 @@ services:
       # Behind a reverse proxy only (see deploy/npm/README.md):
       # FAMIO_TRUST_PROXY: "true"
       # FAMIO_MAX_UPLOAD_MB: "100"
+      # Precise location history is deleted server-side after this period.
+      # FAMIO_LOCATION_HISTORY_DAYS: "7"

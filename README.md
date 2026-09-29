@@ -12,7 +12,7 @@ oder eigenständig (Docker, Proxmox-LXC).
 | Einkaufslisten | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine; Abgleich mit Google, iCloud & Co. | ✅ |
-| Standort: Familienkarte, Orte mit Benachrichtigung, 7-Tage-Verlauf | ✅ (Teilen: Android, iOS) |
+| Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
 | Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung | ✅ |
 | Kinder: Meilensteine, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
@@ -162,8 +162,9 @@ melden sich mit einem eigenen Token, das nur Positionen melden kann. Der Server 
 Datensatz (`member_locations`), erkennt Ankunft und Verlassen von Orten
 (`places`, mit Toleranz gegen GPS-Sprünge) und schreibt Hinweise
 (`location_alerts`) für die Mitglieder, die sie abonniert haben. Positionen
-werden nach **7 Tagen gelöscht**; den Verlauf sehen nur Eltern
-(Administratoren) und das Mitglied selbst.
+werden nach **7 Tagen** gelöscht (Administratoren können 1 bis 365 Tage
+wählen); den Verlauf sehen nur Eltern (Administratoren) und das Mitglied
+selbst.
 
 Pausieren und Beenden – auch Abmelden auf einem teilenden Handy – geht nur
 mit dem **Eltern-Code** (Einstellungen → Server-Verwaltung → Einstellungen).
@@ -171,7 +172,9 @@ Technisch verhindern lässt sich das Abschalten auf einem Handy nicht (App
 deinstallieren, Berechtigung entziehen); Famio zeigt den Eltern aber an,
 wenn ein Handy keine Positionen mehr schickt, die Berechtigung fehlt oder
 GPS aus ist. Kartenkacheln kommen von OpenStreetMap oder von einem eigenen
-Kachelserver (Server-Verwaltung → Einstellungen → Kartenserver).
+Kachelserver (Server-Verwaltung → Einstellungen → Kartenserver). Eine fertige
+self-hosted Martin-Konfiguration für PMTiles/MBTiles liegt unter
+[`deploy/maps/`](deploy/maps/README.md).
 
 ### Rollen
 
@@ -276,15 +279,16 @@ Dokumente). Umgesetzt ist:
 | Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt |
 | Kalender-Abos | Termine lassen sich als *vertraulich* markieren (nie im Abo, nie bei iCloud & Co.); Abos auf Wunsch nur als „Belegt“ ohne Details |
 | CalDAV | Eigenes App-Passwort pro Kalender-App (80 Bit, einzeln widerrufbar, Drosselung), Passwörter für iCloud & Co. nur verschlüsselt auf dem Server |
-| Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 7 Tage, nur für Eltern und die Person selbst; Pausieren nur mit Eltern-Code |
+| Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 1–365 Tage, nur für Eltern und die Person selbst; Pausieren nur mit Eltern-Code |
 
 Bewusst offen bzw. Aufgabe des Betriebs:
 
-- **Schlüssel sichern:** Ohne `famio.key` sind Datenbank und Dateien
-  nicht lesbar – die Datei getrennt von den Daten sichern (z. B. im
-  Passwortmanager). Fehlt sie, startet der Server bewusst nicht, statt
-  leer neu anzufangen. Im Home-Assistant-Add-on liegt sie in `/data`;
-  dort die Backups mit Passwort verschlüsseln (HA-Standard).
+- **Sicherung testen:** [`tool/famio-backup.sh`](tool/famio-backup.sh)
+  erzeugt mit `age` eine authentifizierte, verschlüsselte Sicherung aus
+  Daten und getrenntem Schlüssel und entpackt sie nur in ein neues Ziel. Den
+  Dienst dafür kurz stoppen; die vollständige Anleitung steht weiter unten.
+  Ohne `famio.key` sind Datenbank und Dateien nicht lesbar – fehlt sie,
+  startet der Server bewusst nicht, statt leer neu anzufangen.
 - **Unverschlüsseltes HTTP** (Port 8765) dient nur Loopback, Healthcheck und
   vertrauenswürdigen HTTPS-Proxys. Die API lehnt Klartext aus dem Netz
   standardmäßig ab. Nur für eine befristete Migration alter Clients kann
@@ -397,6 +401,7 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
 | `FAMIO_TRUST_PROXY` | Client-IP aus `X-Forwarded-For` (nur hinter Reverse-Proxy) |
 | `FAMIO_MAX_UPLOAD_MB` | Maximale Dateigröße (Standard 100) |
 | `FAMIO_MAX_STORAGE_MB` | Gesamtes Upload-Speicherbudget der Familie in MB (Standard 5120) |
+| `FAMIO_LOCATION_HISTORY_DAYS` | Standard-Aufbewahrung für präzise Standortpunkte (1–365, Standard 7; in der App übersteuerbar) |
 | `FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS` | Private/HTTP-ICS- und CalDAV-Ziele erlauben (Standard `false`; nur für bewusst lokal betriebene Kalender) |
 | `FAMIO_PORT`, `FAMIO_DATA_DIR` | Port (8765) und Datenverzeichnis |
 | `FAMIO_REQUIRE_TLS` | Klartext-API aus dem Netz sperren (Standard `true`; `false` nur befristet für alte Clients) |
@@ -414,6 +419,40 @@ dessen Sitzung das Add-on je Home-Assistant-Benutzer aufbewahrt.
 Beim ersten Start ohne Konto schreibt der Server einen **Einrichtungscode**
 ins Log. Er wird bei jeder Ersteinrichtung verlangt, auch direkt im Heimnetz,
 damit kein anderes Gerät den frisch gestarteten Server übernehmen kann.
+
+### Verschlüsselte Sicherung und Wiederherstellung
+
+Eine Sicherung muss **Daten und Schlüssel** enthalten, aber nicht unverschlüsselt
+nebeneinander liegen. Das mitgelieferte Werkzeug nutzt deshalb
+[age](https://age-encryption.org/) (authentifizierte Verschlüsselung mit einem
+Empfänger-Schlüssel). Den privaten `age`-Schlüssel getrennt aufbewahren;
+ohne ihn ist die Sicherung absichtlich nicht wiederherstellbar.
+
+Docker-Beispiel (Famio wird nur für die kurze, konsistente Kopie angehalten):
+
+```sh
+brew install age                         # macOS, Linux: apt install age
+cd /pfad/zu/Famio
+docker compose stop famio
+tool/famio-backup.sh create --stopped --data-dir ./data \
+  --key-file ./keys/famio.key --recipient age1... \
+  --output /sicheres-ziel/famio-$(date +%F).tar.age
+docker compose start famio
+```
+
+Das Wiederherstellen überschreibt nie automatisch eine laufende Installation:
+
+```sh
+tool/famio-backup.sh restore --identity ~/.config/age/keys.txt \
+  --input /sicheres-ziel/famio-2026-09-29.tar.age \
+  --output /tmp/famio-restore
+```
+
+Der Befehl entschlüsselt, prüft alle SHA-256-Werte und schreibt ausschließlich
+`/tmp/famio-restore/data` sowie `/tmp/famio-restore/key/famio.key`. Erst nach
+einer Sichtprüfung den Famio-Dienst stoppen und diese beiden Verzeichnisse
+gezielt übernehmen. Home-Assistant-Nutzer verwenden für reguläre Sicherungen
+zusätzlich den verschlüsselten Home-Assistant-Backup-Mechanismus.
 
 Prüfen einer Installation (arm64/amd64, Docker, LXC, hinter NPM):
 

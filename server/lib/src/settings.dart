@@ -30,6 +30,8 @@ class SettingsStore {
     timeZone: _location.name,
     maxUploadMb: _stored.maxUploadMb ?? defaults.maxUploadMb ?? 100,
     mapTileUrl: _stored.mapTileUrl ?? defaults.mapTileUrl,
+    locationHistoryDays:
+        _stored.locationHistoryDays ?? defaults.locationHistoryDays ?? 7,
     twoFactorRequired: _stored.twoFactorRequired,
     hiddenModules: _stored.hiddenModules,
   );
@@ -55,6 +57,7 @@ class SettingsStore {
         'timeZone' => _timeZone(value),
         'maxUploadMb' => _maxUpload(value),
         'mapTileUrl' => _mapTileUrl(value),
+        'locationHistoryDays' => _locationHistoryDays(value),
         'twoFactorRequired' => _policy(value),
         'hiddenModules' => _modules(value),
         _ => null,
@@ -183,5 +186,17 @@ class SettingsStore {
       );
     }
     return mb;
+  }
+
+  static int? _locationHistoryDays(Object? value) {
+    if (value == null) return null;
+    final days = value is int ? value : int.tryParse('$value');
+    if (days == null || days < 1 || days > 365) {
+      throw ApiException.badRequest(
+        'invalid_location_history',
+        'Standortverlauf: 1 bis 365 Tage',
+      );
+    }
+    return days;
   }
 }
