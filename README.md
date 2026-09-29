@@ -217,7 +217,9 @@ Pro Gerät lässt sich einstellen, ob Namen und Texte angezeigt werden.
 
 **Alternativ über ntfy:** Jedes Mitglied kann in den Einstellungen Geräte mit einem ntfy-Thema
 eintragen (`https://ntfy.sh/<geheimer-name>` oder ein eigener ntfy-Server,
-optional mit Token). Der Server meldet dort neue Nachrichten, zugewiesene
+optional mit Token). Öffentliche Ziele müssen HTTPS verwenden; ein privater
+oder HTTP-ntfy-Server braucht die ausdrückliche Serverfreigabe
+`FAMIO_ALLOW_PRIVATE_PUSH_HOSTS=true`. Der Server meldet dort neue Nachrichten, zugewiesene
 Aufgaben, Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen. Ohne
 „Details“ enthält die Meldung nur einen Hinweis wie „Neue Nachricht“ –
 Namen und Inhalte verlassen den Server dann nicht.
@@ -409,6 +411,7 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
 | `FAMIO_MAX_STORAGE_MB` | Gesamtes Upload-Speicherbudget der Familie in MB (Standard 5120) |
 | `FAMIO_LOCATION_HISTORY_DAYS` | Standard-Aufbewahrung für präzise Standortpunkte (1–365, Standard 7; in der App übersteuerbar) |
 | `FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS` | Private/HTTP-ICS- und CalDAV-Ziele erlauben (Standard `false`; nur für bewusst lokal betriebene Kalender) |
+| `FAMIO_ALLOW_PRIVATE_PUSH_HOSTS` | Privaten ntfy-Server oder HTTP-Pushziel erlauben (Standard `false`; sonst ausschließlich HTTPS und keine privaten/Loopback-Ziele) |
 | `FAMIO_PORT`, `FAMIO_DATA_DIR` | Port (8765) und Datenverzeichnis |
 | `FAMIO_REQUIRE_TLS` | Klartext-API aus dem Netz sperren (Standard `true`; `false` nur befristet für alte Clients) |
 | `FAMIO_TLS_NAMES` | Zusätzliche Hostnamen/IP-Adressen für das HTTPS-Zertifikat (Port 8766), z. B. `192.168.1.5,famio.fritz.box` |
@@ -467,6 +470,8 @@ cd packages/famio_client
 dart run tool/smoke_test.dart <server-url> <benutzer> <passwort> [ics-url]
 ```
 
-Server-Binaries für LXC baut `.github/workflows/server-release.yml` bei jedem
-Tag `v*`; Docker-Images für das Add-on `.github/workflows/server-image.yml`.
-Vorher den Platzhalter `YOUR_GITHUB_USER` ersetzen.
+Die CI baut Server-Binaries für LXC und Docker-Images. Für die produktive
+Gitea-Veröffentlichung liegen die Artefakte einschließlich `SHA256SUMS.txt` im
+Release-Ordner; `tool/publish_gitea_release.sh` prüft sie vor dem Upload und
+legt sie am Tag `v*` ab. Das Token bleibt ausschließlich in
+`GITEA_TOKEN` außerhalb des Repositories.

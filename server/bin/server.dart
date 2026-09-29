@@ -59,6 +59,7 @@ Future<void> main(List<String> args) async {
     locationHistoryDays: config.locationHistoryDays,
     maxStorageMb: config.maxStorageMb,
     allowPrivateCalendarHosts: config.allowPrivateCalendarHosts,
+    allowPrivatePushHosts: config.allowPrivatePushHosts,
     dataKey: key,
     keySeparate: keySeparate,
     requireTls: config.requireTls,

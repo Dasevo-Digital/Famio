@@ -2,7 +2,8 @@
 # Installs or updates the Famio server on Debian/Ubuntu (e.g. a Proxmox LXC).
 #
 #   sh install.sh famio-server-linux-x64.tar.gz
-#   sh install.sh --url https://github.com/<user>/famio/releases/latest/download/famio-server-linux-x64.tar.gz
+#   sh install.sh --url https://gitea.status403.de/superkuh/Famio/releases/download/vX.Y.Z/famio-server-linux-x64.tar.gz \
+#     --sha256 <value-from-SHA256SUMS.txt>
 #
 # Moving an existing server here (Docker, another container):
 #   sh install.sh famio-server-linux-x64.tar.gz \
@@ -13,12 +14,14 @@
 set -eu
 
 SRC=""
+EXPECTED_SHA256=""
 NO_SYSTEMD=0
 IMPORT_DATA=""
 IMPORT_KEY=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --url) SRC="$2"; shift 2 ;;
+    --sha256) EXPECTED_SHA256="$2"; shift 2 ;;
     --no-systemd) NO_SYSTEMD=1; shift ;;  # for containers without systemd
     # Contents of the old data directory (famio.db, files.db, tls-*.pem …).
     --import-data) IMPORT_DATA="$2"; shift 2 ;;
@@ -28,7 +31,7 @@ while [ $# -gt 0 ]; do
     *) SRC="$1"; shift ;;
   esac
 done
-[ -n "$SRC" ] || { echo "Usage: $0 <tarball|--url URL>" >&2; exit 64; }
+[ -n "$SRC" ] || { echo "Usage: $0 <tarball|--url URL> [--sha256 HEX]" >&2; exit 64; }
 [ "$(id -u)" -eq 0 ] || { echo "Please run as root." >&2; exit 1; }
 if [ -n "$IMPORT_DATA" ] && [ -z "$IMPORT_KEY" ]; then
   echo "--import-data needs the old server's key: --key famio.key" >&2
@@ -48,10 +51,17 @@ TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 case "$SRC" in
   http://*|https://*)
+    [ -n "$EXPECTED_SHA256" ] || {
+      echo "Remote release needs --sha256 from SHA256SUMS.txt." >&2
+      exit 64
+    }
     command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl ca-certificates; }
     curl -fsSL "$SRC" -o "$TMP/famio.tar.gz" ;;
   *) cp "$SRC" "$TMP/famio.tar.gz" ;;
 esac
+[ -z "$EXPECTED_SHA256" ] || {
+  printf '%s  %s\n' "$EXPECTED_SHA256" "$TMP/famio.tar.gz" | sha256sum -c -
+}
 tar -xzf "$TMP/famio.tar.gz" -C "$TMP"
 [ -x "$TMP/bundle/bin/server" ] || { echo "Archive does not contain bundle/bin/server" >&2; exit 1; }
 

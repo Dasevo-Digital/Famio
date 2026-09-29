@@ -42,5 +42,7 @@ erfolgen, weil Martin dieselben Archive und Style-Endpunkte weiterliefert.
   Martin-Server hält diese Information im eigenen Netz.
 - Archivquellen und Styles haben eigene Lizenzen. Attribution im Style und in
   der App darf nicht entfernt werden.
-- Martin `1.16.1` ist bewusst festgesetzt. Updates zuerst in einer Testumgebung
-  prüfen und Version/Hash anschließend kontrolliert anheben.
+- Martin `1.16.1` ist bewusst mit seinem OCI-Digest festgesetzt. Updates zuerst
+  in einer Testumgebung prüfen und Version/Digest anschließend kontrolliert
+  anheben. Für einen separaten Proxmox-LXC hinter NPM folgt
+  [LXC-NPM.md](LXC-NPM.md) einer vollständig geprüften Installation.

@@ -46,6 +46,7 @@ class FamioServerApp {
     int locationHistoryDays = 7,
     int maxStorageMb = 5120,
     bool allowPrivateCalendarHosts = false,
+    bool allowPrivatePushHosts = false,
     http.Client? httpClient,
     void Function(String line)? auditLog,
     Database? blobs,
@@ -135,6 +136,8 @@ class FamioServerApp {
       accounts: accounts,
       location: () => settings.location,
       client: httpClient,
+      urlPolicy: RemoteUrlPolicy(allowPrivateNetwork: allowPrivatePushHosts),
+      onOperationalError: auditLog,
     );
     notices = NoticeBox(db);
     push.onNotice = notices.add;
@@ -274,6 +277,7 @@ class FamioServerApp {
     caldav.stop();
     allowances.stop();
     notices.close();
+    push.close();
     await hub.close();
     files.blobs.close();
     db.close();

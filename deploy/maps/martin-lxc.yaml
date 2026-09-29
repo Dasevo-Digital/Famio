@@ -1,0 +1,13 @@
+# Martin 1.16 configuration for deploy/maps/martin.service.
+# Set listen_addresses to the LXC LAN address before enabling the service.
+listen_addresses: 127.0.0.1:3000
+pmtiles:
+  paths:
+    - /var/lib/martin/tiles
+  cache:
+    maxzoom: 14
+mbtiles:
+  paths:
+    - /var/lib/martin/tiles
+  cache:
+    maxzoom: 14

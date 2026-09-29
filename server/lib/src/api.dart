@@ -37,7 +37,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '0.21.0';
+const serverVersion = '0.22.0';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
@@ -370,7 +370,7 @@ class FamioApi {
   Future<Response> _addPushTarget(Request request) async {
     final member = _auth(request);
     final body = await _body(request);
-    final target = _push.add(
+    final target = await _push.add(
       member.id,
       name: body['name'] as String? ?? '',
       url: body['url'] as String? ?? '',
@@ -2224,8 +2224,9 @@ class FamioApi {
   };
 
   /// Sync answers of a real family are hundreds of KB of JSON; gzip makes
-  /// them about five times smaller for apps and browsers on the go. Home
-  /// Assistant's ingress compresses for the browser itself.
+  /// them about five times smaller for apps and browsers on the go. Keep the
+  /// body streaming: buffering it here could temporarily double the memory
+  /// use for a full sync. Home Assistant's ingress compresses for browsers.
   static Handler _compressJson(Handler inner) => (request) async {
     final response = await inner(request);
     if (response.mimeType != 'application/json' ||
@@ -2234,16 +2235,18 @@ class FamioApi {
         !(request.headers['accept-encoding'] ?? '').contains('gzip')) {
       return response;
     }
-    final body = BytesBuilder(copy: false);
-    await response.read().forEach(body.add);
-    final bytes = body.takeBytes();
-    if (bytes.length < 1024) return response.change(body: bytes);
-    final packed = gzip.encode(bytes);
+    // Shelf knows the size of ordinary JSON String bodies without reading the
+    // stream. Leave small answers uncompressed without recreating a buffer.
+    if (response.contentLength case final length? when length < 1024) {
+      return response;
+    }
     return response.change(
-      body: packed,
+      body: gzip.encoder.bind(response.read()),
       headers: {
         'content-encoding': 'gzip',
-        'content-length': '${packed.length}',
+        // Shelf has already calculated the uncompressed String body length.
+        // A transformed stream must use chunked transfer instead.
+        'content-length': null,
         'vary': 'accept-encoding',
       },
     );

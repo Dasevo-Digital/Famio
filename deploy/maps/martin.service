@@ -1,0 +1,26 @@
+[Unit]
+Description=Martin tile server (PMTiles and MBTiles)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=martin
+Group=martin
+ExecStart=/opt/martin/martin --config /etc/martin/martin.yaml --no-tui
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/martin
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

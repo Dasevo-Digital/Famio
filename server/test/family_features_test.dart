@@ -365,6 +365,8 @@ void main() {
       for (final url in [
         'ntfy.sh/x',
         'ftp://ntfy.sh/x',
+        'http://ntfy.sh/x',
+        'https://127.0.0.1/famio',
         'https://ntfy.sh/',
         'https://u:p@ntfy.sh/x',
       ]) {

@@ -16,6 +16,7 @@ class ServerConfig {
     this.locationHistoryDays = 7,
     this.maxStorageMb = 5120,
     this.allowPrivateCalendarHosts = false,
+    this.allowPrivatePushHosts = false,
     this.keyFile,
     this.tlsPort = 8766,
     this.requireTls = true,
@@ -78,6 +79,7 @@ class ServerConfig {
       allowPrivateCalendarHosts: _flag(
         env['FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS'],
       ),
+      allowPrivatePushHosts: _flag(env['FAMIO_ALLOW_PRIVATE_PUSH_HOSTS']),
       keyFile: _nonEmpty(env['FAMIO_KEY_FILE']),
       tlsPort: int.tryParse(env['FAMIO_TLS_PORT'] ?? '') ?? 8766,
       // Secure by default. Older installations can deliberately opt out
@@ -148,6 +150,10 @@ class ServerConfig {
 
   /// Explicit opt-in for CalDAV/ICS servers in the home network.
   final bool allowPrivateCalendarHosts;
+
+  /// Explicit opt-in for a self-hosted ntfy server in the home network.
+  /// Public push targets are always HTTPS-only.
+  final bool allowPrivatePushHosts;
 
   /// Key for encrypting database and files at rest. Keep it outside the
   /// data directory (and its backups); defaults to `<dataDir>/famio.key`.

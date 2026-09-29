@@ -11,6 +11,27 @@ import 'package:sqlite3/sqlite3.dart';
 import '../api_exception.dart';
 import '../record_store.dart';
 
+const _maxThumbPixels = 30 * 1000 * 1000;
+
+/// Deliberately top-level: [Isolate.run] must not capture [FileStore], whose
+/// thumbnail queue holds an unsendable Future.
+Uint8List? _renderThumbnail((Uint8List bytes, int size) input) {
+  final (bytes, size) = input;
+  // Read the size from the header first: a tiny file can claim a huge image
+  // ("decompression bomb") and exhaust the server's memory.
+  final decoder = img.findDecoderForData(bytes);
+  final info = decoder?.startDecode(bytes);
+  if (info == null || info.width * info.height > _maxThumbPixels) return null;
+  final decoded = decoder!.decode(bytes);
+  if (decoded == null) return null;
+  final image = img.bakeOrientation(decoded);
+  final landscape = image.width >= image.height;
+  final resized = landscape
+      ? (image.width > size ? img.copyResize(image, width: size) : image)
+      : (image.height > size ? img.copyResize(image, height: size) : image);
+  return img.encodeJpg(resized, quality: 82);
+}
+
 class StoredFile {
   const StoredFile({
     required this.id,
@@ -87,9 +108,23 @@ class FileStore {
   static const orphanGrace = Duration(hours: 24);
   static const thumbSizes = {160, 480, 1280};
 
-  /// Larger images get no preview (~240 MB RAM while decoding; phone
-  /// photos are 12–50 MP).
-  static const maxThumbPixels = 60 * 1000 * 1000;
+  /// Larger images get no preview (~120 MB RAM while decoding; current phone
+  /// photos are normally 12–24 MP). Decodes are serialised below, so several
+  /// simultaneous thumbnail requests cannot multiply that peak.
+  static const maxThumbPixels = _maxThumbPixels;
+
+  /// Isolates prevent decoding from blocking the event loop, but each decoder
+  /// needs a large RGBA buffer. A one-at-a-time queue bounds the process RSS.
+  Future<void> _thumbnailTail = Future.value();
+
+  Future<T> _serializeThumbnail<T>(Future<T> Function() task) {
+    final previous = _thumbnailTail;
+    final completed = Completer<void>();
+    _thumbnailTail = completed.future;
+    return previous
+        .then((_) => task())
+        .whenComplete(() => completed.complete());
+  }
 
   Future<StoredFile> save({
     required String owner,
@@ -199,38 +234,26 @@ class FileStore {
       return null;
     }
     final kind = 't$size';
-    final cached = _readAll(file.id, kind);
-    if (cached != null) return cached;
-    final bytes = _readAll(file.id, _original);
-    if (bytes == null) return null;
-    // Decoding large photos is CPU heavy; keep the server responsive.
-    Uint8List? render() {
-      // Read the size from the header first: a tiny file can claim a huge
-      // image ("decompression bomb") and exhaust the server's memory.
-      final decoder = img.findDecoderForData(bytes);
-      final info = decoder?.startDecode(bytes);
-      if (info == null || info.width * info.height > maxThumbPixels) {
-        return null;
+    return _serializeThumbnail(() async {
+      // Check after entering the queue too: a preceding request may have
+      // produced the same preview while this one was waiting.
+      final cached = _readAll(file.id, kind);
+      if (cached != null) return cached;
+      final bytes = _readAll(file.id, _original);
+      if (bytes == null) return null;
+      Uint8List? jpeg;
+      try {
+        jpeg = await _decodeThumbnail(bytes, size);
+      } catch (_) {
+        jpeg = null; // Unsupported or broken image.
       }
-      final decoded = decoder!.decode(bytes);
-      if (decoded == null) return null;
-      final image = img.bakeOrientation(decoded);
-      final landscape = image.width >= image.height;
-      final resized = landscape
-          ? (image.width > size ? img.copyResize(image, width: size) : image)
-          : (image.height > size ? img.copyResize(image, height: size) : image);
-      return img.encodeJpg(resized, quality: 82);
-    }
-
-    Uint8List? jpeg;
-    try {
-      jpeg = await Isolate.run(render);
-    } catch (_) {
-      jpeg = null; // Unsupported or broken image.
-    }
-    if (jpeg != null) _putBlock(file.id, kind, 0, jpeg);
-    return jpeg;
+      if (jpeg != null) _putBlock(file.id, kind, 0, jpeg);
+      return jpeg;
+    });
   }
+
+  static Future<Uint8List?> _decodeThumbnail(Uint8List bytes, int size) =>
+      Isolate.run(() => _renderThumbnail((bytes, size)));
 
   /// Deletes uploads no live record references any more.
   int collectGarbage() {

@@ -9,6 +9,7 @@ import 'package:timezone/timezone.dart' as tz;
 import '../accounts.dart';
 import '../api_exception.dart';
 import '../record_store.dart';
+import '../remote_url_policy.dart';
 
 /// A notification for some members, with and without details.
 class PushNotice {
@@ -43,13 +44,20 @@ class PushService {
     required this.accounts,
     required this.location,
     http.Client? client,
-  }) : _client = client ?? http.Client();
+    RemoteUrlPolicy? urlPolicy,
+    this.onOperationalError,
+  }) : _client = client ?? http.Client(),
+       _ownsClient = client == null,
+       _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
 
   final Database _db;
   final RecordStore records;
   final Accounts accounts;
   final tz.Location Function() location;
   final http.Client _client;
+  final bool _ownsClient;
+  final RemoteUrlPolicy _urlPolicy;
+  final void Function(String event)? onOperationalError;
 
   /// Famio's own push (see NoticeBox): gets every notice for the members
   /// allowed to see it, whether or not they use ntfy.
@@ -70,26 +78,26 @@ class PushService {
       _target(row),
   ];
 
-  PushTarget add(
+  Future<PushTarget> add(
     String memberId, {
     required String name,
     required String url,
     String? token,
     bool details = false,
-  }) {
+  }) async {
     final uri = Uri.tryParse(url.trim());
     if (uri == null ||
-        !(uri.isScheme('https') || uri.isScheme('http')) ||
         uri.host.isEmpty ||
         uri.pathSegments.where((s) => s.isNotEmpty).isEmpty ||
         uri.hasQuery ||
         uri.userInfo.isNotEmpty) {
       throw ApiException.badRequest(
         'invalid_url',
-        'Bitte die Adresse des ntfy-Themas angeben, z. B. '
+        'Bitte die HTTPS-Adresse des ntfy-Themas angeben, z. B. '
             'https://ntfy.sh/famio-geheimer-name',
       );
     }
+    await _urlPolicy.check(uri);
     if (_db
                 .select(
                   'SELECT COUNT(*) FROM push_targets WHERE member_id = ?',
@@ -116,6 +124,12 @@ class PushService {
       ],
     );
     return targets(memberId).firstWhere((t) => t.id == id);
+  }
+
+  /// Closes only the client this service created itself. A supplied client is
+  /// shared with other server services and remains owned by its caller.
+  void close() {
+    if (_ownsClient) _client.close();
   }
 
   void remove(String memberId, String id) => _db.execute(
@@ -331,9 +345,9 @@ class PushService {
     if (allowed.isEmpty) return;
     try {
       onNotice?.call(allowed, notice);
-    } catch (e) {
+    } catch (_) {
       // A notification must never make the sync that caused it fail.
-      print('Benachrichtigung nicht gespeichert: $e');
+      onOperationalError?.call('push_notice_store_failed');
     }
     final rows = _db.select(
       'SELECT * FROM push_targets WHERE member_id IN '
@@ -362,21 +376,26 @@ class PushService {
     final token = row['token'] as String?;
     String? error;
     try {
-      final response = await _client
-          .post(
-            base.replace(path: base.path.isEmpty ? '/' : base.path),
-            headers: {
+      final request =
+          http.Request(
+              'POST',
+              base.replace(path: base.path.isEmpty ? '/' : base.path),
+            )
+            ..followRedirects = false
+            ..headers.addAll({
               'content-type': 'application/json',
-              'authorization': ?(token == null ? null : 'Bearer $token'),
-            },
-            body: jsonEncode({
+              if (token != null) 'authorization': 'Bearer $token',
+            })
+            ..body = jsonEncode({
               'topic': topic,
               'title': details ? notice.title : 'Famio',
               'message': details ? notice.body : notice.brief,
               'tags': [notice.tag],
-            }),
-          )
+            });
+      final response = await _client
+          .send(request)
           .timeout(const Duration(seconds: 15));
+      await response.stream.drain<void>();
       if (response.statusCode >= 300) {
         error = 'Push-Server antwortet ${response.statusCode}';
       }

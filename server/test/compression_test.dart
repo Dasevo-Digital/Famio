@@ -45,7 +45,8 @@ void main() {
     final bytes = await packed.read().expand((b) => b).toList();
     final json = jsonDecode(utf8.decode(gzip.decode(bytes))) as Map;
     expect((json['changes'] as List), hasLength(50));
-    expect(int.parse(packed.headers['content-length']!), bytes.length);
+    // Streaming compression deliberately has no precomputed body length.
+    expect(packed.headers['content-length'], isNull);
 
     // Not for clients without gzip, nor through Home Assistant's ingress.
     for (final headers in [
@@ -56,7 +57,7 @@ void main() {
       expect(plain.headers['content-encoding'], isNull);
       expect(jsonDecode(await plain.readAsString()), isA<Map>());
     }
-    // Small answers stay as they are.
+    // Small answers stay uncompressed without first buffering them.
     final health = await app.handler(
       Request(
         'GET',

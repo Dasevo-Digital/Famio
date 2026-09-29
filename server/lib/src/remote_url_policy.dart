@@ -20,7 +20,7 @@ class RemoteUrlPolicy {
         uri.userInfo.isNotEmpty) {
       throw ApiException.badRequest(
         'unsafe_remote_url',
-        'Externe Kalender brauchen eine https-Adresse ohne Zugangsdaten in der Adresse.',
+        'Externe Ziele brauchen eine HTTPS-Adresse ohne Zugangsdaten in der Adresse.',
       );
     }
     if (allowPrivateNetwork) return;
@@ -37,7 +37,7 @@ class RemoteUrlPolicy {
 
   Never _blocked(Uri uri) => throw ApiException.badRequest(
     'unsafe_remote_url',
-    'Die Kalenderadresse ${uri.host} zeigt in ein privates Netzwerk. '
-        'Lokale Kalender müssen vom Server ausdrücklich freigegeben werden.',
+    'Die Adresse ${uri.host} zeigt in ein privates Netzwerk. '
+        'Lokale Ziele müssen vom Server ausdrücklich freigegeben werden.',
   );
 }

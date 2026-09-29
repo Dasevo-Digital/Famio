@@ -332,7 +332,7 @@ void main() {
         'api/files/${meta['id']}?thumb=480',
         token: mama,
       );
-      expect(thumb.headers['content-type'], 'image/jpeg');
+      expect(thumb.headers['content-type'], 'image/jpeg', reason: thumb.body);
       final decoded = img.decodeJpg(thumb.bodyBytes)!;
       expect((decoded.width, decoded.height), (480, 240));
     });
