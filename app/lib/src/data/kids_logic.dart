@@ -22,6 +22,15 @@ String ageLabel(Child child, [DateTime? at]) {
       : '$years Jahre';
 }
 
+/// Whether an unfinished milestone is still useful to show for this age.
+///
+/// Developmental milestones are not a checklist parents need to complete.
+/// Keep a small look-back window for genuinely delayed steps, but hide early
+/// baby milestones once they no longer help a family of an older toddler.
+bool milestoneIsRelevant(Milestone milestone, double ageInMonths) =>
+    milestone.toMonth >= ageInMonths - 6 &&
+    milestone.fromMonth <= ageInMonths + 12;
+
 enum DueState {
   /// Recorded as done.
   done,

@@ -20,6 +20,7 @@ import 'home_shell.dart';
 import 'kiosk_screen.dart';
 import 'budget_screens.dart';
 import 'location_screens.dart';
+import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -49,7 +50,12 @@ class HomeScreen extends StatelessWidget {
           onPressed: () => openKiosk(context),
         ),
         const SyncStatusIcon(),
-        MemberAvatar(me, radius: 22),
+        MemberAvatar(
+          me,
+          radius: 22,
+          tooltip: 'Mein Profil',
+          onTap: () => showProfileEditor(context),
+        ),
       ],
       body: DataBuilder(
         collections: const {

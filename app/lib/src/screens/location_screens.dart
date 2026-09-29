@@ -77,11 +77,12 @@ class _LocationScreenState extends State<LocationScreen> {
               ),
             ),
           );
-          final list = MinuteTicker(
+          Widget memberList({bool scrollable = true}) => MinuteTicker(
             builder: (_) => _MemberList(
               engine: engine,
               locations: locations,
               onFocus: _focus,
+              scrollable: scrollable,
             ),
           );
           return LayoutBuilder(
@@ -92,24 +93,29 @@ class _LocationScreenState extends State<LocationScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(width: 380, child: list),
+                      SizedBox(width: 380, child: memberList()),
                       const SizedBox(width: 16),
                       Expanded(child: map),
                     ],
                   ),
                 );
               }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    flex: 5,
+              // On phones map and members share one scroll view. Previously
+              // only the member list scrolled, leaving the map permanently
+              // fixed in the upper half of the screen.
+              final mapHeight = (constraints.maxHeight * 0.55)
+                  .clamp(260.0, 420.0)
+                  .toDouble();
+              return CustomScrollView(
+                key: const PageStorageKey('location-mobile-scroll'),
+                slivers: [
+                  SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: map,
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                      child: SizedBox(height: mapHeight, child: map),
                     ),
                   ),
-                  Expanded(flex: 5, child: list),
+                  SliverToBoxAdapter(child: memberList(scrollable: false)),
                 ],
               );
             },
@@ -624,11 +630,13 @@ class _MemberList extends StatelessWidget {
     required this.engine,
     required this.locations,
     required this.onFocus,
+    this.scrollable = true,
   });
 
   final SyncEngine engine;
   final Map<String, MemberLocation> locations;
   final void Function(MemberLocation) onFocus;
+  final bool scrollable;
 
   @override
   Widget build(BuildContext context) {
@@ -646,6 +654,9 @@ class _MemberList extends StatelessWidget {
         return shares != 0 ? shares : a.displayName.compareTo(b.displayName);
       });
     return ListView(
+      primary: scrollable,
+      shrinkWrap: !scrollable,
+      physics: scrollable ? null : const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(16, 12, 16, listBottomPadding(context)),
       children: [
         MySharingCard(
@@ -1243,9 +1254,7 @@ class PlacesScreen extends StatelessWidget {
       // This is an extended FAB rather than [AddButton]; it needs the same
       // clearance above the phone navigation bar.
       floating: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.sizeOf(context).width < 720 ? 84 : 0,
-        ),
+        padding: EdgeInsets.only(bottom: floatingNavigationClearance(context)),
         child: FloatingActionButton.extended(
           heroTag: 'add-place',
           icon: const Icon(AppIcons.plus),

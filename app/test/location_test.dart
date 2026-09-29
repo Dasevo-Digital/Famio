@@ -155,7 +155,24 @@ void main() {
     expect(button, findsOneWidget);
     // The floating navigation bar starts around the lower 80 px on a phone.
     // A raw Scaffold FAB would land behind it at the very bottom.
-    expect(tester.getBottomRight(button).dy, lessThan(760));
+    expect(tester.getBottomRight(button).dy, lessThan(744));
+  });
+
+  testWidgets('phone map scrolls away with the location details', (
+    tester,
+  ) async {
+    await open(tester);
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+
+    final map = find.byType(FlutterMap);
+    final before = tester.getTopLeft(map).dy;
+    // Start below the map, in the member-details area. A drag on the map
+    // itself deliberately pans the map rather than scrolling the page.
+    await tester.dragFrom(const Offset(195, 700), const Offset(0, -220));
+    await tester.pumpAndSettle();
+
+    expect(tester.getTopLeft(map).dy, lessThan(before));
   });
 
   test('status texts', () {
