@@ -55,6 +55,15 @@ sh install.sh famio-server-<version>-linux-x64.tar.gz
 # Umzug: zusätzlich --import-data famio-data.tar.gz --key famio.key
 ```
 
+Bei einer URL ist der SHA-256-Wert aus der zum Release gehörenden
+`SHA256SUMS.txt` Pflicht, damit ein Transport- oder Downloadfehler nicht
+installiert wird:
+
+```sh
+sh install.sh --url https://gitea.example/famio-server-linux-x64.tar.gz \
+  --sha256 <Wert-aus-SHA256SUMS.txt>
+```
+
 (Auf ARM, z. B. Raspberry Pi: `famio-server-<version>-linux-arm64.tar.gz`.)
 Einstellungen in `/etc/famio/famio.env` (öffentliche Adresse für Nginx Proxy
 Manager, Zeitzone), dann `systemctl restart famio`. Einrichtungscode für das
@@ -80,3 +89,4 @@ HTTPS im Heimnetz: Port 8766 (eigenes Zertifikat, die Apps fragen beim ersten
 Verbinden nach dem Fingerabdruck – er steht in `journalctl -u famio`).
 
 Reverse Proxy: siehe [../npm/README.md](../npm/README.md).
+Eigene Karten als separater LXC: siehe [../maps/LXC-NPM.md](../maps/LXC-NPM.md).

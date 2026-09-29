@@ -18,8 +18,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
       - name: Test
         working-directory: server
         run: dart pub get && dart test
@@ -28,11 +28,11 @@ jobs:
         run: dart build cli -t bin/server.dart -o ../out
       - name: Package
         run: tar -czf famio-server-linux-${{ matrix.arch }}.tar.gz -C out bundle
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: famio-server-linux-${{ matrix.arch }}.tar.gz
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: famio-server-linux-${{ matrix.arch }}
           path: famio-server-linux-${{ matrix.arch }}.tar.gz
