@@ -185,7 +185,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   role: role,
                   onChanged: (r) => setState(() {
                     role = r;
-                    if (r == MemberRole.guest) isAdmin = false;
+                    if (!_canAdminister(r)) isAdmin = false;
                   }),
                 ),
                 SwitchListTile(
@@ -193,7 +193,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   title: const Text('Administrator'),
                   subtitle: const Text('Darf den Server verwalten'),
                   value: isAdmin,
-                  onChanged: role == MemberRole.guest
+                  onChanged: !_canAdminister(role)
                       ? null
                       : (v) => setState(() => isAdmin = v),
                 ),
@@ -218,7 +218,11 @@ class _AdminScreenState extends State<AdminScreen> {
   }
 }
 
-/// Adult, child or guest, with what it means.
+/// Guests and service accounts never manage the server.
+bool _canAdminister(MemberRole role) =>
+    role != MemberRole.guest && role != MemberRole.service;
+
+/// Adult, child, guest or service account, with what it means.
 class _RolePicker extends StatelessWidget {
   const _RolePicker({required this.role, required this.onChanged});
 
@@ -234,6 +238,9 @@ class _RolePicker extends StatelessWidget {
         'Z. B. Großeltern oder Babysitter: nur Kalender, Chat, Einkauf, '
         'Aufgaben, Essen und Kontakte – keine Dokumente, Gesundheitsdaten, '
         'Finanzen oder Standorte.',
+    MemberRole.service:
+        'Für Home Assistant und andere Anbindungen: sieht, was Erwachsene '
+        'sehen, erscheint aber nicht in Chats, Standorten und Auswahllisten.',
   };
 
   @override
@@ -307,7 +314,11 @@ class _UserList extends StatelessWidget {
                         if (u.member.role != MemberRole.adult)
                           _Badge(
                             u.member.role.label,
-                            u.member.isGuest ? AppIcons.user : AppIcons.baby,
+                            switch (u.member.role) {
+                              MemberRole.guest => AppIcons.user,
+                              MemberRole.service => AppIcons.bot,
+                              _ => AppIcons.baby,
+                            },
                           ),
                         if (u.homeAssistant)
                           const _Badge('Home Assistant', AppIcons.house),
@@ -488,7 +499,13 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _RolePicker(
             role: m.role,
-            onChanged: (r) => _run(() => _api.updateUser(m.id, role: r)),
+            onChanged: (r) => _run(
+              () => _api.updateUser(
+                m.id,
+                role: r,
+                isAdmin: _canAdminister(r) ? null : false,
+              ),
+            ),
           ),
         ),
         SwitchListTile(
@@ -498,7 +515,9 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             'Darf Mitglieder verwalten und Servereinstellungen ändern',
           ),
           value: m.isAdmin,
-          onChanged: (v) => _run(() => _api.updateUser(m.id, isAdmin: v)),
+          onChanged: _canAdminister(m.role)
+              ? (v) => _run(() => _api.updateUser(m.id, isAdmin: v))
+              : null,
         ),
         ListHeading('Kalender', color: accent),
         _MemberCalendars(member: m, isMe: isMe),

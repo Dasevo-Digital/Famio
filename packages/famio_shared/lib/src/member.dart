@@ -11,7 +11,12 @@ enum MemberRole {
 
   /// Grandparents, babysitters …: calendar, chat, shopping and tasks only –
   /// no documents, health data, finances or locations.
-  guest('Gast');
+  guest('Gast'),
+
+  /// Technical access, e.g. the Home Assistant integration: sees what an
+  /// adult sees, but is no family member – hidden from chats, pickers and
+  /// member lists, never an administrator.
+  service('Dienstkonto');
 
   const MemberRole(this.label);
 
@@ -58,6 +63,7 @@ class FamilyMember {
 
   bool get isGuest => role == MemberRole.guest;
   bool get isChild => role == MemberRole.child;
+  bool get isService => role == MemberRole.service;
 
   /// Adults manage chores, rewards and pocket money.
   bool get isAdult => role == MemberRole.adult;

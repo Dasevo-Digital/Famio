@@ -22,13 +22,49 @@ const _chatCollections = {
   'members',
 };
 
-/// The family chat plus one direct chat per other member.
-class ChatListScreen extends StatelessWidget {
+/// The family chat plus one direct chat per other member. On wide screens
+/// (tablets, desktop) the open chat sits next to the list.
+class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  State<ChatListScreen> createState() => _ChatListScreenState();
+}
+
+class _ChatListScreenState extends State<ChatListScreen> {
+  var _open = (ChatIds.family, 'Familie');
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      if (constraints.maxWidth < 900) return _list(context, null);
+      final (chatId, title) = _open;
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(width: 380, child: _list(context, chatId)),
+          Expanded(
+            child: ChatScreen(
+              key: ValueKey(chatId),
+              chatId: chatId,
+              title: title,
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  /// [selected]: the chat shown beside the list, else chats open full size.
+  Widget _list(BuildContext context, String? selected) {
     final c = FamioColors.of(context);
+    void open(String chatId, String title) => selected == null
+        ? Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => ChatScreen(chatId: chatId, title: title),
+            ),
+          )
+        : setState(() => _open = (chatId, title));
     return SectionPage(
       section: FamioSection.chat,
       title: 'Chat',
@@ -55,6 +91,8 @@ class ChatListScreen extends StatelessWidget {
                   size: 52,
                 ),
                 engine: engine,
+                selected: selected == ChatIds.family,
+                onTap: () => open(ChatIds.family, 'Familie'),
               ),
               if (others.isNotEmpty) const ListHeading('Einzelchats'),
               for (final m in others)
@@ -65,6 +103,12 @@ class ChatListScreen extends StatelessWidget {
                     title: m.displayName,
                     leading: MemberAvatar(m, radius: 26),
                     engine: engine,
+                    selected:
+                        selected == ChatIds.direct(engine.memberId, m.id),
+                    onTap: () => open(
+                      ChatIds.direct(engine.memberId, m.id),
+                      m.displayName,
+                    ),
                   ),
                 ),
               if (others.isEmpty)
@@ -90,12 +134,16 @@ class _ChatTile extends StatelessWidget {
     required this.title,
     required this.leading,
     required this.engine,
+    required this.onTap,
+    this.selected = false,
   });
 
   final String chatId;
   final String title;
   final Widget leading;
   final SyncEngine engine;
+  final VoidCallback onTap;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -114,11 +162,8 @@ class _ChatTile extends StatelessWidget {
                   : '📎 ${last.attachment?.name ?? 'Anhang'}'}';
     return SoftCard(
       padding: const EdgeInsets.all(14),
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (_) => ChatScreen(chatId: chatId, title: title),
-        ),
-      ),
+      color: selected ? c.tint(FamioSection.chat) : null,
+      onTap: onTap,
       child: Row(
         children: [
           leading,

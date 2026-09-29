@@ -15,6 +15,7 @@ import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -1123,7 +1124,10 @@ void main() {
   }
 
   Future<void> go(WidgetTester tester, String label) async {
-    await tester.tap(find.text(label).first);
+    final text = find.text(label);
+    await tester.tap(
+      text.evaluate().isNotEmpty ? text.first : find.byTooltip(label).first,
+    );
     await tester.pumpAndSettle();
   }
 
@@ -1323,6 +1327,39 @@ void main() {
     await tester.tap(find.textContaining('Wetter').first);
     await tester.pumpAndSettle();
     await _shot(tester, key, 'desktop_45_wetter_details');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  // iPad Air 11": status bar and home indicator as on the device.
+  Future<GlobalKey> ipad(WidgetTester tester, Size size) {
+    tester.view.padding = const FakeViewPadding(top: 48, bottom: 40);
+    tester.view.viewPadding = const FakeViewPadding(top: 48, bottom: 40);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    return start(tester, size);
+  }
+
+  testWidgets('ipad', (tester) async {
+    for (final (name, size) in [
+      ('hoch', const Size(820, 1180)),
+      ('quer', const Size(1180, 820)),
+    ]) {
+      final key = await ipad(tester, size);
+      await _shot(tester, key, 'ipad_1_start_$name');
+      await tester.tap(find.textContaining('Wetter').first);
+      await tester.pumpAndSettle();
+      await _shot(tester, key, 'ipad_2_wetter_$name');
+      await tester.tapAt(const Offset(10, 300));
+      await tester.pumpAndSettle();
+      await go(tester, 'Aufgaben');
+      await _shot(tester, key, 'ipad_3_aufgaben_$name');
+      await go(tester, 'Chat');
+      await _shot(tester, key, 'ipad_4_chat_$name');
+      await go(tester, 'Einstellungen');
+      await _shot(tester, key, 'ipad_5_einstellungen_$name');
+    }
+    debugDefaultTargetPlatformOverride = null;
     await tester.pump(const Duration(seconds: 1));
   });
 

@@ -185,6 +185,26 @@ void main() {
     });
   });
 
+  group('service accounts', () {
+    test('read and write like adults, but never become admin', () async {
+      final ha = await addMember('homeassistant', MemberRole.service);
+      await mama.sync([
+        _record(Collections.documents, 'd1', {'title': 'Pass'}),
+      ]);
+      await ha.sync([
+        _record(Collections.shoppingItems, 's1', {'name': 'Milch'}),
+      ]);
+      expect(ha.seen.containsKey('documents/d1'), isTrue);
+      await mama.sync();
+      expect(mama.seen['shopping_items/s1']!.data['name'], 'Milch');
+      final promote = await mama.call('PATCH', 'api/admin/users/${ha.id}', {
+        'isAdmin': true,
+      });
+      expect(promote['_status'], 400);
+      expect(promote['error'], 'service_admin');
+    });
+  });
+
   group('children', () {
     SyncRecord points(
       String id,

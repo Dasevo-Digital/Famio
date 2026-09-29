@@ -43,6 +43,7 @@ class RecordStore {
     final collection = incoming.collection;
     switch (role) {
       case MemberRole.adult:
+      case MemberRole.service:
         return true;
       case MemberRole.guest:
         return Collections.guestWritable.contains(collection);

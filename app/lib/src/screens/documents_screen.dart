@@ -251,6 +251,8 @@ class _DocumentCard extends StatelessWidget {
       // Above the floating navigation bar.
       useRootNavigator: true,
       isScrollControlled: true,
+      // Below the status bar, so the handle stays reachable.
+      useSafeArea: true,
       builder: (sheet) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),

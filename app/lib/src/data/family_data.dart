@@ -486,7 +486,7 @@ extension FamilyData on SyncEngine {
   // --- members --------------------------------------------------------------
 
   FamilyMember? member(String? id) =>
-      id == null ? null : members.where((m) => m.id == id).firstOrNull;
+      id == null ? null : allMembers.where((m) => m.id == id).firstOrNull;
 
   // --- location -----------------------------------------------------------
 

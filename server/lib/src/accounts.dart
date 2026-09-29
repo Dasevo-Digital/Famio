@@ -49,12 +49,7 @@ class Accounts {
     String? haUserId,
     MemberRole role = MemberRole.adult,
   }) {
-    if (role == MemberRole.guest && isAdmin) {
-      throw ApiException.badRequest(
-        'guest_admin',
-        'Gäste können keine Administratoren sein',
-      );
-    }
+    _checkAdminRole(role, isAdmin);
     username = username.trim();
     displayName = displayName.trim();
     _checkUsername(username);
@@ -136,13 +131,7 @@ class Accounts {
     if (displayName != null && displayName.trim().isEmpty) {
       throw ApiException.badRequest('invalid_name', 'Der Name fehlt');
     }
-    if ((isAdmin ?? current.isAdmin) &&
-        (role ?? current.role) == MemberRole.guest) {
-      throw ApiException.badRequest(
-        'guest_admin',
-        'Gäste können keine Administratoren sein',
-      );
-    }
+    _checkAdminRole(role ?? current.role, isAdmin ?? current.isAdmin);
     if (isAdmin == false && current.isAdmin && adminCount <= 1) {
       throw ApiException.badRequest(
         'last_admin',
@@ -180,6 +169,22 @@ class Accounts {
       ],
     );
     return byId(userId)!;
+  }
+
+  static void _checkAdminRole(MemberRole role, bool isAdmin) {
+    if (!isAdmin) return;
+    if (role == MemberRole.guest) {
+      throw ApiException.badRequest(
+        'guest_admin',
+        'Gäste können keine Administratoren sein',
+      );
+    }
+    if (role == MemberRole.service) {
+      throw ApiException.badRequest(
+        'service_admin',
+        'Dienstkonten können keine Administratoren sein',
+      );
+    }
   }
 
   /// The member's role; adult for unknown ids (e.g. the server itself).

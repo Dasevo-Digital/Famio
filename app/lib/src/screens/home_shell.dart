@@ -147,6 +147,8 @@ class _HomeShellState extends State<HomeShell> {
       // Above the floating navigation bar.
       useRootNavigator: true,
       isScrollControlled: true,
+      // Below the status bar, so the handle stays reachable.
+      useSafeArea: true,
       builder: (context) => SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -294,6 +296,9 @@ class _SideRail extends StatelessWidget {
             // All sections should fit without scrolling on laptops: smaller
             // items when the window is low.
             final compact = constraints.maxHeight < 140 + sections.length * 76;
+            // Still too low (e.g. an iPad in landscape): icons only.
+            final iconsOnly =
+                constraints.maxHeight < 70 + sections.length * 47;
             return SingleChildScrollView(
               padding: EdgeInsets.symmetric(vertical: compact ? 10 : 16),
               child: Column(
@@ -305,6 +310,7 @@ class _SideRail extends StatelessWidget {
                       section: s,
                       selected: s == current,
                       compact: compact,
+                      showLabel: !iconsOnly,
                       badge: s == FamioSection.chat ? unread : 0,
                       onTap: () => onSelect(s),
                     ),
@@ -362,9 +368,11 @@ class _RailItem extends StatelessWidget {
     required this.onTap,
     this.badge = 0,
     this.compact = false,
+    this.showLabel = true,
   });
 
   final FamioSection section;
+  final bool showLabel;
   final bool selected;
   final bool compact;
   final VoidCallback onTap;
@@ -374,8 +382,8 @@ class _RailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(section);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 1 : 3),
+    final item = Padding(
+      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 0 : 3),
       child: Material(
         color: selected ? c.tint(section) : Colors.transparent,
         borderRadius: BorderRadius.circular(22),
@@ -383,7 +391,7 @@ class _RailItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           onTap: onTap,
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: compact ? 4 : 10),
+            padding: EdgeInsets.symmetric(vertical: compact ? 3 : 10),
             child: Column(
               children: [
                 _Badge(
@@ -394,23 +402,31 @@ class _RailItem extends StatelessWidget {
                     size: compact ? 22 : 28,
                   ),
                 ),
-                SizedBox(height: compact ? 2 : 4),
-                Text(
-                  section.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.fade,
-                  softWrap: false,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: selected ? c.ink : c.inkSoft,
-                    fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                if (showLabel) ...[
+                  SizedBox(height: compact ? 2 : 4),
+                  Text(
+                    section.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.fade,
+                    softWrap: false,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: selected ? c.ink : c.inkSoft,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
+    return showLabel
+        ? item
+        : Tooltip(
+            message: section.label,
+            child: Semantics(label: section.label, child: item),
+          );
   }
 }
 
