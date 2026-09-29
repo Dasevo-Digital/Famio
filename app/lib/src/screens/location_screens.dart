@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
@@ -255,9 +256,10 @@ class _FamilyMapState extends State<FamilyMap> {
               Marker(
                 point: LatLng(p.latitude, p.longitude),
                 width: 140,
-                height: 28,
-                alignment: Alignment.topCenter,
-                child: Center(
+                // Below the point, not hidden behind a member's avatar.
+                height: 96,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 8,
@@ -319,13 +321,40 @@ Widget tileLayer(BuildContext context) => TileLayer(
   maxZoom: 19,
 );
 
+/// Small source note in the map's corner, as the tile licence asks for.
+/// Tapping it opens the map data's copyright page.
 Widget attribution(BuildContext context) {
   final custom = AppScope.of(context).mapTileUrl;
-  return SimpleAttributionWidget(
-    source: Text(
-      custom == null
-          ? 'OpenStreetMap-Mitwirkende'
-          : 'Karte: ${Uri.tryParse(custom.replaceAll(RegExp(r'[{}]'), ''))?.host ?? custom}',
+  final host = custom == null
+      ? null
+      : Uri.tryParse(custom.replaceAll(RegExp(r'[{}]'), ''))?.host;
+  final c = FamioColors.of(context);
+  return Align(
+    alignment: Alignment.bottomRight,
+    child: Padding(
+      padding: const EdgeInsets.all(8),
+      child: Material(
+        color: c.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: custom == null
+              ? () => launchUrl(
+                  Uri.parse('https://www.openstreetmap.org/copyright'),
+                  mode: LaunchMode.externalApplication,
+                )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            child: Text(
+              custom == null
+                  ? '© OpenStreetMap'
+                  : 'Karte: ${host == null || host.isEmpty ? custom : host}',
+              style: TextStyle(fontSize: 11, color: c.inkSoft),
+            ),
+          ),
+        ),
+      ),
     ),
   );
 }

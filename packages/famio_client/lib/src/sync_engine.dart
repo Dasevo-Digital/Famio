@@ -81,7 +81,14 @@ class SyncEngine {
   Stream<SyncStatus> get statusChanges => _status.stream;
   SyncStatus get status => _currentStatus;
 
-  List<FamilyMember> get members => _members;
+  /// The family: without service accounts (e.g. Home Assistant), which
+  /// only show up as authors ([allMembers]).
+  List<FamilyMember> get members => [
+    for (final m in _members)
+      if (!m.isService || m.id == memberId) m,
+  ];
+
+  List<FamilyMember> get allMembers => _members;
 
   int get lastRev => int.tryParse(store.getMeta('lastRev') ?? '') ?? 0;
 

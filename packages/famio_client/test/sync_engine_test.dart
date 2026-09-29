@@ -44,6 +44,19 @@ void main() {
     return engine;
   }
 
+  test('service accounts are no family members, but still authors', () async {
+    final ha = await FamioApiClient(url, token: token).createMember(
+      username: 'homeassistant',
+      displayName: 'Home Assistant',
+      password: 'geheim123',
+      role: MemberRole.service,
+    );
+    final engine = device();
+    await engine.refreshMembers();
+    expect(engine.members.map((m) => m.id), [memberId]);
+    expect(engine.allMembers.map((m) => m.id), contains(ha.id));
+  });
+
   test('changes travel between devices, including deletes', () async {
     final a = device(), b = device();
     a.put(Collections.shoppingItems, 'milk', {'name': 'Milch'});

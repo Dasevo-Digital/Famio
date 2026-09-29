@@ -620,7 +620,7 @@ class AppState extends ChangeNotifier {
   void _refreshMe() {
     final engine = this.engine;
     if (engine == null) return;
-    final fresh = engine.members.where((m) => m.id == me?.id).firstOrNull;
+    final fresh = engine.allMembers.where((m) => m.id == me?.id).firstOrNull;
     if (fresh == null) return;
     me = fresh;
     if (!kIsWeb) _prefs.setString('me', jsonEncode(fresh.toJson()));

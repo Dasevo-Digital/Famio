@@ -28,7 +28,9 @@ Verbindung alle 5 Minuten).
    Server-Log vergleichen (`journalctl -u famio` im Container bzw.
    `docker logs famio`) und bestätigen.
 
-Tipp: In Famio ein eigenes Mitglied „Home Assistant“ anlegen. Was es sehen
+Tipp: In Famio ein eigenes Mitglied „Home Assistant“ mit der Rolle
+**Dienstkonto** anlegen (ab 0.19.0) – es erscheint dann nicht in Chats,
+Standorten und Auswahllisten der Familie. Was es sehen
 darf, steuern Sichtbarkeit und Kalender-Profil (Server-Verwaltung → Mitglied
 → Kalender) – Home Assistant bekommt nur diese Daten. Die Sitzung erscheint in
 Famio unter den Geräten als „Home Assistant“ und lässt sich dort beenden;

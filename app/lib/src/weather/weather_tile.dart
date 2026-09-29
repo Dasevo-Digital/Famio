@@ -221,6 +221,8 @@ class _WeatherTileState extends State<WeatherTile> {
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
+      // Below the status bar, so the handle stays reachable.
+      useSafeArea: true,
       showDragHandle: true,
       builder: (context) {
         final theme = Theme.of(context);
@@ -230,9 +232,20 @@ class _WeatherTileState extends State<WeatherTile> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '${weatherEmoji(f.now.code)} ${_deg(f.now.temperature)} in ${place.name}',
-                  style: theme.textTheme.headlineSmall,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${weatherEmoji(f.now.code)} ${_deg(f.now.temperature)} in ${place.name}',
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Schließen',
+                      icon: const Icon(AppIcons.x),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
                 Text(
                   '${weatherText(f.now.code)} · gefühlt ${_deg(f.now.apparent)}'

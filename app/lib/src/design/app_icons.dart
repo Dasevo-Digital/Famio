@@ -130,6 +130,7 @@ abstract final class AppIcons {
   static const IconData usersThree = LucideIcons.users;
   static const IconData warningCircle = LucideIcons.circleAlert;
   static const IconData x = LucideIcons.x;
+  static const IconData bot = LucideIcons.bot;
 
   // Health log, emergency, contacts and planning.
   static const IconData milk = LucideIcons.milk;

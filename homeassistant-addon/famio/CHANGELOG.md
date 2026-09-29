@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.19.0 – iPad, Dienstkonten, Karte
+
+- **Neue Rolle „Dienstkonto“** (z. B. für Home Assistant): sieht, was
+  Erwachsene sehen, erscheint aber nicht mehr in Chats, Standorten,
+  Auswahllisten und der Familienliste. Kann kein Administrator sein.
+- **iPad und große Bildschirme:** Chat mit Liste und Unterhaltung
+  nebeneinander; die Seitenleiste passt auch im Querformat (bei wenig Höhe
+  nur Symbole).
+- **Behoben:** Wetter-Details (und Dokument-Details, „Mehr“-Menü) ließen
+  sich auf dem iPhone nicht schließen, wenn sie den ganzen Bildschirm
+  füllten – jetzt unter der Statusleiste und mit ✕.
+- **Karte:** Quellenhinweis klein in der Kartenecke statt als Balken über
+  den Rand; Ortsnamen nicht mehr vom Profilbild verdeckt.
+
 ## 0.18.1 – schneller und robuster
 
 - **Seitenleiste und Browser laden viel weniger:** 4 statt 15 MB beim
