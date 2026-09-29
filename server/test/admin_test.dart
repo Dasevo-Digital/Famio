@@ -313,12 +313,34 @@ void main() {
         'timeZone': 'Europe/Vienna',
         'maxUploadMb': 5,
         'mapTileUrl': 'https://tiles.example.org/{z}/{x}/{y}.png',
+        'mapProvider': 'martin',
       },
     );
     expect(status, 200, reason: '$body');
     // Every member's app learns where map tiles come from.
     final (_, config) = await call('GET', '/api/config', token: admin);
     expect(config['mapTileUrl'], 'https://tiles.example.org/{z}/{x}/{y}.png');
+    expect(config['mapProvider'], 'martin');
+    final (missingUrl, missingUrlBody) = await call(
+      'PATCH',
+      '/api/admin/settings',
+      token: admin,
+      body: {'mapProvider': 'custom', 'mapTileUrl': null},
+    );
+    expect(missingUrl, 400, reason: '$missingUrlBody');
+    final (osm, osmBody) = await call(
+      'PATCH',
+      '/api/admin/settings',
+      token: admin,
+      body: {
+        'mapProvider': 'osm',
+        'mapTileUrl': 'https://ignored.example/{z}/{x}/{y}.png',
+      },
+    );
+    expect(osm, 200, reason: '$osmBody');
+    final (_, osmConfig) = await call('GET', '/api/config', token: admin);
+    expect(osmConfig['mapProvider'], 'osm');
+    expect(osmConfig['mapTileUrl'], isNull);
     var overview = ServerOverview.fromJson(body);
     expect(overview.effective.publicUrl, 'https://famio.example.org/');
     expect(overview.effective.maxUploadMb, 5);

@@ -30,6 +30,12 @@ class SettingsStore {
     timeZone: _location.name,
     maxUploadMb: _stored.maxUploadMb ?? defaults.maxUploadMb ?? 100,
     mapTileUrl: _stored.mapTileUrl ?? defaults.mapTileUrl,
+    mapProvider:
+        _stored.mapProvider ??
+        defaults.mapProvider ??
+        ((_stored.mapTileUrl ?? defaults.mapTileUrl) == null
+            ? MapTileProvider.openStreetMap
+            : MapTileProvider.custom),
     locationHistoryDays:
         _stored.locationHistoryDays ?? defaults.locationHistoryDays ?? 7,
     twoFactorRequired: _stored.twoFactorRequired,
@@ -57,11 +63,33 @@ class SettingsStore {
         'timeZone' => _timeZone(value),
         'maxUploadMb' => _maxUpload(value),
         'mapTileUrl' => _mapTileUrl(value),
+        'mapProvider' => _mapProvider(value),
         'locationHistoryDays' => _locationHistoryDays(value),
         'twoFactorRequired' => _policy(value),
         'hiddenModules' => _modules(value),
         _ => null,
       };
+    }
+    final selectedProvider = values.containsKey('mapProvider')
+        ? values['mapProvider'] as MapTileProvider?
+        : effective.mapProvider;
+    if (selectedProvider == MapTileProvider.openStreetMap &&
+        values.containsKey('mapProvider')) {
+      // The selection, not a stale URL, decides which provider every app
+      // actually uses. This also removes a previous Martin/custom address.
+      values['mapTileUrl'] = null;
+    }
+    if (selectedProvider != null &&
+        selectedProvider != MapTileProvider.openStreetMap) {
+      final tileUrl = values.containsKey('mapTileUrl')
+          ? values['mapTileUrl'] as String?
+          : effective.mapTileUrl;
+      if (tileUrl == null) {
+        throw ApiException.badRequest(
+          'map_url_required',
+          'Für Martin oder eine eigene Karte ist eine HTTPS-Kacheladresse nötig',
+        );
+      }
     }
     _db.execute('BEGIN');
     try {
@@ -69,10 +97,11 @@ class SettingsStore {
         if (value == null) {
           _db.execute('DELETE FROM settings WHERE key = ?', [key]);
         } else {
+          final stored = value is MapTileProvider ? value.wire : value;
           _db.execute(
             'INSERT INTO settings (key, value) VALUES (?, ?)'
             ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-            [key, jsonEncode(value)],
+            [key, jsonEncode(stored)],
           );
         }
       }
@@ -148,6 +177,18 @@ class SettingsStore {
       );
     }
     return text;
+  }
+
+  static MapTileProvider? _mapProvider(Object? value) {
+    if (value == null || value == '') return null;
+    final provider = MapTileProvider.parse(value);
+    if (provider == null) {
+      throw ApiException.badRequest(
+        'invalid_map_provider',
+        'Kartenanbieter: osm, martin oder custom',
+      );
+    }
+    return provider;
   }
 
   static List<String>? _modules(Object? value) {

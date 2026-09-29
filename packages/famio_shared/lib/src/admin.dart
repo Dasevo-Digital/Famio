@@ -99,6 +99,7 @@ class ServerSettings {
     this.timeZone,
     this.maxUploadMb,
     this.mapTileUrl,
+    this.mapProvider,
     this.locationHistoryDays,
     this.twoFactorRequired,
     this.hiddenModules,
@@ -109,6 +110,7 @@ class ServerSettings {
     timeZone: json['timeZone'] as String?,
     maxUploadMb: json['maxUploadMb'] as int?,
     mapTileUrl: json['mapTileUrl'] as String?,
+    mapProvider: MapTileProvider.parse(json['mapProvider']),
     locationHistoryDays: json['locationHistoryDays'] as int?,
     twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
     hiddenModules: (json['hiddenModules'] as List?)?.cast<String>(),
@@ -124,6 +126,10 @@ class ServerSettings {
   /// Map tiles for the family map, e.g. `https://tiles.example.org/{z}/{x}/{y}.png`;
   /// null uses OpenStreetMap.
   final String? mapTileUrl;
+
+  /// The selected family-wide map provider. Older servers omit this field;
+  /// clients then infer OpenStreetMap or a custom XYZ address from the URL.
+  final MapTileProvider? mapProvider;
 
   /// How long precise location points remain available. The current position
   /// is unaffected; null means the server default (seven days).
@@ -158,6 +164,7 @@ class ServerSettings {
     'timeZone',
     'maxUploadMb',
     'mapTileUrl',
+    'mapProvider',
     'locationHistoryDays',
     'twoFactorRequired',
     'hiddenModules',
@@ -168,10 +175,27 @@ class ServerSettings {
     'timeZone': timeZone,
     'maxUploadMb': maxUploadMb,
     'mapTileUrl': mapTileUrl,
+    'mapProvider': mapProvider?.wire,
     'locationHistoryDays': locationHistoryDays,
     'twoFactorRequired': twoFactorRequired?.name,
     'hiddenModules': hiddenModules,
   };
+}
+
+/// Basemap choice. Martin is an own, privacy-friendly XYZ tile service that
+/// serves the family's PMTiles/MBTiles; it is not a different data format for
+/// the clients.
+enum MapTileProvider {
+  openStreetMap('osm'),
+  martin('martin'),
+  custom('custom');
+
+  const MapTileProvider(this.wire);
+
+  final String wire;
+
+  static MapTileProvider? parse(Object? value) =>
+      values.where((provider) => provider.wire == value).firstOrNull;
 }
 
 /// Members who must use two-factor login (or single sign-on).
