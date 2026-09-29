@@ -1,0 +1,11 @@
+# Martin 1.16 configuration. Files are hot-reloaded when replaced.
+pmtiles:
+  paths:
+    - /tiles
+  cache:
+    maxzoom: 14
+mbtiles:
+  paths:
+    - /tiles
+  cache:
+    maxzoom: 14

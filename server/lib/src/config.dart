@@ -13,6 +13,7 @@ class ServerConfig {
     this.publicUrl,
     this.trustProxy = false,
     this.maxUploadMb = 100,
+    this.locationHistoryDays = 7,
     this.maxStorageMb = 5120,
     this.allowPrivateCalendarHosts = false,
     this.keyFile,
@@ -67,6 +68,12 @@ class ServerConfig {
       publicUrl: _nonEmpty(env['FAMIO_PUBLIC_URL']),
       trustProxy: _flag(env['FAMIO_TRUST_PROXY']),
       maxUploadMb: int.tryParse(env['FAMIO_MAX_UPLOAD_MB'] ?? '') ?? 100,
+      locationHistoryDays: _boundedInt(
+        env['FAMIO_LOCATION_HISTORY_DAYS'],
+        fallback: 7,
+        min: 1,
+        max: 365,
+      ),
       maxStorageMb: int.tryParse(env['FAMIO_MAX_STORAGE_MB'] ?? '') ?? 5120,
       allowPrivateCalendarHosts: _flag(
         env['FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS'],
@@ -132,6 +139,10 @@ class ServerConfig {
   /// Maximum upload size (documents, photos).
   final int maxUploadMb;
 
+  /// Default retention for precise location history. Admins can override it
+  /// in the app; the server still enforces the chosen retention itself.
+  final int locationHistoryDays;
+
   /// Hard storage budget for all uploads of this Famio installation.
   final int maxStorageMb;
 
@@ -159,6 +170,16 @@ class ServerConfig {
 bool _flag(String? v, {bool defaultValue = false}) {
   if (v == null || v.trim().isEmpty) return defaultValue;
   return const {'1', 'true', 'yes', 'on'}.contains(v.trim().toLowerCase());
+}
+
+int _boundedInt(
+  String? value, {
+  required int fallback,
+  required int min,
+  required int max,
+}) {
+  final parsed = int.tryParse(value ?? '');
+  return parsed == null || parsed < min || parsed > max ? fallback : parsed;
 }
 
 String? _nonEmpty(String? v) => v == null || v.trim().isEmpty ? null : v.trim();

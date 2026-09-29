@@ -990,6 +990,11 @@ class FamioApi {
     );
     // The apps reload their configuration with the member list.
     if (changes.containsKey('hiddenModules')) hub.notifyMembersChanged();
+    // Retention is a privacy boundary. Do not wait for the six-hour
+    // housekeeping job when an administrator shortens it.
+    if (changes.containsKey('locationHistoryDays')) {
+      locations?.collectGarbage();
+    }
     // Imported floating times depend on the zone.
     if (location.name != zone) importer?.subscriptionsChanged();
     return _json(_overview().toJson());
@@ -1001,6 +1006,8 @@ class FamioApi {
     final admin = _admin(request);
     final zone = location.name;
     settings.reset();
+    // Resetting may also shorten the effective retention.
+    locations?.collectGarbage();
     _audit(admin, 'hat die Servereinstellungen auf Standard zurückgesetzt');
     hub.notifyMembersChanged();
     if (location.name != zone) importer?.subscriptionsChanged();
@@ -1430,10 +1437,15 @@ class FamioApi {
       throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
     }
     final now = DateTime.now();
-    final from =
+    final oldest = now.subtract(_locations.retention);
+    final requestedFrom =
         DateTime.tryParse(query['from'] ?? '') ??
         now.subtract(const Duration(days: 1));
-    final to = DateTime.tryParse(query['to'] ?? '') ?? now;
+    // A point that is about to be collected must not briefly reappear because
+    // a client guessed an older query range.
+    final from = requestedFrom.isBefore(oldest) ? oldest : requestedFrom;
+    final requestedTo = DateTime.tryParse(query['to'] ?? '') ?? now;
+    final to = requestedTo.isAfter(now) ? now : requestedTo;
     return _json({
       'points': [
         for (final f in _locations.history(target, from: from, to: to))

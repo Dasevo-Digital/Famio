@@ -99,6 +99,7 @@ class ServerSettings {
     this.timeZone,
     this.maxUploadMb,
     this.mapTileUrl,
+    this.locationHistoryDays,
     this.twoFactorRequired,
     this.hiddenModules,
   });
@@ -108,6 +109,7 @@ class ServerSettings {
     timeZone: json['timeZone'] as String?,
     maxUploadMb: json['maxUploadMb'] as int?,
     mapTileUrl: json['mapTileUrl'] as String?,
+    locationHistoryDays: json['locationHistoryDays'] as int?,
     twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
     hiddenModules: (json['hiddenModules'] as List?)?.cast<String>(),
   );
@@ -122,6 +124,10 @@ class ServerSettings {
   /// Map tiles for the family map, e.g. `https://tiles.example.org/{z}/{x}/{y}.png`;
   /// null uses OpenStreetMap.
   final String? mapTileUrl;
+
+  /// How long precise location points remain available. The current position
+  /// is unaffected; null means the server default (seven days).
+  final int? locationHistoryDays;
 
   /// Who must sign in with a second factor; null: nobody.
   final TwoFactorPolicy? twoFactorRequired;
@@ -152,6 +158,7 @@ class ServerSettings {
     'timeZone',
     'maxUploadMb',
     'mapTileUrl',
+    'locationHistoryDays',
     'twoFactorRequired',
     'hiddenModules',
   ];
@@ -161,6 +168,7 @@ class ServerSettings {
     'timeZone': timeZone,
     'maxUploadMb': maxUploadMb,
     'mapTileUrl': mapTileUrl,
+    'locationHistoryDays': locationHistoryDays,
     'twoFactorRequired': twoFactorRequired?.name,
     'hiddenModules': hiddenModules,
   };

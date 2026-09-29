@@ -97,6 +97,33 @@ void main() {
     expect((await call('GET', '/api/admin/overview', token: admin)).$1, 200);
   });
 
+  test('admins control bounded location-history retention', () async {
+    final (admin, kind, _) = await family();
+    var (status, body) = await call(
+      'PATCH',
+      '/api/admin/settings',
+      token: admin,
+      body: {'locationHistoryDays': 30},
+    );
+    expect(status, 200, reason: '$body');
+    expect((body['effective'] as Map)['locationHistoryDays'], 30);
+
+    (status, body) = await call(
+      'PATCH',
+      '/api/admin/settings',
+      token: kind,
+      body: {'locationHistoryDays': 30},
+    );
+    expect(status, 403, reason: '$body');
+    (status, body) = await call(
+      'PATCH',
+      '/api/admin/settings',
+      token: admin,
+      body: {'locationHistoryDays': 0},
+    );
+    expect(status, 400, reason: '$body');
+  });
+
   test('user list shows devices; admin edits a member', () async {
     final (admin, kind, kindId) = await family();
     final (_, list) = await call('GET', '/api/admin/users', token: admin);

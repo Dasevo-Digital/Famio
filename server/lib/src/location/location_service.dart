@@ -22,7 +22,9 @@ class LocationService {
     required this.accounts,
     required this.onChanged,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+    Duration Function()? retention,
+  }) : _clock = clock ?? DateTime.now,
+       _retention = retention ?? (() => defaultRetention);
 
   final Database db;
   final RecordStore records;
@@ -31,8 +33,12 @@ class LocationService {
   /// Called after records changed, e.g. to notify connected apps.
   final void Function() onChanged;
   final DateTime Function() _clock;
+  final Duration Function() _retention;
 
-  static const retention = Duration(days: 7);
+  static const defaultRetention = Duration(days: 7);
+
+  /// The administrator-controlled retention, bounded by [SettingsStore].
+  Duration get retention => _retention();
 
   /// How often phones report while sharing.
   static const reportInterval = Duration(minutes: 2);
