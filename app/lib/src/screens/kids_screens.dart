@@ -772,10 +772,11 @@ class _MilestonesView extends StatelessWidget {
                 .difference(child.ageDate(child.ageInMonths(DateTime.now())))
                 .inDays /
             30.4;
-    // Only what is relevant for this age: reached ones, the current window
-    // and what comes next; far-future items stay hidden.
+    // Keep reached memories, current steps and the near future. Unfinished
+    // baby steps vanish after a six-month look-back window instead of making
+    // a toddler's family confirm foundational skills again.
     final visible = milestones.where(
-      (m) => byMilestone.containsKey(m.id) || m.fromMonth <= age + 12,
+      (m) => byMilestone.containsKey(m.id) || milestoneIsRelevant(m, age),
     );
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),

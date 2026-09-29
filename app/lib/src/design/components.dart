@@ -494,10 +494,10 @@ class AddButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    // Stay clear of the floating navigation bar on phones.
-    padding: EdgeInsets.only(
-      bottom: MediaQuery.sizeOf(context).width < 720 ? 84 : 0,
-    ),
+    // Stay clear of the floating navigation bar and the iPhone home
+    // indicator. The inner section Scaffold does not know about the shell's
+    // floating navigation bar.
+    padding: EdgeInsets.only(bottom: floatingNavigationClearance(context)),
     child: FloatingActionButton(
       heroTag: null,
       tooltip: tooltip,
@@ -509,7 +509,18 @@ class AddButton extends StatelessWidget {
   );
 }
 
+/// Vertical clearance for a floating action above the phone navigation bar.
+///
+/// [viewPadding] retains the iPhone home-indicator inset while a keyboard is
+/// open, unlike the effective [MediaQuery.padding].
+double floatingNavigationClearance(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < 720
+    ? 96 + MediaQuery.viewPaddingOf(context).bottom
+    : 0;
+
 /// Bottom padding so the last list item is not hidden behind the
 /// floating navigation bar and add button.
 double listBottomPadding(BuildContext context) =>
-    MediaQuery.sizeOf(context).width < 720 ? 180 : 100;
+    MediaQuery.sizeOf(context).width < 720
+    ? 192 + MediaQuery.viewPaddingOf(context).bottom
+    : 100;

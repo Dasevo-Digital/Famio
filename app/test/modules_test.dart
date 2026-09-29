@@ -81,6 +81,15 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('home initials open the own profile', (tester) async {
+    await open(tester, 'Start');
+
+    await tester.tap(find.byTooltip('Mein Profil'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mein Profil'), findsOneWidget);
+  });
+
   testWidgets('documents: filter by category and show lock for private ones', (
     tester,
   ) async {
@@ -174,6 +183,30 @@ void main() {
       hasLength(1),
     );
     await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('kids: older toddlers do not see expired baby milestones', (
+    tester,
+  ) async {
+    await open(tester, 'Kinder');
+    final now = DateTime.now();
+    engine.saveChild(
+      Child(
+        id: 't1',
+        name: 'Milo',
+        birthDate: DateUtils.dateOnly(
+          DateTime(now.year - 2, now.month + 1, now.day),
+        ),
+      ),
+    );
+    await pumpData(tester);
+    await tester.tap(find.text('Milo'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Meilensteine'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hält den Kopf sicher'), findsNothing);
+    expect(find.text('Rennt'), findsOneWidget);
   });
 
   testWidgets('pregnancy: weeks, contractions and the baby arrives', (
