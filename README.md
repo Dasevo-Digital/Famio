@@ -176,6 +176,12 @@ Kachelserver (Server-Verwaltung → Einstellungen → Kartenserver). Eine fertig
 self-hosted Martin-Konfiguration für PMTiles/MBTiles liegt unter
 [`deploy/maps/`](deploy/maps/README.md).
 
+In der Server-Verwaltung ist der Anbieter familienweit auswählbar:
+**OpenStreetMap**, **eigener Martin-Server** oder **eigene XYZ-Adresse**.
+Martin und eigene Adressen müssen HTTPS und die Platzhalter `{z}`, `{x}` und
+`{y}` verwenden. Bestehende Kacheladressen bleiben als „Eigene XYZ-Adresse“
+erhalten; die Auswahl wird beim nächsten Abgleich an alle Apps verteilt.
+
 ### Rollen
 
 Neben der Admin-Rolle hat jedes Mitglied eine Rolle, die der Server bei

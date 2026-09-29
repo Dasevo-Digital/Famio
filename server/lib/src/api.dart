@@ -1194,6 +1194,7 @@ class FamioApi {
     _auth(request);
     return _json({
       'mapTileUrl': settings.effective.mapTileUrl,
+      'mapProvider': settings.effective.mapProvider?.wire,
       'hiddenModules': settings.effective.hiddenModules ?? const [],
     });
   }

@@ -14,9 +14,10 @@ auf dem eigenen Rechner; Martin erkennt neue oder ersetzte Dateien automatisch.
    Pfad auf `127.0.0.1:3000` weiterleiten. Nicht direkt an Port 3000 ins
    Internet veröffentlichen.
 4. Im Martin-Katalog (`https://karten.example.org/catalog`) die Quellen und
-   ihre TileJSON-Adresse prüfen. Die genaue XYZ-URL einer Rasterquelle in
-   Famio unter **Server-Verwaltung → Einstellungen → Kartenserver** eintragen,
-   beispielsweise `https://karten.example.org/tiles/basemap/{z}/{x}/{y}`.
+   ihre TileJSON-Adresse prüfen. In Famio unter **Server-Verwaltung →
+   Einstellungen → Eigener Martin-Server** die genaue XYZ-URL einer
+   Rasterquelle eintragen, beispielsweise
+   `https://karten.example.org/tiles/basemap/{z}/{x}/{y}`.
 
 Martin liefert Vektor-, Raster- und TileJSON-Quellen. Famio nutzt heute die
 kompatible XYZ-Ausgabe von `flutter_map`; die PMTiles/MBTiles- und

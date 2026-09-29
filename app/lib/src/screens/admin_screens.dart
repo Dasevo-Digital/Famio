@@ -851,12 +851,20 @@ class _SettingsFormState extends State<_SettingsForm> {
     text: widget.overview.settings.maxUploadMb?.toString() ?? '',
   );
   late final _tiles = TextEditingController(
-    text: widget.overview.settings.mapTileUrl ?? '',
+    text:
+        widget.overview.settings.mapTileUrl ??
+        widget.overview.effective.mapTileUrl ??
+        '',
   );
   late final _locationHistory = TextEditingController(
     text: widget.overview.settings.locationHistoryDays?.toString() ?? '',
   );
   late String _zone = widget.overview.settings.timeZone ?? '';
+  late MapTileProvider _mapProvider =
+      widget.overview.settings.mapProvider ??
+      (widget.overview.effective.mapTileUrl == null
+          ? MapTileProvider.openStreetMap
+          : MapTileProvider.custom);
   late TwoFactorPolicy? _policy = widget.overview.settings.twoFactorRequired;
   var _busy = false;
   String? _error;
@@ -898,7 +906,10 @@ class _SettingsFormState extends State<_SettingsForm> {
                 : _publicUrl.text.trim(),
             'timeZone': _zone.trim().isEmpty ? null : _zone.trim(),
             'maxUploadMb': upload.isEmpty ? null : int.tryParse(upload) ?? -1,
-            'mapTileUrl': _tiles.text.trim().isEmpty
+            'mapProvider': _mapProvider.wire,
+            'mapTileUrl': _mapProvider == MapTileProvider.openStreetMap
+                ? null
+                : _tiles.text.trim().isEmpty
                 ? null
                 : _tiles.text.trim(),
             'locationHistoryDays': _locationHistory.text.trim().isEmpty
@@ -1253,20 +1264,54 @@ class _SettingsFormState extends State<_SettingsForm> {
               ),
             ),
             const SizedBox(height: 16),
-            TextField(
-              controller: _tiles,
-              keyboardType: TextInputType.url,
-              autocorrect: false,
-              decoration: const InputDecoration(
-                labelText: 'Kartenserver (optional)',
-                hintText: 'https://tiles.example.org/{z}/{x}/{y}.png',
-                helperText:
-                    'Leer: OpenStreetMap. Ein eigener Kachelserver sieht als '
-                    'einziger, welche Kartenausschnitte ihr ladet.',
-                helperMaxLines: 3,
-                prefixIcon: Icon(AppIcons.map),
-              ),
+            Text(
+              'Kartenanbieter',
+              style: Theme.of(context).textTheme.titleSmall,
             ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final provider in MapTileProvider.values)
+                  ChoiceChip(
+                    label: Text(switch (provider) {
+                      MapTileProvider.openStreetMap => 'OpenStreetMap',
+                      MapTileProvider.martin => 'Eigener Martin-Server',
+                      MapTileProvider.custom => 'Eigene XYZ-Adresse',
+                    }),
+                    selected: _mapProvider == provider,
+                    onSelected: (_) => setState(() => _mapProvider = provider),
+                  ),
+              ],
+            ),
+            if (_mapProvider == MapTileProvider.openStreetMap)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: Text(
+                  'Sofort nutzbar. Der öffentliche Dienst sieht den geladenen Kartenausschnitt.',
+                ),
+              )
+            else ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: _tiles,
+                keyboardType: TextInputType.url,
+                autocorrect: false,
+                decoration: InputDecoration(
+                  labelText: _mapProvider == MapTileProvider.martin
+                      ? 'Martin-Kacheladresse'
+                      : 'XYZ-Kacheladresse',
+                  hintText:
+                      'https://karten.example.org/tiles/basemap/{z}/{x}/{y}',
+                  helperText: _mapProvider == MapTileProvider.martin
+                      ? 'Martin stellt eigene PMTiles/MBTiles bereit. Die Anleitung liegt unter deploy/maps.'
+                      : 'HTTPS-Adresse mit {z}, {x} und {y}.',
+                  helperMaxLines: 3,
+                  prefixIcon: const Icon(AppIcons.map),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: _locationHistory,
