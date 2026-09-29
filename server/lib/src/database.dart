@@ -198,6 +198,11 @@ const _migrations = [
   -- What a service account (e.g. Home Assistant) may change.
   ALTER TABLE users ADD COLUMN service_access TEXT NOT NULL DEFAULT 'full';
   ''',
+  '''
+  -- Optional recurring local-time window for location sharing. Kept with the
+  -- location state so it is never synchronised to unrelated family clients.
+  ALTER TABLE location_state ADD COLUMN sharing_schedule TEXT;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

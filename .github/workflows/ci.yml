@@ -1,0 +1,42 @@
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dart:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: Check release version
+        run: dart tool/check_versions.dart
+      - name: Shared package
+        working-directory: packages/famio_shared
+        run: dart pub get && dart analyze && dart test
+      - name: Client package
+        working-directory: packages/famio_client
+        run: dart pub get && dart analyze && dart test
+      - name: Server
+        working-directory: server
+        run: dart pub get && dart analyze && dart test && dart build cli -t bin/server.dart -o ../out
+
+  flutter:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+      - name: Analyze and test
+        working-directory: app
+        run: flutter pub get && flutter analyze && flutter test
+      - name: Web build smoke test
+        working-directory: app
+        run: flutter build web --release

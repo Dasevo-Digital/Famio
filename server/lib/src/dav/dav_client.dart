@@ -75,6 +75,7 @@ class DavClient {
     this.username = '',
     this.password = '',
     this.bearer,
+    this.verifyUrl,
     this.timeout = const Duration(seconds: 30),
   });
 
@@ -85,6 +86,7 @@ class DavClient {
   /// OAuth instead of a password (Google): returns an access token, a new
   /// one when [force]d after the server refused the old one.
   final Future<String> Function({bool force})? bearer;
+  final Future<void> Function(Uri url)? verifyUrl;
   final Duration timeout;
 
   static const _maxBytes = 20 * 1024 * 1024;
@@ -100,6 +102,7 @@ class DavClient {
     var renewed = false;
     var forceToken = false;
     for (var hop = 0; hop < 6; hop++) {
+      await verifyUrl?.call(target);
       final token = bearer == null ? null : await bearer!(force: forceToken);
       forceToken = false;
       final request = http.Request(method, target)

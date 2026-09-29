@@ -139,7 +139,7 @@ void main() {
     return (jsonDecode(response.body) as Map).cast();
   }
 
-  Future<String> setup(Uri root) async =>
+  Future<String> setup(Uri root, String setupCode) async =>
       (jsonDecode(
                 (await http.post(
                   root.resolve('api/auth/setup'),
@@ -147,6 +147,7 @@ void main() {
                   body: jsonEncode({
                     'username': 'oma',
                     'password': 'geheim123',
+                    'setupCode': setupCode,
                   }),
                 )).body,
               )
@@ -161,7 +162,7 @@ void main() {
       0,
     );
     final remoteBase = Uri.parse('http://localhost:${remoteServer.port}/');
-    final remoteToken = await setup(remoteBase);
+    final remoteToken = await setup(remoteBase, remoteApp.setupCode!);
     final secret =
         (await call(remoteBase, 'POST', 'api/me/app-passwords', remoteToken, {
               'name': 'Google-Attrappe',
@@ -186,7 +187,7 @@ void main() {
     app = FamioServerApp.inMemory(googleBase: google.base);
     server = await io.serve(app.handler, InternetAddress.loopbackIPv4, 0);
     base = Uri.parse('http://localhost:${server.port}/');
-    token = await setup(base);
+    token = await setup(base, app.setupCode!);
   });
 
   tearDown(() async {

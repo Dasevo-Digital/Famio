@@ -31,23 +31,42 @@ class MainActivity : FlutterActivity() {
                         result,
                     )
                     "start" -> {
-                        prefs().edit()
+                        val prefs = prefs()
+                        LocationSecrets.migrate(this)
+                        val secrets = LocationSecrets.prefs(this)
+                        val wasEnabled = prefs.getBoolean("enabled", false)
+                        prefs.edit()
                             .putBoolean("enabled", true)
+                            .putLong("alertsSince", System.currentTimeMillis())
+                            .apply {
+                                if (!wasEnabled) {
+                                    for (key in locationDiagnosticKeys) remove(key)
+                                }
+                            }
+                            .apply()
+                        secrets.edit()
                             .putString("url", call.argument<String>("url"))
                             .putString("token", call.argument<String>("token"))
                             .putString("pin", call.argument<String>("pin"))
                             .putString("device", call.argument<String>("device"))
-                            .putLong("alertsSince", System.currentTimeMillis())
                             .apply()
                         LocationService.start(this)
                         result.success(null)
                     }
                     "stop" -> {
                         prefs().edit().clear().apply()
+                        LocationSecrets.clear(this)
                         LocationService.stop(this)
                         result.success(null)
                     }
-                    "token" -> result.success(prefs().getString("token", null))
+                    "token" -> {
+                        LocationSecrets.migrate(this)
+                        result.success(LocationSecrets.prefs(this).getString("token", null))
+                    }
+                    // iOS uses system geofences for its low-power background
+                    // strategy. Android already has a foreground location
+                    // service and deliberately keeps this as a no-op.
+                    "setRegions" -> result.success(null)
                     "openBatterySettings" -> {
                         openBatterySettings()
                         result.success(null)
@@ -116,12 +135,13 @@ class MainActivity : FlutterActivity() {
         checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
     private fun status(): Map<String, Any?> {
+        val prefs = prefs()
         val locations = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val power = getSystemService(Context.POWER_SERVICE) as PowerManager
         val background = Build.VERSION.SDK_INT < 29 ||
             granted(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
         return mapOf(
-            "enabled" to prefs().getBoolean("enabled", false),
+            "enabled" to prefs.getBoolean("enabled", false),
             "permission" to when {
                 !LocationService.hasPermission(this) -> "none"
                 !background -> "foreground"
@@ -132,8 +152,26 @@ class MainActivity : FlutterActivity() {
             "batteryUnrestricted" to power.isIgnoringBatteryOptimizations(packageName),
             "notifications" to (Build.VERSION.SDK_INT < 33 ||
                 granted(Manifest.permission.POST_NOTIFICATIONS)),
+            "lastFixAt" to prefs.timeOrNull("lastFixAt"),
+            "lastSuccessfulUploadAt" to prefs.timeOrNull("lastSuccessfulUploadAt"),
+            "lastServerResponseAt" to prefs.timeOrNull("lastServerResponseAt"),
+            "lastServerStatus" to prefs.getString("lastServerStatus", null),
+            "lastErrorAt" to prefs.timeOrNull("lastErrorAt"),
+            "lastError" to prefs.getString("lastError", null),
         )
     }
+
+    private fun android.content.SharedPreferences.timeOrNull(key: String): Long? =
+        getLong(key, 0).takeIf { it > 0 }
+
+    private val locationDiagnosticKeys = listOf(
+        "lastFixAt",
+        "lastSuccessfulUploadAt",
+        "lastServerResponseAt",
+        "lastServerStatus",
+        "lastErrorAt",
+        "lastError",
+    )
 
     /**
      * Android asks in two steps: first "while using the app", then (on its

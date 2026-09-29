@@ -56,6 +56,8 @@ Future<void> main(List<String> args) async {
     ingressAuth: config.ingressAuth,
     trustProxy: config.trustProxy,
     maxUploadMb: config.maxUploadMb,
+    maxStorageMb: config.maxStorageMb,
+    allowPrivateCalendarHosts: config.allowPrivateCalendarHosts,
     dataKey: key,
     keySeparate: keySeparate,
     requireTls: config.requireTls,

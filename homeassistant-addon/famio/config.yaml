@@ -1,5 +1,5 @@
 name: Famio
-version: "0.20.0"
+version: "0.21.0"
 slug: famio
 description: Familien-Organizer in der Seitenleiste – als eigener Server oder verbunden mit eurem Famio-Server.
 url: https://gitea.status403.de/superkuh/Famio
@@ -19,7 +19,7 @@ ports:
   8765/tcp: 8765
   8766/tcp: 8766
 ports_description:
-  8765/tcp: Famio-Server für die Apps (unverschlüsselt, nur Heimnetz)
+  8765/tcp: Famio-Server für Home-Assistant-Ingress (API verlangt HTTPS)
   8766/tcp: Famio-Server für die Apps (HTTPS mit eigenem Zertifikat)
 options:
   mode: server

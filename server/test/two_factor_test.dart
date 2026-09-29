@@ -170,7 +170,11 @@ void main() {
         base,
         'POST',
         'api/auth/setup',
-        body: {'username': 'mama', 'password': 'geheim123'},
+        body: {
+          'username': 'mama',
+          'password': 'geheim123',
+          'setupCode': app.setupCode,
+        },
       );
       admin = setup['token'] as String;
       await call(

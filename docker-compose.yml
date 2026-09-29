@@ -16,7 +16,7 @@ services:
       # Home network access for the apps. Behind a reverse proxy on the same
       # host use "127.0.0.1:8765:8765" (or deploy/npm/docker-compose.yml), so
       # nothing bypasses HTTPS.
-      - "8765:8765"
+      - "127.0.0.1:8765:8765"
       # HTTPS with Famio's own certificate for apps in the home network.
       - "8766:8766"
     volumes:
@@ -28,6 +28,10 @@ services:
       # Time zone of the family: calendar feeds and imported calendars.
       TZ: Europe/Berlin
       FAMIO_KEY_FILE: /keys/famio.key
+      # Plain HTTP is limited to loopback above and rejected for API access
+      # from the network. Set this explicitly to "false" only while migrating
+      # an old client that cannot use the HTTPS port yet.
+      FAMIO_REQUIRE_TLS: "true"
       # Address under which Famio is reachable from the internet (HTTPS via a
       # reverse proxy). Needed for Google Calendar to subscribe to Famio feeds;
       # Apple Calendar in the home network works without it.
@@ -35,6 +39,3 @@ services:
       # Behind a reverse proxy only (see deploy/npm/README.md):
       # FAMIO_TRUST_PROXY: "true"
       # FAMIO_MAX_UPLOAD_MB: "100"
-      # Once every app connects via HTTPS (proxy or port 8766), refuse plain
-      # HTTP from the network:
-      # FAMIO_REQUIRE_TLS: "true"

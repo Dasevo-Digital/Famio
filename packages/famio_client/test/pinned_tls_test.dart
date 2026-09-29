@@ -12,12 +12,13 @@ void main() {
   late HttpServer server;
   late TlsIdentity identity;
   late Uri url;
+  late FamioServerApp app;
 
   setUp(() async {
     identity = TlsIdentity.loadOrCreate(
       Directory.systemTemp.createTempSync('famio_pin_').path,
     );
-    final app = FamioServerApp.inMemory();
+    app = FamioServerApp.inMemory();
     server = await io.serve(
       app.handler,
       InternetAddress.loopbackIPv4,
@@ -27,7 +28,10 @@ void main() {
     url = Uri.parse('https://localhost:${server.port}/');
   });
 
-  tearDown(() => server.close(force: true));
+  tearDown(() async {
+    await server.close(force: true);
+    await app.close();
+  });
 
   test('first contact shows the fingerprint the server prints', () async {
     expect(
@@ -56,6 +60,7 @@ void main() {
       username: 'papa',
       displayName: 'Papa',
       password: 'geheim123',
+      setupCode: app.setupCode,
     );
     SyncEngine device() => SyncEngine(
       store: LocalStore.open(':memory:'),

@@ -266,8 +266,8 @@ Dokumente). Umgesetzt ist:
 
 | Bereich | Schutz |
 |---|---|
-| Transport | Über das Internet nur HTTPS (die App lehnt `http://` zu öffentlichen Adressen ab); im Heimnetz HTTPS auf Port 8766 mit eigener Zertifizierungsstelle; die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers (bleibt bei der automatischen Erneuerung gleich); optional `FAMIO_REQUIRE_TLS`; HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
-| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen, Einrichtungscode für den ersten Admin über das Internet; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht) und Single Sign-On per OpenID Connect |
+| Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
+| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen, Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store` |
@@ -285,9 +285,10 @@ Bewusst offen bzw. Aufgabe des Betriebs:
   Passwortmanager). Fehlt sie, startet der Server bewusst nicht, statt
   leer neu anzufangen. Im Home-Assistant-Add-on liegt sie in `/data`;
   dort die Backups mit Passwort verschlüsseln (HA-Standard).
-- **Unverschlüsseltes HTTP** (Port 8765) bleibt für den Proxy und ältere
-  Apps erreichbar. Sobald alle Geräte HTTPS nutzen (Einstellungen →
-  „Jetzt verschlüsseln“), `FAMIO_REQUIRE_TLS=true` setzen.
+- **Unverschlüsseltes HTTP** (Port 8765) dient nur Loopback, Healthcheck und
+  vertrauenswürdigen HTTPS-Proxys. Die API lehnt Klartext aus dem Netz
+  standardmäßig ab. Nur für eine befristete Migration alter Clients kann
+  `FAMIO_REQUIRE_TLS=false` gesetzt werden.
 - **Kalender-Feeds** sind geheime Links; wer den Link hat, sieht die
   Termine. Google/Apple speichern die abonnierten Termine – vertrauliche
   Termine sind nie enthalten.
@@ -395,7 +396,10 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
 | `FAMIO_PUBLIC_URL` | Öffentliche HTTPS-Adresse (für Google/iCloud-Kalenderabos) |
 | `FAMIO_TRUST_PROXY` | Client-IP aus `X-Forwarded-For` (nur hinter Reverse-Proxy) |
 | `FAMIO_MAX_UPLOAD_MB` | Maximale Dateigröße (Standard 100) |
+| `FAMIO_MAX_STORAGE_MB` | Gesamtes Upload-Speicherbudget der Familie in MB (Standard 5120) |
+| `FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS` | Private/HTTP-ICS- und CalDAV-Ziele erlauben (Standard `false`; nur für bewusst lokal betriebene Kalender) |
 | `FAMIO_PORT`, `FAMIO_DATA_DIR` | Port (8765) und Datenverzeichnis |
+| `FAMIO_REQUIRE_TLS` | Klartext-API aus dem Netz sperren (Standard `true`; `false` nur befristet für alte Clients) |
 | `FAMIO_TLS_NAMES` | Zusätzliche Hostnamen/IP-Adressen für das HTTPS-Zertifikat (Port 8766), z. B. `192.168.1.5,famio.fritz.box` |
 | `FAMIO_WEB_DIR` | Ordner der Web-App (Standard: `web/` neben `bin/` im Server-Paket) |
 
@@ -408,8 +412,8 @@ Home-Assistant-Benutzer, als Client (`mode: client`) mit dem Famio-Konto,
 dessen Sitzung das Add-on je Home-Assistant-Benutzer aufbewahrt.
 
 Beim ersten Start ohne Konto schreibt der Server einen **Einrichtungscode**
-ins Log. Er wird nur verlangt, wenn das erste Konto über einen Proxy oder das
-Internet angelegt wird – im Heimnetz direkt auf Port 8765 nicht.
+ins Log. Er wird bei jeder Ersteinrichtung verlangt, auch direkt im Heimnetz,
+damit kein anderes Gerät den frisch gestarteten Server übernehmen kann.
 
 Prüfen einer Installation (arm64/amd64, Docker, LXC, hinter NPM):
 

@@ -13,9 +13,11 @@ class ServerConfig {
     this.publicUrl,
     this.trustProxy = false,
     this.maxUploadMb = 100,
+    this.maxStorageMb = 5120,
+    this.allowPrivateCalendarHosts = false,
     this.keyFile,
     this.tlsPort = 8766,
-    this.requireTls = false,
+    this.requireTls = true,
     this.tlsNames = const [],
     this.webDir,
     this.upstream,
@@ -65,9 +67,15 @@ class ServerConfig {
       publicUrl: _nonEmpty(env['FAMIO_PUBLIC_URL']),
       trustProxy: _flag(env['FAMIO_TRUST_PROXY']),
       maxUploadMb: int.tryParse(env['FAMIO_MAX_UPLOAD_MB'] ?? '') ?? 100,
+      maxStorageMb: int.tryParse(env['FAMIO_MAX_STORAGE_MB'] ?? '') ?? 5120,
+      allowPrivateCalendarHosts: _flag(
+        env['FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS'],
+      ),
       keyFile: _nonEmpty(env['FAMIO_KEY_FILE']),
       tlsPort: int.tryParse(env['FAMIO_TLS_PORT'] ?? '') ?? 8766,
-      requireTls: _flag(env['FAMIO_REQUIRE_TLS']),
+      // Secure by default. Older installations can deliberately opt out
+      // with FAMIO_REQUIRE_TLS=false while their clients are migrated.
+      requireTls: _flag(env['FAMIO_REQUIRE_TLS'], defaultValue: true),
       tlsNames: [
         for (final n in (env['FAMIO_TLS_NAMES'] ?? '').split(RegExp(r'[,\s]+')))
           if (n.trim().isNotEmpty) n.trim().toLowerCase(),
@@ -124,6 +132,12 @@ class ServerConfig {
   /// Maximum upload size (documents, photos).
   final int maxUploadMb;
 
+  /// Hard storage budget for all uploads of this Famio installation.
+  final int maxStorageMb;
+
+  /// Explicit opt-in for CalDAV/ICS servers in the home network.
+  final bool allowPrivateCalendarHosts;
+
   /// Key for encrypting database and files at rest. Keep it outside the
   /// data directory (and its backups); defaults to `<dataDir>/famio.key`.
   final String? keyFile;
@@ -142,8 +156,10 @@ class ServerConfig {
   final List<String> tlsNames;
 }
 
-bool _flag(String? v) =>
-    const {'1', 'true', 'yes', 'on'}.contains(v?.trim().toLowerCase());
+bool _flag(String? v, {bool defaultValue = false}) {
+  if (v == null || v.trim().isEmpty) return defaultValue;
+  return const {'1', 'true', 'yes', 'on'}.contains(v.trim().toLowerCase());
+}
 
 String? _nonEmpty(String? v) => v == null || v.trim().isEmpty ? null : v.trim();
 

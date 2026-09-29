@@ -9,16 +9,20 @@ import 'package:test/test.dart';
 import 'package:web_socket_channel/io.dart';
 
 void main() {
+  late FamioServerApp app;
   late HttpServer server;
   late Uri base;
 
   setUp(() async {
-    final app = FamioServerApp.inMemory();
+    app = FamioServerApp.inMemory();
     server = await io.serve(app.handler, InternetAddress.loopbackIPv4, 0);
     base = Uri.parse('http://localhost:${server.port}');
   });
 
-  tearDown(() => server.close(force: true));
+  tearDown(() async {
+    await server.close(force: true);
+    await app.close();
+  });
 
   Future<(int, Map<String, Object?>)> call(
     String method,
@@ -45,6 +49,7 @@ void main() {
         'username': 'mama',
         'displayName': 'Mama',
         'password': 'geheim123',
+        'setupCode': app.setupCode,
       },
     );
     expect(status, 200);
@@ -108,6 +113,67 @@ void main() {
 
     await call('POST', '/api/auth/logout', token: child);
     expect((await call('GET', '/api/me', token: child)).$1, 401);
+  });
+
+  test(
+    'members can delete their own account after fresh authentication',
+    () async {
+      final admin = await setupAdmin();
+      final (_, created) = await call(
+        'POST',
+        '/api/members',
+        token: admin,
+        body: {
+          'username': 'papa',
+          'displayName': 'Papa',
+          'password': 'geheim123',
+          'isAdmin': true,
+        },
+      );
+      expect(created['id'], isNotNull);
+      final (_, login) = await call(
+        'POST',
+        '/api/auth/login',
+        body: {'username': 'papa', 'password': 'geheim123'},
+      );
+      final papa = login['token'] as String;
+
+      expect(
+        (await call(
+          'DELETE',
+          '/api/me',
+          token: papa,
+          body: {'password': 'falsch'},
+        )).$1,
+        403,
+      );
+      expect(
+        (await call(
+          'DELETE',
+          '/api/me',
+          token: papa,
+          body: {'password': 'geheim123'},
+        )).$1,
+        200,
+      );
+      expect((await call('GET', '/api/me', token: papa)).$1, 401);
+      expect(
+        (await call('GET', '/api/members', token: admin)).$2['members'],
+        hasLength(1),
+      );
+    },
+  );
+
+  test('the last administrator cannot delete their own account', () async {
+    final admin = await setupAdmin();
+    final result = await call(
+      'DELETE',
+      '/api/me',
+      token: admin,
+      body: {'password': 'geheim123'},
+    );
+    expect(result.$1, 400);
+    expect(result.$2['error'], 'last_admin');
   });
 
   test('sync pushes, pulls and resolves conflicts', () async {

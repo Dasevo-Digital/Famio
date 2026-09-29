@@ -21,7 +21,8 @@ class LocationService {
     required this.records,
     required this.accounts,
     required this.onChanged,
-  });
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final Database db;
   final RecordStore records;
@@ -29,6 +30,7 @@ class LocationService {
 
   /// Called after records changed, e.g. to notify connected apps.
   final void Function() onChanged;
+  final DateTime Function() _clock;
 
   static const retention = Duration(days: 7);
 
@@ -99,7 +101,7 @@ class LocationService {
     String? device,
     String? platform,
   }) {
-    final now = DateTime.now().toUtc();
+    final now = _clock().toUtc();
     var status = _state(member.id);
     if (status.paused &&
         status.pausedUntil != null &&
@@ -133,6 +135,25 @@ class LocationService {
         paused: true,
         pausedUntil: status.pausedUntil?.toLocal(),
         intervalSeconds: 15 * 60,
+      );
+    }
+
+    // A schedule is a privacy boundary, not merely a UI preference: while it
+    // is inactive, incoming positions are neither stored nor exposed. The
+    // phone keeps its existing low-power reporting behaviour. Sharing resumes
+    // only with the next server contact, so an old coordinate never becomes
+    // visible merely because a window began.
+    final schedule = scheduleFor(member.id);
+    if (schedule != null && !schedule.activeAt(_clock())) {
+      final changed = _publish(
+        member.id,
+        previous,
+        MemberLocation(memberId: member.id, state: SharingState.scheduled),
+      );
+      if (changed) onChanged();
+      return LocationReportResult(
+        paused: false,
+        intervalSeconds: reportInterval.inSeconds,
       );
     }
 
@@ -307,6 +328,47 @@ class LocationService {
     ]);
   }
 
+  /// The target's time window, or null when sharing is not scheduled.
+  LocationSchedule? scheduleFor(String memberId) {
+    final row = db.select(
+      'SELECT sharing_schedule FROM location_state WHERE member_id = ?',
+      [memberId],
+    ).firstOrNull;
+    final raw = row?['sharing_schedule'] as String?;
+    if (raw == null) return null;
+    try {
+      return LocationSchedule.fromJson((jsonDecode(raw) as Map).cast());
+    } on FormatException {
+      // A broken legacy value must never accidentally expose a location.
+      return null;
+    }
+  }
+
+  /// Sets or removes a recurring schedule and immediately removes a visible
+  /// location if the new schedule is inactive now.
+  void setSchedule(String memberId, LocationSchedule? schedule) {
+    db.execute(
+      'INSERT INTO location_state (member_id, sharing_schedule) VALUES (?, ?)'
+      ' ON CONFLICT(member_id) DO UPDATE SET'
+      ' sharing_schedule = excluded.sharing_schedule',
+      [memberId, schedule == null ? null : jsonEncode(schedule.toJson())],
+    );
+    if (schedule != null && !schedule.activeAt(_clock())) {
+      final previous = _current(memberId);
+      final changed = _publish(
+        memberId,
+        previous,
+        MemberLocation(memberId: memberId, state: SharingState.scheduled),
+      );
+      if (changed) onChanged();
+    } else {
+      // Removing a schedule must immediately restore the normal sharing
+      // state; waiting for the next phone heartbeat would leave the UI stuck
+      // on "scheduled".
+      _republishState(memberId);
+    }
+  }
+
   /// Publishes [next] unless it only differs from [previous] by a small
   /// move or a recent heartbeat. Returns whether anything was written.
   bool _publish(
@@ -319,6 +381,7 @@ class LocationService {
         previous.placeId == next.placeId &&
         previous.pausedUntil == next.pausedUntil &&
         previous.lastContact != null &&
+        next.lastContact != null &&
         next.lastContact!.difference(previous.lastContact!) < _heartbeat) {
       final moved = previous.hasPosition && next.hasPosition
           ? distanceMeters(
@@ -352,7 +415,7 @@ class LocationService {
     _setPause(
       memberId,
       paused: true,
-      until: duration == null ? null : DateTime.now().toUtc().add(duration),
+      until: duration == null ? null : _clock().toUtc().add(duration),
       by: byMember,
     );
     _republishState(memberId);
@@ -367,8 +430,7 @@ class LocationService {
   bool isPaused(String memberId) {
     final s = _state(memberId);
     return s.paused &&
-        (s.pausedUntil == null ||
-            DateTime.now().toUtc().isBefore(s.pausedUntil!));
+        (s.pausedUntil == null || _clock().toUtc().isBefore(s.pausedUntil!));
   }
 
   void _setPause(
@@ -387,6 +449,7 @@ class LocationService {
   void _republishState(String memberId) {
     final s = _state(memberId);
     final previous = _current(memberId);
+    final scheduledOff = scheduleFor(memberId)?.activeAt(_clock()) == false;
     records.writeAsServer([
       SyncRecord(
         collection: Collections.memberLocations,
@@ -395,20 +458,23 @@ class LocationService {
           memberId: memberId,
           state: s.paused
               ? SharingState.paused
-              : (previous?.state == SharingState.paused
+              : scheduledOff
+              ? SharingState.scheduled
+              : (previous?.state == SharingState.paused ||
+                        previous?.state == SharingState.scheduled
                     ? SharingState.active
                     : previous?.state ?? SharingState.active),
-          latitude: previous?.latitude,
-          longitude: previous?.longitude,
-          accuracy: previous?.accuracy,
-          at: previous?.at,
-          lastContact: previous?.lastContact,
+          latitude: scheduledOff ? null : previous?.latitude,
+          longitude: scheduledOff ? null : previous?.longitude,
+          accuracy: scheduledOff ? null : previous?.accuracy,
+          at: scheduledOff ? null : previous?.at,
+          lastContact: scheduledOff ? null : previous?.lastContact,
           pausedUntil: s.paused ? s.pausedUntil : null,
-          placeId: s.placeId,
-          placeSince: s.placeSince,
-          battery: previous?.battery,
-          device: previous?.device,
-          platform: previous?.platform,
+          placeId: scheduledOff ? null : s.placeId,
+          placeSince: scheduledOff ? null : s.placeSince,
+          battery: scheduledOff ? null : previous?.battery,
+          device: scheduledOff ? null : previous?.device,
+          platform: scheduledOff ? null : previous?.platform,
         ).toData(),
         updatedAt: 0,
       ),

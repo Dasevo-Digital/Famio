@@ -52,7 +52,11 @@ void main() {
       await send(
         'POST',
         'api/auth/setup',
-        body: {'username': 'mama', 'password': 'geheim123'},
+        body: {
+          'username': 'mama',
+          'password': 'geheim123',
+          'setupCode': app.setupCode,
+        },
       ),
     );
     final result = {
@@ -383,6 +387,7 @@ void main() {
                   body: jsonEncode({
                     'username': 'mama',
                     'password': 'geheim123',
+                    'setupCode': small.setupCode,
                   }),
                 ),
               )['token']
@@ -434,14 +439,21 @@ void main() {
       );
     });
 
-    test('first setup through a proxy needs the setup code', () async {
+    test('first setup always needs the setup code', () async {
       const proxied = {'x-forwarded-for': '203.0.113.9'};
       final health = json(await send('GET', 'api/health', headers: proxied));
       expect(health['setupCodeRequired'], isTrue);
       expect(
         json(await send('GET', 'api/health'))['setupCodeRequired'],
-        isFalse,
+        isTrue,
       );
+
+      final localDenied = await send(
+        'POST',
+        'api/auth/setup',
+        body: {'username': 'eve', 'password': 'geheim123'},
+      );
+      expect(localDenied.statusCode, 403);
 
       final denied = await send(
         'POST',

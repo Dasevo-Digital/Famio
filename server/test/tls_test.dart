@@ -160,6 +160,7 @@ void main() {
       final setup = await post('/api/auth/setup', {
         'username': 'mama',
         'password': 'geheim123',
+        'setupCode': app.setupCode,
       });
       final token = (jsonDecode(setup.body) as Map)['token'];
 

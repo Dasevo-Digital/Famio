@@ -1,6 +1,7 @@
 import CoreLocation
 import CryptoKit
 import Flutter
+import Security
 import UIKit
 import UserNotifications
 
@@ -16,6 +17,16 @@ import UserNotifications
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    super.applicationDidBecomeActive(application)
+    LocationReporter.shared.applicationDidBecomeActive()
+  }
+
+  override func applicationDidEnterBackground(_ application: UIApplication) {
+    super.applicationDidEnterBackground(application)
+    LocationReporter.shared.applicationDidEnterBackground()
+  }
+
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioLocation") {
@@ -27,9 +38,9 @@ import UserNotifications
 /// Shares the iPhone's position with the family while enabled, like the
 /// Android LocationService: it reports to the Famio server itself with a
 /// token that can only report positions, also while the app is in the
-/// background. iOS relaunches the app after it was closed when the phone
-/// moves noticeably (significant location changes), and shows the blue
-/// location indicator whenever the position is used in the background.
+/// background. In the background it uses significant changes and visits;
+/// continuous location updates run only while the app is visible. iOS
+/// relaunches the app after it was closed when the phone moves noticeably.
 final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDelegate {
   static let shared = LocationReporter()
 
@@ -37,25 +48,76 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   private let defaults = UserDefaults.standard
   private var pending: [[String: Any]] = []
   private var paused = false
+  private var requestingRegionFix = false
   private var lastFixUpload = Date.distantPast
   private var permissionWaiters: [FlutterResult] = []
+  private static let diagnosticKeys = [
+    "lastFixAt", "lastSuccessfulUploadAt", "lastServerResponseAt",
+    "lastServerStatus", "lastErrorAt", "lastError",
+  ]
   private lazy var session = URLSession(
     configuration: .ephemeral, delegate: self, delegateQueue: nil)
 
   private static let maxPending = 500
+  private static let regionPrefix = "famio.place."
+  private static let maxRegions = 20
+  private static let secretNames = ["url", "token", "pin", "device"]
 
   private override init() {
     super.init()
     manager.delegate = self
     manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
     manager.distanceFilter = 50
-    manager.pausesLocationUpdatesAutomatically = false
+    // iOS may pause foreground updates when they are not useful. Background
+    // tracking is event based, so it never needs a permanently active GPS.
+    manager.pausesLocationUpdatesAutomatically = true
     manager.activityType = .other
     UIDevice.current.isBatteryMonitoringEnabled = true
   }
 
   private func key(_ name: String) -> String { "famio.location.\(name)" }
   private var enabled: Bool { defaults.bool(forKey: key("enabled")) }
+
+  /// Background location needs these values before Flutter is running. Keep
+  /// them in the Keychain, available after the first unlock but never synced.
+  private func secret(_ name: String) -> String? {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "de.status403.famio.location",
+      kSecAttrAccount as String: name,
+      kSecReturnData as String: true,
+      kSecMatchLimit as String: kSecMatchLimitOne,
+    ]
+    var item: CFTypeRef?
+    if SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess,
+      let data = item as? Data, let value = String(data: data, encoding: .utf8) {
+      return value
+    }
+    // One-time migration from versions that used UserDefaults.
+    guard let legacy = defaults.string(forKey: key(name)) else { return nil }
+    setSecret(legacy, name: name)
+    defaults.removeObject(forKey: key(name))
+    return legacy
+  }
+
+  private func setSecret(_ value: String?, name: String) {
+    let query: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: "de.status403.famio.location",
+      kSecAttrAccount as String: name,
+    ]
+    guard let value else {
+      SecItemDelete(query as CFDictionary)
+      return
+    }
+    let attributes: [String: Any] = [
+      kSecValueData as String: Data(value.utf8),
+      kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+    ]
+    if SecItemUpdate(query as CFDictionary, attributes as CFDictionary) == errSecItemNotFound {
+      SecItemAdd((query.merging(attributes) { _, new in new }) as CFDictionary, nil)
+    }
+  }
 
   // MARK: - Flutter channel
 
@@ -71,9 +133,11 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       case "requestPermission":
         self.requestPermission(background: args["background"] as? Bool ?? false, result: result)
       case "start":
-        for name in ["url", "token", "pin", "device"] {
-          self.defaults.set(args[name] as? String, forKey: self.key(name))
+        let wasEnabled = self.enabled
+        for name in Self.secretNames {
+          self.setSecret(args[name] as? String, name: name)
         }
+        if !wasEnabled { self.clearDiagnostics() }
         self.defaults.set(Date().timeIntervalSince1970 * 1000, forKey: self.key("alertsSince"))
         self.defaults.set(true, forKey: self.key("enabled"))
         self.start()
@@ -82,7 +146,10 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
         self.stop()
         result(nil)
       case "token":
-        result(self.defaults.string(forKey: self.key("token")))
+        result(self.secret("token"))
+      case "setRegions":
+        self.setRegions(args["regions"] as? [Any] ?? [])
+        result(nil)
       case "openBatterySettings":
         result(nil)  // iOS has no per-app battery optimisation.
       case "openAppSettings":
@@ -105,7 +172,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   }
 
   private func status() -> [String: Any] {
-    [
+    var result: [String: Any] = [
       "enabled": enabled,
       "permission": permission(),
       "precise": manager.accuracyAuthorization == .fullAccuracy,
@@ -113,6 +180,14 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       "batteryUnrestricted": true,
       "notifications": true,
     ]
+    for name in Self.diagnosticKeys {
+      if let value = defaults.object(forKey: key(name)) { result[name] = value }
+    }
+    return result
+  }
+
+  private func clearDiagnostics() {
+    for name in Self.diagnosticKeys { defaults.removeObject(forKey: key(name)) }
   }
 
   /// First "while using the app", then (a second request) "always", which
@@ -160,32 +235,108 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     if enabled { start() }
   }
 
+  /// Continuous GPS is useful while the map is open, but not while Famio is
+  /// in the background. The latter is handled by significant changes/visits.
+  func applicationDidBecomeActive() {
+    if enabled { start() }
+  }
+
+  func applicationDidEnterBackground() {
+    manager.stopUpdatingLocation()
+    manager.showsBackgroundLocationIndicator = false
+  }
+
   private func start() {
     let status = manager.authorizationStatus
     guard status == .authorizedAlways || status == .authorizedWhenInUse else {
       report(state: "denied")
       return
     }
-    manager.allowsBackgroundLocationUpdates = true
-    manager.showsBackgroundLocationIndicator = true
-    if !paused {
+    manager.allowsBackgroundLocationUpdates = status == .authorizedAlways
+    // Do not merely hide a continuously-running GPS request. There is none
+    // in the background; significant-change and visit monitoring wake us
+    // only when iOS has an event to deliver.
+    manager.showsBackgroundLocationIndicator = false
+    if !paused && UIApplication.shared.applicationState == .active {
       manager.startUpdatingLocation()
+    } else {
+      manager.stopUpdatingLocation()
     }
     if status == .authorizedAlways {
       // Wakes (and relaunches) the app on bigger moves, even when closed.
       manager.startMonitoringSignificantLocationChanges()
       manager.startMonitoringVisits()
+      restoreRegions()
+    } else {
+      manager.stopMonitoringSignificantLocationChanges()
+      manager.stopMonitoringVisits()
     }
     report(state: state())
+  }
+
+  /// Registers the family places as low-power wake-up regions. A region
+  /// event requests exactly one fix; the server still decides whether the
+  /// member actually arrived or left based on its normal accuracy rules.
+  private func setRegions(_ rawRegions: [Any]) {
+    // Keep the configuration for an iOS relaunch caused by a region event.
+    defaults.set(rawRegions, forKey: key("regions"))
+    guard manager.authorizationStatus == .authorizedAlways else {
+      stopFamioRegions()
+      return
+    }
+    let regions = rawRegions.compactMap { raw -> CLCircularRegion? in
+      guard let data = raw as? [String: Any],
+        let id = data["id"] as? String,
+        let lat = (data["lat"] as? NSNumber)?.doubleValue,
+        let lon = (data["lon"] as? NSNumber)?.doubleValue,
+        let radius = (data["radius"] as? NSNumber)?.doubleValue
+      else { return nil }
+      let safeRadius = min(max(100, radius), manager.maximumRegionMonitoringDistance)
+      return CLCircularRegion(
+        center: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+        radius: safeRadius,
+        identifier: Self.regionPrefix + id)
+    }
+    let desired = Dictionary(uniqueKeysWithValues: regions.prefix(Self.maxRegions).map {
+      ($0.identifier, $0)
+    })
+    var retainedIds = Set<String>()
+    for current in manager.monitoredRegions where current.identifier.hasPrefix(Self.regionPrefix) {
+      guard let wanted = desired[current.identifier],
+        let existing = current as? CLCircularRegion,
+        existing.center.latitude == wanted.center.latitude,
+        existing.center.longitude == wanted.center.longitude,
+        existing.radius == wanted.radius
+      else {
+        manager.stopMonitoring(for: current)
+        continue
+      }
+      retainedIds.insert(current.identifier)
+    }
+    for region in desired.values where !retainedIds.contains(region.identifier) {
+      manager.startMonitoring(for: region)
+      manager.requestState(for: region)
+    }
+  }
+
+  private func restoreRegions() {
+    setRegions(defaults.array(forKey: key("regions")) ?? [])
+  }
+
+  private func stopFamioRegions() {
+    for region in manager.monitoredRegions where region.identifier.hasPrefix(Self.regionPrefix) {
+      manager.stopMonitoring(for: region)
+    }
   }
 
   func stop() {
     manager.stopUpdatingLocation()
     manager.stopMonitoringSignificantLocationChanges()
     manager.stopMonitoringVisits()
-    for name in ["enabled", "url", "token", "pin", "device", "alertsSince", "pausedUntil"] {
+    for name in ["enabled", "regions", "alertsSince", "pausedUntil"] + Self.diagnosticKeys {
       defaults.removeObject(forKey: key(name))
     }
+    for name in Self.secretNames { setSecret(nil, name: name) }
     pending.removeAll()
   }
 
@@ -198,6 +349,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard enabled, !paused else { return }
+    requestingRegionFix = false
     for location in locations where location.horizontalAccuracy >= 0 {
       add(location)
     }
@@ -216,11 +368,38 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     report(state: state())
   }
 
+  func locationManager(_ manager: CLLocationManager, didEnterRegion region: CLRegion) {
+    requestRegionFix(for: region)
+  }
+
+  func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+    requestRegionFix(for: region)
+  }
+
+  func locationManager(
+    _ manager: CLLocationManager,
+    didDetermineState state: CLRegionState,
+    for region: CLRegion
+  ) {
+    if state == .inside { requestRegionFix(for: region) }
+  }
+
+  private func requestRegionFix(for region: CLRegion) {
+    guard enabled, !paused, !requestingRegionFix,
+      region.identifier.hasPrefix(Self.regionPrefix)
+    else { return }
+    // One temporary request is far cheaper than leaving standard updates on.
+    requestingRegionFix = true
+    manager.requestLocation()
+  }
+
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     // Temporary (no fix yet); updates continue.
+    requestingRegionFix = false
   }
 
   private func add(_ location: CLLocation) {
+    defaults.set(location.timestamp.timeIntervalSince1970 * 1000, forKey: key("lastFixAt"))
     let level = UIDevice.current.batteryLevel
     var fix: [String: Any] = [
       "lat": location.coordinate.latitude,
@@ -238,8 +417,8 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   // MARK: - Server
 
   private func report(state: String) {
-    guard let base = defaults.string(forKey: key("url")).flatMap(URL.init(string:)),
-      let token = defaults.string(forKey: key("token")),
+    guard let base = secret("url").flatMap(URL.init(string:)),
+      let token = secret("token"),
       let url = URL(string: "api/location/report", relativeTo: base)
     else { return }
     let batch = pending
@@ -250,7 +429,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       "platform": "ios",
       "alertsSince": defaults.double(forKey: key("alertsSince")),
     ]
-    if let device = defaults.string(forKey: key("device")) { body["device"] = device }
+    if let device = secret("device") { body["device"] = device }
     var request = URLRequest(url: url, timeoutInterval: 20)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "content-type")
@@ -262,10 +441,15 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     task = UIApplication.shared.beginBackgroundTask(withName: "famio-location") {
       UIApplication.shared.endBackgroundTask(task)
     }
-    session.dataTask(with: request) { [weak self] data, response, _ in
+    session.dataTask(with: request) { [weak self] data, response, error in
       DispatchQueue.main.async {
         defer { UIApplication.shared.endBackgroundTask(task) }
-        guard let self, let http = response as? HTTPURLResponse else { return }
+        guard let self else { return }
+        guard let http = response as? HTTPURLResponse else {
+          self.recordTransferError(error == nil ? "Keine Serverantwort" : "Netzwerkfehler")
+          return
+        }
+        self.recordServerResponse(http.statusCode, uploadedPosition: !batch.isEmpty)
         if (200..<300).contains(http.statusCode) {
           self.pending.removeFirst(min(batch.count, self.pending.count))
           if let data, let answer = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -278,6 +462,22 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     }.resume()
   }
 
+  private func recordServerResponse(_ status: Int, uploadedPosition: Bool) {
+    let now = Date().timeIntervalSince1970 * 1000
+    defaults.set(now, forKey: key("lastServerResponseAt"))
+    defaults.set("HTTP \(status)", forKey: key("lastServerStatus"))
+    if uploadedPosition && (200..<300).contains(status) {
+      defaults.set(now, forKey: key("lastSuccessfulUploadAt"))
+    }
+    defaults.removeObject(forKey: key("lastErrorAt"))
+    defaults.removeObject(forKey: key("lastError"))
+  }
+
+  private func recordTransferError(_ message: String) {
+    defaults.set(Date().timeIntervalSince1970 * 1000, forKey: key("lastErrorAt"))
+    defaults.set(message, forKey: key("lastError"))
+  }
+
   private func apply(_ answer: [String: Any]) {
     let nowPaused = answer["paused"] as? Bool ?? false
     if nowPaused != paused {
@@ -285,7 +485,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       if paused {
         manager.stopUpdatingLocation()
       } else {
-        manager.startUpdatingLocation()
+        start()
       }
     }
     showAlerts(answer["alerts"] as? [[String: Any]] ?? [])
@@ -323,7 +523,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     _ session: URLSession, didReceive challenge: URLAuthenticationChallenge,
     completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
   ) {
-    let pin = defaults.string(forKey: key("pin"))?
+    let pin = secret("pin")?
       .replacingOccurrences(of: ":", with: "").uppercased()
     guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
       let trust = challenge.protectionSpace.serverTrust, let pin, !pin.isEmpty

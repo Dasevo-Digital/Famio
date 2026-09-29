@@ -102,3 +102,19 @@ String ssoResultPage({required bool ok, required String message}) =>
   <p>${_escape.convert(message)}</p>
 </body>
 </html>''';
+
+/// Public Store listing destination for account deletion. It intentionally
+/// carries no account data and sends a member to the signed-in web app, where
+/// the deletion is protected by password and, when enabled, MFA.
+String accountDeletionPage({required bool webApp}) =>
+    '''<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famio – Konto löschen</title><style>
+:root { color-scheme: light dark; --accent: #3f7d6e; }
+body { font-family: system-ui,sans-serif; max-width:34rem; margin:3rem auto; padding:0 1rem; line-height:1.5; }
+h1,a { color:var(--accent); } a { font-weight:600; }
+</style></head><body><h1>Famio-Konto löschen</h1>
+<p>Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.</p>
+${webApp ? '<p><a href="app/">Bei Famio anmelden und Konto löschen</a></p>' : '<p>Bitte Famio im Browser oder in der App öffnen und unter Einstellungen → Mein Konto löschen fortfahren.</p>'}
+<p>Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.</p>
+</body></html>''';
