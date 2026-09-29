@@ -1,6 +1,6 @@
 #!/bin/sh
 # Creates (or reuses) a Gitea release and uploads verified release artifacts.
-# Usage: GITEA_TOKEN=... tool/publish_gitea_release.sh 0.22.0 /path/to/release
+# Usage: GITEA_TOKEN=... tool/publish_gitea_release.sh VERSION /path/to/release
 set -eu
 
 VERSION=${1:?Usage: GITEA_TOKEN=... $0 VERSION RELEASE_DIR}
