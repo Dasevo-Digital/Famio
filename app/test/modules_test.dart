@@ -90,6 +90,22 @@ void main() {
     expect(find.text('Mein Profil'), findsOneWidget);
   });
 
+  testWidgets('desktop rail fills the height and adapts its scale', (
+    tester,
+  ) async {
+    await open(tester, 'Start');
+    final homeIcon = find.byIcon(AppIcons.house).first;
+    final tallIconSize = tester.widget<Icon>(homeIcon).size!;
+    expect(find.text('Einstellungen'), findsOneWidget);
+
+    tester.view.physicalSize = const Size(1200, 600);
+    await tester.pumpAndSettle();
+
+    final lowIconSize = tester.widget<Icon>(homeIcon).size!;
+    expect(lowIconSize, lessThan(tallIconSize));
+    expect(find.text('Einstellungen'), findsNothing);
+  });
+
   testWidgets('documents: filter by category and show lock for private ones', (
     tester,
   ) async {

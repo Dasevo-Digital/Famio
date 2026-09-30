@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import '../design/app_icons.dart';
@@ -293,26 +295,48 @@ class _SideRail extends StatelessWidget {
         right: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // All sections should fit without scrolling on laptops: smaller
-            // items when the window is low.
-            final compact = constraints.maxHeight < 140 + sections.length * 76;
-            // Still too low (e.g. an iPad in landscape): icons only.
-            final iconsOnly =
-                constraints.maxHeight < 70 + sections.length * 47;
-            return SingleChildScrollView(
-              padding: EdgeInsets.symmetric(vertical: compact ? 10 : 16),
+            // The desktop rail deliberately has no scroll area. Its logo and
+            // items divide all available vertical space, so it remains calm
+            // and balanced on a 13" laptop as well as a tall desktop window.
+            const outerPadding = 12.0;
+            final usableHeight = math.max(
+              0.0,
+              constraints.maxHeight - outerPadding * 2,
+            );
+            final logoExtent = (usableHeight * 0.11)
+                .clamp(52.0, 88.0)
+                .toDouble();
+            final itemExtent = sections.isEmpty
+                ? 0.0
+                : math.max(0.0, (usableHeight - logoExtent) / sections.length);
+            // Below this there is not enough room for a useful text label.
+            // Tooltips keep every destination discoverable in icon mode.
+            final showLabel = itemExtent >= 45;
+            final iconSize = (itemExtent * (showLabel ? 0.42 : 0.64))
+                .clamp(18.0, 36.0)
+                .toDouble();
+            final labelSize = (itemExtent * 0.18).clamp(9.0, 13.0).toDouble();
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: outerPadding),
               child: Column(
                 children: [
-                  _Logo(compact: compact),
-                  SizedBox(height: compact ? 8 : 16),
+                  SizedBox(
+                    height: logoExtent,
+                    child: _Logo(
+                      size: (logoExtent * 0.62).clamp(32.0, 52.0).toDouble(),
+                    ),
+                  ),
                   for (final s in sections)
-                    _RailItem(
-                      section: s,
-                      selected: s == current,
-                      compact: compact,
-                      showLabel: !iconsOnly,
-                      badge: s == FamioSection.chat ? unread : 0,
-                      onTap: () => onSelect(s),
+                    Expanded(
+                      child: _RailItem(
+                        section: s,
+                        selected: s == current,
+                        showLabel: showLabel,
+                        iconSize: iconSize,
+                        labelSize: labelSize,
+                        badge: s == FamioSection.chat ? unread : 0,
+                        onTap: () => onSelect(s),
+                      ),
                     ),
                 ],
               ),
@@ -325,40 +349,48 @@ class _SideRail extends StatelessWidget {
 }
 
 class _Logo extends StatelessWidget {
-  const _Logo({this.compact = false});
+  const _Logo({required this.size});
 
-  final bool compact;
+  final double size;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      Container(
-        width: compact ? 36 : 48,
-        height: compact ? 36 : 48,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFFFFB38A), Color(0xFFF26B8F)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+  Widget build(BuildContext context) {
+    final showName = size >= 42;
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        AnimatedContainer(
+          duration: _railAnimationDuration(context),
+          curve: Curves.easeOutCubic,
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFB38A), Color(0xFFF26B8F)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(size * 0.34),
           ),
-          borderRadius: BorderRadius.circular(16),
+          child: Image.asset(
+            'assets/icon/logo_glyph.png',
+            width: size * 0.72,
+            height: size * 0.72,
+          ),
         ),
-        child: Image.asset(
-          'assets/icon/logo_glyph.png',
-          width: compact ? 28 : 36,
-          height: compact ? 28 : 36,
-        ),
-      ),
-      if (!compact) ...[
-        const SizedBox(height: 6),
-        Text(
-          AppEnv.appName,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
-        ),
+        if (showName) ...[
+          const SizedBox(height: 4),
+          Text(
+            AppEnv.appName,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontSize: (size * 0.36).clamp(14.0, 18.0).toDouble(),
+            ),
+          ),
+        ],
       ],
-    ],
-  );
+    );
+  }
 }
 
 class _RailItem extends StatelessWidget {
@@ -366,56 +398,78 @@ class _RailItem extends StatelessWidget {
     required this.section,
     required this.selected,
     required this.onTap,
+    required this.iconSize,
+    required this.labelSize,
     this.badge = 0,
-    this.compact = false,
     this.showLabel = true,
   });
 
   final FamioSection section;
   final bool showLabel;
   final bool selected;
-  final bool compact;
   final VoidCallback onTap;
   final int badge;
+  final double iconSize;
+  final double labelSize;
 
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(section);
     final item = Padding(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 0 : 3),
-      child: Material(
-        color: selected ? c.tint(section) : Colors.transparent,
-        borderRadius: BorderRadius.circular(22),
-        child: InkWell(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      child: AnimatedContainer(
+        duration: _railAnimationDuration(context),
+        curve: Curves.easeOutCubic,
+        decoration: BoxDecoration(
+          color: selected ? c.tint(section) : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: compact ? 3 : 10),
-            child: Column(
-              children: [
-                _Badge(
-                  count: badge,
-                  child: Icon(
-                    section.icon,
-                    color: selected ? color : c.inkSoft,
-                    size: compact ? 22 : 28,
-                  ),
-                ),
-                if (showLabel) ...[
-                  SizedBox(height: compact ? 2 : 4),
-                  Text(
-                    section.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.fade,
-                    softWrap: false,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected ? c.ink : c.inkSoft,
-                      fontWeight: selected ? FontWeight.w800 : FontWeight.w700,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: onTap,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Badge(
+                    count: badge,
+                    child: AnimatedScale(
+                      duration: _railAnimationDuration(context),
+                      curve: Curves.easeOutCubic,
+                      scale: selected ? 1.07 : 1,
+                      child: Icon(
+                        section.icon,
+                        color: selected ? color : c.inkSoft,
+                        size: iconSize,
+                      ),
                     ),
                   ),
+                  if (showLabel) ...[
+                    SizedBox(
+                      height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
+                    ),
+                    AnimatedDefaultTextStyle(
+                      duration: _railAnimationDuration(context),
+                      curve: Curves.easeOutCubic,
+                      maxLines: 1,
+                      overflow: TextOverflow.fade,
+                      softWrap: false,
+                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                        color: selected ? c.ink : c.inkSoft,
+                        fontSize: labelSize,
+                        fontWeight: selected
+                            ? FontWeight.w800
+                            : FontWeight.w700,
+                      ),
+                      child: Text(section.label),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -429,6 +483,11 @@ class _RailItem extends StatelessWidget {
           );
   }
 }
+
+Duration _railAnimationDuration(BuildContext context) =>
+    MediaQuery.disableAnimationsOf(context)
+    ? Duration.zero
+    : const Duration(milliseconds: 180);
 
 class _FloatingBar extends StatelessWidget {
   const _FloatingBar({
