@@ -22,7 +22,10 @@ if matches=$(git grep -n -I -E '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -- . "${E
   fi
 fi
 
-if identities=$(git log --all --format='%aN <%aE>%n%cN <%cE>' | sort -u | grep -vFx "$IDENTITY" || true); then
+# Inspect the branch intended for publication. Local backup and
+# remote-tracking refs are deliberately excluded because a normal branch push
+# does not publish them.
+if identities=$(git log HEAD --format='%aN <%aE>%n%cN <%cE>' | sort -u | grep -vFx "$IDENTITY" || true); then
   if [[ -n "$identities" ]]; then
     report "Non-project author or committer identity in reachable Git history:"
     printf '%s\n' "$identities" >&2
