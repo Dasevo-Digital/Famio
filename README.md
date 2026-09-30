@@ -14,6 +14,13 @@ Famio läuft auf Android, iOS, macOS, Windows und Linux sowie im Browser
 läuft als Home-Assistant-Add-on oder eigenständig mit Docker bzw.
 Proxmox-LXC.
 
+Der Quellcode ist einsehbar, aber derzeit **nicht als Open Source lizenziert**.
+Die Bedingungen des Projektcodes stehen in [LICENSE](LICENSE), Hinweise zu
+Komponenten und Daten Dritter in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Für selbst gehostete
+Installationen gelten die [Datenschutzinformationen](docs/datenschutz.md); der
+jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
+
 ## Ein Blick in Famio
 
 <p align="center">
@@ -298,6 +305,9 @@ geprüft). Eine SSO-Anmeldung erfüllt auch die Zwei-Faktor-Pflicht – die
 
 Famio speichert auch Gesundheitsdaten (Vorsorge, Impfungen, Wachstum,
 Dokumente). Umgesetzt ist:
+
+Die folgende technische Übersicht ergänzt die ausführlichen
+[Datenschutzinformationen](docs/datenschutz.md), ersetzt sie aber nicht.
 
 | Bereich | Schutz |
 |---|---|
