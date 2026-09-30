@@ -10,7 +10,7 @@
 </p>
 
 Famio läuft auf Android, iOS, macOS, Windows und Linux sowie im Browser
-(`&lt;server&gt;/app/`) und in der Seitenleiste von Home Assistant. Der Server
+und in der Seitenleiste von Home Assistant. Der Server
 läuft als Home-Assistant-Add-on oder eigenständig mit Docker bzw.
 Proxmox-LXC.
 
