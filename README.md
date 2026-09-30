@@ -1,9 +1,33 @@
 # Famio
 
-Familien-Organizer mit eigenem Sync-Server. Die App läuft auf Android, iOS,
-macOS, Windows und Linux sowie im Browser (`<server>/app/`) und in der
-Seitenleiste von Home Assistant; der Server läuft als Home-Assistant-Add-on
-oder eigenständig (Docker, Proxmox-LXC).
+<p align="center">
+  <img src="app/assets/icon/app_icon.png" width="112" alt="Famio App-Symbol">
+</p>
+
+<p align="center">
+  Familien-Organizer mit eigenem Sync-Server – privat, offlinefähig und für
+  alle Geräte der Familie.
+</p>
+
+Famio läuft auf Android, iOS, macOS, Windows und Linux sowie im Browser
+(`&lt;server&gt;/app/`) und in der Seitenleiste von Home Assistant. Der Server
+läuft als Home-Assistant-Add-on oder eigenständig mit Docker bzw.
+Proxmox-LXC.
+
+## Ein Blick in Famio
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" width="74%" alt="Famio Familien-Dashboard auf dem Desktop">
+  <img src="docs/screenshots/tasks-mobile.png" width="24%" alt="Famio Aufgabenansicht auf dem Smartphone">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/calendar.png" width="74%" alt="Famio Kalender auf dem Desktop">
+</p>
+
+*Die Screenshots zeigen ausschließlich anonymisierte Demo-Daten.*
+
+## Funktionen
 
 | Modul | Stand |
 |---|---|
