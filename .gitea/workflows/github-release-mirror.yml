@@ -1,0 +1,112 @@
+# Spiegelt Gitea-Releases samt Binärdateien in das öffentliche GitHub-Repo.
+# Den Code selbst überträgt der Push-Mirror des Repos (Einstellungen → Spiegel).
+# Braucht einen Gitea-Runner mit dem Label github-mirror (bash, curl, jq) und das
+# Secret GH_MIRROR_TOKEN (GitHub-Token mit Contents: Read and write).
+name: GitHub-Release-Spiegel
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag, z. B. v1.2.3 (leer = alle Releases abgleichen)'
+        required: false
+        default: ''
+
+jobs:
+  spiegeln:
+    runs-on: github-mirror
+    steps:
+      - name: Release und Binärdateien nach GitHub spiegeln
+        env:
+          GH_REPO: Dasevo-Digital/Famio
+          GH_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          GITEA_TOKEN: ${{ secrets.GITEA_READ_TOKEN || github.token }}
+          GITEA_API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for tool in curl jq; do
+            command -v "$tool" >/dev/null || { echo "::error::$tool fehlt auf dem Runner"; exit 1; }
+          done
+          [ -n "${GH_TOKEN:-}" ] || [ -n "${DRY_RUN:-}" ] || { echo "::error::Secret GH_MIRROR_TOKEN fehlt"; exit 1; }
+
+          gitea() { curl -fsSL --retry 3 -H "Authorization: token $GITEA_TOKEN" "$@"; }
+          gh_head=(-H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: 2022-11-28')
+          [ -n "${GH_TOKEN:-}" ] && gh_head+=(-H "Authorization: Bearer $GH_TOKEN")
+          github() {
+            curl -fsSL --retry 3 "${gh_head[@]}" "$@"
+          }
+          change() { # führt Schreibzugriffe auf GitHub aus, im Probelauf nur Anzeige
+            if [ -n "${DRY_RUN:-}" ]; then echo "    (Probelauf) $*"; else "$@"; fi
+          }
+
+          work=$(mktemp -d)
+          trap 'rm -rf "$work"' EXIT
+          gh_api="https://api.github.com/repos/$GH_REPO"
+
+          # Zu spiegelnde Releases: das gerade veröffentlichte oder alle (ohne Entwürfe).
+          if [ -n "${TAG:-}" ]; then
+            gitea "$GITEA_API/releases/tags/$TAG" | jq -c '[.]' > "$work/releases.json"
+          else
+            echo '[]' > "$work/releases.json"
+            page=1
+            while :; do
+              gitea "$GITEA_API/releases?limit=50&page=$page" > "$work/page.json"
+              [ "$(jq length "$work/page.json")" -gt 0 ] || break
+              jq -s 'add' "$work/releases.json" "$work/page.json" > "$work/merged.json"
+              mv "$work/merged.json" "$work/releases.json"
+              page=$((page + 1))
+            done
+          fi
+
+          # Älteste zuerst, damit auf GitHub das neueste Release als "Latest" endet.
+          jq -c 'reverse | .[] | select(.draft | not)' "$work/releases.json" | while read -r release; do
+            tag=$(jq -r .tag_name <<<"$release")
+            echo "== $tag"
+
+            code=$(curl -s -o "$work/gh.json" -w '%{http_code}' "${gh_head[@]}" \
+              "$gh_api/releases/tags/$tag")
+            if [ "$code" = 404 ]; then
+              sha=$(gitea "$GITEA_API/tags/$tag" | jq -r .commit.sha)
+              echo "  GitHub-Release fehlt, lege es an (Commit $sha)"
+              jq -n --argjson r "$release" --arg sha "$sha" '{
+                tag_name: $r.tag_name, target_commitish: $sha,
+                name: (if ($r.name // "") == "" then $r.tag_name else $r.name end),
+                body: ($r.body // ""), prerelease: $r.prerelease, draft: false
+              }' > "$work/new.json"
+              if [ -n "${DRY_RUN:-}" ]; then
+                echo "    (Probelauf) POST $gh_api/releases"
+                echo '{"id":0,"upload_url":"","assets":[]}' > "$work/gh.json"
+              else
+                github -X POST --data @"$work/new.json" "$gh_api/releases" > "$work/gh.json"
+              fi
+            elif [ "$code" != 200 ]; then
+              echo "::error::GitHub antwortete $code für $tag"; cat "$work/gh.json"; exit 1
+            fi
+
+            upload_url=$(jq -r '.upload_url | sub("\\{.*"; "")' "$work/gh.json")
+            jq -c '.assets[]' <<<"$release" | while read -r asset; do
+              name=$(jq -r .name <<<"$asset")
+              size=$(jq -r .size <<<"$asset")
+              existing=$(jq -c --arg n "$name" '.assets[] | select(.name == $n)' "$work/gh.json")
+              if [ -n "$existing" ]; then
+                if [ "$(jq -r .size <<<"$existing")" = "$size" ]; then
+                  echo "  ok      $name"
+                  continue
+                fi
+                echo "  ersetze $name (Größe geändert)"
+                change github -X DELETE "$gh_api/releases/assets/$(jq -r .id <<<"$existing")" >/dev/null
+              else
+                echo "  lade    $name ($((size / 1048576)) MB)"
+              fi
+              [ -n "${DRY_RUN:-}" ] && continue
+              gitea -o "$work/asset" "$(jq -r .browser_download_url <<<"$asset")"
+              github -X POST -H 'Content-Type: application/octet-stream' -T "$work/asset" \
+                "$upload_url?name=$(jq -rn --arg n "$name" '$n | @uri')" >/dev/null
+              rm -f "$work/asset"
+            done
+          done
+          echo "Fertig."
