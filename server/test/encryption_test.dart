@@ -17,6 +17,32 @@ bool containsText(String path, String text) => [
 void main() {
   setUpAll(FamioServerApp.initTimeZones);
 
+  test(
+    'an existing owner-only key is accepted without changing it',
+    () {
+      final dir = Directory.systemTemp.createTempSync('famio_key').path;
+      addTearDown(() => Directory(dir).deleteSync(recursive: true));
+      final keyFile = File('$dir/ro/famio.key')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('${'ab' * 32}\n');
+      // The installer's 0400 in a read-only directory, as under systemd's
+      // ProtectSystem=strict: no chmod may be attempted.
+      Process.runSync('chmod', ['400', keyFile.path]);
+      Process.runSync('chmod', ['500', keyFile.parent.path]);
+      addTearDown(() => Process.runSync('chmod', ['700', keyFile.parent.path]));
+      expect(loadOrCreateDataKey(keyFile.path, dataDir: dir), 'ab' * 32);
+      expect(FileStat.statSync(keyFile.path).mode & 0x1ff, 0x100); // 0400
+
+      Process.runSync('chmod', ['700', keyFile.parent.path]);
+      Process.runSync('chmod', ['644', keyFile.path]);
+      expect(
+        () => loadOrCreateDataKey(keyFile.path, dataDir: dir),
+        throwsA(isA<DataKeyException>()),
+      );
+    },
+    testOn: '!windows',
+  );
+
   test('a plain database from an older version is encrypted in place', () {
     final dir = Directory.systemTemp.createTempSync('famio_enc_').path;
     final path = '$dir/famio.db';
