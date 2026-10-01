@@ -60,7 +60,7 @@ bool isPlainSqlite(File file) {
 String loadOrCreateDataKey(String path, {required String dataDir}) {
   final file = File(path);
   if (file.existsSync()) {
-    _ensureOwnerOnly(file);
+    _checkOwnerOnly(file);
     final key = file.readAsStringSync().trim();
     if (!RegExp(r'^[0-9a-f]{64}$').hasMatch(key)) {
       throw DataKeyException('Schlüsseldatei $path ist ungültig.');
@@ -87,6 +87,19 @@ String loadOrCreateDataKey(String path, {required String dataDir}) {
   file.writeAsStringSync('$key\n', flush: true);
   _ensureOwnerOnly(file);
   return key;
+}
+
+/// An existing key is only checked, never changed: under systemd's
+/// ProtectSystem=strict its directory is read-only, and the installer's
+/// stricter 0400 is just as fine as 0600.
+void _checkOwnerOnly(File file) {
+  if (Platform.isWindows) return;
+  if (FileStat.statSync(file.path).mode & 0x3f != 0) {
+    throw DataKeyException(
+      'Schlüsseldatei ${file.path} darf nur für ihren Besitzer lesbar sein '
+      '(chmod 600).',
+    );
+  }
 }
 
 /// The key is as sensitive as the encrypted databases. Dart has no chmod API,
