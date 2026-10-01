@@ -1,6 +1,7 @@
 package de.status403.famio
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,6 +11,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.hardware.Sensor
+import android.hardware.SensorManager
+import android.hardware.TriggerEvent
+import android.hardware.TriggerEventListener
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -19,6 +24,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
+import android.os.SystemClock
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -42,6 +49,14 @@ import javax.net.ssl.X509TrustManager
  *
  * It talks to the Famio server itself with a token that can only report
  * positions, so it needs neither the app nor its login.
+ *
+ * Battery and accuracy: normally it listens in the battery-friendly
+ * "balanced" mode (Wi-Fi/cell, no GPS). When the motion sensor notices the
+ * phone is carried around, it switches to precise mode (GPS) until the
+ * phone has stopped moving for a few minutes. A heartbeat alarm (allowed
+ * while the phone dozes) reports regularly and measures a fresh position
+ * when none came for a while – the screen-off phone otherwise sleeps through
+ * short trips.
  */
 class LocationService : Service(), LocationListener {
     companion object {
@@ -50,6 +65,16 @@ class LocationService : Service(), LocationListener {
         private const val ALERT_CHANNEL = "famio_places"
         private const val NOTIFICATION_ID = 47110
         private const val MAX_PENDING = 500
+        private const val ACTION_HEARTBEAT = "de.status403.famio.LOCATION_HEARTBEAT"
+
+        /** Precise mode lasts this long after the last noticeable move. */
+        private const val MOVING_MS = 5 * 60_000L
+
+        /** Without a fix for this long, the heartbeat measures one. */
+        private const val STALE_FIX_MS = 10 * 60_000L
+
+        /** A move this far is uploaded at once, not with the next batch. */
+        private const val UPLOAD_MOVE_M = 50f
 
         fun start(context: Context) {
             val intent = Intent(context, LocationService::class.java)
@@ -84,16 +109,29 @@ class LocationService : Service(), LocationListener {
 
     /** When positions were last uploaded; at most one upload a minute. */
     private var lastFixUpload = 0L
+    private var lastUploaded: Location? = null
+
+    /** Precise (GPS) mode until this [SystemClock.elapsedRealtime]. */
+    private var movingUntil = 0L
+    private var movingAnchor: Location? = null
+    private var preciseMode = false
+    private var lastHeartbeat = 0L
+    private var foreground = false
+
+    /** Measure one position right away with the next [startUpdates]. */
+    private var needsFirstFix = true
 
     private val heartbeat = object : Runnable {
         override fun run() {
-            // Network location switched on or off since: switch the way.
-            if (listening && useFused() != fusedMode) {
-                stopUpdates()
-                startUpdates()
-            }
-            flush()
+            tick()
             handler.postDelayed(this, intervalMs)
+        }
+    }
+
+    /** The phone started to be carried around (wakes it from doze). */
+    private val motion = object : TriggerEventListener() {
+        override fun onTrigger(event: TriggerEvent?) {
+            handler.post { startMoving() }
         }
     }
 
@@ -130,6 +168,11 @@ class LocationService : Service(), LocationListener {
             stopSelf()
             return START_NOT_STICKY
         }
+        val fromAlarm = intent?.action == ACTION_HEARTBEAT
+        if (fromAlarm && foreground) {
+            tick()
+            return START_STICKY
+        }
         try {
             if (Build.VERSION.SDK_INT >= 29) {
                 startForeground(
@@ -141,11 +184,13 @@ class LocationService : Service(), LocationListener {
                 startForeground(NOTIFICATION_ID, notification())
             }
         } catch (e: Exception) {
-            // Started from the background without "always" permission.
-            report(state = "denied")
+            // Started from the background without "always" permission (an
+            // alarm of a stopped service says nothing about the permission).
+            if (!fromAlarm) report(state = "denied")
             stopSelf()
             return START_NOT_STICKY
         }
+        foreground = true
         startUpdates()
         handler.removeCallbacks(heartbeat)
         handler.post(heartbeat)
@@ -154,9 +199,81 @@ class LocationService : Service(), LocationListener {
 
     override fun onDestroy() {
         handler.removeCallbacks(heartbeat)
+        cancelAlarm()
+        motionSensor()?.let { sensors()?.cancelTriggerSensor(motion, it) }
         stopUpdates()
         network.shutdown()
         super.onDestroy()
+    }
+
+    // --- heartbeat -----------------------------------------------------------
+
+    /**
+     * Regular work, from the handler while the phone is awake and from the
+     * alarm while it dozes (the handler's clock stops then).
+     */
+    private fun tick() {
+        val now = SystemClock.elapsedRealtime()
+        scheduleAlarm()
+        if (now - lastHeartbeat < intervalMs / 2) return
+        lastHeartbeat = now
+        if (listening) {
+            val wantPrecise = now < movingUntil
+            // Network location switched on or off, or the phone stopped
+            // moving: switch the way.
+            if (useFused() != fusedMode || wantPrecise != preciseMode) {
+                stopUpdates()
+                startUpdates()
+            }
+            val lastFix = prefs.getLong("lastFixAt", 0L)
+            if (!paused && System.currentTimeMillis() - lastFix > STALE_FIX_MS) {
+                currentPosition(precise = false)
+            }
+        }
+        flush()
+    }
+
+    private fun scheduleAlarm() {
+        val alarms = getSystemService(AlarmManager::class.java) ?: return
+        // Dozing phones grant such alarms about every 9 minutes at most.
+        alarms.setAndAllowWhileIdle(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            SystemClock.elapsedRealtime() + intervalMs,
+            heartbeatIntent(),
+        )
+    }
+
+    private fun cancelAlarm() {
+        getSystemService(AlarmManager::class.java)?.cancel(heartbeatIntent())
+    }
+
+    private fun heartbeatIntent(): PendingIntent = PendingIntent.getService(
+        this,
+        1,
+        Intent(this, LocationService::class.java).setAction(ACTION_HEARTBEAT),
+        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+
+    private fun sensors(): SensorManager? = getSystemService(SensorManager::class.java)
+
+    private fun motionSensor(): Sensor? =
+        sensors()?.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION)
+
+    /** One-shot: fires once when the phone starts moving, then re-armed. */
+    private fun armMotion() {
+        if (paused) return
+        val sensor = motionSensor() ?: return
+        sensors()?.requestTriggerSensor(motion, sensor)
+    }
+
+    private fun startMoving() {
+        if (paused || !listening) return
+        movingUntil = SystemClock.elapsedRealtime() + MOVING_MS
+        movingAnchor = null
+        if (!preciseMode) {
+            stopUpdates()
+            startUpdates()
+        }
     }
 
     // --- positions -----------------------------------------------------------
@@ -171,11 +288,19 @@ class LocationService : Service(), LocationListener {
             // The battery-friendly fused mode needs network location (Wi-Fi,
             // cell); without it (switched off, emulator) only GPS works.
             fusedMode = useFused()
+            preciseMode = SystemClock.elapsedRealtime() < movingUntil
+            val interval = if (preciseMode) 30_000L else intervalMs
             if (fusedMode) {
-                val request = LocationRequest.Builder(intervalMs)
-                    .setQuality(LocationRequest.QUALITY_BALANCED_POWER_ACCURACY)
-                    .setMinUpdateIntervalMillis(30_000L)
-                    .setMinUpdateDistanceMeters(25f)
+                val request = LocationRequest.Builder(interval)
+                    .setQuality(
+                        if (preciseMode) {
+                            LocationRequest.QUALITY_HIGH_ACCURACY
+                        } else {
+                            LocationRequest.QUALITY_BALANCED_POWER_ACCURACY
+                        },
+                    )
+                    .setMinUpdateIntervalMillis(if (preciseMode) 15_000L else 30_000L)
+                    .setMinUpdateDistanceMeters(if (preciseMode) 15f else 25f)
                     .build()
                 locations.requestLocationUpdates(
                     LocationManager.FUSED_PROVIDER,
@@ -191,8 +316,8 @@ class LocationService : Service(), LocationListener {
                     if (locations.allProviders.contains(provider)) {
                         locations.requestLocationUpdates(
                             provider,
-                            intervalMs,
-                            25f,
+                            interval,
+                            if (preciseMode) 15f else 25f,
                             this,
                             Looper.getMainLooper(),
                         )
@@ -200,7 +325,11 @@ class LocationService : Service(), LocationListener {
                 }
             }
             listening = true
-            currentPosition()
+            if (needsFirstFix) {
+                needsFirstFix = false
+                currentPosition(precise = true)
+            }
+            if (!preciseMode) armMotion()
         } catch (e: SecurityException) {
             listening = false
         }
@@ -219,17 +348,24 @@ class LocationService : Service(), LocationListener {
             networkLocation()
 
     /**
-     * One precise position right away (GPS for up to a minute), so the
-     * family need not wait for the first movement.
+     * One position right away, so the family need not wait for the first
+     * movement: precise (GPS for up to a minute) at the start, otherwise a
+     * cheap Wi-Fi/cell position that still shows a short trip.
      */
-    private fun currentPosition() {
+    private fun currentPosition(precise: Boolean) {
         try {
             if (Build.VERSION.SDK_INT >= 31 &&
                 locations.hasProvider(LocationManager.FUSED_PROVIDER)
             ) {
                 val request = LocationRequest.Builder(0L)
-                    .setQuality(LocationRequest.QUALITY_HIGH_ACCURACY)
-                    .setDurationMillis(60_000L)
+                    .setQuality(
+                        if (precise || !networkLocation()) {
+                            LocationRequest.QUALITY_HIGH_ACCURACY
+                        } else {
+                            LocationRequest.QUALITY_BALANCED_POWER_ACCURACY
+                        },
+                    )
+                    .setDurationMillis(if (precise) 60_000L else 30_000L)
                     .build()
                 locations.getCurrentLocation(
                     LocationManager.FUSED_PROVIDER,
@@ -271,6 +407,14 @@ class LocationService : Service(), LocationListener {
 
     override fun onLocationChanged(location: Location) {
         prefs.edit().putLong("lastFixAt", location.time).apply()
+        if (preciseMode) {
+            // Still moving: stay precise a little longer.
+            val anchor = movingAnchor
+            if (anchor == null || anchor.distanceTo(location) > 30f) {
+                movingAnchor = location
+                movingUntil = SystemClock.elapsedRealtime() + MOVING_MS
+            }
+        }
         synchronized(pending) {
             pending.add(
                 JSONObject()
@@ -282,8 +426,13 @@ class LocationService : Service(), LocationListener {
             )
             while (pending.size > MAX_PENDING) pending.removeAt(0)
         }
-        // At most one upload a minute; the heartbeat sends the rest.
-        if (System.currentTimeMillis() - lastFixUpload >= 60_000L) flush()
+        // At most one upload a minute unless the phone moved noticeably;
+        // the heartbeat sends the rest.
+        val moved = lastUploaded?.let { it.distanceTo(location) >= UPLOAD_MOVE_M } ?: true
+        if (moved || System.currentTimeMillis() - lastFixUpload >= 60_000L) {
+            lastUploaded = location
+            flush()
+        }
     }
 
     override fun onProviderEnabled(provider: String) = providersChanged()
@@ -327,6 +476,13 @@ class LocationService : Service(), LocationListener {
         val batch = synchronized(pending) { ArrayList(pending) }
         if (batch.isNotEmpty()) lastFixUpload = System.currentTimeMillis()
         if (network.isShutdown) return
+        // A dozing phone would fall asleep in the middle of the upload.
+        val wake = (getSystemService(Context.POWER_SERVICE) as PowerManager)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "famio:location")
+            .apply {
+                setReferenceCounted(false)
+                acquire(45_000L)
+            }
         network.execute {
             val body = JSONObject()
                 .put("fixes", JSONArray(batch))
@@ -350,6 +506,8 @@ class LocationService : Service(), LocationListener {
             } catch (e: Exception) {
                 // Unexpected answer; try again with the next heartbeat.
                 recordTransferError("Übertragungsfehler")
+            } finally {
+                if (wake.isHeld) wake.release()
             }
         }
     }
@@ -385,7 +543,13 @@ class LocationService : Service(), LocationListener {
         prefs.edit().putString("pausedUntil", until.ifEmpty { null }).apply()
         if (nowPaused != paused) {
             paused = nowPaused
-            if (paused) stopUpdates() else startUpdates()
+            if (paused) {
+                stopUpdates()
+                motionSensor()?.let { sensors()?.cancelTriggerSensor(motion, it) }
+            } else {
+                needsFirstFix = true
+                startUpdates()
+            }
             handler.removeCallbacks(heartbeat)
             handler.postDelayed(heartbeat, intervalMs)
         }

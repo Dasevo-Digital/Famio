@@ -22,6 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1090,6 +1091,14 @@ void main() {
     });
     // ignore: invalid_use_of_visible_for_testing_member
     FlutterSecureStorage.setMockInitialValues({});
+    // ignore: invalid_use_of_visible_for_testing_member
+    PackageInfo.setMockInitialValues(
+      appName: 'Famio',
+      packageName: 'de.status403.famio',
+      version: '1.0.1',
+      buildNumber: '36',
+      buildSignature: '',
+    );
     final state = AppState();
     await state.init();
     // FAMIO_HC=1 renders everything with "Hoher Kontrast".
@@ -1220,6 +1229,41 @@ void main() {
     await tester.pumpAndSettle();
     await go(tester, 'Kontakte');
     await _shot(tester, key, 'desktop_14_kontakte');
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('kids appointment', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byIcon(AppIcons.dotsThreeCircle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kinder').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Emil');
+    await tester.ensureVisible(find.text('Impfungen'));
+    await tester.pumpAndSettle();
+    await go(tester, 'Impfungen');
+    await tester.tap(find.byType(RoundCheck).first);
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_20_impfung_aktionen');
+    await go(tester, 'Termin eintragen …');
+    await _shot(tester, key, 'phone_21_impfung_termin');
+    await tester.tap(find.textContaining('Am '));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_22_termin_datum');
+    await tester.tap(find.byIcon(Icons.chevron_right).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('7').last);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await go(tester, 'Termin speichern');
+    await _shot(tester, key, 'phone_23_impfung_geplant');
+    await tester.ensureVisible(find.text('Zeitstrahl'));
+    await tester.pumpAndSettle();
+    await go(tester, 'Zeitstrahl');
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Termin'), findsWidgets);
+    await _shot(tester, key, 'phone_24_zeitstrahl_termin');
     await tester.pump(const Duration(seconds: 2));
   });
 

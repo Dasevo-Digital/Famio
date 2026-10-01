@@ -1072,6 +1072,14 @@ class _MySharingCardState extends State<MySharingCard>
         ),
       if (!device.locationOn)
         ('Standort ist am Handy ausgeschaltet', () async {}),
+      // Approximate location is rounded to roughly 2 km: short trips
+      // never show up.
+      if (device.permission != LocationPermission.none && !device.precise)
+        (
+          'Nur „ungefährer“ Standort erlaubt – kurze Wege bleiben '
+              'unsichtbar. Antippen und „Genauen Standort“ einschalten',
+          LocationSharing.openAppSettings,
+        ),
       if (!device.batteryUnrestricted)
         (
           'Akku-Optimierung kann die Freigabe stoppen – antippen',
@@ -1207,7 +1215,12 @@ class _LocationDiagnostics extends StatelessWidget {
       LocationPermission.none => 'Nicht erlaubt',
     };
     final rows = <String>[
-      'Berechtigung: $permission',
+      'Berechtigung: $permission'
+          '${device.permission == LocationPermission.none
+              ? ''
+              : device.precise
+              ? ' · genau'
+              : ' · nur ungefähr'}',
       'Letzter GPS-Fix: ${_when(device.lastFixAt, now)}',
       'Letzter erfolgreicher Positions-Upload: '
           '${_when(device.lastSuccessfulUploadAt, now)}',

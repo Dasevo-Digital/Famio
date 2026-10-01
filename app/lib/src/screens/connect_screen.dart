@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
@@ -30,6 +31,11 @@ class _ConnectScreenState extends State<ConnectScreen> {
   ServerInfo? get _server => _resolved?.info;
   var _busy = false;
   String? _error;
+
+  /// Shown below the form, e.g. to check which build is installed.
+  late final Future<PackageInfo?> _app = PackageInfo.fromPlatform()
+      .then<PackageInfo?>((info) => info)
+      .catchError((Object _) => null);
 
   @override
   void initState() {
@@ -358,6 +364,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             style: theme.textTheme.bodySmall,
                           ),
                         ],
+                        const SizedBox(height: 20),
+                        _VersionLine(app: _app, server: server),
                       ],
                     ),
                   ),
@@ -369,6 +377,36 @@ class _ConnectScreenState extends State<ConnectScreen> {
       ),
     );
   }
+}
+
+/// "Famio 1.0.1 (36) · Server 1.0.1" – the server part once it is known.
+class _VersionLine extends StatelessWidget {
+  const _VersionLine({required this.app, required this.server});
+
+  final Future<PackageInfo?> app;
+  final ServerInfo? server;
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder(
+    future: app,
+    builder: (context, snapshot) {
+      final info = snapshot.data;
+      final parts = [
+        if (info != null)
+          '${AppEnv.appName} ${info.version}'
+              '${info.buildNumber.isEmpty ? '' : ' (${info.buildNumber})'}',
+        if (server case final s?) 'Server ${s.version}',
+      ];
+      if (parts.isEmpty) return const SizedBox.shrink();
+      return Text(
+        parts.join(' · '),
+        textAlign: TextAlign.center,
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: FamioColors.of(context).inkSoft),
+      );
+    },
+  );
 }
 
 /// Tells how the chosen server connection is protected.

@@ -506,7 +506,22 @@ class _Timeline extends StatelessWidget {
         ...checkupPlan(child, entries, now),
         ...vaccinationPlan(child, entries, now),
       ])
-        if (!d.optional &&
+        if (d.appointment case final a?)
+          _TimelineItem(
+            date: a.appointmentAt,
+            title: d.isCheckup ? d.title : 'Impfung: ${d.title}',
+            subtitle: a.date.isBefore(today)
+                ? 'Termin war – erledigt?'
+                : [
+                    if (a.time != null) 'um ${a.time} Uhr',
+                    'Termin',
+                  ].join(' · '),
+            icon: d.isCheckup ? AppIcons.stethoscope : AppIcons.syringe,
+            color: const Color(0xFF3587D6),
+            due: d,
+            future: true,
+          )
+        else if (!d.optional &&
             (d.open ||
                 (d.state == DueState.upcoming && d.from.isBefore(horizon))))
           _TimelineItem(
@@ -521,9 +536,7 @@ class _Timeline extends StatelessWidget {
             future: true,
           ),
       for (final m in milestones)
-        if (!reached.contains(m.id) &&
-            m.fromMonth > ageMonths - 1 &&
-            m.fromMonth <= ageMonths + 6)
+        if (!reached.contains(m.id) && milestoneIsUpcoming(m, ageMonths))
           _TimelineItem(
             date: child.ageDate(m.fromMonth),
             title: m.title,
@@ -537,18 +550,19 @@ class _Timeline extends StatelessWidget {
 
     final past = [
       for (final e in entries)
-        () {
-          final (icon, c) = _entryLook(e.kind, color);
-          return _TimelineItem(
-            date: e.date,
-            title: _entryTitle(e),
-            subtitle: e.note.isEmpty ? null : e.note,
-            icon: icon,
-            color: c,
-            photos: e.photos,
-            entry: e,
-          );
-        }(),
+        if (!e.planned)
+          () {
+            final (icon, c) = _entryLook(e.kind, color);
+            return _TimelineItem(
+              date: e.date,
+              title: _entryTitle(e),
+              subtitle: e.note.isEmpty ? null : e.note,
+              icon: icon,
+              color: c,
+              photos: e.photos,
+              entry: e,
+            );
+          }(),
     ]..sort((a, b) => b.date.compareTo(a.date));
 
     return ListView(
@@ -556,7 +570,11 @@ class _Timeline extends StatelessWidget {
       children: [
         if (upcoming.isNotEmpty) ...[
           const ListHeading('Demnächst'),
-          for (final item in upcoming.take(8))
+          // Booked appointments always, other suggestions only the next few.
+          for (final item in [
+            ...upcoming.where((i) => i.due?.appointment != null),
+            ...upcoming.where((i) => i.due?.appointment == null).take(8),
+          ]..sort((a, b) => a.date.compareTo(b.date)))
             _TimelineRow(item: item, child: child),
         ],
         _TodayMarker(color: color, label: 'Heute · ${ageLabel(child)}'),
@@ -1031,6 +1049,7 @@ class _DueList extends StatelessWidget {
         c.inkSoft,
       ),
       DueState.upcoming => ('demnächst', c.inkSoft),
+      DueState.planned => ('Termin', const Color(0xFF3587D6)),
     };
     // Hide far-future items for small children to keep the list short.
     final horizon = DateTime.now().add(const Duration(days: 730));
@@ -1095,7 +1114,9 @@ class _DueList extends StatelessWidget {
                           style: theme.textTheme.titleMedium,
                         ),
                         Text(
-                          d.state == DueState.done
+                          d.appointment != null
+                              ? _appointmentLabel(d.appointment!)
+                              : d.state == DueState.done
                               ? d.entry!.dateUnknown
                                     ? 'Erledigt · Datum unbekannt'
                                     : 'Am ${_date.format(d.entry!.date)}'
@@ -1134,8 +1155,14 @@ class _DueList extends StatelessWidget {
   }
 }
 
+/// "Termin am 7. Oktober 2026 um 9:30 Uhr".
+String _appointmentLabel(ChildEntry e) =>
+    'Termin am ${_date.format(e.date)}'
+    '${e.time == null ? '' : ' um ${e.time} Uhr'}';
+
 /// What to do with a check-up or vaccination: mark as done today, on
-/// another day or without a known date; done ones open the editor.
+/// another day or without a known date, or book an appointment; done ones
+/// open the editor.
 Future<void> showDueActions(
   BuildContext context,
   Child child,
@@ -1144,6 +1171,9 @@ Future<void> showDueActions(
   final kind = item.isCheckup
       ? ChildEntryKind.checkup
       : ChildEntryKind.vaccination;
+  if (item.appointment != null) {
+    return _showAppointmentActions(context, child, item, item.appointment!);
+  }
   if (item.entry != null) {
     return showEntryEditor(
       context,
@@ -1180,6 +1210,12 @@ Future<void> showDueActions(
               onPressed: () => Navigator.pop(context, 'editor'),
             ),
             const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(AppIcons.clock),
+              label: const Text('Termin eintragen …'),
+              onPressed: () => Navigator.pop(context, 'appointment'),
+            ),
+            const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context, 'unknown'),
               child: const Text('Erledigt, Datum unbekannt'),
@@ -1190,8 +1226,14 @@ Future<void> showDueActions(
     ),
   );
   if (choice == null || !context.mounted) return;
-  if (choice == 'editor') {
-    return showEntryEditor(context, child: child, kind: kind, refId: item.id);
+  if (choice == 'editor' || choice == 'appointment') {
+    return showEntryEditor(
+      context,
+      child: child,
+      kind: kind,
+      refId: item.id,
+      planned: choice == 'appointment',
+    );
   }
   final today = DateUtils.dateOnly(DateTime.now());
   engine.saveChildEntry(
@@ -1199,7 +1241,7 @@ Future<void> showDueActions(
       id: newId(),
       childId: child.id,
       kind: kind,
-      date: choice == 'today' ? today : item.from,
+      date: choice == 'today' || item.from.isAfter(today) ? today : item.from,
       refId: item.id,
       dateUnknown: choice == 'unknown',
     ),
@@ -1210,6 +1252,90 @@ Future<void> showDueActions(
         content: Text('${item.isCheckup ? item.id : item.title} erledigt'),
       ),
     );
+  }
+}
+
+/// A booked appointment: mark it as done, move it or cancel it.
+Future<void> _showAppointmentActions(
+  BuildContext context,
+  Child child,
+  DueItem item,
+  ChildEntry appointment,
+) async {
+  final engine = AppScope.engineOf(context);
+  final today = DateUtils.dateOnly(DateTime.now());
+  // Done on the appointment day, unless it still lies ahead.
+  final doneOn = appointment.date.isAfter(today) ? today : appointment.date;
+  final title = item.isCheckup ? item.title : 'Impfung: ${item.title}';
+  final choice = await showModalBottomSheet<String>(
+    context: context,
+    useRootNavigator: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            Text(
+              _appointmentLabel(appointment),
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              icon: const Icon(AppIcons.check),
+              label: Text(
+                doneOn == today
+                    ? 'Heute erledigt'
+                    : 'Erledigt am ${DateFormat('d.M.', 'de').format(doneOn)}',
+              ),
+              onPressed: () => Navigator.pop(context, 'done'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              icon: const Icon(AppIcons.calendarBlank),
+              label: const Text('Termin ändern …'),
+              onPressed: () => Navigator.pop(context, 'editor'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'cancel'),
+              child: const Text('Termin absagen'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  if (choice == null || !context.mounted) return;
+  switch (choice) {
+    case 'editor':
+      return showEntryEditor(
+        context,
+        child: child,
+        kind: appointment.kind,
+        existing: appointment,
+      );
+    case 'cancel':
+      engine.deleteChildEntry(appointment.id);
+    case 'done':
+      engine.saveChildEntry(
+        ChildEntry(
+          id: appointment.id,
+          childId: appointment.childId,
+          kind: appointment.kind,
+          date: doneOn,
+          refId: appointment.refId,
+          note: appointment.note,
+          photos: appointment.photos,
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${item.isCheckup ? item.id : item.title} erledigt'),
+        ),
+      );
   }
 }
 
@@ -1896,6 +2022,7 @@ Future<void> showEntryEditor(
   required ChildEntryKind kind,
   ChildEntry? existing,
   String? refId,
+  bool planned = false,
 }) => showModalBottomSheet<void>(
   context: context,
   // Above the floating navigation bar.
@@ -1907,6 +2034,7 @@ Future<void> showEntryEditor(
     kind: kind,
     existing: existing,
     refId: refId ?? existing?.refId,
+    planned: existing?.planned ?? planned,
   ),
 );
 
@@ -1916,12 +2044,16 @@ class _EntryEditor extends StatefulWidget {
     required this.kind,
     this.existing,
     this.refId,
+    this.planned = false,
   });
 
   final Child child;
   final ChildEntryKind kind;
   final ChildEntry? existing;
   final String? refId;
+
+  /// Opens on "Termin" (a booked appointment) instead of "Erledigt".
+  final bool planned;
 
   @override
   State<_EntryEditor> createState() => _EntryEditorState();
@@ -1947,7 +2079,29 @@ class _EntryEditorState extends State<_EntryEditor> {
       widget.existing?.date ?? DateUtils.dateOnly(DateTime.now());
   late final _photos = [...?widget.existing?.photos];
   late var _dateUnknown = widget.existing?.dateUnknown ?? false;
+  late var _planned = _datedItem && widget.planned;
+  late TimeOfDay? _time = _parseTime(widget.existing?.time);
   var _uploading = false;
+
+  static TimeOfDay? _parseTime(String? text) {
+    final parts = text?.split(':');
+    if (parts == null || parts.length != 2) return null;
+    final h = int.tryParse(parts[0]), m = int.tryParse(parts[1]);
+    return h == null || m == null ? null : TimeOfDay(hour: h, minute: m);
+  }
+
+  /// Done things lie in the past; appointments may lie years ahead.
+  DateTime get _lastDate => _planned
+      ? DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 365 * 5))
+      : DateUtils.dateOnly(DateTime.now());
+
+  DateTime get _firstDate => DateUtils.dateOnly(widget.child.birthDate);
+
+  DateTime _clamp(DateTime d) => d.isBefore(_firstDate)
+      ? _firstDate
+      : d.isAfter(_lastDate)
+      ? _lastDate
+      : d;
 
   bool get _datedItem =>
       widget.kind == ChildEntryKind.checkup ||
@@ -1956,7 +2110,7 @@ class _EntryEditorState extends State<_EntryEditor> {
   /// Check-ups can carry the measured values.
   bool get _withMeasurements =>
       widget.kind == ChildEntryKind.measurement ||
-      widget.kind == ChildEntryKind.checkup;
+      (widget.kind == ChildEntryKind.checkup && !_planned);
 
   @override
   void dispose() {
@@ -2015,15 +2169,20 @@ class _EntryEditorState extends State<_EntryEditor> {
         id: widget.existing?.id ?? newId(),
         childId: widget.child.id,
         kind: widget.kind,
-        date: _date,
+        date: _clamp(_date),
         refId: widget.refId,
         title: _title.text.trim(),
         note: _note.text.trim(),
         photos: _photos,
-        heightCm: _parse(_height),
-        weightKg: _parse(_weight),
-        headCm: _parse(_head),
-        dateUnknown: _datedItem && _dateUnknown,
+        heightCm: _withMeasurements ? _parse(_height) : null,
+        weightKg: _withMeasurements ? _parse(_weight) : null,
+        headCm: _withMeasurements ? _parse(_head) : null,
+        dateUnknown: _datedItem && !_planned && _dateUnknown,
+        planned: _planned,
+        time: _planned && _time != null
+            ? '${_time!.hour.toString().padLeft(2, '0')}:'
+                  '${_time!.minute.toString().padLeft(2, '0')}'
+            : null,
       ),
     );
     Navigator.pop(context);
@@ -2060,6 +2219,20 @@ class _EntryEditorState extends State<_EntryEditor> {
               ],
             ),
             const SizedBox(height: 16),
+            if (_datedItem) ...[
+              PillTabs<bool>(
+                values: const [false, true],
+                selected: _planned,
+                label: (p) => p ? 'Termin geplant' : 'Erledigt',
+                color: color,
+                onChanged: (p) => setState(() {
+                  _planned = p;
+                  // A done check-up cannot lie in the future.
+                  _date = _clamp(_date);
+                }),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (widget.kind == ChildEntryKind.memory) ...[
               TextField(
                 controller: _title,
@@ -2120,30 +2293,56 @@ class _EntryEditorState extends State<_EntryEditor> {
               ),
               const SizedBox(height: 12),
             ],
-            if (_datedItem)
+            if (_datedItem && !_planned)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Datum unbekannt'),
                 value: _dateUnknown,
                 onChanged: (v) => setState(() => _dateUnknown = v),
               ),
-            if (!(_datedItem && _dateUnknown))
+            if (!(_datedItem && !_planned && _dateUnknown))
               Align(
                 alignment: Alignment.centerLeft,
-                child: InputChip(
-                  avatar: const Icon(AppIcons.calendarBlank, size: 18),
-                  label: Text(
-                    'Am ${DateFormat('d. MMMM y', 'de').format(_date)}',
-                  ),
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _date,
-                      firstDate: widget.child.birthDate,
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) setState(() => _date = picked);
-                  },
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    InputChip(
+                      avatar: const Icon(AppIcons.calendarBlank, size: 18),
+                      label: Text(
+                        'Am ${DateFormat('d. MMMM y', 'de').format(_date)}',
+                      ),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _clamp(_date),
+                          firstDate: _firstDate,
+                          lastDate: _lastDate,
+                        );
+                        if (picked != null) setState(() => _date = picked);
+                      },
+                    ),
+                    if (_planned)
+                      InputChip(
+                        avatar: const Icon(AppIcons.clock, size: 18),
+                        label: Text(
+                          _time == null
+                              ? 'Uhrzeit (optional)'
+                              : 'Um ${_time!.format(context)} Uhr',
+                        ),
+                        onDeleted: _time == null
+                            ? null
+                            : () => setState(() => _time = null),
+                        onPressed: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime:
+                                _time ?? const TimeOfDay(hour: 9, minute: 0),
+                          );
+                          if (picked != null) setState(() => _time = picked);
+                        },
+                      ),
+                  ],
                 ),
               ),
             const SizedBox(height: 12),
@@ -2210,8 +2409,10 @@ class _EntryEditorState extends State<_EntryEditor> {
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
                     label: Text(
-                      widget.kind == ChildEntryKind.memory ||
-                              widget.kind == ChildEntryKind.measurement
+                      widget.existing!.planned
+                          ? 'Termin löschen'
+                          : widget.kind == ChildEntryKind.memory ||
+                                widget.kind == ChildEntryKind.measurement
                           ? 'Löschen'
                           : 'Zurücksetzen',
                     ),
@@ -2227,10 +2428,11 @@ class _EntryEditorState extends State<_EntryEditor> {
                   ),
                 const Spacer(),
                 ColorButton(
-                  label:
-                      widget.existing == null &&
-                          widget.kind != ChildEntryKind.memory &&
-                          widget.kind != ChildEntryKind.measurement
+                  label: _planned
+                      ? 'Termin speichern'
+                      : widget.existing == null &&
+                            widget.kind != ChildEntryKind.memory &&
+                            widget.kind != ChildEntryKind.measurement
                       ? 'Geschafft!'
                       : 'Speichern',
                   color: color,
