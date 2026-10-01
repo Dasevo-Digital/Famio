@@ -147,7 +147,8 @@ class EmergencyInfo {
 enum ChildEntryKind { milestone, memory, measurement, checkup, vaccination }
 
 /// Something that happened, stored in `Collections.childEntries`: a reached
-/// milestone, a memory, a measurement, a done check-up or vaccination.
+/// milestone, a memory, a measurement, a done check-up or vaccination – or,
+/// with [planned], a booked appointment for a check-up or vaccination.
 class ChildEntry {
   const ChildEntry({
     required this.id,
@@ -162,6 +163,8 @@ class ChildEntry {
     this.weightKg,
     this.headCm,
     this.dateUnknown = false,
+    this.planned = false,
+    this.time,
   });
 
   factory ChildEntry.fromRecord(SyncRecord r) => ChildEntry(
@@ -184,6 +187,8 @@ class ChildEntry {
     weightKg: (r.data['weightKg'] as num?)?.toDouble(),
     headCm: (r.data['headCm'] as num?)?.toDouble(),
     dateUnknown: r.data['dateUnknown'] as bool? ?? false,
+    planned: r.data['planned'] as bool? ?? false,
+    time: _time(r.data['time']),
   );
 
   final String id;
@@ -204,6 +209,25 @@ class ChildEntry {
   /// [date] then holds the recommended date.
   final bool dateUnknown;
 
+  /// A booked appointment on [date] (check-ups and vaccinations), not yet
+  /// done. Turns into a regular entry once marked as done.
+  final bool planned;
+
+  /// Time of a [planned] appointment as "HH:mm", if known.
+  final String? time;
+
+  /// The appointment as a point in time (start of day without a [time]).
+  DateTime get appointmentAt {
+    final parts = time?.split(':');
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      int.tryParse(parts?.first ?? '') ?? 0,
+      int.tryParse(parts?.last ?? '') ?? 0,
+    );
+  }
+
   Map<String, Object?> toData() => {
     'childId': childId,
     'kind': kind.name,
@@ -216,8 +240,13 @@ class ChildEntry {
     'weightKg': weightKg,
     'headCm': headCm,
     if (dateUnknown) 'dateUnknown': true,
+    if (planned) 'planned': true,
+    if (planned && time != null) 'time': time,
   };
 }
+
+String? _time(Object? v) =>
+    v is String && RegExp(r'^([01]\d|2[0-3]):[0-5]\d$').hasMatch(v) ? v : null;
 
 DateTime? _date(Object? v) {
   final d = v is String ? DateTime.tryParse(v) : null;

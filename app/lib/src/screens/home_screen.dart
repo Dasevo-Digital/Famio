@@ -606,6 +606,9 @@ class _KidsTile extends StatelessWidget {
                 ),
                 trailing: next == null
                     ? null
+                    : next.appointment != null
+                    ? '${next.isCheckup ? next.id : 'Impfung'} am '
+                          '${DateFormat('d.M.', 'de').format(next.appointment!.date)}'
                     : next.open
                     ? '${next.isCheckup ? next.id : 'Impfung'} fällig'
                     : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',

@@ -388,6 +388,31 @@ List<DueReminder> familyReminders(
         continue;
       }
       final what = d.isCheckup ? d.id : 'Impfung ${d.title}';
+      final appointment = d.appointment;
+      if (appointment != null) {
+        // A booked appointment replaces the "please book" reminders.
+        final at = appointment.appointmentAt;
+        final clock = appointment.time == null
+            ? ''
+            : ' um ${appointment.time} Uhr';
+        final dayBefore = at.subtract(const Duration(days: 1));
+        add(
+          'kid:${child.id}:${d.id}:appt:${appointment.date.toIso8601String()}',
+          DateTime(dayBefore.year, dayBefore.month, dayBefore.day, 18),
+          'Morgen: $what für ${child.name}',
+          'Termin am ${DateFormat('d.M.y', 'de').format(at)}$clock. '
+              'Gelbes Heft bzw. Impfpass mitnehmen.',
+        );
+        if (appointment.time != null) {
+          add(
+            'kid:${child.id}:${d.id}:apptsoon:${at.toIso8601String()}',
+            at.subtract(const Duration(hours: 1)),
+            '$what für ${child.name}$clock',
+            'Termin in einer Stunde.',
+          );
+        }
+        continue;
+      }
       // Pediatricians are booked out for weeks: remind to call in time.
       final book = nineOn(d.from.subtract(const Duration(days: 28)));
       if (d.isCheckup &&

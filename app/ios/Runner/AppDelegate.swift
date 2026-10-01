@@ -38,9 +38,11 @@ import UserNotifications
 /// Shares the iPhone's position with the family while enabled, like the
 /// Android LocationService: it reports to the Famio server itself with a
 /// token that can only report positions, also while the app is in the
-/// background. In the background it uses significant changes and visits;
-/// continuous location updates run only while the app is visible. iOS
-/// relaunches the app after it was closed when the phone moves noticeably.
+/// background. In the background it uses significant changes and visits,
+/// plus a small "moving fence" around the last position: significant changes
+/// only fire after roughly 500 m, the fence already after ~150 m. Continuous
+/// location updates run only while the app is visible. iOS relaunches the
+/// app after it was closed when the phone moves noticeably.
 final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDelegate {
   static let shared = LocationReporter()
 
@@ -49,6 +51,8 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   private var pending: [[String: Any]] = []
   private var paused = false
   private var requestingRegionFix = false
+  /// Keeps the app running while a region-triggered fix is measured.
+  private var fixTask: UIBackgroundTaskIdentifier = .invalid
   private var lastFixUpload = Date.distantPast
   private var permissionWaiters: [FlutterResult] = []
   private static let diagnosticKeys = [
@@ -60,7 +64,11 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
 
   private static let maxPending = 500
   private static let regionPrefix = "famio.place."
-  private static let maxRegions = 20
+  /// The moving fence around the last position (see the class comment).
+  private static let hereRegionId = "famio.here"
+  private static let hereRadius: CLLocationDistance = 150
+  /// iOS monitors at most 20 regions per app; one is the moving fence.
+  private static let maxRegions = 19
   private static let secretNames = ["url", "token", "pin", "device"]
 
   private override init() {
@@ -267,9 +275,11 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       manager.startMonitoringSignificantLocationChanges()
       manager.startMonitoringVisits()
       restoreRegions()
+      if let last = manager.location { moveHereFence(to: last) }
     } else {
       manager.stopMonitoringSignificantLocationChanges()
       manager.stopMonitoringVisits()
+      stopHereFence()
     }
     report(state: state())
   }
@@ -323,6 +333,35 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     setRegions(defaults.array(forKey: key("regions")) ?? [])
   }
 
+  /// Re-centres the moving fence on [location]. Leaving it wakes (or
+  /// relaunches) the app for one new fix, which moves the fence again.
+  private func moveHereFence(to location: CLLocation) {
+    guard manager.authorizationStatus == .authorizedAlways,
+      location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 250
+    else { return }
+    let current = manager.monitoredRegions
+      .first { $0.identifier == Self.hereRegionId } as? CLCircularRegion
+    if let current,
+      CLLocation(latitude: current.center.latitude, longitude: current.center.longitude)
+        .distance(from: location) < 30
+    {
+      return
+    }
+    let radius = min(Self.hereRadius, manager.maximumRegionMonitoringDistance)
+    let region = CLCircularRegion(
+      center: location.coordinate, radius: radius, identifier: Self.hereRegionId)
+    region.notifyOnEntry = false
+    region.notifyOnExit = true
+    // Same identifier: replaces the previous fence.
+    manager.startMonitoring(for: region)
+  }
+
+  private func stopHereFence() {
+    for region in manager.monitoredRegions where region.identifier == Self.hereRegionId {
+      manager.stopMonitoring(for: region)
+    }
+  }
+
   private func stopFamioRegions() {
     for region in manager.monitoredRegions where region.identifier.hasPrefix(Self.regionPrefix) {
       manager.stopMonitoring(for: region)
@@ -333,6 +372,8 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     manager.stopUpdatingLocation()
     manager.stopMonitoringSignificantLocationChanges()
     manager.stopMonitoringVisits()
+    stopFamioRegions()
+    stopHereFence()
     for name in ["enabled", "regions", "alertsSince", "pausedUntil"] + Self.diagnosticKeys {
       defaults.removeObject(forKey: key(name))
     }
@@ -349,14 +390,26 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     guard enabled, !paused else { return }
+    let regionFix = requestingRegionFix
     requestingRegionFix = false
     for location in locations where location.horizontalAccuracy >= 0 {
       add(location)
     }
-    // At most one upload a minute while moving.
-    if Date().timeIntervalSince(lastFixUpload) >= 60 {
+    if let last = locations.last { moveHereFence(to: last) }
+    // At most one upload a minute while moving; a woken app uploads at once,
+    // iOS suspends it again within seconds.
+    if regionFix || UIApplication.shared.applicationState != .active
+      || Date().timeIntervalSince(lastFixUpload) >= 60
+    {
       report(state: state())
     }
+    endFixTask()
+  }
+
+  private func endFixTask() {
+    guard fixTask != .invalid else { return }
+    UIApplication.shared.endBackgroundTask(fixTask)
+    fixTask = .invalid
   }
 
   func locationManager(_ manager: CLLocationManager, didVisit visit: CLVisit) {
@@ -365,6 +418,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       coordinate: visit.coordinate, altitude: 0,
       horizontalAccuracy: visit.horizontalAccuracy, verticalAccuracy: -1,
       timestamp: visit.arrivalDate == .distantPast ? Date() : visit.arrivalDate))
+    if let last = manager.location { moveHereFence(to: last) }
     report(state: state())
   }
 
@@ -381,21 +435,34 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     didDetermineState state: CLRegionState,
     for region: CLRegion
   ) {
-    if state == .inside { requestRegionFix(for: region) }
+    if region.identifier == Self.hereRegionId {
+      // Already outside the fence when it was (re)registered.
+      if state == .outside { requestRegionFix(for: region) }
+    } else if state == .inside {
+      requestRegionFix(for: region)
+    }
   }
 
   private func requestRegionFix(for region: CLRegion) {
     guard enabled, !paused, !requestingRegionFix,
       region.identifier.hasPrefix(Self.regionPrefix)
+        || region.identifier == Self.hereRegionId
     else { return }
     // One temporary request is far cheaper than leaving standard updates on.
     requestingRegionFix = true
+    if fixTask == .invalid {
+      fixTask = UIApplication.shared.beginBackgroundTask(withName: "famio-fix") { [weak self] in
+        self?.requestingRegionFix = false
+        self?.endFixTask()
+      }
+    }
     manager.requestLocation()
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
     // Temporary (no fix yet); updates continue.
     requestingRegionFix = false
+    endFixTask()
   }
 
   private func add(_ location: CLLocation) {
