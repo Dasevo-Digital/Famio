@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../data/usernames.dart';
 import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
@@ -148,6 +149,20 @@ class _AdminScreenState extends State<AdminScreen> {
     var isAdmin = false;
     var role = MemberRole.adult;
     var created = false;
+    // The login name follows the name ("Jürgen" → "juergen") until it is
+    // edited by hand.
+    final taken = [for (final m in engine.allMembers) m.username];
+    var suggested = '';
+    void follow() {
+      if (username.text != suggested) return;
+      suggested = suggestUsername(name.text, taken);
+      username.value = TextEditingValue(
+        text: suggested,
+        selection: TextSelection.collapsed(offset: suggested.length),
+      );
+    }
+
+    name.addListener(follow);
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
@@ -159,12 +174,10 @@ class _AdminScreenState extends State<AdminScreen> {
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(labelText: 'Name'),
           ),
-          TextField(
+          _UsernameField(
             controller: username,
-            autocorrect: false,
-            decoration: const InputDecoration(
-              labelText: 'Benutzername (für die Anmeldung)',
-            ),
+            label: 'Benutzername (für die Anmeldung)',
+            helper: 'Wird aus dem Namen vorgeschlagen',
           ),
           PasswordReveal(
             builder: (_, obscure, toggle) => TextField(
@@ -216,6 +229,34 @@ class _AdminScreenState extends State<AdminScreen> {
     );
     if (created && mounted) _refresh();
   }
+}
+
+/// A login name field that says right away what the server would refuse.
+class _UsernameField extends StatelessWidget {
+  const _UsernameField({
+    required this.controller,
+    required this.label,
+    this.helper,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String? helper;
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: controller,
+    builder: (context, value, _) => TextField(
+      controller: controller,
+      autocorrect: false,
+      enableSuggestions: false,
+      decoration: InputDecoration(
+        labelText: label,
+        helperText: helper,
+        errorText: usernameProblem(value.text),
+      ),
+    ),
+  );
 }
 
 /// Guests and service accounts never manage the server.
@@ -703,11 +744,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(labelText: 'Anzeigename'),
           ),
-          TextField(
-            controller: username,
-            autocorrect: false,
-            decoration: const InputDecoration(labelText: 'Benutzername'),
-          ),
+          _UsernameField(controller: username, label: 'Benutzername'),
           StatefulBuilder(
             builder: (context, setState) => AvatarColorPicker(
               selected: color,

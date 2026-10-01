@@ -1461,6 +1461,21 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('admin add member', (tester) async {
+    final key = await start(tester, desktop);
+    await go(tester, 'Einstellungen');
+    await go(tester, 'Server-Verwaltung');
+    await go(tester, 'Mitglied hinzufügen');
+    await tester.enterText(find.byType(TextField).first, 'Jürgen Müller');
+    await tester.pumpAndSettle();
+    expect(find.text('juergen.mueller'), findsOneWidget);
+    await _shot(tester, key, 'desktop_25_mitglied_vorschlag');
+    await tester.enterText(find.byType(TextField).at(1), 'jürgen');
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'desktop_26_mitglied_ungueltig');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('sso admin', (tester) async {
     final key = await start(tester, desktop);
     await go(tester, 'Einstellungen');
