@@ -25,3 +25,6 @@ __pycache__/
 
 # Built web app (app/tool/build_web.sh), part of the server packages
 server/web/
+
+# Lokale Arbeitsanweisungen, nicht veröffentlichen
+/AGENTS.md
