@@ -9,6 +9,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -114,6 +115,54 @@ void main() {
     expect(find.text('Teilt keinen Standort'), findsOneWidget);
     // On the desktop only the others are shown.
     expect(find.textContaining('Android oder iPhone'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('the map follows members until it is moved by hand', (
+    tester,
+  ) async {
+    await open(tester);
+    MapCamera camera() =>
+        MapCamera.of(tester.element(find.byType(MarkerLayer).first));
+    void moveMia(double latitude, double longitude) {
+      final now = DateTime.now();
+      engine.put(
+        Collections.memberLocations,
+        'm2',
+        MemberLocation(
+          memberId: 'm2',
+          state: SharingState.active,
+          latitude: latitude,
+          longitude: longitude,
+          accuracy: 12,
+          at: now,
+          lastContact: now,
+        ).toData(),
+      );
+    }
+
+    // Mia moves while the map is open: the camera keeps her in the picture.
+    const away = LatLng(53.70, 10.20);
+    expect(camera().visibleBounds.contains(away), isFalse);
+    moveMia(away.latitude, away.longitude);
+    await tester.pumpAndSettle();
+    expect(camera().visibleBounds.contains(away), isTrue);
+    expect(find.byTooltip('Alle zeigen und wieder mitführen'), findsNothing);
+
+    // Moved by hand, the camera stays where the user put it.
+    await tester.drag(find.byType(FlutterMap), const Offset(250, 0));
+    await tester.pumpAndSettle();
+    final center = camera().center;
+    const further = LatLng(53.30, 9.60);
+    moveMia(further.latitude, further.longitude);
+    await tester.pumpAndSettle();
+    expect(camera().center, center);
+
+    // The button follows everybody again.
+    await tester.tap(find.byTooltip('Alle zeigen und wieder mitführen'));
+    await tester.pumpAndSettle();
+    expect(camera().visibleBounds.contains(further), isTrue);
+    expect(find.byTooltip('Alle zeigen und wieder mitführen'), findsNothing);
     await tester.pump(const Duration(seconds: 1));
   });
 

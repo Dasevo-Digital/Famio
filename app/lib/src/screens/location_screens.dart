@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:intl/intl.dart';
@@ -40,11 +41,12 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  final _map = MapController();
+  /// The member the map follows; null follows everybody.
+  String? _focused;
 
   void _focus(MemberLocation l) {
     if (!l.hasPosition) return;
-    _map.move(LatLng(l.latitude!, l.longitude!), 15);
+    setState(() => _focused = l.memberId);
   }
 
   @override
@@ -71,9 +73,10 @@ class _LocationScreenState extends State<LocationScreen> {
             builder: (_) => ClipRRect(
               borderRadius: BorderRadius.circular(28),
               child: FamilyMap(
-                controller: _map,
                 engine: engine,
                 locations: locations,
+                focus: _focused,
+                onShowAll: () => setState(() => _focused = null),
               ),
             ),
           );
@@ -136,6 +139,8 @@ class FamilyMap extends StatefulWidget {
     this.extra = const [],
     this.onTap,
     this.center,
+    this.focus,
+    this.onShowAll,
   });
 
   final SyncEngine engine;
@@ -146,8 +151,15 @@ class FamilyMap extends StatefulWidget {
   final List<Widget> extra;
   final void Function(LatLng point)? onTap;
 
-  /// Where to start instead of fitting everybody in.
+  /// Where to start instead of fitting everybody in; the camera then stays
+  /// where the user puts it.
   final LatLng? center;
+
+  /// The member the camera follows instead of everybody.
+  final String? focus;
+
+  /// Called by the "follow again" button, e.g. to drop [focus].
+  final VoidCallback? onShowAll;
 
   @override
   State<FamilyMap> createState() => _FamilyMapState();
@@ -156,11 +168,20 @@ class FamilyMap extends StatefulWidget {
 class _FamilyMapState extends State<FamilyMap> {
   late final MapController _controller = widget.controller ?? MapController();
 
-  /// Whether the camera already shows real positions; until then (e.g. the
-  /// first sync is still running) it follows the data.
-  var _fitted = false;
+  /// The camera follows the positions (everybody or [FamilyMap.focus]) until
+  /// the user moves the map. Previously it was fitted once, so somebody who
+  /// moved while the map stayed open walked out of the picture.
+  var _following = true;
 
-  List<LatLng> _points() {
+  /// What the camera was last moved to, so updates without movement (and
+  /// the minute ticker) leave it alone.
+  List<LatLng>? _shownTargets;
+
+  List<LatLng> _targets() {
+    final focused = widget.locations[widget.focus];
+    if (focused != null && focused.hasPosition) {
+      return [LatLng(focused.latitude!, focused.longitude!)];
+    }
     final members = {for (final m in widget.engine.members) m.id};
     final shown = [
       for (final l in widget.locations.values)
@@ -175,35 +196,55 @@ class _FamilyMapState extends State<FamilyMap> {
           ];
   }
 
-  void _fit() {
-    if (_fitted || widget.center != null) return;
-    final points = _points();
-    if (points.isEmpty) return;
-    _fitted = true;
+  void _follow() {
+    if (!_following || widget.center != null) return;
+    final targets = _targets();
+    if (targets.isEmpty || listEquals(targets, _shownTargets)) return;
+    final first = _shownTargets == null;
+    _shownTargets = targets;
+    final focused = widget.focus != null && targets.length == 1;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       try {
-        if (points.length == 1) {
-          _controller.move(points.single, 14);
+        if (targets.length == 1) {
+          // A followed member keeps the zoom the user chose.
+          _controller.move(
+            targets.single,
+            focused && !first ? _controller.camera.zoom : (focused ? 15 : 14),
+          );
         } else {
           _controller.fitCamera(
             CameraFit.coordinates(
-              coordinates: points,
+              coordinates: targets,
               padding: const EdgeInsets.all(56),
               maxZoom: 16,
             ),
           );
         }
       } catch (_) {
-        _fitted = false; // Map not laid out yet; try with the next update.
+        _shownTargets = null; // Not laid out yet; try with the next update.
       }
     });
+  }
+
+  void _followAgain() {
+    setState(() {
+      _following = true;
+      _shownTargets = null;
+    });
+    widget.onShowAll?.call();
+    _follow();
   }
 
   @override
   void didUpdateWidget(FamilyMap old) {
     super.didUpdateWidget(old);
-    _fit();
+    if (widget.focus != old.focus) {
+      // Tapping a member (again) follows them, also after a manual move.
+      _following = true;
+      _shownTargets = null;
+    }
+    _follow();
   }
 
   @override
@@ -238,7 +279,12 @@ class _FamilyMapState extends State<FamilyMap> {
               )
             : null,
         onTap: widget.onTap == null ? null : (_, point) => widget.onTap!(point),
-        onMapReady: _fit,
+        onMapReady: _follow,
+        onPositionChanged: (_, hasGesture) {
+          if (hasGesture && _following && center == null) {
+            setState(() => _following = false);
+          }
+        },
         interactionOptions: const InteractionOptions(
           flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
         ),
@@ -337,6 +383,18 @@ class _FamilyMapState extends State<FamilyMap> {
           ],
         ),
         attribution(context),
+        if (!_following && center == null)
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: BubbleButton(
+                icon: AppIcons.locate,
+                tooltip: 'Alle zeigen und wieder mitführen',
+                onPressed: _followAgain,
+              ),
+            ),
+          ),
       ],
     );
   }
