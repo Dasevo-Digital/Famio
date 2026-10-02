@@ -271,15 +271,16 @@ class LocationService {
     final useLatest =
         latest != null &&
         (previous?.at == null || latest.at.isAfter(previous!.at!.toUtc()));
+    final pin = useLatest ? _pinFor(latest, valid, previous) : null;
     final changed = _publish(
       member.id,
       previous,
       MemberLocation(
         memberId: member.id,
         state: state == SharingState.paused ? SharingState.active : state,
-        latitude: useLatest ? latest.latitude : previous?.latitude,
-        longitude: useLatest ? latest.longitude : previous?.longitude,
-        accuracy: useLatest ? latest.accuracy : previous?.accuracy,
+        latitude: pin != null ? pin.latitude : previous?.latitude,
+        longitude: pin != null ? pin.longitude : previous?.longitude,
+        accuracy: pin != null ? pin.accuracy : previous?.accuracy,
         at: useLatest ? latest.at : previous?.at,
         lastContact: now,
         placeId: placeId,
@@ -295,6 +296,56 @@ class LocationService {
       paused: false,
       intervalSeconds: reportInterval.inSeconds,
     );
+  }
+
+  /// Where the map shows the member after [latest], the newest of [fixes].
+  ///
+  /// Places are decided by precise fixes only, but phones in balanced mode
+  /// mostly send coarse Wi-Fi/cell fixes in between (indoors often 1–2 km
+  /// off). Such a fix whose uncertainty still covers the last precise
+  /// position confirms that position instead of moving the pin, otherwise
+  /// the map shows somebody at home while the place says "at work".
+  _Pin _pinFor(
+    LocationFix latest,
+    List<LocationFix> fixes,
+    MemberLocation? previous,
+  ) {
+    final own = (
+      latitude: latest.latitude,
+      longitude: latest.longitude,
+      accuracy: latest.accuracy,
+    );
+    final coarse = latest.accuracy;
+    if (coarse == null || coarse <= _placeAccuracy) return own;
+    _Pin? anchor;
+    for (final f in fixes.reversed) {
+      if (f != latest && (f.accuracy ?? 0) <= _placeAccuracy) {
+        anchor = (
+          latitude: f.latitude,
+          longitude: f.longitude,
+          accuracy: f.accuracy,
+        );
+        break;
+      }
+    }
+    if (anchor == null &&
+        previous != null &&
+        previous.hasPosition &&
+        (previous.accuracy ?? 0) <= _placeAccuracy) {
+      anchor = (
+        latitude: previous.latitude!,
+        longitude: previous.longitude!,
+        accuracy: previous.accuracy,
+      );
+    }
+    if (anchor == null) return own;
+    final distance = distanceMeters(
+      latest.latitude,
+      latest.longitude,
+      anchor.latitude,
+      anchor.longitude,
+    );
+    return distance <= coarse ? anchor : own;
   }
 
   LocationAlert _alert(
@@ -599,3 +650,5 @@ class _State {
   final String? placeId;
   final DateTime? placeSince;
 }
+
+typedef _Pin = ({double latitude, double longitude, double? accuracy});
