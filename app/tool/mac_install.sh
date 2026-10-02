@@ -57,12 +57,15 @@ dev)
   echo "Installiert: /Applications/Famio Dev.app"
   ;;
 prod)
+  # Release folders are called Famio-Release-v<version>-Upload (flat);
+  # older ones had no suffix and a macOS subfolder.
   if [ -n "${2:-}" ]; then
-    DIR="$HOME/Desktop/Famio-Release-v$2"
+    DIR="$(ls -d "$HOME/Desktop/Famio-Release-v$2-Upload" \
+      "$HOME/Desktop/Famio-Release-v$2" 2>/dev/null | head -n 1)"
   else
     DIR="$(ls -d "$HOME"/Desktop/Famio-Release-v* 2>/dev/null | sort -V | tail -n 1)"
   fi
-  ZIP="$(ls "$DIR"/macOS/Famio-*-macOS.zip 2>/dev/null | head -n 1)"
+  ZIP="$(ls "$DIR"/Famio-*-macOS.zip "$DIR"/macOS/Famio-*-macOS.zip 2>/dev/null | head -n 1)"
   if [ -z "$ZIP" ]; then
     echo "Keine freigegebene macOS-Version gefunden (${DIR:-~/Desktop/Famio-Release-v…})." >&2
     exit 1
