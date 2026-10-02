@@ -14,8 +14,11 @@ und in der Seitenleiste von Home Assistant. Der Server
 läuft als Home-Assistant-Add-on oder eigenständig mit Docker bzw.
 Proxmox-LXC.
 
-Der Quellcode ist einsehbar, aber derzeit **nicht als Open Source lizenziert**.
-Die Bedingungen des Projektcodes stehen in [LICENSE](LICENSE), Hinweise zu
+Der Quellcode ist einsehbar, aber **nicht Open Source**: Der Projektcode steht
+unter der [PolyForm Strict License 1.0.0](LICENSE) (© 2026 Dasevo Digital
+und superkuh). Erlaubt sind die nichtkommerzielle Nutzung der App und das
+Prüfen des Quellcodes; Kopieren, Ändern, Weitergeben und jede kommerzielle
+Nutzung sind ohne gesonderte schriftliche Genehmigung nicht gestattet. Hinweise zu
 Komponenten und Daten Dritter in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Für selbst gehostete
 Installationen gelten die [Datenschutzinformationen](docs/datenschutz.md); der
