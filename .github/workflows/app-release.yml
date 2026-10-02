@@ -26,7 +26,7 @@ jobs:
             runner: ubuntu-24.04
     runs-on: ${{ matrix.runner }}
     permissions:
-      contents: write
+      contents: read
     defaults:
       run:
         working-directory: app
@@ -75,11 +75,28 @@ jobs:
           flutter build apk --release --flavor prod
           cp build/app/outputs/flutter-apk/app-prod-release.apk "$GITHUB_WORKSPACE/famio-android.apk"
 
-      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          files: famio-*.*
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: famio-${{ matrix.target }}
           path: famio-*.*
+
+  # One job publishes everything once all builds succeeded, with a checksum
+  # list, instead of every build uploading into the release on its own.
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: famio-*
+          merge-multiple: true
+          path: dist
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum famio-* > SHA256SUMS-app.txt && cat SHA256SUMS-app.txt
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          files: dist/*

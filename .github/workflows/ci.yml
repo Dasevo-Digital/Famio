@@ -40,3 +40,56 @@ jobs:
       - name: Web build smoke test
         working-directory: app
         run: flutter build web --release
+
+  # Compiles the native shells (Kotlin, Swift, C++) on every push, so a
+  # broken platform build shows up before a release tag and not only then.
+  native:
+    if: github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: android
+            runner: ubuntu-24.04
+          - target: linux
+            runner: ubuntu-24.04
+          - target: windows
+            runner: windows-latest
+          - target: apple
+            runner: macos-latest
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: subosito/flutter-action@1508160852fb97248640997f7cfb38da241df0ba # v2.9.1
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+      - if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev
+      - if: matrix.target == 'android'
+        uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: flutter pub get
+      - if: matrix.target == 'android'
+        run: flutter build apk --debug --flavor prod
+      - if: matrix.target == 'linux'
+        run: flutter build linux --debug
+      - if: matrix.target == 'windows'
+        run: flutter build windows --debug
+      - name: macOS, iOS and the iOS unit tests
+        if: matrix.target == 'apple'
+        run: |
+          flutter build macos --debug
+          flutter build ios --simulator --debug
+          device=$(xcrun simctl list devices available -j \
+            | python3 -c 'import json,sys; print(next(d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d["name"].startswith("iPhone")))')
+          cd ios && xcodebuild test -workspace Runner.xcworkspace -scheme Runner \
+            -destination "id=$device" -only-testing:RunnerTests CODE_SIGNING_ALLOWED=NO
