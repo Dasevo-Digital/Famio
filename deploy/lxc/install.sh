@@ -2,7 +2,7 @@
 # Installs or updates the Famio server on Debian/Ubuntu (e.g. a Proxmox LXC).
 #
 #   sh install.sh famio-server-linux-x64.tar.gz
-#   sh install.sh --url https://gitea.status403.de/superkuh/Famio/releases/download/vX.Y.Z/famio-server-linux-x64.tar.gz \
+#   sh install.sh --url https://gitea.status403.de/dasevo-digital/Famio/releases/download/vX.Y.Z/famio-server-X.Y.Z-linux-x64.tar.gz \
 #     --sha256 <value-from-SHA256SUMS.txt>
 #
 # Moving an existing server here (Docker, another container):
