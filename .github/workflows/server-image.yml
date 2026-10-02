@@ -1,9 +1,8 @@
+# Publishes the server images to ghcr.io. Only started by hand until the
+# Home Assistant add-on actually uses these images.
 name: Server image
 
 on:
-  push:
-    branches: [main]
-    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
