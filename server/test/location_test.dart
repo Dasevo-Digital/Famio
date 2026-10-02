@@ -185,6 +185,42 @@ void main() {
     expect(app.records.currentRev, rev);
   });
 
+  test('a coarse fix does not move the pin away from the place', () async {
+    final t0 = DateTime.now().toUtc().subtract(const Duration(minutes: 30));
+    // Precise at school, then a cell fix near home that still covers it,
+    // in one batch and in a later report.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [
+        fix(school, t0),
+        fix(home, t0.add(const Duration(minutes: 2)), acc: 2500),
+      ],
+    });
+    var mia = locationOf(kidId)!;
+    expect(mia.placeId, 'school');
+    expect((mia.latitude, mia.longitude), school);
+    expect(mia.accuracy, 15);
+    expect(
+      mia.at!.millisecondsSinceEpoch,
+      t0.add(const Duration(minutes: 2)).millisecondsSinceEpoch,
+    );
+
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, t0.add(const Duration(minutes: 10)), acc: 2500)],
+    });
+    mia = locationOf(kidId)!;
+    // Not moved, so not even republished before the next heartbeat.
+    expect((mia.latitude, mia.longitude), school);
+
+    // A coarse fix that rules the old position out does move the pin.
+    const far = (53.70, 10.20);
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(far, t0.add(const Duration(minutes: 20)), acc: 2500)],
+    });
+    mia = locationOf(kidId)!;
+    expect((mia.latitude, mia.longitude), far);
+    expect(mia.accuracy, 2500);
+  });
+
   test('pausing needs the parents code; resuming does not', () async {
     // No code set yet.
     var r = await call('POST', 'api/location/pause', kidToken, {'code': '1'});
