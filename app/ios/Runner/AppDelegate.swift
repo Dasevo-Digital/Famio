@@ -48,7 +48,10 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
 
   private let manager = CLLocationManager()
   private let defaults = UserDefaults.standard
-  private var pending: [[String: Any]] = []
+  private var queue = LocationQueue()
+  /// Whether the encrypted file with unsent positions was read back. Before
+  /// the first unlock after a reboot it cannot be, and is then not touched.
+  private var queueRestored = false
   private var paused = false
   private var requestingRegionFix = false
   /// Keeps the app running while a region-triggered fix is measured.
@@ -62,7 +65,6 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   private lazy var session = URLSession(
     configuration: .ephemeral, delegate: self, delegateQueue: nil)
 
-  private static let maxPending = 500
   private static let regionPrefix = "famio.place."
   /// The moving fence around the last position (see the class comment).
   private static let hereRegionId = "famio.here"
@@ -255,6 +257,7 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   }
 
   private func start() {
+    restoreQueue()
     let status = manager.authorizationStatus
     guard status == .authorizedAlways || status == .authorizedWhenInUse else {
       report(state: "denied")
@@ -378,7 +381,10 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       defaults.removeObject(forKey: key(name))
     }
     for name in Self.secretNames { setSecret(nil, name: name) }
-    pending.removeAll()
+    queue.clear()
+    if let file = queueFile { try? FileManager.default.removeItem(at: file) }
+    setSecret(nil, name: "queueKey")
+    queueRestored = true
   }
 
   private func state() -> String {
@@ -475,10 +481,65 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       "at": Int64(location.timestamp.timeIntervalSince1970 * 1000),
     ]
     if level >= 0 { fix["battery"] = Int(level * 100) }
-    pending.append(fix)
-    if pending.count > Self.maxPending {
-      pending.removeFirst(pending.count - Self.maxPending)
+    restoreQueue()
+    queue.add(fix)
+    persistQueue()
+  }
+
+  // MARK: - Offline queue
+
+  /// Unsent positions survive the app being ended, but only encrypted with a
+  /// key in the Keychain (this device only), at most 24 hours and 500 fixes,
+  /// and the file is deleted as soon as the server has everything.
+  private var queueFile: URL? {
+    FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
+      .appendingPathComponent("famio-location-queue")
+  }
+
+  private func queueKey(create: Bool) -> SymmetricKey? {
+    if let stored = secret("queueKey"), let data = Data(base64Encoded: stored) {
+      return SymmetricKey(data: data)
     }
+    guard create else { return nil }
+    let key = SymmetricKey(size: .bits256)
+    setSecret(key.withUnsafeBytes { Data($0) }.base64EncodedString(), name: "queueKey")
+    // The Keychain is unavailable before the first unlock.
+    return secret("queueKey") == nil ? nil : key
+  }
+
+  private func restoreQueue() {
+    guard !queueRestored, let file = queueFile else { return }
+    guard FileManager.default.fileExists(atPath: file.path) else {
+      queueRestored = true
+      return
+    }
+    // Protected until the first unlock after a reboot: try again later.
+    guard let data = try? Data(contentsOf: file) else { return }
+    if let key = queueKey(create: false), let fixes = LocationQueue.open(data, key: key) {
+      queue.merge(fixes)
+    }
+    // An unreadable file is replaced with the next save.
+    queueRestored = true
+  }
+
+  private func persistQueue() {
+    restoreQueue()
+    guard queueRestored, let file = queueFile else { return }
+    queue.prune(Date())
+    guard !queue.fixes.isEmpty else {
+      try? FileManager.default.removeItem(at: file)
+      return
+    }
+    guard let key = queueKey(create: true),
+      let data = LocationQueue.seal(queue.fixes, key: key)
+    else { return }
+    try? FileManager.default.createDirectory(
+      at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try? data.write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    var target = file
+    try? target.setResourceValues(values)
   }
 
   // MARK: - Server
@@ -488,7 +549,9 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       let token = secret("token"),
       let url = URL(string: "api/location/report", relativeTo: base)
     else { return }
-    let batch = pending
+    restoreQueue()
+    // One upload at a time; a report asked for meanwhile follows it.
+    guard let batch = queue.beginUpload() else { return }
     if !batch.isEmpty { lastFixUpload = Date() }
     var body: [String: Any] = [
       "fixes": batch,
@@ -512,19 +575,26 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
       DispatchQueue.main.async {
         defer { UIApplication.shared.endBackgroundTask(task) }
         guard let self else { return }
-        guard let http = response as? HTTPURLResponse else {
+        let http = response as? HTTPURLResponse
+        let accepted = http.map { (200..<300).contains($0.statusCode) } ?? false
+        // Removes exactly the positions this upload carried.
+        let again = self.queue.finishUpload(confirmed: accepted ? batch : nil)
+        self.persistQueue()
+        guard let http else {
           self.recordTransferError(error == nil ? "Keine Serverantwort" : "Netzwerkfehler")
+          if again { self.report(state: self.state()) }
           return
         }
         self.recordServerResponse(http.statusCode, uploadedPosition: !batch.isEmpty)
-        if (200..<300).contains(http.statusCode) {
-          self.pending.removeFirst(min(batch.count, self.pending.count))
+        if accepted {
           if let data, let answer = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
             self.apply(answer)
           }
         } else if http.statusCode == 401 {
           self.revoked()
+          return
         }
+        if again { self.report(state: self.state()) }
       }
     }.resume()
   }
@@ -615,6 +685,84 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     } else {
       completionHandler(.cancelAuthenticationChallenge, nil)
     }
+  }
+}
+
+/// The positions the server has not confirmed yet. Uploads run one at a
+/// time, and an answer removes only the positions it actually carried,
+/// matched by their time (the server skips duplicates by time as well), so a
+/// fix measured during an upload is never dropped.
+struct LocationQueue {
+  static let maxCount = 500
+  /// Older positions are of no use to the family and should not linger.
+  static let maxAge: TimeInterval = 24 * 60 * 60
+
+  private(set) var fixes: [[String: Any]] = []
+  private(set) var uploading = false
+  /// A report was asked for while an upload was running.
+  private var again = false
+
+  static func time(_ fix: [String: Any]) -> Int64? { (fix["at"] as? NSNumber)?.int64Value }
+
+  mutating func add(_ fix: [String: Any], now: Date = Date()) {
+    fixes.append(fix)
+    prune(now)
+  }
+
+  /// Adds positions read back from the offline file.
+  mutating func merge(_ restored: [[String: Any]], now: Date = Date()) {
+    let known = Set(fixes.compactMap(Self.time))
+    fixes += restored.filter { Self.time($0).map { !known.contains($0) } ?? false }
+    fixes.sort { (Self.time($0) ?? 0) < (Self.time($1) ?? 0) }
+    prune(now)
+  }
+
+  mutating func prune(_ now: Date) {
+    let oldest = Int64((now.timeIntervalSince1970 - Self.maxAge) * 1000)
+    fixes.removeAll { (Self.time($0) ?? 0) < oldest }
+    if fixes.count > Self.maxCount { fixes.removeFirst(fixes.count - Self.maxCount) }
+  }
+
+  /// The positions for the next upload, or nil while one is running; the
+  /// report is then repeated once that one has finished.
+  mutating func beginUpload() -> [[String: Any]]? {
+    guard !uploading else {
+      again = true
+      return nil
+    }
+    uploading = true
+    return fixes
+  }
+
+  /// Ends the running upload; [confirmed] is the batch the server accepted.
+  /// Returns whether another report was asked for meanwhile.
+  mutating func finishUpload(confirmed batch: [[String: Any]]?) -> Bool {
+    if let batch { confirm(batch) }
+    uploading = false
+    defer { again = false }
+    return again
+  }
+
+  mutating func confirm(_ batch: [[String: Any]]) {
+    let sent = Set(batch.compactMap(Self.time))
+    fixes.removeAll { Self.time($0).map(sent.contains) ?? false }
+  }
+
+  mutating func clear() {
+    fixes = []
+    again = false
+  }
+
+  static func seal(_ fixes: [[String: Any]], key: SymmetricKey) -> Data? {
+    guard let json = try? JSONSerialization.data(withJSONObject: fixes) else { return nil }
+    return try? AES.GCM.seal(json, using: key).combined
+  }
+
+  static func open(_ data: Data, key: SymmetricKey) -> [[String: Any]]? {
+    guard let box = try? AES.GCM.SealedBox(combined: data),
+      let json = try? AES.GCM.open(box, using: key)
+    else { return nil }
+    return try? JSONSerialization.jsonObject(with: json) as? [[String: Any]]
   }
 }
 
