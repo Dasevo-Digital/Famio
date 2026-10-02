@@ -37,7 +37,7 @@ import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
 
-const serverVersion = '1.0.2';
+const serverVersion = '1.0.3';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
