@@ -162,6 +162,7 @@ class FamioApi {
     final router = Router()
       ..get('/', _landing)
       ..get('/delete-account', _deleteAccountPage)
+      ..get('/.well-known/security.txt', _securityTxt)
       ..get('/app', (Request _) => Response.found('app/'))
       ..get('/app/<path|.*>', _webApp)
       ..get('/api/panel', _panel)
@@ -1923,6 +1924,26 @@ class FamioApi {
         webApp: webApp != null,
       ),
       headers: {'content-type': 'text/html; charset=utf-8'},
+    );
+  }
+
+  /// Where to report security problems (RFC 9116). Every server runs the
+  /// same software, so reports go privately to the project.
+  static const securityContact =
+      'https://github.com/Dasevo-Digital/Famio/security/advisories/new';
+
+  Response _securityTxt(Request request) {
+    final now = DateTime.now().toUtc();
+    final expires = DateTime.utc(
+      now.year,
+      now.month,
+      now.day,
+    ).add(const Duration(days: 180));
+    return Response.ok(
+      'Contact: $securityContact\n'
+      'Expires: ${expires.toIso8601String().replaceFirst('.000', '')}\n'
+      'Preferred-Languages: de, en\n',
+      headers: {'content-type': 'text/plain; charset=utf-8'},
     );
   }
 

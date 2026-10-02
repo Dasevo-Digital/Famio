@@ -30,6 +30,30 @@ void main() {
     expect(html, isNot(contains('Add-on')));
   });
 
+  test('security.txt names the private reporting channel', () async {
+    final response = await app.handler(
+      Request(
+        'GET',
+        Uri.parse('https://famio.example.org/.well-known/security.txt'),
+      ),
+    );
+    expect(response.statusCode, 200);
+    expect(response.mimeType, 'text/plain');
+    final text = await response.readAsString();
+    expect(text, contains('Contact: ${FamioApi.securityContact}\n'));
+    final expires = DateTime.parse(
+      RegExp(r'^Expires: (.+)$', multiLine: true).firstMatch(text)!.group(1)!,
+    );
+    expect(
+      expires.isAfter(DateTime.now().add(const Duration(days: 150))),
+      isTrue,
+    );
+    expect(
+      expires.isBefore(DateTime.now().add(const Duration(days: 365))),
+      isTrue,
+    );
+  });
+
   test('the public address wins', () async {
     app.settings.update({'publicUrl': 'https://famio.example.org'});
     final html = await page('http://192.168.1.10:8765/');
