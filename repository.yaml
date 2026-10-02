@@ -1,4 +1,4 @@
 # Lets Home Assistant use this Git repository as an add-on repository.
 name: Famio Add-ons
-url: https://gitea.status403.de/superkuh/Famio
+url: https://gitea.status403.de/dasevo-digital/Famio
 maintainer: Famio
