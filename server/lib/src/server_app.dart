@@ -20,6 +20,7 @@ import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
 import 'database.dart';
 import 'dav/caldav_sync.dart';
+import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
 import 'family/allowance_job.dart';
 import 'hub.dart';
@@ -91,6 +92,16 @@ class FamioServerApp {
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
       urlPolicy: remoteUrlPolicy,
+    );
+    lists = ListSync(
+      db: db,
+      records: records,
+      timeZone: () => settings.location.name,
+      onChanged: () => hub.notifyRev(records.currentRev),
+      enabled: () => !(settings.effective.hiddenModules ?? const []).contains(
+        ServerSettings.listSyncModule,
+      ),
+      client: httpClient,
     );
     caldav = CalDavSync(
       db: db,
@@ -179,6 +190,7 @@ class FamioServerApp {
       encryptedAtRest: dataKey != null,
       keySeparate: dataKey != null && keySeparate,
       caldav: caldav,
+      lists: lists,
       calendarAccess: calendarAccess,
       locations: locations,
       push: push,
@@ -227,6 +239,9 @@ class FamioServerApp {
   late final CalendarAccess calendarAccess;
   late final CalendarImporter importer;
   late final CalDavSync caldav;
+
+  /// Bring! and Microsoft To Do connections.
+  late final ListSync lists;
   late final LocationService locations;
   late final FileStore files;
   late final PushService push;
@@ -259,6 +274,7 @@ class FamioServerApp {
   void startBackgroundJobs() {
     importer.start();
     caldav.start();
+    lists.start();
     allowances.start();
     accounts.deleteExpiredSessions();
     locations.collectGarbage();
@@ -275,6 +291,7 @@ class FamioServerApp {
     _gc?.cancel();
     importer.stop();
     caldav.stop();
+    lists.stop();
     allowances.stop();
     notices.close();
     push.close();

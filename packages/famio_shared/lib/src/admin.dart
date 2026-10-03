@@ -157,7 +157,12 @@ class ServerSettings {
     'budget',
     'health',
     'contacts',
+    // Not a section: connections to Bring! and Microsoft To Do.
+    listSyncModule,
   ];
+
+  /// In [hiddenModules]: the family does not connect lists in other apps.
+  static const listSyncModule = 'listSync';
 
   static const keys = [
     'publicUrl',

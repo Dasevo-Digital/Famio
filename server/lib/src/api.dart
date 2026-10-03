@@ -30,6 +30,7 @@ import 'files/file_store.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'hub.dart';
+import 'lists/list_sync.dart';
 import 'landing_page.dart';
 import 'web_app.dart';
 import 'location/location_service.dart';
@@ -42,6 +43,7 @@ part 'api/admin_routes.dart';
 part 'api/auth_routes.dart';
 part 'api/calendar_routes.dart';
 part 'api/file_routes.dart';
+part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
 part 'api/web_routes.dart';
@@ -79,6 +81,7 @@ class FamioApi {
     this.keySeparate = false,
     this.onEventsChanged,
     this.caldav,
+    this.lists,
     this.calendarAccess,
     this.locations,
     this.push,
@@ -145,6 +148,9 @@ class FamioApi {
 
   /// Two-way sync with other CalDAV servers; null in some tests.
   final CalDavSync? caldav;
+
+  /// Connections to Bring! and Microsoft To Do; null in some tests.
+  final ListSync? lists;
 
   /// Calendar sharing and the admins' calendar profiles.
   final CalendarAccess? calendarAccess;
@@ -250,6 +256,14 @@ class FamioApi {
       ..delete('/api/calendar/caldav/<id>', _caldavDelete)
       ..post('/api/calendar/caldav/<id>/sync', _caldavSync)
       ..get('/api/calendar/occurrences', _occurrences)
+      ..get('/api/lists/accounts', _listAccounts)
+      ..post('/api/lists/bring', _listConnectBring)
+      ..post('/api/lists/microsoft', _listStartMicrosoft)
+      ..post('/api/lists/microsoft/poll', _listPollMicrosoft)
+      ..get('/api/lists/accounts/<id>/remote', _listRemoteLists)
+      ..put('/api/lists/accounts/<id>/links', _listSetLinks)
+      ..post('/api/lists/accounts/<id>/sync', _listSync)
+      ..delete('/api/lists/accounts/<id>', _listDisconnect)
       ..get('/ical/<file>', _icalFeed)
       ..get('/api/ws', _ws)
       ..post('/api/ws/ticket', _wsTicket)
@@ -263,7 +277,10 @@ class FamioApi {
       throttle: throttle,
       clientAddress: clientAddress,
       onChanged: _eventsChanged,
-      onRecordsChanged: () => hub.notifyRev(records.currentRev),
+      onRecordsChanged: () {
+        hub.notifyRev(records.currentRev);
+        lists?.poke();
+      },
     );
     return const Pipeline()
         .addMiddleware(_compressJson)
@@ -300,6 +317,13 @@ class FamioApi {
     }
     if (syncRequest.changes.any((c) => c.collection == Collections.events)) {
       onEventsChanged?.call();
+    }
+    if (syncRequest.changes.any(
+      (c) =>
+          c.collection == Collections.tasks ||
+          c.collection == Collections.shoppingItems,
+    )) {
+      lists?.poke();
     }
     return _json(response.toJson());
   }

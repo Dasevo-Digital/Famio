@@ -203,6 +203,38 @@ const _migrations = [
   -- location state so it is never synchronised to unrelated family clients.
   ALTER TABLE location_state ADD COLUMN sharing_schedule TEXT;
   ''',
+  '''
+  -- Lists in other apps (Bring!, Microsoft To Do) kept in sync with tasks
+  -- and shopping lists. Credentials are tokens, never passwords.
+  CREATE TABLE list_accounts (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    name TEXT NOT NULL,
+    credentials TEXT NOT NULL,
+    last_sync INTEGER,
+    last_error TEXT,
+    created_at INTEGER NOT NULL
+  );
+  -- Which Famio list ('tasks' or a shopping list id) goes with which list.
+  CREATE TABLE list_links (
+    account_id TEXT NOT NULL REFERENCES list_accounts(id) ON DELETE CASCADE,
+    famio_list TEXT NOT NULL,
+    remote_list TEXT NOT NULL,
+    remote_name TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (account_id, famio_list)
+  );
+  -- Which entry there belongs to which Famio record, and the fingerprint of
+  -- the state both sides last agreed on.
+  CREATE TABLE list_items (
+    account_id TEXT NOT NULL REFERENCES list_accounts(id) ON DELETE CASCADE,
+    famio_list TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    remote_id TEXT NOT NULL,
+    hash TEXT NOT NULL,
+    PRIMARY KEY (account_id, famio_list, item_id)
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.
