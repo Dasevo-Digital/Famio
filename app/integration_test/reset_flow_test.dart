@@ -141,7 +141,14 @@ void main() {
     await tap(tester, find.text('Server-Verwaltung'));
     await tap(tester, find.text('Einstellungen').last);
     await waitFor(tester, find.text('Öffentliche Adresse'));
-    expect(find.widgetWithText(TextField, '7'), findsOneWidget);
+    // By label: other fields may show "7" as their hint.
+    String uploadLimit() => tester
+        .widget<TextField>(
+          find.widgetWithText(TextField, 'Maximale Dateigröße (MB)'),
+        )
+        .controller!
+        .text;
+    expect(uploadLimit(), '7');
 
     // a. Settings back to the defaults (at the end of the list).
     await tester.dragUntilVisible(
@@ -153,7 +160,7 @@ void main() {
     await tap(tester, find.widgetWithText(FilledButton, 'Zurücksetzen'));
     await dialogClosed(tester);
     await waitFor(tester, find.text('Einstellungen auf Standard gesetzt'));
-    expect(find.widgetWithText(TextField, '7'), findsNothing);
+    expect(uploadLimit(), isEmpty);
     expect((await api.adminOverview()).settings.maxUploadMb, isNull);
 
     // b. Delete all data, and the other members.
