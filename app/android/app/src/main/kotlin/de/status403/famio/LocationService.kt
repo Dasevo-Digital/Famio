@@ -64,7 +64,6 @@ class LocationService : Service(), LocationListener {
         private const val CHANNEL = "famio_location"
         private const val ALERT_CHANNEL = "famio_places"
         private const val NOTIFICATION_ID = 47110
-        private const val MAX_PENDING = 500
         private const val ACTION_HEARTBEAT = "de.status403.famio.LOCATION_HEARTBEAT"
 
         /** Precise mode lasts this long after the last noticeable move. */
@@ -99,7 +98,7 @@ class LocationService : Service(), LocationListener {
     private val handler = Handler(Looper.getMainLooper())
     private val network = Executors.newSingleThreadExecutor()
     private lateinit var locations: LocationManager
-    private val pending = ArrayList<JSONObject>()
+    private lateinit var queue: FixQueue
     private var listening = false
 
     /** Whether updates come from the fused provider (else GPS/network). */
@@ -143,6 +142,7 @@ class LocationService : Service(), LocationListener {
     override fun onCreate() {
         super.onCreate()
         LocationSecrets.migrate(this)
+        loadQueue()
         locations = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
@@ -173,6 +173,9 @@ class LocationService : Service(), LocationListener {
             tick()
             return START_STICKY
         }
+        // Started again from the app, maybe for another account: the saved
+        // queue is the one that counts (the app drops it then).
+        if (!fromAlarm) loadQueue()
         try {
             if (Build.VERSION.SDK_INT >= 29) {
                 startForeground(
@@ -277,6 +280,27 @@ class LocationService : Service(), LocationListener {
     }
 
     // --- positions -----------------------------------------------------------
+
+    /**
+     * Unconfirmed positions survive a restart, encrypted like the token.
+     * Once sharing is off nothing is written any more.
+     */
+    private fun loadQueue() {
+        val store = secrets
+        queue = FixQueue.restore(
+            store.getString(LocationSecrets.PENDING, null),
+            System.currentTimeMillis(),
+        ) { json ->
+            val enabled = prefs.getBoolean("enabled", false)
+            store.edit().apply {
+                if (json == null || !enabled) {
+                    remove(LocationSecrets.PENDING)
+                } else {
+                    putString(LocationSecrets.PENDING, json)
+                }
+            }.apply()
+        }
+    }
 
     private fun startUpdates() {
         if (paused || listening) return
@@ -415,17 +439,15 @@ class LocationService : Service(), LocationListener {
                 movingUntil = SystemClock.elapsedRealtime() + MOVING_MS
             }
         }
-        synchronized(pending) {
-            pending.add(
-                JSONObject()
-                    .put("lat", location.latitude)
-                    .put("lon", location.longitude)
-                    .put("acc", if (location.hasAccuracy()) location.accuracy.toDouble() else JSONObject.NULL)
-                    .put("at", location.time)
-                    .put("battery", battery()),
-            )
-            while (pending.size > MAX_PENDING) pending.removeAt(0)
-        }
+        queue.add(
+            JSONObject()
+                .put("lat", location.latitude)
+                .put("lon", location.longitude)
+                .put("acc", if (location.hasAccuracy()) location.accuracy.toDouble() else JSONObject.NULL)
+                .put("at", location.time)
+                .put("battery", battery()),
+            System.currentTimeMillis(),
+        )
         // At most one upload a minute unless the phone moved noticeably;
         // the heartbeat sends the rest.
         val moved = lastUploaded?.let { it.distanceTo(location) >= UPLOAD_MOVE_M } ?: true
@@ -473,7 +495,7 @@ class LocationService : Service(), LocationListener {
         val pin = secrets.getString("pin", null)
         val device = secrets.getString("device", null)
         val alertsSince = prefs.getLong("alertsSince", System.currentTimeMillis())
-        val batch = synchronized(pending) { ArrayList(pending) }
+        val batch = queue.snapshot()
         if (batch.isNotEmpty()) lastFixUpload = System.currentTimeMillis()
         if (network.isShutdown) return
         // A dozing phone would fall asleep in the middle of the upload.
@@ -495,7 +517,7 @@ class LocationService : Service(), LocationListener {
                 recordServerResponse(status, uploadedPosition = batch.isNotEmpty())
                 when {
                     status in 200..299 -> {
-                        synchronized(pending) { pending.removeAll(batch.toSet()) }
+                        queue.confirm(batch)
                         handler.post { applyAnswer(JSONObject(text)) }
                     }
                     status == 401 -> handler.post { revoked() }

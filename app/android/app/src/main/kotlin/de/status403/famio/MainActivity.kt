@@ -44,11 +44,18 @@ class MainActivity : FlutterActivity() {
                                 }
                             }
                             .apply()
+                        val url = call.argument<String>("url")
+                        val token = call.argument<String>("token")
+                        // Positions buffered for another server or account
+                        // must not go to this one.
+                        val sameSession = secrets.getString("url", null) == url &&
+                            secrets.getString("token", null) == token
                         secrets.edit()
-                            .putString("url", call.argument<String>("url"))
-                            .putString("token", call.argument<String>("token"))
+                            .putString("url", url)
+                            .putString("token", token)
                             .putString("pin", call.argument<String>("pin"))
                             .putString("device", call.argument<String>("device"))
+                            .apply { if (!sameSession) remove(LocationSecrets.PENDING) }
                             .apply()
                         LocationService.start(this)
                         result.success(null)

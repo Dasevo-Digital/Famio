@@ -80,7 +80,9 @@ jobs:
           java-version: "17"
       - run: flutter pub get
       - if: matrix.target == 'android'
-        run: flutter build apk --debug --flavor prod
+        run: |
+          flutter build apk --debug --flavor prod
+          cd android && ./gradlew :app:testDevDebugUnitTest --console=plain
       - if: matrix.target == 'linux'
         run: flutter build linux --debug
       - if: matrix.target == 'windows'
