@@ -15,6 +15,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'fresh_start.dart';
+
 const _url = String.fromEnvironment('FAMIO_URL');
 const _user = String.fromEnvironment('FAMIO_USER', defaultValue: 'admin');
 const _password = String.fromEnvironment('FAMIO_PASSWORD');
@@ -139,6 +141,7 @@ void main() {
     expect(sync.rejected.map((r) => r.id), ['e2e-$now-2']);
 
     await initializeDateFormatting('de');
+    await freshStart();
     final state = AppState();
     await state.init();
     await tester.pumpWidget(FamioApp(state: state));

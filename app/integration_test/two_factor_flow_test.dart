@@ -21,6 +21,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import 'fresh_start.dart';
+
 const _url = String.fromEnvironment('FAMIO_URL');
 const _user = String.fromEnvironment('FAMIO_USER', defaultValue: 'admin');
 const _password = String.fromEnvironment('FAMIO_PASSWORD');
@@ -111,13 +113,19 @@ void main() {
       find.byWidgetPredicate(
         (w) =>
             (w is Text && w.data == 'Einstellungen') ||
-            (w is Tooltip && w.message == 'Mehr'),
+            (w is Tooltip &&
+                (w.message == 'Mehr' || w.message == 'Einstellungen')),
       ),
     );
-    if (find.text('Einstellungen').evaluate().isEmpty) {
+    if (find.text('Einstellungen').evaluate().isNotEmpty) {
+      await tap(tester, find.text('Einstellungen').last);
+    } else if (find.byTooltip('Einstellungen').evaluate().isNotEmpty) {
+      // A low window: the side rail shows icons only.
+      await tap(tester, find.byTooltip('Einstellungen').last);
+    } else {
       await tap(tester, find.byTooltip('Mehr').last);
+      await tap(tester, find.text('Einstellungen').last);
     }
-    await tap(tester, find.text('Einstellungen').last);
   }
 
   Future<void> signIn(WidgetTester tester) async {
@@ -145,6 +153,7 @@ void main() {
   ) async {
     expect(_url, isNotEmpty, reason: 'pass --dart-define=FAMIO_URL=…');
     await initializeDateFormatting('de');
+    await freshStart();
     final state = AppState();
     await state.init();
     await tester.pumpWidget(FamioApp(state: state));
@@ -156,7 +165,8 @@ void main() {
           (w) =>
               (w is Text &&
                   (w.data == 'Einstellungen' || w.data == 'Verbinden')) ||
-              (w is Tooltip && w.message == 'Mehr'),
+              (w is Tooltip &&
+                  (w.message == 'Mehr' || w.message == 'Einstellungen')),
         ),
       );
       if (find.text('Verbinden').evaluate().isEmpty) await signOut(tester);

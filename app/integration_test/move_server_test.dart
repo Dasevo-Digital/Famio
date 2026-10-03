@@ -9,6 +9,8 @@ import 'package:famio/src/app_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
+import 'fresh_start.dart';
+
 const _url = String.fromEnvironment('FAMIO_URL');
 const _newUrl = String.fromEnvironment('FAMIO_NEW_URL');
 const _user = String.fromEnvironment('FAMIO_USER', defaultValue: 'admin');
@@ -22,6 +24,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('moving to a new address keeps the session', (tester) async {
+    await freshStart();
     final state = AppState();
     await state.init();
     if (state.me == null) {

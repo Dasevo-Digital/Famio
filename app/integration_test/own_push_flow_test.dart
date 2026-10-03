@@ -72,8 +72,16 @@ void main() {
         _url,
       );
       await tap(tester, find.text('Verbinden'));
-      await enter(tester, find.widgetWithText(TextField, 'Benutzername'), _user);
-      await enter(tester, find.widgetWithText(TextField, 'Passwort'), _password);
+      await enter(
+        tester,
+        find.widgetWithText(TextField, 'Benutzername'),
+        _user,
+      );
+      await enter(
+        tester,
+        find.widgetWithText(TextField, 'Passwort'),
+        _password,
+      );
       await tap(tester, find.text('Anmelden'));
     }
 
@@ -83,13 +91,19 @@ void main() {
       find.byWidgetPredicate(
         (w) =>
             (w is Text && w.data == 'Einstellungen') ||
-            (w is Tooltip && w.message == 'Mehr'),
+            (w is Tooltip &&
+                (w.message == 'Mehr' || w.message == 'Einstellungen')),
       ),
     );
-    if (find.text('Einstellungen').evaluate().isEmpty) {
+    if (find.text('Einstellungen').evaluate().isNotEmpty) {
+      await tap(tester, find.text('Einstellungen').last);
+    } else if (find.byTooltip('Einstellungen').evaluate().isNotEmpty) {
+      // A low window: the side rail shows icons only.
+      await tap(tester, find.byTooltip('Einstellungen').last);
+    } else {
       await tap(tester, find.byTooltip('Mehr').last);
+      await tap(tester, find.text('Einstellungen').last);
     }
-    await tap(tester, find.text('Einstellungen').last);
     await waitFor(tester, find.text('Push-Benachrichtigungen'));
     await tester.dragUntilVisible(
       find.text('Push-Benachrichtigungen'),
