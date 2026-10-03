@@ -70,4 +70,36 @@ void main() {
     t.failed('1.2.3.4', 'mama');
     expect(t.blockedFor('1.2.3.4', 'mama'), isNull);
   });
+
+  test('a stranger cannot lock the owner out of the account', () {
+    final t = throttle();
+    t.succeeded('192.168.1.5', 'mama'); // Mama's own network.
+    for (var i = 0; i < 25; i++) {
+      t.failed('10.0.0.$i', 'mama');
+    }
+    // Guessing from elsewhere is blocked, Mama's address is not …
+    expect(t.blockedFor('10.0.1.1', 'mama'), isNotNull);
+    expect(t.blockedFor('192.168.1.5', 'mama'), isNull);
+    // … but mistyping there is still slowed down.
+    for (var i = 0; i < 5; i++) {
+      t.failed('192.168.1.5', 'mama');
+    }
+    expect(t.blockedFor('192.168.1.5', 'mama'), isNotNull);
+  });
+
+  test('trust is per account and ends after a while', () {
+    final t = throttle();
+    t.succeeded('192.168.1.5', 'mama');
+    for (var i = 0; i < 20; i++) {
+      t.failed('10.0.0.$i', 'papa');
+    }
+    // Mama's address is not trusted for Papa's account.
+    expect(t.blockedFor('192.168.1.5', 'papa'), isNotNull);
+
+    now = now.add(const Duration(days: 31));
+    for (var i = 0; i < 20; i++) {
+      t.failed('10.0.0.$i', 'mama');
+    }
+    expect(t.blockedFor('192.168.1.5', 'mama'), isNotNull);
+  });
 }
