@@ -90,4 +90,7 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    testImplementation("junit:junit:4.13.2")
+    // The real org.json: android.jar only has stubs in unit tests.
+    testImplementation("org.json:json:20240303")
 }

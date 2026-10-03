@@ -12,6 +12,9 @@ import androidx.security.crypto.MasterKey
  */
 object LocationSecrets {
     private const val PREFS = "famio_location_secrets"
+
+    /** Positions not yet confirmed by the server (see [FixQueue]). */
+    const val PENDING = "pending"
     private val keys = listOf("url", "token", "pin", "device")
 
     fun prefs(context: Context) = EncryptedSharedPreferences.create(
