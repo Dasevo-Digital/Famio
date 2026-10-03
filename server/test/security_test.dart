@@ -5,6 +5,7 @@ import 'package:famio_server/famio_server.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:test/test.dart';
 
@@ -492,6 +493,24 @@ void main() {
       expect(private('203.0.113.9'), isFalse);
       expect(private('172.32.0.1'), isFalse);
       expect(private('2001:db8::1'), isFalse);
+    });
+
+    test('behind a proxy, the address the proxy appended counts', () {
+      String of(Map<String, String> headers, {bool trust = true}) =>
+          ClientAddress(
+            trustProxy: trust,
+          ).of(Request('GET', Uri.parse('http://famio/'), headers: headers));
+      // The client sent its own header; NPM appended the real address.
+      expect(of({'x-forwarded-for': '10.9.9.9, 203.0.113.9'}), '203.0.113.9');
+      expect(of({'x-forwarded-for': '203.0.113.9'}), '203.0.113.9');
+      expect(of({'x-forwarded-for': ' , 203.0.113.9 ,'}), '203.0.113.9');
+      expect(
+        of({'x-forwarded-for': '198.51.100.7', 'x-real-ip': '10.9.9.9'}),
+        '198.51.100.7',
+      );
+      expect(of({'x-real-ip': '198.51.100.7'}), '198.51.100.7');
+      // Without a trusted proxy, headers are ignored.
+      expect(of({'x-forwarded-for': '10.9.9.9'}, trust: false), 'unknown');
     });
   });
 }

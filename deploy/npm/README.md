@@ -111,6 +111,10 @@ Heimnetz offen.
   `FAMIO_TRUST_PROXY=true`, sonst sähe Famio nur die IP von NPM.
 - `FAMIO_TRUST_PROXY` nur setzen, wenn Port 8765 **nicht** direkt erreichbar
   ist – sonst könnten Clients ihre Adresse fälschen.
+- Famio nimmt den letzten Eintrag aus `X-Forwarded-For`, also die Adresse,
+  die NPM selbst angehängt hat; was der Client mitschickt, zählt nicht.
+  Steht vor NPM noch ein weiterer Proxy (z. B. Cloudflare), sieht Famio
+  dessen Adresse statt der des Geräts.
 - Private Dokumente, Einzelchats und deren Dateien liefert der Server nur an
   berechtigte Mitglieder aus.
 - `FAMIO_REQUIRE_TLS=true` (in der Vorlage gesetzt): Unverschlüsselte

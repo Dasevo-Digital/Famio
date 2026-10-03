@@ -10,13 +10,19 @@ class ClientAddress {
 
   final bool trustProxy;
 
+  /// Behind the proxy, the address is the *last* `X-Forwarded-For` entry:
+  /// the proxy appends the peer it saw, while everything before it comes
+  /// from the client and may be made up. `X-Real-IP` is only a fallback,
+  /// as some proxies pass a client's own value through unchanged.
   String of(Request request) {
     if (trustProxy) {
-      final forwarded = request.headers['x-forwarded-for']
-          ?.split(',')
-          .first
-          .trim();
-      if (forwarded != null && forwarded.isNotEmpty) return forwarded;
+      final hops = [
+        for (final hop
+            in request.headers['x-forwarded-for']?.split(',') ??
+                const <String>[])
+          if (hop.trim().isNotEmpty) hop.trim(),
+      ];
+      if (hops.isNotEmpty) return hops.last;
       final real = request.headers['x-real-ip']?.trim();
       if (real != null && real.isNotEmpty) return real;
     }
