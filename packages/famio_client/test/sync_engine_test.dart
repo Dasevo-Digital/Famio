@@ -75,6 +75,30 @@ void main() {
     expect(a.records(Collections.shoppingItems), isEmpty);
   });
 
+  test('fields from reminder apps survive an edit in the app', () async {
+    final a = device(), b = device();
+    a.put(Collections.tasks, 't', {
+      'title': 'Elternabend',
+      'ext:ical': [
+        {'n': 'PRIORITY', 'v': '1'},
+      ],
+    });
+    await a.sync();
+    await b.sync();
+    // The app only writes the fields it knows.
+    b.put(Collections.tasks, 't', {'title': 'Elternabend vorbereiten'});
+    await b.sync();
+    await a.sync();
+    final data = a.record(Collections.tasks, 't')!.data;
+    expect(data['title'], 'Elternabend vorbereiten');
+    expect(data['ext:ical'], [
+      {'n': 'PRIORITY', 'v': '1'},
+    ]);
+    // A deletion does not carry anything over.
+    b.delete(Collections.tasks, 't');
+    expect(b.store.get(Collections.tasks, 't')!.record.data, isEmpty);
+  });
+
   test('offline edits merge with last writer wins', () async {
     final a = device(), b = device();
     a.put(Collections.tasks, 't1', {'title': 'alt'});

@@ -32,6 +32,25 @@ class SyncRecord {
   /// Absent or null means the whole family. Enforced by the server.
   static const visibilityKey = 'visibleTo';
 
+  /// Prefix of data keys the apps do not interpret but must keep, e.g. what
+  /// a reminder app stored on a task (priority, repetition). Saving a record
+  /// in the app carries them over from the stored version.
+  static const externalPrefix = 'ext:';
+
+  /// [data] plus the [externalPrefix] keys of [previous] it lacks.
+  static Map<String, Object?> keepExternal(
+    Map<String, Object?> data,
+    SyncRecord? previous,
+  ) {
+    if (previous == null || previous.deleted) return data;
+    final kept = {
+      for (final e in previous.data.entries)
+        if (e.key.startsWith(externalPrefix) && !data.containsKey(e.key))
+          e.key: e.value,
+    };
+    return kept.isEmpty ? data : {...data, ...kept};
+  }
+
   /// Members allowed to see this record; null for the whole family.
   List<String>? get visibleTo => switch (data[visibilityKey]) {
     final List<Object?> ids => [for (final id in ids) id as String],

@@ -125,7 +125,7 @@ class SyncEngine {
       SyncRecord(
         collection: collection,
         id: id,
-        data: data,
+        data: deleted ? data : SyncRecord.keepExternal(data, existing),
         deleted: deleted,
         updatedAt: updatedAt,
         updatedBy: memberId,
