@@ -12,6 +12,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/sync_status_icon.dart';
+import 'list_connect_screen.dart';
 
 const _shopping = {
   Collections.shoppingLists,
@@ -54,6 +55,16 @@ class ShoppingListsScreen extends StatelessWidget {
           tooltip: 'Liste aus Vorlage',
           onPressed: () => showTemplatePicker(context),
         ),
+        if (canConnectLists(AppScope.of(context)))
+          BubbleButton(
+            icon: AppIcons.arrowsLeftRight,
+            tooltip: 'Mit anderen Apps verbinden',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ListConnectScreen(),
+              ),
+            ),
+          ),
         const SyncStatusIcon(),
       ],
       floating: AddButton(

@@ -44,6 +44,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Aufgaben (fällig, zuständig, Erinnerung) | ✅ |
 | Einkaufslisten | ✅ |
+| Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
@@ -168,6 +169,29 @@ Der Abgleich läuft über ICS-Abo-Links, ohne Passwörter oder Google-Cloud-Proj
   geht zurück an die App. Neue Listen werden in Famio angelegt. Mit
   iCloud-Erinnerungen gleicht Famio nicht ab: Sie sind seit iOS 13 nicht
   mehr über CalDAV erreichbar.
+
+### Bring! und Microsoft To Do
+
+Unter Aufgaben bzw. Einkauf → „Mit anderen Apps verbinden“ verbindet jedes
+Mitglied sein eigenes Konto und ordnet Famio-Listen Listen dort zu. Der
+Server gleicht in beide Richtungen ab, alle 5 Minuten und kurz nach jeder
+Änderung; haben beide Seiten denselben Eintrag geändert, gewinnt die
+neuere Änderung, Löschungen gehen in beide Richtungen.
+
+- **Bring!** (nur Einkaufslisten): Anmeldung mit E-Mail und Passwort; Famio
+  behält nur das Token. Bring! hat keine offizielle Schnittstelle, Famio
+  nutzt die der Bring!-Apps (wie die Home-Assistant-Integration). Ändert
+  Bring! sie, pausiert der Abgleich mit einer Fehlermeldung. Gleichnamige
+  Artikel werden beim ersten Abgleich zusammengeführt, die Menge steht in
+  der Spezifikation.
+- **Microsoft To Do** (Aufgaben und Einkaufslisten): einmalig im
+  Microsoft-Entra-Portal eine App registrieren (Kontotyp „beliebiges
+  Organisationsverzeichnis und persönliche Microsoft-Konten“,
+  „Öffentliche Clientflows zulassen“), ihre Anwendungs-ID in Famio
+  eintragen und sich mit dem angezeigten Code anmelden. Der Server braucht
+  dafür keine öffentliche Adresse.
+- Eine Familie kann die Anbindungen in der Server-Verwaltung → Bereiche
+  ganz abschalten.
   Für Mac, iPhone und iPad erstellt die App ein **Profil**
   („Apple-Gerät einrichten“) mit eigenem App-Passwort und der
   Zertifizierungsstelle des Servers: Apple Kalender sendet Passwörter nur

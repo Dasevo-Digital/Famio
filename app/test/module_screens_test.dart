@@ -33,6 +33,7 @@ void main() {
   setUpAll(() => initializeDateFormatting('de'));
 
   late SyncEngine engine;
+  late AppState appState;
 
   /// Starts the app as Mama, optionally in [section].
   Future<void> open(WidgetTester tester, {String? section}) async {
@@ -41,7 +42,7 @@ void main() {
     addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
-    final state = AppState();
+    final state = appState = AppState();
     await state.init();
     engine = SyncEngine(
       store: LocalStore.open(':memory:')..setMeta('members', _members),
@@ -309,6 +310,28 @@ void main() {
       await _pumpData(tester);
       expect(engine.pregnancy('p1')!.contractions, hasLength(1));
       await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('list connections', () {
+    testWidgets('opened from tasks, hidden when the family switched it off', (
+      tester,
+    ) async {
+      await open(tester, section: 'Aufgaben');
+      await tester.tap(find.byTooltip('Mit anderen Apps verbinden'));
+      await tester.pumpAndSettle();
+      expect(find.text('Listen verbinden'), findsWidgets);
+      expect(
+        find.text('Apple Erinnerungen, Thunderbird & Co.'),
+        findsOneWidget,
+      );
+      Navigator.of(tester.element(find.text('Listen verbinden').first)).pop();
+      await tester.pumpAndSettle();
+
+      appState.hiddenModules = {ServerSettings.listSyncModule};
+      await tester.tap(find.text('Einkauf').first);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Mit anderen Apps verbinden'), findsNothing);
     });
   });
 

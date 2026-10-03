@@ -68,6 +68,17 @@ Einrichtung verwendet. Dabei verlassen Termine beziehungsweise Zugangsdaten
 den Famio-Server im für die Funktion erforderlichen Umfang. Als vertraulich
 markierte Famio-Termine werden nicht in Kalenderabos veröffentlicht.
 
+**Bring! und Microsoft To Do.** Nur wenn ein Mitglied sein Konto verbindet
+und Listen zuordnet. Dann überträgt der Famio-Server die Einträge der
+zugeordneten Listen (bei Aufgaben Titel, Notiz, Fälligkeit und Erledigt-
+Status; bei Einkaufslisten Artikel, Menge und Abgehakt-Status) an Bring!
+(Bring! Labs AG, Schweiz) beziehungsweise Microsoft (Microsoft Graph) und
+holt Änderungen von dort ab. Gespeichert werden nur Anmelde-Token, nicht
+das Passwort. Die Anbindung an Bring! nutzt eine nicht offiziell
+dokumentierte Schnittstelle. Eine Familie kann die Funktion in der
+Server-Verwaltung ganz abschalten; das Trennen eines Kontos löscht die
+Token und Zuordnungen auf dem Famio-Server.
+
 **OpenID Connect.** Bei aktivierter Anmeldung über einen Identitätsanbieter
 werden Browser, Famio-Server und der konfigurierte Anbieter miteinander
 verbunden. Der Anbieter verarbeitet die zur Anmeldung erforderlichen Konto-

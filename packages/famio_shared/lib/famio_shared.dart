@@ -10,6 +10,7 @@ export 'src/catalog/pregnancy.dart';
 export 'src/catalog/vaccinations.dart';
 export 'src/collections.dart';
 export 'src/ids.dart';
+export 'src/list_sync.dart';
 export 'src/member.dart';
 export 'src/models/birthday.dart';
 export 'src/models/budget.dart';

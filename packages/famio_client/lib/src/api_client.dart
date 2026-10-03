@@ -735,6 +735,84 @@ class FamioApiClient {
         await _send('POST', 'api/calendar/caldav/$id/sync', null, _slow),
       );
 
+  // --- lists in other apps --------------------------------------------------
+
+  Future<List<ListAccount>> listAccounts() async {
+    final json = await _send('GET', 'api/lists/accounts');
+    return [
+      for (final a in json['accounts'] as List)
+        ListAccount.fromJson((a as Map).cast()),
+    ];
+  }
+
+  /// Signs in to Bring!; the server keeps a token, not the password.
+  Future<ListAccount> connectBring({
+    required String email,
+    required String password,
+  }) async => ListAccount.fromJson(
+    await _send('POST', 'api/lists/bring', {
+      'email': email,
+      'password': password,
+    }, _slow),
+  );
+
+  /// First step of signing in to Microsoft To Do with the family's own
+  /// app registration ([clientId]).
+  Future<DeviceLogin> startMicrosoftLogin(String clientId) async =>
+      DeviceLogin.fromJson(
+        await _send('POST', 'api/lists/microsoft', {
+          'clientId': clientId,
+        }, _slow),
+      );
+
+  /// Null while the member has not confirmed yet.
+  Future<ListAccount?> pollMicrosoftLogin(String flow) async {
+    final json = await _send('POST', 'api/lists/microsoft/poll', {
+      'flow': flow,
+    }, _slow);
+    return json['status'] == 'done'
+        ? ListAccount.fromJson((json['account'] as Map).cast())
+        : null;
+  }
+
+  Future<List<RemoteListInfo>> remoteLists(String accountId) async {
+    final json = await _send(
+      'GET',
+      'api/lists/accounts/$accountId/remote',
+      null,
+      _slow,
+    );
+    return [
+      for (final l in json['lists'] as List)
+        RemoteListInfo.fromJson((l as Map).cast()),
+    ];
+  }
+
+  /// Sets which Famio list goes with which list there and syncs.
+  Future<ListAccount> setListLinks(
+    String accountId,
+    List<ListLink> links,
+  ) async => ListAccount.fromJson(
+    (await _send('PUT', 'api/lists/accounts/$accountId/links', {
+          'links': [for (final l in links) l.toJson()],
+        }, _slow))['account']
+        as Map<String, Object?>,
+  );
+
+  Future<ListAccount> syncListAccount(String accountId) async =>
+      ListAccount.fromJson(
+        (await _send(
+              'POST',
+              'api/lists/accounts/$accountId/sync',
+              null,
+              _slow,
+            ))['account']
+            as Map<String, Object?>,
+      );
+
+  Future<void> disconnectListAccount(String accountId) =>
+      _send('DELETE', 'api/lists/accounts/$accountId', null, _slow);
+
   // --- location -------------------------------------------------------------
 
   /// A token that can only report positions, for a phone's background

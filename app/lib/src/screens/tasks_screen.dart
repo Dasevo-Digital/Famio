@@ -11,6 +11,7 @@ import '../format.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import 'list_connect_screen.dart';
 
 enum _Filter {
   open('Offen'),
@@ -65,7 +66,20 @@ class _TasksScreenState extends State<TasksScreen> {
       section: FamioSection.tasks,
       title: 'Aufgaben',
       subtitle: 'Gemeinsam schaffen wir das',
-      actions: const [SyncStatusIcon()],
+      actions: [
+        if (canConnectLists(AppScope.of(context)))
+          BubbleButton(
+            icon: AppIcons.arrowsLeftRight,
+            tooltip: 'Mit anderen Apps verbinden',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) =>
+                    const ListConnectScreen(section: FamioSection.tasks),
+              ),
+            ),
+          ),
+        const SyncStatusIcon(),
+      ],
       floating: AddButton(
         color: color,
         tooltip: 'Aufgabe mit Details anlegen',

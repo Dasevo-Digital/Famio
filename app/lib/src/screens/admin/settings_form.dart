@@ -135,6 +135,22 @@ class _SettingsFormState extends State<_SettingsForm> {
                       () => on ? hidden.remove(s.name) : hidden.add(s.name),
                     ),
                   ),
+                const Divider(),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(AppIcons.arrowsLeftRight),
+                  title: const Text('Listen-Anbindungen'),
+                  subtitle: const Text(
+                    'Mitglieder dürfen Aufgaben und Einkaufslisten mit '
+                    'Bring! und Microsoft To Do abgleichen.',
+                  ),
+                  value: !hidden.contains(ServerSettings.listSyncModule),
+                  onChanged: (on) => setDialog(
+                    () => on
+                        ? hidden.remove(ServerSettings.listSyncModule)
+                        : hidden.add(ServerSettings.listSyncModule),
+                  ),
+                ),
               ],
             ),
           ),
@@ -556,7 +572,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                 (o.settings.hiddenModules ?? const []).isEmpty
                     ? 'Alle Bereiche sind sichtbar'
                     : 'Ausgeblendet: ${[for (final s in FamioSection.values)
-                        if (o.settings.hiddenModules!.contains(s.name)) s.label].join(', ')}',
+                        if (o.settings.hiddenModules!.contains(s.name)) s.label, if (o.settings.hiddenModules!.contains(ServerSettings.listSyncModule)) 'Listen-Anbindungen'].join(', ')}',
               ),
               trailing: TextButton(
                 onPressed: _busy ? null : _editModules,
