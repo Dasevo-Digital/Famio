@@ -263,6 +263,7 @@ class FamioApi {
       throttle: throttle,
       clientAddress: clientAddress,
       onChanged: _eventsChanged,
+      onRecordsChanged: () => hub.notifyRev(records.currentRev),
     );
     return const Pipeline()
         .addMiddleware(_compressJson)

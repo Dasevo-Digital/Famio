@@ -10,6 +10,7 @@ import 'package:xml/xml.dart';
 import '../accounts.dart';
 import '../calendar/event_ics.dart';
 import '../calendar/ics.dart';
+import '../calendar/todo_ics.dart';
 import '../record_store.dart';
 import '../security.dart';
 
@@ -21,13 +22,17 @@ const _ical = 'http://apple.com/ns/ical/';
 /// Prefixes used in responses; other namespaces get their own on the spot.
 const _prefixes = {_dav: 'd', _caldav: 'c', _cs: 'cs', _ical: 'ical'};
 
-/// Famio's family calendar as a CalDAV server (RFC 4791), so Apple Calendar,
-/// Thunderbird or DAVx5 (Android) can show and edit Famio events directly.
+/// Famio's family calendar, tasks and shopping lists as a CalDAV server
+/// (RFC 4791), so Apple Calendar and Reminders, Thunderbird or DAVx5
+/// (Android) can show and edit them directly.
 ///
-/// Layout (one calendar per member, showing what that member may see):
+/// Layout (per member, showing what that member may see):
 ///
 ///     /dav/principals/<username>/
-///     /dav/calendars/<username>/famio/<event id>.ics
+///     /dav/calendars/<username>/famio/<event id>.ics        events (VEVENT)
+///     /dav/calendars/<username>/aufgaben/<task id>.ics      tasks (VTODO)
+///     /dav/calendars/<username>/einkauf-<list id>/<item id>.ics
+///                                                           shopping (VTODO)
 ///
 /// Calendar apps log in with the username and an app password
 /// ([Accounts.createAppPassword]), never with the Famio password.
@@ -39,6 +44,7 @@ class CalDavServer {
     required this.throttle,
     required this.clientAddress,
     required this.onChanged,
+    this.onRecordsChanged,
   });
 
   final Accounts accounts;
@@ -50,7 +56,12 @@ class CalDavServer {
   /// Called after events were written, e.g. to notify connected apps.
   final void Function() onChanged;
 
+  /// Called after tasks or shopping items were written.
+  final void Function()? onRecordsChanged;
+
   static const calendarSlug = 'famio';
+  static const tasksSlug = 'aufgaben';
+  static const shoppingPrefix = 'einkauf-';
   static const _maxBody = 1024 * 1024;
   static const _syncTokenPrefix = 'http://famio.app/ns/sync/';
 
@@ -178,32 +189,47 @@ class CalDavServer {
           _response(_homeHref(user), _homeProps(context), wanted),
         );
         if (depth != '0') {
-          responses.write(
-            _response(_calendarHref(user), _calendarProps(context), wanted),
-          );
-        }
-      case _Kind.calendar:
-        responses.write(
-          _response(_calendarHref(user), _calendarProps(context), wanted),
-        );
-        if (depth != '0') {
-          for (final r in _exposed(context)) {
+          for (final c in _collections(context)) {
             responses.write(
               _response(
-                _eventHref(user, r.id),
-                _eventProps(r, withData: false),
+                _collectionHref(user, c),
+                _calendarProps(context, c),
+                wanted,
+              ),
+            );
+          }
+        }
+      case _Kind.calendar:
+        final c = _collection(context, target);
+        if (c == null) return _status(404);
+        responses.write(
+          _response(
+            _collectionHref(user, c),
+            _calendarProps(context, c),
+            wanted,
+          ),
+        );
+        if (depth != '0') {
+          for (final r in _exposed(context, c)) {
+            responses.write(
+              _response(
+                _resourceHref(user, c, r.id),
+                _resourceProps(r, c, withData: false),
                 wanted,
               ),
             );
           }
         }
       case _Kind.event:
-        final r = _exposedRecord(context, target.eventId!);
-        if (r == null) return _status(404);
+        final c = _collection(context, target);
+        final r = c == null
+            ? null
+            : _exposedRecord(context, c, target.eventId!);
+        if (c == null || r == null) return _status(404);
         responses.write(
           _response(
-            _eventHref(user, r.id),
-            _eventProps(r, withData: false),
+            _resourceHref(user, c, r.id),
+            _resourceProps(r, c, withData: false),
             wanted,
           ),
         );
@@ -256,18 +282,40 @@ class CalDavServer {
     };
   }
 
-  Map<(String, String), String> _calendarProps(_Context c) {
+  Map<(String, String), String> _calendarProps(
+    _Context c,
+    _Collection collection,
+  ) {
     final user = c.member.username;
-    final rev = records.collectionRev(Collections.events, c.member.id);
+    final rev = _collectionRev(c, collection);
+    final (name, description, color) = switch (collection.kind) {
+      _Content.events => (
+        'Famio',
+        'Termine der Familie aus Famio',
+        '#7B5BE0FF',
+      ),
+      _Content.tasks => (
+        'Famio-Aufgaben',
+        'Aufgaben der Familie aus Famio',
+        '#2A9D6EFF',
+      ),
+      _Content.shopping => (
+        _shoppingListName(collection.listId!) ?? 'Einkauf',
+        'Einkaufsliste aus Famio',
+        '#E8703AFF',
+      ),
+    };
+    final component = collection.todos ? 'VTODO' : 'VEVENT';
     return {
       (_dav, 'resourcetype'): '<d:collection/><c:calendar/>',
-      (_dav, 'displayname'): 'Famio',
-      (_caldav, 'calendar-description'): 'Termine der Familie aus Famio',
-      (_caldav, 'supported-calendar-component-set'): '<c:comp name="VEVENT"/>',
+      (_dav, 'displayname'): _esc(name),
+      (_caldav, 'calendar-description'): _esc(description),
+      (_caldav, 'supported-calendar-component-set'):
+          '<c:comp name="$component"/>',
       (_caldav, 'calendar-timezone'): _esc(_vtimezone()),
       (_cs, 'getctag'): '"$rev"',
       (_dav, 'sync-token'): '$_syncTokenPrefix$rev',
-      (_ical, 'calendar-color'): '#7B5BE0FF',
+      (_ical, 'calendar-color'): color,
       (_dav, 'current-user-principal'): _hrefXml(_principalHref(user)),
       (_dav, 'owner'): _hrefXml(_principalHref(user)),
       (_dav, 'current-user-privilege-set'): _privileges(write: true),
@@ -293,17 +341,20 @@ class CalDavServer {
     return w.toString();
   }
 
-  Map<(String, String), String> _eventProps(
-    SyncRecord r, {
+  Map<(String, String), String> _resourceProps(
+    SyncRecord r,
+    _Collection collection, {
     required bool withData,
   }) => {
     (_dav, 'resourcetype'): '',
     (_dav, 'getetag'): _esc(_etag(r)),
-    (_dav, 'getcontenttype'): 'text/calendar; charset=utf-8; component=vevent',
+    (_dav, 'getcontenttype'):
+        'text/calendar; charset=utf-8; '
+        'component=${collection.todos ? 'vtodo' : 'vevent'}',
     (_dav, 'getlastmodified'): _httpDate(
       DateTime.fromMillisecondsSinceEpoch(r.updatedAt, isUtc: true),
     ),
-    if (withData) (_caldav, 'calendar-data'): _esc(_ics(r)),
+    if (withData) (_caldav, 'calendar-data'): _esc(_ics(r, collection)),
   };
 
   static String _privileges({required bool write}) => [
@@ -328,6 +379,8 @@ class CalDavServer {
     if (target.kind != _Kind.calendar && target.kind != _Kind.event) {
       return _status(403);
     }
+    final collection = _collection(context, target);
+    if (collection == null) return _status(404);
     final body = await _xmlBody(request);
     if (body == null) return _status(400, 'Leere Anfrage');
     final root = body.rootElement;
@@ -335,36 +388,61 @@ class CalDavServer {
     final user = context.member.username;
     final responses = StringBuffer();
 
-    Map<(String, String), String> props(SyncRecord r) => _eventProps(
+    Map<(String, String), String> props(SyncRecord r) => _resourceProps(
       r,
+      collection,
       withData: wanted == null || wanted.contains((_caldav, 'calendar-data')),
     );
 
     switch ((root.name.namespaceUri, root.name.local)) {
       case (_caldav, 'calendar-multiget'):
         for (final href in root.findAllElements('href', namespaceUri: _dav)) {
-          final id = _eventIdFromHref(href.innerText.trim(), user);
-          final r = id == null ? null : _exposedRecord(context, id);
+          final id = _resourceIdFromHref(
+            href.innerText.trim(),
+            user,
+            collection,
+          );
+          final r = id == null ? null : _exposedRecord(context, collection, id);
           if (r == null) {
             responses.write(_statusResponse(href.innerText.trim(), 404));
           } else {
             responses.write(
-              _response(_eventHref(user, r.id), props(r), wanted),
+              _response(
+                _resourceHref(user, collection, r.id),
+                props(r),
+                wanted,
+              ),
             );
           }
         }
       case (_caldav, 'calendar-query'):
         final filter = _QueryFilter.parse(root);
-        if (filter.component == 'VEVENT') {
-          for (final r in _exposed(context)) {
+        if (filter.component == 'VEVENT' && !collection.todos) {
+          for (final r in _exposed(context, collection)) {
             if (!filter.matches(CalendarEvent.fromRecord(r))) continue;
             responses.write(
-              _response(_eventHref(user, r.id), props(r), wanted),
+              _response(
+                _resourceHref(user, collection, r.id),
+                props(r),
+                wanted,
+              ),
+            );
+          }
+        } else if (filter.component == 'VTODO' && collection.todos) {
+          // Apps filter completed to-dos themselves; all of them is a
+          // valid superset of what they asked for.
+          for (final r in _exposed(context, collection)) {
+            responses.write(
+              _response(
+                _resourceHref(user, collection, r.id),
+                props(r),
+                wanted,
+              ),
             );
           }
         }
       case (_dav, 'sync-collection'):
-        return _syncCollection(root, context, wanted);
+        return _syncCollection(root, context, collection, wanted);
       default:
         return _davError(403, '<d:supported-report/>');
     }
@@ -375,6 +453,7 @@ class CalDavServer {
   Response _syncCollection(
     XmlElement root,
     _Context context,
+    _Collection collection,
     List<(String, String)>? wanted,
   ) {
     final user = context.member.username;
@@ -385,10 +464,7 @@ class CalDavServer {
             ?.innerText
             .trim() ??
         '';
-    final current = records.collectionRev(
-      Collections.events,
-      context.member.id,
-    );
+    final current = _collectionRev(context, collection);
     var since = 0;
     if (token.isNotEmpty) {
       final parsed = token.startsWith(_syncTokenPrefix)
@@ -399,40 +475,48 @@ class CalDavServer {
       }
       since = parsed;
     }
+    String href(String id) => _resourceHref(user, collection, id);
     final responses = StringBuffer();
     if (since == 0) {
-      for (final r in _exposed(context)) {
+      for (final r in _exposed(context, collection)) {
         responses.write(
           _response(
-            _eventHref(user, r.id),
-            _eventProps(r, withData: false),
+            href(r.id),
+            _resourceProps(r, collection, withData: false),
             wanted,
           ),
         );
       }
     } else {
       final (changed, revoked) = records.changesSince(
-        Collections.events,
+        collection.records,
         since,
         context.member.id,
       );
       final reported = <String>{};
       for (final r in changed) {
         if (!reported.add(r.id)) continue;
-        if (_isExposed(context, r)) {
+        if (_isExposed(context, collection, r)) {
           responses.write(
             _response(
-              _eventHref(user, r.id),
-              _eventProps(r, withData: false),
+              href(r.id),
+              _resourceProps(r, collection, withData: false),
               wanted,
             ),
           );
-        } else if (RecordStore.canSee(r, context.member.id)) {
-          responses.write(_statusResponse(_eventHref(user, r.id), 404));
+        } else if (r.deleted || RecordStore.canSee(r, context.member.id)) {
+          // Deleted, or (shopping) on another list: gone from here. Items of
+          // other lists the app never had are simply ignored by it.
+          if (!collection.todos ||
+              r.deleted ||
+              collection.kind != _Content.shopping ||
+              _onList(r, collection)) {
+            responses.write(_statusResponse(href(r.id), 404));
+          }
         }
       }
       for (final id in revoked.where(reported.add)) {
-        responses.write(_statusResponse(_eventHref(user, id), 404));
+        responses.write(_statusResponse(href(id), 404));
       }
     }
     responses.write('<d:sync-token>$_syncTokenPrefix$current</d:sync-token>');
@@ -445,9 +529,12 @@ class CalDavServer {
     if (target.kind != _Kind.event) {
       return target.kind == _Kind.calendar ? _status(403) : _status(404);
     }
-    final r = _exposedRecord(context, target.eventId!);
-    if (r == null) return _status(404);
-    final text = _ics(r);
+    final collection = _collection(context, target);
+    final r = collection == null
+        ? null
+        : _exposedRecord(context, collection, target.eventId!);
+    if (collection == null || r == null) return _status(404);
+    final text = _ics(r, collection);
     return Response.ok(
       request.method == 'HEAD' ? null : text,
       headers: {
@@ -465,12 +552,14 @@ class CalDavServer {
     _Target target,
   ) async {
     if (target.kind != _Kind.event) return _status(405);
+    final collection = _collection(context, target);
+    if (collection == null) return _status(404);
     final id = target.eventId!;
     final memberId = context.member.id;
-    final stored = records.get(Collections.events, id);
+    final stored = records.get(collection.records, id);
     final live = stored != null && !stored.deleted;
     if (live && !RecordStore.canSee(stored, memberId)) return _status(403);
-    if (live && !_isExposed(context, stored)) return _status(403);
+    if (live && !_isExposed(context, collection, stored)) return _status(403);
 
     final ifNoneMatch = request.headers['if-none-match'];
     final ifMatch = request.headers['if-match'];
@@ -483,6 +572,15 @@ class CalDavServer {
     if (ifMatch == '*' && !live) return _status(412);
 
     final text = await _text(request);
+    if (collection.todos) {
+      return _putTodo(
+        context,
+        collection,
+        id,
+        stored: live ? stored : null,
+        text: text,
+      );
+    }
     final existing = live ? CalendarEvent.fromRecord(stored) : null;
     final parsed = parseEventIcs(
       text,
@@ -521,24 +619,72 @@ class CalDavServer {
     return Response(live ? 204 : 201);
   }
 
+  /// A task or shopping item from a reminder app.
+  Response _putTodo(
+    _Context context,
+    _Collection collection,
+    String id, {
+    required SyncRecord? stored,
+    required String text,
+  }) {
+    final todo = parseTodoIcs(text, location: location());
+    if (todo == null) {
+      return _davError(
+        403,
+        '<c:valid-calendar-object-resource/>',
+        message: 'Diese Liste nimmt nur Aufgaben (VTODO) an.',
+      );
+    }
+    final data = switch (collection.kind) {
+      _Content.tasks => taskDataFrom(
+        todo,
+        stored == null ? null : Task.fromRecord(stored),
+      ),
+      _ => shoppingItemDataFrom(
+        todo,
+        collection.listId!,
+        stored == null ? null : ShoppingItem.fromRecord(stored),
+      ),
+    };
+    final audience = stored?.visibleTo;
+    final rejected = records.writeAs(context.member.id, [
+      SyncRecord(
+        collection: collection.records,
+        id: id,
+        data: {...data, SyncRecord.visibilityKey: ?audience},
+        updatedAt: max(
+          DateTime.now().millisecondsSinceEpoch,
+          (stored?.updatedAt ?? 0) + 1,
+        ),
+      ),
+    ]);
+    if (rejected.any((r) => r.id == id)) return _status(409);
+    onRecordsChanged?.call();
+    return Response(stored != null ? 204 : 201);
+  }
+
   Response _delete(Request request, _Context context, _Target target) {
     if (target.kind != _Kind.event) return _status(403);
-    final r = _exposedRecord(context, target.eventId!);
-    if (r == null) return _status(404);
+    final collection = _collection(context, target);
+    final r = collection == null
+        ? null
+        : _exposedRecord(context, collection, target.eventId!);
+    if (collection == null || r == null) return _status(404);
     final ifMatch = request.headers['if-match'];
     if (ifMatch != null && ifMatch != '*' && ifMatch != _etag(r)) {
       return _status(412);
     }
-    records.writeAs(context.member.id, [
+    final rejected = records.writeAs(context.member.id, [
       SyncRecord(
-        collection: Collections.events,
+        collection: collection.records,
         id: r.id,
         data: const {},
         deleted: true,
         updatedAt: max(DateTime.now().millisecondsSinceEpoch, r.updatedAt + 1),
       ),
     ]);
-    onChanged();
+    if (rejected.isNotEmpty) return _status(403);
+    collection.todos ? onRecordsChanged?.call() : onChanged();
     return Response(204);
   }
 
@@ -563,29 +709,98 @@ class CalDavServer {
 
   // --- data -----------------------------------------------------------------
 
-  bool _isExposed(_Context c, SyncRecord r) =>
-      !r.deleted &&
-      RecordStore.canSee(r, c.member.id) &&
-      (c.password.includeConfidential || r.data['confidential'] != true);
-
-  List<SyncRecord> _exposed(_Context c) => [
-    for (final r in records.all(
-      Collections.events,
+  /// The collections [c] sees in their calendar home.
+  List<_Collection> _collections(_Context c) => [
+    const _Collection(_Content.events, CalDavServer.calendarSlug),
+    const _Collection(_Content.tasks, CalDavServer.tasksSlug),
+    for (final list in records.all(
+      Collections.shoppingLists,
       visibleToMember: c.member.id,
     ))
-      if (_isExposed(c, r)) r,
+      if (!list.deleted && _validListId(list.id))
+        _Collection(
+          _Content.shopping,
+          '${CalDavServer.shoppingPrefix}${list.id}',
+          listId: list.id,
+        ),
   ];
 
-  SyncRecord? _exposedRecord(_Context c, String id) {
-    final r = records.get(Collections.events, id);
-    return r != null && _isExposed(c, r) ? r : null;
+  /// The collection [target] is in, if it exists for [c].
+  _Collection? _collection(_Context c, _Target target) {
+    final slug = target.slug;
+    if (slug == null) return null;
+    if (slug == CalDavServer.calendarSlug) {
+      return const _Collection(_Content.events, CalDavServer.calendarSlug);
+    }
+    if (slug == CalDavServer.tasksSlug) {
+      return const _Collection(_Content.tasks, CalDavServer.tasksSlug);
+    }
+    if (!slug.startsWith(CalDavServer.shoppingPrefix)) return null;
+    final listId = slug.substring(CalDavServer.shoppingPrefix.length);
+    final list = records.get(Collections.shoppingLists, listId);
+    if (list == null ||
+        list.deleted ||
+        !RecordStore.canSee(list, c.member.id)) {
+      return null;
+    }
+    return _Collection(_Content.shopping, slug, listId: listId);
   }
 
-  String _ics(SyncRecord r) => eventToIcs(
-    CalendarEvent.fromRecord(r),
-    location: location(),
-    updatedAt: r.updatedAt,
-  );
+  static bool _validListId(String id) =>
+      _Target._validId.hasMatch('${CalDavServer.shoppingPrefix}$id');
+
+  String? _shoppingListName(String listId) {
+    final list = records.get(Collections.shoppingLists, listId);
+    return list == null ? null : ShoppingList.fromRecord(list).name;
+  }
+
+  /// Change tag of [collection]: shopping lists also change with their
+  /// name.
+  int _collectionRev(_Context c, _Collection collection) {
+    final rev = records.collectionRev(collection.records, c.member.id);
+    if (collection.kind != _Content.shopping) return rev;
+    return max(
+      rev,
+      records.collectionRev(Collections.shoppingLists, c.member.id),
+    );
+  }
+
+  static bool _onList(SyncRecord r, _Collection collection) =>
+      r.data['listId'] == collection.listId;
+
+  bool _isExposed(_Context c, _Collection collection, SyncRecord r) =>
+      !r.deleted &&
+      RecordStore.canSee(r, c.member.id) &&
+      switch (collection.kind) {
+        _Content.events =>
+          c.password.includeConfidential || r.data['confidential'] != true,
+        _Content.tasks => true,
+        _Content.shopping => _onList(r, collection),
+      };
+
+  List<SyncRecord> _exposed(_Context c, _Collection collection) => [
+    for (final r in records.all(
+      collection.records,
+      visibleToMember: c.member.id,
+    ))
+      if (_isExposed(c, collection, r)) r,
+  ];
+
+  SyncRecord? _exposedRecord(_Context c, _Collection collection, String id) {
+    final r = records.get(collection.records, id);
+    return r != null && _isExposed(c, collection, r) ? r : null;
+  }
+
+  String _ics(SyncRecord r, _Collection collection) =>
+      switch (collection.kind) {
+        _Content.events => eventToIcs(
+          CalendarEvent.fromRecord(r),
+          location: location(),
+          updatedAt: r.updatedAt,
+        ),
+        _Content.tasks => taskToIcs(r, location: location()),
+        _Content.shopping => shoppingItemToIcs(r, location: location()),
+      };
 
   static String _etag(SyncRecord r) => '"${r.rev}"';
 
@@ -597,13 +812,17 @@ class CalDavServer {
   static String _homeHref(String user) =>
       '/dav/calendars/${Uri.encodeComponent(user)}/';
 
-  static String _calendarHref(String user) =>
-      '${_homeHref(user)}$calendarSlug/';
+  static String _collectionHref(String user, _Collection c) =>
+      '${_homeHref(user)}${Uri.encodeComponent(c.slug)}/';
 
-  static String _eventHref(String user, String id) =>
-      '${_calendarHref(user)}${Uri.encodeComponent(id)}.ics';
+  static String _resourceHref(String user, _Collection c, String id) =>
+      '${_collectionHref(user, c)}${Uri.encodeComponent(id)}.ics';
 
-  static String? _eventIdFromHref(String href, String user) {
+  static String? _resourceIdFromHref(
+    String href,
+    String user,
+    _Collection collection,
+  ) {
     final path = Uri.tryParse(href)?.pathSegments;
     if (path == null) return null;
     final target = _Target.parse([
@@ -611,7 +830,8 @@ class CalDavServer {
         if (s.isNotEmpty) s,
     ]);
     if (target?.kind != _Kind.event ||
-        target!.user!.toLowerCase() != user.toLowerCase()) {
+        target!.user!.toLowerCase() != user.toLowerCase() ||
+        target.slug != collection.slug) {
       return null;
     }
     return target.eventId;
@@ -779,16 +999,46 @@ class _DavError implements Exception {
 
 enum _Kind { root, principals, principal, home, calendar, event }
 
+/// What a collection holds.
+enum _Content { events, tasks, shopping }
+
+/// A collection in a member's calendar home.
+class _Collection {
+  const _Collection(this.kind, this.slug, {this.listId});
+
+  final _Content kind;
+  final String slug;
+
+  /// The shopping list of a [_Content.shopping] collection.
+  final String? listId;
+
+  bool get todos => kind != _Content.events;
+
+  /// The record collection behind it.
+  String get records => switch (kind) {
+    _Content.events => Collections.events,
+    _Content.tasks => Collections.tasks,
+    _Content.shopping => Collections.shoppingItems,
+  };
+}
+
 /// What a path below `/dav/` points to.
 class _Target {
-  _Target(this.kind, this.path, {this.user, this.eventId});
+  _Target(this.kind, this.path, {this.user, this.slug, this.eventId});
 
   final _Kind kind;
   final String path;
   final String? user;
+
+  /// The collection (calendar or to-do list) for [_Kind.calendar] and
+  /// [_Kind.event].
+  final String? slug;
+
+  /// The resource (event, task or item) for [_Kind.event].
   final String? eventId;
 
   static final _validId = RegExp(r'^[A-Za-z0-9._@~+-]{1,64}$');
+  static final _validSlug = RegExp(r'^[A-Za-z0-9._~+-]{1,80}$');
 
   /// [parts] are the decoded segments after `dav`.
   static _Target? parse(List<String> parts) {
@@ -802,13 +1052,13 @@ class _Target {
         return _Target(_Kind.principal, '$path/', user: user);
       case ['calendars', final user]:
         return _Target(_Kind.home, '$path/', user: user);
-      case ['calendars', final user, CalDavServer.calendarSlug]:
-        return _Target(_Kind.calendar, '$path/', user: user);
-      case ['calendars', final user, CalDavServer.calendarSlug, final file]
-          when file.toLowerCase().endsWith('.ics'):
+      case ['calendars', final user, final slug] when _validSlug.hasMatch(slug):
+        return _Target(_Kind.calendar, '$path/', user: user, slug: slug);
+      case ['calendars', final user, final slug, final file]
+          when _validSlug.hasMatch(slug) && file.toLowerCase().endsWith('.ics'):
         final id = file.substring(0, file.length - 4);
         if (!_validId.hasMatch(id)) return null;
-        return _Target(_Kind.event, path, user: user, eventId: id);
+        return _Target(_Kind.event, path, user: user, slug: slug, eventId: id);
       default:
         return null;
     }

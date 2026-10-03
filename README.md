@@ -45,7 +45,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Aufgaben (fällig, zuständig, Erinnerung) | ✅ |
 | Einkaufslisten | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
-| CalDAV: Kalender-Apps bearbeiten Famio-Termine; Abgleich mit Google, iCloud & Co. | ✅ |
+| CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
 | Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung | ✅ |
@@ -159,6 +159,15 @@ Der Abgleich läuft über ICS-Abo-Links, ohne Passwörter oder Google-Cloud-Proj
   bewusst nicht. Vertrauliche Termine sieht eine Kalender-App nur, wenn es
   beim App-Passwort erlaubt wurde. Teilnehmer und Sichtbarkeit aus Famio
   bleiben beim Bearbeiten erhalten.
+- **Erinnerungs-Apps → Famio:** Im selben Konto liegen die Aufgabenlisten
+  „Famio-Aufgaben“ und je Einkaufsliste eine Liste (VTODO). Apple
+  Erinnerungen (Mac, iPhone), Thunderbird und Tasks.org/jtx mit DAVx⁵
+  können Einträge anlegen, abhaken, ändern und löschen; die Menge eines
+  Einkaufsartikels steht in der Notiz. Was Famio nicht kennt (Priorität,
+  Wiederholung, Unteraufgaben, Uhrzeit der Fälligkeit), bleibt erhalten und
+  geht zurück an die App. Neue Listen werden in Famio angelegt. Mit
+  iCloud-Erinnerungen gleicht Famio nicht ab: Sie sind seit iOS 13 nicht
+  mehr über CalDAV erreichbar.
   Für Mac, iPhone und iPad erstellt die App ein **Profil**
   („Apple-Gerät einrichten“) mit eigenem App-Passwort und der
   Zertifizierungsstelle des Servers: Apple Kalender sendet Passwörter nur

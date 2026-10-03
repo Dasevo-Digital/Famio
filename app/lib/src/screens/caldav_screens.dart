@@ -353,7 +353,9 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
             ),
             _Help('So geht’s mit Mac, iPhone und iPad', [
               '„Apple-Gerät einrichten“ erstellt ein Profil mit eigenem '
-                  'App-Passwort (und dem Zertifikat des Servers).',
+                  'App-Passwort (und dem Zertifikat des Servers). Es bringt '
+                  'die Termine in Apple Kalender und Aufgaben und '
+                  'Einkaufslisten in Apple Erinnerungen.',
               'Mac: Profil sichern, es öffnet sich in den '
                   'Systemeinstellungen → Allgemein → Geräteverwaltung → '
                   '„Famio-Kalender“ doppelklicken → Installieren.',
