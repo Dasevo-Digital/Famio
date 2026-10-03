@@ -107,7 +107,10 @@ Heimnetz offen.
 ## Sicherheit
 
 - Anmeldungen werden nach 5 Fehlversuchen gedrosselt (pro Client-IP und
-  Benutzer, bis zu 1 Stunde). Hinter NPM braucht es dafür
+  Benutzer, bis zu 1 Stunde). Nach 20 Fehlversuchen von verschiedenen
+  Adressen ist das Konto gesperrt – außer für Adressen, von denen aus sich
+  jemand in den letzten 30 Tagen erfolgreich angemeldet hat, damit ein
+  Fremder niemanden aussperren kann. Hinter NPM braucht es dafür
   `FAMIO_TRUST_PROXY=true`, sonst sähe Famio nur die IP von NPM.
 - `FAMIO_TRUST_PROXY` nur setzen, wenn Port 8765 **nicht** direkt erreichbar
   ist – sonst könnten Clients ihre Adresse fälschen.

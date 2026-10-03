@@ -72,19 +72,29 @@ class ClientAddress {
 ///   accounts ("password spraying"),
 /// * per username over all addresses ([accountAttempts]) – guessing one
 ///   account from many machines.
+///
+/// The last count would let anyone who knows a username lock its owner
+/// out. Addresses that signed in to an account successfully within
+/// [trustFor] are therefore exempt from it for that account; the other
+/// two limits still apply to them.
 class LoginThrottle {
   LoginThrottle({
     this.freeAttempts = 5,
     this.addressAttempts = 20,
     this.accountAttempts = 20,
+    this.trustFor = const Duration(days: 30),
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
 
   final int freeAttempts;
   final int addressAttempts;
   final int accountAttempts;
+  final Duration trustFor;
   final DateTime Function() _clock;
   final _failures = <String, _Failures>{};
+
+  /// Last successful login per "address|username".
+  final _trusted = <String, DateTime>{};
 
   static const _maxBlock = Duration(hours: 1);
 
@@ -98,7 +108,9 @@ class LoginThrottle {
   Duration? blockedFor(String address, String username) {
     final now = _clock();
     Duration? longest;
+    final trusted = _isTrusted(address, username, now);
     for (final key in _keys(address, username)) {
+      if (trusted && key.startsWith('account|')) continue;
       final until = _failures[key]?.blockedUntil;
       if (until == null || !until.isAfter(now)) continue;
       final left = until.difference(now);
@@ -135,8 +147,28 @@ class LoginThrottle {
 
   /// A successful login forgives this address's mistakes with this
   /// account (not the counts over all accounts or addresses).
-  void succeeded(String address, String username) =>
-      _failures.remove(_keys(address, username).first);
+  void succeeded(String address, String username) {
+    final key = _keys(address, username).first;
+    _failures.remove(key);
+    final now = _clock();
+    _trusted[key] = now;
+    if (_trusted.length > _maxEntries) {
+      _trusted.removeWhere((_, at) => now.difference(at) > trustFor);
+      // Still too many: the oldest go first.
+      if (_trusted.length > _maxEntries) {
+        final oldest = _trusted.entries.toList()
+          ..sort((a, b) => a.value.compareTo(b.value));
+        for (final e in oldest.take(_trusted.length - _maxEntries)) {
+          _trusted.remove(e.key);
+        }
+      }
+    }
+  }
+
+  bool _isTrusted(String address, String username, DateTime now) {
+    final at = _trusted[_keys(address, username).first];
+    return at != null && now.difference(at) <= trustFor;
+  }
 
   /// Drops forgotten entries, then the oldest unblocked ones – never an
   /// active block, so flooding with made-up names cannot lift one.
