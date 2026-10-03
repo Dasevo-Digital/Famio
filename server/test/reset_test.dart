@@ -152,7 +152,9 @@ void main() {
     test('needs an admin, the password and the confirmation', () async {
       expect((await wipe(papa))['_status'], 403);
       expect((await wipe(mama, password: 'falsch'))['_status'], 403);
-      expect((await wipe(mama, confirm: 'ja'))['_status'], 400);
+      final unconfirmed = await wipe(mama, confirm: 'ja');
+      expect(unconfirmed['_status'], 400);
+      expect(unconfirmed['message'], contains('„LÖSCHEN“'));
     });
 
     test('removes content everywhere, keeps the accounts', () async {
