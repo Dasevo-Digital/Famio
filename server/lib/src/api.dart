@@ -46,7 +46,7 @@ part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
 part 'api/web_routes.dart';
 
-const serverVersion = '1.0.3';
+const serverVersion = '1.0.4';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;
