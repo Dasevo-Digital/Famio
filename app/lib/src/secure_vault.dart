@@ -35,9 +35,9 @@ class SecureVault {
 
   final Map<String, String>? _memory;
 
-  /// Both builds share the login keychain on macOS: separate entries keep
-  /// development away from the family's secrets.
-  static const _entry = AppEnv.isDev ? 'famio-dev' : 'famio';
+  /// All builds share the login keychain on macOS: separate entries keep
+  /// development and tests away from the family's secrets.
+  static const _entry = AppEnv.vaultEntry;
   static const insecureFallbackPreference = 'vault.allowInsecureFallback';
 
   static Future<SecureVault> open(SharedPreferences prefs) async {

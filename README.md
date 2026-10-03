@@ -428,6 +428,11 @@ flutter drive --profile -d macos --driver test_driver/integration_test.dart \
   --dart-define=FAMIO_URL=localhost:8775 --dart-define=FAMIO_PASSWORD=…
 ```
 
+Alle Ende-zu-Ende-Tests, die kein Telefon brauchen (Verwaltung, Funktionen,
+Serverumzug, Zwei-Faktor, Zurücksetzen), startet `app/tool/integration_tests.sh
+<linux|macos>`: Es baut den Server und richtet für jeden Test einen frischen
+Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
+
 ## Betrieb
 
 | Variante | Anleitung |

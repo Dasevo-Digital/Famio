@@ -94,3 +94,30 @@ jobs:
             | python3 -c 'import json,sys; print(next(d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d["name"].startswith("iPhone")))')
           cd ios && xcodebuild test -workspace Runner.xcworkspace -scheme Runner \
             -destination "id=$device" -only-testing:RunnerTests CODE_SIGNING_ALLOWED=NO
+
+  # The integration tests that need no phone: the real Linux app against a
+  # throwaway server per test, on a virtual display with a keyring.
+  integration:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: subosito/flutter-action@1508160852fb97248640997f7cfb38da241df0ba # v2.9.1
+        with:
+          flutter-version: "3.44.8"
+          channel: stable
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev \
+            xvfb gnome-keyring dbus-x11
+      - run: flutter pub get
+      - name: Integration tests
+        run: |
+          dbus-run-session -- bash -c '
+            echo -n ci | gnome-keyring-daemon --unlock --components=secrets >/dev/null
+            xvfb-run -a -s "-screen 0 1600x1200x24" tool/integration_tests.sh linux
+          '

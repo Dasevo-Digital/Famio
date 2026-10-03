@@ -6,8 +6,21 @@ import 'package:flutter/services.dart';
 abstract final class AppEnv {
   static const name = String.fromEnvironment('FAMIO_ENV', defaultValue: 'prod');
 
+  /// Integration tests against throwaway servers
+  /// (`tool/integration_tests.sh`): a development build with its own
+  /// keychain entry, so a test never replaces the session of "Famio Dev".
+  static const isE2e = name == 'e2e';
+
   /// Also the Android build variant (`--flavor dev`).
-  static const isDev = name == 'dev' || appFlavor == 'dev';
+  static const isDev = name == 'dev' || isE2e || appFlavor == 'dev';
+
+  /// The app's entry in the system keychain. On macOS all builds share the
+  /// login keychain, so each variant needs its own.
+  static const vaultEntry = isE2e
+      ? 'famio-e2e'
+      : isDev
+      ? 'famio-dev'
+      : 'famio';
   static const appName = isDev ? 'Famio Dev' : 'Famio';
 
   /// HTTPS port tried first when connecting; the development server runs
