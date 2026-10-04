@@ -20,6 +20,7 @@ import '../widgets/form_dialog.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
 import '../widgets/data_export.dart';
+import '../widgets/update_check.dart';
 
 part 'admin/member_calendars.dart';
 part 'admin/settings_form.dart';

@@ -68,6 +68,11 @@ Einrichtung verwendet. Dabei verlassen Termine beziehungsweise Zugangsdaten
 den Famio-Server im für die Funktion erforderlichen Umfang. Als vertraulich
 markierte Famio-Termine werden nicht in Kalenderabos veröffentlicht.
 
+**Versionsprüfung.** Nur wenn ein Administrator in der Server-Verwaltung „Nach
+neuer Version suchen“ antippt, fragt seine App die öffentliche Release-Liste
+des Projekts bei GitHub ab. Dabei werden keine Famio-Daten übertragen; GitHub
+sieht die IP-Adresse des Geräts. Der Server selbst fragt nie nach Updates.
+
 **Bring! und Microsoft To Do.** Nur wenn ein Mitglied sein Konto verbindet
 und Listen zuordnet. Dann überträgt der Famio-Server die Einträge der
 zugeordneten Listen (bei Aufgaben Titel, Notiz, Fälligkeit und Erledigt-

@@ -55,6 +55,18 @@ class _StatusView extends StatelessWidget {
             ),
           ],
         ),
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              icon: const Icon(AppIcons.cloudArrowDown),
+              label: const Text('Nach neuer Version suchen'),
+              onPressed: () =>
+                  showUpdateCheck(context, serverVersion: o.version),
+            ),
+          ),
+        ),
         ListHeading('Einträge', color: accent),
         SoftCard(
           child: Column(
