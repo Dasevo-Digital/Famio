@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Runs the quick CI checks before a push to main or a tag, so a broken state
+# never reaches Gitea and from there the GitHub mirror (each failed run there
+# sends a mail). Native platform builds stay with the CI.
+#
+# Set up once per clone:  git config core.hooksPath .githooks
+# Skip once:              git push --no-verify
+set -euo pipefail
+
+zero=0000000000000000000000000000000000000000
+commit=""
+while read -r _ local_sha remote_ref _; do
+  [ "$local_sha" = "$zero" ] && continue # deleting a ref
+  case "$remote_ref" in
+    refs/heads/main | refs/tags/*) commit=$(git rev-parse "$local_sha^{commit}") ;;
+  esac
+done
+[ -z "$commit" ] && exit 0
+
+root=$(git rev-parse --show-toplevel)
+# Test exactly what is pushed: the checkout itself when it matches, otherwise
+# a throwaway worktree of the pushed commit.
+if [ "$(git rev-parse HEAD)" = "$commit" ] &&
+  [ -z "$(git status --porcelain --untracked-files=no)" ]; then
+  dir=$root
+else
+  dir=$(mktemp -d)
+  trap 'git -C "$root" worktree remove --force "$dir" >/dev/null 2>&1 || rm -rf "$dir"' EXIT
+  git worktree add --detach --quiet "$dir" "$commit"
+fi
+cd "$dir"
+
+step() {
+  echo "pre-push: $*" >&2
+  if ! "$@" >"${TMPDIR:-/tmp}/pre-push.log" 2>&1; then
+    tail -n 60 "${TMPDIR:-/tmp}/pre-push.log" >&2
+    echo "pre-push: failed: $* (push cancelled; skip with --no-verify)" >&2
+    exit 1
+  fi
+}
+
+step bash tool/repo_privacy_check.sh
+step dart tool/check_versions.dart
+for pkg in packages/famio_shared packages/famio_client server; do
+  step bash -c "cd $pkg && dart pub get && dart analyze && dart test"
+done
+step bash -c "cd app && flutter pub get && flutter analyze && flutter test"
+echo "pre-push: all checks passed" >&2
