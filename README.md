@@ -42,6 +42,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Modul | Stand |
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
+| Suche über alle Bereiche, offline auf dem Gerät | ✅ |
 | Aufgaben (fällig, zuständig, Erinnerung, Wiederholung) | ✅ |
 | Einkaufslisten | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |

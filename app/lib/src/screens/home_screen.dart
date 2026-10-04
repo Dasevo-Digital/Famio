@@ -22,6 +22,7 @@ import 'budget_screens.dart';
 import 'location_screens.dart';
 import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
+import 'search_screen.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
 class HomeScreen extends StatelessWidget {
@@ -44,6 +45,13 @@ class HomeScreen extends StatelessWidget {
       title: '${_greeting(now)}, ${me.displayName}!',
       subtitle: DateFormat('EEEE, d. MMMM', 'de').format(now),
       actions: [
+        BubbleButton(
+          icon: AppIcons.magnifyingGlass,
+          tooltip: 'Suchen',
+          onPressed: () => Navigator.of(
+            context,
+          ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
+        ),
         BubbleButton(
           icon: AppIcons.tv,
           tooltip: 'Wandanzeige',

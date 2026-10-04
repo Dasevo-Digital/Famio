@@ -437,6 +437,24 @@ void main() {
     });
   });
 
+  group('search', () {
+    testWidgets('finds a task from the start page and opens it', (
+      tester,
+    ) async {
+      await open(tester);
+      engine.saveTask(const Task(id: 't1', title: 'Müll rausbringen'));
+      await _pumpData(tester);
+      await tester.tap(find.byTooltip('Suchen'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'muell');
+      await tester.pumpAndSettle();
+      expect(find.text('Müll rausbringen'), findsOneWidget);
+      await tester.tap(find.text('Müll rausbringen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Aufgabe bearbeiten'), findsOneWidget);
+    });
+  });
+
   group('list connections', () {
     testWidgets('opened from tasks, hidden when the family switched it off', (
       tester,
