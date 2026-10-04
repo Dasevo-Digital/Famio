@@ -20,6 +20,7 @@ import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
 import 'database.dart';
 import 'dav/caldav_sync.dart';
+import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
 import 'family/allowance_job.dart';
@@ -142,6 +143,14 @@ class FamioServerApp {
       maxBytes: () => settings.maxUploadBytes,
       maxTotalBytes: () => maxStorageMb * 1024 * 1024,
     );
+    exports = DataExport(
+      db: db,
+      records: records,
+      accounts: accounts,
+      files: files,
+      settings: settings,
+      tempDir: p.join(dataDir, 'tmp'),
+    );
     push = PushService(
       db: db,
       records: records,
@@ -192,6 +201,7 @@ class FamioServerApp {
       keySeparate: dataKey != null && keySeparate,
       caldav: caldav,
       lists: lists,
+      exports: exports,
       calendarAccess: calendarAccess,
       locations: locations,
       push: push,
@@ -243,6 +253,9 @@ class FamioServerApp {
 
   /// Bring! and Microsoft To Do connections.
   late final ListSync lists;
+
+  /// Exports for members and admins.
+  late final DataExport exports;
   late final LocationService locations;
   late final FileStore files;
   late final PushService push;
@@ -276,6 +289,7 @@ class FamioServerApp {
     importer.start();
     caldav.start();
     lists.start();
+    exports.cleanUp();
     allowances.start();
     accounts.deleteExpiredSessions();
     locations.collectGarbage();

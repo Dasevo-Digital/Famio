@@ -31,6 +31,7 @@ import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
 import 'hub.dart';
+import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'landing_page.dart';
 import 'web_app.dart';
@@ -43,6 +44,7 @@ part 'api/account_routes.dart';
 part 'api/admin_routes.dart';
 part 'api/auth_routes.dart';
 part 'api/calendar_routes.dart';
+part 'api/export_routes.dart';
 part 'api/file_routes.dart';
 part 'api/list_routes.dart';
 part 'api/location_routes.dart';
@@ -83,6 +85,7 @@ class FamioApi {
     this.onEventsChanged,
     this.caldav,
     this.lists,
+    this.exports,
     this.calendarAccess,
     this.locations,
     this.push,
@@ -153,6 +156,9 @@ class FamioApi {
   /// Connections to Bring! and Microsoft To Do; null in some tests.
   final ListSync? lists;
 
+  /// Data exports; null in some tests.
+  final DataExport? exports;
+
   /// Calendar sharing and the admins' calendar profiles.
   final CalendarAccess? calendarAccess;
 
@@ -201,6 +207,8 @@ class FamioApi {
       ..patch('/api/me', _updateMe)
       ..delete('/api/me', _deleteMe)
       ..put('/api/me/password', _changePassword)
+      ..post('/api/me/export', _exportMine)
+      ..post('/api/admin/export', _exportFamily)
       ..get('/api/me/sessions', _mySessions)
       ..delete('/api/me/sessions/<sid>', _deleteMySession)
       ..get('/api/me/app-passwords', _appPasswords)

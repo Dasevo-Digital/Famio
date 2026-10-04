@@ -974,6 +974,32 @@ class FamioApiClient {
     return response.bodyBytes;
   }
 
+  /// A ZIP of the member's own data or, with [family] (admins), of the
+  /// whole family; [password] confirms it.
+  Future<List<int>> exportData({
+    required String password,
+    bool family = false,
+  }) async {
+    final request =
+        http.Request(
+            'POST',
+            baseUrl.resolve(family ? 'api/admin/export' : 'api/me/export'),
+          )
+          ..headers.addAll(authHeaders)
+          ..headers['content-type'] = 'application/json'
+          ..body = jsonEncode({'password': password});
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(
+        await _http.send(request).timeout(const Duration(minutes: 10)),
+      );
+    } catch (e) {
+      throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
+    }
+    if (response.statusCode != 200) _decode(response);
+    return response.bodyBytes;
+  }
+
   Uri fileUrl(String id, {int? thumb}) => baseUrl
       .resolve('api/files/$id')
       .replace(queryParameters: {if (thumb != null) 'thumb': '$thumb'});

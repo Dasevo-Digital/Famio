@@ -96,7 +96,13 @@ Push- oder Identitätsdienste können eigene Protokolle führen.
 
 ## Export, Auskunft und Berichtigung
 
-Mitglieder wenden sich für Auskunft, Berichtigung, Export und Löschung an den
+Jedes Mitglied kann unter Einstellungen → „Meine Daten exportieren“ selbst eine
+ZIP-Datei mit allen Daten erstellen, die es in Famio sehen kann, einschließlich
+seiner Dateien und seines Standortverlaufs (Passwort-Bestätigung). Ein
+Administrator kann in der Server-Verwaltung die Daten der ganzen Familie
+exportieren; Standortverläufe sind darin nicht enthalten. Die Datei wird auf
+dem Server nur kurz für den Download angelegt und danach gelöscht. Für
+Berichtigung und Löschung sowie weitere Auskünfte wenden sich Mitglieder an den
 Betreiber ihres Famio-Servers. Das Famio-Projekt besitzt keinen Zugriff auf
 eine selbst gehostete Installation und kann deren Inhalte weder lesen noch
 löschen.

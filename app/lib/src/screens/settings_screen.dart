@@ -27,6 +27,7 @@ import '../widgets/trust_certificate.dart';
 import '../widgets/password_reveal.dart';
 import 'admin_screens.dart';
 import 'security_screens.dart';
+import '../widgets/data_export.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -132,6 +133,12 @@ class SettingsScreen extends StatelessWidget {
               title: const Text('Passwort ändern'),
               onTap: () => _changePassword(context),
             ),
+          ListTile(
+            leading: const Icon(AppIcons.cloudArrowDown),
+            title: const Text('Meine Daten exportieren'),
+            subtitle: const Text('Alles, was du siehst, als ZIP-Datei'),
+            onTap: () => exportData(context),
+          ),
           ListTile(
             leading: const Icon(AppIcons.shieldCheck),
             title: const Text('Anmeldung & Sicherheit'),

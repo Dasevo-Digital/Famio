@@ -9,6 +9,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  archive: ^4.3.0
   args: ^2.7.0
   basic_utils: ^5.8.2
   crypto: ^3.0.7

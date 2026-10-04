@@ -71,6 +71,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Web-App im Browser und in der Home-Assistant-Seitenleiste (Add-on als Server oder nur als Client) | ✅ |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
+| Datenexport als ZIP (eigene Daten bzw. ganze Familie) | ✅ |
 
 ## Aufbau
 

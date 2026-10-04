@@ -609,6 +609,21 @@ class _SettingsFormState extends State<_SettingsForm> {
               value: o.ingressAuth ? 'an' : 'aus',
               note: 'Add-on-Option ingress_auth',
             ),
+            ListHeading('Export', color: accent),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.cloudArrowDown),
+              title: const Text('Familie exportieren'),
+              subtitle: const Text(
+                'Alle Daten und Dateien als ZIP, z. B. für einen Umzug',
+              ),
+              trailing: TextButton(
+                onPressed: _busy
+                    ? null
+                    : () => exportData(context, family: true),
+                child: const Text('Exportieren'),
+              ),
+            ),
             ListHeading('Zurücksetzen', color: c.danger),
             ListTile(
               contentPadding: EdgeInsets.zero,

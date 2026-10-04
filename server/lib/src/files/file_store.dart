@@ -198,6 +198,18 @@ class FileStore {
     );
   }
 
+  /// Every stored file, oldest first (e.g. for an export).
+  List<StoredFile> all() => [
+    for (final r in _db.select('SELECT * FROM files ORDER BY rowid'))
+      StoredFile(
+        id: r['id'] as String,
+        owner: r['owner'] as String,
+        name: r['name'] as String,
+        mime: r['mime'] as String,
+        size: r['size'] as int,
+      ),
+  ];
+
   bool mayRead(StoredFile file, String memberId) =>
       file.owner == memberId || records.referencedFor(file.id, memberId);
 
