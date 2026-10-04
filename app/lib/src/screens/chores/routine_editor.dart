@@ -247,7 +247,12 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                     label: const Text('Löschen'),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
-                      engine.deleteRoutine(widget.routine!.id);
+                      deleteWithUndo(
+                        context,
+                        what: widget.routine!.title,
+                        collections: const {Collections.routines},
+                        delete: () => engine.deleteRoutine(widget.routine!.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

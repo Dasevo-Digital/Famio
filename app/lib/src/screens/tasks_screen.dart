@@ -12,6 +12,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
+import '../widgets/undo_delete.dart';
 
 enum _Filter {
   open('Offen'),
@@ -252,18 +253,12 @@ class _TaskTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Icon(AppIcons.trash, color: theme.colorScheme.onErrorContainer),
       ),
-      onDismissed: (_) {
-        engine.deleteTask(task.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('„${task.title}“ gelöscht'),
-            action: SnackBarAction(
-              label: 'Rückgängig',
-              onPressed: () => engine.saveTask(task),
-            ),
-          ),
-        );
-      },
+      onDismissed: (_) => deleteWithUndo(
+        context,
+        what: task.title,
+        collections: const {Collections.tasks},
+        delete: () => engine.deleteTask(task.id),
+      ),
       child: SoftCard(
         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
         onTap: () => showTaskEditor(context, task: task),
@@ -511,7 +506,12 @@ class _TaskEditorState extends State<_TaskEditor> {
                       foregroundColor: Theme.of(context).colorScheme.error,
                     ),
                     onPressed: () {
-                      engine.deleteTask(task.id);
+                      deleteWithUndo(
+                        context,
+                        what: task.title,
+                        collections: const {Collections.tasks},
+                        delete: () => engine.deleteTask(task.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

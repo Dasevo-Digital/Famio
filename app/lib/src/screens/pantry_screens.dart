@@ -16,6 +16,7 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 const _collections = {
   Collections.pantryItems,
@@ -545,7 +546,13 @@ class _PantryEditorState extends State<_PantryEditor> {
                     label: const Text('Entfernen'),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
-                      engine.deletePantryItem(widget.initial.id);
+                      deleteWithUndo(
+                        context,
+                        what: widget.initial.name,
+                        collections: const {Collections.pantryItems},
+                        delete: () =>
+                            engine.deletePantryItem(widget.initial.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

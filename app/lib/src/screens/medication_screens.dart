@@ -12,6 +12,7 @@ import '../format.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 const _collections = {
   Collections.medications,
@@ -469,7 +470,15 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             tooltip: 'Löschen',
             color: c.danger,
             onPressed: () {
-              engine.deleteMedication(_old.id);
+              deleteWithUndo(
+                context,
+                what: _old.name,
+                collections: const {
+                  Collections.medications,
+                  Collections.medicationIntakes,
+                },
+                delete: () => engine.deleteMedication(_old.id),
+              );
               Navigator.pop(context);
             },
           ),

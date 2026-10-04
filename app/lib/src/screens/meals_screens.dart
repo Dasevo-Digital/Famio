@@ -11,6 +11,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 const _collections = {
   Collections.recipes,
@@ -752,7 +753,12 @@ class _MealEditorState extends State<_MealEditor> {
                       foregroundColor: theme.colorScheme.error,
                     ),
                     onPressed: () {
-                      engine.deleteMeal(widget.existing!.id);
+                      deleteWithUndo(
+                        context,
+                        what: widget.existing!.title,
+                        collections: const {Collections.mealPlan},
+                        delete: () => engine.deleteMeal(widget.existing!.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),
@@ -940,7 +946,13 @@ class _RecipeEditorState extends State<_RecipeEditor> {
       ),
     );
     if (ok != true || !mounted) return;
-    AppScope.engineOf(context).deleteRecipe(widget.existing!.id);
+    final engine = AppScope.engineOf(context);
+    deleteWithUndo(
+      context,
+      what: widget.existing!.title,
+      collections: const {Collections.recipes},
+      delete: () => engine.deleteRecipe(widget.existing!.id),
+    );
     Navigator.of(context).popUntil((r) => r.isFirst);
   }
 

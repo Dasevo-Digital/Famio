@@ -13,6 +13,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
+import '../widgets/undo_delete.dart';
 
 const _shopping = {
   Collections.shoppingLists,
@@ -235,8 +236,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       ),
     );
     if (ok != true || !mounted) return;
+    deleteWithUndo(
+      context,
+      what: list.name,
+      collections: const {Collections.shoppingLists, Collections.shoppingItems},
+      delete: () => engine.deleteShoppingList(list.id),
+    );
     Navigator.pop(context);
-    engine.deleteShoppingList(list.id);
   }
 
   @override
@@ -270,9 +276,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
               tooltip: 'Mehr',
               icon: const Icon(AppIcons.dotsThreeVertical),
               onSelected: (action) => switch (action) {
-                'clear' => [
-                  for (final i in done) engine.deleteShoppingItem(i.id),
-                ],
+                'clear' => deleteWithUndo(
+                  context,
+                  message: done.length == 1
+                      ? '1 erledigter Artikel entfernt'
+                      : '${done.length} erledigte Artikel entfernt',
+                  collections: const {Collections.shoppingItems},
+                  delete: () {
+                    for (final i in done) {
+                      engine.deleteShoppingItem(i.id);
+                    }
+                  },
+                ),
                 'uncheck' => [
                   for (final i in done)
                     engine.saveShoppingItem(i.copyWith(checked: false)),
@@ -429,7 +444,12 @@ class _ItemTile extends StatelessWidget {
             color: theme.colorScheme.onErrorContainer,
           ),
         ),
-        onDismissed: (_) => engine.deleteShoppingItem(item.id),
+        onDismissed: (_) => deleteWithUndo(
+          context,
+          what: item.name,
+          collections: const {Collections.shoppingItems},
+          delete: () => engine.deleteShoppingItem(item.id),
+        ),
         child: SoftCard(
           padding: const EdgeInsets.fromLTRB(6, 4, 8, 4),
           color: item.checked ? c.surfaceSoft : null,

@@ -212,7 +212,12 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
           if (reward != null)
             TextButton(
               onPressed: () {
-                engine.deleteReward(reward.id);
+                deleteWithUndo(
+                  context,
+                  what: reward.title,
+                  collections: const {Collections.rewards},
+                  delete: () => engine.deleteReward(reward.id),
+                );
                 Navigator.pop(context);
               },
               child: const Text('Löschen'),

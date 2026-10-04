@@ -13,6 +13,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import 'caldav_screens.dart';
 import '../widgets/section_header.dart';
+import '../widgets/undo_delete.dart';
 
 /// Connects Famio with Google Calendar, Apple Calendar & co. via ICS links:
 /// publishing Famio events (feeds) and showing external calendars
@@ -547,7 +548,14 @@ class _SubscriptionsSection extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true) engine.deleteCalendarSubscription(sub.id);
+    if (ok == true && context.mounted) {
+      deleteWithUndo(
+        context,
+        what: sub.name,
+        collections: const {Collections.calendarSubscriptions},
+        delete: () => engine.deleteCalendarSubscription(sub.id),
+      );
+    }
   }
 
   @override

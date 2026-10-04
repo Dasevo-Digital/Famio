@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../format.dart';
 import '../widgets/event_comments.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/undo_delete.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
 /// [occurrence] (which may be one appearance of a series).
@@ -316,14 +317,22 @@ class _EventEditorState extends State<_EventEditor> {
       if (scope == null) return;
       if (scope == _Scope.this_) {
         engine.saveEvent(_skip(original, widget.occurrence!));
-      } else {
-        engine.deleteEvent(original.id);
+      } else if (mounted) {
+        _deleteWithUndo(engine, original);
       }
     } else {
-      engine.deleteEvent(original.id);
+      _deleteWithUndo(engine, original);
     }
     if (mounted) Navigator.pop(context);
   }
+
+  void _deleteWithUndo(SyncEngine engine, CalendarEvent event) =>
+      deleteWithUndo(
+        context,
+        what: event.title,
+        collections: const {Collections.events},
+        delete: () => engine.deleteEvent(event.id),
+      );
 
   static CalendarEvent _skip(CalendarEvent series, Occurrence o) =>
       series.copyWith(

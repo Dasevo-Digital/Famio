@@ -10,6 +10,7 @@ import '../widgets/birthday_field.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/phone.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 const _contactCollections = {
   Collections.contacts,
@@ -239,7 +240,13 @@ class _ContactEditorState extends State<_ContactEditor> {
       ),
     );
     if (ok != true || !mounted) return;
-    AppScope.engineOf(context).deleteContact(widget.existing!.id);
+    final engine = AppScope.engineOf(context);
+    deleteWithUndo(
+      context,
+      what: widget.existing!.name,
+      collections: const {Collections.contacts},
+      delete: () => engine.deleteContact(widget.existing!.id),
+    );
     Navigator.pop(context);
   }
 

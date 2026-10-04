@@ -19,6 +19,7 @@ import 'kids_emergency_screens.dart';
 import 'kids_log_screens.dart';
 import 'pregnancy_screens.dart';
 import 'timetable_view.dart';
+import '../widgets/undo_delete.dart';
 
 part 'kids/child_editor.dart';
 part 'kids/child_screen.dart';

@@ -11,6 +11,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 part 'chores/accounts.dart';
 part 'chores/chore_editor.dart';

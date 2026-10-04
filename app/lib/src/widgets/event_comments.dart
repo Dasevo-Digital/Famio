@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../format.dart';
 import 'data_builder.dart';
 import 'member_avatar.dart';
+import '../widgets/undo_delete.dart';
 
 /// "Wer bringt den Kuchen mit?" – comments under an event.
 class EventComments extends StatefulWidget {
@@ -58,7 +59,12 @@ class _EventCommentsState extends State<EventComments> {
                 padding: const EdgeInsets.only(bottom: 10),
                 child: GestureDetector(
                   onLongPress: comment.authorId == engine.memberId
-                      ? () => engine.deleteEventComment(comment.id)
+                      ? () => deleteWithUndo(
+                          context,
+                          message: 'Kommentar gelöscht',
+                          collections: const {Collections.eventComments},
+                          delete: () => engine.deleteEventComment(comment.id),
+                        )
                       : null,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

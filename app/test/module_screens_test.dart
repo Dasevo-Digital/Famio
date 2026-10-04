@@ -7,6 +7,7 @@ import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/widgets/data_builder.dart';
+import 'package:famio/src/widgets/undo_delete.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -309,6 +310,98 @@ void main() {
       await tester.tap(find.text('Wehe vorbei'));
       await _pumpData(tester);
       expect(engine.pregnancy('p1')!.contractions, hasLength(1));
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('undo after deleting', () {
+    testWidgets('a list with its items comes back as it was', (tester) async {
+      await open(tester, section: 'Einkauf');
+      engine
+        ..saveShoppingList(const ShoppingList(id: 'l1', name: 'Grillfest'))
+        ..saveShoppingItem(
+          const ShoppingItem(id: 'i1', listId: 'l1', name: 'Kohle'),
+        )
+        ..put(Collections.budgetEntries, 'b1', {
+          ...BudgetEntry(
+            id: 'b1',
+            date: DateTime(2026, 10, 1),
+            cents: 999,
+            category: 'Freizeit',
+          ).toData(),
+          SyncRecord.visibilityKey: ['m1'],
+          'ext:quelle': 'Bank',
+        });
+      // As in the app: from the page on screen.
+      final context = tester.element(find.byTooltip('Neue Liste'));
+
+      deleteWithUndo(
+        context,
+        what: 'Grillfest',
+        collections: const {
+          Collections.shoppingLists,
+          Collections.shoppingItems,
+        },
+        delete: () => engine.deleteShoppingList('l1'),
+      );
+      await tester.pumpAndSettle();
+      expect(engine.shoppingLists, isEmpty);
+      expect(find.text('„Grillfest“ gelöscht'), findsOneWidget);
+      await tester.tap(find.text('Rückgängig'));
+      await tester.pump();
+      expect(engine.shoppingLists.single.name, 'Grillfest');
+      expect(engine.shoppingItems('l1').single.name, 'Kohle');
+
+      // Visibility and fields from other apps come back too.
+      deleteWithUndo(
+        context,
+        collections: const {Collections.budgetEntries},
+        delete: () => engine.deleteBudgetEntry('b1'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rückgängig'));
+      await tester.pump();
+      final restored = engine.record(Collections.budgetEntries, 'b1')!;
+      expect(restored.visibleTo, ['m1']);
+      expect(restored.data['ext:quelle'], 'Bank');
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a swiped away task can be brought back', (tester) async {
+      await open(tester, section: 'Aufgaben');
+      engine.saveTask(const Task(id: 't1', title: 'Müll rausbringen'));
+      await _pumpData(tester);
+      await tester.drag(find.text('Müll rausbringen'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+      expect(engine.tasks, isEmpty);
+      expect(find.text('Rückgängig').hitTestable(), findsOneWidget);
+      await tester.tap(find.text('Rückgängig'));
+      await _pumpData(tester);
+      expect(engine.tasks.single.title, 'Müll rausbringen');
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a swiped away shopping item can be brought back', (
+      tester,
+    ) async {
+      await open(tester);
+      engine
+        ..saveShoppingList(const ShoppingList(id: 'l1', name: 'Einkauf'))
+        ..saveShoppingItem(
+          const ShoppingItem(id: 'i1', listId: 'l1', name: 'Milch'),
+        );
+      await tester.tap(find.text('Einkauf').first);
+      await tester.pumpAndSettle();
+      if (find.text('Milch').evaluate().isEmpty) {
+        await tester.tap(find.text('Einkauf').last);
+        await tester.pumpAndSettle();
+      }
+      await tester.drag(find.text('Milch'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+      expect(engine.shoppingItems('l1'), isEmpty);
+      await tester.tap(find.text('Rückgängig'));
+      await _pumpData(tester);
+      expect(engine.shoppingItems('l1').single.name, 'Milch');
       await tester.pump(const Duration(seconds: 5));
     });
   });

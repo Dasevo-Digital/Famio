@@ -224,7 +224,12 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                     label: const Text('Löschen'),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
-                      engine.deleteChore(chore.id);
+                      deleteWithUndo(
+                        context,
+                        what: chore.title,
+                        collections: const {Collections.chores},
+                        delete: () => engine.deleteChore(chore.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

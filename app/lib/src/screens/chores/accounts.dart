@@ -194,7 +194,12 @@ class MemberAccountScreen extends StatelessWidget {
                     ),
                   ),
                   onLongPress: adult
-                      ? () => engine.deletePointEntry(e.id)
+                      ? () => deleteWithUndo(
+                          context,
+                          what: e.title,
+                          collections: const {Collections.pointEntries},
+                          delete: () => engine.deletePointEntry(e.id),
+                        )
                       : null,
                 ),
               ListHeading('Taschengeld', color: color),
@@ -209,7 +214,12 @@ class MemberAccountScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   onLongPress: adult
-                      ? () => engine.deleteMoneyEntry(e.id)
+                      ? () => deleteWithUndo(
+                          context,
+                          what: e.note.isEmpty ? e.kind.label : e.note,
+                          collections: const {Collections.moneyEntries},
+                          delete: () => engine.deleteMoneyEntry(e.id),
+                        )
                       : null,
                 ),
               if (adult)

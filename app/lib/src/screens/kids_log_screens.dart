@@ -14,6 +14,7 @@ import '../design/palette.dart';
 import '../design/theme.dart';
 import '../widgets/member_avatar.dart';
 import 'kids_screens.dart';
+import '../widgets/undo_delete.dart';
 
 final _time = DateFormat('HH:mm', 'de');
 final _day = DateFormat('EEEE, d. MMMM', 'de');
@@ -1418,7 +1419,11 @@ class _LogEditorState extends State<_LogEditor> {
                       foregroundColor: theme.colorScheme.error,
                     ),
                     onPressed: () {
-                      engine.deleteChildLog(_old.id);
+                      deleteWithUndo(
+                        context,
+                        collections: const {Collections.childLogs},
+                        delete: () => engine.deleteChildLog(_old.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

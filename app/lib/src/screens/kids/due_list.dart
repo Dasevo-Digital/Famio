@@ -297,7 +297,12 @@ Future<void> _showAppointmentActions(
         existing: appointment,
       );
     case 'cancel':
-      engine.deleteChildEntry(appointment.id);
+      deleteWithUndo(
+        context,
+        message: '„${_appointmentLabel(appointment)}“ abgesagt',
+        collections: const {Collections.childEntries},
+        delete: () => engine.deleteChildEntry(appointment.id),
+      );
     case 'done':
       engine.saveChildEntry(
         ChildEntry(

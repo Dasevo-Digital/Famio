@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 const _collections = {
   Collections.budgetEntries,
@@ -489,7 +490,15 @@ class _EntryEditorState extends State<_EntryEditor> {
                       foregroundColor: theme.colorScheme.error,
                     ),
                     onPressed: () {
-                      engine.deleteBudgetEntry(widget.existing!.id);
+                      deleteWithUndo(
+                        context,
+                        what: widget.existing!.note.isEmpty
+                            ? widget.existing!.category
+                            : widget.existing!.note,
+                        collections: const {Collections.budgetEntries},
+                        delete: () =>
+                            engine.deleteBudgetEntry(widget.existing!.id),
+                      );
                       Navigator.pop(context);
                     },
                   ),

@@ -11,6 +11,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import '../widgets/undo_delete.dart';
 
 (IconData, Color) categoryLook(DocumentCategory c) => switch (c) {
   DocumentCategory.identity => (
@@ -339,9 +340,14 @@ class _DocumentCard extends StatelessWidget {
                           ],
                         ),
                       );
-                      if (ok == true) {
-                        engine.deleteDocument(document.id);
-                        if (sheet.mounted) Navigator.pop(sheet);
+                      if (ok == true && sheet.mounted) {
+                        deleteWithUndo(
+                          sheet,
+                          what: document.title,
+                          collections: const {Collections.documents},
+                          delete: () => engine.deleteDocument(document.id),
+                        );
+                        Navigator.pop(sheet);
                       }
                     },
                   ),
