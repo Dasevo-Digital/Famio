@@ -14,6 +14,7 @@ import '../design/palette.dart';
 import '../widgets/form_dialog.dart';
 import '../widgets/password_reveal.dart';
 import 'calendar_connect_screen.dart';
+import '../widgets/section_header.dart';
 
 /// Whether this member may connect lists in other apps.
 bool canConnectLists(AppState state) =>
@@ -212,7 +213,7 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 120),
             children: [
-              const _Title(
+              const SectionHeader(
                 'Apple Erinnerungen, Thunderbird & Co.',
                 'Aufgaben und Einkaufslisten erscheinen dort als Listen, '
                     'sobald das Gerät per CalDAV mit Famio verbunden ist – '
@@ -234,7 +235,7 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                 ),
               ),
               const Divider(height: 40),
-              const _Title(
+              const SectionHeader(
                 'Mit Bring! und Microsoft To Do abgleichen',
                 'Der Famio-Server gleicht die gewählten Listen in beide '
                     'Richtungen ab, alle 5 Minuten und kurz nach jeder '
@@ -367,29 +368,6 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Title extends StatelessWidget {
-  const _Title(this.title, this.text);
-
-  final String title;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(text, style: theme.textTheme.bodySmall),
-        ],
       ),
     );
   }

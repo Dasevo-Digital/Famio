@@ -12,6 +12,7 @@ import '../widgets/calendar_sharing.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import 'caldav_screens.dart';
+import '../widgets/section_header.dart';
 
 /// Connects Famio with Google Calendar, Apple Calendar & co. via ICS links:
 /// publishing Famio events (feeds) and showing external calendars
@@ -31,7 +32,7 @@ class CalendarConnectScreen extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 120),
             children: const [
-              _SectionTitle(
+              SectionHeader(
                 'Kalender-Apps direkt verbinden',
                 'Apple Kalender (Mac, iPhone), Thunderbird oder DAVx⁵ auf '
                     'Android zeigen die Famio-Termine an – und du kannst sie '
@@ -39,7 +40,7 @@ class CalendarConnectScreen extends StatelessWidget {
               ),
               CalDavAppsSection(),
               Divider(height: 40),
-              _SectionTitle(
+              SectionHeader(
                 'Mit Google, iCloud, Nextcloud & Co. abgleichen',
                 'Der Famio-Server gleicht Termine mit einem Kalender dort in '
                     'beide Richtungen ab, alle 15 Minuten und nach jeder '
@@ -47,7 +48,7 @@ class CalendarConnectScreen extends StatelessWidget {
               ),
               CalDavAccountsSection(),
               Divider(height: 40),
-              _SectionTitle(
+              SectionHeader(
                 'Famio in anderen Kalendern anzeigen',
                 'Ein privater Link, den du in Google Kalender, Apple Kalender '
                     'oder Outlook abonnierst. Änderungen in Famio erscheinen '
@@ -55,7 +56,7 @@ class CalendarConnectScreen extends StatelessWidget {
               ),
               _FeedsSection(),
               Divider(height: 40),
-              _SectionTitle(
+              SectionHeader(
                 'Andere Kalender in Famio anzeigen',
                 'Schulkalender, Dienstplan oder dein Google- bzw. '
                     'iCloud-Kalender: Der Famio-Server ruft sie alle 30 '
@@ -66,53 +67,6 @@ class CalendarConnectScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.title, this.text);
-
-  final String title;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 4),
-          Text(text, style: theme.textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-}
-
-class _Help extends StatelessWidget {
-  const _Help(this.title, this.steps);
-
-  final String title;
-  final List<String> steps;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-      leading: const Icon(AppIcons.question, size: 22),
-      childrenPadding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final (i, step) in steps.indexed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text('${i + 1}. $step'),
-          ),
-      ],
     );
   }
 }
@@ -326,13 +280,13 @@ class _FeedsSectionState extends State<_FeedsSection> {
                 ),
               ),
             ),
-            const _Help('So geht’s in Google Kalender', [
+            const HelpSteps('So geht’s in Google Kalender', [
               'calendar.google.com im Browser öffnen.',
               'Links bei „Weitere Kalender“ auf + → „Per URL“.',
               'Den kopierten Link einfügen und „Kalender hinzufügen“.',
               'Google aktualisiert Abos nur alle paar Stunden.',
             ]),
-            const _Help('So geht’s in Apple Kalender (Mac)', [
+            const HelpSteps('So geht’s in Apple Kalender (Mac)', [
               'Kalender-App → Ablage → Neues Kalenderabonnement …',
               'Den kopierten Link einfügen.',
               'Bei „Automatisch aktualisieren“ z. B. „Alle 5 Minuten“ wählen.',
@@ -340,7 +294,7 @@ class _FeedsSectionState extends State<_FeedsSection> {
                   'wenn Famio aus dem Internet erreichbar ist – sonst meldet '
                   'der Kalender „Anfrage fehlgeschlagen“.',
             ]),
-            const _Help('So geht’s auf iPhone und iPad', [
+            const HelpSteps('So geht’s auf iPhone und iPad', [
               'Einstellungen → Kalender → Accounts → Account hinzufügen.',
               '„Andere“ → „Kalenderabo hinzufügen“.',
               'Den kopierten Link einfügen.',
@@ -671,18 +625,18 @@ class _SubscriptionsSection extends StatelessWidget {
               ),
             ),
           ),
-          const _Help('Adresse aus Google Kalender holen', [
+          const HelpSteps('Adresse aus Google Kalender holen', [
             'calendar.google.com im Browser öffnen.',
             'Beim gewünschten Kalender ⋮ → „Einstellungen und Freigabe“.',
             'Ganz unten „Privatadresse im iCal-Format“ kopieren.',
             'Diese Adresse ist geheim – jeder mit dem Link sieht die Termine.',
           ]),
-          const _Help('Adresse aus Apple iCloud holen', [
+          const HelpSteps('Adresse aus Apple iCloud holen', [
             'Kalender-App auf dem Mac oder iCloud.com öffnen.',
             'Beim Kalender auf „Teilen“ → „Öffentlicher Kalender“ aktivieren.',
             'Den angezeigten webcal://-Link kopieren.',
           ]),
-          const _Help('Andere Quellen', [
+          const HelpSteps('Andere Quellen', [
             'Viele Schulen, Vereine und Abfallkalender bieten einen '
                 'ICS- oder „iCal“-Link zum Abonnieren an.',
             'Outlook: Kalender veröffentlichen und den ICS-Link verwenden.',

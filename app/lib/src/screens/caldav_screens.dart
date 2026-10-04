@@ -16,6 +16,7 @@ import '../widgets/calendar_sharing.dart';
 import '../widgets/form_dialog.dart';
 import '../widgets/password_reveal.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/section_header.dart';
 
 // --- calendar apps connecting to Famio (CalDAV server) ----------------------
 
@@ -351,7 +352,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                 ],
               ),
             ),
-            _Help('So geht’s mit Mac, iPhone und iPad', [
+            HelpSteps('So geht’s mit Mac, iPhone und iPad', [
               '„Apple-Gerät einrichten“ erstellt ein Profil mit eigenem '
                   'App-Passwort (und dem Zertifikat des Servers). Es bringt '
                   'die Termine in Apple Kalender und Aufgaben und '
@@ -364,7 +365,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
               'Die Profildatei danach löschen – sie enthält das Passwort.',
               'Unterwegs klappt das nur mit der Internet-Adresse oder VPN.',
             ]),
-            _Help('So geht’s auf Android (DAVx⁵)', [
+            HelpSteps('So geht’s auf Android (DAVx⁵)', [
               'DAVx⁵ aus dem Play Store oder F-Droid installieren.',
               '„+“ → „Mit URL und Benutzername anmelden“.',
               'Basis-URL: die Adresse von oben, Benutzername „$user“, '
@@ -880,7 +881,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
               const SizedBox(height: 12),
               Text(_provider.hint, style: theme.textTheme.bodySmall),
               if (_provider == _Provider.google) ...[
-                const _Help('So legst du den Google-Zugang an (einmalig)', [
+                const HelpSteps('So legst du den Google-Zugang an (einmalig)', [
                   'console.cloud.google.com öffnen und ein Projekt anlegen, '
                       'z. B. „Famio“.',
                   '„APIs & Dienste“ → „Bibliothek“: „Google Calendar API“ und '
@@ -1056,30 +1057,6 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _Help extends StatelessWidget {
-  const _Help(this.title, this.steps);
-
-  final String title;
-  final List<String> steps;
-
-  @override
-  Widget build(BuildContext context) {
-    return ExpansionTile(
-      title: Text(title, style: Theme.of(context).textTheme.bodyMedium),
-      leading: const Icon(AppIcons.question, size: 22),
-      childrenPadding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final (i, step) in steps.indexed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Text('${i + 1}. $step'),
-          ),
-      ],
     );
   }
 }
