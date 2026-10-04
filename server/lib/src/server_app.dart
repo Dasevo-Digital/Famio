@@ -97,6 +97,7 @@ class FamioServerApp {
       db: db,
       records: records,
       timeZone: () => settings.location.name,
+      location: () => settings.location,
       onChanged: () => hub.notifyRev(records.currentRev),
       enabled: () => !(settings.effective.hiddenModules ?? const []).contains(
         ServerSettings.listSyncModule,

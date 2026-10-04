@@ -5,8 +5,10 @@ import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:sqlite3/sqlite3.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../api_exception.dart';
+import '../family/repeating_tasks.dart';
 import '../record_store.dart';
 import 'bring.dart';
 import 'list_provider.dart';
@@ -28,6 +30,7 @@ class ListSync {
     required this.timeZone,
     required this.onChanged,
     required this.enabled,
+    this.location,
     http.Client? client,
     this.interval = const Duration(minutes: 5),
     this.providerFor,
@@ -47,6 +50,9 @@ class ListSync {
 
   /// Whether the family uses list connections at all (server setting).
   final bool Function() enabled;
+
+  /// The family's zone, for advancing repeating tasks ticked off there.
+  final tz.Location Function()? location;
   final Duration interval;
 
   /// Tests replace the providers; otherwise Bring! or Microsoft To Do.
@@ -569,6 +575,11 @@ class ListSync {
 
     if (famioWrites.isEmpty) return false;
     records.writeAs(memberId, famioWrites);
+    if (isTasks) {
+      advanceRepeatingTasks(records, [
+        for (final w in famioWrites) w.id,
+      ], location: location?.call() ?? tz.local);
+    }
     return true;
   }
 

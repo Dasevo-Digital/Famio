@@ -29,6 +29,7 @@ import 'dav/google_oauth.dart';
 import 'files/file_store.dart';
 import 'security.dart';
 import 'settings.dart';
+import 'family/repeating_tasks.dart';
 import 'hub.dart';
 import 'lists/list_sync.dart';
 import 'landing_page.dart';
@@ -308,6 +309,10 @@ class FamioApi {
     final syncRequest = SyncRequest.fromJson(await _body(request));
     final before = records.currentRev;
     final response = records.sync(syncRequest, member.id);
+    advanceRepeatingTasks(records, [
+      for (final c in syncRequest.changes)
+        if (c.collection == Collections.tasks) c.id,
+    ], location: location);
     final after = records.currentRev;
     if (after != before) hub.notifyRev(after);
     if (syncRequest.changes.any(

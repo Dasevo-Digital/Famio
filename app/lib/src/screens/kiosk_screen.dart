@@ -571,9 +571,7 @@ class _PeopleBoard extends StatelessWidget {
               value: false,
               size: 30,
               color: c.strong(FamioSection.tasks),
-              onChanged: (_) => engine.saveTask(
-                t.copyWith(done: true, completedAt: DateTime.now()),
-              ),
+              onChanged: (_) => engine.saveTask(t.completed()),
             ),
           ],
         ),

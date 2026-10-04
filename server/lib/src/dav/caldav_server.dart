@@ -11,6 +11,7 @@ import '../accounts.dart';
 import '../calendar/event_ics.dart';
 import '../calendar/ics.dart';
 import '../calendar/todo_ics.dart';
+import '../family/repeating_tasks.dart';
 import '../record_store.dart';
 import '../security.dart';
 
@@ -659,6 +660,9 @@ class CalDavServer {
       ),
     ]);
     if (rejected.any((r) => r.id == id)) return _status(409);
+    if (collection.kind == _Content.tasks) {
+      advanceRepeatingTasks(records, [id], location: location());
+    }
     onRecordsChanged?.call();
     return Response(stored != null ? 204 : 201);
   }

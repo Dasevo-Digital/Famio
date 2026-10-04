@@ -12,6 +12,8 @@ class Task {
     this.completedAt,
     this.createdAt,
     this.remindAt,
+    this.repeat,
+    this.repeatEvery = 1,
   });
 
   factory Task.fromRecord(SyncRecord r) => Task(
@@ -24,6 +26,8 @@ class Task {
     completedAt: _date(r.data['completedAt']),
     createdAt: _date(r.data['createdAt']),
     remindAt: _date(r.data['remindAt'])?.toLocal(),
+    repeat: TaskRepeat.parse(r.data['repeat']),
+    repeatEvery: (r.data['repeatEvery'] as num?)?.toInt().clamp(1, 99) ?? 1,
   );
 
   final String id;
@@ -38,6 +42,12 @@ class Task {
   /// When to notify the assignee (everyone if unassigned).
   final DateTime? remindAt;
 
+  /// How often it comes back; null: once.
+  final TaskRepeat? repeat;
+
+  /// Every how many [repeat] periods (2: every other week).
+  final int repeatEvery;
+
   /// Nullable fields are cleared by passing `null` explicitly.
   Task copyWith({
     String? title,
@@ -47,6 +57,8 @@ class Task {
     Object? assigneeId = _keep,
     Object? completedAt = _keep,
     Object? remindAt = _keep,
+    Object? repeat = _keep,
+    int? repeatEvery,
   }) => Task(
     id: id,
     title: title ?? this.title,
@@ -59,7 +71,34 @@ class Task {
         : completedAt as DateTime?,
     createdAt: createdAt,
     remindAt: remindAt == _keep ? this.remindAt : remindAt as DateTime?,
+    repeat: repeat == _keep ? this.repeat : repeat as TaskRepeat?,
+    repeatEvery: repeatEvery ?? this.repeatEvery,
   );
+
+  /// Ticked off: a repeating task comes back open with its next due date
+  /// (and reminder), the next one from [today] on; others are done.
+  Task completed({DateTime? today}) {
+    final now = today ?? DateTime.now();
+    final r = repeat;
+    if (r == null) return copyWith(done: true, completedAt: now);
+    final day = DateTime(now.year, now.month, now.day);
+    final from = due ?? day;
+    var next = r.after(from, repeatEvery);
+    while (next.isBefore(day)) {
+      next = r.after(next, repeatEvery);
+    }
+    final shift = DateTime(
+      next.year,
+      next.month,
+      next.day,
+    ).difference(DateTime(from.year, from.month, from.day));
+    return copyWith(
+      due: next,
+      remindAt: remindAt?.add(shift),
+      done: false,
+      completedAt: null,
+    );
+  }
 
   Map<String, Object?> toData() => {
     'title': title,
@@ -70,6 +109,42 @@ class Task {
     'completedAt': completedAt?.toIso8601String(),
     'createdAt': createdAt?.toIso8601String(),
     'remindAt': remindAt?.toUtc().toIso8601String(),
+    'repeat': repeat?.name,
+    'repeatEvery': repeat == null ? null : repeatEvery,
+  };
+}
+
+/// How often a task comes back.
+enum TaskRepeat {
+  daily,
+  weekly,
+  monthly,
+  yearly;
+
+  static TaskRepeat? parse(Object? v) =>
+      values.where((r) => r.name == v).firstOrNull;
+
+  /// [every] periods after [from]; month ends stay month ends (31.1. →
+  /// 28.2.).
+  DateTime after(DateTime from, int every) => switch (this) {
+    daily => DateTime(from.year, from.month, from.day + every),
+    weekly => DateTime(from.year, from.month, from.day + 7 * every),
+    monthly => _addMonths(from, every),
+    yearly => _addMonths(from, 12 * every),
+  };
+
+  static DateTime _addMonths(DateTime from, int months) {
+    final first = DateTime(from.year, from.month + months);
+    final last = DateTime(first.year, first.month + 1, 0).day;
+    return DateTime(first.year, first.month, from.day > last ? last : from.day);
+  }
+
+  /// "täglich", "alle 2 Wochen" …
+  String label(int every) => switch (this) {
+    daily => every == 1 ? 'täglich' : 'alle $every Tage',
+    weekly => every == 1 ? 'wöchentlich' : 'alle $every Wochen',
+    monthly => every == 1 ? 'monatlich' : 'alle $every Monate',
+    yearly => every == 1 ? 'jährlich' : 'alle $every Jahre',
   };
 }
 

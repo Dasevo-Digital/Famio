@@ -46,6 +46,8 @@ class ParsedTodo {
     this.remindAt,
     this.categories = '',
     this.extra = const [],
+    this.repeat,
+    this.repeatEvery = 1,
   });
 
   final String title;
@@ -59,6 +61,35 @@ class ParsedTodo {
   final DateTime? remindAt;
   final String categories;
   final List<Map<String, Object?>> extra;
+
+  /// A simple repetition Famio can represent (others stay in [extra]).
+  final TaskRepeat? repeat;
+  final int repeatEvery;
+}
+
+/// FREQ and INTERVAL only, e.g. `FREQ=WEEKLY;INTERVAL=2`; anything else
+/// (BYDAY, COUNT, UNTIL …) is not Famio's.
+(TaskRepeat, int)? _simpleRule(String value) {
+  final parts = {
+    for (final p in value.split(';'))
+      if (p.contains('='))
+        p.substring(0, p.indexOf('=')).toUpperCase(): p.substring(
+          p.indexOf('=') + 1,
+        ),
+  };
+  if (parts.keys.any((k) => k != 'FREQ' && k != 'INTERVAL' && k != 'WKST')) {
+    return null;
+  }
+  final repeat = switch (parts['FREQ']?.toUpperCase()) {
+    'DAILY' => TaskRepeat.daily,
+    'WEEKLY' => TaskRepeat.weekly,
+    'MONTHLY' => TaskRepeat.monthly,
+    'YEARLY' => TaskRepeat.yearly,
+    _ => null,
+  };
+  final every = int.tryParse(parts['INTERVAL'] ?? '1') ?? 0;
+  if (repeat == null || every < 1 || every > 99) return null;
+  return (repeat, every);
 }
 
 /// Reads the first VTODO of [text]; null if there is none.
@@ -82,6 +113,8 @@ ParsedTodo? parseTodoIcs(String text, {required tz.Location location}) {
     }
   }
 
+  final rrule = todo.property('RRULE');
+  final rule = rrule == null ? null : _simpleRule(rrule.value);
   final status = todo.property('STATUS')?.value.trim().toUpperCase();
   final completed = parseIcsTime(todo.property('COMPLETED'), tz.UTC);
   final done = status == 'COMPLETED' || (status == null && completed != null);
@@ -101,8 +134,11 @@ ParsedTodo? parseTodoIcs(String text, {required tz.Location location}) {
     ].join(', '),
     extra: [
       for (final p in todo.properties)
-        if (!_handled.contains(p.name)) _raw(p),
+        if (!_handled.contains(p.name) && !(p.name == 'RRULE' && rule != null))
+          _raw(p),
     ],
+    repeat: rule?.$1,
+    repeatEvery: rule?.$2 ?? 1,
   );
 }
 
@@ -150,6 +186,7 @@ String _quoteParam(String v) => v.contains(RegExp('[:;,]')) ? '"$v"' : v;
 /// The VTODO of a Famio task.
 String taskToIcs(SyncRecord r, {required tz.Location location}) {
   final task = Task.fromRecord(r);
+  final repeat = task.repeat;
   return _todo(
     r,
     location: location,
@@ -160,6 +197,10 @@ String taskToIcs(SyncRecord r, {required tz.Location location}) {
     due: task.due,
     remindAt: task.remindAt,
     createdAt: task.createdAt,
+    rule: repeat == null
+        ? null
+        : 'FREQ=${repeat.name.toUpperCase()}'
+              '${task.repeatEvery > 1 ? ';INTERVAL=${task.repeatEvery}' : ''}',
   );
 }
 
@@ -187,6 +228,7 @@ String _todo(
   DateTime? remindAt,
   DateTime? createdAt,
   String categories = '',
+  String? rule,
 }) {
   final modified = DateTime.fromMillisecondsSinceEpoch(
     r.updatedAt,
@@ -225,7 +267,10 @@ String _todo(
     w.line('STATUS', 'NEEDS-ACTION');
   }
   if (categories.isNotEmpty) w.text('CATEGORIES', categories);
+  // Famio's own repetition replaces one an app stored before.
+  if (rule != null) w.line('RRULE', rule);
   for (final raw in (r.data[icalExtraKey] as List?) ?? const []) {
+    if (rule != null && raw is Map && raw['n'] == 'RRULE') continue;
     _writeRaw(w, raw);
   }
   if (remindAt != null) {
@@ -270,6 +315,8 @@ Map<String, Object?> taskDataFrom(ParsedTodo todo, Task? existing) => {
             due: todo.due,
             completedAt: todo.completedAt,
             remindAt: todo.remindAt,
+            repeat: todo.repeat,
+            repeatEvery: todo.repeatEvery,
           ) ??
           Task(
             id: '',
@@ -280,6 +327,8 @@ Map<String, Object?> taskDataFrom(ParsedTodo todo, Task? existing) => {
             completedAt: todo.completedAt,
             createdAt: DateTime.now(),
             remindAt: todo.remindAt,
+            repeat: todo.repeat,
+            repeatEvery: todo.repeatEvery,
           ))
       .toData(),
   ..._external(todo),

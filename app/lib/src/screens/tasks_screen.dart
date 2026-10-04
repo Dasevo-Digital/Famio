@@ -236,6 +236,7 @@ class _TaskTile extends StatelessWidget {
     final remind = task.remindAt;
     final subtitle = [
       if (task.due != null) DateFormat('E, d. MMM', 'de').format(task.due!),
+      if (task.repeat case final r?) '↻ ${r.label(task.repeatEvery)}',
       if (!task.done && remind != null && remind.isAfter(DateTime.now()))
         '⏰ ${dateTimeLabel(remind)}',
       if (task.notes.isNotEmpty) task.notes.split('\n').first,
@@ -268,12 +269,32 @@ class _TaskTile extends StatelessWidget {
               label: task.title,
               value: task.done,
               color: c.strong(FamioSection.tasks),
-              onChanged: (done) => engine.saveTask(
-                task.copyWith(
-                  done: done,
-                  completedAt: done ? DateTime.now() : null,
-                ),
-              ),
+              onChanged: (done) {
+                if (!done) {
+                  engine.saveTask(
+                    task.copyWith(done: false, completedAt: null),
+                  );
+                  return;
+                }
+                final next = task.completed();
+                engine.saveTask(next);
+                if (!next.done && next.due != null) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          '„${task.title}“ erledigt – wieder fällig '
+                          '${DateFormat('EEEE, d. MMMM', 'de').format(next.due!)}',
+                        ),
+                        action: SnackBarAction(
+                          label: 'Rückgängig',
+                          onPressed: () => engine.saveTask(task),
+                        ),
+                      ),
+                    );
+                }
+              },
             ),
             const SizedBox(width: 4),
             Expanded(
@@ -323,6 +344,18 @@ Future<void> showTaskEditor(BuildContext context, {Task? task}) =>
       builder: (_) => _TaskEditor(task: task),
     );
 
+const _repeatChoices = <(TaskRepeat?, int)>[
+  (null, 1),
+  (TaskRepeat.daily, 1),
+  (TaskRepeat.weekly, 1),
+  (TaskRepeat.weekly, 2),
+  (TaskRepeat.monthly, 1),
+  (TaskRepeat.monthly, 3),
+  (TaskRepeat.yearly, 1),
+];
+
+String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
 class _TaskEditor extends StatefulWidget {
   const _TaskEditor({this.task});
 
@@ -338,6 +371,8 @@ class _TaskEditorState extends State<_TaskEditor> {
   late DateTime? _due = widget.task?.due;
   late String? _assigneeId = widget.task?.assigneeId;
   late DateTime? _remindAt = widget.task?.remindAt;
+  late TaskRepeat? _repeat = widget.task?.repeat;
+  late int _repeatEvery = widget.task?.repeatEvery ?? 1;
 
   @override
   void dispose() {
@@ -357,9 +392,14 @@ class _TaskEditorState extends State<_TaskEditor> {
       base.copyWith(
         title: title,
         notes: _notes.text.trim(),
-        due: _due,
+        // A repeating task needs a day to count from.
+        due: _repeat != null && _due == null
+            ? DateUtils.dateOnly(DateTime.now())
+            : _due,
         assigneeId: _assigneeId,
         remindAt: _remindAt,
+        repeat: _repeat,
+        repeatEvery: _repeatEvery,
       ),
     );
     Navigator.pop(context);
@@ -470,6 +510,31 @@ class _TaskEditorState extends State<_TaskEditor> {
                   onDeleted: _remindAt == null
                       ? null
                       : () => setState(() => _remindAt = null),
+                ),
+                PopupMenuButton<(TaskRepeat?, int)>(
+                  tooltip: 'Wiederholen',
+                  initialValue: (_repeat, _repeatEvery),
+                  onSelected: (v) => setState(() {
+                    _repeat = v.$1;
+                    _repeatEvery = v.$2;
+                  }),
+                  itemBuilder: (_) => [
+                    for (final (r, n) in _repeatChoices)
+                      PopupMenuItem(
+                        value: (r, n),
+                        child: Text(
+                          r == null ? 'Nicht wiederholen' : _cap(r.label(n)),
+                        ),
+                      ),
+                  ],
+                  child: Chip(
+                    avatar: const Icon(AppIcons.repeat, size: 18),
+                    label: Text(
+                      _repeat == null
+                          ? 'Wiederholen …'
+                          : _cap(_repeat!.label(_repeatEvery)),
+                    ),
+                  ),
                 ),
               ],
             ),

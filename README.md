@@ -42,7 +42,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Modul | Stand |
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
-| Aufgaben (fällig, zuständig, Erinnerung) | ✅ |
+| Aufgaben (fällig, zuständig, Erinnerung, Wiederholung) | ✅ |
 | Einkaufslisten | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
@@ -164,9 +164,11 @@ Der Abgleich läuft über ICS-Abo-Links, ohne Passwörter oder Google-Cloud-Proj
   „Famio-Aufgaben“ und je Einkaufsliste eine Liste (VTODO). Apple
   Erinnerungen (Mac, iPhone), Thunderbird und Tasks.org/jtx mit DAVx⁵
   können Einträge anlegen, abhaken, ändern und löschen; die Menge eines
-  Einkaufsartikels steht in der Notiz. Was Famio nicht kennt (Priorität,
-  Wiederholung, Unteraufgaben, Uhrzeit der Fälligkeit), bleibt erhalten und
-  geht zurück an die App. Neue Listen werden in Famio angelegt. Mit
+  Einkaufsartikels steht in der Notiz. Einfache Wiederholungen (täglich,
+  wöchentlich, monatlich, jährlich, auch „alle 2 Wochen“) übernimmt Famio;
+  was es nicht kennt (Priorität, Wiederholung an bestimmten Wochentagen,
+  Unteraufgaben, Uhrzeit der Fälligkeit), bleibt erhalten und geht zurück
+  an die App. Neue Listen werden in Famio angelegt. Mit
   iCloud-Erinnerungen gleicht Famio nicht ab: Sie sind seit iOS 13 nicht
   mehr über CalDAV erreichbar.
 

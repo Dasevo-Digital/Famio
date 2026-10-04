@@ -3,6 +3,7 @@ import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/app_icons.dart';
+import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
@@ -402,6 +403,36 @@ void main() {
       await tester.tap(find.text('Rückgängig'));
       await _pumpData(tester);
       expect(engine.shoppingItems('l1').single.name, 'Milch');
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('repeating tasks', () {
+    testWidgets('ticking one off moves it to the next date', (tester) async {
+      await open(tester, section: 'Aufgaben');
+      final today = DateUtils.dateOnly(DateTime.now());
+      engine.saveTask(
+        Task(
+          id: 't1',
+          title: 'Gelbe Tonne',
+          due: today,
+          repeat: TaskRepeat.weekly,
+          repeatEvery: 2,
+        ),
+      );
+      await _pumpData(tester);
+      expect(find.textContaining('alle 2 Wochen'), findsOneWidget);
+
+      await tester.tap(find.byType(RoundCheck).first);
+      await tester.pumpAndSettle();
+      final next = engine.tasks.single;
+      expect(next.done, isFalse);
+      expect(next.due, today.add(const Duration(days: 14)));
+      expect(find.textContaining('wieder fällig'), findsOneWidget);
+
+      await tester.tap(find.text('Rückgängig'));
+      await _pumpData(tester);
+      expect(engine.tasks.single.due, today);
       await tester.pump(const Duration(seconds: 5));
     });
   });

@@ -254,6 +254,69 @@ void main() {
     },
   );
 
+  test('a repeating reminder repeats in Famio too', () async {
+    final put = await dav(
+      'PUT',
+      'dav/calendars/mama/aufgaben/tonne.ics',
+      body: reminder(
+        'tonne',
+        'Gelbe Tonne',
+        extra: 'DUE;VALUE=DATE:20991006\r\nRRULE:FREQ=WEEKLY;INTERVAL=2\r\n',
+      ),
+    );
+    expect(put.statusCode, 201);
+    var task = Task.fromRecord(app.records.get(Collections.tasks, 'tonne')!);
+    expect(task.repeat, TaskRepeat.weekly);
+    expect(task.repeatEvery, 2);
+    final get = await dav('GET', 'dav/calendars/mama/aufgaben/tonne.ics');
+    expect(get.body, contains('RRULE:FREQ=WEEKLY;INTERVAL=2'));
+    expect('RRULE'.allMatches(get.body), hasLength(1));
+
+    // Ticked off in Reminders: open again, two weeks later.
+    await dav(
+      'PUT',
+      'dav/calendars/mama/aufgaben/tonne.ics',
+      body: reminder(
+        'tonne',
+        'Gelbe Tonne',
+        extra:
+            'DUE;VALUE=DATE:20991006\r\nRRULE:FREQ=WEEKLY;INTERVAL=2\r\n'
+            'STATUS:COMPLETED\r\n',
+      ),
+    );
+    task = Task.fromRecord(app.records.get(Collections.tasks, 'tonne')!);
+    expect(task.done, isFalse);
+    expect(task.due, DateTime(2099, 10, 20));
+
+    // Ticked off through the app interface (e.g. Home Assistant).
+    await sync([
+      record(
+        Collections.tasks,
+        'tonne',
+        task.copyWith(done: true, completedAt: DateTime.now()).toData(),
+      ),
+    ]);
+    task = Task.fromRecord(app.records.get(Collections.tasks, 'tonne')!);
+    expect(task.done, isFalse);
+    expect(task.due, DateTime(2099, 11, 3));
+  });
+
+  test('a rule Famio cannot show is kept as it is', () async {
+    await dav(
+      'PUT',
+      'dav/calendars/mama/aufgaben/sport.ics',
+      body: reminder(
+        'sport',
+        'Sport',
+        extra: 'RRULE:FREQ=WEEKLY;BYDAY=MO,TH\r\n',
+      ),
+    );
+    final task = Task.fromRecord(app.records.get(Collections.tasks, 'sport')!);
+    expect(task.repeat, isNull);
+    final get = await dav('GET', 'dav/calendars/mama/aufgaben/sport.ics');
+    expect(get.body, contains('RRULE:FREQ=WEEKLY;BYDAY=MO,TH'));
+  });
+
   test(
     'assignee and visibility set in famio survive an edit in Reminders',
     () async {
