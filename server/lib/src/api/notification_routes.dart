@@ -41,6 +41,18 @@ extension _NotificationRoutes on FamioApi {
     return _json({'ok': error == null, 'error': error});
   }
 
+  Response _quietHours(Request request) {
+    final member = _auth(request);
+    return _json(_push.quietHours(member.id).toJson());
+  }
+
+  Future<Response> _setQuietHours(Request request) async {
+    final member = _auth(request);
+    final quiet = QuietHours.fromJson(await _body(request));
+    _push.setQuietHours(member.id, quiet);
+    return _json(quiet.toJson());
+  }
+
   NoticeBox get _box =>
       notices ??
       (throw ApiException(404, 'not_found', 'Benachrichtigungen fehlen'));

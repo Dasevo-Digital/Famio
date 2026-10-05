@@ -845,6 +845,14 @@ class FamioApiClient {
 
   Future<void> testNotice() => _send('POST', 'api/notifications/test');
 
+  Future<QuietHours> quietHours() async =>
+      QuietHours.fromJson(await _send('GET', 'api/me/quiet-hours'));
+
+  Future<QuietHours> setQuietHours(QuietHours quiet) async =>
+      QuietHours.fromJson(
+        await _send('PUT', 'api/me/quiet-hours', quiet.toJson()),
+      );
+
   Future<String> locationDeviceToken(String device) async =>
       (await _send('POST', 'api/location/device-token', {
             'device': device,
@@ -1152,6 +1160,7 @@ class Notice {
     required this.body,
     required this.brief,
     required this.tag,
+    this.quiet = false,
   });
 
   factory Notice.fromJson(Map<String, Object?> json) => Notice(
@@ -1161,6 +1170,7 @@ class Notice {
     body: json['body'] as String? ?? '',
     brief: json['brief'] as String? ?? '',
     tag: json['tag'] as String? ?? '',
+    quiet: json['quiet'] as bool? ?? false,
   );
 
   final int id;
@@ -1171,6 +1181,9 @@ class Notice {
   /// Instead of title and body when the device shows no details.
   final String brief;
   final String tag;
+
+  /// In the member's quiet time: show without sound.
+  final bool quiet;
 }
 
 class NoticeBatch {

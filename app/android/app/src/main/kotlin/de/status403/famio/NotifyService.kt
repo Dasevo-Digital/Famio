@@ -35,6 +35,7 @@ class NotifyService : Service() {
         const val PREFS = "famio_notify"
         private const val CHANNEL = "famio_connection"
         private const val MESSAGES = "famio_messages"
+        private const val QUIET = "famio_quiet"
         private const val NOTIFICATION_ID = 47120
         private const val WAIT_SECONDS = 240
 
@@ -80,6 +81,13 @@ class NotifyService : Service() {
                     "Nachrichten & Hinweise",
                     NotificationManager.IMPORTANCE_HIGH,
                 ).apply { description = "Neue Nachrichten, Aufgaben, Termine und Anfragen" },
+            )
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    QUIET,
+                    "Ruhezeit",
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply { description = "Hinweise während der eigenen Ruhezeit, ohne Ton" },
             )
         }
     }
@@ -181,11 +189,13 @@ class NotifyService : Service() {
                 .getOrDefault(System.currentTimeMillis())
             val title = if (details) notice.optString("title", "Famio") else "Famio"
             val text = if (details) notice.optString("body") else notice.optString("brief")
-            val public = builder(MESSAGES)
+            // In the member's quiet time (set on the server): no sound.
+            val channel = if (notice.optBoolean("quiet")) QUIET else MESSAGES
+            val public = builder(channel)
                 .setContentTitle("Famio")
                 .setContentText(notice.optString("brief"))
                 .build()
-            val notification = builder(MESSAGES)
+            val notification = builder(channel)
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(Notification.BigTextStyle().bigText(text))

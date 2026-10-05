@@ -6,6 +6,7 @@ import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
+import 'package:famio/src/screens/push_settings_screen.dart';
 import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/widgets/data_builder.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
@@ -70,6 +71,42 @@ void main() {
 
   Finder field(String label) =>
       find.widgetWithText(TextField, label, skipOffstage: false);
+
+  group('quiet hours', () {
+    testWidgets('shows the saved time; offline a change is undone', (
+      tester,
+    ) async {
+      await open(tester);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        'quietHours',
+        '{"enabled":true,"start":"22:00","end":"06:30","placesLoud":true}',
+      );
+      await push(
+        tester,
+        const Scaffold(body: SingleChildScrollView(child: QuietHoursCard())),
+      );
+      expect(find.text('ab 22:00 Uhr'), findsOneWidget);
+      expect(find.text('bis 06:30 Uhr'), findsOneWidget);
+
+      // Saving fails here (no server): the switch springs back.
+      await tester.tap(find.text('Ortsmeldungen trotzdem laut'));
+      await tester.pumpAndSettle();
+      expect(
+        tester
+            .widget<SwitchListTile>(
+              find.widgetWithText(
+                SwitchListTile,
+                'Ortsmeldungen trotzdem laut',
+              ),
+            )
+            .value,
+        isTrue,
+      );
+      expect(find.byType(SnackBar), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
 
   group('budget', () {
     testWidgets('the first booking appears in the month', (tester) async {

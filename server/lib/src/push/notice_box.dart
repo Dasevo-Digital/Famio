@@ -23,6 +23,14 @@ class NoticeBox {
     _db.execute(
       'CREATE INDEX IF NOT EXISTS notices_member ON notices(member_id, id)',
     );
+    final columns = {
+      for (final c in _db.select('PRAGMA table_info(notices)')) c['name'],
+    };
+    if (!columns.contains('quiet')) {
+      _db.execute(
+        'ALTER TABLE notices ADD COLUMN quiet INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
 
   final Database _db;
@@ -37,15 +45,28 @@ class NoticeBox {
   final _waiting = <String, Set<Completer<void>>>{};
 
   /// Stores [notice] for [memberIds] and wakes their waiting devices.
-  void add(Iterable<String> memberIds, PushNotice notice) {
+  /// Devices show it without sound for those in [quiet].
+  void add(
+    Iterable<String> memberIds,
+    PushNotice notice, [
+    Set<String> quiet = const {},
+  ]) {
     final now = DateTime.now().millisecondsSinceEpoch;
     for (final id in memberIds.toSet()) {
       // Records may name members that no longer exist (deleted, imported).
       _db.execute(
-        'INSERT INTO notices (member_id, at, title, body, brief, tag)'
-        ' SELECT ?1, ?2, ?3, ?4, ?5, ?6 WHERE EXISTS'
+        'INSERT INTO notices (member_id, at, title, body, brief, tag, quiet)'
+        ' SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7 WHERE EXISTS'
         ' (SELECT 1 FROM users WHERE id = ?1)',
-        [id, now, notice.title, notice.body, notice.brief, notice.tag],
+        [
+          id,
+          now,
+          notice.title,
+          notice.body,
+          notice.brief,
+          notice.tag,
+          if (quiet.contains(id)) 1 else 0,
+        ],
       );
       if (_db.updatedRows == 0) continue;
       _db.execute(
@@ -87,6 +108,7 @@ class NoticeBox {
         'body': row['body'],
         'brief': row['brief'],
         'tag': row['tag'],
+        'quiet': row['quiet'] == 1,
       },
   ];
 

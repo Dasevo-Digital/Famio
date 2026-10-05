@@ -84,6 +84,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
               const _OwnPushCard(),
+              const SizedBox(height: 12),
+              const QuietHoursCard(),
               ListHeading(
                 'Alternativ: über ntfy',
                 color: accent,
@@ -178,6 +180,122 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+/// The member's quiet time: notifications arrive silently, on every device
+/// and through ntfy.
+class QuietHoursCard extends StatefulWidget {
+  const QuietHoursCard({super.key});
+
+  @override
+  State<QuietHoursCard> createState() => _QuietHoursCardState();
+}
+
+class _QuietHoursCardState extends State<QuietHoursCard> {
+  late QuietHours _quiet = AppScope.read(context).quietHours;
+  var _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refresh());
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final quiet = await AppScope.read(context).engine!.api.quietHours();
+      if (mounted) setState(() => _quiet = quiet);
+    } on ApiError {
+      // Offline: show what this device knows.
+    }
+  }
+
+  Future<void> _save(QuietHours value) async {
+    final previous = _quiet;
+    setState(() {
+      _quiet = value;
+      _busy = true;
+    });
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AppScope.read(context).setQuietHours(value);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _quiet = previous);
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _pick({required bool start}) async {
+    final minutes = start ? _quiet.start : _quiet.end;
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
+      helpText: start ? 'Ruhezeit ab' : 'Ruhezeit bis',
+    );
+    if (picked == null) return;
+    final value = picked.hour * 60 + picked.minute;
+    await _save(
+      start ? _quiet.copyWith(start: value) : _quiet.copyWith(end: value),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final q = _quiet;
+    return SoftCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Ruhezeit', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'In dieser Zeit kommen Nachrichten, neue Termine und Aufgaben '
+            'ohne Ton an – auf allen deinen Geräten und über ntfy. '
+            'Erinnerungen, die du selbst gestellt hast (Termine, '
+            'Medikamente), bleiben laut.',
+            style: theme.textTheme.bodySmall,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(AppIcons.moon),
+            title: const Text('Ruhezeit einschalten'),
+            value: q.enabled,
+            onChanged: _busy ? null : (v) => _save(q.copyWith(enabled: v)),
+          ),
+          if (q.enabled) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.clock, size: 18),
+                  label: Text('ab ${QuietHours.format(q.start)} Uhr'),
+                  onPressed: _busy ? null : () => _pick(start: true),
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.clock, size: 18),
+                  label: Text('bis ${QuietHours.format(q.end)} Uhr'),
+                  onPressed: _busy ? null : () => _pick(start: false),
+                ),
+              ],
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Ortsmeldungen trotzdem laut'),
+              subtitle: const Text('z. B. „Mia ist zu Hause angekommen“'),
+              value: q.placesLoud,
+              onChanged: _busy ? null : (v) => _save(q.copyWith(placesLoud: v)),
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -219,6 +219,8 @@ class FamioApi {
       ..post('/api/me/push', _addPushTarget)
       ..delete('/api/me/push/<id>', _deletePushTarget)
       ..post('/api/me/push/<id>/test', _testPushTarget)
+      ..get('/api/me/quiet-hours', _quietHours)
+      ..put('/api/me/quiet-hours', _setQuietHours)
       ..get('/api/notifications', _notices)
       ..post('/api/notifications/device-token', _noticeDeviceToken)
       ..post('/api/notifications/test', _testNotice)

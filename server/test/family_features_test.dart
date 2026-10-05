@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/push/push_service.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:test/test.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 /// One family member talking to the server.
 class _Member {
@@ -494,6 +496,63 @@ void main() {
       expect(author['notices'], isEmpty);
       expect((await device.call('POST', 'api/sync', {}))['_status'], 401);
       expect((await device.call('GET', 'api/me'))['_status'], 401);
+    });
+
+    test('in the quiet time notices arrive silently', () async {
+      final now = tz.TZDateTime.now(app.settings.location);
+      String at(int minutes) =>
+          QuietHours.format((now.hour * 60 + now.minute + minutes) % (24 * 60));
+      expect((await kind.call('GET', 'api/me/quiet-hours'))['enabled'], false);
+      final saved = await kind.call('PUT', 'api/me/quiet-hours', {
+        'enabled': true,
+        'start': at(-60),
+        'end': at(60),
+        'placesLoud': true,
+      });
+      expect(saved['start'], at(-60));
+      await kind.call('POST', 'api/me/push', {
+        'url': 'https://push.example/famio-geheim',
+      });
+      pushed.clear();
+
+      await mama.sync([
+        _record(
+          Collections.chatMessages,
+          'q1',
+          chat('q1', ChatIds.family, 'Gute Nacht'),
+        ),
+      ]);
+      await app.push.idle;
+      final kindGot = await kind.call('GET', 'api/notifications?after=0');
+      expect((kindGot['notices'] as List).last['quiet'], isTrue);
+      expect(pushed.single['priority'], 2);
+      final mamaGot = await mama.call('GET', 'api/notifications?after=0');
+      expect([
+        for (final n in mamaGot['notices'] as List) n['quiet'],
+      ], everyElement(isFalse));
+
+      // Arrivals stay loud if wanted; outside the time everything is loud.
+      const place = PushNotice(
+        to: {},
+        title: 'Famio',
+        body: 'Mia ist angekommen',
+        brief: 'Neue Ortsmeldung',
+        place: true,
+      );
+      expect(app.push.isQuiet(kind.id, place), isFalse);
+      await kind.call('PUT', 'api/me/quiet-hours', {
+        ...saved,
+        'placesLoud': false,
+      });
+      expect(app.push.isQuiet(kind.id, place), isTrue);
+      expect(
+        app.push.isQuiet(
+          kind.id,
+          place,
+          now: DateTime.now().add(const Duration(hours: 3)),
+        ),
+        isFalse,
+      );
     });
 
     test('a waiting request returns as soon as something arrives', () async {

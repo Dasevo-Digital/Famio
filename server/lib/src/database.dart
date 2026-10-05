@@ -235,6 +235,13 @@ const _migrations = [
     PRIMARY KEY (account_id, famio_list, item_id)
   );
   ''',
+  '''
+  -- When a member's notifications arrive silently (QuietHours as JSON).
+  CREATE TABLE quiet_hours (
+    member_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    config TEXT NOT NULL
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

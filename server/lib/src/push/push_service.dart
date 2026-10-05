@@ -19,6 +19,7 @@ class PushNotice {
     required this.body,
     required this.brief,
     this.tag = 'house',
+    this.place = false,
   });
 
   final Set<String> to;
@@ -30,6 +31,9 @@ class PushNotice {
 
   /// ntfy emoji tag.
   final String tag;
+
+  /// An arrival or leaving notice (may stay loud in the quiet time).
+  final bool place;
 }
 
 /// Real push notifications while the apps are closed: the server publishes
@@ -61,7 +65,9 @@ class PushService {
 
   /// Famio's own push (see NoticeBox): gets every notice for the members
   /// allowed to see it, whether or not they use ntfy.
-  void Function(List<String> memberIds, PushNotice notice)? onNotice;
+  /// [quiet]: those of [memberIds] in their quiet time.
+  void Function(List<String> memberIds, PushNotice notice, Set<String> quiet)?
+  onNotice;
 
   /// Sends still running (tests wait for them).
   final _pending = <Future<void>>{};
@@ -132,6 +138,33 @@ class PushService {
     if (_ownsClient) _client.close();
   }
 
+  // --- quiet hours ------------------------------------------------------------
+
+  QuietHours quietHours(String memberId) {
+    final row = _db.select(
+      'SELECT config FROM quiet_hours WHERE member_id = ?',
+      [memberId],
+    ).firstOrNull;
+    if (row == null) return const QuietHours();
+    return QuietHours.fromJson(
+      (jsonDecode(row['config'] as String) as Map).cast<String, Object?>(),
+    );
+  }
+
+  void setQuietHours(String memberId, QuietHours quiet) => _db.execute(
+    'INSERT INTO quiet_hours (member_id, config) VALUES (?, ?)'
+    ' ON CONFLICT DO UPDATE SET config = excluded.config',
+    [memberId, jsonEncode(quiet.toJson())],
+  );
+
+  /// Whether [notice] reaches [memberId] silently right now.
+  bool isQuiet(String memberId, PushNotice notice, {DateTime? now}) {
+    final quiet = quietHours(memberId);
+    if (notice.place && quiet.placesLoud) return false;
+    final local = tz.TZDateTime.from(now ?? DateTime.now(), location());
+    return quiet.isQuietAt(local);
+  }
+
   void remove(String memberId, String id) => _db.execute(
     'DELETE FROM push_targets WHERE member_id = ? AND id = ?',
     [memberId, id],
@@ -194,6 +227,7 @@ class PushService {
           body: alert.text(names[alert.memberId] ?? 'Jemand'),
           brief: 'Neue Ortsmeldung',
           tag: 'round_pushpin',
+          place: true,
         ),
         r,
       );
@@ -343,8 +377,12 @@ class PushService {
         if (records.canAccess(about, id)) id,
     ];
     if (allowed.isEmpty) return;
+    final quiet = {
+      for (final id in allowed)
+        if (isQuiet(id, notice)) id,
+    };
     try {
-      onNotice?.call(allowed, notice);
+      onNotice?.call(allowed, notice, quiet);
     } catch (_) {
       // A notification must never make the sync that caused it fail.
       onOperationalError?.call('push_notice_store_failed');
@@ -359,13 +397,18 @@ class PushService {
       f = _send(
         row,
         notice,
+        quiet: quiet.contains(row['member_id']),
       ).then((_) {}).whenComplete(() => _pending.remove(f));
       _pending.add(f);
     }
   }
 
   /// Publishes via ntfy's JSON API; returns the error text, if any.
-  Future<String?> _send(Row row, PushNotice notice) async {
+  Future<String?> _send(
+    Row row,
+    PushNotice notice, {
+    bool quiet = false,
+  }) async {
     final uri = Uri.parse(row['url'] as String);
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
     final topic = segments.last;
@@ -391,6 +434,8 @@ class PushService {
               'title': details ? notice.title : 'Famio',
               'message': details ? notice.body : notice.brief,
               'tags': [notice.tag],
+              // ntfy's "low": no sound, no vibration, no pop-up.
+              if (quiet) 'priority': 2,
             });
       final response = await _client
           .send(request)

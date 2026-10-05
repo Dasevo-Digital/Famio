@@ -87,13 +87,23 @@ class ReminderService {
   /// True while this device gets Famio's own push notifications.
   bool Function()? ownPushActive;
 
+  /// The member's quiet time (see QuietHours); reminders the member set
+  /// themselves stay loud.
+  QuietHours Function()? quietHours;
+
+  bool _quiet({bool place = false}) {
+    final quiet = quietHours?.call();
+    if (quiet == null || (place && quiet.placesLoud)) return false;
+    return quiet.isQuietAt(DateTime.now());
+  }
+
   /// A notification of Famio's own push (see OwnPush).
   Future<void> showNotice(Notice notice, {required bool details}) =>
       _plugin.show(
         id: 800000 + notice.id % 100000,
         title: details ? notice.title : AppEnv.appName,
         body: details ? notice.body : notice.brief,
-        notificationDetails: _chatDetails,
+        notificationDetails: notice.quiet ? _quietDetails : _chatDetails,
       );
 
   SyncEngine? _engine;
@@ -284,7 +294,7 @@ class ReminderService {
             : m.text.isNotEmpty
             ? m.text
             : '📎 ${m.attachment?.name ?? 'Anhang'}',
-        notificationDetails: _chatDetails,
+        notificationDetails: _quiet() ? _quietDetails : _chatDetails,
       );
     }
   }
@@ -310,7 +320,9 @@ class ReminderService {
         id: int.tryParse(a.id.substring(0, 7), radix: 16) ?? a.id.hashCode,
         title: AppEnv.appName,
         body: a.text(engine.member(a.memberId)?.displayName ?? 'Jemand'),
-        notificationDetails: _placeDetails,
+        notificationDetails: _quiet(place: true)
+            ? _quietDetails
+            : _placeDetails,
       );
     }
   }
@@ -340,6 +352,28 @@ class ReminderService {
     macOS: DarwinNotificationDetails(),
     linux: LinuxNotificationDetails(),
     windows: WindowsNotificationDetails(),
+  );
+
+  /// In the quiet time: listed, but no sound and no pop-up.
+  static final _quietDetails = NotificationDetails(
+    android: const AndroidNotificationDetails(
+      'quiet',
+      'Ruhezeit',
+      channelDescription: 'Hinweise während der Ruhezeit, ohne Ton',
+      importance: Importance.low,
+      priority: Priority.low,
+      playSound: false,
+      enableVibration: false,
+      visibility: NotificationVisibility.private,
+    ),
+    macOS: const DarwinNotificationDetails(
+      presentSound: false,
+      presentBanner: false,
+    ),
+    linux: const LinuxNotificationDetails(suppressSound: true),
+    windows: WindowsNotificationDetails(
+      audio: WindowsNotificationAudio.silent(),
+    ),
   );
 
   static String _body(DueReminder r) {

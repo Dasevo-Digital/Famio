@@ -58,6 +58,35 @@ class AppState extends ChangeNotifier {
   }
 
   late SharedPreferences _prefs;
+
+  /// The member's quiet time; kept for the local notifications offline.
+  QuietHours get quietHours {
+    final raw = _prefs.getString('quietHours');
+    if (raw == null) return const QuietHours();
+    try {
+      return QuietHours.fromJson(
+        (jsonDecode(raw) as Map).cast<String, Object?>(),
+      );
+    } on FormatException {
+      return const QuietHours();
+    }
+  }
+
+  Future<void> setQuietHours(QuietHours value) async {
+    final saved = await engine!.api.setQuietHours(value);
+    await _prefs.setString('quietHours', jsonEncode(saved.toJson()));
+    notifyListeners();
+  }
+
+  Future<void> _loadQuietHours(FamioApiClient api) async {
+    try {
+      final quiet = await api.quietHours();
+      await _prefs.setString('quietHours', jsonEncode(quiet.toJson()));
+    } on ApiError {
+      // Offline or an older server: keep what we had.
+    }
+  }
+
   late SecureVault vault;
   bool insecureVaultConsentRequired = false;
   ReminderService? _reminders;
@@ -619,6 +648,8 @@ class AppState extends ChangeNotifier {
         .catchError((Object _) {});
     _reminders ??= await ReminderService.create(_prefs);
     _reminders?.ownPushActive = () => push.active;
+    _reminders?.quietHours = () => quietHours;
+    _loadQuietHours(api);
     if (this.engine == engine) _reminders?.attach(engine);
     _loadConfig(api);
     refreshTwoFactor();
