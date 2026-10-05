@@ -283,6 +283,7 @@ class _TaskTile extends StatelessWidget {
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
                       SnackBar(
+                        persist: false,
                         content: Text(
                           '„${task.title}“ erledigt – wieder fällig '
                           '${DateFormat('EEEE, d. MMMM', 'de').format(next.due!)}',

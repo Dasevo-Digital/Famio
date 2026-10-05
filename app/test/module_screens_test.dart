@@ -382,6 +382,18 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
 
+    testWidgets('the undo message goes away by itself', (tester) async {
+      await open(tester, section: 'Aufgaben');
+      engine.saveTask(const Task(id: 't1', title: 'Müll rausbringen'));
+      await _pumpData(tester);
+      await tester.drag(find.text('Müll rausbringen'), const Offset(-600, 0));
+      await tester.pumpAndSettle();
+      expect(find.text('Rückgängig'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.text('Rückgängig'), findsNothing);
+    });
+
     testWidgets('a swiped away shopping item can be brought back', (
       tester,
     ) async {

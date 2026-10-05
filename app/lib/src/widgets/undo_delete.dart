@@ -29,6 +29,8 @@ void deleteWithUndo(
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
+        // With an action a snack bar would stay until tapped.
+        persist: false,
         content: Text(
           message ?? (what.isEmpty ? 'Gelöscht' : '„$what“ gelöscht'),
         ),
