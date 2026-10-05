@@ -145,18 +145,34 @@ class BringProvider implements ListProvider {
         headers: await _auth(),
       ),
     );
-    final items = (json['items'] as Map?) ?? const {};
-    RemoteItem item(Map e, {required bool done}) => RemoteItem(
-      id: '${e['itemId']}',
-      title: '${e['itemId']}',
-      note: '${e['specification'] ?? ''}',
-      done: done,
-    );
+    // Current answer: {items: {purchase, recently}}; older ones have both
+    // lists at the top and call the article "name".
+    final items = json['items'] is Map ? json['items'] as Map : json;
+    if (items['purchase'] is! List && items['recently'] is! List) {
+      // Never read an unknown answer as an empty list: the sync would
+      // then do nothing without telling anyone.
+      throw ListProviderException(
+        'Bring! hat die Liste in einem unbekannten Format geliefert '
+        '(Felder: ${json.keys.join(', ')}).',
+      );
+    }
+    RemoteItem? item(Object? e, {required bool done}) {
+      if (e is! Map) return null;
+      final name = '${e['itemId'] ?? e['name'] ?? ''}'.trim();
+      if (name.isEmpty) return null;
+      return RemoteItem(
+        id: name,
+        title: name,
+        note: '${e['specification'] ?? ''}',
+        done: done,
+      );
+    }
+
     return [
       for (final e in (items['purchase'] as List?) ?? const [])
-        if (e is Map) item(e, done: false),
+        ?item(e, done: false),
       for (final e in (items['recently'] as List?) ?? const [])
-        if (e is Map) item(e, done: true),
+        ?item(e, done: true),
     ];
   }
 
