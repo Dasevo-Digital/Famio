@@ -104,6 +104,7 @@ class FamioServerApp {
         ServerSettings.listSyncModule,
       ),
       client: httpClient,
+      log: auditLog,
     );
     caldav = CalDavSync(
       db: db,

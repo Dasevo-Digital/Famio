@@ -93,7 +93,10 @@ void main() {
   late ListSync lists;
   var enabled = true;
 
+  final logLines = <String>[];
+
   setUp(() {
+    logLines.clear();
     app = FamioServerApp.inMemory();
     mama = app.accounts
         .create(
@@ -112,6 +115,7 @@ void main() {
       onChanged: () {},
       enabled: () => enabled,
       providerFor: (_, _) => fake,
+      log: logLines.add,
     );
   });
 
@@ -182,9 +186,17 @@ void main() {
     final arzt = tasks().firstWhere((t) => t.title == 'Arzt anrufen');
     expect(arzt.notes, 'vor 12 Uhr');
 
+    expect(
+      logLines.single,
+      contains('Famio 1, dort 1 Einträge; 1 gesendet, 1 übernommen'),
+    );
+
     final writes = fake.writes;
     await lists.syncAccount(id);
     expect(fake.writes, writes, reason: 'no echo');
+    expect(logLines, hasLength(1), reason: 'quiet runs are not logged');
+    await lists.syncAccount(id, report: true);
+    expect(logLines.last, contains('0 gesendet, 0 übernommen, 0 gelöscht'));
     expect(tasks(), hasLength(2));
     expect(lists.accounts(mama).single['lastError'], isNull);
   });

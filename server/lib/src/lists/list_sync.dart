@@ -37,6 +37,7 @@ class ListSync {
     this.bringBase,
     this.graphBase,
     this.loginBase,
+    this.log,
   }) : _client = client ?? http.Client();
 
   final Database db;
@@ -61,6 +62,9 @@ class ListSync {
   final Uri? bringBase;
   final Uri? graphBase;
   final Uri? loginBase;
+
+  /// Writes a line to the server log (what a sync did, errors).
+  final void Function(String line)? log;
   final http.Client _client;
 
   Timer? _timer;
@@ -383,16 +387,17 @@ class ListSync {
   // --- syncing ---------------------------------------------------------------
 
   /// Syncs one account; runs of the same account never overlap.
-  Future<void> syncAccount(String id) {
+  /// [report]: log the outcome even if nothing changed (a member asked).
+  Future<void> syncAccount(String id, {bool report = false}) {
     final previous = _running[id] ?? Future<void>.value();
-    final next = previous.then((_) => _syncAccount(id));
+    final next = previous.then((_) => _syncAccount(id, report: report));
     _running[id] = next;
     return next.whenComplete(() {
       if (identical(_running[id], next)) _running.remove(id);
     });
   }
 
-  Future<void> _syncAccount(String id) async {
+  Future<void> _syncAccount(String id, {bool report = false}) async {
     if (!enabled()) return;
     final account = db.select('SELECT * FROM list_accounts WHERE id = ?', [
       id,
@@ -402,10 +407,15 @@ class ListSync {
     final provider = _provider(account);
     String? error;
     var changed = false;
-    for (final link in db.select(
-      'SELECT * FROM list_links WHERE account_id = ?',
-      [id],
-    )) {
+    final links = db.select('SELECT * FROM list_links WHERE account_id = ?', [
+      id,
+    ]);
+    if (report && links.isEmpty) {
+      log?.call('[listen] ${_label(provider)}: keine Liste zugeordnet');
+    }
+    for (final link in links) {
+      final stats = _SyncStats();
+      final name = '${_label(provider)} „${link['remote_name']}“';
       try {
         changed |= await _syncLink(
           id,
@@ -413,12 +423,16 @@ class ListSync {
           provider,
           link['famio_list'] as String,
           link['remote_list'] as String,
+          stats,
         );
+        if (report || stats.changes > 0) log?.call('[listen] $name: $stats');
       } on ListProviderException catch (e) {
         error = e.message;
+        log?.call('[listen] $name: $error');
         if (e.signedOut) break;
-      } on http.ClientException {
+      } on http.ClientException catch (e) {
         error = 'Keine Verbindung zu ${_label(provider)}.';
+        log?.call('[listen] $name: $error (${e.message})');
       }
     }
     _keepCredentials(id, provider);
@@ -439,15 +453,20 @@ class ListSync {
     ListProvider provider,
     String famioList,
     String remoteList,
+    _SyncStats stats,
   ) async {
     final isTasks = famioList == tasksList;
     final collection = isTasks ? Collections.tasks : Collections.shoppingItems;
     if (!isTasks) {
       final list = records.get(Collections.shoppingLists, famioList);
-      if (list == null || list.deleted) return false;
+      if (list == null || list.deleted) {
+        stats.missing = true;
+        return false;
+      }
     }
 
     final remote = {for (final r in await provider.items(remoteList)) r.id: r};
+    stats.remote = remote.length;
     final links = {
       for (final row in db.select(
         'SELECT item_id, remote_id, hash FROM list_items'
@@ -463,6 +482,7 @@ class ListSync {
       for (final r in records.all(collection, visibleToMember: memberId))
         if (isTasks || r.data['listId'] == famioList) r.id: r,
     };
+    stats.famio = famio.length;
     final dueDates = isTasks && provider.hasDueDates;
 
     String hashOf(_State? s) => s == null ? '' : s.hash;
@@ -483,6 +503,7 @@ class ListSync {
       [accountId, famioList, itemId],
     );
     Future<void> push(String itemId, _State state, RemoteItem? there) async {
+      stats.sent++;
       if (there == null) {
         final created = await provider.create(remoteList, state.draft);
         link(itemId, created.id, state);
@@ -493,6 +514,7 @@ class ListSync {
     }
 
     void pull(String itemId, RemoteItem there) {
+      stats.taken++;
       final previous = records.get(collection, itemId);
       famioWrites.add(
         _record(collection, itemId, there, previous, famioList, isTasks),
@@ -533,6 +555,7 @@ class ListSync {
       if (famioWins) {
         if (here == null) {
           await provider.delete(remoteList, there!);
+          stats.deleted++;
           unlink(itemId);
         } else {
           await push(itemId, here, there);
@@ -540,6 +563,7 @@ class ListSync {
       } else if (there == null) {
         if (record != null && !record.deleted) {
           famioWrites.add(_tombstone(record));
+          stats.deleted++;
         }
         unlink(itemId);
       } else {
@@ -640,6 +664,24 @@ class ListSync {
       updatedAt: _after(previous),
     );
   }
+}
+
+/// What one sync of a link did, for the server log.
+class _SyncStats {
+  int famio = 0;
+  int remote = 0;
+  int sent = 0;
+  int taken = 0;
+  int deleted = 0;
+  bool missing = false;
+
+  int get changes => sent + taken + deleted;
+
+  @override
+  String toString() => missing
+      ? 'die Famio-Liste gibt es nicht mehr'
+      : 'Famio $famio, dort $remote Einträge; $sent gesendet, '
+            '$taken übernommen, $deleted gelöscht';
 }
 
 /// What both sides compare: title, note (quantity), done, due day.

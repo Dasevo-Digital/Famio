@@ -67,7 +67,7 @@ extension _ListRoutes on FamioApi {
     final member = _listMember(request);
     final body = await _body(request);
     _lists.setLinks(id, member.id, (body['links'] as List?) ?? const []);
-    await _lists.syncAccount(id);
+    await _lists.syncAccount(id, report: true);
     return _json({
       'account': _lists.accounts(member.id).firstWhere((a) => a['id'] == id),
     });
@@ -78,7 +78,7 @@ extension _ListRoutes on FamioApi {
     if (!_lists.accounts(member.id).any((a) => a['id'] == id)) {
       throw ApiException(404, 'not_found', 'Verbindung nicht gefunden');
     }
-    await _lists.syncAccount(id);
+    await _lists.syncAccount(id, report: true);
     return _json({
       'account': _lists.accounts(member.id).firstWhere((a) => a['id'] == id),
     });
