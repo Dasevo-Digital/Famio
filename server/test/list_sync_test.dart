@@ -351,6 +351,53 @@ void main() {
     expect(fake.entries['Milch']!.done, isTrue);
   });
 
+  test('done entries new on one side are not copied over', () async {
+    fake = FakeProvider(kind: 'bring', oneEntryPerTitle: true);
+    final id = account(provider: 'bring');
+    write(Collections.shoppingLists, 'l1', {'name': 'Einkauf'});
+    void item(String id, String name, {bool checked = false}) => write(
+      Collections.shoppingItems,
+      id,
+      ShoppingItem(id: id, listId: 'l1', name: name, checked: checked).toData(),
+    );
+    item('alt', 'Kaffee', checked: true);
+    item('butter', 'Butter', checked: true);
+    item('eier', 'Eier');
+    fake.add('Mehl', done: true);
+    fake.add('Butter');
+    fake.add('Eier', done: true);
+    fake.add('Brot');
+    lists.setLinks(id, mama, [
+      {'famioList': 'l1', 'remoteList': 'L'},
+    ]);
+    await lists.syncAccount(id);
+
+    final items = {
+      for (final r in app.records.all(Collections.shoppingItems))
+        ShoppingItem.fromRecord(r).name: ShoppingItem.fromRecord(r),
+    };
+    // Bought long ago there (Mehl) stays out of Famio, ticked off here
+    // (Kaffee) stays out of Bring!.
+    expect(items.keys, unorderedEquals(['Kaffee', 'Butter', 'Eier', 'Brot']));
+    expect(
+      fake.entries.keys,
+      unorderedEquals(['Mehl', 'Butter', 'Eier', 'Brot']),
+    );
+    // Still needed on one side wins over bought on the other.
+    expect(items['Butter']!.checked, isFalse);
+    expect(items['Butter']!.id, 'butter');
+    expect(fake.entries['Eier']!.done, isFalse);
+    expect(fake.entries['Butter']!.done, isFalse);
+
+    // Unticked later, an entry travels as usual.
+    item('alt', 'Kaffee');
+    await lists.syncAccount(id);
+    expect(fake.entries['Kaffee']!.done, isFalse);
+    final writes = fake.writes;
+    await lists.syncAccount(id);
+    expect(fake.writes, writes, reason: 'no echo');
+  });
+
   test('switched off by the family: nothing happens', () async {
     final id = account();
     write(
@@ -497,7 +544,7 @@ void main() {
             final page = url.queryParameters[r'$skip'] == '1' ? 1 : 0;
             return json({
               'value': [
-                for (final e in all.skip(page).take(1))
+                for (final e in page == 0 ? all.take(1) : all.skip(1))
                   {'id': e.key, ...e.value},
               ],
               if (page == 0 && all.length > 1)
@@ -635,12 +682,14 @@ void main() {
       graph['a'] = {'title': 'Steuer', 'status': 'notStarted'};
       graph['b'] = {
         'title': 'Reifen wechseln',
-        'status': 'completed',
+        'status': 'notStarted',
         'dueDateTime': {
           'dateTime': '2026-10-20T00:00:00.0000000',
           'timeZone': 'UTC',
         },
       };
+      // Done long ago: stays in Microsoft To Do.
+      graph['c'] = {'title': 'Steuer 2025', 'status': 'completed'};
       server.records.writeAs(server.accounts.members().single.id, [
         SyncRecord(
           collection: Collections.tasks,
@@ -663,13 +712,15 @@ void main() {
             as Map)['lastError'],
         isNull,
       );
+      graph['b']!['status'] = 'completed';
+      await call('POST', 'api/lists/accounts/$id/sync');
       final tasks = [
         for (final r in server.records.all(Collections.tasks))
           Task.fromRecord(r),
       ];
       expect(
         tasks.map((t) => t.title),
-        containsAll(['Steuer', 'Reifen wechseln']),
+        unorderedEquals(['Steuer', 'Reifen wechseln', 'Kita-Anmeldung']),
       );
       final tyres = tasks.firstWhere((t) => t.title == 'Reifen wechseln');
       expect(tyres.done, isTrue);

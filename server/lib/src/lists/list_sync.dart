@@ -573,6 +573,9 @@ class ListSync {
 
     // New on either side. Apps with one entry per name first pair up
     // entries of the same name, so a first sync creates no duplicates.
+    // Done entries that are new on one side stay there: otherwise
+    // connecting would copy all of Bring's "recently bought" or every
+    // completed task over as ticked off clutter.
     final unlinkedRemote = [
       for (final r in remote.values)
         if (!linkedRemote.contains(r.id)) r,
@@ -587,13 +590,18 @@ class ListSync {
       final here = famioState(record)!;
       final same = byTitle[here.title.trim().toLowerCase()];
       if (same != null && paired.add(same.id)) {
-        await push(record.id, here, same);
-      } else {
+        // Still needed on one side beats bought long ago on the other.
+        if (here.done && !same.done) {
+          pull(record.id, same);
+        } else {
+          await push(record.id, here, same);
+        }
+      } else if (!here.done) {
         await push(record.id, here, null);
       }
     }
     for (final there in unlinkedRemote) {
-      if (paired.contains(there.id)) continue;
+      if (paired.contains(there.id) || there.done) continue;
       pull(newId(), there);
     }
 
