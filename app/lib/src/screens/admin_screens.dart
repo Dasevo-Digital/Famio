@@ -21,6 +21,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
 import '../widgets/data_export.dart';
 import '../widgets/update_check.dart';
+import 'invite_screens.dart' show InviteScreen;
 
 part 'admin/member_calendars.dart';
 part 'admin/settings_form.dart';
@@ -82,7 +83,7 @@ class _AdminScreenState extends State<AdminScreen> {
               color: accent,
               tooltip: 'Mitglied hinzufügen',
               icon: AppIcons.userPlus,
-              onPressed: _addMember,
+              onPressed: _chooseAdd,
             )
           : null,
       body: Column(
@@ -148,6 +149,43 @@ class _AdminScreenState extends State<AdminScreen> {
         ],
       ),
     );
+  }
+
+  /// Invite (the newcomer chooses the password) or create directly.
+  Future<void> _chooseAdd() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      useRootNavigator: true,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(AppIcons.userPlus),
+              title: const Text('Einladen (QR-Code oder Link)'),
+              subtitle: const Text('Wählt Benutzername und Passwort selbst'),
+              onTap: () => Navigator.pop(context, 'invite'),
+            ),
+            ListTile(
+              leading: const Icon(AppIcons.lockKey),
+              title: const Text('Direkt anlegen'),
+              subtitle: const Text('Du vergibst das Passwort'),
+              onTap: () => Navigator.pop(context, 'create'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    switch (choice) {
+      case 'invite':
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const InviteScreen()));
+      case 'create':
+        await _addMember();
+    }
   }
 
   Future<void> _addMember() async {

@@ -573,20 +573,30 @@ class _PantryEditorState extends State<_PantryEditor> {
 
 /// Full screen camera that returns the first product barcode it sees.
 class BarcodeScanScreen extends StatefulWidget {
-  const BarcodeScanScreen({super.key});
+  const BarcodeScanScreen({
+    super.key,
+    this.qr = false,
+    this.title = 'Barcode scannen',
+  });
+
+  /// Scan QR codes (e.g. an invitation) instead of product barcodes.
+  final bool qr;
+  final String title;
 
   @override
   State<BarcodeScanScreen> createState() => _BarcodeScanScreenState();
 }
 
 class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
-  final _controller = MobileScannerController(
-    formats: const [
-      BarcodeFormat.ean13,
-      BarcodeFormat.ean8,
-      BarcodeFormat.upcA,
-      BarcodeFormat.upcE,
-    ],
+  late final _controller = MobileScannerController(
+    formats: widget.qr
+        ? const [BarcodeFormat.qrCode]
+        : const [
+            BarcodeFormat.ean13,
+            BarcodeFormat.ean8,
+            BarcodeFormat.upcA,
+            BarcodeFormat.upcE,
+          ],
   );
   var _done = false;
 
@@ -602,7 +612,7 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
     appBar: AppBar(
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
-      title: const Text('Barcode scannen'),
+      title: Text(widget.title),
     ),
     body: Stack(
       children: [
@@ -632,7 +642,7 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
         Center(
           child: Container(
             width: 280,
-            height: 160,
+            height: widget.qr ? 280 : 160,
             decoration: BoxDecoration(
               border: Border.all(color: Colors.white, width: 3),
               borderRadius: BorderRadius.circular(20),

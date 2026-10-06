@@ -242,6 +242,20 @@ const _migrations = [
     config TEXT NOT NULL
   );
   ''',
+  '''
+  -- Invitations: a one-time code (only its hash) for a new member.
+  CREATE TABLE invites (
+    id TEXT PRIMARY KEY,
+    code_hash TEXT NOT NULL UNIQUE,
+    role TEXT NOT NULL,
+    display_name TEXT NOT NULL DEFAULT '',
+    created_by TEXT,
+    created_at INTEGER NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER,
+    used_by TEXT
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

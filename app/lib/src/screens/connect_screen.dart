@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'invite_screens.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
@@ -313,6 +314,21 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                   : null,
                               onFieldSubmitted: (_) => _submit(),
                             ),
+                          ),
+                        ],
+                        if (server == null) ...[
+                          const SizedBox(height: 8),
+                          TextButton.icon(
+                            icon: const Icon(AppIcons.userPlus, size: 18),
+                            label: const Text('Mit Einladung beitreten'),
+                            onPressed: _busy
+                                ? null
+                                : () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const JoinWithInviteScreen(),
+                                    ),
+                                  ),
                           ),
                         ],
                         if (_error != null) ...[

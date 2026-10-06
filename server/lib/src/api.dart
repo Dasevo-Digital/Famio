@@ -30,6 +30,7 @@ import 'files/file_store.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
+import 'family/invites.dart';
 import 'family/sos.dart';
 import 'hub.dart';
 import 'export/data_export.dart';
@@ -50,6 +51,7 @@ part 'api/file_routes.dart';
 part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
+part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
 
@@ -93,6 +95,7 @@ class FamioApi {
     this.push,
     this.notices,
     this.sos,
+    this.invites,
     required this.mfa,
     this.sso,
     this.webApp,
@@ -152,6 +155,9 @@ class FamioApi {
 
   /// The emergency button; null in some tests.
   final SosService? sos;
+
+  /// Invitations for new members; null in some tests.
+  final Invites? invites;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -240,6 +246,11 @@ class FamioApi {
       ..post('/api/admin/wipe', _adminWipe)
       ..get('/api/admin/users', _adminUsers)
       ..post('/api/admin/users', _createMember)
+      ..get('/api/admin/invites', _openInvites)
+      ..post('/api/admin/invites', _createInvite)
+      ..delete('/api/admin/invites/<id>', _revokeInvite)
+      ..post('/api/auth/invite/check', _checkInvite)
+      ..post('/api/auth/invite', _redeemInvite)
       ..patch('/api/admin/users/<id>', _adminUpdateUser)
       ..put('/api/admin/users/<id>/password', _adminResetPassword)
       ..delete('/api/admin/users/<id>', _deleteMember)

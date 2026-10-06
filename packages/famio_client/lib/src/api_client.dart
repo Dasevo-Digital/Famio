@@ -237,6 +237,49 @@ class FamioApiClient {
 
   Future<void> logout() => _send('POST', 'api/auth/logout');
 
+  // --- invitations -----------------------------------------------------------
+
+  /// What [code] invites to (role, suggested name), without signing in.
+  Future<InviteInfo> checkInvite(String code) async => InviteInfo.fromJson(
+    await _send('POST', 'api/auth/invite/check', {'code': code}),
+  );
+
+  /// Joins the family with an invitation; the member chooses the login.
+  Future<LoginResult> redeemInvite({
+    required String code,
+    required String username,
+    required String password,
+    String displayName = '',
+    String? device,
+  }) => _login('api/auth/invite', {
+    'code': code,
+    'username': username,
+    'password': password,
+    'displayName': displayName,
+    'device': device,
+  });
+
+  /// Admins: a new invitation; [InviteInfo.code] is only known now.
+  Future<InviteInfo> createInvite({
+    required MemberRole role,
+    String displayName = '',
+  }) async => InviteInfo.fromJson(
+    await _send('POST', 'api/admin/invites', {
+      'role': role.name,
+      'displayName': displayName,
+    }),
+  );
+
+  Future<List<InviteInfo>> openInvites() async => [
+    for (final i
+        in (await _send('GET', 'api/admin/invites'))['invites'] as List? ??
+            const [])
+      InviteInfo.fromJson((i as Map).cast()),
+  ];
+
+  Future<void> revokeInvite(String id) =>
+      _send('DELETE', 'api/admin/invites/${Uri.encodeComponent(id)}');
+
   // --- two-factor ------------------------------------------------------------
 
   Future<TwoFactorStatus> twoFactorStatus() async =>
@@ -1210,6 +1253,68 @@ class FamioApiClient {
 }
 
 /// One notification of Famio's own push.
+/// An invitation for a new member.
+class InviteInfo {
+  const InviteInfo({
+    required this.role,
+    required this.expiresAt,
+    this.id,
+    this.displayName = '',
+    this.code,
+  });
+
+  factory InviteInfo.fromJson(Map<String, Object?> json) => InviteInfo(
+    id: json['id'] as String?,
+    role: MemberRole.parse(json['role']),
+    displayName: json['displayName'] as String? ?? '',
+    expiresAt: DateTime.parse(json['expiresAt'] as String).toLocal(),
+    code: json['code'] as String?,
+  );
+
+  final String? id;
+  final MemberRole role;
+  final String displayName;
+  final DateTime expiresAt;
+
+  /// Only right after creating it.
+  final String? code;
+}
+
+/// What an invitation QR code holds: server, code and (for the server's
+/// own certificate) its fingerprint, so the newcomer need not compare it.
+class InviteLink {
+  const InviteLink({required this.server, required this.code, this.pin});
+
+  static const _prefix = 'famio-invite:';
+
+  final String server;
+  final String code;
+  final String? pin;
+
+  String encode() =>
+      _prefix +
+      base64Url
+          .encode(utf8.encode(jsonEncode({'s': server, 'c': code, 'p': ?pin})))
+          .replaceAll('=', '');
+
+  /// Null if [text] is not a Famio invitation.
+  static InviteLink? parse(String text) {
+    final t = text.trim();
+    if (!t.startsWith(_prefix)) return null;
+    try {
+      var b64 = t.substring(_prefix.length);
+      b64 = b64.padRight((b64.length + 3) ~/ 4 * 4, '=');
+      final json = jsonDecode(utf8.decode(base64Url.decode(b64))) as Map;
+      final server = json['s'];
+      final code = json['c'];
+      if (server is! String || code is! String) return null;
+      return InviteLink(server: server, code: code, pin: json['p'] as String?);
+    } on FormatException {
+      return null;
+    }
+  }
+}
+
 class Notice {
   const Notice({
     required this.id,

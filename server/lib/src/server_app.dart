@@ -23,6 +23,7 @@ import 'dav/caldav_sync.dart';
 import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
+import 'family/invites.dart';
 import 'family/sos.dart';
 import 'family/allowance_job.dart';
 import 'hub.dart';
@@ -164,6 +165,7 @@ class FamioServerApp {
     );
     notices = NoticeBox(db);
     sos = SosService(records: records, accounts: accounts, push: push);
+    invites = Invites(db, accounts);
     push.onNotice = notices.add;
     records
       ..onStored = push.stored
@@ -210,6 +212,7 @@ class FamioServerApp {
       push: push,
       notices: notices,
       sos: sos,
+      invites: invites,
       mfa: mfa,
       sso: sso,
       webApp: webApp,
@@ -265,6 +268,7 @@ class FamioServerApp {
   late final PushService push;
   late final NoticeBox notices;
   late final SosService sos;
+  late final Invites invites;
   late final AllowanceJob allowances;
   late final Mfa mfa;
   late final SsoService sso;

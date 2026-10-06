@@ -379,6 +379,33 @@ class AppState extends ChangeNotifier {
   }
 
   /// First start of a fresh server: creates the admin account.
+  /// An unauthenticated client for [server] (e.g. to check an invitation).
+  static FamioApiClient clientFor(ResolvedServer server) =>
+      _client(server.url, server.pin);
+
+  /// Joins the family with an invitation and signs in.
+  Future<void> joinWithInvite(
+    ResolvedServer server, {
+    required String code,
+    required String username,
+    required String password,
+    String displayName = '',
+  }) async {
+    final result = await _client(server.url, server.pin).redeemInvite(
+      code: code,
+      username: username,
+      password: password,
+      displayName: displayName,
+      device: deviceName,
+    );
+    await _startSession(
+      server.url,
+      result.token,
+      result.member,
+      pin: server.pin,
+    );
+  }
+
   Future<void> setupServer(
     ResolvedServer server, {
     required String displayName,
