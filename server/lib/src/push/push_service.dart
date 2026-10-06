@@ -231,8 +231,10 @@ class PushService {
           to: to,
           title: 'Famio',
           body: alert.text(names[alert.memberId] ?? 'Jemand'),
-          brief: 'Neue Ortsmeldung',
-          tag: 'round_pushpin',
+          brief: alert.checkIn != null ? 'Neuer Check-in' : 'Neue Ortsmeldung',
+          // Phones that share their location show arrivals themselves,
+          // but not check-ins: those get their own tag.
+          tag: alert.checkIn != null ? 'wave' : 'round_pushpin',
           place: true,
         ),
         r,

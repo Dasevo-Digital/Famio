@@ -316,10 +316,9 @@ class ReminderService {
     _placesSeen = fresh.last.at;
     // A sharing Android phone gets them from its location service, also
     // with the app closed; it uses the same notification ids.
-    if (LocationSharing.supported && (await LocationSharing.status()).enabled) {
-      return;
-    }
-    for (final a in fresh.take(5)) {
+    final sharing =
+        LocationSharing.supported && (await LocationSharing.status()).enabled;
+    for (final a in fresh.where((a) => !sharing || a.checkIn != null).take(5)) {
       await _plugin.show(
         id: int.tryParse(a.id.substring(0, 7), radix: 16) ?? a.id.hashCode,
         title: AppEnv.appName,

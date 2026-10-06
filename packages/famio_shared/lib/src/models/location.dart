@@ -251,6 +251,9 @@ class LocationAlert {
     required this.placeName,
     required this.arrived,
     required this.at,
+    this.checkIn,
+    this.latitude,
+    this.longitude,
   });
 
   factory LocationAlert.fromRecord(SyncRecord r) => LocationAlert(
@@ -260,7 +263,18 @@ class LocationAlert {
     placeName: r.data['placeName'] as String? ?? '',
     arrived: r.data['arrived'] as bool? ?? true,
     at: _time(r.data['at']) ?? DateTime.fromMillisecondsSinceEpoch(0),
+    checkIn: r.data['checkIn'] as String?,
+    latitude: (r.data['latitude'] as num?)?.toDouble(),
+    longitude: (r.data['longitude'] as num?)?.toDouble(),
   );
+
+  /// Texts a member can check in with.
+  static const checkInTexts = [
+    'Bin angekommen',
+    'Alles ok',
+    'Bin auf dem Heimweg',
+    'Bitte abholen',
+  ];
 
   final String id;
 
@@ -271,9 +285,23 @@ class LocationAlert {
   final bool arrived;
   final DateTime at;
 
-  String text(String memberName) => arrived
-      ? '$memberName ist bei „$placeName“ angekommen'
-      : '$memberName hat „$placeName“ verlassen';
+  /// A check-in the member sent themselves (its text), not a place event.
+  final String? checkIn;
+
+  /// Where the check-in was sent (only for check-ins).
+  final double? latitude;
+  final double? longitude;
+
+  String text(String memberName) {
+    if (checkIn case final note?) {
+      return placeName.isEmpty
+          ? '$memberName: $note'
+          : '$memberName: $note (bei „$placeName“)';
+    }
+    return arrived
+        ? '$memberName ist bei „$placeName“ angekommen'
+        : '$memberName hat „$placeName“ verlassen';
+  }
 
   Map<String, Object?> toData() => {
     'memberId': memberId,
@@ -281,6 +309,9 @@ class LocationAlert {
     'placeName': placeName,
     'arrived': arrived,
     'at': _iso(at),
+    'checkIn': ?checkIn,
+    'latitude': ?latitude,
+    'longitude': ?longitude,
   };
 }
 

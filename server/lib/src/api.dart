@@ -275,6 +275,8 @@ class FamioApi {
       ..get('/api/calendar/occurrences', _occurrences)
       ..get('/api/lists/accounts', _listAccounts)
       ..post('/api/members/<id>/ring', _ring)
+      ..post('/api/members/<id>/checkin-request', _requestCheckIn)
+      ..post('/api/checkin', _checkIn)
       ..post('/api/sos', _sosRaise)
       ..post('/api/sos/<id>/position', _sosPosition)
       ..post('/api/sos/<id>/coming', _sosComing)

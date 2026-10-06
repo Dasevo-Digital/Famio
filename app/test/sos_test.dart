@@ -97,6 +97,39 @@ void main() {
     expect(find.textContaining('Akku 30 %'), findsOneWidget);
   });
 
+  testWidgets('a child checks in; adults see recent check-ins', (tester) async {
+    await open(tester, 'k1');
+    await tester.tap(find.text('Check-in: „Alles ok“'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bin auf dem Heimweg'), findsOneWidget);
+    await tester.tap(find.text('Alles ok'));
+    await tester.pumpAndSettle();
+    // No server here: the sheet closes with an error message.
+    expect(find.text('Bin auf dem Heimweg'), findsNothing);
+    expect(find.byType(SnackBar), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('adults see check-ins of the last day', (tester) async {
+    await open(tester, 'm1');
+    engine.put(Collections.locationAlerts, 'c1', {
+      ...LocationAlert(
+        id: 'c1',
+        memberId: 'k1',
+        placeId: 's',
+        placeName: 'Schule',
+        arrived: true,
+        at: DateTime.now(),
+        checkIn: 'Bin angekommen',
+        latitude: 53.55,
+        longitude: 10,
+      ).toData(),
+    });
+    await tester.tap(find.text('Standort').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Mia: Bin angekommen (bei „Schule“)'), findsOneWidget);
+  });
+
   test('the text without internet and the siren sound', () {
     expect(
       SosController.smsText(

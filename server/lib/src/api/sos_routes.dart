@@ -42,6 +42,25 @@ extension _SosRoutes on FamioApi {
     return _json(alert.toData()..['id'] = alert.id);
   }
 
+  Future<Response> _checkIn(Request request) async {
+    final member = _member(request);
+    final body = await _body(request);
+    final alert = _sos.checkIn(
+      member,
+      note: body['note'] as String? ?? '',
+      latitude: _number(body['latitude']),
+      longitude: _number(body['longitude']),
+    );
+    hub.notifyRev(records.currentRev);
+    return _json(alert.toData()..['id'] = alert.id, status: 201);
+  }
+
+  Response _requestCheckIn(Request request, String id) {
+    final member = _member(request);
+    _sos.requestCheckIn(member, id);
+    return _json({'ok': true});
+  }
+
   Response _ring(Request request, String id) {
     final member = _member(request);
     _sos.ring(member, id);

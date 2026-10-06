@@ -46,10 +46,12 @@ class _MemberList extends StatelessWidget {
             place: engine.place(locations[m.id]?.placeId),
             isMe: m.id == me.id,
             canManage: me.isAdmin,
+            canAsk: me.isAdult,
             onTap: locations[m.id] == null
                 ? null
                 : () => onFocus(locations[m.id]!),
           ),
+        if (me.isAdult) RecentCheckIns(engine: engine),
         if (engine.places.isEmpty)
           Padding(
             padding: const EdgeInsets.all(12),
@@ -71,6 +73,7 @@ class _MemberTile extends StatelessWidget {
     required this.place,
     required this.isMe,
     required this.canManage,
+    this.canAsk = false,
     this.onTap,
   });
 
@@ -79,6 +82,9 @@ class _MemberTile extends StatelessWidget {
   final Place? place;
   final bool isMe;
   final bool canManage;
+
+  /// An adult: may ask for a check-in and let the phone ring.
+  final bool canAsk;
   final VoidCallback? onTap;
 
   @override
@@ -105,7 +111,7 @@ class _MemberTile extends StatelessWidget {
         style: warn ? TextStyle(color: c.danger) : null,
       ),
       onTap: onTap,
-      trailing: canHistory || canManage
+      trailing: canHistory || canManage || (canAsk && !isMe)
           ? PopupMenuButton<String>(
               onSelected: (v) async {
                 switch (v) {
@@ -121,6 +127,8 @@ class _MemberTile extends StatelessWidget {
                     await _resume(context);
                   case 'ring':
                     await _ring(context);
+                  case 'checkin':
+                    await _askCheckIn(context);
                 }
               },
               itemBuilder: (_) => [
@@ -133,15 +141,32 @@ class _MemberTile extends StatelessWidget {
                     value: 'resume',
                     child: Text('Fortsetzen'),
                   ),
-                if (canManage && !isMe)
+                if (canAsk && !isMe) ...[
+                  const PopupMenuItem(
+                    value: 'checkin',
+                    child: Text('Um Check-in bitten'),
+                  ),
                   const PopupMenuItem(
                     value: 'ring',
                     child: Text('Handy klingeln lassen'),
                   ),
+                ],
               ],
             )
           : null,
     );
+  }
+
+  Future<void> _askCheckIn(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AppScope.read(context).engine!.api.requestCheckIn(member.id);
+      messenger.showSnackBar(
+        SnackBar(content: Text('${member.displayName} wurde gefragt.')),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   Future<void> _ring(BuildContext context) async {

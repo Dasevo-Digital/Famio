@@ -143,6 +143,129 @@ class _SosHoldButtonState extends State<SosHoldButton>
   }
 }
 
+/// Sends a check-in: one of [LocationAlert.checkInTexts] or an own text,
+/// with the current position if the phone can measure it.
+Future<void> showCheckIn(BuildContext context) async {
+  final engine = AppScope.read(context).engine;
+  if (engine == null) return;
+  final messenger = ScaffoldMessenger.of(context);
+  final own = TextEditingController();
+  final note = await showModalBottomSheet<String>(
+    context: context,
+    useSafeArea: true,
+    isScrollControlled: true,
+    builder: (context) => Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        16 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Check-in', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 4),
+          const Text('Deine Eltern bekommen die Nachricht mit deinem Ort.'),
+          const SizedBox(height: 12),
+          for (final text in LocationAlert.checkInTexts)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context, text),
+                child: Text(text),
+              ),
+            ),
+          TextField(
+            controller: own,
+            maxLength: 80,
+            decoration: InputDecoration(
+              hintText: 'Oder eigener Text …',
+              suffixIcon: IconButton(
+                tooltip: 'Senden',
+                icon: const Icon(AppIcons.paperPlaneRight),
+                onPressed: () => Navigator.pop(context, own.text.trim()),
+              ),
+            ),
+            onSubmitted: (v) => Navigator.pop(context, v.trim()),
+          ),
+        ],
+      ),
+    ),
+  ).whenComplete(own.dispose);
+  if (note == null || note.isEmpty) return;
+  final fix = await SosDevice.currentFix(timeout: const Duration(seconds: 10));
+  try {
+    await engine.api.checkIn(
+      note,
+      latitude: fix?.latitude,
+      longitude: fix?.longitude,
+    );
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          fix == null
+              ? 'Check-in gesendet (ohne Ort)'
+              : 'Check-in mit deinem Ort gesendet',
+        ),
+      ),
+    );
+  } on ApiError catch (e) {
+    messenger.showSnackBar(SnackBar(content: Text(e.message)));
+  }
+}
+
+/// Check-ins of the last day, for the adults (newest first).
+class RecentCheckIns extends StatelessWidget {
+  const RecentCheckIns({super.key, required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final since = DateTime.now().subtract(const Duration(days: 1));
+    final checkIns =
+        engine.locationAlerts
+            .where((a) => a.checkIn != null && a.at.isAfter(since))
+            .toList()
+          ..sort((a, b) => b.at.compareTo(a.at));
+    if (checkIns.isEmpty) return const SizedBox.shrink();
+    final time = DateFormat('HH:mm');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListHeading(
+          'Check-ins',
+          color: FamioColors.of(context).strong(FamioSection.location),
+        ),
+        for (final a in checkIns.take(5))
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+            leading: const Icon(AppIcons.mapPin),
+            title: Text(
+              a.text(engine.member(a.memberId)?.displayName ?? 'Jemand'),
+            ),
+            subtitle: Text('${time.format(a.at)} Uhr'),
+            trailing: a.latitude == null
+                ? null
+                : IconButton(
+                    tooltip: 'In Karten-App öffnen',
+                    icon: const Icon(AppIcons.arrowSquareOut),
+                    onPressed: () => launchUrl(
+                      Uri.parse(
+                        'https://www.openstreetmap.org/?mlat=${a.latitude}'
+                        '&mlon=${a.longitude}#map=17/${a.latitude}/${a.longitude}',
+                      ),
+                      mode: LaunchMode.externalApplication,
+                    ),
+                  ),
+          ),
+      ],
+    );
+  }
+}
+
 /// The card on the children's start page.
 class SosCard extends StatelessWidget {
   const SosCard({super.key});
@@ -165,6 +288,12 @@ class SosCard extends StatelessWidget {
                 const Text(
                   'Halte den roten Knopf 3 Sekunden lang. Deine Eltern '
                   'bekommen sofort einen Alarm und sehen, wo du bist.',
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.mapPin, size: 18),
+                  label: const Text('Check-in: „Alles ok“'),
+                  onPressed: () => showCheckIn(context),
                 ),
               ],
             ),

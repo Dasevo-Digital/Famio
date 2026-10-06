@@ -580,6 +580,51 @@ void main() {
       );
     });
 
+    test('check-ins reach the adults, with the place', () async {
+      await mama.sync([
+        _record(Collections.places, 'school', {
+          'name': 'Schule',
+          'latitude': 53.55,
+          'longitude': 10.0,
+          'radius': 150,
+        }),
+      ]);
+      final last = (await mama.call('GET', 'api/notifications'))['last'] as int;
+      final sent = await kind.call('POST', 'api/checkin', {
+        'note': 'Bin angekommen',
+        'latitude': 53.5505,
+        'longitude': 10.0005,
+      });
+      expect(sent['_status'], 201);
+      expect(sent['placeName'], 'Schule');
+      await app.push.idle;
+      final got = await mama.call('GET', 'api/notifications?after=$last');
+      final notice = (got['notices'] as List).single as Map;
+      expect(notice['body'], 'kind: Bin angekommen (bei „Schule“)');
+      expect(notice['tag'], 'wave');
+      await mama.sync();
+      final alert = LocationAlert.fromRecord(
+        mama.seen.values.firstWhere(
+          (r) => r.collection == Collections.locationAlerts,
+        ),
+      );
+      expect((alert.checkIn, alert.latitude), ('Bin angekommen', 53.5505));
+      expect(
+        (await oma.call('POST', 'api/checkin', {'note': 'x'}))['_status'],
+        403,
+      );
+
+      // Adults ask for one.
+      final kindLast =
+          (await kind.call('GET', 'api/notifications'))['last'] as int;
+      await mama.call('POST', 'api/members/${kind.id}/checkin-request');
+      final asked = await kind.call('GET', 'api/notifications?after=$kindLast');
+      expect(
+        ((asked['notices'] as List).single as Map)['title'],
+        'mama bittet um einen Check-in',
+      );
+    });
+
     test('only adults change the settings', () async {
       final settings = _record(Collections.sosSettings, SosSettings.recordId, {
         ...const SosSettings(phones: {'x': '0170 1'}).toData(),

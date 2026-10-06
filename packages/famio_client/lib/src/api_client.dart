@@ -873,6 +873,20 @@ class FamioApiClient {
     'battery': ?battery,
   });
 
+  /// Tells the adults where this member is and how it is going.
+  Future<void> checkIn(String note, {double? latitude, double? longitude}) =>
+      _send('POST', 'api/checkin', {
+        'note': note,
+        'latitude': ?latitude,
+        'longitude': ?longitude,
+      });
+
+  /// Asks [memberId] to check in (adults only).
+  Future<void> requestCheckIn(String memberId) => _send(
+    'POST',
+    'api/members/${Uri.encodeComponent(memberId)}/checkin-request',
+  );
+
   /// Lets [memberId]'s phone ring loudly (adults only, once a minute).
   Future<void> ringMember(String memberId) =>
       _send('POST', 'api/members/${Uri.encodeComponent(memberId)}/ring');

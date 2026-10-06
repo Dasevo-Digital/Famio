@@ -242,6 +242,82 @@ class SosService {
     );
   }
 
+  /// [member] tells the adults where they are and how it is going (see
+  /// [LocationAlert.checkInTexts]); also without location sharing. The
+  /// adults get it like an arrival notice.
+  LocationAlert checkIn(
+    FamilyMember member, {
+    required String note,
+    double? latitude,
+    double? longitude,
+  }) {
+    if (member.isGuest || member.isService) {
+      throw ApiException(403, 'forbidden', 'Für dieses Konto nicht verfügbar');
+    }
+    final text = note.trim();
+    if (text.isEmpty || text.length > 80) {
+      throw ApiException.badRequest('invalid_note', 'Bitte einen kurzen Text');
+    }
+    var place = (id: '', name: '');
+    if (latitude != null && longitude != null) {
+      for (final r in records.all(Collections.places)) {
+        final p = Place.fromRecord(r);
+        if (distanceMeters(latitude, longitude, p.latitude, p.longitude) <=
+            p.radius) {
+          place = (id: p.id, name: p.name);
+          break;
+        }
+      }
+    }
+    final alert = LocationAlert(
+      id: newId(),
+      memberId: member.id,
+      placeId: place.id,
+      placeName: place.name,
+      arrived: true,
+      at: DateTime.now(),
+      checkIn: text,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    records.writeAsServer([
+      for (final a in _adults(member.id))
+        SyncRecord(
+          collection: Collections.locationAlerts,
+          // One record per recipient, like arrival notices.
+          id: '${alert.id}.${a.id.substring(0, a.id.length < 8 ? a.id.length : 8)}',
+          data: {
+            ...alert.toData(),
+            SyncRecord.visibilityKey: [a.id],
+          },
+          updatedAt: 0,
+        ),
+    ]);
+    return alert;
+  }
+
+  /// An adult asks [memberId] to check in.
+  void requestCheckIn(FamilyMember adult, String memberId) {
+    if (!adult.isAdult) {
+      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+    }
+    if (!accounts.members().any((m) => m.id == memberId)) {
+      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+    }
+    push?.deliver(
+      PushNotice(
+        to: {memberId},
+        title: '${adult.displayName} bittet um einen Check-in',
+        body:
+            'Tippe in Famio auf „Check-in“, damit ${adult.displayName} '
+            'weiß, wo du bist und dass alles ok ist.',
+        brief: 'Bitte um einen Check-in',
+        tag: 'wave',
+      ),
+      null,
+    );
+  }
+
   /// ntfy tag of a ring; the apps sound the siren for it.
   static const ringTag = 'loud_sound';
 

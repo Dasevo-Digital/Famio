@@ -19,6 +19,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/form_dialog.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
+import 'sos_screens.dart' show RecentCheckIns, showCheckIn;
 
 part 'location/family_map.dart';
 part 'location/history.dart';
@@ -32,6 +33,7 @@ part 'location/schedule_dialog.dart';
 const _collections = {
   Collections.places,
   Collections.memberLocations,
+  Collections.locationAlerts,
   'members',
 };
 
@@ -65,6 +67,11 @@ class _LocationScreenState extends State<LocationScreen> {
       title: 'Wo ist wer?',
       subtitle: 'Standort der Familie',
       actions: [
+        BubbleButton(
+          icon: AppIcons.check,
+          tooltip: 'Check-in senden',
+          onPressed: () => showCheckIn(context),
+        ),
         BubbleButton(
           icon: AppIcons.mapPin,
           tooltip: 'Orte',
