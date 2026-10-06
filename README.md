@@ -508,6 +508,30 @@ Beim ersten Start ohne Konto schreibt der Server einen **Einrichtungscode**
 ins Log. Er wird bei jeder Ersteinrichtung verlangt, auch direkt im Heimnetz,
 damit kein anderes Gerät den frisch gestarteten Server übernehmen kann.
 
+### Automatische Sicherung im laufenden Betrieb
+
+Der Server sichert sich jede Nacht um 3 Uhr (Zeitzone der Familie) selbst,
+ohne anzuhalten: SQLite schreibt mit `VACUUM INTO` eine in sich stimmige Kopie
+beider Datenbanken nach `backups/` im Datenverzeichnis (anderer Ort:
+`FAMIO_BACKUP_DIR=/pfad`, ausschalten: `FAMIO_BACKUP_DIR=off`). Aufbewahrt
+werden die letzten 7 Tage und je ein Stand der 4 Wochen davor. Die Kopien
+sind mit demselben Datenschlüssel verschlüsselt; zum Wiederherstellen werden
+also Sicherung **und** Schlüsseldatei gebraucht. In der Server-Verwaltung
+unter „Status“ stehen letzte Sicherung, Fehler und „Jetzt sichern“.
+
+Wiederherstellen (Famio vorher stoppen; die bisherigen Datenbanken werden nur
+beiseitegelegt):
+
+```sh
+systemctl stop famio
+sh tool/famio-restore-backup.sh /var/lib/famio/backups/famio-20261006-030000 /var/lib/famio
+systemctl start famio
+```
+
+Liegt `backups/` im Datenverzeichnis, ist es in Proxmox- und
+Home-Assistant-Sicherungen enthalten. Für eine Kopie außer Haus eignet sich
+die verschlüsselte Sicherung mit `age`:
+
 ### Verschlüsselte Sicherung und Wiederherstellung
 
 Eine Sicherung muss **Daten und Schlüssel** enthalten, aber nicht unverschlüsselt

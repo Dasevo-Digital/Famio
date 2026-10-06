@@ -23,6 +23,7 @@ import 'dav/caldav_sync.dart';
 import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
+import 'backup/backup_job.dart';
 import 'family/invites.dart';
 import 'family/sos.dart';
 import 'family/allowance_job.dart';
@@ -61,6 +62,7 @@ class FamioServerApp {
     ServerTls? tls,
     Uri? googleBase,
     WebApp? webApp,
+    String? backupDir,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -166,6 +168,15 @@ class FamioServerApp {
     notices = NoticeBox(db);
     sos = SosService(records: records, accounts: accounts, push: push);
     invites = Invites(db, accounts);
+    backups = backupDir == 'off'
+        ? null
+        : BackupJob(
+            db: db,
+            blobs: files.blobs,
+            dir: backupDir ?? p.join(dataDir, 'backups'),
+            location: () => settings.location,
+            onError: auditLog,
+          );
     push.onNotice = notices.add;
     records
       ..onStored = push.stored
@@ -213,6 +224,7 @@ class FamioServerApp {
       notices: notices,
       sos: sos,
       invites: invites,
+      backups: backups,
       mfa: mfa,
       sso: sso,
       webApp: webApp,
@@ -269,6 +281,9 @@ class FamioServerApp {
   late final NoticeBox notices;
   late final SosService sos;
   late final Invites invites;
+
+  /// Nightly backups; null when switched off (`FAMIO_BACKUP_DIR=off`).
+  late final BackupJob? backups;
   late final AllowanceJob allowances;
   late final Mfa mfa;
   late final SsoService sso;
@@ -303,6 +318,7 @@ class FamioServerApp {
     accounts.deleteExpiredSessions();
     locations.collectGarbage();
     notices.collectGarbage();
+    backups?.start();
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
       notices.collectGarbage();
       files.collectGarbage();
@@ -313,6 +329,7 @@ class FamioServerApp {
 
   Future<void> close() async {
     _gc?.cancel();
+    backups?.stop();
     importer.stop();
     caldav.stop();
     lists.stop();

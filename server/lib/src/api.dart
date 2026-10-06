@@ -30,6 +30,7 @@ import 'files/file_store.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
+import 'backup/backup_job.dart';
 import 'family/invites.dart';
 import 'family/sos.dart';
 import 'hub.dart';
@@ -96,6 +97,7 @@ class FamioApi {
     this.notices,
     this.sos,
     this.invites,
+    this.backups,
     required this.mfa,
     this.sso,
     this.webApp,
@@ -158,6 +160,9 @@ class FamioApi {
 
   /// Invitations for new members; null in some tests.
   final Invites? invites;
+
+  /// Nightly backups; null when switched off.
+  final BackupJob? backups;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -246,6 +251,8 @@ class FamioApi {
       ..post('/api/admin/wipe', _adminWipe)
       ..get('/api/admin/users', _adminUsers)
       ..post('/api/admin/users', _createMember)
+      ..get('/api/admin/backups', _backupStatus)
+      ..post('/api/admin/backups', _backupNow)
       ..get('/api/admin/invites', _openInvites)
       ..post('/api/admin/invites', _createInvite)
       ..delete('/api/admin/invites/<id>', _revokeInvite)

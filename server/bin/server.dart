@@ -58,6 +58,7 @@ Future<void> main(List<String> args) async {
     maxUploadMb: config.maxUploadMb,
     locationHistoryDays: config.locationHistoryDays,
     maxStorageMb: config.maxStorageMb,
+    backupDir: config.backupDir,
     allowPrivateCalendarHosts: config.allowPrivateCalendarHosts,
     allowPrivatePushHosts: config.allowPrivatePushHosts,
     dataKey: key,

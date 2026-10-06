@@ -67,6 +67,8 @@ class _StatusView extends StatelessWidget {
             ),
           ),
         ),
+        ListHeading('Sicherungen', color: accent),
+        const _BackupCard(),
         ListHeading('Einträge', color: accent),
         SoftCard(
           child: Column(
@@ -146,6 +148,108 @@ class _StatusView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Backups the server makes while running (nightly, and on request).
+class _BackupCard extends StatefulWidget {
+  const _BackupCard();
+
+  @override
+  State<_BackupCard> createState() => _BackupCardState();
+}
+
+class _BackupCardState extends State<_BackupCard> {
+  late Future<Map<String, Object?>> _status = _load();
+  var _busy = false;
+
+  Future<Map<String, Object?>> _load() =>
+      AppScope.read(context).engine!.api.backupStatus();
+
+  Future<void> _now() async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AppScope.read(context).engine!.api.backupNow();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Sicherung erstellt')),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _status = _load();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FutureBuilder<Map<String, Object?>>(
+      future: _status,
+      builder: (context, snapshot) {
+        final s = snapshot.data;
+        if (s == null) {
+          return snapshot.hasError
+              ? const Text('Sicherungen: Status nicht verfügbar')
+              : const LinearProgressIndicator();
+        }
+        if (s['enabled'] != true) {
+          return const Text(
+            'Ausgeschaltet (FAMIO_BACKUP_DIR=off). Sichere das Datenverzeichnis '
+            'dann anders, z. B. mit Proxmox oder Home Assistant.',
+          );
+        }
+        final backups = (s['backups'] as List? ?? const []).cast<Map>();
+        final last = DateTime.tryParse(s['lastAt'] as String? ?? '');
+        final bytes = backups.fold<int>(
+          0,
+          (sum, b) => sum + ((b['bytes'] as num?)?.toInt() ?? 0),
+        );
+        final error = s['lastError'] as String?;
+        return SoftCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                last == null
+                    ? 'Noch keine Sicherung'
+                    : 'Letzte Sicherung ${_ago(last)}',
+                style: theme.textTheme.titleMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${backups.length} Stände · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB · '
+                'jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt',
+              ),
+              Text(
+                'Ordner: ${s['dir']} – verschlüsselt mit dem Datenschlüssel; '
+                'zum Wiederherstellen werden die Sicherung und die '
+                'Schlüsseldatei gebraucht.',
+                style: theme.textTheme.bodySmall,
+              ),
+              if (error != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Fehler: $error',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ],
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                icon: const Icon(AppIcons.hardDrives, size: 18),
+                label: const Text('Jetzt sichern'),
+                onPressed: _busy ? null : _now,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

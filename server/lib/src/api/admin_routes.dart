@@ -234,6 +234,38 @@ extension _AdminRoutes on FamioApi {
     });
   }
 
+  Response _backupStatus(Request request) {
+    _admin(request);
+    final job = backups;
+    return _json(
+      job == null ? {'enabled': false} : {'enabled': true, ...job.status()},
+    );
+  }
+
+  Response _backupNow(Request request) {
+    final admin = _admin(request);
+    final job = backups;
+    if (job == null) {
+      throw ApiException.badRequest(
+        'backups_off',
+        'Sicherungen sind ausgeschaltet (FAMIO_BACKUP_DIR=off)',
+      );
+    }
+    try {
+      final backup = job.run();
+      _audit(admin, 'hat eine Sicherung erstellt');
+      return _json(backup.toJson(), status: 201);
+    } on StateError catch (e) {
+      throw ApiException(409, 'backup_running', e.message);
+    } catch (_) {
+      throw ApiException(
+        500,
+        'backup_failed',
+        'Die Sicherung ist fehlgeschlagen: ${job.lastError}',
+      );
+    }
+  }
+
   Future<Response> _createMember(Request request) async {
     final admin = _admin(request);
     final body = await _body(request);

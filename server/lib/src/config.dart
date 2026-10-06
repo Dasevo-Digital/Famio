@@ -18,6 +18,7 @@ class ServerConfig {
     this.allowPrivateCalendarHosts = false,
     this.allowPrivatePushHosts = false,
     this.keyFile,
+    this.backupDir,
     this.tlsPort = 8766,
     this.requireTls = true,
     this.tlsNames = const [],
@@ -81,6 +82,7 @@ class ServerConfig {
       ),
       allowPrivatePushHosts: _flag(env['FAMIO_ALLOW_PRIVATE_PUSH_HOSTS']),
       keyFile: _nonEmpty(env['FAMIO_KEY_FILE']),
+      backupDir: _nonEmpty(env['FAMIO_BACKUP_DIR']),
       tlsPort: int.tryParse(env['FAMIO_TLS_PORT'] ?? '') ?? 8766,
       // Secure by default. Older installations can deliberately opt out
       // with FAMIO_REQUIRE_TLS=false while their clients are migrated.
@@ -158,6 +160,10 @@ class ServerConfig {
   /// Key for encrypting database and files at rest. Keep it outside the
   /// data directory (and its backups); defaults to `<dataDir>/famio.key`.
   final String? keyFile;
+
+  /// Where nightly backups go (default: `backups` in the data directory);
+  /// `off` switches them off.
+  final String? backupDir;
 
   /// HTTPS port with the server's own certificate, for apps in the home
   /// network (0 disables it).

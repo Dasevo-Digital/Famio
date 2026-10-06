@@ -277,6 +277,14 @@ class FamioApiClient {
       InviteInfo.fromJson((i as Map).cast()),
   ];
 
+  /// Admins: the server's backups (`enabled`, `lastAt`, `lastError`,
+  /// `backups`: name, at, bytes).
+  Future<Map<String, Object?>> backupStatus() =>
+      _send('GET', 'api/admin/backups');
+
+  /// Admins: a backup now.
+  Future<void> backupNow() => _send('POST', 'api/admin/backups');
+
   Future<void> revokeInvite(String id) =>
       _send('DELETE', 'api/admin/invites/${Uri.encodeComponent(id)}');
 
