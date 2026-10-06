@@ -2,6 +2,8 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/family_extras.dart';
+import '../data/pantry_match.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../data/recipe_import.dart';
@@ -16,6 +18,7 @@ import '../widgets/undo_delete.dart';
 const _collections = {
   Collections.recipes,
   Collections.mealPlan,
+  Collections.pantryItems,
   Collections.shoppingLists,
   Collections.shoppingItems,
 };
@@ -316,6 +319,10 @@ class _RecipeList extends StatelessWidget {
       listenable: search,
       builder: (context, _) {
         final q = search.text.trim().toLowerCase();
+        final pantry = engine.pantryItems;
+        final stock = {
+          for (final r in engine.recipes) r.id: engine.stockOf(r, pantry),
+        };
         final recipes = engine.recipes
             .where(
               (r) =>
@@ -325,6 +332,12 @@ class _RecipeList extends StatelessWidget {
                   r.ingredients.any((i) => i.name.toLowerCase().contains(q)),
             )
             .toList();
+        // With a stocked pantry: what can be cooked with it comes first.
+        if (pantry.isNotEmpty && q.isEmpty) {
+          recipes.sort(
+            (a, b) => stock[b.id]!.share.compareTo(stock[a.id]!.share),
+          );
+        }
         if (engine.recipes.isEmpty) {
           return EmptyHint(
             icon: AppIcons.cookingPot,
@@ -383,7 +396,12 @@ class _RecipeList extends StatelessWidget {
                             ),
                             Text(
                               [
-                                '${r.ingredients.length} Zutaten',
+                                if (pantry.isNotEmpty && stock[r.id]!.total > 0)
+                                  stock[r.id]!.missing.isEmpty
+                                      ? 'alles im Vorrat'
+                                      : '${stock[r.id]!.have.length}/${stock[r.id]!.total} im Vorrat'
+                                else
+                                  '${r.ingredients.length} Zutaten',
                                 if (r.minutes != null) '${r.minutes} min',
                                 ...r.tags,
                               ].join(' · '),
@@ -436,6 +454,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
         }
         final servings = _servings ?? widget.servings ?? r.servings;
         final factor = servings / r.servings;
+        final pantry = engine.pantryItems;
         final steps = r.steps
             .split('\n')
             .where((s) => s.trim().isNotEmpty)
@@ -524,6 +543,15 @@ class _RecipeScreenState extends State<RecipeScreen> {
                               ),
                             ),
                             Expanded(child: Text(i.name)),
+                            if (pantry.isNotEmpty && inPantry(i, pantry))
+                              Tooltip(
+                                message: 'Im Vorrat',
+                                child: Icon(
+                                  AppIcons.check,
+                                  size: 18,
+                                  color: color,
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -535,8 +563,22 @@ class _RecipeScreenState extends State<RecipeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  if (pantry.isNotEmpty &&
+                      engine.stockOf(r, pantry).have.isNotEmpty &&
+                      engine.stockOf(r, pantry).missing.isNotEmpty)
+                    ColorButton(
+                      label: 'Fehlendes auf die Einkaufsliste',
+                      icon: AppIcons.basket,
+                      color: color,
+                      onPressed: () => _toShopping(context, engine, [
+                        for (final i in _scaled(r, servings))
+                          if (!inPantry(i, pantry)) i,
+                      ]),
+                    ),
                   ColorButton(
-                    label: 'Auf die Einkaufsliste',
+                    label: pantry.isEmpty
+                        ? 'Auf die Einkaufsliste'
+                        : 'Alles auf die Einkaufsliste',
                     icon: AppIcons.basket,
                     color: color,
                     onPressed: () =>
