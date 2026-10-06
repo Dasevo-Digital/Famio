@@ -375,12 +375,13 @@ class PushService {
 
   // --- delivery --------------------------------------------------------------
 
-  /// Sends [notice] to the targets of its members who may see [about].
-  void deliver(PushNotice notice, SyncRecord about) {
+  /// Sends [notice] to the targets of its members who may see [about]
+  /// (all of them without [about], e.g. a direct call to one member).
+  void deliver(PushNotice notice, SyncRecord? about) {
     if (notice.to.isEmpty) return;
     final allowed = [
       for (final id in notice.to)
-        if (records.canAccess(about, id)) id,
+        if (about == null || records.canAccess(about, id)) id,
     ];
     if (allowed.isEmpty) return;
     final quiet = {

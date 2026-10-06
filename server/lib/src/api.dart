@@ -274,6 +274,7 @@ class FamioApi {
       ..post('/api/calendar/caldav/<id>/sync', _caldavSync)
       ..get('/api/calendar/occurrences', _occurrences)
       ..get('/api/lists/accounts', _listAccounts)
+      ..post('/api/members/<id>/ring', _ring)
       ..post('/api/sos', _sosRaise)
       ..post('/api/sos/<id>/position', _sosPosition)
       ..post('/api/sos/<id>/coming', _sosComing)

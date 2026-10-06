@@ -207,6 +207,44 @@ class SosService {
     return updated;
   }
 
+  final _rung = <String, DateTime>{};
+
+  /// Lets [memberId]'s phone ring loudly (also on silent, where the phone
+  /// allows it), e.g. when they do not answer. At most once a minute.
+  void ring(FamilyMember adult, String memberId) {
+    if (!adult.isAdult) {
+      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+    }
+    final target = accounts.members().where((m) => m.id == memberId);
+    if (target.isEmpty || memberId == adult.id || target.first.isService) {
+      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+    }
+    final last = _rung[memberId];
+    final now = DateTime.now();
+    if (last != null && now.difference(last) < const Duration(minutes: 1)) {
+      throw ApiException(
+        429,
+        'too_soon',
+        'Gerade erst geklingelt – bitte eine Minute warten.',
+      );
+    }
+    _rung[memberId] = now;
+    push?.deliver(
+      PushNotice(
+        to: {memberId},
+        title: '🔔 ${adult.displayName} sucht dich',
+        body: 'Bitte melde dich bei ${adult.displayName}.',
+        brief: '🔔 ${adult.displayName} sucht dich',
+        tag: ringTag,
+        urgent: true,
+      ),
+      null,
+    );
+  }
+
+  /// ntfy tag of a ring; the apps sound the siren for it.
+  static const ringTag = 'loud_sound';
+
   void _notify(
     SyncRecord about, {
     required Set<String> to,

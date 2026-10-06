@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -14,6 +15,7 @@ import 'location/location_sharing.dart';
 import 'push/own_push.dart';
 import 'secure_vault.dart';
 import 'reminders/reminder_service.dart';
+import 'sos/sos_device.dart';
 import 'environment.dart';
 import 'platform/browser.dart';
 
@@ -640,8 +642,15 @@ class AppState extends ChangeNotifier {
     // notification permission dialog.
     final push = ownPush ??= OwnPush(
       _prefs,
-      show: (notice, {required details}) async =>
-          _reminders?.showNotice(notice, details: details),
+      show: (notice, {required details}) async {
+        await _reminders?.showNotice(notice, details: details);
+        // "Handy klingeln lassen": the siren for half a minute (iPhone
+        // and desktops while Famio runs; Android does it natively).
+        if (notice.tag == ringTag) {
+          await SosDevice.startSiren();
+          Timer(const Duration(seconds: 30), SosDevice.stopSiren);
+        }
+      },
     );
     push
         .attach(api, serverUrl: normalized, pin: pin, device: deviceName)

@@ -560,6 +560,26 @@ void main() {
       expect((await kind.call('POST', 'api/sos', {}))['id'], isNot(id));
     });
 
+    test('adults let a phone ring, once a minute', () async {
+      final last = (await kind.call('GET', 'api/notifications'))['last'] as int;
+      expect(
+        (await kind.call('POST', 'api/members/${mama.id}/ring'))['_status'],
+        403,
+      );
+      expect(
+        (await mama.call('POST', 'api/members/${kind.id}/ring'))['_status'],
+        200,
+      );
+      final got = await kind.call('GET', 'api/notifications?after=$last');
+      final ring = (got['notices'] as List).single as Map;
+      expect((ring['tag'], ring['alarm']), ('loud_sound', true));
+      expect(ring['title'], '🔔 mama sucht dich');
+      expect(
+        (await mama.call('POST', 'api/members/${kind.id}/ring'))['_status'],
+        429,
+      );
+    });
+
     test('only adults change the settings', () async {
       final settings = _record(Collections.sosSettings, SosSettings.recordId, {
         ...const SosSettings(phones: {'x': '0170 1'}).toData(),

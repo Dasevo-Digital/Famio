@@ -42,6 +42,13 @@ extension _SosRoutes on FamioApi {
     return _json(alert.toData()..['id'] = alert.id);
   }
 
+  Response _ring(Request request, String id) {
+    final member = _member(request);
+    _sos.ring(member, id);
+    _audit(member, 'hat ein Handy klingeln lassen');
+    return _json({'ok': true});
+  }
+
   Response _sosComing(Request request, String id) {
     final member = _member(request);
     final alert = _sos.coming(member, id);

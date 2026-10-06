@@ -9,7 +9,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
+import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.os.Handler
+import android.os.Looper
 import android.os.Build
 import android.os.IBinder
 import org.json.JSONObject
@@ -39,6 +43,10 @@ class NotifyService : Service() {
         private const val MESSAGES = "famio_messages"
         private const val QUIET = "famio_quiet"
         private const val ALARM = "famio_sos"
+        private const val STOP_RING = "de.status403.famio.STOP_RING"
+
+        /** How long a "ring the phone" from the parents sounds. */
+        private const val RING_MS = 30_000L
         private const val NOTIFICATION_ID = 47120
         private const val WAIT_SECONDS = 240
 
@@ -117,6 +125,10 @@ class NotifyService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == STOP_RING) {
+            stopRing()
+            return START_STICKY
+        }
         if (!prefs.getBoolean("enabled", false)) {
             stopSelf()
             return START_NOT_STICKY
@@ -148,6 +160,7 @@ class NotifyService : Service() {
     }
 
     override fun onDestroy() {
+        stopRing()
         running = false
         worker?.interrupt()
         super.onDestroy()
@@ -215,6 +228,8 @@ class NotifyService : Service() {
             val text = if (details) notice.optString("body") else notice.optString("brief")
             // In the member's quiet time (set on the server): no sound.
             val alarm = notice.optBoolean("alarm")
+            val ring = notice.optString("tag") == "loud_sound"
+            if (ring) startRing()
             val channel = when {
                 alarm -> ALARM
                 notice.optBoolean("quiet") -> QUIET
@@ -239,6 +254,20 @@ class NotifyService : Service() {
                             ),
                             true,
                         )
+                    }
+                }
+                .apply {
+                    if (ring) {
+                        val stop = PendingIntent.getService(
+                            this@NotifyService,
+                            2,
+                            Intent(this@NotifyService, NotifyService::class.java).setAction(STOP_RING),
+                            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                        )
+                        @Suppress("DEPRECATION")
+                        addAction(Notification.Action.Builder(null, "Ruhe", stop).build())
+                        setDeleteIntent(stop)
+                        setContentIntent(stop)
                     }
                 }
                 .setContentTitle(title)
@@ -300,6 +329,62 @@ class NotifyService : Service() {
         } finally {
             connection.disconnect()
         }
+    }
+
+    // --- ringing ---------------------------------------------------------------
+
+    private val main = Handler(Looper.getMainLooper())
+    private var ringer: MediaPlayer? = null
+    private var previousAlarmVolume: Int? = null
+    private val stopLater = Runnable { stopRing() }
+
+    /** The parents let this phone ring: alarm sound, full volume, 30 s. */
+    private fun startRing() = main.post {
+        stopRing()
+        val audio = getSystemService(AudioManager::class.java)
+        previousAlarmVolume = audio.getStreamVolume(AudioManager.STREAM_ALARM)
+        runCatching {
+            audio.setStreamVolume(
+                AudioManager.STREAM_ALARM,
+                audio.getStreamMaxVolume(AudioManager.STREAM_ALARM),
+                0,
+            )
+        }
+        ringer = runCatching {
+            MediaPlayer().apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_ALARM)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build(),
+                )
+                setDataSource(
+                    this@NotifyService,
+                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+                )
+                isLooping = true
+                prepare()
+                start()
+            }
+        }.getOrNull()
+        main.postDelayed(stopLater, RING_MS)
+    }
+
+    private fun stopRing() {
+        main.removeCallbacks(stopLater)
+        ringer?.runCatching {
+            stop()
+            release()
+        }
+        ringer = null
+        previousAlarmVolume?.let { volume ->
+            runCatching {
+                getSystemService(AudioManager::class.java)
+                    .setStreamVolume(AudioManager.STREAM_ALARM, volume, 0)
+            }
+        }
+        previousAlarmVolume = null
     }
 
     // --- notifications -------------------------------------------------------

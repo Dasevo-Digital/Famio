@@ -873,6 +873,10 @@ class FamioApiClient {
     'battery': ?battery,
   });
 
+  /// Lets [memberId]'s phone ring loudly (adults only, once a minute).
+  Future<void> ringMember(String memberId) =>
+      _send('POST', 'api/members/${Uri.encodeComponent(memberId)}/ring');
+
   Future<void> sosComing(String id) =>
       _send('POST', 'api/sos/${Uri.encodeComponent(id)}/coming');
 

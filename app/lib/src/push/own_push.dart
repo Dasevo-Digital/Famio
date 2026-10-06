@@ -172,8 +172,9 @@ class OwnPush {
             WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
         if (last != null) {
           for (final notice in batch.notices.take(5)) {
-            // The test message always shows: it is asked for in the app.
-            if (!inFront || notice.tag == 'tada') {
+            // The test message always shows: it is asked for in the app;
+            // alarms and rings too.
+            if (!inFront || notice.tag == 'tada' || notice.alarm) {
               await show(notice, details: _details);
             }
           }

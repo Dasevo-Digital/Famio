@@ -119,6 +119,8 @@ class _MemberTile extends StatelessWidget {
                     await showPauseDialog(context, member: member);
                   case 'resume':
                     await _resume(context);
+                  case 'ring':
+                    await _ring(context);
                 }
               },
               itemBuilder: (_) => [
@@ -131,10 +133,32 @@ class _MemberTile extends StatelessWidget {
                     value: 'resume',
                     child: Text('Fortsetzen'),
                   ),
+                if (canManage && !isMe)
+                  const PopupMenuItem(
+                    value: 'ring',
+                    child: Text('Handy klingeln lassen'),
+                  ),
               ],
             )
           : null,
     );
+  }
+
+  Future<void> _ring(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AppScope.read(context).engine!.api.ringMember(member.id);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            '${member.displayName}s Handy klingelt eine halbe Minute – '
+            'wenn dort Famio-Benachrichtigungen an sind.',
+          ),
+        ),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   Future<void> _resume(BuildContext context) async {

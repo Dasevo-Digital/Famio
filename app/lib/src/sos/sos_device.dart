@@ -5,6 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Tag of a notice that lets this phone ring (see the server's
+/// `SosService.ringTag`).
+const ringTag = 'loud_sound';
+
 /// A position for the emergency button.
 class SosFix {
   const SosFix({
