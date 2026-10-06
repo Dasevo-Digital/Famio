@@ -47,8 +47,16 @@ extension _LocationRoutes on FamioApi {
         _ => null,
       },
     );
+    // The stored position is only rewritten after a real move, so the
+    // battery comes from the report itself.
+    final battery = [
+      for (final f in fixes)
+        if (f.battery != null) f.battery,
+    ].lastOrNull;
+    sos?.batteryReported(member, battery);
     // Place notices for this member, so the phone can show them even while
-    // the app is closed.
+    // the app is closed. Check-ins come through the notifications (they
+    // must not wait for the next position report).
     final since = (body['alertsSince'] as num?)?.toInt();
     final names = {for (final m in accounts.members()) m.id: m.displayName};
     return _json({
@@ -60,7 +68,7 @@ extension _LocationRoutes on FamioApi {
             visibleToMember: member.id,
           ))
             if (LocationAlert.fromRecord(r) case final a
-                when a.at.millisecondsSinceEpoch > since)
+                when a.at.millisecondsSinceEpoch > since && a.checkIn == null)
               {
                 'id': a.id,
                 'text': a.text(names[a.memberId] ?? 'Jemand'),

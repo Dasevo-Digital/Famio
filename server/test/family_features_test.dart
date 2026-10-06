@@ -625,6 +625,31 @@ void main() {
       );
     });
 
+    test('a nearly empty battery is told once', () async {
+      Future<void> report(int battery) =>
+          kind.call('POST', 'api/location/report', {
+            'fixes': [
+              {
+                'lat': 53.55,
+                'lon': 10.0,
+                'acc': 10,
+                'at': DateTime.now().millisecondsSinceEpoch,
+                'battery': battery,
+              },
+            ],
+          });
+      final last = (await mama.call('GET', 'api/notifications'))['last'] as int;
+      await report(40);
+      await report(12);
+      await report(9);
+      await app.push.idle;
+      final got = await mama.call('GET', 'api/notifications?after=$last');
+      expect(
+        [for (final n in got['notices'] as List) (n as Map)['title']],
+        ['🔋 kinds Handy hat 12 % Akku'],
+      );
+    });
+
     test('only adults change the settings', () async {
       final settings = _record(Collections.sosSettings, SosSettings.recordId, {
         ...const SosSettings(phones: {'x': '0170 1'}).toData(),

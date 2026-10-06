@@ -318,6 +318,42 @@ class SosService {
     );
   }
 
+  /// Below this the adults hear about a phone's battery.
+  static const lowBattery = 15;
+  final _batteryWarned = <String, DateTime>{};
+  final _battery = <String, int>{};
+
+  /// A position report with [member]'s battery: falling below [lowBattery]
+  /// tells the adults once (at most every 6 hours), so a missing position
+  /// later is no mystery.
+  void batteryReported(FamilyMember member, int? now) {
+    if (now == null) return;
+    final before = _battery[member.id];
+    _battery[member.id] = now;
+    if (now > lowBattery) return;
+    if (before != null && before <= lowBattery) return;
+    final last = _batteryWarned[member.id];
+    final at = DateTime.now();
+    if (last != null && at.difference(last) < const Duration(hours: 6)) {
+      return;
+    }
+    _batteryWarned[member.id] = at;
+    final to = {for (final a in _adults(member.id)) a.id};
+    final about = records.get(Collections.memberLocations, member.id);
+    push?.deliver(
+      PushNotice(
+        to: to,
+        title: '🔋 ${member.displayName}s Handy hat $now % Akku',
+        body:
+            'Bald kann Famio ${member.displayName}s Standort nicht mehr '
+            'zeigen.',
+        brief: 'Akku fast leer',
+        tag: 'battery',
+      ),
+      about,
+    );
+  }
+
   /// ntfy tag of a ring; the apps sound the siren for it.
   static const ringTag = 'loud_sound';
 
