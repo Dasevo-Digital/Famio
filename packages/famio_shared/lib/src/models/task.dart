@@ -14,6 +14,7 @@ class Task {
     this.remindAt,
     this.repeat,
     this.repeatEvery = 1,
+    this.checklist = const [],
   });
 
   factory Task.fromRecord(SyncRecord r) => Task(
@@ -28,6 +29,10 @@ class Task {
     remindAt: _date(r.data['remindAt'])?.toLocal(),
     repeat: TaskRepeat.parse(r.data['repeat']),
     repeatEvery: (r.data['repeatEvery'] as num?)?.toInt().clamp(1, 99) ?? 1,
+    checklist: [
+      for (final i in r.data['checklist'] as List? ?? const [])
+        if (i is Map) TaskStep.fromJson(i.cast()),
+    ],
   );
 
   final String id;
@@ -48,6 +53,15 @@ class Task {
   /// Every how many [repeat] periods (2: every other week).
   final int repeatEvery;
 
+  /// Steps to tick off (a packing list …); the task itself is ticked off
+  /// separately.
+  final List<TaskStep> checklist;
+
+  /// "2/5" for the list.
+  String? get checklistProgress => checklist.isEmpty
+      ? null
+      : '${checklist.where((i) => i.done).length}/${checklist.length}';
+
   /// Nullable fields are cleared by passing `null` explicitly.
   Task copyWith({
     String? title,
@@ -59,6 +73,7 @@ class Task {
     Object? remindAt = _keep,
     Object? repeat = _keep,
     int? repeatEvery,
+    List<TaskStep>? checklist,
   }) => Task(
     id: id,
     title: title ?? this.title,
@@ -73,6 +88,7 @@ class Task {
     remindAt: remindAt == _keep ? this.remindAt : remindAt as DateTime?,
     repeat: repeat == _keep ? this.repeat : repeat as TaskRepeat?,
     repeatEvery: repeatEvery ?? this.repeatEvery,
+    checklist: checklist ?? this.checklist,
   );
 
   /// Ticked off: a repeating task comes back open with its next due date
@@ -97,6 +113,8 @@ class Task {
       remindAt: remindAt?.add(shift),
       done: false,
       completedAt: null,
+      // Next time the list starts over.
+      checklist: [for (final i in checklist) i.copyWith(done: false)],
     );
   }
 
@@ -111,7 +129,29 @@ class Task {
     'remindAt': remindAt?.toUtc().toIso8601String(),
     'repeat': repeat?.name,
     'repeatEvery': repeat == null ? null : repeatEvery,
+    if (checklist.isNotEmpty)
+      'checklist': [for (final i in checklist) i.toJson()],
   };
+}
+
+/// One step of a task's checklist.
+class TaskStep {
+  const TaskStep({required this.id, required this.text, this.done = false});
+
+  factory TaskStep.fromJson(Map<String, Object?> json) => TaskStep(
+    id: json['id'] as String? ?? '',
+    text: json['text'] as String? ?? '',
+    done: json['done'] as bool? ?? false,
+  );
+
+  final String id;
+  final String text;
+  final bool done;
+
+  TaskStep copyWith({String? text, bool? done}) =>
+      TaskStep(id: id, text: text ?? this.text, done: done ?? this.done);
+
+  Map<String, Object?> toJson() => {'id': id, 'text': text, 'done': done};
 }
 
 /// How often a task comes back.

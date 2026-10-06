@@ -109,6 +109,42 @@ void main() {
     });
   });
 
+  group('task checklists', () {
+    testWidgets('progress in the list, steps ticked in the editor', (
+      tester,
+    ) async {
+      await open(tester, section: 'Aufgaben');
+      engine.saveTask(
+        const Task(
+          id: 't1',
+          title: 'Freibad',
+          checklist: [
+            TaskStep(id: 'a', text: 'Badesachen', done: true),
+            TaskStep(id: 'b', text: 'Sonnencreme'),
+          ],
+        ),
+      );
+      await _pumpData(tester);
+      expect(find.textContaining('☑ 1/2'), findsOneWidget);
+      await tester.tap(find.text('Freibad'));
+      await tester.pumpAndSettle();
+      expect(find.text('Checkliste (1/2)'), findsOneWidget);
+      await tester.tap(find.byType(Checkbox).last);
+      await tester.pump();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Punkt hinzufügen, z. B. Sonnencreme'),
+        'Handtuch',
+      );
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final task = engine.tasks.single;
+      expect(
+        [for (final s in task.checklist) (s.text, s.done)],
+        [('Badesachen', true), ('Sonnencreme', true), ('Handtuch', false)],
+      );
+    });
+  });
+
   group('shopping aisles', () {
     testWidgets('new items find their aisle; corrections are remembered', (
       tester,

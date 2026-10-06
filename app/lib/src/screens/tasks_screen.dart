@@ -237,6 +237,7 @@ class _TaskTile extends StatelessWidget {
     final subtitle = [
       if (task.due != null) DateFormat('E, d. MMM', 'de').format(task.due!),
       if (task.repeat case final r?) '↻ ${r.label(task.repeatEvery)}',
+      if (task.checklistProgress case final p?) '☑ $p',
       if (!task.done && remind != null && remind.isAfter(DateTime.now()))
         '⏰ ${dateTimeLabel(remind)}',
       if (task.notes.isNotEmpty) task.notes.split('\n').first,
@@ -374,12 +375,24 @@ class _TaskEditorState extends State<_TaskEditor> {
   late DateTime? _remindAt = widget.task?.remindAt;
   late TaskRepeat? _repeat = widget.task?.repeat;
   late int _repeatEvery = widget.task?.repeatEvery ?? 1;
+  late final _steps = [...?widget.task?.checklist];
+  final _newStep = TextEditingController();
 
   @override
   void dispose() {
     _title.dispose();
     _notes.dispose();
+    _newStep.dispose();
     super.dispose();
+  }
+
+  void _addStep() {
+    final text = _newStep.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _steps.add(TaskStep(id: newId(), text: text));
+      _newStep.clear();
+    });
   }
 
   void _save() {
@@ -401,6 +414,12 @@ class _TaskEditorState extends State<_TaskEditor> {
         remindAt: _remindAt,
         repeat: _repeat,
         repeatEvery: _repeatEvery,
+        checklist: [
+          ..._steps,
+          // Typed but not yet added with Enter: keep it too.
+          if (_newStep.text.trim().isNotEmpty)
+            TaskStep(id: newId(), text: _newStep.text.trim()),
+        ],
       ),
     );
     Navigator.pop(context);
@@ -538,6 +557,51 @@ class _TaskEditorState extends State<_TaskEditor> {
                   ),
                 ),
               ],
+            ),
+            ListHeading(
+              _steps.isEmpty
+                  ? 'Checkliste'
+                  : 'Checkliste (${_steps.where((s) => s.done).length}/${_steps.length})',
+            ),
+            for (final (i, step) in _steps.indexed)
+              Row(
+                children: [
+                  Checkbox(
+                    value: step.done,
+                    onChanged: (v) => setState(
+                      () => _steps[i] = step.copyWith(done: v ?? false),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      step.text,
+                      style: step.done
+                          ? TextStyle(
+                              decoration: TextDecoration.lineThrough,
+                              color: c.inkSoft,
+                            )
+                          : null,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Punkt entfernen',
+                    icon: Icon(AppIcons.x, size: 18, color: c.inkSoft),
+                    onPressed: () => setState(() => _steps.removeAt(i)),
+                  ),
+                ],
+              ),
+            TextField(
+              controller: _newStep,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Punkt hinzufügen, z. B. Sonnencreme',
+                suffixIcon: IconButton(
+                  tooltip: 'Hinzufügen',
+                  icon: const Icon(AppIcons.plus),
+                  onPressed: _addStep,
+                ),
+              ),
+              onSubmitted: (_) => _addStep(),
             ),
             const ListHeading('Wer kümmert sich?'),
             Wrap(

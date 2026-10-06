@@ -86,4 +86,37 @@ void main() {
     expect(TaskRepeat.weekly.label(2), 'alle 2 Wochen');
     expect(const Task(id: 'x', title: 'x').toData()['repeat'], isNull);
   });
+
+  test('checklists survive the round trip and restart when repeating', () {
+    const items = [
+      TaskStep(id: 'a', text: 'Badesachen', done: true),
+      TaskStep(id: 'b', text: 'Sonnencreme'),
+    ];
+    final task = Task(
+      id: 't',
+      title: 'Freibad',
+      checklist: items,
+      repeat: TaskRepeat.weekly,
+      due: DateTime(2026, 10, 6),
+    );
+    expect(task.checklistProgress, '1/2');
+    final back = Task.fromRecord(
+      SyncRecord(
+        collection: 'tasks',
+        id: 't',
+        data: task.toData(),
+        updatedAt: 1,
+      ),
+    );
+    expect(
+      [for (final i in back.checklist) (i.text, i.done)],
+      [('Badesachen', true), ('Sonnencreme', false)],
+    );
+    final next = task.completed(today: DateTime(2026, 10, 6));
+    expect(next.checklistProgress, '0/2');
+    expect(
+      const Task(id: 'x', title: 'y').toData().containsKey('checklist'),
+      isFalse,
+    );
+  });
 }
