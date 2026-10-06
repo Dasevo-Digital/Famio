@@ -93,6 +93,9 @@ abstract final class Collections {
   static const medications = 'medications';
   static const medicationIntakes = 'medication_intakes';
 
+  /// The family's pinboard notes (visibility per note).
+  static const notes = 'notes';
+
   /// How the emergency button behaves (one record, adults only).
   static const sosSettings = 'sos_settings';
 
@@ -100,6 +103,7 @@ abstract final class Collections {
   static const sosAlerts = 'sos_alerts';
 
   static const all = {
+    notes,
     shoppingAisles,
     sosSettings,
     sosAlerts,
@@ -143,6 +147,9 @@ abstract final class Collections {
 
   /// What guests (grandparents, babysitters …) receive at all.
   static const guestReadable = {
+    // Babysitters need the notes meant for them; others are restricted
+    // per note.
+    notes,
     shoppingAisles,
     tasks,
     shoppingLists,

@@ -14,7 +14,8 @@ enum SearchKind {
   contact(FamioSection.contacts, 'Kontakte'),
   chat(FamioSection.chat, 'Chat'),
   pantry(FamioSection.shopping, 'Vorrat'),
-  medication(FamioSection.health, 'Medikamente');
+  medication(FamioSection.health, 'Medikamente'),
+  note(FamioSection.home, 'Pinnwand');
 
   const SearchKind(this.section, this.label);
 
@@ -208,6 +209,19 @@ List<SearchHit> searchFamily(
         [m.text],
         detail: m.chatId,
         at: m.sentAt,
+      );
+    }
+  }
+
+  if (shows(SearchKind.note)) {
+    for (final n in engine.notes) {
+      consider(
+        SearchKind.note,
+        n.id,
+        n.title,
+        [n.text],
+        detail: n.text.split('\n').first,
+        at: n.updatedAt,
       );
     }
   }

@@ -14,6 +14,7 @@ import 'contacts_screens.dart';
 import 'event_editor.dart';
 import 'home_shell.dart';
 import 'meals_screens.dart';
+import 'notes_screen.dart';
 import 'medication_screens.dart';
 import 'pantry_screens.dart';
 import 'shopping_screens.dart';
@@ -83,6 +84,10 @@ class _SearchScreenState extends State<SearchScreen> {
       case SearchKind.medication:
         final m = engine.medications.where((m) => m.id == hit.id).firstOrNull;
         if (m != null) await showMedicationEditor(context, medication: m);
+      case SearchKind.note:
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const NotesScreen()));
       case SearchKind.chat:
         final r = engine.record(Collections.chatMessages, hit.id);
         if (r == null) return;

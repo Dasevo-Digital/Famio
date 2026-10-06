@@ -4,6 +4,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
@@ -106,6 +107,34 @@ void main() {
       );
       expect(find.byType(SnackBar), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('pinboard', () {
+    testWidgets('a pinned note shows on the start page', (tester) async {
+      await open(tester);
+      await push(tester, const NotesScreen());
+      await tester.tap(find.byTooltip('Notiz anlegen'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Titel'),
+        'WLAN für Gäste',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Text'),
+        'Famio-Gast / sonnenblume42',
+      );
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.notes.single.pinned, isTrue);
+      expect(engine.notes.single.visibleTo, isNull);
+      expect(find.text('WLAN für Gäste'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Pinnwand').first)).pop();
+      await tester.pumpAndSettle();
+      expect(
+        find.text('WLAN für Gäste: Famio-Gast / sonnenblume42'),
+        findsOneWidget,
+      );
     });
   });
 

@@ -88,6 +88,21 @@ extension FamilyData on SyncEngine {
           learned: learned ?? learnedShoppingCategories,
         );
 
+  /// The pinboard: pinned first, then the newest.
+  List<FamilyNote> get notes =>
+      records(Collections.notes).map(FamilyNote.fromRecord).toList()
+        ..sort((a, b) {
+          if (a.pinned != b.pinned) return a.pinned ? -1 : 1;
+          return (b.updatedAt ?? DateTime(0)).compareTo(
+            a.updatedAt ?? DateTime(0),
+          );
+        });
+
+  void saveNote(FamilyNote note) =>
+      put(Collections.notes, note.id, note.toData());
+
+  void deleteNote(String id) => delete(Collections.notes, id);
+
   void saveShoppingList(ShoppingList list) =>
       put(Collections.shoppingLists, list.id, list.toData());
 

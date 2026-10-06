@@ -23,6 +23,7 @@ import 'location_screens.dart';
 import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 import 'search_screen.dart';
+import 'notes_screen.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -100,6 +101,7 @@ class HomeScreen extends StatelessWidget {
           Collections.pointEntries,
           Collections.medications,
           Collections.medicationIntakes,
+          Collections.notes,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
@@ -140,6 +142,7 @@ class HomeScreen extends StatelessWidget {
                 _DocumentsTile(engine: engine),
               if (on(FamioSection.budget) && engine.budgetEntries.isNotEmpty)
                 _BudgetTile(engine: engine),
+              _NotesTile(engine: engine),
             ];
             const gap = 16.0;
             // Tiles of a row share its height, so the grid has no holes.
@@ -269,6 +272,8 @@ class _Tile extends StatelessWidget {
     required this.title,
     required this.child,
     this.badge,
+    this.icon,
+    this.onTap,
   });
 
   final FamioSection section;
@@ -276,13 +281,17 @@ class _Tile extends StatelessWidget {
   final Widget child;
   final String? badge;
 
+  /// Instead of the section's icon and page (e.g. the pinboard).
+  final IconData? icon;
+  final VoidCallback? onTap;
+
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     return SoftCard(
       color: c.tint(section),
-      onTap: () => FamioNav.of(context).go(section),
+      onTap: onTap ?? () => FamioNav.of(context).go(section),
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -290,7 +299,7 @@ class _Tile extends StatelessWidget {
           Row(
             children: [
               IconBlob(
-                section.icon,
+                icon ?? section.icon,
                 color: c.strong(section),
                 background: c.surface.withValues(alpha: 0.7),
                 size: 42,
@@ -633,6 +642,43 @@ class _KidsTile extends StatelessWidget {
                     : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
               );
             }(),
+        ],
+      ),
+    );
+  }
+}
+
+class _NotesTile extends StatelessWidget {
+  const _NotesTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final notes = engine.notes;
+    final pinned = notes.where((n) => n.pinned).toList();
+    return _Tile(
+      section: FamioSection.home,
+      title: 'Pinnwand',
+      icon: AppIcons.note,
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const NotesScreen())),
+      child: Column(
+        children: [
+          if (pinned.isEmpty)
+            _Line(
+              notes.isEmpty
+                  ? 'Notizen für alle: WLAN, Babysitter, Müllabfuhr …'
+                  : '${notes.length} Notizen',
+              dim: true,
+            ),
+          for (final n in pinned.take(3))
+            _Line(
+              n.text.isEmpty
+                  ? n.title
+                  : '${n.title}: ${n.text.split('\n').first}',
+            ),
         ],
       ),
     );
