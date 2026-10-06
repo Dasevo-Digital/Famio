@@ -60,6 +60,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         sos = SosChannel(this, flutterEngine.dartExecutor.binaryMessenger)
+        OcrChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/location")
             .setMethodCallHandler { call, result ->
                 when (call.method) {

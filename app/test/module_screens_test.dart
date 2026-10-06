@@ -4,6 +4,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/screens/event_import_screen.dart';
 import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
@@ -107,6 +108,35 @@ void main() {
       );
       expect(find.byType(SnackBar), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('appointments from text', () {
+    testWidgets('pasted text becomes checked appointments', (tester) async {
+      await open(tester);
+      await push(tester, const EventImportScreen());
+      final now = DateTime.now();
+      final next = DateTime(now.year, now.month, now.day + 10);
+      final after = DateTime(now.year, now.month, now.day + 11);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Oder Text hier einfügen'),
+        'Elternabend am ${next.day}.${next.month}. um 19:30 Uhr\n'
+        'Wandertag ${after.day}.${after.month}.',
+      );
+      await tester.tap(find.text('Termine suchen'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 Termine übernehmen'), findsOneWidget);
+      // Only the first one.
+      await tester.tap(find.byType(Checkbox).last);
+      await tester.pump();
+      await tester.tap(find.text('1 Termin übernehmen'));
+      await tester.pumpAndSettle();
+      final event = engine.events.single;
+      expect(event.title, 'Elternabend');
+      expect(
+        (event.start.hour, event.start.minute, event.allDay),
+        (19, 30, false),
+      );
     });
   });
 

@@ -14,6 +14,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'calendar_connect_screen.dart';
 import 'event_editor.dart';
+import 'event_import_screen.dart';
 
 /// Month grid plus the agenda of the selected day; side by side when wide.
 class CalendarScreen extends StatefulWidget {
@@ -50,6 +51,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
       title: 'Kalender',
       subtitle: DateFormat('EEEE, d. MMMM', 'de').format(_selected),
       actions: [
+        BubbleButton(
+          icon: AppIcons.scanBarcode,
+          tooltip: 'Termine aus Foto oder Text erkennen',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const EventImportScreen()),
+          ),
+        ),
         BubbleButton(
           icon: AppIcons.arrowsLeftRight,
           tooltip: 'Mit Google/Apple Kalender verbinden',

@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreLocation
+import Vision
 import CryptoKit
 import Flutter
 import Security
@@ -35,6 +36,36 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioSos") {
       SosBridge.shared.register(with: registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOcr") {
+      // Text in photos (appointments from a letter), on the device.
+      let ocr = FlutterMethodChannel(
+        name: "famio/ocr", binaryMessenger: registrar.messenger())
+      ocr.setMethodCallHandler { call, result in
+        guard call.method == "recognize",
+          let path = (call.arguments as? [String: Any])?["path"] as? String,
+          let cg = UIImage(contentsOfFile: path)?.cgImage
+        else {
+          result(nil)
+          return
+        }
+        let request = VNRecognizeTextRequest { request, _ in
+          let lines = (request.results as? [VNRecognizedTextObservation] ?? [])
+            .sorted { $0.boundingBox.minY > $1.boundingBox.minY }
+            .compactMap { $0.topCandidates(1).first?.string }
+          DispatchQueue.main.async { result(lines.joined(separator: "\n")) }
+        }
+        request.recognitionLevel = .accurate
+        request.recognitionLanguages = ["de-DE", "en-US"]
+        request.usesLanguageCorrection = true
+        DispatchQueue.global(qos: .userInitiated).async {
+          do {
+            try VNImageRequestHandler(cgImage: cg).perform([request])
+          } catch {
+            DispatchQueue.main.async { result(nil) }
+          }
+        }
+      }
     }
   }
 }
