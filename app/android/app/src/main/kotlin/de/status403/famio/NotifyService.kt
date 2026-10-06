@@ -8,6 +8,8 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import android.os.IBinder
 import org.json.JSONObject
@@ -36,6 +38,7 @@ class NotifyService : Service() {
         private const val CHANNEL = "famio_connection"
         private const val MESSAGES = "famio_messages"
         private const val QUIET = "famio_quiet"
+        private const val ALARM = "famio_sos"
         private const val NOTIFICATION_ID = 47120
         private const val WAIT_SECONDS = 240
 
@@ -88,6 +91,27 @@ class NotifyService : Service() {
                     "Ruhezeit",
                     NotificationManager.IMPORTANCE_LOW,
                 ).apply { description = "Hinweise während der eigenen Ruhezeit, ohne Ton" },
+            )
+            manager.createNotificationChannel(
+                NotificationChannel(
+                    ALARM,
+                    "Notfall (SOS)",
+                    NotificationManager.IMPORTANCE_HIGH,
+                ).apply {
+                    description = "Wenn jemand aus der Familie den Notfallknopf drückt – " +
+                        "laut, auch bei „Nicht stören“"
+                    setSound(
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
+                    enableVibration(true)
+                    vibrationPattern = longArrayOf(0, 800, 400, 800, 400, 800)
+                    setBypassDnd(true)
+                    lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                },
             )
         }
     }
@@ -190,12 +214,33 @@ class NotifyService : Service() {
             val title = if (details) notice.optString("title", "Famio") else "Famio"
             val text = if (details) notice.optString("body") else notice.optString("brief")
             // In the member's quiet time (set on the server): no sound.
-            val channel = if (notice.optBoolean("quiet")) QUIET else MESSAGES
+            val alarm = notice.optBoolean("alarm")
+            val channel = when {
+                alarm -> ALARM
+                notice.optBoolean("quiet") -> QUIET
+                else -> MESSAGES
+            }
             val public = builder(channel)
                 .setContentTitle("Famio")
                 .setContentText(notice.optString("brief"))
                 .build()
             val notification = builder(channel)
+                .apply {
+                    if (alarm) {
+                        // Over the lock screen, like an alarm clock.
+                        setCategory(Notification.CATEGORY_ALARM)
+                        setFullScreenIntent(
+                            PendingIntent.getActivity(
+                                this@NotifyService,
+                                1,
+                                Intent(this@NotifyService, MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                            ),
+                            true,
+                        )
+                    }
+                }
                 .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(Notification.BigTextStyle().bigText(text))

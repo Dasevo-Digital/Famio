@@ -15,6 +15,7 @@ abstract final class AppIcons {
   static const IconData backpack = LucideIcons.backpack;
   static const IconData basket = LucideIcons.shoppingBasket;
   static const IconData bell = LucideIcons.bell;
+  static const IconData bellOff = LucideIcons.bellOff;
   static const IconData cake = LucideIcons.cake;
   static const IconData calendarBlank = LucideIcons.calendar;
   static const IconData calendarCheck = LucideIcons.calendarCheck;

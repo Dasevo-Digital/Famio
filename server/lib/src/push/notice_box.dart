@@ -26,10 +26,12 @@ class NoticeBox {
     final columns = {
       for (final c in _db.select('PRAGMA table_info(notices)')) c['name'],
     };
-    if (!columns.contains('quiet')) {
-      _db.execute(
-        'ALTER TABLE notices ADD COLUMN quiet INTEGER NOT NULL DEFAULT 0',
-      );
+    for (final column in ['quiet', 'alarm']) {
+      if (!columns.contains(column)) {
+        _db.execute(
+          'ALTER TABLE notices ADD COLUMN $column INTEGER NOT NULL DEFAULT 0',
+        );
+      }
     }
   }
 
@@ -55,8 +57,8 @@ class NoticeBox {
     for (final id in memberIds.toSet()) {
       // Records may name members that no longer exist (deleted, imported).
       _db.execute(
-        'INSERT INTO notices (member_id, at, title, body, brief, tag, quiet)'
-        ' SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7 WHERE EXISTS'
+        'INSERT INTO notices (member_id, at, title, body, brief, tag, quiet,'
+        ' alarm) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8 WHERE EXISTS'
         ' (SELECT 1 FROM users WHERE id = ?1)',
         [
           id,
@@ -66,6 +68,7 @@ class NoticeBox {
           notice.brief,
           notice.tag,
           if (quiet.contains(id)) 1 else 0,
+          if (notice.urgent) 1 else 0,
         ],
       );
       if (_db.updatedRows == 0) continue;
@@ -109,6 +112,7 @@ class NoticeBox {
         'brief': row['brief'],
         'tag': row['tag'],
         'quiet': row['quiet'] == 1,
+        'alarm': row['alarm'] == 1,
       },
   ];
 

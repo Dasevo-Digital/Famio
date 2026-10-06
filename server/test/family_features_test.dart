@@ -458,6 +458,126 @@ void main() {
     });
   });
 
+  group('emergency button', () {
+    test(
+      'a child raises an alarm the adults hear, also in quiet time',
+      () async {
+        // Mama sleeps: quiet hours around the clock.
+        final now = tz.TZDateTime.now(app.settings.location);
+        String at(int minutes) => QuietHours.format(
+          (now.hour * 60 + now.minute + minutes) % (24 * 60),
+        );
+        await mama.call('PUT', 'api/me/quiet-hours', {
+          'enabled': true,
+          'start': at(-60),
+          'end': at(60),
+        });
+        await mama.call('POST', 'api/me/push', {
+          'url': 'https://push.example/famio-mama',
+        });
+        pushed.clear();
+
+        expect((await oma.call('POST', 'api/sos', {}))['_status'], 403);
+        final raised = await kind.call('POST', 'api/sos', {
+          'latitude': 53.55,
+          'longitude': 10.0,
+          'accuracy': 8,
+          'battery': 40,
+        });
+        expect(raised['_status'], 201);
+        final id = raised['id'] as String;
+        await app.push.idle;
+
+        final notices = await mama.call('GET', 'api/notifications?after=0');
+        final alarm = (notices['notices'] as List).last as Map;
+        expect(alarm['alarm'], isTrue);
+        expect(alarm['quiet'], isFalse);
+        expect(alarm['title'], '🚨 SOS von kind');
+        expect(pushed.single['priority'], 5);
+        expect(pushed.single['title'], 'Famio');
+        expect(pushed.single['message'], '🚨 SOS von kind');
+
+        // The child and the adults see it; the guest does not.
+        await mama.sync();
+        await kind.sync();
+        await oma.sync();
+        final seen = SosAlert.fromRecord(mama.seen['sos_alerts/$id']!);
+        expect(
+          (seen.latitude, seen.battery, seen.state),
+          (53.55, 40, SosState.active),
+        );
+        expect(kind.seen['sos_alerts/$id'], isNotNull);
+        expect(oma.collections(), isNot(contains(Collections.sosAlerts)));
+
+        // Pressing again within half an hour updates the same alert.
+        final again = await kind.call('POST', 'api/sos', {});
+        expect(again['id'], id);
+        expect(again['latitude'], 53.55);
+      },
+    );
+
+    test('position, "Ich komme" and the end', () async {
+      final id = (await kind.call('POST', 'api/sos', {}))['id'] as String;
+      final moved = await kind.call('POST', 'api/sos/$id/position', {
+        'latitude': 48.1,
+        'longitude': 11.5,
+      });
+      expect(moved['latitude'], 48.1);
+      expect(
+        (await mama.call('POST', 'api/sos/$id/position', {
+          'latitude': 1,
+          'longitude': 1,
+        }))['_status'],
+        404,
+        reason: 'only the phone that raised it',
+      );
+      expect((await kind.call('POST', 'api/sos/$id/coming'))['_status'], 403);
+
+      final kindLast =
+          (await kind.call('GET', 'api/notifications'))['last'] as int;
+      final coming = await mama.call('POST', 'api/sos/$id/coming');
+      expect(coming['state'], 'coming');
+      expect(coming['comingBy'], mama.id);
+      final kindGot = await kind.call(
+        'GET',
+        'api/notifications?after=$kindLast',
+      );
+      expect(
+        ((kindGot['notices'] as List).single as Map)['title'],
+        'mama kommt',
+      );
+
+      final done = await kind.call('POST', 'api/sos/$id/resolve');
+      expect(done['state'], 'resolved');
+      expect(
+        (await kind.call('POST', 'api/sos/$id/position', {
+          'latitude': 1,
+          'longitude': 1,
+        }))['_status'],
+        409,
+      );
+      // A new press after the end is a new alert.
+      expect((await kind.call('POST', 'api/sos', {}))['id'], isNot(id));
+    });
+
+    test('only adults change the settings', () async {
+      final settings = _record(Collections.sosSettings, SosSettings.recordId, {
+        ...const SosSettings(phones: {'x': '0170 1'}).toData(),
+      });
+      final byKind = await kind.sync([settings]);
+      expect(byKind.rejected, isNotEmpty);
+      final byMama = await mama.sync([settings]);
+      expect(byMama.rejected, isEmpty);
+      await kind.sync();
+      expect(
+        SosSettings.fromRecord(
+          kind.seen['sos_settings/${SosSettings.recordId}'],
+        ).phones,
+        {'x': '0170 1'},
+      );
+    });
+  });
+
   group('own push', () {
     Map<String, Object?> chat(String id, String chatId, String text) => {
       'chatId': chatId,

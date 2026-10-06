@@ -23,6 +23,7 @@ import 'dav/caldav_sync.dart';
 import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
+import 'family/sos.dart';
 import 'family/allowance_job.dart';
 import 'hub.dart';
 import 'push/notice_box.dart';
@@ -162,6 +163,7 @@ class FamioServerApp {
       onOperationalError: auditLog,
     );
     notices = NoticeBox(db);
+    sos = SosService(records: records, accounts: accounts, push: push);
     push.onNotice = notices.add;
     records
       ..onStored = push.stored
@@ -207,6 +209,7 @@ class FamioServerApp {
       locations: locations,
       push: push,
       notices: notices,
+      sos: sos,
       mfa: mfa,
       sso: sso,
       webApp: webApp,
@@ -261,6 +264,7 @@ class FamioServerApp {
   late final FileStore files;
   late final PushService push;
   late final NoticeBox notices;
+  late final SosService sos;
   late final AllowanceJob allowances;
   late final Mfa mfa;
   late final SsoService sso;

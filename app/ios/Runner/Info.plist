@@ -3,12 +3,13 @@
 <plist version="1.0">
 <dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Famio zeigt deiner Familie, wo du bist – nur wenn du „Standort teilen“ einschaltest.</string>
+	<string>Famio zeigt deiner Familie, wo du bist – nur wenn du „Standort teilen“ einschaltest oder den Notfallknopf drückst.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Damit deine Familie deinen Standort auch sieht, wenn Famio geschlossen ist. Pausieren geht mit dem Eltern-Code.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
+		<string>audio</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Für Fotos im Chat, bei Dokumenten und Erinnerungen sowie zum Scannen von Barcodes für den Vorrat.</string>

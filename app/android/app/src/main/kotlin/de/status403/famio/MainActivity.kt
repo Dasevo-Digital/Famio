@@ -14,14 +14,16 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 /**
- * Hosts Flutter and the channels `famio/location` (location sharing) and
- * `famio/notify` (Famio's own push).
+ * Hosts Flutter and the channels `famio/location` (location sharing),
+ * `famio/notify` (Famio's own push) and `famio/sos` (emergency button).
  */
 class MainActivity : FlutterActivity() {
     private var permissionResult: MethodChannel.Result? = null
+    private var sos: SosChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        sos = SosChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/location")
             .setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -209,6 +211,7 @@ class MainActivity : FlutterActivity() {
         grantResults: IntArray,
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (sos?.onPermissionResult(requestCode) == true) return
         if (requestCode != 4711) return
         permissionResult?.success(status())
         permissionResult = null

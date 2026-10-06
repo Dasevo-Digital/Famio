@@ -24,6 +24,7 @@ import 'kiosk_screen.dart';
 import 'location_screens.dart';
 import 'meals_screens.dart';
 import 'settings_screen.dart';
+import 'sos_screens.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 import '../environment.dart';
@@ -202,14 +203,13 @@ class _HomeShellState extends State<HomeShell> {
     );
     final c = FamioColors.of(context);
     final changed = AppScope.of(context).changedCertificate;
-    final body = changed == null
-        ? pages
-        : Column(
-            children: [
-              _CertificateBanner(fingerprint: changed),
-              Expanded(child: pages),
-            ],
-          );
+    final body = Column(
+      children: [
+        if (changed != null) _CertificateBanner(fingerprint: changed),
+        const SosBanner(),
+        Expanded(child: pages),
+      ],
+    );
 
     return FamioNav(
       go: _go,

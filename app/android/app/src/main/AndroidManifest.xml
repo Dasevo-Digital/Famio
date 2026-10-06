@@ -16,6 +16,14 @@
     <!-- Famio's own push: a background connection to the family's server. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Emergency button: call a parent directly, text the position without
+         internet, and show an alarm for the parents over the lock screen.
+         Asked for only when the button is used. -->
+    <uses-permission android:name="android.permission.CALL_PHONE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <application
         android:label="@string/app_name"
         android:name="${applicationName}"

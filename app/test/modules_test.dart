@@ -229,9 +229,9 @@ void main() {
     tester,
   ) async {
     await open(tester, 'Kinder');
-    final due = DateUtils.dateOnly(
-      DateTime.now(),
-    ).add(const Duration(days: 20));
+    // Calendar days: adding 20 × 24 h misses a day across a DST change.
+    final now = DateTime.now();
+    final due = DateTime(now.year, now.month, now.day + 20);
     engine.savePregnancy(
       Pregnancy(id: 'p1', dueDate: due, name: 'Krümel', guardianIds: [me.id]),
     );

@@ -30,6 +30,7 @@ import 'files/file_store.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
+import 'family/sos.dart';
 import 'hub.dart';
 import 'export/data_export.dart';
 import 'lists/list_sync.dart';
@@ -49,6 +50,7 @@ part 'api/file_routes.dart';
 part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
+part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
 
 const serverVersion = '1.0.7';
@@ -90,6 +92,7 @@ class FamioApi {
     this.locations,
     this.push,
     this.notices,
+    this.sos,
     required this.mfa,
     this.sso,
     this.webApp,
@@ -146,6 +149,9 @@ class FamioApi {
 
   /// Famio's own push notifications; null in some tests.
   final NoticeBox? notices;
+
+  /// The emergency button; null in some tests.
+  final SosService? sos;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -268,6 +274,10 @@ class FamioApi {
       ..post('/api/calendar/caldav/<id>/sync', _caldavSync)
       ..get('/api/calendar/occurrences', _occurrences)
       ..get('/api/lists/accounts', _listAccounts)
+      ..post('/api/sos', _sosRaise)
+      ..post('/api/sos/<id>/position', _sosPosition)
+      ..post('/api/sos/<id>/coming', _sosComing)
+      ..post('/api/sos/<id>/resolve', _sosResolve)
       ..post('/api/lists/bring', _listConnectBring)
       ..post('/api/lists/microsoft', _listStartMicrosoft)
       ..post('/api/lists/microsoft/poll', _listPollMicrosoft)

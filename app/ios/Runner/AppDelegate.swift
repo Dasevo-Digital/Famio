@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreLocation
 import CryptoKit
 import Flutter
@@ -32,6 +33,121 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioLocation") {
       LocationReporter.shared.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioSos") {
+      SosBridge.shared.register(with: registrar)
+    }
+  }
+}
+
+/// The emergency button's phone side (`famio/sos`): one fresh position and
+/// a siren that also sounds with the ring/silent switch on silent (the
+/// "playback" audio category). Calls go through the phone app (tel:) and
+/// texts are not possible without asking, so those stay in Dart.
+final class SosBridge: NSObject, CLLocationManagerDelegate {
+  static let shared = SosBridge()
+
+  private let manager = CLLocationManager()
+  private var fixResults: [FlutterResult] = []
+  private var timeout: DispatchWorkItem?
+  private var player: AVAudioPlayer?
+
+  func register(with registrar: FlutterPluginRegistrar) {
+    manager.delegate = self
+    manager.desiredAccuracy = kCLLocationAccuracyBest
+    let channel = FlutterMethodChannel(
+      name: "famio/sos", binaryMessenger: registrar.messenger())
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard let self else { return }
+      let args = call.arguments as? [String: Any]
+      switch call.method {
+      case "currentFix":
+        self.currentFix(timeoutMs: args?["timeoutMs"] as? Int ?? 20000, result: result)
+      case "startSiren":
+        if let wav = args?["wav"] as? FlutterStandardTypedData {
+          self.startSiren(wav.data)
+        }
+        result(nil)
+      case "stopSiren":
+        self.stopSiren()
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  private func currentFix(timeoutMs: Int, result: @escaping FlutterResult) {
+    fixResults.append(result)
+    guard fixResults.count == 1 else { return }
+    let item = DispatchWorkItem { [weak self] in self?.answer(self?.manager.location) }
+    timeout = item
+    DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(timeoutMs), execute: item)
+    switch manager.authorizationStatus {
+    case .notDetermined:
+      manager.requestWhenInUseAuthorization()
+    case .denied, .restricted:
+      answer(nil)
+    default:
+      manager.requestLocation()
+    }
+  }
+
+  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    guard !fixResults.isEmpty else { return }
+    switch manager.authorizationStatus {
+    case .authorizedAlways, .authorizedWhenInUse: manager.requestLocation()
+    case .denied, .restricted: answer(nil)
+    default: break
+    }
+  }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    answer(locations.last)
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    answer(manager.location)
+  }
+
+  private func answer(_ location: CLLocation?) {
+    timeout?.cancel()
+    timeout = nil
+    let waiting = fixResults
+    fixResults = []
+    guard !waiting.isEmpty else { return }
+    var value: [String: Any]?
+    if let location {
+      UIDevice.current.isBatteryMonitoringEnabled = true
+      let level = UIDevice.current.batteryLevel
+      value = [
+        "latitude": location.coordinate.latitude,
+        "longitude": location.coordinate.longitude,
+        "accuracy": location.horizontalAccuracy >= 0 ? location.horizontalAccuracy : NSNull(),
+        "battery": level >= 0 ? Int(level * 100) : NSNull(),
+      ]
+    }
+    for result in waiting { result(value) }
+  }
+
+  private func startSiren(_ wav: Data) {
+    stopSiren()
+    do {
+      try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+      try AVAudioSession.sharedInstance().setActive(true)
+      let player = try AVAudioPlayer(data: wav)
+      player.numberOfLoops = -1
+      player.volume = 1
+      player.play()
+      self.player = player
+    } catch {
+      NSLog("Famio SOS: Sirene nicht möglich: \(error)")
+    }
+  }
+
+  private func stopSiren() {
+    player?.stop()
+    player = nil
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
   }
 }
 

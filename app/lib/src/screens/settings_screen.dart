@@ -1,5 +1,6 @@
 import 'kiosk_screen.dart';
 import 'push_settings_screen.dart';
+import 'sos_screens.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -178,6 +179,16 @@ class SettingsScreen extends StatelessWidget {
                 }
               },
             ),
+          ListTile(
+            leading: const Icon(AppIcons.siren),
+            title: const Text('Notfallknopf'),
+            subtitle: const Text('Sirene, Anruf, Telefonnummern'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const SosSettingsScreen(),
+              ),
+            ),
+          ),
           // The web app shows no notifications.
           if (!kIsWeb)
             ListTile(

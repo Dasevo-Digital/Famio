@@ -20,6 +20,7 @@ class PushNotice {
     required this.brief,
     this.tag = 'house',
     this.place = false,
+    this.urgent = false,
   });
 
   final Set<String> to;
@@ -34,6 +35,10 @@ class PushNotice {
 
   /// An arrival or leaving notice (may stay loud in the quiet time).
   final bool place;
+
+  /// An emergency: always loud, also in the quiet time; devices show it
+  /// as an alarm.
+  final bool urgent;
 }
 
 /// Real push notifications while the apps are closed: the server publishes
@@ -159,6 +164,7 @@ class PushService {
 
   /// Whether [notice] reaches [memberId] silently right now.
   bool isQuiet(String memberId, PushNotice notice, {DateTime? now}) {
+    if (notice.urgent) return false;
     final quiet = quietHours(memberId);
     if (notice.place && quiet.placesLoud) return false;
     final local = tz.TZDateTime.from(now ?? DateTime.now(), location());
@@ -436,6 +442,8 @@ class PushService {
               'tags': [notice.tag],
               // ntfy's "low": no sound, no vibration, no pop-up.
               if (quiet) 'priority': 2,
+              // "urgent": long vibration, breaks through on phones.
+              if (notice.urgent) 'priority': 5,
             });
       final response = await _client
           .send(request)

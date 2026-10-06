@@ -23,6 +23,7 @@ import 'location_screens.dart';
 import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 import 'search_screen.dart';
+import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
 class HomeScreen extends StatelessWidget {
@@ -45,6 +46,12 @@ class HomeScreen extends StatelessWidget {
       title: '${_greeting(now)}, ${me.displayName}!',
       subtitle: DateFormat('EEEE, d. MMMM', 'de').format(now),
       actions: [
+        // Children get the big button on the page itself.
+        if (!me.isGuest && !me.isService && !me.isChild)
+          const Padding(
+            padding: EdgeInsets.only(right: 4),
+            child: SosHoldButton(),
+          ),
         BubbleButton(
           icon: AppIcons.magnifyingGlass,
           tooltip: 'Suchen',
@@ -144,6 +151,10 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (engine.me?.isChild ?? false) ...[
+                    const SosCard(),
+                    const SizedBox(height: gap),
+                  ],
                   for (var i = 0; i < tiles.length; i += columns) ...[
                     if (i > 0) const SizedBox(height: gap),
                     IntrinsicHeight(

@@ -103,7 +103,11 @@ class ReminderService {
         id: 800000 + notice.id % 100000,
         title: details ? notice.title : AppEnv.appName,
         body: details ? notice.body : notice.brief,
-        notificationDetails: notice.quiet ? _quietDetails : _chatDetails,
+        notificationDetails: notice.alarm
+            ? _alarmDetails
+            : notice.quiet
+            ? _quietDetails
+            : _chatDetails,
       );
 
   SyncEngine? _engine;
@@ -352,6 +356,28 @@ class ReminderService {
     macOS: DarwinNotificationDetails(),
     linux: LinuxNotificationDetails(),
     windows: WindowsNotificationDetails(),
+  );
+
+  /// An emergency (SOS): loud like an alarm clock, over the lock screen.
+  static const _alarmDetails = NotificationDetails(
+    android: AndroidNotificationDetails(
+      'sos',
+      'Notfall (SOS)',
+      channelDescription: 'Wenn jemand den Notfallknopf drückt',
+      importance: Importance.max,
+      priority: Priority.max,
+      category: AndroidNotificationCategory.alarm,
+      fullScreenIntent: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      visibility: NotificationVisibility.public,
+    ),
+    macOS: DarwinNotificationDetails(
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    ),
+    linux: LinuxNotificationDetails(urgency: LinuxNotificationUrgency.critical),
+    windows: WindowsNotificationDetails(
+      scenario: WindowsNotificationScenario.urgent,
+    ),
   );
 
   /// In the quiet time: listed, but no sound and no pop-up.

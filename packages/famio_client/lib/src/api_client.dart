@@ -845,6 +845,40 @@ class FamioApiClient {
 
   Future<void> testNotice() => _send('POST', 'api/notifications/test');
 
+  /// Raises an emergency (or updates the open one); returns its id.
+  Future<String> raiseSos({
+    double? latitude,
+    double? longitude,
+    double? accuracy,
+    int? battery,
+  }) async =>
+      (await _send('POST', 'api/sos', {
+            'latitude': ?latitude,
+            'longitude': ?longitude,
+            'accuracy': ?accuracy,
+            'battery': ?battery,
+          }))['id']
+          as String;
+
+  Future<void> sosPosition(
+    String id, {
+    required double latitude,
+    required double longitude,
+    double? accuracy,
+    int? battery,
+  }) => _send('POST', 'api/sos/${Uri.encodeComponent(id)}/position', {
+    'latitude': latitude,
+    'longitude': longitude,
+    'accuracy': ?accuracy,
+    'battery': ?battery,
+  });
+
+  Future<void> sosComing(String id) =>
+      _send('POST', 'api/sos/${Uri.encodeComponent(id)}/coming');
+
+  Future<void> sosResolve(String id) =>
+      _send('POST', 'api/sos/${Uri.encodeComponent(id)}/resolve');
+
   Future<QuietHours> quietHours() async =>
       QuietHours.fromJson(await _send('GET', 'api/me/quiet-hours'));
 
@@ -1161,6 +1195,7 @@ class Notice {
     required this.brief,
     required this.tag,
     this.quiet = false,
+    this.alarm = false,
   });
 
   factory Notice.fromJson(Map<String, Object?> json) => Notice(
@@ -1171,6 +1206,7 @@ class Notice {
     brief: json['brief'] as String? ?? '',
     tag: json['tag'] as String? ?? '',
     quiet: json['quiet'] as bool? ?? false,
+    alarm: json['alarm'] as bool? ?? false,
   );
 
   final int id;
@@ -1184,6 +1220,9 @@ class Notice {
 
   /// In the member's quiet time: show without sound.
   final bool quiet;
+
+  /// An emergency (SOS): show as an alarm, always loud.
+  final bool alarm;
 }
 
 class NoticeBatch {

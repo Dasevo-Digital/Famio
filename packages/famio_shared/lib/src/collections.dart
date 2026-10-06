@@ -88,7 +88,15 @@ abstract final class Collections {
   static const medications = 'medications';
   static const medicationIntakes = 'medication_intakes';
 
+  /// How the emergency button behaves (one record, adults only).
+  static const sosSettings = 'sos_settings';
+
+  /// Emergencies raised with the button; written by the server.
+  static const sosAlerts = 'sos_alerts';
+
   static const all = {
+    sosSettings,
+    sosAlerts,
     chores,
     routines,
     routineRuns,
@@ -166,6 +174,7 @@ abstract final class Collections {
     allowances,
     moneyEntries,
     routines,
+    sosSettings,
   };
 
   /// Collections clients may read but never write.
@@ -174,5 +183,6 @@ abstract final class Collections {
     calendarSyncStatus,
     memberLocations,
     locationAlerts,
+    sosAlerts,
   };
 }

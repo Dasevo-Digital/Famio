@@ -30,6 +30,7 @@ export 'src/models/location.dart';
 export 'src/models/pregnancy.dart';
 export 'src/models/recipe.dart';
 export 'src/models/shopping.dart';
+export 'src/models/sos.dart';
 export 'src/models/task.dart';
 export 'src/models/timetable.dart';
 export 'src/push.dart';
