@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../design/app_icons.dart';
 
 import '../data/birthdays.dart';
+import '../data/holidays.dart';
 import '../data/family_data.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -158,6 +159,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
 }
 
 Color eventColor(BuildContext context, SyncEngine engine, CalendarEvent e) {
+  if (isHolidaySource(e.sourceId)) return const Color(0xFF7A8796);
   if (isBirthdaySource(e.sourceId)) {
     final color = engine.birthdayOf(e.sourceId)?.color;
     return color == null ? const Color(0xFFE89B1A) : Color(color);
@@ -514,7 +516,10 @@ class _OccurrenceTile extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      isBirthdaySource(e.sourceId)
+                      isHolidaySource(e.sourceId)
+                          ? 'Das Bundesland stellen Admins in der '
+                                'Server-Verwaltung ein.'
+                          : isBirthdaySource(e.sourceId)
                           ? '${engine.birthdayOf(e.sourceId)?.headline(occurrence.start) ?? 'Geburtstag'}. '
                                 'Ändern im Profil, beim Kind oder unter Kontakte.'
                           : FamilyData.isCalDavSource(e.sourceId)
@@ -624,7 +629,9 @@ class _OccurrenceTile extends StatelessWidget {
             ),
             if (e.sourceId != null)
               Tooltip(
-                message: isBirthdaySource(e.sourceId)
+                message: isHolidaySource(e.sourceId)
+                    ? 'Feiertag'
+                    : isBirthdaySource(e.sourceId)
                     ? 'Geburtstag'
                     : engine.calendarSubscription(e.sourceId)?.name ??
                           (FamilyData.isCalDavSource(e.sourceId)

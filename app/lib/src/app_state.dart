@@ -14,6 +14,7 @@ import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
 import 'push/own_push.dart';
 import 'secure_vault.dart';
+import 'data/holidays.dart';
 import 'reminders/reminder_service.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
@@ -160,6 +161,7 @@ class AppState extends ChangeNotifier {
     serverUrl = _prefs.getString('serverUrl');
     mapTileUrl = _prefs.getString('mapTileUrl');
     hiddenModules = {...?_prefs.getStringList('hiddenModules')};
+    familyHolidayRegion = GermanState.parse(_prefs.getString('holidayRegion'));
     final token = await vault.read('token');
     final meJson = _prefs.getString('me');
     if (serverUrl != null && token != null && meJson != null) {
@@ -679,6 +681,12 @@ class AppState extends ChangeNotifier {
       mapTileUrl = config['mapTileUrl'] as String?;
       hiddenModules = {...?(config['hiddenModules'] as List?)?.cast<String>()};
       await _prefs.setStringList('hiddenModules', hiddenModules.toList());
+      familyHolidayRegion = GermanState.parse(config['holidayRegion']);
+      if (familyHolidayRegion == null) {
+        await _prefs.remove('holidayRegion');
+      } else {
+        await _prefs.setString('holidayRegion', familyHolidayRegion!.code);
+      }
       if (mapTileUrl == null) {
         await _prefs.remove('mapTileUrl');
       } else {

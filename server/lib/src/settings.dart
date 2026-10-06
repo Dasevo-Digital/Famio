@@ -40,6 +40,7 @@ class SettingsStore {
         _stored.locationHistoryDays ?? defaults.locationHistoryDays ?? 7,
     twoFactorRequired: _stored.twoFactorRequired,
     hiddenModules: _stored.hiddenModules,
+    holidayRegion: _stored.holidayRegion,
   );
 
   tz.Location get location => _location;
@@ -67,6 +68,7 @@ class SettingsStore {
         'locationHistoryDays' => _locationHistoryDays(value),
         'twoFactorRequired' => _policy(value),
         'hiddenModules' => _modules(value),
+        'holidayRegion' => _region(value),
         _ => null,
       };
     }
@@ -203,6 +205,17 @@ class SettingsStore {
     }
     final modules = {for (final m in list) m as String}.toList();
     return modules.isEmpty ? null : modules;
+  }
+
+  static String? _region(Object? value) {
+    if (value == null || value == '') return null;
+    if (GermanState.parse(value) == null) {
+      throw ApiException.badRequest(
+        'invalid_region',
+        'Bundesland als Kürzel, z. B. NW, BY oder BE',
+      );
+    }
+    return value as String;
   }
 
   static String? _policy(Object? value) {

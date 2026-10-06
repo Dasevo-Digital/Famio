@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 
 import 'birthdays.dart';
+import 'holidays.dart';
 
 /// Typed access to the generic records, one section per module.
 extension FamilyData on SyncEngine {
@@ -162,7 +163,12 @@ extension FamilyData on SyncEngine {
   /// ones first per start.
   List<Occurrence> occurrences(DateTime from, DateTime to) =>
       [
-        for (final e in [...events, ...externalEvents, ...birthdayEvents(this)])
+        for (final e in [
+          ...events,
+          ...externalEvents,
+          ...birthdayEvents(this),
+          ...holidayEvents(from, to),
+        ])
           ...e.occurrencesBetween(from, to),
       ]..sort((a, b) {
         final byStart = a.start.compareTo(b.start);

@@ -103,6 +103,7 @@ class ServerSettings {
     this.locationHistoryDays,
     this.twoFactorRequired,
     this.hiddenModules,
+    this.holidayRegion,
   });
 
   factory ServerSettings.fromJson(Map<String, Object?> json) => ServerSettings(
@@ -114,6 +115,7 @@ class ServerSettings {
     locationHistoryDays: json['locationHistoryDays'] as int?,
     twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
     hiddenModules: (json['hiddenModules'] as List?)?.cast<String>(),
+    holidayRegion: json['holidayRegion'] as String?,
   );
 
   /// Address under which the server is reachable from the internet.
@@ -141,6 +143,10 @@ class ServerSettings {
   /// Areas the family does not use (e.g. `budget`): hidden in every app.
   /// Their data stays on the server. Null or empty: all are shown.
   final List<String>? hiddenModules;
+
+  /// Federal state whose public holidays the calendars show
+  /// ([GermanState.code], e.g. `NW`); null: none.
+  final String? holidayRegion;
 
   /// Areas that can be hidden (the names of the app's sections); start and
   /// settings always stay.
@@ -173,6 +179,7 @@ class ServerSettings {
     'locationHistoryDays',
     'twoFactorRequired',
     'hiddenModules',
+    'holidayRegion',
   ];
 
   Map<String, Object?> toJson() => {
@@ -184,6 +191,7 @@ class ServerSettings {
     'locationHistoryDays': locationHistoryDays,
     'twoFactorRequired': twoFactorRequired?.name,
     'hiddenModules': hiddenModules,
+    'holidayRegion': holidayRegion,
   };
 }
 

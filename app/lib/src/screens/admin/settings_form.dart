@@ -37,6 +37,9 @@ class _SettingsFormState extends State<_SettingsForm> {
           ? MapTileProvider.openStreetMap
           : MapTileProvider.custom);
   late TwoFactorPolicy? _policy = widget.overview.settings.twoFactorRequired;
+  late GermanState? _region = GermanState.parse(
+    widget.overview.settings.holidayRegion,
+  );
   var _busy = false;
   String? _error;
 
@@ -63,6 +66,39 @@ class _SettingsFormState extends State<_SettingsForm> {
     super.dispose();
   }
 
+  /// The state's school holidays as a calendar subscription for the whole
+  /// family (public source, imported by the server like any ICS feed).
+  void _subscribeSchoolHolidays(GermanState state) {
+    final engine = AppScope.read(context).engine!;
+    final messenger = ScaffoldMessenger.of(context);
+    if (engine.calendarSubscriptions.any(
+      (s) => s.url == state.schoolHolidaysUrl,
+    )) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Schulferien ${state.label} sind schon abonniert'),
+        ),
+      );
+      return;
+    }
+    engine.saveCalendarSubscription(
+      CalendarSubscription(
+        id: newId(),
+        name: 'Schulferien ${state.label}',
+        url: state.schoolHolidaysUrl,
+        color: 0xFF5B8DEF,
+      ),
+    );
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          'Schulferien ${state.label} abonniert – sie erscheinen nach dem '
+          'nächsten Abgleich im Kalender.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _save() async {
     setState(() {
       _busy = true;
@@ -87,6 +123,7 @@ class _SettingsFormState extends State<_SettingsForm> {
                 ? null
                 : int.tryParse(_locationHistory.text.trim()) ?? -1,
             'twoFactorRequired': _policy?.name,
+            'holidayRegion': _region?.code,
           });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -437,6 +474,33 @@ class _SettingsFormState extends State<_SettingsForm> {
                     ),
                   ),
             ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<GermanState?>(
+              initialValue: _region,
+              decoration: const InputDecoration(
+                labelText: 'Bundesland',
+                helperText: 'Für die gesetzlichen Feiertage im Kalender',
+                prefixIcon: Icon(AppIcons.calendarBlank),
+              ),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('Keine Feiertage'),
+                ),
+                for (final s in GermanState.values)
+                  DropdownMenuItem(value: s, child: Text(s.label)),
+              ],
+              onChanged: (v) => setState(() => _region = v),
+            ),
+            if (_region != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(AppIcons.cloudArrowDown, size: 18),
+                  label: Text('Schulferien ${_region!.label} abonnieren'),
+                  onPressed: () => _subscribeSchoolHolidays(_region!),
+                ),
+              ),
             const SizedBox(height: 16),
             TextField(
               controller: _upload,

@@ -44,7 +44,10 @@ extension _AdminRoutes on FamioApi {
       '${changes.keys.join(', ')}',
     );
     // The apps reload their configuration with the member list.
-    if (changes.containsKey('hiddenModules')) hub.notifyMembersChanged();
+    if (changes.containsKey('hiddenModules') ||
+        changes.containsKey('holidayRegion')) {
+      hub.notifyMembersChanged();
+    }
     // Retention is a privacy boundary. Do not wait for the six-hour
     // housekeeping job when an administrator shortens it.
     if (changes.containsKey('locationHistoryDays')) {
@@ -220,6 +223,7 @@ extension _AdminRoutes on FamioApi {
       'mapTileUrl': settings.effective.mapTileUrl,
       'mapProvider': settings.effective.mapProvider?.wire,
       'hiddenModules': settings.effective.hiddenModules ?? const [],
+      'holidayRegion': settings.effective.holidayRegion,
     });
   }
 

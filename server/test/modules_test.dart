@@ -70,4 +70,16 @@ void main() {
     await call('PATCH', 'api/admin/settings', {'hiddenModules': <String>[]});
     expect((await call('GET', 'api/config')).$2['hiddenModules'], isEmpty);
   });
+
+  test('the federal state for public holidays', () async {
+    expect((await call('GET', 'api/config')).$2['holidayRegion'], isNull);
+    final (bad, body) = await call('PATCH', 'api/admin/settings', {
+      'holidayRegion': 'Bayern',
+    });
+    expect((bad, body['error']), (400, 'invalid_region'));
+    await call('PATCH', 'api/admin/settings', {'holidayRegion': 'BY'});
+    expect((await call('GET', 'api/config')).$2['holidayRegion'], 'BY');
+    await call('PATCH', 'api/admin/settings', {'holidayRegion': null});
+    expect((await call('GET', 'api/config')).$2['holidayRegion'], isNull);
+  });
 }
