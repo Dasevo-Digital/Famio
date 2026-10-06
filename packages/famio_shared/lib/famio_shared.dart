@@ -7,6 +7,7 @@ export 'src/catalog/checkups.dart';
 export 'src/catalog/growth_reference.dart';
 export 'src/catalog/milestones.dart';
 export 'src/catalog/pregnancy.dart';
+export 'src/catalog/shopping_categories.dart';
 export 'src/catalog/vaccinations.dart';
 export 'src/collections.dart';
 export 'src/ids.dart';

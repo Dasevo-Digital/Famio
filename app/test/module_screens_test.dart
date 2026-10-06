@@ -7,6 +7,7 @@ import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
+import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/widgets/data_builder.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
@@ -104,6 +105,64 @@ void main() {
         isTrue,
       );
       expect(find.byType(SnackBar), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('shopping aisles', () {
+    testWidgets('new items find their aisle; corrections are remembered', (
+      tester,
+    ) async {
+      await open(tester);
+      engine.saveShoppingList(const ShoppingList(id: 'l1', name: 'Einkauf'));
+      await push(tester, const ShoppingListScreen(listId: 'l1'));
+      for (final text in ['Vollmilch', '3 Äpfel', 'Hafermilch']) {
+        await tester.enterText(find.byType(TextField).first, text);
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await _pumpData(tester);
+      }
+      await tester.pumpAndSettle();
+      final produce = tester.getTopLeft(find.text('Obst & Gemüse'));
+      final dairy = tester.getTopLeft(find.text('Kühlregal'));
+      expect(produce.dy, lessThan(dairy.dy), reason: 'store order');
+      final apples = engine
+          .shoppingItems('l1')
+          .firstWhere((i) => i.name == 'Äpfel');
+      expect((apples.quantity, apples.category), ('3', 'produce'));
+
+      // Hafermilch belongs to the drinks in this family.
+      final oat = engine
+          .shoppingItems('l1')
+          .firstWhere((i) => i.name == 'Hafermilch');
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Hafermilch'),
+            matching: find.byType(SoftCard),
+          ),
+          matching: find.byTooltip('Bearbeiten'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kühlregal').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Getränke').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      // Still known after the list was cleared.
+      engine.deleteShoppingItem(oat.id);
+      await _pumpData(tester);
+      await tester.enterText(find.byType(TextField).first, 'hafermilch');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await _pumpData(tester);
+      expect(
+        engine
+            .shoppingItems('l1')
+            .firstWhere((i) => i.name == 'hafermilch')
+            .category,
+        'drinks',
+      );
       await tester.pump(const Duration(seconds: 5));
     });
   });

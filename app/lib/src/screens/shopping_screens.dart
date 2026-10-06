@@ -189,12 +189,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final text = _input.text.trim();
     if (text.isEmpty) return;
     final match = RegExp(r'^(\d+)\s*[xX]?\s+(.+)$').firstMatch(text);
+    final name = match?.group(2) ?? text;
     engine.saveShoppingItem(
       ShoppingItem(
         id: newId(),
         listId: widget.listId,
-        name: match?.group(2) ?? text,
+        name: name,
         quantity: match?.group(1) ?? '',
+        category: guessShoppingCategory(
+          name,
+          learned: engine.learnedShoppingCategories,
+        ),
       ),
     );
     _input.clear();
@@ -264,6 +269,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
         final items = engine.shoppingItems(list.id);
         final open = items.where((i) => !i.checked).toList();
         final done = items.where((i) => i.checked).toList();
+        // Open items by aisle, in the order of a walk through the store.
+        final learned = engine.learnedShoppingCategories;
+        final byAisle = <String, List<ShoppingItem>>{
+          for (final c in shoppingCategories) c.key: [],
+        };
+        for (final i in open) {
+          byAisle[engine.shoppingCategoryOf(i, learned)]!.add(i);
+        }
+        final aisles = byAisle.entries.where((e) => e.value.isNotEmpty);
 
         return SectionPage(
           maxBodyWidth: 960,
@@ -351,8 +365,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     bottom: listBottomPadding(context),
                   ),
                   children: [
-                    for (final item in open)
-                      _ItemTile(item: item, engine: engine),
+                    // One aisle needs no heading.
+                    if (aisles.length < 2)
+                      for (final item in open)
+                        _ItemTile(item: item, engine: engine)
+                    else
+                      for (final aisle in aisles) ...[
+                        _AisleHeading(shoppingCategory(aisle.key)!.label),
+                        for (final item in aisle.value)
+                          _ItemTile(item: item, engine: engine),
+                      ],
                     if (done.isNotEmpty) ...[
                       ListHeading('Im Wagen (${done.length})', color: color),
                       for (final item in done)
@@ -369,6 +391,23 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   }
 }
 
+class _AisleHeading extends StatelessWidget {
+  const _AisleHeading(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
+    child: Text(
+      label,
+      style: Theme.of(
+        context,
+      ).textTheme.labelLarge?.copyWith(color: FamioColors.of(context).inkSoft),
+    ),
+  );
+}
+
 class _ItemTile extends StatelessWidget {
   const _ItemTile({required this.item, required this.engine});
 
@@ -378,6 +417,7 @@ class _ItemTile extends StatelessWidget {
   Future<void> _edit(BuildContext context) async {
     final name = TextEditingController(text: item.name);
     final quantity = TextEditingController(text: item.quantity);
+    var category = engine.shoppingCategoryOf(item);
     final save = await showDialog<bool>(
       context: context,
       builder: (context) => DisposeWith(
@@ -401,6 +441,17 @@ class _ItemTile extends StatelessWidget {
                 ),
                 onSubmitted: (_) => Navigator.pop(context, true),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                initialValue: category,
+                decoration: const InputDecoration(labelText: 'Gang'),
+                items: [
+                  for (final c in shoppingCategories)
+                    DropdownMenuItem(value: c.key, child: Text(c.label)),
+                ],
+                // Remembered: next time this article lands there.
+                onChanged: (v) => category = v ?? category,
+              ),
             ],
           ),
           actions: [
@@ -417,8 +468,15 @@ class _ItemTile extends StatelessWidget {
       ),
     );
     if (save == true && name.text.trim().isNotEmpty) {
+      if (category != engine.shoppingCategoryOf(item)) {
+        engine.rememberShoppingCategory(name.text.trim(), category);
+      }
       engine.saveShoppingItem(
-        item.copyWith(name: name.text.trim(), quantity: quantity.text.trim()),
+        item.copyWith(
+          name: name.text.trim(),
+          quantity: quantity.text.trim(),
+          category: category,
+        ),
       );
     }
   }

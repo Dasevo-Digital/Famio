@@ -7,6 +7,11 @@ abstract final class Collections {
   static const tasks = 'tasks';
   static const shoppingLists = 'shopping_lists';
   static const shoppingItems = 'shopping_items';
+
+  /// The family's aisle corrections (one record, [shoppingAislesId]):
+  /// article key → category key; outlives the items.
+  static const shoppingAisles = 'shopping_aisles';
+  static const shoppingAislesId = 'family';
   static const events = 'events';
 
   /// External calendars (ICS URLs) the server imports; edited by members.
@@ -95,6 +100,7 @@ abstract final class Collections {
   static const sosAlerts = 'sos_alerts';
 
   static const all = {
+    shoppingAisles,
     sosSettings,
     sosAlerts,
     chores,
@@ -137,6 +143,7 @@ abstract final class Collections {
 
   /// What guests (grandparents, babysitters …) receive at all.
   static const guestReadable = {
+    shoppingAisles,
     tasks,
     shoppingLists,
     shoppingItems,

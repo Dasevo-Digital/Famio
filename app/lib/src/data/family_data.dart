@@ -35,6 +35,58 @@ extension FamilyData on SyncEngine {
         ).map(ShoppingItem.fromRecord).where((i) => i.listId == listId).toList()
         ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
+  /// Which aisle the family put each article in, newest choice first
+  /// ([shoppingKey] → category key).
+  Map<String, String> get learnedShoppingCategories {
+    final rows = records(Collections.shoppingItems).toList()
+      ..sort((a, b) => a.updatedAt.compareTo(b.updatedAt));
+    final corrected =
+        record(
+          Collections.shoppingAisles,
+          Collections.shoppingAislesId,
+        )?.data ??
+        const {};
+    return {
+      for (final r in rows)
+        if (ShoppingItem.fromRecord(r) case final i
+            when i.category.isNotEmpty && shoppingCategory(i.category) != null)
+          shoppingKey(i.name): i.category,
+      // Chosen by hand: wins, also after the items are gone.
+      for (final e in corrected.entries)
+        if (e.value is String && shoppingCategory(e.value as String) != null)
+          e.key: e.value as String,
+    };
+  }
+
+  /// Remembers that [name] belongs in [category] for the whole family.
+  void rememberShoppingCategory(String name, String category) {
+    final key = shoppingKey(name);
+    if (key.isEmpty) return;
+    final current =
+        record(
+          Collections.shoppingAisles,
+          Collections.shoppingAislesId,
+        )?.data ??
+        const {};
+    if (current[key] == category) return;
+    put(Collections.shoppingAisles, Collections.shoppingAislesId, {
+      ...current,
+      key: category,
+    });
+  }
+
+  /// [item]'s aisle: as stored, else guessed (e.g. from Bring! or older
+  /// versions).
+  String shoppingCategoryOf(
+    ShoppingItem item, [
+    Map<String, String>? learned,
+  ]) => shoppingCategory(item.category) != null
+      ? item.category
+      : guessShoppingCategory(
+          item.name,
+          learned: learned ?? learnedShoppingCategories,
+        );
+
   void saveShoppingList(ShoppingList list) =>
       put(Collections.shoppingLists, list.id, list.toData());
 
