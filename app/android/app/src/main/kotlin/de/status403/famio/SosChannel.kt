@@ -29,14 +29,25 @@ import java.io.File
  * text message. Permissions are asked for when first needed.
  */
 class SosChannel(private val activity: Activity, messenger: BinaryMessenger) {
+    private val channel = MethodChannel(messenger, CHANNEL)
+
+    /** Tells a running app that the tile or shortcut was used. */
+    fun announceLaunch() {
+        channel.invokeMethod("launch", null)
+    }
+
     private var player: MediaPlayer? = null
     private var previousAlarmVolume: Int? = null
     private var pending: Pair<MethodCall, MethodChannel.Result>? = null
     private val main = Handler(Looper.getMainLooper())
 
     init {
-        MethodChannel(messenger, CHANNEL).setMethodCallHandler { call, result ->
+        channel.setMethodCallHandler { call, result ->
             when (call.method) {
+                "takeLaunch" -> {
+                    result.success(launchPending)
+                    launchPending = false
+                }
                 "currentFix" -> withPermissions(LOCATION, call, result) { currentFix(call, result) }
                 "startSiren" -> {
                     startSiren(call.argument<ByteArray>("wav")!!)
@@ -44,6 +55,21 @@ class SosChannel(private val activity: Activity, messenger: BinaryMessenger) {
                 }
                 "stopSiren" -> {
                     stopSiren()
+                    result.success(null)
+                }
+                "startLive" -> {
+                    SosLocationService.start(
+                        activity,
+                        call.argument<String>("url")!!,
+                        call.argument<String>("token")!!,
+                        call.argument<String>("pin"),
+                        call.argument<String>("alert")!!,
+                        call.argument<Number>("until")!!.toLong(),
+                    )
+                    result.success(true)
+                }
+                "stopLive" -> {
+                    SosLocationService.stop(activity)
                     result.success(null)
                 }
                 "call" -> withPermissions(arrayOf(Manifest.permission.CALL_PHONE), call, result) {
@@ -244,6 +270,9 @@ class SosChannel(private val activity: Activity, messenger: BinaryMessenger) {
     }
 
     companion object {
+        /** Opened from the quick settings tile or the shortcut. */
+        @Volatile
+        var launchPending = false
         const val CHANNEL = "famio/sos"
         private const val REQUEST = 4720
         private val LOCATION = arrayOf(

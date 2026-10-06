@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -304,11 +306,108 @@ class SosCard extends StatelessWidget {
   }
 }
 
+/// From the quick settings tile or the shortcut: 5 seconds to cancel a
+/// slip, then the alarm.
+Future<void> startSosCountdown(BuildContext context) async {
+  if (SosController.current != null) return openSos(context);
+  final go = await Navigator.of(context, rootNavigator: true).push<bool>(
+    MaterialPageRoute(
+      fullscreenDialog: true,
+      builder: (_) => const _SosCountdown(),
+    ),
+  );
+  if ((go ?? false) && context.mounted) await openSos(context);
+}
+
+class _SosCountdown extends StatefulWidget {
+  const _SosCountdown();
+
+  @override
+  State<_SosCountdown> createState() => _SosCountdownState();
+}
+
+class _SosCountdownState extends State<_SosCountdown> {
+  var _left = 5;
+  late final Timer _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+    if (_left <= 1) {
+      t.cancel();
+      Navigator.of(context).pop(true);
+    } else {
+      setState(() => _left--);
+    }
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    _timer;
+    HapticFeedback.heavyImpact();
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Scaffold(
+      backgroundColor: _sosRed,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+              Text(
+                'Notruf in',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+              Text(
+                '$_left',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.displayLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 120,
+                ),
+              ),
+              const Spacer(),
+              _BigButton(
+                icon: AppIcons.siren,
+                label: 'Sofort auslösen',
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+              _BigButton(
+                icon: AppIcons.x,
+                label: 'Abbrechen',
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Starts the alarm (or shows the running one) for this member.
 Future<void> openSos(BuildContext context) async {
-  final engine = AppScope.read(context).engine;
+  final state = AppScope.read(context);
+  final engine = state.engine;
   if (engine == null) return;
-  final controller = SosController.current ??= SosController(engine);
+  final controller = SosController.current ??= SosController(
+    engine,
+    serverUrl: state.serverUrl,
+    pin: state.certificatePin,
+    device: AppState.deviceName,
+  );
   final fresh =
       controller.step == SosStep.starting && controller.alertId == null;
   await Navigator.of(context, rootNavigator: true).push(

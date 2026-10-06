@@ -25,6 +25,7 @@ import 'location_screens.dart';
 import 'meals_screens.dart';
 import 'settings_screen.dart';
 import 'sos_screens.dart';
+import '../sos/sos_device.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 import '../environment.dart';
@@ -103,7 +104,7 @@ class HomeShell extends StatefulWidget {
   State<HomeShell> createState() => _HomeShellState();
 }
 
-class _HomeShellState extends State<HomeShell> {
+class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   var _section = FamioSection.home;
 
   /// Sections for the member's role, updated with the member list.
@@ -127,10 +128,34 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    SosDevice.onLaunch = _sosLaunch;
     // Kitchen tablet: straight to the wall display.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && AppScope.read(context).kioskAutostart) openKiosk(context);
+      _checkSosLaunch();
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (SosDevice.onLaunch == _sosLaunch) SosDevice.onLaunch = null;
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _checkSosLaunch();
+  }
+
+  /// Opened from the "Famio Notruf" tile or the app shortcut (Android).
+  Future<void> _checkSosLaunch() async {
+    if (await SosDevice.takeLaunch()) _sosLaunch();
+  }
+
+  void _sosLaunch() {
+    if (mounted) startSosCountdown(context);
   }
 
   void _go(FamioSection section) {

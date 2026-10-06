@@ -18,8 +18,44 @@ import io.flutter.plugin.common.MethodChannel
  * `famio/notify` (Famio's own push) and `famio/sos` (emergency button).
  */
 class MainActivity : FlutterActivity() {
+    companion object {
+        const val ACTION_SOS = "de.status403.famio.SOS"
+
+        fun sosIntent(context: Context) =
+            Intent(context, MainActivity::class.java).setAction(ACTION_SOS)
+    }
+
     private var permissionResult: MethodChannel.Result? = null
     private var sos: SosChannel? = null
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        if (intent?.action == ACTION_SOS) SosChannel.launchPending = true
+        addSosShortcut()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if (intent.action == ACTION_SOS) {
+            SosChannel.launchPending = true
+            sos?.announceLaunch()
+        }
+    }
+
+    /** "Notruf" when long-pressing the app icon (any build flavour). */
+    private fun addSosShortcut() {
+        if (Build.VERSION.SDK_INT < 25) return
+        runCatching {
+            val manager = getSystemService(android.content.pm.ShortcutManager::class.java)
+            val shortcut = android.content.pm.ShortcutInfo.Builder(this, "sos")
+                .setShortLabel("Notruf")
+                .setLongLabel("Famio-Notruf auslösen")
+                .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher))
+                .setIntent(sosIntent(this))
+                .build()
+            manager.dynamicShortcuts = listOf(shortcut)
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)

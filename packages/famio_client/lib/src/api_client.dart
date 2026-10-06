@@ -860,6 +860,12 @@ class FamioApiClient {
           }))['id']
           as String;
 
+  /// A token for the phone's background service that can only send
+  /// emergency positions.
+  Future<String> sosDeviceToken(String device) async =>
+      (await _send('POST', 'api/sos/device-token', {'device': device}))['token']
+          as String;
+
   Future<void> sosPosition(
     String id, {
     required double latitude,

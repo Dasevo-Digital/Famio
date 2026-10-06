@@ -560,6 +560,21 @@ void main() {
       expect((await kind.call('POST', 'api/sos', {}))['id'], isNot(id));
     });
 
+    test('the background token only sends emergency positions', () async {
+      final id = (await kind.call('POST', 'api/sos', {}))['id'] as String;
+      final created = await kind.call('POST', 'api/sos/device-token', {
+        'device': 'Handy',
+      });
+      final device = _Member(base, created['token'] as String, kind.id);
+      final moved = await device.call('POST', 'api/sos/$id/position', {
+        'latitude': 50.1,
+        'longitude': 8.6,
+      });
+      expect(moved['latitude'], 50.1);
+      expect((await device.call('POST', 'api/sync', {}))['_status'], 401);
+      expect((await device.call('POST', 'api/sos', {}))['_status'], 401);
+    });
+
     test('adults let a phone ring, once a minute', () async {
       final last = (await kind.call('GET', 'api/notifications'))['last'] as int;
       expect(

@@ -278,6 +278,7 @@ class FamioApi {
       ..post('/api/members/<id>/checkin-request', _requestCheckIn)
       ..post('/api/checkin', _checkIn)
       ..post('/api/sos', _sosRaise)
+      ..post('/api/sos/device-token', _sosDeviceToken)
       ..post('/api/sos/<id>/position', _sosPosition)
       ..post('/api/sos/<id>/coming', _sosComing)
       ..post('/api/sos/<id>/resolve', _sosResolve)

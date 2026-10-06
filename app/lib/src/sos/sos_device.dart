@@ -33,6 +33,28 @@ class SosDevice {
 
   static bool get _native => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
+  /// Called when the quick settings tile or the shortcut opens the
+  /// running app (Android).
+  static void Function()? onLaunch;
+
+  static bool _listening = false;
+
+  /// Whether the app was opened from the tile or the shortcut (once).
+  static Future<bool> takeLaunch() async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    if (!_listening) {
+      _listening = true;
+      _channel.setMethodCallHandler((call) async {
+        if (call.method == 'launch' && await takeLaunch()) onLaunch?.call();
+      });
+    }
+    try {
+      return await _channel.invokeMethod<bool>('takeLaunch') ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Android can text without asking each time.
   static bool get canSms => !kIsWeb && Platform.isAndroid;
 
@@ -74,6 +96,39 @@ class SosDevice {
     if (!_native) return;
     try {
       await _channel.invokeMethod('stopSiren');
+    } catch (_) {}
+  }
+
+  /// Android: a background service sends the position of alert [alertId]
+  /// until [until], also with the screen off (see SosLocationService).
+  /// False where there is none; then the app sends while it runs.
+  static Future<bool> startLiveService({
+    required String serverUrl,
+    required String token,
+    required String? pin,
+    required String alertId,
+    required DateTime until,
+  }) async {
+    if (kIsWeb || !Platform.isAndroid) return false;
+    try {
+      return await _channel.invokeMethod<bool>('startLive', {
+            'url': serverUrl.endsWith('/') ? serverUrl : '$serverUrl/',
+            'token': token,
+            'pin': pin,
+            'alert': alertId,
+            'until': until.millisecondsSinceEpoch,
+          }) ??
+          false;
+    } catch (e) {
+      debugPrint('Notruf-Standortdienst nicht möglich: $e');
+      return false;
+    }
+  }
+
+  static Future<void> stopLiveService() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('stopLive');
     } catch (_) {}
   }
 

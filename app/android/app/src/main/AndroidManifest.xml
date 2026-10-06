@@ -64,6 +64,20 @@
             android:exported="false"
             android:foregroundServiceType="location" />
         <service
+            android:name=".SosTileService"
+            android:exported="true"
+            android:icon="@drawable/ic_launcher_monochrome"
+            android:label="Famio Notruf"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service
+            android:name=".SosLocationService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
+        <service
             android:name=".NotifyService"
             android:exported="false"
             android:foregroundServiceType="remoteMessaging" />

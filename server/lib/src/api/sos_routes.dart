@@ -1,5 +1,9 @@
 part of '../api.dart';
 
+/// Scope of the token a phone's background service uses to send positions
+/// during an emergency; it can do nothing else.
+const _sosScope = 'sos';
+
 /// The emergency button (see [SosService]).
 extension _SosRoutes on FamioApi {
   SosService get _sos =>
@@ -22,8 +26,25 @@ extension _SosRoutes on FamioApi {
     return _json(alert.toData()..['id'] = alert.id, status: 201);
   }
 
-  Future<Response> _sosPosition(Request request, String id) async {
+  /// A token for the phone's background service: sends positions of the
+  /// member's emergencies, nothing else.
+  Future<Response> _sosDeviceToken(Request request) async {
     final member = _member(request);
+    final body = await _body(request);
+    final device = (body['device'] as String? ?? 'Telefon').trim();
+    final token = accounts.createSession(
+      member.id,
+      device: '${device.isEmpty ? 'Telefon' : device} · Notruf',
+      scope: _sosScope,
+    );
+    return _json({'token': token}, status: 201);
+  }
+
+  Future<Response> _sosPosition(Request request, String id) async {
+    final token = _bearer(request);
+    final member = token == null
+        ? _member(request)
+        : accounts.userForToken(token, scope: _sosScope) ?? _member(request);
     final body = await _body(request);
     final latitude = _number(body['latitude']);
     final longitude = _number(body['longitude']);

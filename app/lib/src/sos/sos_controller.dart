@@ -13,7 +13,18 @@ enum SosStep { starting, sent, offline, failed }
 /// the server (or a text without internet), the call, and the position
 /// every [interval] while the alarm is open and the app runs.
 class SosController extends ChangeNotifier {
-  SosController(this.engine, {this.interval = const Duration(seconds: 20)});
+  SosController(
+    this.engine, {
+    this.interval = const Duration(seconds: 20),
+    this.serverUrl,
+    this.pin,
+    this.device = 'Telefon',
+  });
+
+  /// For the background service (Android).
+  final String? serverUrl;
+  final String? pin;
+  final String device;
 
   /// The press running on this device, so its screen can be reopened.
   static SosController? current;
@@ -53,7 +64,7 @@ class SosController extends ChangeNotifier {
       step = SosStep.sent;
       _notify();
       unawaited(_sendPosition(await fix));
-      _startLive();
+      if (!await _startService()) _startLive();
     } on ApiError catch (e) {
       step = e.code == 'network' ? SosStep.offline : SosStep.failed;
       _notify();
@@ -103,6 +114,24 @@ class SosController extends ChangeNotifier {
     }
   }
 
+  /// Android: positions also with the screen off, from a service.
+  Future<bool> _startService() async {
+    final url = serverUrl;
+    final id = alertId;
+    if (url == null || id == null) return false;
+    try {
+      return await SosDevice.startLiveService(
+        serverUrl: url,
+        token: await engine.api.sosDeviceToken(device),
+        pin: pin,
+        alertId: id,
+        until: DateTime.now().add(SosAlert.live),
+      );
+    } on ApiError {
+      return false;
+    }
+  }
+
   void _startLive() {
     _liveUntil = DateTime.now().add(SosAlert.live);
     _live?.cancel();
@@ -133,6 +162,7 @@ class SosController extends ChangeNotifier {
   void stop() {
     _live?.cancel();
     _live = null;
+    unawaited(SosDevice.stopLiveService());
     if (sirenOn) unawaited(siren(false));
   }
 

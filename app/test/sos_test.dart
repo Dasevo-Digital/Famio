@@ -1,5 +1,6 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/screens/sos_screens.dart';
 import 'package:famio/src/sos/sos_controller.dart';
 import 'package:famio/src/sos/sos_device.dart';
 import 'package:famio_client/famio_client.dart';
@@ -128,6 +129,28 @@ void main() {
     await tester.tap(find.text('Standort').first);
     await tester.pumpAndSettle();
     expect(find.text('Mia: Bin angekommen (bei „Schule“)'), findsOneWidget);
+  });
+
+  testWidgets('the tile counts down and can be cancelled', (tester) async {
+    await open(tester, 'k1');
+    final context = tester.element(find.text('Notfall?'));
+    startSosCountdown(context);
+    await tester.pumpAndSettle();
+    expect(find.text('5'), findsOneWidget);
+    await tester.tap(find.text('Abbrechen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Notruf in'), findsNothing);
+    expect(SosController.current, isNull);
+
+    startSosCountdown(context);
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 5; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.pumpAndSettle();
+    expect(find.text('Ich bin sicher – Alarm beenden'), findsOneWidget);
+    await tester.tap(find.text('Ich bin sicher – Alarm beenden'));
+    await tester.pumpAndSettle();
   });
 
   test('the text without internet and the siren sound', () {
