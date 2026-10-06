@@ -272,4 +272,40 @@ void main() {
     await tester.tap(find.byTooltip('Wandanzeige beenden'));
     await tester.pumpAndSettle();
   });
+
+  testWidgets('the wall display shows family photos when nobody uses it', (
+    tester,
+  ) async {
+    final engine = await open(tester, memberId: 'm1');
+    engine.saveDocument(
+      FamilyDocument(
+        id: 'd1',
+        title: 'Urlaub',
+        category: DocumentCategory.photos,
+        file: const FileRef(
+          id: 'f1',
+          name: 'strand.jpg',
+          mime: 'image/jpeg',
+          size: 10,
+        ),
+        createdAt: DateTime.now(),
+      ),
+    );
+    await tester.pump();
+    final context = tester.element(find.byType(Scaffold).first);
+    openKiosk(context);
+    await tester.pumpAndSettle(const Duration(milliseconds: 100));
+    expect(find.byType(PhotoSlideshow), findsNothing);
+    expect(find.byTooltip('Keine Fotos zeigen'), findsOneWidget);
+    for (var i = 0; i < 9; i++) {
+      await tester.pump(const Duration(seconds: 15));
+    }
+    expect(find.byType(PhotoSlideshow), findsOneWidget);
+    // A touch brings the day back.
+    await tester.tapAt(const Offset(200, 200));
+    await tester.pump();
+    expect(find.byType(PhotoSlideshow), findsNothing);
+    await tester.tap(find.byTooltip('Wandanzeige beenden'));
+    await tester.pump(const Duration(seconds: 1));
+  });
 }

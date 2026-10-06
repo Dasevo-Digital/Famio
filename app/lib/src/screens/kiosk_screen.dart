@@ -18,6 +18,7 @@ import '../design/palette.dart';
 import '../format.dart';
 import '../weather/weather_tile.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import 'chores_screens.dart';
 
@@ -31,6 +32,7 @@ Future<void> openKiosk(BuildContext context) =>
     );
 
 const _collections = {
+  Collections.documents,
   Collections.tasks,
   Collections.events,
   Collections.externalEvents,
@@ -61,13 +63,26 @@ class _KioskScreenState extends State<KioskScreen> {
   late Timer _clock;
   var _now = DateTime.now();
 
+  /// After this long without a touch the photos start.
+  static const idle = Duration(minutes: 2);
+  static const _tick = Duration(seconds: 15);
+
+  /// Clock ticks since the last touch (not wall time: the clock may jump).
+  var _idleTicks = 0;
+  var _photos = false;
+
   static bool get _mobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
   @override
   void initState() {
     super.initState();
-    _clock = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted) setState(() => _now = DateTime.now());
+    _clock = Timer.periodic(_tick, (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+        _idleTicks++;
+        if (_tick * _idleTicks >= idle) _photos = true;
+      });
     });
     WakelockPlus.enable().catchError((Object _) {});
     if (_mobile) {
@@ -87,135 +102,172 @@ class _KioskScreenState extends State<KioskScreen> {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
-    return Scaffold(
-      backgroundColor: c.background,
-      body: SafeArea(
-        child: DataBuilder(
-          collections: _collections,
-          builder: (context, engine) => LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 1200
-                  ? 3
-                  : constraints.maxWidth >= 760
-                  ? 2
-                  : 1;
-              // Areas the family switched off stay off here too.
-              final state = AppScope.of(context);
-              final hidden = state.hiddenModules;
-              final byPerson = state.kioskByPerson;
-              bool on(FamioSection s) => !hidden.contains(s.name);
-              final panels = [
-                if (on(FamioSection.calendar))
-                  _EventsPanel(engine: engine, now: _now),
-                if (on(FamioSection.chores))
-                  _ChoresPanel(engine: engine, now: _now),
-                WeatherTile(engine: engine),
-                if (on(FamioSection.shopping)) _ShoppingPanel(engine: engine),
-                if (on(FamioSection.meals))
-                  _MealsPanel(engine: engine, now: _now),
-              ];
-              const gap = 16.0;
-              final width =
-                  (constraints.maxWidth - 40 - gap * (columns - 1)) / columns;
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+    return Listener(
+      // Any touch counts as use and ends the photos.
+      onPointerDown: (_) {
+        _idleTicks = 0;
+        if (_photos) setState(() => _photos = false);
+      },
+      child: Scaffold(
+        backgroundColor: c.background,
+        body: SafeArea(
+          child: DataBuilder(
+            collections: _collections,
+            builder: (context, engine) {
+              final photos = familyPhotos(engine);
+              if (_photos &&
+                  photos.isNotEmpty &&
+                  AppScope.of(context).kioskPhotos) {
+                return PhotoSlideshow(
+                  photos: photos,
+                  now: _now,
+                  engine: engine,
+                );
+              }
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final columns = constraints.maxWidth >= 1200
+                      ? 3
+                      : constraints.maxWidth >= 760
+                      ? 2
+                      : 1;
+                  // Areas the family switched off stay off here too.
+                  final state = AppScope.of(context);
+                  final hidden = state.hiddenModules;
+                  final byPerson = state.kioskByPerson;
+                  bool on(FamioSection s) => !hidden.contains(s.name);
+                  final panels = [
+                    if (on(FamioSection.calendar))
+                      _EventsPanel(engine: engine, now: _now),
+                    if (on(FamioSection.chores))
+                      _ChoresPanel(engine: engine, now: _now),
+                    WeatherTile(engine: engine),
+                    if (on(FamioSection.shopping))
+                      _ShoppingPanel(engine: engine),
+                    if (on(FamioSection.meals))
+                      _MealsPanel(engine: engine, now: _now),
+                  ];
+                  const gap = 16.0;
+                  final width =
+                      (constraints.maxWidth - 40 - gap * (columns - 1)) /
+                      columns;
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text(
-                          DateFormat.Hm('de').format(_now),
-                          style: theme.textTheme.displayLarge?.copyWith(
-                            fontFamily: 'Fredoka',
-                            fontWeight: FontWeight.w600,
-                            color: c.ink,
-                          ),
-                        ),
-                        const SizedBox(width: 20),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Text(
-                              DateFormat('EEEE, d. MMMM', 'de').format(_now),
-                              style: theme.textTheme.headlineSmall?.copyWith(
-                                color: c.inkSoft,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              DateFormat.Hm('de').format(_now),
+                              style: theme.textTheme.displayLarge?.copyWith(
+                                fontFamily: 'Fredoka',
+                                fontWeight: FontWeight.w600,
+                                color: c.ink,
                               ),
                             ),
-                          ),
-                        ),
-                        BubbleButton(
-                          icon: byPerson
-                              ? AppIcons.layoutGrid
-                              : AppIcons.usersThree,
-                          tooltip: byPerson
-                              ? 'Nach Themen anzeigen'
-                              : 'Nach Personen anzeigen',
-                          onPressed: () => state.setKioskByPerson(!byPerson),
-                        ),
-                        const SizedBox(width: 8),
-                        BubbleButton(
-                          icon: AppIcons.x,
-                          tooltip: 'Wandanzeige beenden',
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    for (final (b, day) in upcomingBirthdays(
-                      engine,
-                      _now,
-                      days: 1,
-                    ))
-                      if (DateUtils.isSameDay(day, _now))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: SoftCard(
-                            color: c.tint(FamioSection.kids),
-                            child: Text(
-                              '🎂 Heute: ${b.headline(day)}',
-                              style: theme.textTheme.headlineSmall,
-                            ),
-                          ),
-                        ),
-                    const SizedBox(height: 8),
-                    if (byPerson)
-                      _PeopleBoard(
-                        engine: engine,
-                        now: _now,
-                        width: constraints.maxWidth - 40,
-                        hidden: hidden,
-                      )
-                    else
-                      // Columns instead of rows: no gaps under short panels.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          for (var col = 0; col < columns; col++) ...[
-                            if (col > 0) const SizedBox(width: gap),
-                            SizedBox(
-                              width: width,
-                              child: Column(
-                                children: [
-                                  for (
-                                    var i = col;
-                                    i < panels.length;
-                                    i += columns
-                                  )
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: gap,
-                                      ),
-                                      child: panels[i],
-                                    ),
-                                ],
+                            const SizedBox(width: 20),
+                            Expanded(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: Text(
+                                  DateFormat(
+                                    'EEEE, d. MMMM',
+                                    'de',
+                                  ).format(_now),
+                                  style: theme.textTheme.headlineSmall
+                                      ?.copyWith(color: c.inkSoft),
+                                ),
                               ),
+                            ),
+                            BubbleButton(
+                              icon: byPerson
+                                  ? AppIcons.layoutGrid
+                                  : AppIcons.usersThree,
+                              tooltip: byPerson
+                                  ? 'Nach Themen anzeigen'
+                                  : 'Nach Personen anzeigen',
+                              onPressed: () =>
+                                  state.setKioskByPerson(!byPerson),
+                            ),
+                            const SizedBox(width: 8),
+                            if (photos.isNotEmpty) ...[
+                              BubbleButton(
+                                icon: state.kioskPhotos
+                                    ? AppIcons.image
+                                    : AppIcons.imageBroken,
+                                tooltip: state.kioskPhotos
+                                    ? 'Keine Fotos zeigen'
+                                    : 'Fotos zeigen, wenn niemand tippt',
+                                onPressed: () =>
+                                    state.setKioskPhotos(!state.kioskPhotos),
+                              ),
+                              const SizedBox(width: 8),
+                            ],
+                            BubbleButton(
+                              icon: AppIcons.x,
+                              tooltip: 'Wandanzeige beenden',
+                              onPressed: () => Navigator.pop(context),
                             ),
                           ],
-                        ],
-                      ),
-                  ],
-                ),
+                        ),
+                        for (final (b, day) in upcomingBirthdays(
+                          engine,
+                          _now,
+                          days: 1,
+                        ))
+                          if (DateUtils.isSameDay(day, _now))
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: SoftCard(
+                                color: c.tint(FamioSection.kids),
+                                child: Text(
+                                  '🎂 Heute: ${b.headline(day)}',
+                                  style: theme.textTheme.headlineSmall,
+                                ),
+                              ),
+                            ),
+                        const SizedBox(height: 8),
+                        if (byPerson)
+                          _PeopleBoard(
+                            engine: engine,
+                            now: _now,
+                            width: constraints.maxWidth - 40,
+                            hidden: hidden,
+                          )
+                        else
+                          // Columns instead of rows: no gaps under short panels.
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var col = 0; col < columns; col++) ...[
+                                if (col > 0) const SizedBox(width: gap),
+                                SizedBox(
+                                  width: width,
+                                  child: Column(
+                                    children: [
+                                      for (
+                                        var i = col;
+                                        i < panels.length;
+                                        i += columns
+                                      )
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: gap,
+                                          ),
+                                          child: panels[i],
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -735,5 +787,111 @@ class _PeopleBoard extends StatelessWidget {
         ),
     ];
     return Wrap(spacing: gap, runSpacing: gap, children: cards);
+  }
+}
+
+/// Images in the documents category "Fotos" the member may see.
+List<FileRef> familyPhotos(SyncEngine engine) => [
+  for (final d in engine.documents)
+    if (d.category == DocumentCategory.photos &&
+        d.file != null &&
+        d.file!.mime.startsWith('image/'))
+      d.file!,
+];
+
+/// The wall display while nobody uses it: one family photo after the
+/// other, with the time and the next appointment. A touch ends it.
+class PhotoSlideshow extends StatefulWidget {
+  const PhotoSlideshow({
+    super.key,
+    required this.photos,
+    required this.now,
+    required this.engine,
+  });
+
+  final List<FileRef> photos;
+  final DateTime now;
+  final SyncEngine engine;
+
+  static const every = Duration(seconds: 20);
+
+  @override
+  State<PhotoSlideshow> createState() => _PhotoSlideshowState();
+}
+
+class _PhotoSlideshowState extends State<PhotoSlideshow> {
+  late final _order = [...widget.photos]..shuffle();
+  var _index = 0;
+  late final Timer _next = Timer.periodic(PhotoSlideshow.every, (_) {
+    if (mounted) setState(() => _index = (_index + 1) % _order.length);
+  });
+
+  @override
+  void initState() {
+    super.initState();
+    _next;
+  }
+
+  @override
+  void dispose() {
+    _next.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final now = widget.now;
+    final next = widget.engine
+        .occurrences(now, now.add(const Duration(days: 2)))
+        .where((o) => !o.event.allDay && o.start.isAfter(now))
+        .firstOrNull;
+    const shadow = [Shadow(blurRadius: 12, color: Colors.black54)];
+    return ColoredBox(
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(seconds: 2),
+            child: CachedImage(
+              _order[_index % _order.length],
+              key: ValueKey(_order[_index % _order.length].id),
+              thumb: 1920,
+              fit: BoxFit.contain,
+              radius: 0,
+            ),
+          ),
+          Positioned(
+            left: 32,
+            bottom: 24,
+            right: 32,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  DateFormat.Hm('de').format(now),
+                  style: theme.textTheme.displayMedium?.copyWith(
+                    color: Colors.white,
+                    fontFamily: 'Fredoka',
+                    fontWeight: FontWeight.w600,
+                    shadows: shadow,
+                  ),
+                ),
+                if (next != null)
+                  Text(
+                    '${DateFormat.Hm('de').format(next.start)} ${next.event.title}',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      shadows: shadow,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

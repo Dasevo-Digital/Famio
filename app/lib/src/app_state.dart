@@ -46,6 +46,14 @@ class AppState extends ChangeNotifier {
   /// The wall display shows one column per member instead of topics.
   bool get kioskByPerson => _prefs.getBool('kiosk.byPerson') ?? false;
 
+  /// The wall display shows family photos after a while without touch.
+  bool get kioskPhotos => _prefs.getBool('kiosk.photos') ?? true;
+
+  Future<void> setKioskPhotos(bool value) async {
+    await _prefs.setBool('kiosk.photos', value);
+    notifyListeners();
+  }
+
   Future<void> setKioskByPerson(bool value) async {
     await _prefs.setBool('kiosk.byPerson', value);
     notifyListeners();

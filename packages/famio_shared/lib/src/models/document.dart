@@ -9,6 +9,9 @@ enum DocumentCategory {
   finance('Finanzen & Steuern'),
   home('Haus & Wohnen'),
   contracts('Verträge'),
+
+  /// Family photos; the wall display shows them as a screen saver.
+  photos('Fotos'),
   other('Sonstiges');
 
   const DocumentCategory(this.label);

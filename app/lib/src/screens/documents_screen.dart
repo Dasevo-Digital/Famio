@@ -24,6 +24,7 @@ import '../widgets/undo_delete.dart';
   DocumentCategory.finance => (AppIcons.piggyBank, const Color(0xFF2A9D6E)),
   DocumentCategory.home => (AppIcons.houseLine, const Color(0xFFE8703A)),
   DocumentCategory.contracts => (AppIcons.signature, const Color(0xFF7B5BE0)),
+  DocumentCategory.photos => (AppIcons.images, const Color(0xFFDB4A7E)),
   DocumentCategory.other => (AppIcons.folderOpen, const Color(0xFFB07A3C)),
 };
 
