@@ -225,7 +225,8 @@ class _BackupCardState extends State<_BackupCard> {
               const SizedBox(height: 4),
               Text(
                 '${backups.length} Stände · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB · '
-                'jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt',
+                'jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt '
+                '(Dokumente und Fotos in den 2 neuesten)',
               ),
               Text(
                 'Ordner: ${s['dir']} – verschlüsselt mit dem Datenschlüssel; '

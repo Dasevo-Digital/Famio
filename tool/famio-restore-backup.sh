@@ -17,10 +17,14 @@ usage() {
 [ $# -eq 2 ] || usage
 BACKUP="$1"
 DATA="$2"
-[ -f "$BACKUP/famio.db" ] && [ -f "$BACKUP/files.db" ] || {
-  echo "Keine Famio-Sicherung: $BACKUP (famio.db und files.db fehlen)" >&2
+[ -f "$BACKUP/famio.db" ] || {
+  echo "Keine Famio-Sicherung: $BACKUP (famio.db fehlt)" >&2
   exit 66
 }
+# Older backups keep no files.db (documents and photos are only in the
+# newest ones): then the current files stay in place.
+WITH_FILES=0
+[ -f "$BACKUP/files.db" ] && WITH_FILES=1
 [ -d "$DATA" ] || {
   echo "Datenverzeichnis fehlt: $DATA" >&2
   exit 66
@@ -32,14 +36,21 @@ fi
 
 ASIDE="$DATA/before-restore-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$ASIDE"
-for f in famio.db famio.db-wal famio.db-shm files.db files.db-wal files.db-shm; do
+MOVE="famio.db famio.db-wal famio.db-shm"
+[ "$WITH_FILES" = 1 ] && MOVE="$MOVE files.db files.db-wal files.db-shm"
+for f in $MOVE; do
   [ -e "$DATA/$f" ] && mv "$DATA/$f" "$ASIDE/"
 done
-cp "$BACKUP/famio.db" "$BACKUP/files.db" "$DATA/"
+cp "$BACKUP/famio.db" "$DATA/"
+[ "$WITH_FILES" = 1 ] && cp "$BACKUP/files.db" "$DATA/"
 # Same owner as the data directory (e.g. the famio service user).
 owner=$(stat -c '%u:%g' "$DATA" 2>/dev/null || stat -f '%u:%g' "$DATA")
-chown "$owner" "$DATA/famio.db" "$DATA/files.db" 2>/dev/null || true
-chmod 600 "$DATA/famio.db" "$DATA/files.db"
+for f in famio.db files.db; do
+  chown "$owner" "$DATA/$f" 2>/dev/null || true
+  chmod 600 "$DATA/$f" 2>/dev/null || true
+done
+[ "$WITH_FILES" = 1 ] ||
+  echo 'Diese Sicherung enthält keine Dateien: Dokumente und Fotos bleiben auf dem heutigen Stand.'
 echo "Wiederhergestellt aus $BACKUP."
 echo "Die vorherigen Datenbanken liegen in $ASIDE."
 echo 'Jetzt Famio wieder starten, z. B. systemctl start famio'

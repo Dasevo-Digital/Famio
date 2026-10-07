@@ -514,7 +514,10 @@ Der Server sichert sich jede Nacht um 3 Uhr (Zeitzone der Familie) selbst,
 ohne anzuhalten: SQLite schreibt mit `VACUUM INTO` eine in sich stimmige Kopie
 beider Datenbanken nach `backups/` im Datenverzeichnis (anderer Ort:
 `FAMIO_BACKUP_DIR=/pfad`, ausschalten: `FAMIO_BACKUP_DIR=off`). Aufbewahrt
-werden die letzten 7 Tage und je ein Stand der 4 Wochen davor. Die Kopien
+werden die letzten 7 Tage und je ein Stand der 4 Wochen davor; Dokumente und
+Fotos (`files.db`) nur in den 2 neuesten Ständen, damit der Platz reicht. Die
+Sicherung läuft neben dem Server, er bleibt erreichbar, und sie bricht ab,
+wenn der freie Platz nicht reicht. Die Kopien
 sind mit demselben Datenschlüssel verschlüsselt; zum Wiederherstellen werden
 also Sicherung **und** Schlüsseldatei gebraucht. In der Server-Verwaltung
 unter „Status“ stehen letzte Sicherung, Fehler und „Jetzt sichern“.

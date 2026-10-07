@@ -242,7 +242,7 @@ extension _AdminRoutes on FamioApi {
     );
   }
 
-  Response _backupNow(Request request) {
+  Future<Response> _backupNow(Request request) async {
     final admin = _admin(request);
     final job = backups;
     if (job == null) {
@@ -252,7 +252,7 @@ extension _AdminRoutes on FamioApi {
       );
     }
     try {
-      final backup = job.run();
+      final backup = await job.run();
       _audit(admin, 'hat eine Sicherung erstellt');
       return _json(backup.toJson(), status: 201);
     } on StateError catch (e) {

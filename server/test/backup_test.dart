@@ -103,4 +103,38 @@ void main() {
     // … then one per older week.
     expect(kept, isNot(contains('famio-20260929-120000')));
   });
+
+  test('documents and photos stay only in the newest backups', () async {
+    final dir = Directory.systemTemp.createTempSync('famio_backup_files_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    for (final day in ['20261004', '20261005', '20261006']) {
+      final b = Directory(p.join(dir.path, 'famio-$day-030000'))..createSync();
+      File(p.join(b.path, 'famio.db')).writeAsStringSync('x');
+      File(p.join(b.path, 'files.db')).writeAsStringSync('x');
+    }
+    final db = sqlite3.openInMemory();
+    final job = BackupJob(
+      db: db,
+      blobs: db,
+      dir: dir.path,
+      location: () => tz.UTC,
+    )..prune();
+    final backups = job.list();
+    expect(backups, hasLength(3));
+    bool has(BackupInfo b, String f) =>
+        File(p.join(dir.path, b.name, f)).existsSync();
+    expect([for (final b in backups) has(b, 'files.db')], [true, true, false]);
+    expect([for (final b in backups) has(b, 'famio.db')], everyElement(isTrue));
+    expect(await BackupJob.freeBytes(dir.path), greaterThan(0));
+  });
+
+  test('the copy runs beside the server (file databases)', () async {
+    // files.db of the test app is a real file: copied in an isolate.
+    final backup = await app.backups!.run();
+    final copy = sqlite3.open(
+      p.join(app.backups!.dir, backup.name, 'files.db'),
+    );
+    expect(copy.select('SELECT name FROM sqlite_master'), isNotEmpty);
+    copy.close();
+  });
 }

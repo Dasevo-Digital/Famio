@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:timezone/timezone.dart' as tz;
+
+import '../crypto/encrypted_db.dart';
 
 /// One stored backup: a folder with `famio.db` and `files.db`.
 class BackupInfo {
@@ -30,14 +33,30 @@ class BackupJob {
     required this.blobs,
     required this.dir,
     required this.location,
+    this.dbPath,
+    this.blobsPath,
+    this.hexKey,
     this.hour = 3,
     this.daily = 7,
     this.weekly = 4,
+    this.filesKeep = 2,
     this.onError,
   });
 
   final Database db;
   final Database blobs;
+
+  /// The database files: with them the copy runs in a separate isolate on
+  /// its own connection, so the server keeps answering (a large files.db
+  /// takes minutes). Without (in-memory tests) it runs here.
+  final String? dbPath;
+  final String? blobsPath;
+  final String? hexKey;
+
+  /// Only this many newest backups keep files.db: it holds every document
+  /// and photo (up to the storage limit) and would otherwise be copied a
+  /// dozen times. Older backups have famio.db only.
+  final int filesKeep;
   final String dir;
   final tz.Location Function() location;
   final int hour;
@@ -68,17 +87,14 @@ class BackupJob {
     if (now.hour < hour) return;
     final today = '${now.year}${_two(now.month)}${_two(now.day)}';
     if (list().any((b) => b.name.startsWith('famio-$today'))) return;
-    try {
-      run();
-    } catch (_) {
-      // Recorded in lastError; tried again in half an hour.
-    }
+    // Errors are recorded in lastError; tried again in half an hour.
+    unawaited(run().then((_) {}, onError: (Object _) {}));
   }
 
   static String _two(int n) => n.toString().padLeft(2, '0');
 
   /// Writes a backup now and prunes old ones.
-  BackupInfo run() {
+  Future<BackupInfo> run() async {
     if (_running) throw StateError('Sicherung läuft bereits');
     _running = true;
     final now = tz.TZDateTime.now(location());
@@ -90,9 +106,9 @@ class BackupJob {
     try {
       if (partial.existsSync()) partial.deleteSync(recursive: true);
       partial.createSync(recursive: true);
-      String quoted(String path) => "'${path.replaceAll("'", "''")}'";
-      db.execute('VACUUM INTO ${quoted(p.join(partial.path, 'famio.db'))}');
-      blobs.execute('VACUUM INTO ${quoted(p.join(partial.path, 'files.db'))}');
+      await _checkSpace();
+      await _copy(db, dbPath, p.join(partial.path, 'famio.db'));
+      await _copy(blobs, blobsPath, p.join(partial.path, 'files.db'));
       // Only complete backups get their final name.
       partial.renameSync(target.path);
       lastAt = DateTime.now();
@@ -106,6 +122,61 @@ class BackupJob {
       rethrow;
     } finally {
       _running = false;
+    }
+  }
+
+  static String _quoted(String path) => "'${path.replaceAll("'", "''")}'";
+
+  /// `VACUUM INTO` [target]: in a separate isolate when the database is a
+  /// file, so the server is not blocked.
+  Future<void> _copy(Database open, String? path, String target) async {
+    if (path == null || !File(path).existsSync()) {
+      open.execute('VACUUM INTO ${_quoted(target)}');
+      return;
+    }
+    final key = hexKey;
+    await Isolate.run(() {
+      final own = openEncrypted(path, hexKey: key);
+      try {
+        own.execute('VACUUM INTO ${_quoted(target)}');
+      } finally {
+        own.close();
+      }
+    });
+  }
+
+  /// Refuses to start when the disk would run (nearly) full: the copy
+  /// needs about the size of both databases.
+  Future<void> _checkSpace() async {
+    var needed = 64 * 1024 * 1024;
+    for (final path in [dbPath, blobsPath]) {
+      if (path == null) continue;
+      for (final f in [path, '$path-wal']) {
+        final file = File(f);
+        if (file.existsSync()) needed += file.lengthSync();
+      }
+    }
+    final free = await freeBytes(dir);
+    if (free != null && free < needed) {
+      throw StateError(
+        'Zu wenig Speicherplatz für die Sicherung: frei '
+        '${free ~/ (1024 * 1024)} MB, nötig etwa '
+        '${needed ~/ (1024 * 1024)} MB',
+      );
+    }
+  }
+
+  /// Free bytes on the disk of [path] (via `df`), or null if unknown.
+  static Future<int?> freeBytes(String path) async {
+    try {
+      final r = await Process.run('df', ['-Pk', path]);
+      if (r.exitCode != 0) return null;
+      final lines = (r.stdout as String).trim().split('\n');
+      final cols = lines.last.trim().split(RegExp(r'\s+'));
+      final kb = int.tryParse(cols.length > 3 ? cols[3] : '');
+      return kb == null ? null : kb * 1024;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -168,6 +239,11 @@ class BackupJob {
       if (!keep.contains(b.name)) {
         Directory(p.join(dir, b.name)).deleteSync(recursive: true);
       }
+    }
+    // Documents and photos only in the newest few.
+    for (final b in list().skip(filesKeep)) {
+      final files = File(p.join(dir, b.name, 'files.db'));
+      if (files.existsSync()) files.deleteSync();
     }
   }
 

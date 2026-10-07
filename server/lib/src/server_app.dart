@@ -174,6 +174,9 @@ class FamioServerApp {
             db: db,
             blobs: files.blobs,
             dir: backupDir ?? p.join(dataDir, 'backups'),
+            dbPath: p.join(dataDir, 'famio.db'),
+            blobsPath: blobs == null ? p.join(dataDir, 'files.db') : null,
+            hexKey: dataKey,
             location: () => settings.location,
             onError: auditLog,
           );
