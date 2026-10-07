@@ -170,6 +170,8 @@ void main() {
 
     // Add a member.
     await tap(tester, find.byTooltip('Mitglied hinzufügen'));
+    // Invite (they pick name and password) or create directly.
+    await tap(tester, find.text('Direkt anlegen'));
     await enter(tester, 'Name', 'E2E Testkind');
     await enter(tester, 'Benutzername (für die Anmeldung)', 'e2e-testkind');
     await enter(tester, 'Startpasswort (min. 8 Zeichen)', 'e2e-start-123');
