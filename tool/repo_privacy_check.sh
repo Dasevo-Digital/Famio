@@ -2,8 +2,10 @@
 # Fails when a personal identifier slips into tracked source or Git history.
 set -euo pipefail
 
-readonly PROJECT_EMAIL='noreply'@'famio.invalid'
-readonly IDENTITY="Famio Contributors <$PROJECT_EMAIL>"
+# Commits carry the maintainer's GitHub login and its noreply address, so
+# GitHub attributes them to that account without a real name or mailbox.
+readonly PROJECT_EMAIL='335995236+superkuh86'@'users.noreply.github.com'
+readonly IDENTITY="superkuh86 <$PROJECT_EMAIL>"
 readonly EXCLUDED=(
   ':(exclude)app/assets/fonts/OFL-Fredoka.txt'
   ':(exclude)app/assets/fonts/OFL-Nunito.txt'
