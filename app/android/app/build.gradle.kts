@@ -77,6 +77,16 @@ android {
     }
 }
 
+// Prod is for phones: x86_64 (emulators, a few Chromebooks) would add
+// about a third to the APK (text recognition, barcode scanner). Famio Dev
+// keeps it for the emulator.
+androidComponents {
+    onVariants(selector().withFlavor("env" to "prod")) { variant ->
+        variant.packaging.jniLibs.excludes.add("lib/x86_64/**")
+        variant.packaging.jniLibs.excludes.add("lib/x86/**")
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
