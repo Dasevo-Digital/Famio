@@ -171,13 +171,22 @@ class _MemberTile extends StatelessWidget {
 
   Future<void> _ring(BuildContext context) async {
     final messenger = ScaffoldMessenger.of(context);
+    final api = AppScope.read(context).engine!.api;
     try {
-      await AppScope.read(context).engine!.api.ringMember(member.id);
+      await api.ringMember(member.id);
+      final reach = await api
+          .reachability()
+          .then<Reachability?>((r) => r[member.id])
+          .catchError((Object _) => null);
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            '${member.displayName}s Handy klingelt eine halbe Minute – '
-            'wenn dort Famio-Benachrichtigungen an sind.',
+            reach == null || reach.reachable
+                ? '${member.displayName}s Handy klingelt eine halbe Minute.'
+                : 'Gesendet – aber ${member.displayName}s Handy empfängt '
+                      'gerade keine Famio-Benachrichtigungen. Dort unter '
+                      'Einstellungen → Benachrichtigungen „Direkt über '
+                      'Famio“ einschalten.',
           ),
         ),
       );

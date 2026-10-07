@@ -818,6 +818,65 @@ class SosAlertScreen extends StatelessWidget {
   }
 }
 
+/// Whose phone gets alarms and rings (own push or ntfy).
+class _Reachability extends StatefulWidget {
+  const _Reachability({required this.members});
+
+  final List<FamilyMember> members;
+
+  @override
+  State<_Reachability> createState() => _ReachabilityState();
+}
+
+class _ReachabilityState extends State<_Reachability> {
+  late final Future<Map<String, Reachability>> _reach = AppScope.read(
+    context,
+  ).engine!.api.reachability();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return FutureBuilder<Map<String, Reachability>>(
+      future: _reach,
+      builder: (context, snapshot) {
+        final reach = snapshot.data;
+        if (reach == null) {
+          return snapshot.hasError
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Text('Nur mit Verbindung zum Server sichtbar.'),
+                )
+              : const LinearProgressIndicator();
+        }
+        return Column(
+          children: [
+            for (final m in widget.members)
+              if (reach[m.id] case final r?)
+                ListTile(
+                  leading: Icon(
+                    r.reachable ? AppIcons.bellRing : AppIcons.warningCircle,
+                    color: r.reachable ? null : c.danger,
+                  ),
+                  title: Text(m.displayName),
+                  subtitle: Text(
+                    r.reachable
+                        ? [
+                            if (r.ownPush != null)
+                              'Famio-Benachrichtigungen aktiv',
+                            if (r.ntfy > 0) 'über ntfy',
+                          ].join(' · ')
+                        : 'Empfängt keine Alarme – auf dem Handy unter '
+                              'Einstellungen → Benachrichtigungen „Direkt '
+                              'über Famio“ einschalten (iPhone: ntfy).',
+                  ),
+                ),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /// Adults decide how the button behaves: siren, texts without internet,
 /// phone numbers and whom each member's button calls.
 class SosSettingsScreen extends StatelessWidget {
@@ -888,6 +947,10 @@ class SosSettingsScreen extends StatelessWidget {
                 value: s.sms,
                 onChanged: mayEdit ? (v) => save(s.copyWith(sms: v)) : null,
               ),
+              if (mayEdit) ...[
+                ListHeading('Wer bekommt Alarme?', color: accent),
+                _Reachability(members: others),
+              ],
               ListHeading('Telefonnummern', color: accent),
               for (final m in others)
                 ListTile(

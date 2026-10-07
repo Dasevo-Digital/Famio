@@ -41,6 +41,23 @@ extension _NotificationRoutes on FamioApi {
     return _json({'ok': error == null, 'error': error});
   }
 
+  /// Adults: whose phone gets alarms and rings (own push or ntfy).
+  Response _reachability(Request request) {
+    final member = _member(request);
+    if (!member.isAdult) {
+      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+    }
+    final members = [
+      for (final m in accounts.members())
+        if (!m.isService) m.id,
+    ];
+    return _json({
+      for (final MapEntry(key: id, value: r)
+          in _push.reachability(members, noticeScope: _noticeScope).entries)
+        id: {'ownPush': r.ownPush?.toUtc().toIso8601String(), 'ntfy': r.ntfy},
+    });
+  }
+
   Response _quietHours(Request request) {
     final member = _auth(request);
     return _json(_push.quietHours(member.id).toJson());

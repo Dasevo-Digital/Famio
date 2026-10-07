@@ -143,6 +143,38 @@ class PushService {
     if (_ownsClient) _client.close();
   }
 
+  // --- reachability -----------------------------------------------------------
+
+  /// Whether alarms and rings reach each member's phone: the last contact
+  /// of a phone fetching Famio's own notifications (scope [noticeScope])
+  /// and the number of ntfy devices without an error.
+  Map<String, ({DateTime? ownPush, int ntfy})> reachability(
+    Iterable<String> memberIds, {
+    required String noticeScope,
+  }) => {
+    for (final id in memberIds)
+      id: (
+        ownPush: switch (_db.select(
+          'SELECT MAX(last_seen) AS seen FROM sessions'
+          ' WHERE user_id = ? AND scope = ?',
+          [id, noticeScope],
+        ).first['seen']) {
+          final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+          _ => null,
+        },
+        ntfy:
+            _db
+                    .select(
+                      'SELECT COUNT(*) FROM push_targets'
+                      ' WHERE member_id = ? AND last_error IS NULL',
+                      [id],
+                    )
+                    .first
+                    .columnAt(0)
+                as int,
+      ),
+  };
+
   // --- quiet hours ------------------------------------------------------------
 
   QuietHours quietHours(String memberId) {

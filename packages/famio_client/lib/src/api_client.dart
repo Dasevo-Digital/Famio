@@ -944,6 +944,13 @@ class FamioApiClient {
     'api/members/${Uri.encodeComponent(memberId)}/checkin-request',
   );
 
+  /// Adults: whose phone gets alarms and rings.
+  Future<Map<String, Reachability>> reachability() async => {
+    for (final e in (await _send('GET', 'api/members/reachability')).entries)
+      if (e.value is Map)
+        e.key: Reachability.fromJson((e.value! as Map).cast()),
+  };
+
   /// Lets [memberId]'s phone ring loudly (adults only, once a minute).
   Future<void> ringMember(String memberId) =>
       _send('POST', 'api/members/${Uri.encodeComponent(memberId)}/ring');
@@ -1261,6 +1268,28 @@ class FamioApiClient {
 }
 
 /// One notification of Famio's own push.
+/// Whether alarms and rings reach a member's phone.
+class Reachability {
+  const Reachability({this.ownPush, this.ntfy = 0});
+
+  factory Reachability.fromJson(Map<String, Object?> json) => Reachability(
+    ownPush: DateTime.tryParse(json['ownPush'] as String? ?? '')?.toLocal(),
+    ntfy: (json['ntfy'] as num?)?.toInt() ?? 0,
+  );
+
+  /// Last contact of a phone fetching Famio's own notifications.
+  final DateTime? ownPush;
+
+  /// ntfy devices without an error.
+  final int ntfy;
+
+  /// A phone listened within the last half hour, or ntfy is set up.
+  bool get reachable =>
+      ntfy > 0 ||
+      (ownPush != null &&
+          DateTime.now().difference(ownPush!) < const Duration(minutes: 30));
+}
+
 /// An invitation for a new member.
 class InviteInfo {
   const InviteInfo({

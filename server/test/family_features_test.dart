@@ -575,6 +575,29 @@ void main() {
       expect((await device.call('POST', 'api/sos', {}))['_status'], 401);
     });
 
+    test('adults see whose phone gets alarms', () async {
+      final before = await mama.call('GET', 'api/members/reachability');
+      expect((before[kind.id] as Map)['ownPush'], isNull);
+      final created = await kind.call(
+        'POST',
+        'api/notifications/device-token',
+        {'device': 'Handy'},
+      );
+      final phone = _Member(base, created['token'] as String, kind.id);
+      await phone.call('GET', 'api/notifications');
+      await kind.call('POST', 'api/me/push', {
+        'url': 'https://push.example/famio-kind',
+      });
+      final after = await mama.call('GET', 'api/members/reachability');
+      expect((after[kind.id] as Map)['ownPush'], isNotNull);
+      expect((after[kind.id] as Map)['ntfy'], 1);
+      expect((after[oma.id] as Map)['ownPush'], isNull);
+      expect(
+        (await kind.call('GET', 'api/members/reachability'))['_status'],
+        403,
+      );
+    });
+
     test('adults let a phone ring, once a minute', () async {
       final last = (await kind.call('GET', 'api/notifications'))['last'] as int;
       expect(

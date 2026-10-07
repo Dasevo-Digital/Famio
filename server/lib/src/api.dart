@@ -236,6 +236,7 @@ class FamioApi {
       ..post('/api/me/push', _addPushTarget)
       ..delete('/api/me/push/<id>', _deletePushTarget)
       ..post('/api/me/push/<id>/test', _testPushTarget)
+      ..get('/api/members/reachability', _reachability)
       ..get('/api/me/quiet-hours', _quietHours)
       ..put('/api/me/quiet-hours', _setQuietHours)
       ..get('/api/notifications', _notices)
