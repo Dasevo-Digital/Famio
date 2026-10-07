@@ -516,6 +516,13 @@ void main() {
       },
     );
 
+    test('Home Assistant (a service account) sees alarms too', () async {
+      final ha = await addMember('ha', MemberRole.service);
+      final id = (await kind.call('POST', 'api/sos', {}))['id'] as String;
+      await ha.sync();
+      expect(ha.seen['sos_alerts/$id'], isNotNull);
+    });
+
     test('position, "Ich komme" and the end', () async {
       final id = (await kind.call('POST', 'api/sos', {}))['id'] as String;
       final moved = await kind.call('POST', 'api/sos/$id/position', {

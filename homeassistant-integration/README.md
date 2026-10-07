@@ -61,6 +61,38 @@ Einkaufslisten und eine Karte der geteilten Standorte.
 Was das Dashboard zeigt, bestimmt das verbundene Famio-Konto: Nur für
 bestimmte Personen freigegebene Einträge bleiben verborgen.
 
+## Notruf und Check-in in Automationen
+
+Drückt jemand in Famio den Notfallknopf, feuert die Integration das Ereignis
+`famio_sos` (Daten: `member`, `member_id`, `state` = `active`/`coming`/
+`resolved`, `latitude`, `longitude`, `coming`), und je Person ist der
+Binärsensor „Notruf (SOS)“ an, bis der Notfall beendet ist. Ein Check-in
+(„Bin angekommen“, „Alles ok“ …) feuert `famio_checkin` (`member`, `text`,
+`place`). Beispiel: bei einem Notruf alle Lichter rot blinken lassen.
+
+```yaml
+automation:
+  - alias: Famio-Notruf
+    triggers:
+      - trigger: event
+        event_type: famio_sos
+        event_data:
+          state: active
+    actions:
+      - action: light.turn_on
+        target:
+          area_id: wohnzimmer
+        data:
+          color_name: red
+          flash: long
+      - action: notify.notify
+        data:
+          message: "SOS von {{ trigger.event.data.member }}!"
+```
+
+Ereignisse kommen nur für frische Notrufe und Check-ins (höchstens 30 Minuten
+alt), nicht für alte Einträge beim ersten Abgleich.
+
 ## Dienstkonto und Schreibrechte
 
 Am besten verbindet sich Home Assistant mit einem eigenen Mitglied mit der

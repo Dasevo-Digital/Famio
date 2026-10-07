@@ -25,6 +25,13 @@ class SosService {
       if (m.isAdult && m.id != except) m,
   ];
 
+  /// Adults plus service accounts (Home Assistant): they see emergencies
+  /// and check-ins too, e.g. to flash the lights.
+  List<FamilyMember> _watchers(String except) => [
+    for (final m in accounts.members())
+      if ((m.isAdult || m.isService) && m.id != except) m,
+  ];
+
   SosAlert? _get(String id) {
     final r = records.get(Collections.sosAlerts, id);
     return r == null || r.deleted ? null : SosAlert.fromRecord(r);
@@ -43,7 +50,7 @@ class SosService {
 
   List<String> _audience(SosAlert alert) => [
     alert.memberId,
-    for (final a in _adults(alert.memberId)) a.id,
+    for (final a in _watchers(alert.memberId)) a.id,
   ];
 
   /// [member] pressed the button.
@@ -281,7 +288,7 @@ class SosService {
       longitude: longitude,
     );
     records.writeAsServer([
-      for (final a in _adults(member.id))
+      for (final a in _watchers(member.id))
         SyncRecord(
           collection: Collections.locationAlerts,
           // One record per recipient, like arrival notices.

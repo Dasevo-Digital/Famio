@@ -45,6 +45,11 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "sos": {
+        "name": "Emergency (SOS)"
+      }
+    },
     "calendar": {
       "calendar": {
         "name": "Calendar"

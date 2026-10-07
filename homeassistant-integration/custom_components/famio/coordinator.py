@@ -24,7 +24,16 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .api import FamioAuthError, FamioClient, FamioError
-from .const import DOMAIN, POLL_INTERVAL, UPCOMING_WINDOW
+from .const import (
+    DOMAIN,
+    EVENT_CHECKIN,
+    EVENT_MAX_AGE,
+    EVENT_SOS,
+    LOCATION_ALERTS,
+    POLL_INTERVAL,
+    SOS_ALERTS,
+    UPCOMING_WINDOW,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -89,6 +98,8 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
         self._state = FamioData()
         self._listener: asyncio.Task | None = None
         self._lock = asyncio.Lock()
+        # What was already announced as an event: alert id → state.
+        self._announced: dict[str, str] = {}
 
     # --- pull -----------------------------------------------------------------
 
@@ -131,6 +142,48 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
             else:
                 self._stored[key] = record
                 collection[record["id"]] = record.get("data") or {}
+                self._announce(record["collection"], record["id"], record.get("data") or {})
+
+    def _announce(self, collection: str, record_id: str, data: dict[str, Any]) -> None:
+        """Fires famio_sos / famio_checkin for fresh emergencies and
+        check-ins, so automations can flash lights or play an announcement."""
+        if collection == SOS_ALERTS:
+            when = data.get("startedAt")
+            state = data.get("state") or "active"
+            if self._announced.get(record_id) == state or not _recent(when):
+                self._announced.setdefault(record_id, state)
+                return
+            self._announced[record_id] = state
+            member_id = data.get("memberId")
+            self.hass.bus.async_fire(
+                EVENT_SOS,
+                {
+                    "alert_id": record_id,
+                    "member_id": member_id,
+                    "member": self._state.member_name(member_id),
+                    "state": state,
+                    "latitude": data.get("latitude"),
+                    "longitude": data.get("longitude"),
+                    "coming": self._state.member_name(data.get("comingBy")),
+                },
+            )
+        elif collection == LOCATION_ALERTS and data.get("checkIn"):
+            if record_id in self._announced or not _recent(data.get("at")):
+                self._announced.setdefault(record_id, "seen")
+                return
+            self._announced[record_id] = "seen"
+            member_id = data.get("memberId")
+            self.hass.bus.async_fire(
+                EVENT_CHECKIN,
+                {
+                    "member_id": member_id,
+                    "member": self._state.member_name(member_id),
+                    "text": data.get("checkIn"),
+                    "place": data.get("placeName") or None,
+                    "latitude": data.get("latitude"),
+                    "longitude": data.get("longitude"),
+                },
+            )
 
     # --- write ----------------------------------------------------------------
 
@@ -207,6 +260,12 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
             if parse_end(occurrence) > now:
                 return occurrence
         return None
+
+
+def _recent(value: str | None) -> bool:
+    """Whether an ISO time lies within EVENT_MAX_AGE."""
+    when = dt_util.parse_datetime(value) if value else None
+    return when is not None and dt_util.utcnow() - when < EVENT_MAX_AGE
 
 
 def parse_start(occurrence: dict[str, Any]) -> datetime:

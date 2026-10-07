@@ -27,3 +27,13 @@ EVENTS: Final = "events"
 MEMBER_LOCATIONS: Final = "member_locations"
 PLACES: Final = "places"
 POINT_ENTRIES: Final = "point_entries"
+SOS_ALERTS: Final = "sos_alerts"
+LOCATION_ALERTS: Final = "location_alerts"
+
+# Fired when someone presses the emergency button (and when it changes).
+EVENT_SOS: Final = "famio_sos"
+# Fired for a check-in ("Bin angekommen", "Alles ok" …).
+EVENT_CHECKIN: Final = "famio_checkin"
+
+# Older records seen at the first sync fire no events.
+EVENT_MAX_AGE: Final = timedelta(minutes=30)
