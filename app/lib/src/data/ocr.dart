@@ -11,6 +11,20 @@ class Ocr {
   static bool get available =>
       !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
+  /// The text of a PDF (text layer, or the first pages read like a photo).
+  static Future<String?> pdfText(String path) async {
+    if (!available) return null;
+    try {
+      final text = await _channel.invokeMethod<String>('pdfText', {
+        'path': path,
+      });
+      return text == null || text.trim().isEmpty ? null : text;
+    } catch (e) {
+      debugPrint('PDF nicht lesbar: $e');
+      return null;
+    }
+  }
+
   static Future<String?> recognize(String path) async {
     if (!available) return null;
     try {

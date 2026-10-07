@@ -1,5 +1,6 @@
 import AVFoundation
 import CoreLocation
+import PDFKit
 import Vision
 import CryptoKit
 import Flutter
@@ -42,10 +43,31 @@ import UserNotifications
       let ocr = FlutterMethodChannel(
         name: "famio/ocr", binaryMessenger: registrar.messenger())
       ocr.setMethodCallHandler { call, result in
-        guard call.method == "recognize",
-          let path = (call.arguments as? [String: Any])?["path"] as? String,
-          let cg = UIImage(contentsOfFile: path)?.cgImage
-        else {
+        let path = (call.arguments as? [String: Any])?["path"] as? String
+        var image = path.flatMap { UIImage(contentsOfFile: $0)?.cgImage }
+        if call.method == "pdfText", let path {
+          // The text layer; scanned letters: the first page as an image.
+          guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
+            result(nil)
+            return
+          }
+          if let text = document.string,
+            text.trimmingCharacters(in: .whitespacesAndNewlines).count > 20
+          {
+            result(text)
+            return
+          }
+          if let page = document.page(at: 0) {
+            let box = page.bounds(for: .mediaBox)
+            image = page.thumbnail(
+              of: CGSize(width: box.width * 2, height: box.height * 2), for: .mediaBox
+            ).cgImage
+          }
+        } else if call.method != "recognize" {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        guard let cg = image else {
           result(nil)
           return
         }

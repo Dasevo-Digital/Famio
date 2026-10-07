@@ -44,6 +44,36 @@ class _EventImportScreenState extends State<EventImportScreen> {
     super.dispose();
   }
 
+  Future<void> _pdf() async {
+    final picked = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+    );
+    if (picked.isEmpty) return;
+    final file = picked.first;
+    var path = file.path;
+    if (path == null) {
+      final tmp = File(
+        '${Directory.systemTemp.path}/famio-pdf-${DateTime.now().millisecondsSinceEpoch}.pdf',
+      );
+      await tmp.writeAsBytes(await file.readAsBytes());
+      path = tmp.path;
+    }
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    final text = await Ocr.pdfText(path);
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (text == null) {
+      setState(() => _message = 'Im PDF wurde kein Text gefunden.');
+      return;
+    }
+    _text.text = text;
+    _analyse();
+  }
+
   Future<void> _photo({required bool camera}) async {
     String? path;
     if (camera) {
@@ -181,6 +211,12 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     icon: const Icon(AppIcons.image),
                     label: const Text('Bild wählen'),
                     onPressed: _busy ? null : () => _photo(camera: false),
+                  ),
+                if (Ocr.available)
+                  OutlinedButton.icon(
+                    icon: const Icon(AppIcons.fileText),
+                    label: const Text('PDF wählen'),
+                    onPressed: _busy ? null : _pdf,
                   ),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.clipboardList),

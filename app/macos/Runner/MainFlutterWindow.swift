@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import PDFKit
 import Vision
 
 class MainFlutterWindow: NSWindow {
@@ -16,6 +17,12 @@ class MainFlutterWindow: NSWindow {
       name: "famio/ocr",
       binaryMessenger: flutterViewController.engine.binaryMessenger)
     ocr.setMethodCallHandler { call, result in
+      if call.method == "pdfText",
+        let path = (call.arguments as? [String: Any])?["path"] as? String
+      {
+        pdfText(at: path, result: result)
+        return
+      }
       guard call.method == "recognize",
         let path = (call.arguments as? [String: Any])?["path"] as? String,
         let image = NSImage(contentsOfFile: path),
@@ -49,4 +56,29 @@ func recognizeText(in image: CGImage, result: @escaping FlutterResult) {
       DispatchQueue.main.async { result(nil) }
     }
   }
+}
+
+/// The text of a PDF: its text layer, or (scanned letters) the first pages
+/// read with Vision.
+func pdfText(at path: String, result: @escaping FlutterResult) {
+  guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
+    result(nil)
+    return
+  }
+  if let text = document.string, text.trimmingCharacters(in: .whitespacesAndNewlines).count > 20 {
+    result(text)
+    return
+  }
+  guard let page = document.page(at: 0) else {
+    result(nil)
+    return
+  }
+  let box = page.bounds(for: .mediaBox)
+  let size = NSSize(width: box.width * 2, height: box.height * 2)
+  let image = page.thumbnail(of: size, for: .mediaBox)
+  guard let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+    result(nil)
+    return
+  }
+  recognizeText(in: cg, result: result)
 }
