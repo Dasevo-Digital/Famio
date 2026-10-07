@@ -70,6 +70,31 @@ List<DueReminder> upcomingReminders({
       );
     }
   }
+  // Lifts: the one who brings and the one who picks up, whatever the
+  // event's own reminder.
+  for (final event in events) {
+    for (final (who, lead, verb, fromEnd) in [
+      (event.bringerId, CalendarEvent.bringLead, 'Bringen', false),
+      (event.pickerId, CalendarEvent.pickLead, 'Abholen', true),
+    ]) {
+      if (who != memberId || event.allDay) continue;
+      for (final o in event.occurrencesBetween(
+        from.subtract(const Duration(days: 1)),
+        to.add(const Duration(days: 1)),
+      )) {
+        final at = (fromEnd ? o.end : o.start).subtract(lead);
+        if (at.isBefore(from) || !at.isBefore(to)) continue;
+        result.add(
+          DueReminder(
+            key: 'lift:$verb:${o.key}',
+            at: at,
+            title: '🚗 $verb: ${event.title}',
+            occurrence: o,
+          ),
+        );
+      }
+    }
+  }
   for (final task in tasks) {
     final at = task.remindAt;
     if (at == null || task.done) continue;

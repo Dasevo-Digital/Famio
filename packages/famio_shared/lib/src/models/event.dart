@@ -108,6 +108,8 @@ class CalendarEvent {
     this.sourceId,
     this.confidential = false,
     this.icalUid,
+    this.bringerId,
+    this.pickerId,
   });
 
   factory CalendarEvent.fromRecord(SyncRecord r) {
@@ -135,8 +137,21 @@ class CalendarEvent {
       sourceId: r.data['sourceId'] as String?,
       confidential: r.data['confidential'] as bool? ?? false,
       icalUid: r.data['icalUid'] as String?,
+      bringerId: r.data['bringerId'] as String?,
+      pickerId: r.data['pickerId'] as String?,
     );
   }
+
+  /// Who takes the children there and who picks them up (member ids);
+  /// they get their own reminders.
+  final String? bringerId;
+  final String? pickerId;
+
+  /// Reminder for the one who brings: this long before the start.
+  static const bringLead = Duration(minutes: 30);
+
+  /// Reminder for the one who picks up: this long before the end.
+  static const pickLead = Duration(minutes: 15);
 
   final String id;
   final String title;
@@ -324,6 +339,8 @@ class CalendarEvent {
     Set<DateTime>? exceptions,
     Object? reminderMinutes = _keep,
     bool? confidential,
+    Object? bringerId = _keep,
+    Object? pickerId = _keep,
   }) => CalendarEvent(
     id: id,
     title: title ?? this.title,
@@ -343,6 +360,8 @@ class CalendarEvent {
     sourceId: sourceId,
     confidential: confidential ?? this.confidential,
     icalUid: icalUid,
+    bringerId: bringerId == _keep ? this.bringerId : bringerId as String?,
+    pickerId: pickerId == _keep ? this.pickerId : pickerId as String?,
   );
 
   /// A copy with a new [id], e.g. to detach one occurrence from a series.
@@ -376,6 +395,8 @@ class CalendarEvent {
     'sourceId': ?sourceId,
     if (confidential) 'confidential': true,
     'icalUid': ?icalUid,
+    'bringerId': ?bringerId,
+    'pickerId': ?pickerId,
   };
 }
 

@@ -86,4 +86,27 @@ void main() {
       isFalse,
     );
   });
+
+  test('a change from another app keeps who brings and picks up', () {
+    final existing = CalendarEvent(
+      id: 'x',
+      title: 'Training',
+      start: DateTime(2026, 10, 8, 17),
+      end: DateTime(2026, 10, 8, 18),
+      bringerId: 'papa',
+      pickerId: 'mama',
+    );
+    final changed = parseEventIcs(
+      eventToIcs(
+        existing.copyWith(title: 'Training (Halle 2)'),
+        location: berlin,
+        updatedAt: 0,
+      ),
+      id: 'x',
+      location: berlin,
+      existing: existing,
+    ).event!;
+    expect(changed.title, 'Training (Halle 2)');
+    expect((changed.bringerId, changed.pickerId), ('papa', 'mama'));
+  });
 }

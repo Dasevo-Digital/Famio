@@ -4,6 +4,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/screens/event_editor.dart';
 import 'package:famio/src/screens/event_import_screen.dart';
 import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
@@ -108,6 +109,43 @@ void main() {
       );
       expect(find.byType(SnackBar), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('lifts', () {
+    testWidgets('who brings and who picks up', (tester) async {
+      await open(tester);
+      final now = DateTime.now();
+      final start = DateTime(now.year, now.month, now.day + 1, 17);
+      engine.saveEvent(
+        CalendarEvent(
+          id: 'e1',
+          title: 'Training',
+          start: start,
+          end: start.add(const Duration(hours: 1)),
+        ),
+      );
+      await _pumpData(tester);
+      final context = tester.element(find.byType(Scaffold).first);
+      showEventEditor(
+        context,
+        occurrence: engine
+            .occurrences(start, start.add(const Duration(hours: 1)))
+            .single,
+      );
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Wer fährt?'));
+      await tester.tap(
+        find.widgetWithText(DropdownButtonFormField<String?>, 'Bringt'),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Papa').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final e = engine.events.single;
+      expect((e.bringerId, e.pickerId), ('m2', null));
+      expect(engine.liftsLabel(e), '🚗 Papa bringt');
     });
   });
 

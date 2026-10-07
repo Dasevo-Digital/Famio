@@ -359,6 +359,9 @@ ParsedEvent parseEventIcs(
       location: v.property('LOCATION')?.text.trim() ?? '',
       notes: v.property('DESCRIPTION')?.text.trim() ?? '',
       memberIds: existing?.memberIds ?? const [],
+      // Other apps know no lifts: kept as they were.
+      bringerId: existing?.bringerId,
+      pickerId: existing?.pickerId,
       recurrence: recurrence,
       exceptions: exceptions,
       reminderMinutes: reminder,

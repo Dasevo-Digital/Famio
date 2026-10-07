@@ -406,7 +406,11 @@ class _TodayTile extends StatelessWidget {
             const _Line('Heute steht nichts an. 🌤', dim: true),
           for (final o in todays.take(4))
             _Line(
-              o.event.title,
+              // My lift today stands out.
+              o.event.bringerId == engine.memberId ||
+                      o.event.pickerId == engine.memberId
+                  ? '🚗 ${o.event.title}'
+                  : o.event.title,
               leading: _Dot(c.strong(FamioSection.calendar)),
               trailing: o.event.allDay ? 'ganztägig' : timeLabel(o.start),
             ),

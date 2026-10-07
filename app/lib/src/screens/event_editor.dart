@@ -101,6 +101,8 @@ class _EventEditorState extends State<_EventEditor> {
   late Set<String> _memberIds;
   int? _reminder;
   var _confidential = false;
+  String? _bringerId;
+  String? _pickerId;
 
   bool get _isSeries => _original?.recurrence != null;
 
@@ -118,6 +120,8 @@ class _EventEditorState extends State<_EventEditor> {
       _memberIds = {...o.event.memberIds};
       _reminder = o.event.reminderMinutes;
       _confidential = o.event.confidential;
+      _bringerId = o.event.bringerId;
+      _pickerId = o.event.pickerId;
     } else {
       final day = widget.day ?? DateUtils.dateOnly(DateTime.now());
       final now = DateTime.now();
@@ -259,6 +263,8 @@ class _EventEditorState extends State<_EventEditor> {
           ),
     reminderMinutes: _reminder,
     confidential: _confidential,
+    bringerId: _allDay ? null : _bringerId,
+    pickerId: _allDay ? null : _pickerId,
     // Other calendar apps (CalDAV) know the event by its UID.
     icalUid: id == _original?.id ? _original?.icalUid : null,
   );
@@ -530,6 +536,41 @@ class _EventEditorState extends State<_EventEditor> {
                 onChanged: (v) => setState(() => _confidential = v),
               ),
               const SizedBox(height: 8),
+              if (!_allDay) ...[
+                Text('Wer fährt?', style: theme.textTheme.labelLarge),
+                const SizedBox(height: 8),
+                for (final (label, value, set) in [
+                  ('Bringt', _bringerId, (String? v) => _bringerId = v),
+                  ('Holt ab', _pickerId, (String? v) => _pickerId = v),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: DropdownButtonFormField<String?>(
+                      initialValue: engine.members.any((m) => m.id == value)
+                          ? value
+                          : null,
+                      decoration: InputDecoration(
+                        labelText: label,
+                        prefixIcon: const Icon(AppIcons.car),
+                        isDense: true,
+                      ),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text('Niemand eingeteilt'),
+                        ),
+                        for (final m in engine.members)
+                          if (!m.isChild)
+                            DropdownMenuItem(
+                              value: m.id,
+                              child: Text(m.displayName),
+                            ),
+                      ],
+                      onChanged: (v) => setState(() => set(v)),
+                    ),
+                  ),
+                const SizedBox(height: 8),
+              ],
               Text('Wer ist dabei?', style: theme.textTheme.labelLarge),
               const SizedBox(height: 8),
               Wrap(

@@ -567,6 +567,7 @@ class _OccurrenceTile extends StatelessWidget {
     final color = eventColor(context, engine, e);
     final members = [for (final id in e.memberIds) ?engine.member(id)];
     final details = [
+      ?engine.liftsLabel(e),
       if (e.location.isNotEmpty) e.location,
       if (e.notes.isNotEmpty) e.notes.split('\n').first,
     ].join(' · ');

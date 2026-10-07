@@ -174,6 +174,15 @@ extension FamilyData on SyncEngine {
   void deleteCalendarSubscription(String id) =>
       delete(Collections.calendarSubscriptions, id);
 
+  /// "🚗 Papa bringt · Mama holt ab", or null without lifts.
+  String? liftsLabel(CalendarEvent e) {
+    final bring = member(e.bringerId)?.displayName;
+    final pick = member(e.pickerId)?.displayName;
+    if (bring == null && pick == null) return null;
+    if (bring != null && bring == pick) return '🚗 $bring bringt und holt ab';
+    return '🚗 ${[if (bring != null) '$bring bringt', if (pick != null) '$pick holt ab'].join(' · ')}';
+  }
+
   /// All occurrences (own and imported) overlapping `[from, to)`; all-day
   /// ones first per start.
   List<Occurrence> occurrences(DateTime from, DateTime to) =>

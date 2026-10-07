@@ -110,4 +110,42 @@ void main() {
       isNot(DueReminder(key: 'event:abd', at: from, title: 't').notificationId),
     );
   });
+
+  test('lifts remind the one who brings and the one who picks up', () {
+    final training = CalendarEvent(
+      id: 'e',
+      title: 'Training',
+      start: DateTime(2026, 10, 8, 17),
+      end: DateTime(2026, 10, 8, 18, 30),
+      bringerId: 'papa',
+      pickerId: 'mama',
+    );
+    List<(String, DateTime)> forMember(String id) => [
+      for (final r in upcomingReminders(
+        events: [training],
+        tasks: const [],
+        memberId: id,
+        from: DateTime(2026, 10, 8),
+        to: DateTime(2026, 10, 9),
+      ))
+        (r.title, r.at),
+    ];
+    expect(forMember('papa'), [
+      ('🚗 Bringen: Training', DateTime(2026, 10, 8, 16, 30)),
+    ]);
+    expect(forMember('mama'), [
+      ('🚗 Abholen: Training', DateTime(2026, 10, 8, 18, 15)),
+    ]);
+    expect(forMember('mia'), isEmpty);
+    final back = CalendarEvent.fromRecord(
+      SyncRecord(
+        collection: 'events',
+        id: 'e',
+        data: training.toData(),
+        updatedAt: 1,
+      ),
+    );
+    expect((back.bringerId, back.pickerId), ('papa', 'mama'));
+    expect(back.copyWith(pickerId: null).pickerId, isNull);
+  });
 }
