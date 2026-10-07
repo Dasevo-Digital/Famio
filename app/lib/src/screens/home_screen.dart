@@ -24,6 +24,7 @@ import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 import 'search_screen.dart';
 import 'notes_screen.dart';
+import 'wishes_screen.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -102,6 +103,7 @@ class HomeScreen extends StatelessWidget {
           Collections.medications,
           Collections.medicationIntakes,
           Collections.notes,
+          Collections.wishes,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
@@ -143,6 +145,10 @@ class HomeScreen extends StatelessWidget {
               if (on(FamioSection.budget) && engine.budgetEntries.isNotEmpty)
                 _BudgetTile(engine: engine),
               _NotesTile(engine: engine),
+              if (!guest &&
+                  (engine.wishes.isNotEmpty ||
+                      upcomingBirthdays(engine, now).isNotEmpty))
+                _WishesTile(engine: engine),
             ];
             const gap = 16.0;
             // Tiles of a row share its height, so the grid has no holes.
@@ -646,6 +652,40 @@ class _KidsTile extends StatelessWidget {
                     : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
               );
             }(),
+        ],
+      ),
+    );
+  }
+}
+
+class _WishesTile extends StatelessWidget {
+  const _WishesTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final open = engine.wishes.where((w) => !w.received).toList();
+    final mine = open.where((w) => w.ownerId == engine.memberId).length;
+    final others = open.length - mine;
+    return _Tile(
+      section: FamioSection.home,
+      title: 'Wunschzettel',
+      icon: AppIcons.gift,
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const WishesScreen())),
+      child: Column(
+        children: [
+          _Line(
+            open.isEmpty
+                ? 'Was wünscht ihr euch? Die anderen besorgen es heimlich.'
+                : [
+                    if (mine > 0) 'Du: $mine Wünsche',
+                    if (others > 0) 'Familie: $others Wünsche',
+                  ].join(' · '),
+            dim: open.isEmpty,
+          ),
         ],
       ),
     );

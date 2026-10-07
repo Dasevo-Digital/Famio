@@ -12,6 +12,7 @@ import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
+import 'package:famio/src/screens/wishes_screen.dart';
 import 'package:famio/src/widgets/data_builder.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
 import 'package:famio_client/famio_client.dart';
@@ -108,6 +109,28 @@ void main() {
         isTrue,
       );
       expect(find.byType(SnackBar), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('wish lists', () {
+    testWidgets('a claim is hidden from the one who wishes', (tester) async {
+      await open(tester);
+      engine.saveWish(
+        Wish(
+          id: 'w1',
+          ownerId: 'k1',
+          title: 'Fahrrad',
+          createdAt: DateTime(2026),
+        ),
+      );
+      await push(tester, const WishesScreen(memberId: 'k1'));
+      expect(find.text('Fahrrad'), findsOneWidget);
+      await tester.tap(find.text('Ich besorge das'));
+      await _pumpData(tester);
+      final claim = engine.record(Collections.wishClaims, 'w1')!;
+      expect(claim.visibleTo, unorderedEquals(['m1', 'm2']));
+      expect(find.text('Du besorgst das'), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
     });
   });

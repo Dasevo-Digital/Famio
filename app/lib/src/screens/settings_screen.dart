@@ -1,6 +1,7 @@
 import 'kiosk_screen.dart';
 import 'push_settings_screen.dart';
 import 'sos_screens.dart';
+import 'wishes_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -179,6 +180,14 @@ class SettingsScreen extends StatelessWidget {
                 }
               },
             ),
+          ListTile(
+            leading: const Icon(AppIcons.gift),
+            title: const Text('Wunschzettel'),
+            subtitle: const Text('Deine Wünsche und die der Familie'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const WishesScreen()),
+            ),
+          ),
           ListTile(
             leading: const Icon(AppIcons.siren),
             title: const Text('Notfallknopf'),

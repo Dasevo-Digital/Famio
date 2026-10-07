@@ -93,6 +93,11 @@ abstract final class Collections {
   static const medications = 'medications';
   static const medicationIntakes = 'medication_intakes';
 
+  /// Wish lists (per member) and who gets what – the latter never visible
+  /// to the wish's owner.
+  static const wishes = 'wishes';
+  static const wishClaims = 'wish_claims';
+
   /// The family's pinboard notes (visibility per note).
   static const notes = 'notes';
 
@@ -103,6 +108,8 @@ abstract final class Collections {
   static const sosAlerts = 'sos_alerts';
 
   static const all = {
+    wishes,
+    wishClaims,
     notes,
     shoppingAisles,
     sosSettings,
@@ -147,6 +154,9 @@ abstract final class Collections {
 
   /// What guests (grandparents, babysitters …) receive at all.
   static const guestReadable = {
+    // Grandparents read wish lists and say what they get.
+    wishes,
+    wishClaims,
     // Babysitters need the notes meant for them; others are restricted
     // per note.
     notes,
@@ -171,6 +181,7 @@ abstract final class Collections {
 
   /// What guests may change: chatting, ticking off and commenting.
   static const guestWritable = {
+    wishClaims,
     tasks,
     shoppingItems,
     eventComments,

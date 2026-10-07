@@ -713,6 +713,44 @@ void main() {
     });
   });
 
+  group('wish lists', () {
+    test('who gets a wish stays hidden from its owner', () async {
+      await kind.sync([
+        _record(Collections.wishes, 'w1', {
+          ...Wish(id: 'w1', ownerId: kind.id, title: 'Lego').toData(),
+        }),
+      ]);
+      // Grandma (a guest) sees the wish and claims it for everyone else.
+      await oma.sync();
+      expect(oma.seen['wishes/w1'], isNotNull);
+      final claim = await oma.sync([
+        _record(
+          Collections.wishClaims,
+          'w1',
+          WishClaim(wishId: 'w1', claimedBy: oma.id).toData([mama.id, oma.id]),
+        ),
+      ]);
+      expect(claim.rejected, isEmpty);
+      await mama.sync();
+      expect(
+        WishClaim.fromRecord(mama.seen['wish_claims/w1']!).claimedBy,
+        oma.id,
+      );
+      // The child never learns of it, not even by writing the same record.
+      await kind.sync();
+      expect(kind.seen['wish_claims/w1'], isNull);
+      final probe = await kind.sync([
+        _record(Collections.wishClaims, 'w1', {'claimedBy': kind.id}),
+      ]);
+      expect(jsonEncode(probe.toJson()), isNot(contains(oma.id)));
+      await mama.sync();
+      expect(
+        WishClaim.fromRecord(mama.seen['wish_claims/w1']!).claimedBy,
+        oma.id,
+      );
+    });
+  });
+
   group('own push', () {
     Map<String, Object?> chat(String id, String chatId, String text) => {
       'chatId': chatId,
