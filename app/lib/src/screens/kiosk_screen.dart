@@ -12,6 +12,7 @@ import '../app_state.dart';
 import '../data/birthdays.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
+import '../data/waste.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -46,6 +47,7 @@ const _collections = {
   Collections.mealPlan,
   Collections.recipes,
   Collections.places,
+  Collections.wasteSettings,
   'members',
 };
 
@@ -228,6 +230,28 @@ class _KioskScreenState extends State<KioskScreen> {
                                 ),
                               ),
                             ),
+                        if (engine.nextWastePickup(_now) case final pickup?)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: SoftCard(
+                              color: c.tint(FamioSection.chores),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 12,
+                              ),
+                              child: Text(
+                                [
+                                  wasteHeadline(pickup, _now),
+                                  if (engine.wasteSettings.memberIds.isNotEmpty)
+                                    engine
+                                        .wasteResponsible(pickup)
+                                        .map((m) => m.displayName)
+                                        .join(', '),
+                                ].join(' · '),
+                                style: theme.textTheme.titleLarge,
+                              ),
+                            ),
+                          ),
                         if (on(FamioSection.calendar))
                           if (engine.countdowns(_now) case final counts
                               when counts.isNotEmpty)

@@ -16,6 +16,7 @@ import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
+import '../data/waste.dart';
 import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
@@ -266,6 +267,8 @@ class ReminderService {
 
   static const _scheduledCollections = {
     Collections.events,
+    Collections.externalEvents,
+    Collections.wasteSettings,
     Collections.tasks,
     Collections.children,
     Collections.childEntries,
@@ -622,6 +625,22 @@ List<DueReminder> familyReminders(
         DateTime(best.year, best.month, best.day - 1, 17),
         '${item.name} bald verbrauchen',
         'Mindestens haltbar bis morgen.',
+      );
+    }
+  }
+  // Bins: the evening before, for whoever's turn it is.
+  if (engine.wasteConfigured) {
+    final hour = engine.wasteSettings.remindHour;
+    for (final p in engine.wastePickups(
+      from,
+      to.add(const Duration(days: 1)),
+    )) {
+      if (!engine.wasteIsMine(p)) continue;
+      add(
+        'waste:${dayKey(p.day)}',
+        DateTime(p.day.year, p.day.month, p.day.day - 1, hour),
+        'Morgen: ${p.label}',
+        'Du bist dran: bitte heute Abend rausstellen.',
       );
     }
   }

@@ -36,6 +36,7 @@ export 'src/models/shopping.dart';
 export 'src/models/sos.dart';
 export 'src/models/task.dart';
 export 'src/models/timetable.dart';
+export 'src/models/waste.dart';
 export 'src/models/wish.dart';
 export 'src/push.dart';
 export 'src/sync_protocol.dart';

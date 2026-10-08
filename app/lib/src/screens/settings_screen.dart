@@ -30,6 +30,7 @@ import '../widgets/password_reveal.dart';
 import 'admin_screens.dart';
 import 'security_screens.dart';
 import '../widgets/data_export.dart';
+import 'waste_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -186,6 +187,14 @@ class SettingsScreen extends StatelessWidget {
             subtitle: const Text('Deine Wünsche und die der Familie'),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const WishesScreen()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(AppIcons.recycle),
+            title: const Text('Abfallkalender'),
+            subtitle: const Text('Wer wann welche Tonne rausstellt'),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const WasteScreen()),
             ),
           ),
           ListTile(

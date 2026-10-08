@@ -25,6 +25,8 @@ import '../weather/weather_tile.dart';
 import 'search_screen.dart';
 import 'notes_screen.dart';
 import 'wishes_screen.dart';
+import 'waste_screen.dart';
+import '../data/waste.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -104,6 +106,7 @@ class HomeScreen extends StatelessWidget {
           Collections.medicationIntakes,
           Collections.notes,
           Collections.wishes,
+          Collections.wasteSettings,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
@@ -121,6 +124,8 @@ class HomeScreen extends StatelessWidget {
               if (on(FamioSection.calendar) &&
                   engine.countdowns(now).isNotEmpty)
                 _CountdownTile(engine: engine),
+              if (engine.nextWastePickup(now) != null)
+                _WasteTile(engine: engine),
               if (on(FamioSection.tasks)) _TasksTile(engine: engine),
               if (on(FamioSection.shopping)) _ShoppingTile(engine: engine),
               if (on(FamioSection.meals) &&
@@ -494,6 +499,45 @@ class _CountdownTile extends StatelessWidget {
               e.occurrence.event.title,
               leading: _Dot(c.inkSoft),
               trailing: countdownLabel(e.occurrence, e.days, now),
+              dim: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Which bins go out today or tomorrow, and whose turn it is.
+class _WasteTile extends StatelessWidget {
+  const _WasteTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final pickup = engine.nextWastePickup(now)!;
+    final who = engine.wasteSettings.memberIds.isEmpty
+        ? const <FamilyMember>[]
+        : engine.wasteResponsible(pickup);
+    final mine = who.any((m) => m.id == engine.memberId);
+    return _Tile(
+      section: FamioSection.chores,
+      title: 'Tonnen',
+      icon: AppIcons.recycle,
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const WasteScreen())),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _Line(wasteHeadline(pickup, now)),
+          if (who.isNotEmpty)
+            _Line(
+              mine
+                  ? 'Du bist dran'
+                  : '${who.map((m) => m.displayName).join(', ')} ist dran',
+              leading: MemberAvatar(who.first, radius: 10),
               dim: true,
             ),
         ],

@@ -107,7 +107,12 @@ abstract final class Collections {
   /// Emergencies raised with the button; written by the server.
   static const sosAlerts = 'sos_alerts';
 
+  /// Who puts the bins out and which calendar has the pickup days (one
+  /// record, set by adults).
+  static const wasteSettings = 'waste_settings';
+
   static const all = {
+    wasteSettings,
     wishes,
     wishClaims,
     notes,
@@ -200,6 +205,7 @@ abstract final class Collections {
     moneyEntries,
     routines,
     sosSettings,
+    wasteSettings,
   };
 
   /// Collections clients may read but never write.
