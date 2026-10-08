@@ -349,6 +349,8 @@ Map<String, Object?> shoppingItemDataFrom(
     category: todo.categories.isNotEmpty
         ? todo.categories
         : existing?.category ?? '',
+    // Other apps know nothing of whose thing it is (packing lists).
+    memberId: existing?.memberId,
   ).toData(),
   ..._external(todo),
 };

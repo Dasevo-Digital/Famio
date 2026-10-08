@@ -11,6 +11,7 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
+import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/undo_delete.dart';
@@ -177,6 +178,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   final _input = TextEditingController();
   final _focus = FocusNode();
 
+  /// Packing lists: only this member's things (null: everyone's).
+  String? _who;
+
   @override
   void dispose() {
     _input.dispose();
@@ -190,16 +194,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     if (text.isEmpty) return;
     final match = RegExp(r'^(\d+)\s*[xX]?\s+(.+)$').firstMatch(text);
     final name = match?.group(2) ?? text;
+    final packing = engine.shoppingList(widget.listId)?.packing ?? false;
     engine.saveShoppingItem(
       ShoppingItem(
         id: newId(),
         listId: widget.listId,
         name: name,
         quantity: match?.group(1) ?? '',
-        category: guessShoppingCategory(
-          name,
-          learned: engine.learnedShoppingCategories,
-        ),
+        // Packing lists have no aisles.
+        category: packing
+            ? ''
+            : guessShoppingCategory(
+                name,
+                learned: engine.learnedShoppingCategories,
+              ),
+        memberId: packing ? _who : null,
       ),
     );
     _input.clear();
@@ -266,7 +275,17 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             body: Center(child: Text('Diese Liste gibt es nicht mehr.')),
           );
         }
-        final items = engine.shoppingItems(list.id);
+        final all = engine.shoppingItems(list.id);
+        final owners = [
+          for (final m in engine.members)
+            if (all.any((i) => i.memberId == m.id)) m,
+        ];
+        final who = owners.any((m) => m.id == _who) ? _who : null;
+        // A member's view of a packing list: theirs and everyone's things.
+        final items = [
+          for (final i in all)
+            if (who == null || i.memberId == null || i.memberId == who) i,
+        ];
         final open = items.where((i) => !i.checked).toList();
         final done = items.where((i) => i.checked).toList();
         // Open items by aisle, in the order of a walk through the store.
@@ -283,7 +302,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           maxBodyWidth: 960,
           section: FamioSection.shopping,
           title: list.name,
-          subtitle: open.isEmpty ? 'Alles erledigt' : '${open.length} offen',
+          subtitle: list.packing
+              ? '${done.length} von ${items.length} eingepackt'
+              : open.isEmpty
+              ? 'Alles erledigt'
+              : '${open.length} offen',
           actions: [
             const SyncStatusIcon(),
             PopupMenuButton<String>(
@@ -342,7 +365,9 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 focusNode: _focus,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  hintText: 'Artikel hinzufügen, z. B. „2 Milch“',
+                  hintText: list.packing
+                      ? 'Hinzufügen, z. B. „Taucherbrille“'
+                      : 'Artikel hinzufügen, z. B. „2 Milch“',
                   prefixIcon: const Icon(AppIcons.plus, size: 20),
                   suffixIcon: Padding(
                     padding: const EdgeInsets.all(6),
@@ -365,8 +390,43 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     bottom: listBottomPadding(context),
                   ),
                   children: [
+                    if (list.packing && owners.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Alle'),
+                              selected: who == null,
+                              onSelected: (_) => setState(() => _who = null),
+                            ),
+                            for (final m in owners)
+                              ChoiceChip(
+                                avatar: MemberAvatar(m, radius: 10),
+                                label: Text(
+                                  m.id == engine.memberId
+                                      ? 'Ich'
+                                      : m.displayName,
+                                ),
+                                selected: who == m.id,
+                                onSelected: (_) => setState(() => _who = m.id),
+                              ),
+                          ],
+                        ),
+                      ),
+                    if (list.packing)
+                      for (final (heading, group) in _packingGroups(
+                        engine,
+                        open,
+                      )) ...[
+                        if (heading != null) _AisleHeading(heading),
+                        for (final item in group)
+                          _ItemTile(item: item, engine: engine, packing: true),
+                      ]
                     // One aisle needs no heading.
-                    if (aisles.length < 2)
+                    else if (aisles.length < 2)
                       for (final item in open)
                         _ItemTile(item: item, engine: engine)
                     else
@@ -376,9 +436,18 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                           _ItemTile(item: item, engine: engine),
                       ],
                     if (done.isNotEmpty) ...[
-                      ListHeading('Im Wagen (${done.length})', color: color),
+                      ListHeading(
+                        list.packing
+                            ? 'Eingepackt (${done.length})'
+                            : 'Im Wagen (${done.length})',
+                        color: color,
+                      ),
                       for (final item in done)
-                        _ItemTile(item: item, engine: engine),
+                        _ItemTile(
+                          item: item,
+                          engine: engine,
+                          packing: list.packing,
+                        ),
                     ],
                   ],
                 ),
@@ -389,6 +458,41 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       },
     );
   }
+}
+
+/// Open things of a packing list: everyone's first, then per member, each
+/// sorted by category; one group needs no heading.
+List<(String?, List<ShoppingItem>)> _packingGroups(
+  SyncEngine engine,
+  List<ShoppingItem> open,
+) {
+  int byCategory(ShoppingItem a, ShoppingItem b) {
+    final c = a.category.compareTo(b.category);
+    return c != 0 ? c : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  }
+
+  final groups = <(String?, List<ShoppingItem>)>[
+    (
+      'Für alle',
+      [
+        for (final i in open)
+          if (i.memberId == null) i,
+      ],
+    ),
+    for (final m in engine.members)
+      (
+        m.id == engine.memberId ? 'Meine Sachen' : m.displayName,
+        [
+          for (final i in open)
+            if (i.memberId == m.id) i,
+        ],
+      ),
+  ].where((g) => g.$2.isNotEmpty).toList();
+  for (final g in groups) {
+    g.$2.sort(byCategory);
+  }
+  if (groups.length == 1) return [(null, groups.single.$2)];
+  return groups;
 }
 
 class _AisleHeading extends StatelessWidget {
@@ -409,10 +513,17 @@ class _AisleHeading extends StatelessWidget {
 }
 
 class _ItemTile extends StatelessWidget {
-  const _ItemTile({required this.item, required this.engine});
+  const _ItemTile({
+    required this.item,
+    required this.engine,
+    this.packing = false,
+  });
 
   final ShoppingItem item;
   final SyncEngine engine;
+
+  /// On a packing list: no aisles.
+  final bool packing;
 
   Future<void> _edit(BuildContext context) async {
     final name = TextEditingController(text: item.name);
@@ -441,17 +552,19 @@ class _ItemTile extends StatelessWidget {
                 ),
                 onSubmitted: (_) => Navigator.pop(context, true),
               ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: category,
-                decoration: const InputDecoration(labelText: 'Gang'),
-                items: [
-                  for (final c in shoppingCategories)
-                    DropdownMenuItem(value: c.key, child: Text(c.label)),
-                ],
-                // Remembered: next time this article lands there.
-                onChanged: (v) => category = v ?? category,
-              ),
+              if (!packing) ...[
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Gang'),
+                  items: [
+                    for (final c in shoppingCategories)
+                      DropdownMenuItem(value: c.key, child: Text(c.label)),
+                  ],
+                  // Remembered: next time this article lands there.
+                  onChanged: (v) => category = v ?? category,
+                ),
+              ],
             ],
           ),
           actions: [
@@ -468,6 +581,12 @@ class _ItemTile extends StatelessWidget {
       ),
     );
     if (save == true && name.text.trim().isNotEmpty) {
+      if (packing) {
+        engine.saveShoppingItem(
+          item.copyWith(name: name.text.trim(), quantity: quantity.text.trim()),
+        );
+        return;
+      }
       if (category != engine.shoppingCategoryOf(item)) {
         engine.rememberShoppingCategory(name.text.trim(), category);
       }

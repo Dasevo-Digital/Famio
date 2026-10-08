@@ -269,6 +269,8 @@ class ReminderService {
     Collections.events,
     Collections.externalEvents,
     Collections.wasteSettings,
+    Collections.shoppingLists,
+    Collections.shoppingItems,
     Collections.tasks,
     Collections.children,
     Collections.childEntries,
@@ -627,6 +629,34 @@ List<DueReminder> familyReminders(
         'Mindestens haltbar bis morgen.',
       );
     }
+  }
+  // Packing lists: the evening before the trip, while I still have to pack.
+  final events = {for (final e in engine.events) e.id: e};
+  for (final list in engine.shoppingLists) {
+    final trip = events[list.eventId];
+    if (!list.packing || trip == null) continue;
+    final start = trip
+        .occurrencesBetween(from, to.add(const Duration(days: 1)))
+        .where((o) => !o.start.isBefore(from))
+        .firstOrNull
+        ?.start;
+    if (start == null) continue;
+    final left = engine
+        .shoppingItems(list.id)
+        .where(
+          (i) =>
+              !i.checked &&
+              (i.memberId == engine.memberId ||
+                  (i.memberId == null && trip.involves(engine.memberId))),
+        )
+        .length;
+    if (left == 0) continue;
+    add(
+      'pack:${list.id}:${dayKey(start)}',
+      DateTime(start.year, start.month, start.day - 1, 18),
+      '🧳 Morgen: ${trip.title}',
+      left == 1 ? 'Noch 1 Sache packen' : 'Noch $left Sachen packen',
+    );
   }
   // Bins: the evening before, for whoever's turn it is.
   if (engine.wasteConfigured) {

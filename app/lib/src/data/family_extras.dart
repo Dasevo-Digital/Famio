@@ -360,6 +360,52 @@ extension FamilyExtras on SyncEngine {
     return list.id;
   }
 
+  /// The packing list for [event] (the trip), if there is one.
+  ShoppingList? packingListOf(String eventId) =>
+      shoppingLists.where((l) => l.eventId == eventId).firstOrNull;
+
+  /// Creates a packing list for [event] from [t]: everyone's things once,
+  /// the rest once per member in [memberIds] (children's things only for
+  /// children). Without members every entry comes once.
+  String packingListFor(
+    CalendarEvent event,
+    ListTemplate t, {
+    List<String> memberIds = const [],
+  }) {
+    final list = ShoppingList(
+      id: newId(),
+      name: '🧳 ${event.title}',
+      packing: true,
+      eventId: event.id,
+    );
+    saveShoppingList(list);
+    final people = [for (final id in memberIds) ?member(id)];
+    final kids = people.where((m) => m.isChild).toList();
+    for (final item in t.items) {
+      final List<String?> owners;
+      if (people.isEmpty || sharedPackingCategories.contains(item.category)) {
+        owners = [null];
+      } else if (item.category == 'Kinder') {
+        owners = kids.isEmpty ? [null] : [for (final k in kids) k.id];
+      } else {
+        owners = [for (final p in people) p.id];
+      }
+      for (final owner in owners) {
+        saveShoppingItem(
+          ShoppingItem(
+            id: newId(),
+            listId: list.id,
+            name: item.name,
+            quantity: item.quantity,
+            category: item.category,
+            memberId: owner,
+          ),
+        );
+      }
+    }
+    return list.id;
+  }
+
   /// Saves the items of a list as a template (unticked).
   ListTemplate templateFromList(ShoppingList list, {String emoji = '📋'}) {
     final t = ListTemplate(
@@ -367,7 +413,10 @@ extension FamilyExtras on SyncEngine {
       name: list.name,
       emoji: emoji,
       items: [
-        for (final i in shoppingItems(list.id))
+        // A packing list has each person's things once per person.
+        for (final i in {
+          for (final i in shoppingItems(list.id)) (i.name, i.category): i,
+        }.values)
           TemplateItem(i.name, quantity: i.quantity, category: i.category),
       ],
     );
@@ -451,3 +500,11 @@ extension FamilyExtras on SyncEngine {
 
   void deleteIntake(String id) => delete(Collections.medicationIntakes, id);
 }
+
+/// Things a family packs once, not once per person.
+const sharedPackingCategories = {
+  'Dokumente',
+  'Unterwegs',
+  'Technik',
+  'Gemeinsam',
+};

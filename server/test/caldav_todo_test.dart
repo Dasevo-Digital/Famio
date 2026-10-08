@@ -359,6 +359,7 @@ void main() {
             name: 'Milch',
             quantity: '2 l',
             category: 'Kühlregal',
+            memberId: 'm1',
           ).toData(),
         ),
         record(
@@ -418,6 +419,7 @@ void main() {
       expect(checked.quantity, '');
       // The category set in Famio stays when Reminders sends none.
       expect(checked.category, 'Kühlregal');
+      expect(checked.memberId, 'm1');
 
       final deleted = await dav(
         'DELETE',

@@ -11,6 +11,7 @@ import '../format.dart';
 import '../widgets/event_comments.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import 'list_templates.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
 /// [occurrence] (which may be one appearance of a series).
@@ -628,6 +629,8 @@ class _EventEditorState extends State<_EventEditor> {
                 ),
               ),
               if (_original != null) ...[
+                if (_original.sourceId == null)
+                  PackingListTile(event: _original),
                 const SizedBox(height: 8),
                 EventComments(eventId: _original.id),
                 const SizedBox(height: 24),

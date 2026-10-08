@@ -660,6 +660,7 @@ class ListSync {
         quantity: there.note,
         checked: there.done,
         category: item?.category ?? '',
+        memberId: item?.memberId,
       ).toData();
     }
     return SyncRecord(
