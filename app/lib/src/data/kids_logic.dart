@@ -25,11 +25,16 @@ String ageLabel(Child child, [DateTime? at]) {
 /// Whether an unfinished milestone is still useful to show for this age.
 ///
 /// Developmental milestones are not a checklist parents need to complete.
-/// Keep a small look-back window for genuinely delayed steps, but hide early
-/// baby milestones once they no longer help a family of an older toddler.
+/// Keep a short look-back window for genuinely delayed steps, but do not ask
+/// the family of a two-year-old about first steps (window ends at 18 months).
 bool milestoneIsRelevant(Milestone milestone, double ageInMonths) =>
-    milestone.toMonth >= ageInMonths - 6 &&
+    milestone.toMonth >= ageInMonths - 3 &&
     milestone.fromMonth <= ageInMonths + 12;
+
+/// An unfinished milestone whose time has passed: offered only folded away,
+/// to add it afterwards.
+bool milestoneIsPast(Milestone milestone, double ageInMonths) =>
+    milestone.toMonth < ageInMonths - 3;
 
 /// Whether the timeline suggests an unfinished milestone as coming up: it
 /// starts within the next half year, never one whose time has passed.

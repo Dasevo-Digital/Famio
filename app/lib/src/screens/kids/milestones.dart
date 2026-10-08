@@ -24,11 +24,15 @@ class _MilestonesView extends StatelessWidget {
                 .inDays /
             30.4;
     // Keep reached memories, current steps and the near future. Unfinished
-    // baby steps vanish after a six-month look-back window instead of making
-    // a toddler's family confirm foundational skills again.
+    // steps whose time has passed are folded away instead of making a
+    // toddler's family confirm baby skills again.
     final visible = milestones.where(
       (m) => byMilestone.containsKey(m.id) || milestoneIsRelevant(m, age),
     );
+    final past = [
+      for (final m in milestones)
+        if (!byMilestone.containsKey(m.id) && milestoneIsPast(m, age)) m,
+    ];
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
       children: [
@@ -49,6 +53,30 @@ class _MilestonesView extends StatelessWidget {
                 color: color,
               ),
           ],
+        if (past.isNotEmpty)
+          Theme(
+            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(horizontal: 8),
+              childrenPadding: EdgeInsets.zero,
+              title: const Text('Früher erreicht? Nachtragen'),
+              subtitle: Text(
+                past.length == 1
+                    ? '1 Meilenstein, dessen Zeitraum vorbei ist'
+                    : '${past.length} Meilensteine, deren Zeitraum vorbei ist',
+              ),
+              children: [
+                for (final m in past)
+                  _MilestoneRow(
+                    milestone: m,
+                    entry: null,
+                    age: age,
+                    child: child,
+                    color: color,
+                  ),
+              ],
+            ),
+          ),
       ],
     );
   }

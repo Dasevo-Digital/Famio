@@ -166,6 +166,23 @@ void main() {
       expect(milestoneIsRelevant(m, age), isFalse, reason: m.id);
       expect(milestoneIsUpcoming(m, months), isFalse, reason: m.id);
     }
+    // Nor about first steps (window ends at 18 months): only folded away.
+    final walk = milestoneById('walk')!;
+    final twoToday = Child(
+      id: 't',
+      name: 'Tom',
+      birthDate: DateTime(2024, 10, 1),
+    );
+    final twoMonths = twoToday.ageInMonths(at).toDouble();
+    expect(twoMonths, 24);
+    expect(milestoneIsRelevant(walk, twoMonths), isFalse);
+    expect(milestoneIsPast(walk, twoMonths), isTrue);
+    expect(milestoneIsUpcoming(walk, twoToday.ageInMonths(at)), isFalse);
+    // What is due now stays.
+    expect(milestoneIsRelevant(milestoneById('jump')!, twoMonths), isTrue);
+    // Shortly after the window a late walker is still asked.
+    expect(milestoneIsRelevant(walk, 20), isTrue);
+    expect(milestoneIsPast(walk, 20), isFalse);
     // A baby still sees it.
     final baby = Child(id: 'b', name: 'Emil', birthDate: DateTime(2026, 7, 18));
     expect(milestoneIsUpcoming(head, baby.ageInMonths(at)), isTrue);
