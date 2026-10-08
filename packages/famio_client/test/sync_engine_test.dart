@@ -12,10 +12,11 @@ void main() {
   late String url;
   late String token;
   late String memberId;
+  late FamioServerApp app;
   final engines = <SyncEngine>[];
 
   setUp(() async {
-    final app = FamioServerApp.inMemory();
+    app = FamioServerApp.inMemory();
     server = await io.serve(app.handler, InternetAddress.loopbackIPv4, 0);
     url = 'localhost:${server.port}';
     final login = await FamioApiClient(url).setup(
@@ -73,6 +74,46 @@ void main() {
     await b.sync();
     await a.sync();
     expect(a.records(Collections.shoppingItems), isEmpty);
+  });
+
+  test('deletions do not pile up; a device behind cleaned-up ones starts '
+      'over', () async {
+    final a = device(), b = device();
+    a
+      ..put(Collections.shoppingItems, 'x', {'name': 'Milch'})
+      ..put(Collections.shoppingItems, 'y', {'name': 'Brot'});
+    await a.sync();
+    await b.sync();
+    a.delete(Collections.shoppingItems, 'x');
+    await a.sync();
+    // The deletion reached the server: no copy left on the device.
+    expect(a.store.get(Collections.shoppingItems, 'x'), isNull);
+
+    // b stays offline for half a year and adds something meanwhile.
+    b.put(Collections.shoppingItems, 'z', {'name': 'Käse'});
+    final t0 = DateTime.now();
+    expect(app.records.purgeDeleted(now: t0), 0);
+    expect(
+      app.records.purgeDeleted(now: t0.add(const Duration(days: 181))),
+      1,
+    );
+    expect(app.records.purgedRev, greaterThan(0));
+
+    await b.sync();
+    expect(
+      {for (final r in b.records(Collections.shoppingItems)) r.id},
+      {'y', 'z'},
+    );
+    await a.sync();
+    expect(
+      {for (final r in a.records(Collections.shoppingItems)) r.id},
+      {'y', 'z'},
+    );
+
+    // A new device downloads everything in pages without starting over.
+    final c = device();
+    await c.sync();
+    expect(c.records(Collections.shoppingItems).length, 2);
   });
 
   test('fields from reminder apps survive an edit in the app', () async {

@@ -15,6 +15,8 @@ class LocalRecord {
 /// reads synchronous for the UI.
 class LocalStore {
   LocalStore._(this._backend) {
+    // Deletions the server knows need no copy (kept by apps before 1.0.10).
+    _backend.removeCleanDeleted();
     for (final (record, dirty) in _backend.load()) {
       _cache.putIfAbsent(record.collection, () => {})[record.id] = LocalRecord(
         record,
@@ -50,9 +52,25 @@ class LocalStore {
   void markClean(String collection, String id) {
     final local = get(collection, id);
     if (local == null || !local.dirty) return;
+    if (local.record.deleted) {
+      // The server has the deletion; the device needs no copy.
+      remove(collection, id);
+      return;
+    }
     _backend.markClean(collection, id);
     _cache[collection]![id] = LocalRecord(local.record, dirty: false);
   }
+
+  void remove(String collection, String id) {
+    _backend.remove(collection, id);
+    _cache[collection]?.remove(id);
+  }
+
+  /// Keys of all records, for finding the ones a full download lacks.
+  Iterable<(String, String)> get keys => [
+    for (final c in _cache.entries)
+      for (final id in c.value.keys) (c.key, id),
+  ];
 
   /// Runs [action] in one SQLite transaction.
   T transaction<T>(T Function() action) {

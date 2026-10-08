@@ -3,7 +3,12 @@ import 'sync_record.dart';
 /// Body of `POST /api/sync`: push local changes and pull everything newer
 /// than [since] in one round trip.
 class SyncRequest {
-  const SyncRequest({required this.since, this.changes = const []});
+  const SyncRequest({
+    required this.since,
+    this.changes = const [],
+    this.resettable = false,
+    this.full = false,
+  });
 
   factory SyncRequest.fromJson(Map<String, Object?> json) => SyncRequest(
     since: json['since'] as int? ?? 0,
@@ -11,15 +16,26 @@ class SyncRequest {
       for (final c in (json['changes'] as List? ?? const []))
         SyncRecord.fromJson((c as Map).cast()),
     ],
+    resettable: json['resettable'] as bool? ?? false,
+    full: json['full'] as bool? ?? false,
   );
 
   /// Highest server revision the client has already applied.
   final int since;
   final List<SyncRecord> changes;
 
+  /// The client understands [SyncResponse.reset] (since 1.0.10).
+  final bool resettable;
+
+  /// The client is downloading everything from revision 0 page by page, so
+  /// an old [since] is no reason for another reset.
+  final bool full;
+
   Map<String, Object?> toJson() => {
     'since': since,
     'changes': [for (final c in changes) c.toJson()],
+    if (resettable) 'resettable': true,
+    if (full) 'full': true,
   };
 }
 
@@ -31,6 +47,7 @@ class SyncResponse {
     this.rejected = const [],
     this.unsupported = const {},
     this.hasMore = false,
+    this.reset = false,
   });
 
   factory SyncResponse.fromJson(Map<String, Object?> json) => SyncResponse(
@@ -48,6 +65,7 @@ class SyncResponse {
       for (final c in (json['unsupported'] as List? ?? const [])) c as String,
     },
     hasMore: json['hasMore'] as bool? ?? false,
+    reset: json['reset'] as bool? ?? false,
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -69,6 +87,11 @@ class SyncResponse {
   /// More changes are pending; the client should sync again with [rev].
   final bool hasMore;
 
+  /// The server no longer has the deletions since the client's revision
+  /// (they were cleaned up): it sends everything from revision 0, and the
+  /// client drops what it has but does not receive in this pass.
+  final bool reset;
+
   Map<String, Object?> toJson() => {
     'rev': rev,
     'serverTime': serverTime,
@@ -76,5 +99,6 @@ class SyncResponse {
     'rejected': [for (final c in rejected) c.toJson()],
     'unsupported': unsupported.toList(),
     'hasMore': hasMore,
+    if (reset) 'reset': true,
   };
 }

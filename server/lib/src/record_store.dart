@@ -102,11 +102,80 @@ class RecordStore {
       row['collection'] as String: row['n'] as int,
   };
 
-  int get currentRev =>
-      _db.select('SELECT COALESCE(MAX(rev), 0) FROM records').first.columnAt(0)
-          as int;
+  /// Never goes back, also when the newest record was a cleaned-up
+  /// deletion mark (see [purgedRev]).
+  int get currentRev => max(
+    _db.select('SELECT COALESCE(MAX(rev), 0) FROM records').first.columnAt(0)
+        as int,
+    purgedRev,
+  );
 
   static const _resetKey = 'dataResetAt';
+  static const _purgedKey = 'purgedRev';
+
+  /// Highest revision of a deletion mark that was cleaned up: a client
+  /// behind it may have missed deletions and has to download everything.
+  late int purgedRev = int.tryParse(_setting(_purgedKey) ?? '') ?? 0;
+
+  /// How long deletion marks are kept: devices offline for longer download
+  /// everything again.
+  static const keepDeleted = Duration(days: 180);
+
+  String? _setting(String key) =>
+      _db
+              .select('SELECT value FROM settings WHERE key = ?', [key])
+              .firstOrNull
+              ?.columnAt(0)
+          as String?;
+
+  /// Notes the current revision with the time and removes deletion marks
+  /// (and revocations) that were older than [keepDeleted] by the server's
+  /// clock. Run regularly; returns how many were removed.
+  int purgeDeleted({DateTime? now}) {
+    final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final cutoff = at - keepDeleted.inMilliseconds;
+    var removed = 0;
+    _transaction(() {
+      _db.execute(
+        'INSERT OR REPLACE INTO rev_marks (at, rev) VALUES (?, ?)',
+        [at, currentRev],
+      );
+      final horizon = _db
+          .select(
+            'SELECT at, rev FROM rev_marks WHERE at <= ? ORDER BY at DESC'
+            ' LIMIT 1',
+            [cutoff],
+          )
+          .firstOrNull;
+      if (horizon == null) return;
+      final rev = horizon['rev'] as int;
+      // Older marks are no longer needed; the horizon stays as a floor.
+      _db.execute('DELETE FROM rev_marks WHERE at < ?', [horizon['at']]);
+      final purged = _db
+          .select(
+            'SELECT MAX(rev) FROM ('
+            ' SELECT rev FROM records WHERE deleted = 1 AND rev <= ?1'
+            ' UNION ALL SELECT rev FROM revocations WHERE rev <= ?1)',
+            [rev],
+          )
+          .first
+          .columnAt(0) as int?;
+      if (purged == null) return;
+      _db.execute('DELETE FROM records WHERE deleted = 1 AND rev <= ?', [rev]);
+      removed += _db.updatedRows;
+      _db.execute('DELETE FROM revocations WHERE rev <= ?', [rev]);
+      removed += _db.updatedRows;
+      if (purged > purgedRev) {
+        purgedRev = purged;
+        _db.execute(
+          'INSERT INTO settings (key, value) VALUES (?, ?)'
+          ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+          [_purgedKey, '$purged'],
+        );
+      }
+    });
+    return removed;
+  }
 
   /// When an admin last deleted all data (ms since epoch, 0: never).
   late int resetAt =
@@ -175,8 +244,15 @@ class RecordStore {
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     // A client ahead of the server means the server database was reset:
-    // send it everything again.
-    final since = request.since > currentRev ? 0 : request.since;
+    // send it everything again. One behind cleaned-up deletion marks gets
+    // everything too and drops what it does not receive (newer apps only;
+    // older ones would ask again and again).
+    final reset =
+        request.resettable &&
+        !request.full &&
+        request.since > 0 &&
+        request.since < purgedRev;
+    final since = request.since > currentRev || reset ? 0 : request.since;
     // Newer clients may know collections this server does not; skip those
     // instead of failing the whole sync.
     final accepted = <SyncRecord>[];
@@ -293,7 +369,15 @@ class RecordStore {
     });
 
     if (stored.isNotEmpty) onStored?.call(userId, stored);
-    return _pull(userId, since, now, rejected, unsupported, role);
+    return _pull(
+      userId,
+      since,
+      now,
+      rejected,
+      unsupported,
+      role,
+      reset: reset,
+    );
   }
 
   SyncResponse _pull(
@@ -302,8 +386,9 @@ class RecordStore {
     int now,
     List<SyncRecord> rejected,
     Set<String> unsupported,
-    MemberRole role,
-  ) {
+    MemberRole role, {
+    bool reset = false,
+  }) {
     // Guests only get their collections (names are constants, no input).
     final only = role == MemberRole.guest
         ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
@@ -333,6 +418,7 @@ class RecordStore {
       rejected: rejected,
       unsupported: unsupported,
       hasMore: hasMore,
+      reset: reset,
     );
   }
 

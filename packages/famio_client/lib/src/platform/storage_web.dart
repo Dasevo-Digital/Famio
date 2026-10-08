@@ -28,6 +28,12 @@ class _MemoryRecords implements RecordBackend {
   void markClean(String collection, String id) {}
 
   @override
+  void remove(String collection, String id) {}
+
+  @override
+  void removeCleanDeleted() {}
+
+  @override
   void begin() {}
 
   @override

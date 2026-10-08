@@ -11,6 +11,11 @@ abstract class RecordBackend {
 
   void markClean(String collection, String id);
 
+  void remove(String collection, String id);
+
+  /// Removes deletions the server already knows about.
+  void removeCleanDeleted();
+
   void begin();
 
   void commit();

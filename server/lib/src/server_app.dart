@@ -321,9 +321,13 @@ class FamioServerApp {
     accounts.deleteExpiredSessions();
     locations.collectGarbage();
     notices.collectGarbage();
+    records.purgeDeleted();
+    invites.collectGarbage();
     backups?.start();
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
       notices.collectGarbage();
+      records.purgeDeleted();
+      invites.collectGarbage();
       files.collectGarbage();
       accounts.deleteExpiredSessions();
       locations.collectGarbage();

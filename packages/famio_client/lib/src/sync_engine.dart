@@ -223,17 +223,40 @@ class SyncEngine {
     _lastSync = DateTime.now();
     try {
       bool more;
+      // Downloading everything (first sync or after a reset): an old
+      // revision on the next pages is no reason for another reset.
+      var full = lastRev == 0;
+      // After a reset: what the server still has, to drop the rest.
+      Set<(String, String)>? received;
       do {
         final pushed = _pushable.take(_pushBatch).toList();
         final sentAt = DateTime.now().millisecondsSinceEpoch;
         final response = await api.sync(
-          SyncRequest(since: lastRev, changes: pushed),
+          SyncRequest(
+            since: lastRev,
+            changes: pushed,
+            resettable: true,
+            full: full,
+          ),
         );
         final receivedAt = DateTime.now().millisecondsSinceEpoch;
         _clockOffset = response.serverTime - (sentAt + receivedAt) ~/ 2;
+        if (response.reset) {
+          full = true;
+          received = {};
+        }
+        if (received != null) {
+          for (final r in [...response.changes, ...response.rejected]) {
+            received.add((r.collection, r.id));
+          }
+        }
         _apply(pushed, response);
         _unsupported.addAll(response.unsupported);
         more = response.hasMore || _pushable.isNotEmpty;
+        if (!response.hasMore && received != null) {
+          _dropMissing(received);
+          received = null;
+        }
       } while (more);
       lastError = null;
       _setStatus(SyncState.idle, null, DateTime.now());
@@ -268,11 +291,31 @@ class SyncEngine {
         if (local != null && local.dirty && _newer(local.record, remote)) {
           continue; // Our pending edit will win on the next push.
         }
-        store.put(remote, dirty: false);
+        if (remote.deleted) {
+          // Nothing to keep of a deleted record.
+          if (local != null) store.remove(remote.collection, remote.id);
+        } else {
+          store.put(remote, dirty: false);
+        }
         changed.add(remote.collection);
       }
       store.setMeta('lastRev', '${response.rev}');
       store.setMeta('clockOffset', '$_clockOffset');
+    });
+    if (changed.isNotEmpty) _changes.add(changed);
+  }
+
+  /// After a full download: drops what the server no longer has (its
+  /// deletion was cleaned up there), unless it waits to be pushed.
+  void _dropMissing(Set<(String, String)> received) {
+    final changed = <String>{};
+    store.transaction(() {
+      for (final (collection, id) in store.keys.toList()) {
+        if (received.contains((collection, id))) continue;
+        if (store.get(collection, id)?.dirty ?? true) continue;
+        store.remove(collection, id);
+        changed.add(collection);
+      }
     });
     if (changed.isNotEmpty) _changes.add(changed);
   }

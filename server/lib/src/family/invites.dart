@@ -116,6 +116,17 @@ class Invites {
       _invite(row),
   ];
 
+  /// Forgets invitations that expired or were used more than 30 days ago.
+  void collectGarbage() {
+    final cutoff = DateTime.now()
+        .subtract(const Duration(days: 30))
+        .millisecondsSinceEpoch;
+    _db.execute(
+      'DELETE FROM invites WHERE expires_at < ?1 OR used_at < ?1',
+      [cutoff],
+    );
+  }
+
   void revoke(String id) =>
       _db.execute('DELETE FROM invites WHERE id = ? AND used_at IS NULL', [id]);
 

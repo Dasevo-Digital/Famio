@@ -463,6 +463,19 @@ END:VCALENDAR
     );
     expect(bogus.statusCode, 403);
     expect(bogus.body, contains('valid-sync-token'));
+
+    // Half a year later the deletion mark is gone: an app with the old
+    // token has to start over instead of missing the deletion.
+    final t0 = DateTime(2026);
+    app.records
+      ..purgeDeleted(now: t0)
+      ..purgeDeleted(now: t0.add(const Duration(days: 181)));
+    final stale = await dav(
+      'REPORT',
+      'dav/calendars/mama/famio/',
+      body: report(token2),
+    );
+    expect(stale.statusCode, 403);
   });
 
   test('app passwords can be listed and revoked', () async {

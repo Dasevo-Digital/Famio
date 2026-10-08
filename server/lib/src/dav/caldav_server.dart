@@ -471,7 +471,8 @@ class CalDavServer {
       final parsed = token.startsWith(_syncTokenPrefix)
           ? int.tryParse(token.substring(_syncTokenPrefix.length))
           : null;
-      if (parsed == null || parsed > current) {
+      // Behind cleaned-up deletion marks: the app has to start over.
+      if (parsed == null || parsed > current || parsed < records.purgedRev) {
         return _davError(403, '<d:valid-sync-token/>');
       }
       since = parsed;

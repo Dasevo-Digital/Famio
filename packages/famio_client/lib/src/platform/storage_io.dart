@@ -89,6 +89,16 @@ class _SqliteRecords implements RecordBackend {
   );
 
   @override
+  void remove(String collection, String id) => _db.execute(
+    'DELETE FROM records WHERE collection = ? AND id = ?',
+    [collection, id],
+  );
+
+  @override
+  void removeCleanDeleted() =>
+      _db.execute('DELETE FROM records WHERE deleted = 1 AND dirty = 0');
+
+  @override
   void begin() => _db.execute('BEGIN');
 
   @override

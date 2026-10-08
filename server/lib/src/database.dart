@@ -256,6 +256,14 @@ const _migrations = [
     used_by TEXT
   );
   ''',
+  '''
+  -- The revision the records had at a server time: tells which deletion
+  -- marks are old enough to clean up.
+  CREATE TABLE rev_marks (
+    at INTEGER PRIMARY KEY,
+    rev INTEGER NOT NULL
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.
