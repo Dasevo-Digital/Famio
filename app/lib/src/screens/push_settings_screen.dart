@@ -86,6 +86,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
               const _OwnPushCard(),
               const SizedBox(height: 12),
               const QuietHoursCard(),
+              const SizedBox(height: 12),
+              const _WeekPreviewCard(),
               ListHeading(
                 'Alternativ: über ntfy',
                 color: accent,
@@ -302,6 +304,30 @@ class _QuietHoursCardState extends State<QuietHoursCard> {
 }
 
 /// Famio's own push on this device: switch, details, test.
+/// Sunday evening's look at the coming week (on this device).
+class _WeekPreviewCard extends StatelessWidget {
+  const _WeekPreviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    return SoftCard(
+      color: FamioColors.of(context).tint(FamioSection.settings),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: SwitchListTile(
+        secondary: const Icon(AppIcons.calendarRange),
+        title: const Text('Wochenvorschau'),
+        subtitle: const Text(
+          'Sonntags um 18 Uhr: deine Termine, Fahrten und Geburtstage der '
+          'nächsten Woche',
+        ),
+        value: state.weekPreview,
+        onChanged: state.setWeekPreview,
+      ),
+    );
+  }
+}
+
 class _OwnPushCard extends StatefulWidget {
   const _OwnPushCard();
 

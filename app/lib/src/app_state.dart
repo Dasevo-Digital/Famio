@@ -49,6 +49,15 @@ class AppState extends ChangeNotifier {
   /// The wall display shows family photos after a while without touch.
   bool get kioskPhotos => _prefs.getBool('kiosk.photos') ?? true;
 
+  /// Sunday evening's notification about the coming week.
+  bool get weekPreview => _prefs.getBool('reminders.weekPreview') ?? true;
+
+  Future<void> setWeekPreview(bool value) async {
+    await _prefs.setBool('reminders.weekPreview', value);
+    _reminders?.refresh();
+    notifyListeners();
+  }
+
   Future<void> setKioskPhotos(bool value) async {
     await _prefs.setBool('kiosk.photos', value);
     notifyListeners();
@@ -695,6 +704,7 @@ class AppState extends ChangeNotifier {
     _reminders ??= await ReminderService.create(_prefs);
     _reminders?.ownPushActive = () => push.active;
     _reminders?.quietHours = () => quietHours;
+    _reminders?.weekPreview = () => weekPreview;
     _loadQuietHours(api);
     if (this.engine == engine) _reminders?.attach(engine);
     _loadConfig(api);

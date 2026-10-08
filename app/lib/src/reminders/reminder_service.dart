@@ -16,6 +16,7 @@ import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
+import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
 import '../environment.dart';
@@ -86,6 +87,12 @@ class ReminderService {
 
   /// True while this device gets Famio's own push notifications.
   bool Function()? ownPushActive;
+
+  /// Whether this device shows the week ahead on Sunday evening.
+  bool Function()? weekPreview;
+
+  /// Plans again, e.g. after a setting changed.
+  void refresh() => _reschedule();
 
   /// The member's quiet time (see QuietHours); reminders the member set
   /// themselves stay loud.
@@ -183,6 +190,15 @@ class ReminderService {
         limit: _maxScheduled,
       ),
       ...familyReminders(engine, from: now, to: now.add(_window)),
+      if (weekPreview?.call() ?? true)
+        for (final (at, monday) in weekPreviewTimes(now, now.add(_window)))
+          if (buildWeekPreview(engine, monday) case final p?)
+            DueReminder(
+              key: 'week:${dayKey(monday)}',
+              at: at,
+              title: p.title,
+              body: p.body,
+            ),
     ]..sort((a, b) => a.at.compareTo(b.at));
     if (due.length > _maxScheduled) due.removeRange(_maxScheduled, due.length);
     if (_canSchedule) {
