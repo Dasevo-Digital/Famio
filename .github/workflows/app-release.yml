@@ -36,10 +36,18 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      - if: matrix.target != 'linux-arm64'
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+      # Flutter publishes no SDK archive for Linux on ARM: the tag from git.
+      - if: matrix.target == 'linux-arm64'
+        working-directory: ${{ runner.temp }}
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/flutter/bin/flutter" --version
       - if: startsWith(matrix.target, 'linux')
         run: |
           sudo apt-get update
