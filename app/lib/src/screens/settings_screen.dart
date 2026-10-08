@@ -260,6 +260,7 @@ class SettingsScreen extends StatelessWidget {
             value: state.highContrast.value,
             onChanged: state.setHighContrast,
           ),
+          if (!kIsWeb && state.files != null) const _DeviceStorageTile(),
           ListHeading('Synchronisation', color: accent),
           ListTile(
             leading: const Icon(AppIcons.hardDrives),
@@ -790,4 +791,58 @@ class VersionTileState extends State<VersionTile> {
       );
     },
   );
+}
+
+/// How much room the offline copies of photos and documents take on this
+/// device, with a button to free it.
+class _DeviceStorageTile extends StatefulWidget {
+  const _DeviceStorageTile();
+
+  @override
+  State<_DeviceStorageTile> createState() => _DeviceStorageTileState();
+}
+
+class _DeviceStorageTileState extends State<_DeviceStorageTile> {
+  @override
+  Widget build(BuildContext context) {
+    final files = AppScope.of(context).files!;
+    String mb(int bytes) => '${(bytes / (1024 * 1024)).round()} MB';
+    return ListTile(
+      leading: const Icon(AppIcons.database),
+      title: const Text('Speicher auf diesem Gerät'),
+      subtitle: Text(
+        'Fotos und Dokumente zum Offline-Ansehen: ${mb(files.size)} '
+        '(höchstens ${mb(files.maxBytes)}; was lange nicht angesehen wurde, '
+        'fällt zuerst raus)',
+      ),
+      trailing: TextButton(
+        onPressed: files.size == 0
+            ? null
+            : () async {
+                final ok = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Speicher leeren?'),
+                    content: const Text(
+                      'Fotos und Dokumente werden beim nächsten Ansehen neu '
+                      'geladen. Auf dem Server bleibt alles erhalten.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Abbrechen'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Leeren'),
+                      ),
+                    ],
+                  ),
+                );
+                if (ok == true) setState(files.clear);
+              },
+        child: const Text('Leeren'),
+      ),
+    );
+  }
 }

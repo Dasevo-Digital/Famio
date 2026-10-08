@@ -54,7 +54,12 @@ class _MemoryBlobs implements BlobBackend {
   var _bytes = 0;
 
   @override
-  List<int>? read(String key) => _blobs[key];
+  List<int>? read(String key) {
+    // Most recently used last.
+    final data = _blobs.remove(key);
+    if (data != null) _blobs[key] = data;
+    return data;
+  }
 
   @override
   void write(String key, List<int> data) {
@@ -65,6 +70,22 @@ class _MemoryBlobs implements BlobBackend {
     while (_bytes > limit) {
       _bytes -= _blobs.remove(_blobs.keys.first)!.length;
     }
+  }
+
+  @override
+  int get size => _bytes;
+
+  @override
+  void trim(int maxBytes) {
+    while (_bytes > maxBytes && _blobs.isNotEmpty) {
+      _bytes -= _blobs.remove(_blobs.keys.first)!.length;
+    }
+  }
+
+  @override
+  void clear() {
+    _blobs.clear();
+    _bytes = 0;
   }
 
   @override

@@ -12,8 +12,11 @@ import 'platform/platform.dart';
 /// The cache is an encrypted database: documents and photos are never
 /// stored in plain text, except for a short-lived copy in [tempDir] when a
 /// file is handed to another app (PDF viewer …); [clearTemp] removes those.
+///
+/// It keeps at most [maxBytes]; beyond that the files not shown for the
+/// longest time go first (they are downloaded again when needed).
 class FileCache {
-  FileCache._(this._blobs, this.api, this.tempDir);
+  FileCache._(this._blobs, this.api, this.tempDir, this.maxBytes);
 
   /// Opens the cache database at [path] (`:memory:` for tests; in the
   /// browser the cache stays in memory).
@@ -22,7 +25,19 @@ class FileCache {
     FamioApiClient api, {
     String? hexKey,
     required String tempDir,
-  }) => FileCache._(openBlobBackend(path, hexKey: hexKey), api, tempDir);
+    int maxBytes = defaultMaxBytes,
+  }) => FileCache._(
+    openBlobBackend(path, hexKey: hexKey),
+    api,
+    tempDir,
+    maxBytes,
+  );
+
+  /// Enough for thousands of previews and plenty of documents, little next
+  /// to a phone's storage.
+  static const defaultMaxBytes = 500 * 1024 * 1024;
+
+  final int maxBytes;
 
   final BlobBackend _blobs;
   final FamioApiClient api;
@@ -86,6 +101,16 @@ class FileCache {
   /// downloads their own file again.
   void put(FileRef ref, List<int> data) => _write(ref.id, data);
 
+  /// Bytes the cache takes on this device.
+  int get size => _blobs.size;
+
+  /// Forgets all files; they are downloaded again when shown.
+  void clear() {
+    _recent.clear();
+    _recentBytes = 0;
+    _blobs.clear();
+  }
+
   void close() => _blobs.close();
 
   Uint8List? _read(String key) => switch (_blobs.read(key)) {
@@ -94,7 +119,10 @@ class FileCache {
     final data => Uint8List.fromList(data),
   };
 
-  void _write(String key, List<int> data) => _blobs.write(key, data);
+  void _write(String key, List<int> data) {
+    _blobs.write(key, data);
+    _blobs.trim(maxBytes);
+  }
 
   static String _safe(String name) => name.replaceAll(RegExp(r'[^\w.\-]'), '_');
 }

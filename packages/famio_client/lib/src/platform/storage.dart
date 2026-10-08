@@ -30,5 +30,14 @@ abstract class BlobBackend {
 
   void write(String key, List<int> data);
 
+  /// Bytes stored.
+  int get size;
+
+  /// Drops the least recently used files until at most [maxBytes] remain.
+  void trim(int maxBytes);
+
+  /// Drops everything.
+  void clear();
+
   void close();
 }
