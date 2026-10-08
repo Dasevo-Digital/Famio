@@ -362,6 +362,7 @@ ParsedEvent parseEventIcs(
       // Other apps know no lifts: kept as they were.
       bringerId: existing?.bringerId,
       pickerId: existing?.pickerId,
+      countdown: existing?.countdown ?? false,
       recurrence: recurrence,
       exceptions: exceptions,
       reminderMinutes: reminder,

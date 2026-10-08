@@ -95,6 +95,7 @@ void main() {
       end: DateTime(2026, 10, 8, 18),
       bringerId: 'papa',
       pickerId: 'mama',
+      countdown: true,
     );
     final changed = parseEventIcs(
       eventToIcs(
@@ -108,5 +109,6 @@ void main() {
     ).event!;
     expect(changed.title, 'Training (Halle 2)');
     expect((changed.bringerId, changed.pickerId), ('papa', 'mama'));
+    expect(changed.countdown, isTrue);
   });
 }

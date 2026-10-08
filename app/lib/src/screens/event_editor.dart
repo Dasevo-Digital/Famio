@@ -103,6 +103,7 @@ class _EventEditorState extends State<_EventEditor> {
   var _confidential = false;
   String? _bringerId;
   String? _pickerId;
+  var _countdown = false;
 
   bool get _isSeries => _original?.recurrence != null;
 
@@ -122,6 +123,7 @@ class _EventEditorState extends State<_EventEditor> {
       _confidential = o.event.confidential;
       _bringerId = o.event.bringerId;
       _pickerId = o.event.pickerId;
+      _countdown = o.event.countdown;
     } else {
       final day = widget.day ?? DateUtils.dateOnly(DateTime.now());
       final now = DateTime.now();
@@ -265,6 +267,7 @@ class _EventEditorState extends State<_EventEditor> {
     confidential: _confidential,
     bringerId: _allDay ? null : _bringerId,
     pickerId: _allDay ? null : _pickerId,
+    countdown: _countdown,
     // Other calendar apps (CalDAV) know the event by its UID.
     icalUid: id == _original?.id ? _original?.icalUid : null,
   );
@@ -534,6 +537,16 @@ class _EventEditorState extends State<_EventEditor> {
                 ),
                 value: _confidential,
                 onChanged: (v) => setState(() => _confidential = v),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(AppIcons.partyPopper),
+                title: const Text('Countdown'),
+                subtitle: const Text(
+                  'Auf der Startseite und der Wandanzeige: „Noch 12 Tage“',
+                ),
+                value: _countdown,
+                onChanged: (v) => setState(() => _countdown = v),
               ),
               const SizedBox(height: 8),
               if (!_allDay) ...[

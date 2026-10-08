@@ -110,6 +110,7 @@ class CalendarEvent {
     this.icalUid,
     this.bringerId,
     this.pickerId,
+    this.countdown = false,
   });
 
   factory CalendarEvent.fromRecord(SyncRecord r) {
@@ -139,8 +140,13 @@ class CalendarEvent {
       icalUid: r.data['icalUid'] as String?,
       bringerId: r.data['bringerId'] as String?,
       pickerId: r.data['pickerId'] as String?,
+      countdown: r.data['countdown'] as bool? ?? false,
     );
   }
+
+  /// Counted down to on the start page and the wall display ("noch 12
+  /// Tage"), e.g. holidays, a birthday party or the first day at school.
+  final bool countdown;
 
   /// Who takes the children there and who picks them up (member ids);
   /// they get their own reminders.
@@ -341,6 +347,7 @@ class CalendarEvent {
     bool? confidential,
     Object? bringerId = _keep,
     Object? pickerId = _keep,
+    bool? countdown,
   }) => CalendarEvent(
     id: id,
     title: title ?? this.title,
@@ -362,6 +369,7 @@ class CalendarEvent {
     icalUid: icalUid,
     bringerId: bringerId == _keep ? this.bringerId : bringerId as String?,
     pickerId: pickerId == _keep ? this.pickerId : pickerId as String?,
+    countdown: countdown ?? this.countdown,
   );
 
   /// A copy with a new [id], e.g. to detach one occurrence from a series.
@@ -379,6 +387,7 @@ class CalendarEvent {
     reminderMinutes: reminderMinutes,
     sourceId: sourceId,
     confidential: confidential,
+    countdown: countdown,
   );
 
   Map<String, Object?> toData() => {
@@ -397,6 +406,7 @@ class CalendarEvent {
     'icalUid': ?icalUid,
     'bringerId': ?bringerId,
     'pickerId': ?pickerId,
+    if (countdown) 'countdown': true,
   };
 }
 

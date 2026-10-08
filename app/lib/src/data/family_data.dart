@@ -201,6 +201,36 @@ extension FamilyData on SyncEngine {
         return a.event.title.compareTo(b.event.title);
       });
 
+  /// Events marked for a countdown with their next occurrence within a
+  /// year, soonest first; one that is running (the holiday week) counts
+  /// as 0 days.
+  List<({Occurrence occurrence, int days})> countdowns(DateTime now) {
+    final today = DateTime(now.year, now.month, now.day);
+    final result = <({Occurrence occurrence, int days})>[];
+    for (final e in events) {
+      if (!e.countdown) continue;
+      final next = e
+          .occurrencesBetween(now, today.add(const Duration(days: 366)))
+          .firstOrNull;
+      if (next == null) continue;
+      final day = DateTime.utc(
+        next.start.year,
+        next.start.month,
+        next.start.day,
+      );
+      final days = day
+          .difference(DateTime.utc(today.year, today.month, today.day))
+          .inDays;
+      result.add((occurrence: next, days: days < 0 ? 0 : days));
+    }
+    return result..sort((a, b) {
+      final byDays = a.days.compareTo(b.days);
+      return byDays != 0
+          ? byDays
+          : a.occurrence.start.compareTo(b.occurrence.start);
+    });
+  }
+
   // --- chat ---------------------------------------------------------------
 
   List<ChatMessage> chatMessages(String chatId) =>
@@ -595,4 +625,15 @@ extension FamilyData on SyncEngine {
   List<LocationAlert> get locationAlerts =>
       records(Collections.locationAlerts).map(LocationAlert.fromRecord).toList()
         ..sort((a, b) => b.at.compareTo(a.at));
+}
+
+/// "heute", "morgen", "noch 12 Tage"; "läuft" once a several-day event
+/// has begun.
+String countdownLabel(Occurrence o, int days, DateTime now) {
+  if (o.start.isBefore(DateTime(now.year, now.month, now.day))) return 'läuft';
+  return switch (days) {
+    0 => 'heute',
+    1 => 'morgen',
+    _ => 'noch $days Tage',
+  };
 }

@@ -228,6 +228,31 @@ class _KioskScreenState extends State<KioskScreen> {
                                 ),
                               ),
                             ),
+                        if (on(FamioSection.calendar))
+                          if (engine.countdowns(_now) case final counts
+                              when counts.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Wrap(
+                                spacing: 12,
+                                runSpacing: 12,
+                                children: [
+                                  for (final e in counts.take(4))
+                                    SoftCard(
+                                      color: c.tint(FamioSection.calendar),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 18,
+                                        vertical: 12,
+                                      ),
+                                      child: Text(
+                                        '🎉 ${e.occurrence.event.title}: '
+                                        '${countdownLabel(e.occurrence, e.days, _now)}',
+                                        style: theme.textTheme.titleLarge,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                         const SizedBox(height: 8),
                         if (byPerson)
                           _PeopleBoard(

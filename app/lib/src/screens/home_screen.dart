@@ -118,6 +118,9 @@ class HomeScreen extends StatelessWidget {
             final tiles = [
               if (on(FamioSection.calendar)) _TodayTile(engine: engine),
               WeatherTile(engine: engine),
+              if (on(FamioSection.calendar) &&
+                  engine.countdowns(now).isNotEmpty)
+                _CountdownTile(engine: engine),
               if (on(FamioSection.tasks)) _TasksTile(engine: engine),
               if (on(FamioSection.shopping)) _ShoppingTile(engine: engine),
               if (on(FamioSection.meals) &&
@@ -430,6 +433,69 @@ class _TodayTile extends StatelessWidget {
                 dim: true,
               ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Looking forward: the next marked event big, a few more below.
+class _CountdownTile extends StatelessWidget {
+  const _CountdownTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final all = engine.countdowns(now);
+    final first = all.first;
+    final c = FamioColors.of(context);
+    final theme = Theme.of(context);
+    final accent = c.strong(FamioSection.calendar);
+    return _Tile(
+      section: FamioSection.calendar,
+      title: 'Countdown',
+      icon: AppIcons.partyPopper,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              if (first.days > 1)
+                Text(
+                  '${first.days}',
+                  style: theme.textTheme.displaySmall?.copyWith(
+                    fontFamily: 'Fredoka',
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              if (first.days > 1) const SizedBox(width: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    first.days > 1
+                        ? 'Tage bis ${first.occurrence.event.title}'
+                        : '${first.occurrence.event.title}: '
+                              '${countdownLabel(first.occurrence, first.days, now)}! 🎉',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          for (final e in all.skip(1).take(3))
+            _Line(
+              e.occurrence.event.title,
+              leading: _Dot(c.inkSoft),
+              trailing: countdownLabel(e.occurrence, e.days, now),
+              dim: true,
+            ),
         ],
       ),
     );

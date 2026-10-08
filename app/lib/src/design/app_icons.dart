@@ -181,4 +181,10 @@ abstract final class AppIcons {
   static const IconData bellRing = LucideIcons.bellRing;
   static const IconData template = LucideIcons.layoutTemplate;
   static const IconData poll = LucideIcons.chartNoAxesColumn;
+  static const IconData calendarRange = LucideIcons.calendarRange;
+  static const IconData luggage = LucideIcons.luggage;
+  static const IconData partyPopper = LucideIcons.partyPopper;
+  static const IconData pawPrint = LucideIcons.pawPrint;
+  static const IconData recycle = LucideIcons.recycle;
+  static const IconData wrench = LucideIcons.wrench;
 }
