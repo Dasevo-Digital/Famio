@@ -21,6 +21,7 @@ export 'src/models/chat.dart';
 export 'src/models/child_log.dart';
 export 'src/models/chores.dart';
 export 'src/models/contact.dart';
+export 'src/models/deadline.dart';
 export 'src/models/document.dart';
 export 'src/models/event.dart';
 export 'src/models/event_comment.dart';

@@ -111,7 +111,12 @@ abstract final class Collections {
   /// record, set by adults).
   static const wasteSettings = 'waste_settings';
 
+  /// Recurring deadlines: the car's inspection, the boiler service, the
+  /// pet's vaccination (set by adults).
+  static const deadlines = 'deadlines';
+
   static const all = {
+    deadlines,
     wasteSettings,
     wishes,
     wishClaims,
@@ -206,6 +211,7 @@ abstract final class Collections {
     routines,
     sosSettings,
     wasteSettings,
+    deadlines,
   };
 
   /// Collections clients may read but never write.

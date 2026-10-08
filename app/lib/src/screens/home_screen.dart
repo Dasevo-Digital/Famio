@@ -27,6 +27,8 @@ import 'notes_screen.dart';
 import 'wishes_screen.dart';
 import 'waste_screen.dart';
 import '../data/waste.dart';
+import '../data/deadlines.dart';
+import 'deadlines_screen.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -107,6 +109,7 @@ class HomeScreen extends StatelessWidget {
           Collections.notes,
           Collections.wishes,
           Collections.wasteSettings,
+          Collections.deadlines,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
@@ -127,6 +130,8 @@ class HomeScreen extends StatelessWidget {
               if (engine.nextWastePickup(now) != null)
                 _WasteTile(engine: engine),
               if (on(FamioSection.tasks)) _TasksTile(engine: engine),
+              if (!guest && engine.deadlinesSoon(now).isNotEmpty)
+                _DeadlinesTile(engine: engine),
               if (on(FamioSection.shopping)) _ShoppingTile(engine: engine),
               if (on(FamioSection.meals) &&
                   engine
@@ -539,6 +544,43 @@ class _WasteTile extends StatelessWidget {
                   : '${who.map((m) => m.displayName).join(', ')} ist dran',
               leading: MemberAvatar(who.first, radius: 10),
               dim: true,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// TÜV, boiler service & co. that are due soon or overdue.
+class _DeadlinesTile extends StatelessWidget {
+  const _DeadlinesTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final soon = engine.deadlinesSoon(now);
+    final c = FamioColors.of(context);
+    return _Tile(
+      section: FamioSection.tasks,
+      title: 'Fristen',
+      icon: AppIcons.wrench,
+      badge: '${soon.length}',
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const DeadlinesScreen())),
+      child: Column(
+        children: [
+          for (final d in soon.take(4))
+            _Line(
+              '${d.area.emoji} ${d.label}',
+              leading: _Dot(
+                d.daysLeft(now) < 0
+                    ? Theme.of(context).colorScheme.error
+                    : c.strong(FamioSection.tasks),
+              ),
+              trailing: deadlineWhen(d, now),
             ),
         ],
       ),

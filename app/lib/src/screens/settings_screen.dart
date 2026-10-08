@@ -30,6 +30,7 @@ import '../widgets/password_reveal.dart';
 import 'admin_screens.dart';
 import 'security_screens.dart';
 import '../widgets/data_export.dart';
+import 'deadlines_screen.dart';
 import 'waste_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -189,14 +190,27 @@ class SettingsScreen extends StatelessWidget {
               MaterialPageRoute<void>(builder: (_) => const WishesScreen()),
             ),
           ),
-          ListTile(
-            leading: const Icon(AppIcons.recycle),
-            title: const Text('Abfallkalender'),
-            subtitle: const Text('Wer wann welche Tonne rausstellt'),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const WasteScreen()),
+          // Guests (grandparents, babysitters) see neither.
+          if (!me.isGuest) ...[
+            ListTile(
+              leading: const Icon(AppIcons.wrench),
+              title: const Text('Fristen & Wartung'),
+              subtitle: const Text('TÜV, Heizung, Tierarzt – mit Erinnerung'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const DeadlinesScreen(),
+                ),
+              ),
             ),
-          ),
+            ListTile(
+              leading: const Icon(AppIcons.recycle),
+              title: const Text('Abfallkalender'),
+              subtitle: const Text('Wer wann welche Tonne rausstellt'),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const WasteScreen()),
+              ),
+            ),
+          ],
           ListTile(
             leading: const Icon(AppIcons.siren),
             title: const Text('Notfallknopf'),

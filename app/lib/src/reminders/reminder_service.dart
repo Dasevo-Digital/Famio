@@ -16,6 +16,7 @@ import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
+import '../data/deadlines.dart';
 import '../data/waste.dart';
 import '../data/week_preview.dart';
 import '../format.dart';
@@ -269,6 +270,7 @@ class ReminderService {
     Collections.events,
     Collections.externalEvents,
     Collections.wasteSettings,
+    Collections.deadlines,
     Collections.shoppingLists,
     Collections.shoppingItems,
     Collections.tasks,
@@ -629,6 +631,25 @@ List<DueReminder> familyReminders(
         'Mindestens haltbar bis morgen.',
       );
     }
+  }
+  // Deadlines (car, house, pets): ahead of time and on the day.
+  for (final d in engine.deadlines) {
+    if (d.done || !engine.deadlineIsMine(d)) continue;
+    final when = DateFormat('d.M.y', 'de').format(d.due);
+    if (d.leadDays > 0) {
+      add(
+        'deadline:${d.id}:${dayKey(d.due)}:lead',
+        nineOn(d.due.subtract(Duration(days: d.leadDays))),
+        '${d.area.emoji} ${d.label}: in ${d.leadDays} Tagen',
+        'Fällig am $when – rechtzeitig einen Termin machen.',
+      );
+    }
+    add(
+      'deadline:${d.id}:${dayKey(d.due)}',
+      nineOn(d.due),
+      '${d.area.emoji} Heute fällig: ${d.label}',
+      d.note.isEmpty ? 'In Famio als erledigt markieren.' : d.note,
+    );
   }
   // Packing lists: the evening before the trip, while I still have to pack.
   final events = {for (final e in engine.events) e.id: e};
