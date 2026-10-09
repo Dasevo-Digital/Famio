@@ -21,6 +21,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
 import 'sos_screens.dart' show RecentCheckIns, showCheckIn;
 import '../l10n.dart';
+import '../format.dart';
 
 part 'location/family_map.dart';
 part 'location/history.dart';

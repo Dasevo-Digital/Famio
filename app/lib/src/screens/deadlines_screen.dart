@@ -15,7 +15,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 
-final _date = DateFormat.yMd(appLanguage);
+DateFormat get _date => DateFormat.yMd(appLanguage);
 
 /// TÜV, boiler service, the dog's vaccination: dates that come back and
 /// must not be missed, with a reminder ahead of time.
@@ -35,13 +35,13 @@ class DeadlinesScreen extends StatelessWidget {
         final accent = c.strong(FamioSection.tasks);
         return SectionPage(
           section: FamioSection.tasks,
-          title: 'Fristen & Wartung',
-          subtitle: 'Auto, Haus und Haustiere',
+          title: tr.settingsDeadlines,
+          subtitle: tr.deadlinesCarHousePets,
           maxBodyWidth: 720,
           floating: mayEdit
               ? AddButton(
                   color: accent,
-                  tooltip: 'Frist hinzufügen',
+                  tooltip: tr.deadlinesAddDeadline,
                   icon: AppIcons.plus,
                   onPressed: () => showDeadlineEditor(context),
                 )
@@ -54,12 +54,7 @@ class DeadlinesScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Famio erinnert rechtzeitig an TÜV, Heizungswartung, '
-                        'Impfungen der Haustiere und alles, was regelmäßig '
-                        'wiederkommt. Ist es erledigt, rückt die Frist '
-                        'automatisch weiter.',
-                      ),
+                      Text(tr.deadlinesFamioRemindsYouGood),
                       if (mayEdit) ...[
                         const SizedBox(height: 12),
                         Wrap(
@@ -67,11 +62,11 @@ class DeadlinesScreen extends StatelessWidget {
                           runSpacing: 8,
                           children: [
                             for (final p in deadlinePresets.where(
-                              (p) => const {
-                                'HU/TÜV',
-                                'Heizungswartung',
-                                'Rauchmelder testen',
-                                'Impfung',
+                              (p) => {
+                                tr.deadlinesCarInspection,
+                                tr.deadlinesHeatingMaintenance,
+                                tr.deadlinesTestSmokeDetectors,
+                                tr.commonVaccination,
                               }.contains(p.title),
                             ))
                               ActionChip(
@@ -93,7 +88,7 @@ class DeadlinesScreen extends StatelessWidget {
                     _DeadlineCard(deadline: d, engine: engine),
                 ],
               if (done.isNotEmpty) ...[
-                ListHeading('Erledigt', color: accent),
+                ListHeading(tr.commonDoneCap, color: accent),
                 for (final d in done)
                   _DeadlineCard(deadline: d, engine: engine),
               ],
@@ -137,7 +132,9 @@ class _DeadlineCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     d.done
-                        ? 'Erledigt am ${_date.format(d.lastDone ?? d.due)}'
+                        ? tr.deadlinesDoneDate(
+                            _date.format(d.lastDone ?? d.due),
+                          )
                         : '${_date.format(d.due)} · ${deadlineWhen(d, now)}',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: days < 0 && !d.done
@@ -173,17 +170,17 @@ class _DeadlineCard extends StatelessWidget {
                       persist: false,
                       content: Text(
                         next.done
-                            ? '„${d.title}“ erledigt'
-                            : 'Nächstes Mal: ${_date.format(next.due)}',
+                            ? tr.deadlinesTitleDone(d.title)
+                            : tr.deadlinesNextTimeDate(_date.format(next.due)),
                       ),
                       action: SnackBarAction(
-                        label: 'Rückgängig',
+                        label: tr.commonUndo,
                         onPressed: () => engine.saveDeadline(d),
                       ),
                     ),
                   );
                 },
-                child: const Text('Erledigt'),
+                child: Text(tr.commonDoneCap),
               ),
           ],
         ),
@@ -193,11 +190,11 @@ class _DeadlineCard extends StatelessWidget {
 }
 
 String _every(int months) => switch (months) {
-  1 => 'jeden Monat',
-  12 => 'jedes Jahr',
-  24 => 'alle 2 Jahre',
-  36 => 'alle 3 Jahre',
-  _ => 'alle $months Monate',
+  1 => tr.deadlinesEveryMonth,
+  12 => tr.deadlinesEveryYear,
+  24 => tr.deadlinesEvery2Years,
+  36 => tr.deadlinesEvery3Years,
+  _ => tr.deadlinesEveryMonthsMonths(months),
 };
 
 /// Adds or edits a deadline; [preset] fills in a suggestion.
@@ -287,7 +284,9 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                existing == null ? 'Neue Frist' : 'Frist bearbeiten',
+                existing == null
+                    ? tr.deadlinesNewDeadline
+                    : tr.deadlinesEditDeadline,
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 12),
@@ -326,7 +325,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               TextField(
                 controller: _title,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Was?'),
+                decoration: InputDecoration(labelText: tr.wishesWhat),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -334,9 +333,9 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                 textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
                   labelText: switch (_area) {
-                    DeadlineArea.car => 'Welches Auto? (optional)',
-                    DeadlineArea.pet => 'Welches Tier? (optional)',
-                    _ => 'Wofür? (optional)',
+                    DeadlineArea.car => tr.deadlinesWhichCarOptional,
+                    DeadlineArea.pet => tr.deadlinesWhichPetOptional,
+                    _ => tr.budgetWhatOptional,
                   },
                 ),
               ),
@@ -348,7 +347,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.calendarBlank),
-                title: const Text('Fällig am'),
+                title: Text(tr.deadlinesDue),
                 trailing: Text(_date.format(_due)),
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -363,13 +362,13 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.arrowsClockwise),
-                title: const Text('Wiederholen'),
+                title: Text(tr.eventRepeat),
                 trailing: DropdownButton<int?>(
                   value: _repeat,
                   items: [
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: null,
-                      child: Text('einmalig'),
+                      child: Text(tr.deadlinesOnce),
                     ),
                     for (final m in const [1, 3, 6, 12, 24, 36])
                       DropdownMenuItem(value: m, child: Text(_every(m))),
@@ -386,7 +385,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.bell),
-                title: const Text('Erinnern'),
+                title: Text(tr.deadlinesRemind),
                 trailing: DropdownButton<int>(
                   value: _lead,
                   items: [
@@ -394,7 +393,9 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                       DropdownMenuItem(
                         value: d,
                         child: Text(
-                          d == 0 ? 'am Tag selbst' : '$d Tage vorher',
+                          d == 0
+                              ? tr.deadlinesDayItself
+                              : tr.deadlinesDaysDaysBefore(d),
                         ),
                       ),
                   ],
@@ -405,13 +406,11 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                 initialValue: adults.any((m) => m.id == _assignee)
                     ? _assignee
                     : null,
-                decoration: const InputDecoration(
-                  labelText: 'Wer kümmert sich?',
-                ),
+                decoration: InputDecoration(labelText: tr.tasksWhoTakesCare),
                 items: [
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: null,
-                    child: Text('Die Erwachsenen'),
+                    child: Text(tr.deadlinesAdults),
                   ),
                   for (final m in adults)
                     DropdownMenuItem(value: m.id, child: Text(m.displayName)),
@@ -421,8 +420,8 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               const SizedBox(height: 12),
               TextField(
                 controller: _note,
-                decoration: const InputDecoration(
-                  labelText: 'Notiz (Werkstatt, Telefonnummer …)',
+                decoration: InputDecoration(
+                  labelText: tr.deadlinesNoteGaragePhoneNumber,
                 ),
               ),
               const SizedBox(height: 16),
@@ -431,7 +430,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                   if (existing != null)
                     TextButton.icon(
                       icon: const Icon(AppIcons.trash),
-                      label: const Text('Löschen'),
+                      label: Text(tr.commonDelete),
                       onPressed: () {
                         Navigator.pop(context);
                         deleteWithUndo(
@@ -443,10 +442,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                       },
                     ),
                   const Spacer(),
-                  FilledButton(
-                    onPressed: _save,
-                    child: const Text('Speichern'),
-                  ),
+                  FilledButton(onPressed: _save, child: Text(tr.commonSave)),
                 ],
               ),
             ],

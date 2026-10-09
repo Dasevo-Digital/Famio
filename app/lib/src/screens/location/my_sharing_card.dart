@@ -87,10 +87,7 @@ class _MySharingCardState extends State<MySharingCard>
     final state = AppScope.read(context);
     var status = await LocationSharing.requestPermission();
     if (status.permission == LocationPermission.none) {
-      _snack(
-        'Ohne Standortzugriff kann Famio nichts teilen. Du kannst ihn in den '
-        'App-Einstellungen erlauben.',
-      );
+      _snack(tr.locationWithoutLocationAccessFamio);
       return;
     }
     await LocationSharing.enable(
@@ -111,20 +108,16 @@ class _MySharingCardState extends State<MySharingCard>
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Standort auch im Hintergrund teilen?'),
-        content: const Text(
-          'Damit Famio deinen Standort auch bei geschlossener App zuverlässig '
-          'aktualisieren kann, braucht es den Standortzugriff „Immer '
-          'zulassen“. Android öffnet dafür gleich seine Einstellungen.',
-        ),
+        title: Text(tr.locationShareLocationBackgroundToo),
+        content: Text(tr.locationSoThatFamioCan),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Später'),
+            child: Text(tr.commonLater),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Freigabe aktivieren'),
+            child: Text(tr.locationTurnSharing),
           ),
         ],
       ),
@@ -143,8 +136,7 @@ class _MySharingCardState extends State<MySharingCard>
         color: c.tint(FamioSection.location),
         padding: const EdgeInsets.all(16),
         child: Text(
-          'Den eigenen Standort teilt man mit der Famio-App auf dem Handy '
-          '(Android oder iPhone). Hier siehst du, wo die anderen sind.',
+          tr.locationYouShareOwnLocation,
           style: theme.textTheme.bodySmall,
         ),
       );
@@ -161,17 +153,18 @@ class _MySharingCardState extends State<MySharingCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Meinen Standort teilen', style: theme.textTheme.titleMedium),
+            Text(
+              tr.locationShareMyLocation,
+              style: theme.textTheme.titleMedium,
+            ),
             const SizedBox(height: 6),
             Text(
-              'Deine Familie sieht auf der Karte, wo du bist, und bekommt '
-              'Bescheid, wenn du an einem Ort ankommst. Positionen werden '
-              'nach 7 Tagen gelöscht. Pausieren geht nur mit dem Eltern-Code.',
+              tr.locationFamilySeesMapWhere,
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             ColorButton(
-              label: 'Standort teilen',
+              label: tr.locationShareLocation,
               icon: AppIcons.locate,
               color: accent,
               onPressed: _busy ? null : _enable,
@@ -188,7 +181,7 @@ class _MySharingCardState extends State<MySharingCard>
     final hints = <(String, Future<void> Function())>[
       if (device.permission == LocationPermission.none)
         (
-          'Standortzugriff fehlt – antippen zum Erlauben',
+          tr.locationLocationAccessMissingTap,
           () async {
             final s = await LocationSharing.requestPermission();
             if (s.permission == LocationPermission.none) {
@@ -199,28 +192,22 @@ class _MySharingCardState extends State<MySharingCard>
           },
         ),
       if (backgroundLimited)
-        (
-          'Hintergrundortung ist nicht aktiv – der Standort wird nur bei '
-              'geöffneter App zuverlässig aktualisiert',
-          _askAlways,
-        ),
-      if (!device.locationOn)
-        ('Standort ist am Handy ausgeschaltet', () async {}),
+        (tr.locationBackgroundLocationNotActive, _askAlways),
+      if (!device.locationOn) (tr.locationLocationTurnedOffPhone, () async {}),
       // Approximate location is rounded to roughly 2 km: short trips
       // never show up.
       if (device.permission != LocationPermission.none && !device.precise)
         (
-          'Nur „ungefährer“ Standort erlaubt – kurze Wege bleiben '
-              'unsichtbar. Antippen und „Genauen Standort“ einschalten',
+          tr.locationOnlyApproximateLocationAllowed,
           LocationSharing.openAppSettings,
         ),
       if (!device.batteryUnrestricted)
         (
-          'Akku-Optimierung kann die Freigabe stoppen – antippen',
+          tr.locationBatteryOptimizationCanStop,
           LocationSharing.openBatterySettings,
         ),
       if (!device.notifications)
-        ('Benachrichtigungen sind aus', LocationSharing.openAppSettings),
+        (tr.locationNotificationsOff, LocationSharing.openAppSettings),
     ];
     return SoftCard(
       color: c.tint(FamioSection.location),
@@ -238,12 +225,12 @@ class _MySharingCardState extends State<MySharingCard>
               Expanded(
                 child: Text(
                   paused
-                      ? 'Freigabe pausiert'
+                      ? tr.locationSharingPaused
                       : scheduled
-                      ? 'Freigabe nach Zeitplan aus'
+                      ? tr.locationSharingOffSchedule
                       : backgroundLimited
-                      ? 'Standortfreigabe eingeschränkt'
-                      : 'Du teilst deinen Standort',
+                      ? tr.locationLocationSharingRestricted
+                      : tr.locationYouShareLocation,
                   style: theme.textTheme.titleMedium,
                 ),
               ),
@@ -256,7 +243,7 @@ class _MySharingCardState extends State<MySharingCard>
           ),
           const SizedBox(height: 4),
           Text(
-            'Zeitplan: ${scheduleLabel(_schedule)}',
+            tr.locationScheduleSchedule(scheduleLabel(_schedule)),
             style: theme.textTheme.bodySmall,
           ),
           for (final (text, action) in hints)
@@ -290,7 +277,7 @@ class _MySharingCardState extends State<MySharingCard>
               if (paused)
                 FilledButton.tonalIcon(
                   icon: const Icon(AppIcons.play),
-                  label: const Text('Fortsetzen'),
+                  label: Text(tr.locationResume),
                   onPressed: _busy
                       ? null
                       : () => _run(() async {
@@ -302,19 +289,19 @@ class _MySharingCardState extends State<MySharingCard>
               else
                 FilledButton.tonalIcon(
                   icon: const Icon(AppIcons.pause),
-                  label: const Text('Pausieren'),
+                  label: Text(tr.locationPause),
                   onPressed: _busy
                       ? null
                       : () => showPauseDialog(context, member: me),
                 ),
               TextButton.icon(
                 icon: const Icon(AppIcons.clock),
-                label: const Text('Zeitplan'),
+                label: Text(tr.locationSchedule),
                 onPressed: _busy ? null : _editSchedule,
               ),
               TextButton.icon(
                 icon: const Icon(AppIcons.stop),
-                label: const Text('Beenden'),
+                label: Text(tr.commonEnd2),
                 onPressed: _busy
                     ? null
                     : () => _run(() async {
@@ -344,25 +331,32 @@ class _LocationDiagnostics extends StatelessWidget {
     final theme = Theme.of(context);
     final now = DateTime.now();
     final permission = switch (device.permission) {
-      LocationPermission.always => 'Immer erlaubt',
-      LocationPermission.foreground => 'Nur bei geöffneter App',
-      LocationPermission.none => 'Nicht erlaubt',
+      LocationPermission.always => tr.locationAlwaysAllowed,
+      LocationPermission.foreground => tr.locationOnlyWhileAppOpen,
+      LocationPermission.none => tr.locationNotAllowed,
     };
     final rows = <String>[
-      'Berechtigung: $permission'
-          '${device.permission == LocationPermission.none
-              ? ''
-              : device.precise
-              ? ' · genau'
-              : ' · nur ungefähr'}',
-      'Letzter GPS-Fix: ${_when(device.lastFixAt, now)}',
-      'Letzter erfolgreicher Positions-Upload: '
-          '${_when(device.lastSuccessfulUploadAt, now)}',
-      'Letzte Serverantwort: ${_when(device.lastServerResponseAt, now)}'
-          '${device.lastServerStatus == null ? '' : ' (${device.lastServerStatus})'}',
+      tr.locationPermissionPermissionPrecision(
+        permission,
+        device.permission == LocationPermission.none
+            ? ''
+            : device.precise
+            ? tr.locationPrecise
+            : tr.locationApproximateOnly,
+      ),
+      tr.locationLastGpsFixTime(_when(device.lastFixAt, now)),
+      tr.locationLastSuccessfulPositionUpload(
+        _when(device.lastSuccessfulUploadAt, now),
+      ),
+      tr.locationLastServerResponseTime(
+        _when(device.lastServerResponseAt, now),
+        device.lastServerStatus == null ? '' : ' (${device.lastServerStatus})',
+      ),
       if (device.lastErrorAt != null)
-        'Letzter Übertragungsfehler: ${_when(device.lastErrorAt, now)}'
-            '${device.lastError == null ? '' : ' (${device.lastError})'}',
+        tr.locationLastTransferErrorTime(
+          _when(device.lastErrorAt, now),
+          device.lastError == null ? '' : ' (${device.lastError})',
+        ),
     ];
     return Container(
       width: double.infinity,
@@ -374,7 +368,7 @@ class _LocationDiagnostics extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Diagnose', style: theme.textTheme.labelLarge),
+          Text(tr.locationDiagnostics, style: theme.textTheme.labelLarge),
           const SizedBox(height: 4),
           for (final row in rows) Text(row, style: theme.textTheme.bodySmall),
         ],
@@ -383,7 +377,7 @@ class _LocationDiagnostics extends StatelessWidget {
   }
 
   String _when(DateTime? at, DateTime now) =>
-      at == null ? 'noch nie' : ago(at, now: now);
+      at == null ? tr.locationNever : ago(at, now: now);
 }
 
 // --- places -------------------------------------------------------------------

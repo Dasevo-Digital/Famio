@@ -49,8 +49,8 @@ class SettingsScreen extends StatelessWidget {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.settings,
-      title: 'Einstellungen',
-      subtitle: 'Konto, Familie & Server',
+      title: tr.sectionSettings,
+      subtitle: tr.settingsSubtitle,
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
         children: [
@@ -68,7 +68,7 @@ class SettingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       Text(
-                        '@${me.username}${me.isAdmin ? ' · Administrator' : ''}',
+                        '@${me.username}${me.isAdmin ? tr.settingsAdministrator2 : ''}',
                         style: TextStyle(color: c.inkSoft),
                       ),
                     ],
@@ -103,7 +103,7 @@ class SettingsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Server-Verwaltung',
+                          tr.settingsServerAdministration,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Text(
@@ -275,9 +275,9 @@ class SettingsScreen extends StatelessWidget {
             title: Text(context.l10n.settingsServer),
             subtitle: Text(
               state.panelMode == 'server'
-                  ? 'Famio in Home Assistant'
+                  ? tr.settingsInHomeAssistant
                   : state.panelMode == 'client'
-                  ? 'Über Home Assistant verbunden'
+                  ? tr.settingsViaHomeAssistant
                   : state.serverUrl ?? '',
             ),
           ),
@@ -292,12 +292,14 @@ class SettingsScreen extends StatelessWidget {
                 leading: const Icon(AppIcons.arrowsClockwise),
                 title: Text(context.l10n.settingsSyncNow),
                 subtitle: Text(switch (status.state) {
-                  SyncState.syncing => 'Läuft …',
-                  SyncState.offline =>
-                    'Offline: ${status.message ?? 'Server nicht erreichbar'}',
-                  _ when last != null =>
-                    'Zuletzt ${DateFormat.MMMd(appLanguage).add_jm().format(last)}',
-                  _ => 'Noch nicht synchronisiert',
+                  SyncState.syncing => tr.settingsSyncRunning,
+                  SyncState.offline => tr.settingsOfflineMessage(
+                    status.message ?? tr.commonServerUnreachable,
+                  ),
+                  _ when last != null => tr.settingsLastTime(
+                    DateFormat.MMMd(appLanguage).add_jm().format(last),
+                  ),
+                  _ => tr.settingsNotSynced,
                 }),
                 onTap: engine.sync,
               );
@@ -316,7 +318,7 @@ class SettingsScreen extends StatelessWidget {
                       [
                         '@${m.username}',
                         if (m.role != MemberRole.adult) m.role.label,
-                        if (m.isAdmin) 'Administrator',
+                        if (m.isAdmin) tr.settingsAdministrator,
                       ].join(' · '),
                     ),
                   ),
@@ -333,8 +335,8 @@ class SettingsScreen extends StatelessWidget {
               ),
               subtitle: Text(
                 state.panelMode == 'client'
-                    ? 'Home Assistant vergisst deine Anmeldung'
-                    : 'Lokale Daten auf diesem Gerät werden entfernt',
+                    ? tr.settingsSignOutHa
+                    : tr.settingsSignOutSubtitle,
               ),
               onTap: () async {
                 // Signing out would end location sharing: parents' code first.
@@ -385,7 +387,7 @@ class SettingsScreen extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Passwort ändern',
+        title: tr.settingsChangePassword,
         controllers: [current, next],
         fields: [
           PasswordReveal(
@@ -428,15 +430,11 @@ class SettingsScreen extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Konto wirklich löschen?',
-        submitLabel: 'Konto löschen',
+        title: tr.settingsDeleteAccountConfirm,
+        submitLabel: tr.settingsDeleteAccountButton,
         controllers: [password, code],
         fields: [
-          const Text(
-            'Dein Konto, Sitzungen und persönlichen Verbindungen werden entfernt. '
-            'Geteilte Familieneinträge bleiben für die anderen Mitglieder erhalten. '
-            'Als letzter Administrator musst du zuerst die Verwaltung übergeben.',
-          ),
+          Text(tr.settingsAccountSessionsPersonalConnections),
           PasswordReveal(
             builder: (_, obscure, toggle) => TextField(
               controller: password,
@@ -467,7 +465,9 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
     if (confirmed && context.mounted) {
-      await state.signOut(notice: 'Konto ${me.displayName} wurde gelöscht.');
+      await state.signOut(
+        notice: tr.settingsAccountNameWasDeleted(me.displayName),
+      );
     }
   }
 }
@@ -483,7 +483,7 @@ Future<void> showProfileEditor(BuildContext context) async {
   await showDialog<void>(
     context: context,
     builder: (context) => FormDialog(
-      title: 'Mein Profil',
+      title: tr.settingsMyProfile,
       controllers: [name],
       fields: [
         TextField(
@@ -546,8 +546,8 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.settings,
-      title: 'Meine Geräte',
-      subtitle: 'Angemeldete Apps mit deinem Konto',
+      title: tr.settingsMyDevices,
+      subtitle: tr.settingsMyDevicesTitleSubtitle,
       body: FutureBuilder(
         future: _sessions,
         builder: (context, snapshot) => ApiFutureView(
@@ -604,9 +604,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
         SnackBar(
           content: Text(
             e.isNetwork
-                ? 'Der Server bietet kein HTTPS an (Port '
-                      '${AppState.defaultTlsPort}). Server aktualisieren oder '
-                      'den Reverse-Proxy verwenden.'
+                ? tr.settingsServerDoesNotOffer(AppState.defaultTlsPort)
                 : e.message,
           ),
         ),
@@ -635,11 +633,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Nur wenn euer Famio-Server umgezogen ist (z. B. auf einen '
-                  'Proxmox-Container) und die Daten mitgenommen hat. Du '
-                  'bleibst angemeldet.',
-                ),
+                Text(tr.settingsOnlyIfFamioServer),
                 const SizedBox(height: 12),
                 TextField(
                   controller: address,
@@ -648,7 +642,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
                   keyboardType: TextInputType.url,
                   decoration: InputDecoration(
                     labelText: l.settingsNewServerAddress,
-                    hintText: 'famio.example.de oder 192.168.1.10',
+                    hintText: tr.settingsFamioExampleCom192,
                   ),
                   onSubmitted: (v) => Navigator.pop(context, v),
                 ),
@@ -703,23 +697,22 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
       TransportSecurity.encrypted => (
         AppIcons.lock,
         c.strong(FamioSection.tasks),
-        'Verbindung verschlüsselt',
+        tr.settingsConnectionEncrypted,
         pin == null
-            ? 'HTTPS – Daten sind unterwegs geschützt.'
-            : 'HTTPS mit dem bestätigten Zertifikat des Servers '
-                  '(${pin.substring(0, 11)}…).',
+            ? tr.settingsHttpsProtected
+            : tr.settingsHttpsServerSConfirmed(pin.substring(0, 11)),
       ),
       TransportSecurity.localNetwork => (
         AppIcons.warningCircle,
         c.strong(FamioSection.home),
-        'Unverschlüsselt im Heimnetz',
-        'Andere Geräte im WLAN könnten mitlesen.',
+        tr.settingsUnencryptedLan,
+        tr.settingsUnencryptedLanHint,
       ),
       TransportSecurity.insecure => (
         AppIcons.warningCircle,
         c.danger,
-        'Unverschlüsselt über das Internet',
-        'Bitte abmelden und mit der https-Adresse neu verbinden.',
+        tr.settingsUnencryptedInternet,
+        tr.settingsUnencryptedInternetHint,
       ),
     };
     return Column(
@@ -745,8 +738,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
           leading: const Icon(AppIcons.arrowsLeftRight),
           title: Text(context.l10n.settingsChangeServer),
           subtitle: Text(
-            '${Uri.tryParse(url)?.authority ?? url} – z. B. nach einem '
-            'Umzug des Servers',
+            tr.settingsAddressEGAfter(Uri.tryParse(url)?.authority ?? url),
           ),
           onTap: _busy ? null : _move,
         ),
@@ -760,11 +752,8 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
           title: Text(context.l10n.settingsLocalData),
           subtitle: Text(
             state.vault.secure
-                ? 'Verschlüsselt; Schlüssel und Anmeldung im Schlüsselbund '
-                      'des Systems.'
-                : 'Verschlüsselt, aber ohne Schlüsselbund des Systems '
-                      '(z. B. Linux ohne KWallet/GNOME-Schlüsselbund) – '
-                      'der Schlüssel liegt ungeschützt in den Einstellungen.',
+                ? tr.settingsLocalDataKeychain
+                : tr.settingsEncryptedButWithoutSystem,
           ),
         ),
       ],
@@ -801,14 +790,14 @@ class VersionTileState extends State<VersionTile> {
         leading: const Icon(AppIcons.info),
         title: Text(
           app == null
-              ? 'Version'
+              ? tr.settingsVersion
               : '${AppEnv.appName} ${app.version}'
                     '${app.buildNumber.isEmpty ? '' : ' (${app.buildNumber})'}',
         ),
         subtitle: Text(
           snapshot.connectionState != ConnectionState.done
-              ? 'Server-Version wird abgefragt …'
-              : 'Server ${server ?? 'nicht erreichbar'}',
+              ? tr.settingsServerVersionLoading
+              : tr.settingsServerVersion(server ?? tr.settingsNotReachable),
         ),
       );
     },
@@ -833,9 +822,10 @@ class _DeviceStorageTileState extends State<_DeviceStorageTile> {
       leading: const Icon(AppIcons.database),
       title: Text(context.l10n.settingsStorage),
       subtitle: Text(
-        'Fotos und Dokumente zum Offline-Ansehen: ${mb(files.size)} '
-        '(höchstens ${mb(files.maxBytes)}; was lange nicht angesehen wurde, '
-        'fällt zuerst raus)',
+        tr.settingsPhotosDocumentsViewingOffline(
+          mb(files.size),
+          mb(files.maxBytes),
+        ),
       ),
       trailing: TextButton(
         onPressed: files.size == 0

@@ -65,16 +65,17 @@ class PantryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Vorrat',
+                      tr.conflictsPantry,
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     Text(
                       items.isEmpty
-                          ? 'Kühlschrank & Vorratsschrank im Blick – mit Barcode-Scanner'
+                          ? tr.pantryFridgePantryGlanceBarcode
                           : [
-                              '${items.length} Artikel',
-                              if (low > 0) '$low werden knapp',
-                              if (expiring > 0) '$expiring laufen bald ab',
+                              tr.pantryCountItems(items.length),
+                              if (low > 0) tr.pantryCountRunningLow(low),
+                              if (expiring > 0)
+                                tr.pantryCountExpiringSoon(expiring),
                             ].join(' · '),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
@@ -113,8 +114,8 @@ class _PantryScreenState extends State<PantryScreen> {
     }
     final messenger = ScaffoldMessenger.of(context);
     messenger.showSnackBar(
-      const SnackBar(
-        content: Text('Suche Produkt …'),
+      SnackBar(
+        content: Text(tr.pantrySearchingProduct),
         duration: Duration(seconds: 2),
       ),
     );
@@ -139,15 +140,15 @@ class _PantryScreenState extends State<PantryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(item.name),
-        content: Text('Vorrat: ${item.amountLabel}'),
+        content: Text(tr.pantryStockAmount(item.amountLabel)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Verbraucht (−1)'),
+            child: Text(tr.pantryUsedUp1),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eingekauft (+1)'),
+            child: Text(tr.pantryBought1),
           ),
         ],
       ),
@@ -160,7 +161,7 @@ class _PantryScreenState extends State<PantryScreen> {
   void _restock(SyncEngine engine, List<PantryItem> low) {
     final lists = engine.shoppingLists;
     if (lists.isEmpty) {
-      final list = ShoppingList(id: newId(), name: 'Einkauf');
+      final list = ShoppingList(id: newId(), name: tr.sectionShopping);
       engine.saveShoppingList(list);
       lists.add(list);
     }
@@ -171,8 +172,8 @@ class _PantryScreenState extends State<PantryScreen> {
       SnackBar(
         content: Text(
           added == 0
-              ? 'Steht schon alles auf „${lists.first.name}“'
-              : '$added Artikel auf „${lists.first.name}“ gesetzt',
+              ? tr.pantryEverythingAlreadyList(lists.first.name)
+              : tr.pantryCountItemsPutList(added, lists.first.name),
         ),
       ),
     );
@@ -185,20 +186,20 @@ class _PantryScreenState extends State<PantryScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.shopping,
-      title: 'Vorrat',
-      subtitle: 'Was ist noch da?',
+      title: tr.conflictsPantry,
+      subtitle: tr.pantryWhatSStillThere,
       actions: [
         if (scannerAvailable)
           BubbleButton(
             icon: AppIcons.scanBarcode,
-            tooltip: 'Barcode scannen',
+            tooltip: tr.pantryScanBarcode,
             onPressed: _scan,
           ),
         const SyncStatusIcon(),
       ],
       floating: AddButton(
         color: color,
-        tooltip: 'Artikel hinzufügen',
+        tooltip: tr.pantryAddItem,
         onPressed: () => showPantryEditor(
           context,
           initial: PantryItem(
@@ -225,7 +226,8 @@ class _PantryScreenState extends State<PantryScreen> {
               PillTabs<PantryPlace?>(
                 values: const [null, ...PantryPlace.values],
                 selected: _place,
-                label: (p) => p == null ? 'Alles' : '${p.emoji} ${p.label}',
+                label: (p) =>
+                    p == null ? tr.commonAll : '${p.emoji} ${p.label}',
                 color: color,
                 onChanged: (p) => setState(() => _place = p),
               ),
@@ -235,9 +237,8 @@ class _PantryScreenState extends State<PantryScreen> {
                         icon: AppIcons.refrigerator,
                         color: color,
                         text: scannerAvailable
-                            ? 'Noch nichts erfasst.\nScanne den Barcode einer '
-                                  'Packung oder tippe auf +.'
-                            : 'Noch nichts erfasst. Tippe auf +.',
+                            ? tr.pantryNothingRecordedYetScan
+                            : tr.pantryNothingRecordedYetTap,
                       )
                     : ListView(
                         padding: EdgeInsets.only(
@@ -246,24 +247,24 @@ class _PantryScreenState extends State<PantryScreen> {
                         ),
                         children: [
                           if (expiring.isNotEmpty) ...[
-                            ListHeading('Bald verbrauchen', color: c.danger),
+                            ListHeading(tr.pantryUseSoon, color: c.danger),
                             for (final i in expiring)
                               _PantryTile(item: i, engine: engine),
                           ],
                           if (low.isNotEmpty)
                             ListHeading(
-                              'Wird knapp',
+                              tr.pantryRunningLow,
                               color: color,
                               trailing: TextButton.icon(
                                 icon: const Icon(AppIcons.basket, size: 18),
-                                label: const Text('Auf die Einkaufsliste'),
+                                label: Text(tr.mealsShoppingList),
                                 onPressed: () => _restock(engine, low),
                               ),
                             ),
                           for (final i in low)
                             if (!expiring.contains(i))
                               _PantryTile(item: i, engine: engine),
-                          const ListHeading('Alles'),
+                          ListHeading(tr.commonAll),
                           for (final i in items)
                             if (!expiring.contains(i) && !low.contains(i))
                               _PantryTile(item: i, engine: engine),
@@ -292,12 +293,14 @@ class _PantryTile extends StatelessWidget {
     final expiry = days == null
         ? null
         : days < 0
-        ? 'abgelaufen'
+        ? tr.pantryExpired
         : days == 0
-        ? 'MHD heute'
+        ? tr.pantryBestBeforeToday
         : days == 1
-        ? 'MHD morgen'
-        : 'MHD ${DateFormat.Md(appLanguage).format(item.bestBefore!)}';
+        ? tr.pantryBestBeforeTomorrow
+        : tr.pantryBestBeforeDate(
+            DateFormat.Md(appLanguage).format(item.bestBefore!),
+          );
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SoftCard(
@@ -326,7 +329,7 @@ class _PantryTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Eins weniger',
+              tooltip: tr.pantryOneLess,
               icon: const Icon(AppIcons.minus),
               onPressed: item.amount <= 0
                   ? null
@@ -348,7 +351,7 @@ class _PantryTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Eins mehr',
+              tooltip: tr.pantryOneMore,
               icon: const Icon(AppIcons.plus),
               onPressed: () =>
                   engine.savePantryItem(item.copyWith(amount: item.amount + 1)),
@@ -444,13 +447,17 @@ class _PantryEditorState extends State<_PantryEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.existing ? 'Vorrat bearbeiten' : 'In den Vorrat',
+              widget.existing ? tr.pantryEditPantryItem : tr.pantryIntoPantry,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             if (widget.initial.barcode != null)
               Text(
-                'Barcode ${widget.initial.barcode}'
-                '${widget.initial.name.isEmpty && !widget.existing ? ' – Produkt unbekannt, bitte Namen eintragen' : ''}',
+                tr.pantryBarcodeBarcodeUnknown(
+                  widget.initial.barcode,
+                  widget.initial.name.isEmpty && !widget.existing
+                      ? tr.pantryProductUnknownPleaseEnter
+                      : '',
+                ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             const SizedBox(height: 16),
@@ -458,12 +465,12 @@ class _PantryEditorState extends State<_PantryEditor> {
               controller: _name,
               autofocus: widget.initial.name.isEmpty,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Artikel'),
+              decoration: InputDecoration(labelText: tr.shoppingItem),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _brand,
-              decoration: const InputDecoration(labelText: 'Marke (optional)'),
+              decoration: InputDecoration(labelText: tr.pantryBrandOptional),
             ),
             const SizedBox(height: 12),
             Row(
@@ -474,16 +481,16 @@ class _PantryEditorState extends State<_PantryEditor> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Menge'),
+                    decoration: InputDecoration(labelText: tr.commonQuantity),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
                     controller: _unit,
-                    decoration: const InputDecoration(
-                      labelText: 'Einheit',
-                      hintText: 'Stück, Packungen, l',
+                    decoration: InputDecoration(
+                      labelText: tr.pantryUnit,
+                      hintText: tr.pantryPiecesPacksL,
                     ),
                   ),
                 ),
@@ -494,7 +501,7 @@ class _PantryEditorState extends State<_PantryEditor> {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: 'Knapp ab'),
+                    decoration: InputDecoration(labelText: tr.pantryLow),
                   ),
                 ),
               ],
@@ -520,8 +527,10 @@ class _PantryEditorState extends State<_PantryEditor> {
                 avatar: const Icon(AppIcons.calendarX, size: 18),
                 label: Text(
                   _bestBefore == null
-                      ? 'Mindestens haltbar bis …'
-                      : 'MHD ${DateFormat.yMd(appLanguage).format(_bestBefore!)}',
+                      ? tr.pantryBestBefore
+                      : tr.pantryBestBeforeDate(
+                          DateFormat.yMd(appLanguage).format(_bestBefore!),
+                        ),
                 ),
                 onPressed: () async {
                   final now = DateTime.now();
@@ -544,7 +553,7 @@ class _PantryEditorState extends State<_PantryEditor> {
                 if (widget.existing)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Entfernen'),
+                    label: Text(tr.commonRemove),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
                       deleteWithUndo(
@@ -559,7 +568,7 @@ class _PantryEditorState extends State<_PantryEditor> {
                   ),
                 const Spacer(),
                 ColorButton(
-                  label: 'Speichern',
+                  label: tr.commonSave,
                   color: c.strong(FamioSection.shopping),
                   onPressed: _save,
                 ),
@@ -577,12 +586,12 @@ class BarcodeScanScreen extends StatefulWidget {
   const BarcodeScanScreen({
     super.key,
     this.qr = false,
-    this.title = 'Barcode scannen',
+    this.title,
   });
 
   /// Scan QR codes (e.g. an invitation) instead of product barcodes.
   final bool qr;
-  final String title;
+  final String? title;
 
   @override
   State<BarcodeScanScreen> createState() => _BarcodeScanScreenState();
@@ -613,7 +622,7 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
     appBar: AppBar(
       backgroundColor: Colors.black,
       foregroundColor: Colors.white,
-      title: Text(widget.title),
+      title: Text(widget.title ?? tr.pantryScanBarcode),
     ),
     body: Stack(
       children: [
@@ -632,8 +641,7 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
             child: Padding(
               padding: const EdgeInsets.all(32),
               child: Text(
-                'Die Kamera ist nicht verfügbar. Bitte den Zugriff in den '
-                'Einstellungen erlauben.',
+                tr.pantryCameraNotAvailablePlease,
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.white),
               ),

@@ -15,8 +15,9 @@ import '../design/palette.dart';
 import '../widgets/password_reveal.dart';
 import '../widgets/trust_certificate.dart';
 import 'pantry_screens.dart' show BarcodeScanScreen;
+import '../l10n.dart';
 
-final _until = DateFormat("EEEE, d. MMMM 'um' HH:mm 'Uhr'", 'de');
+DateFormat get _until => DateFormat.MMMMEEEEd(appLanguage).add_jm();
 
 /// Admins: invite someone instead of handing over a password. Shows the
 /// QR code and a text to send; also lists and withdraws open invitations.
@@ -86,33 +87,30 @@ class _InviteScreenState extends State<InviteScreen> {
           );
     final text = created == null
         ? ''
-        : 'Einladung zu Famio${created.displayName.isEmpty ? '' : ' für ${created.displayName}'}:\n'
-              '1. Famio installieren und öffnen\n'
-              '2. „Mit Einladung beitreten“ wählen\n'
-              '3. Server: ${state.serverUrl}\n'
-              '   Code: ${created.code}\n'
-              'Gültig bis ${_until.format(created.expiresAt)}.';
+        : tr.inviteInvitationFamioForname1(
+            created.displayName.isEmpty
+                ? ''
+                : tr.inviteName(created.displayName),
+            state.serverUrl,
+            created.code,
+            _until.format(created.expiresAt),
+          );
     return SectionPage(
       section: FamioSection.settings,
-      title: 'Einladen',
-      subtitle: 'Ohne Passwort weiterzugeben',
+      title: tr.inviteInvite,
+      subtitle: tr.inviteWithoutPassingPassword,
       maxBodyWidth: 720,
       body: ListView(
         padding: EdgeInsets.only(bottom: listBottomPadding(context)),
         children: [
           if (created == null) ...[
-            const SoftCard(
-              child: Text(
-                'Das neue Mitglied wählt Benutzername und Passwort selbst. '
-                'Die Einladung gilt 48 Stunden und nur einmal.',
-              ),
-            ),
+            SoftCard(child: Text(tr.inviteNewMemberChoosesTheir)),
             const SizedBox(height: 12),
             TextField(
               controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Name (Vorschlag)',
-                hintText: 'z. B. Oma Erika',
+              decoration: InputDecoration(
+                labelText: tr.inviteNameSuggestion,
+                hintText: tr.inviteEGGrandmaErika,
               ),
             ),
             const SizedBox(height: 12),
@@ -138,7 +136,7 @@ class _InviteScreenState extends State<InviteScreen> {
             const SizedBox(height: 16),
             FilledButton.icon(
               icon: const Icon(AppIcons.userPlus),
-              label: const Text('Einladung erstellen'),
+              label: Text(tr.inviteCreateInvitation),
               onPressed: _busy ? null : _create,
             ),
           ] else ...[
@@ -166,24 +164,23 @@ class _InviteScreenState extends State<InviteScreen> {
             const SizedBox(height: 4),
             Center(
               child: Text(
-                '${created.role.label} · gültig bis '
-                '${_until.format(created.expiresAt)}',
+                tr.inviteRoleValidUntilUntil(
+                  created.role.label,
+                  _until.format(created.expiresAt),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Mit Famio auf dem neuen Gerät den QR-Code scannen – oder den '
-              'Text unten schicken.',
-            ),
+            Text(tr.inviteScanQrCodeFamio),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(AppIcons.copy),
-              label: const Text('Einladungstext kopieren'),
+              label: Text(tr.inviteCopyInvitationText),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: text));
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('Kopiert')));
+                ).showSnackBar(SnackBar(content: Text(tr.inviteCopied)));
               },
             ),
             TextButton(
@@ -191,7 +188,7 @@ class _InviteScreenState extends State<InviteScreen> {
                 _created = null;
                 _name.clear();
               }),
-              child: const Text('Weitere Einladung'),
+              child: Text(tr.inviteAnotherInvitation),
             ),
           ],
           FutureBuilder<List<InviteInfo>>(
@@ -202,7 +199,7 @@ class _InviteScreenState extends State<InviteScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  ListHeading('Offene Einladungen', color: accent),
+                  ListHeading(tr.inviteOpenInvitations, color: accent),
                   for (final i in open)
                     ListTile(
                       leading: const Icon(AppIcons.userPlus),
@@ -210,10 +207,13 @@ class _InviteScreenState extends State<InviteScreen> {
                         i.displayName.isEmpty ? i.role.label : i.displayName,
                       ),
                       subtitle: Text(
-                        '${i.role.label} · bis ${_until.format(i.expiresAt)}',
+                        tr.inviteRoleUntilUntil(
+                          i.role.label,
+                          _until.format(i.expiresAt),
+                        ),
                       ),
                       trailing: IconButton(
-                        tooltip: 'Zurückziehen',
+                        tooltip: tr.inviteWithdraw,
                         icon: const Icon(AppIcons.trash),
                         onPressed: () => _revoke(i),
                       ),
@@ -263,13 +263,13 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
     final text = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) =>
-            const BarcodeScanScreen(qr: true, title: 'Einladung scannen'),
+            BarcodeScanScreen(qr: true, title: tr.inviteScanInvitation),
       ),
     );
     if (text == null || !mounted) return;
     final link = InviteLink.parse(text);
     if (link == null) {
-      setState(() => _error = 'Das ist kein Famio-Einladungscode.');
+      setState(() => _error = tr.inviteNotFamioInvitationCode);
       return;
     }
     _server.text = link.server;
@@ -308,7 +308,7 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
     } on ApiError catch (e) {
       setState(() => _error = e.message);
     } on FormatException {
-      setState(() => _error = 'Ungültige Server-Adresse');
+      setState(() => _error = tr.settingsInvalidServerAddress);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -341,7 +341,7 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
     final invite = _invite;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Mit Einladung beitreten')),
+      appBar: AppBar(title: Text(tr.inviteJoin)),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -353,19 +353,19 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
                   if (_canScan) ...[
                     FilledButton.icon(
                       icon: const Icon(AppIcons.scanBarcode),
-                      label: const Text('QR-Code scannen'),
+                      label: Text(tr.inviteScanQrCode),
                       onPressed: _busy ? null : _scan,
                     ),
                     const SizedBox(height: 16),
-                    const Text('Oder aus dem Einladungstext:'),
+                    Text(tr.inviteInvitationText),
                     const SizedBox(height: 8),
                   ],
                   TextField(
                     controller: _server,
                     keyboardType: TextInputType.url,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Server',
+                    decoration: InputDecoration(
+                      labelText: tr.settingsServer,
                       hintText: 'z. B. https://famio.example.org',
                     ),
                   ),
@@ -374,8 +374,8 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
                     controller: _code,
                     textCapitalization: TextCapitalization.characters,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Code',
+                    decoration: InputDecoration(
+                      labelText: tr.commonCode,
                       hintText: 'ABCD-EFGH',
                     ),
                     onSubmitted: (_) => _check(),
@@ -383,27 +383,25 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: _busy ? null : _check,
-                    child: const Text('Weiter'),
+                    child: Text(tr.commonNext),
                   ),
                 ] else ...[
                   Text(
-                    'Du wirst als ${invite.role.label} eingeladen.',
+                    tr.inviteYouInvitedRole(invite.role.label),
                     style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 4),
-                  const Text('Wähle, wie du dich anmelden möchtest.'),
+                  Text(tr.inviteChooseHowYouWant),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _name,
-                    decoration: const InputDecoration(labelText: 'Dein Name'),
+                    decoration: InputDecoration(labelText: tr.inviteName2),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _username,
                     autocorrect: false,
-                    decoration: const InputDecoration(
-                      labelText: 'Benutzername',
-                    ),
+                    decoration: InputDecoration(labelText: tr.commonUsername),
                   ),
                   const SizedBox(height: 12),
                   PasswordReveal(
@@ -414,7 +412,7 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
                       autofillHints: const [AutofillHints.newPassword],
                       decoration: InputDecoration(
                         suffixIcon: toggle,
-                        labelText: 'Passwort (mindestens 8 Zeichen)',
+                        labelText: tr.invitePasswordLeast8Characters,
                       ),
                       onSubmitted: (_) => _join(),
                     ),
@@ -422,7 +420,7 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: _busy ? null : _join,
-                    child: const Text('Beitreten'),
+                    child: Text(tr.inviteJoin2),
                   ),
                 ],
                 if (_busy) ...[

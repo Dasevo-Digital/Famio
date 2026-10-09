@@ -15,6 +15,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _shopping = {
   Collections.shoppingLists,
@@ -26,7 +27,7 @@ class ShoppingListsScreen extends StatelessWidget {
   const ShoppingListsScreen({super.key});
 
   Future<void> _create(BuildContext context) async {
-    final name = await _askName(context, title: 'Neue Einkaufsliste');
+    final name = await _askName(context, title: tr.shoppingNewShoppingList);
     if (name == null || !context.mounted) return;
     final engine = AppScope.engineOf(context);
     final list = ShoppingList(
@@ -49,18 +50,18 @@ class ShoppingListsScreen extends StatelessWidget {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.shopping,
-      title: 'Einkauf',
-      subtitle: 'Was brauchen wir?',
+      title: tr.sectionShopping,
+      subtitle: tr.shoppingWhatDoWeNeed,
       actions: [
         BubbleButton(
           icon: AppIcons.template,
-          tooltip: 'Liste aus Vorlage',
+          tooltip: tr.shoppingListTemplate,
           onPressed: () => showTemplatePicker(context),
         ),
         if (canConnectLists(AppScope.of(context)))
           BubbleButton(
             icon: AppIcons.arrowsLeftRight,
-            tooltip: 'Mit anderen Apps verbinden',
+            tooltip: tr.commonConnectOtherApps,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const ListConnectScreen(),
@@ -71,7 +72,7 @@ class ShoppingListsScreen extends StatelessWidget {
       ],
       floating: AddButton(
         color: color,
-        tooltip: 'Neue Liste',
+        tooltip: tr.shoppingNewList,
         onPressed: () => _create(context),
       ),
       body: DataBuilder(
@@ -88,9 +89,9 @@ class ShoppingListsScreen extends StatelessWidget {
                 EmptyHint(
                   icon: AppIcons.basket,
                   color: color,
-                  text: 'Noch keine Einkaufsliste.',
+                  text: tr.homeNoShoppingListYet,
                   action: ColorButton(
-                    label: 'Erste Liste anlegen',
+                    label: tr.shoppingCreateFirstList,
                     color: color,
                     onPressed: () => _create(context),
                   ),
@@ -130,8 +131,10 @@ class ShoppingListsScreen extends StatelessWidget {
                           ),
                           Text(
                             open == 0
-                                ? (items.isEmpty ? 'Leer' : 'Alles im Wagen ✓')
-                                : '$open offen',
+                                ? (items.isEmpty
+                                      ? tr.shoppingEmpty
+                                      : tr.shoppingEverythingCart)
+                                : tr.commonOpenCount(open),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -218,7 +221,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   Future<void> _rename(SyncEngine engine, ShoppingList list) async {
     final name = await _askName(
       context,
-      title: 'Liste umbenennen',
+      title: tr.shoppingRenameList,
       initial: list.name,
     );
     if (name != null) engine.saveShoppingList(list.copyWith(name: name));
@@ -227,7 +230,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   void _saveTemplate(SyncEngine engine, ShoppingList list) {
     engine.templateFromList(list);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('„${list.name}“ als Vorlage gespeichert')),
+      SnackBar(content: Text(tr.shoppingNameSavedTemplate(list.name))),
     );
   }
 
@@ -235,16 +238,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('„${list.name}“ löschen?'),
-        content: const Text('Die Liste und alle Einträge werden gelöscht.'),
+        title: Text(tr.commonDeleteName(list.name)),
+        content: Text(tr.shoppingListAllItsEntries),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -268,11 +271,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       builder: (context, engine) {
         final list = engine.shoppingList(widget.listId);
         if (list == null) {
-          return const SectionPage(
+          return SectionPage(
             maxBodyWidth: 960,
             section: FamioSection.shopping,
-            title: 'Einkauf',
-            body: Center(child: Text('Diese Liste gibt es nicht mehr.')),
+            title: tr.sectionShopping,
+            body: Center(child: Text(tr.shoppingListNoLongerExists)),
           );
         }
         final all = engine.shoppingItems(list.id);
@@ -303,21 +306,21 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           section: FamioSection.shopping,
           title: list.name,
           subtitle: list.packing
-              ? '${done.length} von ${items.length} eingepackt'
+              ? tr.shoppingDoneTotalPacked(done.length, items.length)
               : open.isEmpty
-              ? 'Alles erledigt'
-              : '${open.length} offen',
+              ? tr.shoppingAllDone
+              : tr.commonOpenCount(open.length),
           actions: [
             const SyncStatusIcon(),
             PopupMenuButton<String>(
-              tooltip: 'Mehr',
+              tooltip: tr.navMore,
               icon: const Icon(AppIcons.dotsThreeVertical),
               onSelected: (action) => switch (action) {
                 'clear' => deleteWithUndo(
                   context,
                   message: done.length == 1
-                      ? '1 erledigter Artikel entfernt'
-                      : '${done.length} erledigte Artikel entfernt',
+                      ? tr.shopping1CheckedItemRemoved
+                      : tr.shoppingCountCheckedItemsRemoved(done.length),
                   collections: const {Collections.shoppingItems},
                   delete: () {
                     for (final i in done) {
@@ -338,22 +341,22 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 PopupMenuItem(
                   value: 'clear',
                   enabled: done.isNotEmpty,
-                  child: const Text('Erledigte entfernen'),
+                  child: Text(tr.shoppingRemoveCheckedItems),
                 ),
                 PopupMenuItem(
                   value: 'uncheck',
                   enabled: done.isNotEmpty,
-                  child: const Text('Alle Haken entfernen'),
+                  child: Text(tr.shoppingRemoveAllCheckmarks),
                 ),
                 PopupMenuItem(
                   value: 'template',
                   enabled: items.isNotEmpty,
-                  child: const Text('Als Vorlage speichern'),
+                  child: Text(tr.shoppingSaveTemplate),
                 ),
-                const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
-                const PopupMenuItem(
+                PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
+                PopupMenuItem(
                   value: 'delete',
-                  child: Text('Liste löschen'),
+                  child: Text(tr.shoppingDeleteList),
                 ),
               ],
             ),
@@ -366,12 +369,12 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   hintText: list.packing
-                      ? 'Hinzufügen, z. B. „Taucherbrille“'
-                      : 'Artikel hinzufügen, z. B. „2 Milch“',
+                      ? tr.shoppingAddEGDiving
+                      : tr.shoppingAddItemEG,
                   prefixIcon: const Icon(AppIcons.plus, size: 20),
                   suffixIcon: BubbleButton(
                     icon: AppIcons.arrowUp,
-                    tooltip: 'Hinzufügen',
+                    tooltip: tr.commonAdd,
                     color: Colors.white,
                     background: color,
                     size: 38,
@@ -395,7 +398,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                           runSpacing: 8,
                           children: [
                             ChoiceChip(
-                              label: const Text('Alle'),
+                              label: Text(tr.commonEveryone),
                               selected: who == null,
                               onSelected: (_) => setState(() => _who = null),
                             ),
@@ -404,7 +407,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                                 avatar: MemberAvatar(m, radius: 10),
                                 label: Text(
                                   m.id == engine.memberId
-                                      ? 'Ich'
+                                      ? tr.shoppingMe
                                       : m.displayName,
                                 ),
                                 selected: who == m.id,
@@ -435,8 +438,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     if (done.isNotEmpty) ...[
                       ListHeading(
                         list.packing
-                            ? 'Eingepackt (${done.length})'
-                            : 'Im Wagen (${done.length})',
+                            ? tr.shoppingPackedCount(done.length)
+                            : tr.shoppingCartCount(done.length),
                         color: color,
                       ),
                       for (final item in done)
@@ -470,7 +473,7 @@ List<(String?, List<ShoppingItem>)> _packingGroups(
 
   final groups = <(String?, List<ShoppingItem>)>[
     (
-      'Für alle',
+      tr.shoppingEveryone,
       [
         for (final i in open)
           if (i.memberId == null) i,
@@ -478,7 +481,7 @@ List<(String?, List<ShoppingItem>)> _packingGroups(
     ),
     for (final m in engine.members)
       (
-        m.id == engine.memberId ? 'Meine Sachen' : m.displayName,
+        m.id == engine.memberId ? tr.shoppingMyThings : m.displayName,
         [
           for (final i in open)
             if (i.memberId == m.id) i,
@@ -531,21 +534,21 @@ class _ItemTile extends StatelessWidget {
       builder: (context) => DisposeWith(
         controllers: [name, quantity],
         child: AlertDialog(
-          title: const Text('Artikel bearbeiten'),
+          title: Text(tr.shoppingEditItem),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: name,
                 autofocus: true,
-                decoration: const InputDecoration(labelText: 'Artikel'),
+                decoration: InputDecoration(labelText: tr.shoppingItem),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: quantity,
-                decoration: const InputDecoration(
-                  labelText: 'Menge',
-                  hintText: 'z. B. 2, 500 g, 1 Packung',
+                decoration: InputDecoration(
+                  labelText: tr.commonQuantity,
+                  hintText: tr.shoppingEG2500,
                 ),
                 onSubmitted: (_) => Navigator.pop(context, true),
               ),
@@ -553,7 +556,7 @@ class _ItemTile extends StatelessWidget {
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: category,
-                  decoration: const InputDecoration(labelText: 'Gang'),
+                  decoration: InputDecoration(labelText: tr.shoppingAisle),
                   items: [
                     for (final c in shoppingCategories)
                       DropdownMenuItem(value: c.key, child: Text(c.label)),
@@ -567,11 +570,11 @@ class _ItemTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
+              child: Text(tr.commonSave),
             ),
           ],
         ),
@@ -667,7 +670,7 @@ class _ItemTile extends StatelessWidget {
                 ),
               IconButton(
                 icon: Icon(AppIcons.pencilSimple, size: 18, color: c.inkSoft),
-                tooltip: 'Bearbeiten',
+                tooltip: tr.commonEdit,
                 onPressed: () => _edit(context),
               ),
             ],
@@ -694,20 +697,20 @@ Future<String?> _askName(
           controller: controller,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            hintText: 'z. B. Wocheneinkauf, Drogerie',
+          decoration: InputDecoration(
+            labelText: tr.commonName,
+            hintText: tr.shoppingEGWeeklyShopping,
           ),
           onSubmitted: (v) => Navigator.pop(context, v),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('OK'),
+            child: Text(tr.commonOk),
           ),
         ],
       ),

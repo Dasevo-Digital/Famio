@@ -18,8 +18,8 @@ import '../widgets/undo_delete.dart';
 import '../format.dart';
 import '../l10n.dart';
 
-final _time = DateFormat.jm(appLanguage);
-final _day = DateFormat.MMMMEEEEd(appLanguage);
+DateFormat get _time => DateFormat.jm(appLanguage);
+DateFormat get _day => DateFormat.MMMMEEEEd(appLanguage);
 
 /// Look of each log kind: icon and color.
 (IconData, Color) logLook(LogKind kind) => switch (kind) {

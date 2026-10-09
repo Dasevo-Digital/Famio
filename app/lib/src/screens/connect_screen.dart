@@ -11,6 +11,7 @@ import '../widgets/trust_certificate.dart';
 import '../environment.dart';
 import '../widgets/password_reveal.dart';
 import 'security_screens.dart';
+import '../l10n.dart';
 
 /// Server address, then login – or the admin setup on a fresh server.
 class ConnectScreen extends StatefulWidget {
@@ -92,7 +93,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
     } on ApiError catch (e) {
       setState(() => _error = e.message);
     } on FormatException {
-      setState(() => _error = 'Ungültige Server-Adresse');
+      setState(() => _error = tr.settingsInvalidServerAddress);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -106,7 +107,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
       if (!mounted) return;
       final code = await askTwoFactorCode(
         context,
-        title: 'Zwei-Faktor-Anmeldung',
+        title: tr.securityTwoFactorSignIn,
         error: error,
       );
       if (code == null) return;
@@ -207,10 +208,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         const SizedBox(height: 4),
                         Text(
                           server == null
-                              ? 'Euer Familien-Organizer'
+                              ? tr.connectFamilyOrganizer
                               : setup
-                              ? 'Neuer Server – lege das erste Konto an.\nEs wird Administrator.'
-                              : 'Schön, dass du da bist!',
+                              ? tr.connectNewServerCreateFirst
+                              : tr.connectNiceHaveYouHere,
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: c.inkSoft,
@@ -224,8 +225,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             keyboardType: TextInputType.url,
                             autocorrect: false,
                             decoration: InputDecoration(
-                              labelText: 'Server-Adresse',
-                              hintText: 'famio.example.de oder 192.168.1.10',
+                              labelText: tr.connectServerAddress,
+                              hintText: tr.settingsFamioExampleCom192,
                               prefixIcon: const Icon(AppIcons.hardDrives),
                               suffixIcon: server == null
                                   ? null
@@ -234,13 +235,13 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                         AppIcons.pencilSimple,
                                         size: 18,
                                       ),
-                                      tooltip: 'Server ändern',
+                                      tooltip: tr.connectChangeServer,
                                       onPressed: () =>
                                           setState(() => _resolved = null),
                                     ),
                             ),
                             validator: (v) => (v ?? '').trim().isEmpty
-                                ? 'Bitte Adresse eingeben'
+                                ? tr.connectPleaseEnterAddress
                                 : null,
                             onFieldSubmitted: (_) => _submit(),
                           ),
@@ -254,14 +255,13 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             enabled: !_busy,
                             autocorrect: false,
                             textCapitalization: TextCapitalization.characters,
-                            decoration: const InputDecoration(
-                              labelText: 'Einrichtungscode',
-                              helperText:
-                                  'Steht im Server-Log, z. B.: docker logs famio',
+                            decoration: InputDecoration(
+                              labelText: tr.connectSetupCode,
+                              helperText: tr.connectServerLogEG,
                               prefixIcon: Icon(AppIcons.key),
                             ),
                             validator: (v) => (v ?? '').trim().isEmpty
-                                ? 'Code aus dem Server-Log eingeben'
+                                ? tr.connectEnterCodeServerLog
                                 : null,
                           ),
                         ],
@@ -271,8 +271,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             controller: _displayName,
                             enabled: !_busy,
                             textCapitalization: TextCapitalization.words,
-                            decoration: const InputDecoration(
-                              labelText: 'Dein Name',
+                            decoration: InputDecoration(
+                              labelText: tr.inviteName2,
                               prefixIcon: Icon(AppIcons.smiley),
                             ),
                           ),
@@ -284,12 +284,12 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             enabled: !_busy,
                             autocorrect: false,
                             autofillHints: const [AutofillHints.username],
-                            decoration: const InputDecoration(
-                              labelText: 'Benutzername',
+                            decoration: InputDecoration(
+                              labelText: tr.commonUsername,
                               prefixIcon: Icon(AppIcons.user),
                             ),
                             validator: (v) => (v ?? '').trim().isEmpty
-                                ? 'Bitte Benutzernamen eingeben'
+                                ? tr.connectPleaseEnterUsername
                                 : null,
                           ),
                           const SizedBox(height: 12),
@@ -306,11 +306,11 @@ class _ConnectScreenState extends State<ConnectScreen> {
                               ],
                               decoration: InputDecoration(
                                 suffixIcon: toggle,
-                                labelText: 'Passwort',
+                                labelText: tr.commonPassword,
                                 prefixIcon: Icon(AppIcons.lockKey),
                               ),
                               validator: (v) => setup && (v ?? '').length < 8
-                                  ? 'Mindestens 8 Zeichen'
+                                  ? tr.connectLeast8Characters
                                   : null,
                               onFieldSubmitted: (_) => _submit(),
                             ),
@@ -320,7 +320,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           const SizedBox(height: 8),
                           TextButton.icon(
                             icon: const Icon(AppIcons.userPlus, size: 18),
-                            label: const Text('Mit Einladung beitreten'),
+                            label: Text(tr.inviteJoin),
                             onPressed: _busy
                                 ? null
                                 : () => Navigator.of(context).push(
@@ -352,8 +352,10 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             ? const Center(child: CircularProgressIndicator())
                             : ColorButton(
                                 label: server == null
-                                    ? 'Verbinden'
-                                    : (setup ? 'Konto anlegen' : 'Anmelden'),
+                                    ? tr.commonConnect
+                                    : (setup
+                                          ? tr.connectCreateAccount
+                                          : tr.commonSignIn),
                                 color: accent,
                                 onPressed: _submit,
                               ),
@@ -362,7 +364,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
                             icon: const Icon(AppIcons.logIn, size: 18),
-                            label: Text('Mit $label anmelden'),
+                            label: Text(tr.commonSignInWith(label)),
                             onPressed: () => _singleSignOn(_resolved!, label),
                           ),
                         ],
@@ -370,12 +372,8 @@ class _ConnectScreenState extends State<ConnectScreen> {
                           const SizedBox(height: 16),
                           Text(
                             state.panelMode == 'client'
-                                ? 'Mit deinem Famio-Konto anmelden – Home '
-                                      'Assistant merkt sich die Anmeldung für '
-                                      'deinen Benutzer.'
-                                : 'Mit Home Assistant? Öffne Famio in der '
-                                      'Seitenleiste, um ein Passwort für die '
-                                      'App festzulegen.',
+                                ? tr.connectSignFamioAccountHome
+                                : tr.connectHomeAssistantOpenFamio,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodySmall,
                           ),
@@ -411,7 +409,7 @@ class _VersionLine extends StatelessWidget {
         if (info != null)
           '${AppEnv.appName} ${info.version}'
               '${info.buildNumber.isEmpty ? '' : ' (${info.buildNumber})'}',
-        if (server case final s?) 'Server ${s.version}',
+        if (server case final s?) tr.settingsServerVersion(s.version),
       ];
       if (parts.isEmpty) return const SizedBox.shrink();
       return Text(
@@ -439,9 +437,9 @@ class _ConnectionHint extends StatelessWidget {
         TransportSecurity.encrypted;
     final text = encrypted
         ? (server.pin == null
-              ? 'Verschlüsselt verbunden'
-              : 'Verschlüsselt verbunden (Zertifikat bestätigt)')
-        : 'Unverschlüsselt im Heimnetz – der Server bietet kein HTTPS an';
+              ? tr.connectConnectedSecurely
+              : tr.connectConnectedSecurelyCertificateConfirmed)
+        : tr.connectUnencryptedHomeNetworkServer;
     return Padding(
       padding: const EdgeInsets.only(top: 8, left: 4),
       child: Row(

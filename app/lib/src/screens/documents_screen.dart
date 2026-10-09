@@ -62,14 +62,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     final color = c.strong(FamioSection.documents);
     return SectionPage(
       section: FamioSection.documents,
-      title: 'Dokumente',
-      subtitle: 'Wichtiges sicher an einem Ort',
+      title: tr.sectionDocuments,
+      subtitle: tr.docsImportantThingsSafelyOne,
       actions: const [SyncStatusIcon()],
-      floating: AddButton(
-        color: color,
-        tooltip: 'Dokument hinzufügen',
-        onPressed: _add,
-      ),
+      floating: AddButton(color: color, tooltip: tr.docsAdd, onPressed: _add),
       body: DataBuilder(
         collections: const {Collections.documents, 'members'},
         builder: (context, engine) {
@@ -89,8 +85,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               TextField(
                 controller: _search,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  hintText: 'Suchen …',
+                decoration: InputDecoration(
+                  hintText: tr.docsSearch,
                   prefixIcon: Icon(AppIcons.magnifyingGlass, size: 20),
                 ),
               ),
@@ -98,7 +94,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               PillTabs<DocumentCategory?>(
                 values: [null, ...DocumentCategory.values.where(used.contains)],
                 selected: _category,
-                label: (c) => c?.label ?? 'Alle (${all.length})',
+                label: (c) => c?.label ?? tr.docsAllCount(all.length),
                 color: color,
                 onChanged: (c) => setState(() => _category = c),
               ),
@@ -108,11 +104,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                         icon: AppIcons.folderSimpleStar,
                         color: color,
                         text: all.isEmpty
-                            ? 'Ausweise, Arztbriefe, Zeugnisse, Verträge –\nhier findet ihr alles wieder.'
-                            : 'Nichts gefunden.',
+                            ? tr.docsIdsDoctorSLetters
+                            : tr.commonNothingFound,
                         action: all.isEmpty
                             ? ColorButton(
-                                label: 'Erstes Dokument hinzufügen',
+                                label: tr.docsAddFirstDocument,
                                 color: color,
                                 onPressed: _add,
                               )
@@ -185,8 +181,9 @@ class _DocumentCard extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.only(left: 6),
                         child: Tooltip(
-                          message:
-                              'Sichtbar für: ${_names(engine, document.visibleTo!)}',
+                          message: tr.commonVisibleTo(
+                            _names(engine, document.visibleTo!),
+                          ),
                           child: Icon(
                             AppIcons.lock,
                             size: 15,
@@ -220,7 +217,7 @@ class _DocumentCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '${expires.isBefore(DateTime.now()) ? 'Abgelaufen am' : 'Gültig bis'} '
+                        '${expires.isBefore(DateTime.now()) ? tr.docsExpired : tr.docsValidUntil} '
                         '${DateFormat.yMd(appLanguage).format(expires)}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: soon
@@ -288,8 +285,8 @@ class _DocumentCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 document.visibleTo == null
-                    ? 'Sichtbar für die ganze Familie'
-                    : 'Sichtbar für: ${_names(engine, document.visibleTo!)}',
+                    ? tr.docsVisibleWholeFamily
+                    : tr.commonVisibleTo(_names(engine, document.visibleTo!)),
                 style: Theme.of(sheet).textTheme.bodySmall,
               ),
               const SizedBox(height: 20),
@@ -299,14 +296,14 @@ class _DocumentCard extends StatelessWidget {
                 children: [
                   if (file != null)
                     ColorButton(
-                      label: 'Öffnen',
+                      label: tr.commonOpen,
                       icon: AppIcons.arrowSquareOut,
                       color: color,
                       onPressed: () => openFileRef(context, file),
                     ),
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.pencilSimple, size: 18),
-                    label: const Text('Bearbeiten'),
+                    label: Text(tr.commonEdit),
                     onPressed: () {
                       Navigator.pop(sheet);
                       Navigator.of(context).push(
@@ -318,7 +315,7 @@ class _DocumentCard extends StatelessWidget {
                   ),
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(
                       foregroundColor: Theme.of(sheet).colorScheme.error,
                     ),
@@ -326,18 +323,16 @@ class _DocumentCard extends StatelessWidget {
                       final ok = await showDialog<bool>(
                         context: sheet,
                         builder: (d) => AlertDialog(
-                          title: Text('„${document.title}“ löschen?'),
-                          content: const Text(
-                            'Das Dokument wird für alle entfernt.',
-                          ),
+                          title: Text(tr.commonDeleteName(document.title)),
+                          content: Text(tr.docsDocumentRemovedEveryone),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(d, false),
-                              child: const Text('Abbrechen'),
+                              child: Text(tr.commonCancel),
                             ),
                             FilledButton(
                               onPressed: () => Navigator.pop(d, true),
-                              child: const Text('Löschen'),
+                              child: Text(tr.commonDelete),
                             ),
                           ],
                         ),
@@ -456,7 +451,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
 
     return SectionPage(
       section: FamioSection.documents,
-      title: widget.existing == null ? 'Neues Dokument' : 'Dokument bearbeiten',
+      title: widget.existing == null ? tr.docsNewDocument : tr.docsEditDocument,
       subtitle: fileName,
       actions: [
         _saving
@@ -464,16 +459,16 @@ class _DocumentEditorState extends State<DocumentEditor> {
                 dimension: 28,
                 child: CircularProgressIndicator(strokeWidth: 3),
               )
-            : ColorButton(label: 'Speichern', color: color, onPressed: _save),
+            : ColorButton(label: tr.commonSave, color: color, onPressed: _save),
       ],
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
         children: [
           TextField(
             controller: _title,
-            decoration: const InputDecoration(labelText: 'Titel'),
+            decoration: InputDecoration(labelText: tr.commonTitle),
           ),
-          const ListHeading('Kategorie'),
+          ListHeading(tr.commonCategory),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -492,7 +487,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
                 ),
             ],
           ),
-          const ListHeading('Wen betrifft es?'),
+          ListHeading(tr.docsWhomDoesConcern),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -508,14 +503,14 @@ class _DocumentEditorState extends State<DocumentEditor> {
                 ),
             ],
           ),
-          const ListHeading('Gültig bis (optional)'),
+          ListHeading(tr.docsValidUntilOptional),
           Align(
             alignment: Alignment.centerLeft,
             child: InputChip(
               avatar: const Icon(AppIcons.calendarX, size: 18),
               label: Text(
                 _expires == null
-                    ? 'Kein Ablaufdatum'
+                    ? tr.docsNoExpiryDate
                     : DateFormat.yMMMMd(appLanguage).format(_expires!),
               ),
               onPressed: () async {
@@ -536,11 +531,11 @@ class _DocumentEditorState extends State<DocumentEditor> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Famio erinnert rechtzeitig vor dem Ablauf (z. B. beim Reisepass).',
+              tr.docsFamioRemindsYouGood,
               style: theme.textTheme.bodySmall,
             ),
           ),
-          const ListHeading('Wer darf es sehen?'),
+          ListHeading(tr.commonWhoMaySee),
           SoftCard(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: RadioGroup<_Visibility>(
@@ -548,20 +543,20 @@ class _DocumentEditorState extends State<DocumentEditor> {
               onChanged: (v) => setState(() => _visibility = v!),
               child: Column(
                 children: [
-                  const RadioListTile(
+                  RadioListTile(
                     value: _Visibility.family,
-                    title: Text('Ganze Familie'),
+                    title: Text(tr.commonWholeFamily),
                     secondary: Icon(AppIcons.usersThree),
                   ),
-                  const RadioListTile(
+                  RadioListTile(
                     value: _Visibility.me,
-                    title: Text('Nur ich'),
+                    title: Text(tr.docsOnlyMe),
                     secondary: Icon(AppIcons.lockKey),
                   ),
                   if (others.isNotEmpty)
-                    const RadioListTile(
+                    RadioListTile(
                       value: _Visibility.selected,
-                      title: Text('Ich und …'),
+                      title: Text(tr.docsMe),
                       secondary: Icon(AppIcons.userList),
                     ),
                 ],
@@ -586,14 +581,12 @@ class _DocumentEditorState extends State<DocumentEditor> {
               ],
             ),
           ],
-          const ListHeading('Notizen'),
+          ListHeading(tr.commonNotes),
           TextField(
             controller: _notes,
             minLines: 2,
             maxLines: 6,
-            decoration: const InputDecoration(
-              hintText: 'z. B. Ausweisnummer, Ansprechpartner …',
-            ),
+            decoration: InputDecoration(hintText: tr.docsEGIdNumber),
           ),
         ],
       ),

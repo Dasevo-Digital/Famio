@@ -44,7 +44,7 @@ const _kidsCollections = {
 Color childColorOf(BuildContext context, Child child) =>
     _childColor(context, child);
 
-final _date = DateFormat.yMMMd(appLanguage);
+DateFormat get _date => DateFormat.yMMMd(appLanguage);
 
 Color _childColor(BuildContext context, Child child) => child.color == null
     ? FamioColors.of(context).strong(FamioSection.kids)

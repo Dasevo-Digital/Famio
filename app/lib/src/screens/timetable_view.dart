@@ -6,8 +6,9 @@ import '../data/family_data.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../format.dart';
 
-const _days = ['Mo', 'Di', 'Mi', 'Do', 'Fr'];
+List<String> get _days => weekdaysShort(5);
 
 /// Distinct friendly colors for up to twelve subjects.
 const _subjectColors = [

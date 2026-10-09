@@ -26,3 +26,18 @@ String decimal(num value, [int digits = 1]) {
   final text = value.toStringAsFixed(digits);
   return appLanguage == 'en' ? text : text.replaceAll('.', ',');
 }
+
+/// Short name of the ISO [weekday] (1 = Monday) in the app's language,
+/// without the abbreviation dot ("Mo", "Mon", "lun").
+String weekdayShort(int weekday) => DateFormat.E(
+  appLanguage,
+).format(DateTime(2024, 1, weekday)).replaceAll('.', '');
+
+/// Full name of the ISO [weekday] (1 = Monday) in the app's language.
+String weekdayLong(int weekday) =>
+    DateFormat.EEEE(appLanguage).format(DateTime(2024, 1, weekday));
+
+/// Short names of Monday to Sunday (or the first [count] days).
+List<String> weekdaysShort([int count = 7]) => [
+  for (var d = 1; d <= count; d++) weekdayShort(d),
+];

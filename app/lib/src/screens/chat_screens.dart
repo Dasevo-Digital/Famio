@@ -33,7 +33,7 @@ class ChatListScreen extends StatefulWidget {
 }
 
 class _ChatListScreenState extends State<ChatListScreen> {
-  var _open = (ChatIds.family, 'Familie');
+  var _open = (ChatIds.family, tr.settingsFamily);
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
@@ -68,8 +68,8 @@ class _ChatListScreenState extends State<ChatListScreen> {
         : setState(() => _open = (chatId, title));
     return SectionPage(
       section: FamioSection.chat,
-      title: 'Chat',
-      subtitle: 'Nachrichten an die Familie',
+      title: tr.sectionChat,
+      subtitle: tr.chatMessagesFamily,
       actions: const [SyncStatusIcon()],
       body: DataBuilder(
         collections: _chatCollections,
@@ -85,7 +85,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             children: [
               _ChatTile(
                 chatId: ChatIds.family,
-                title: 'Familie',
+                title: tr.settingsFamily,
                 leading: IconBlob(
                   AppIcons.usersThree,
                   color: c.strong(FamioSection.chat),
@@ -93,9 +93,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
                 engine: engine,
                 selected: selected == ChatIds.family,
-                onTap: () => open(ChatIds.family, 'Familie'),
+                onTap: () => open(ChatIds.family, tr.settingsFamily),
               ),
-              if (others.isNotEmpty) const ListHeading('Einzelchats'),
+              if (others.isNotEmpty) ListHeading(tr.chatOneOneChats),
               for (final m in others)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
@@ -115,8 +115,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Sobald weitere Familienmitglieder dabei sind, könnt ihr euch '
-                    'hier auch einzeln schreiben.',
+                    tr.chatSoonMoreFamilyMembers,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -153,13 +152,13 @@ class _ChatTile extends StatelessWidget {
     final unread = engine.unreadCount(chatId);
     final author = last == null ? null : engine.member(last.authorId);
     final preview = last == null
-        ? 'Noch keine Nachrichten – sag Hallo! 👋'
-        : '${last.authorId == engine.memberId ? 'Du: ' : (ChatIds.isDirect(chatId) ? '' : '${author?.displayName ?? '?'}: ')}'
+        ? tr.chatNoMessagesYetSay
+        : '${last.authorId == engine.memberId ? tr.chatYou : (ChatIds.isDirect(chatId) ? '' : '${author?.displayName ?? '?'}: ')}'
               '${last.poll != null
                   ? '📊 ${last.poll!.question}'
                   : last.text.isNotEmpty
                   ? last.text
-                  : '📎 ${last.attachment?.name ?? 'Anhang'}'}';
+                  : '📎 ${last.attachment?.name ?? tr.commonAttachment}'}';
     return SoftCard(
       padding: const EdgeInsets.all(14),
       color: selected ? c.tint(FamioSection.chat) : null,
@@ -305,16 +304,16 @@ class _ChatScreenState extends State<ChatScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nachricht löschen?'),
-        content: const Text('Sie verschwindet für alle.'),
+        title: Text(tr.chatDeleteMessage),
+        content: Text(tr.chatDisappearsEveryone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -332,8 +331,8 @@ class _ChatScreenState extends State<ChatScreen> {
       section: FamioSection.chat,
       title: widget.title,
       subtitle: ChatIds.isDirect(widget.chatId)
-          ? 'Privat – nur ihr zwei'
-          : 'Alle in der Familie',
+          ? tr.chatPrivateJustTwoYou
+          : tr.chatEveryoneFamily,
       bodyPadding: EdgeInsets.zero,
       body: DataBuilder(
         collections: _chatCollections,
@@ -363,8 +362,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     ? EmptyHint(
                         icon: AppIcons.chatCircleDots,
                         color: color,
-                        text:
-                            'Noch ganz still hier.\nSchreib die erste Nachricht!',
+                        text: tr.chatQuietHereSoFar,
                       )
                     : ListView.builder(
                         reverse: true,
@@ -548,7 +546,7 @@ class _Bubble extends StatelessWidget {
             Align(
               alignment: Alignment.bottomRight,
               child: Text(
-                '${timeLabel(message.sentAt)}${read ? ' · gelesen' : ''}',
+                '${timeLabel(message.sentAt)}${read ? tr.chatRead : ''}',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: mine ? Colors.white.withValues(alpha: 0.8) : c.inkSoft,
                   fontSize: 10.5,
@@ -684,14 +682,14 @@ class _Composer extends StatelessWidget {
                   )
                 : BubbleButton(
                     icon: AppIcons.paperclip,
-                    tooltip: 'Foto oder Datei senden',
+                    tooltip: tr.chatSendPhotoFile,
                     background: c.surfaceSoft,
                     onPressed: onAttach,
                   ),
             const SizedBox(width: 4),
             BubbleButton(
               icon: AppIcons.poll,
-              tooltip: 'Umfrage',
+              tooltip: tr.chatPoll,
               background: c.surfaceSoft,
               onPressed: onPoll,
             ),
@@ -704,8 +702,8 @@ class _Composer extends StatelessWidget {
                 maxLines: 5,
                 textCapitalization: TextCapitalization.sentences,
                 textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Nachricht …',
+                decoration: InputDecoration(
+                  hintText: tr.chatMessage,
                   filled: false,
                   isDense: true,
                   contentPadding: EdgeInsets.symmetric(
@@ -720,7 +718,7 @@ class _Composer extends StatelessWidget {
             ),
             BubbleButton(
               icon: AppIcons.paperPlaneRight,
-              tooltip: 'Senden',
+              tooltip: tr.commonSend,
               color: Colors.white,
               background: color,
               onPressed: onSend,
@@ -863,9 +861,9 @@ class _PollView extends StatelessWidget {
               Expanded(
                 child: Text(
                   [
-                    '$voters ${voters == 1 ? 'Stimme' : 'Stimmen'}',
-                    if (poll.multiple) 'mehrere Antworten möglich',
-                    if (poll.closed) 'beendet',
+                    '$voters ${voters == 1 ? tr.chatVote : tr.chatVotes}',
+                    if (poll.multiple) tr.chatMultipleAnswersPossible,
+                    if (poll.closed) tr.chatPollClosed,
                   ].join(' · '),
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: fg.withValues(alpha: 0.8),
@@ -881,7 +879,7 @@ class _PollView extends StatelessWidget {
                     minimumSize: const Size(48, 48),
                   ),
                   onPressed: () => engine.closePoll(message),
-                  child: const Text('Beenden'),
+                  child: Text(tr.commonEnd2),
                 ),
             ],
           ),
@@ -923,9 +921,9 @@ class _PollEditorState extends State<_PollEditor> {
         if (o.text.trim().isNotEmpty) o.text.trim(),
     ];
     if (question.isEmpty || options.length < 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Frage und mindestens zwei Antworten')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.chatQuestionLeastTwoAnswers)));
       return;
     }
     Navigator.pop(
@@ -944,7 +942,7 @@ class _PollEditorState extends State<_PollEditor> {
   @override
   Widget build(BuildContext context) => AlertDialog(
     scrollable: true,
-    title: const Text('Umfrage'),
+    title: Text(tr.chatPoll),
     content: SizedBox(
       width: 380,
       child: Column(
@@ -954,9 +952,9 @@ class _PollEditorState extends State<_PollEditor> {
             controller: _question,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Frage',
-              hintText: 'z. B. Wohin am Sonntag?',
+            decoration: InputDecoration(
+              labelText: tr.chatQuestion,
+              hintText: tr.chatEGWhereGo,
             ),
           ),
           const SizedBox(height: 12),
@@ -966,7 +964,9 @@ class _PollEditorState extends State<_PollEditor> {
               child: TextField(
                 controller: o,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: 'Antwort ${i + 1}'),
+                decoration: InputDecoration(
+                  labelText: tr.chatAnswerNumber(i + 1),
+                ),
               ),
             ),
           if (_options.length < 10)
@@ -974,14 +974,14 @@ class _PollEditorState extends State<_PollEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.plus),
-                label: const Text('Antwort'),
+                label: Text(tr.chatAnswer),
                 onPressed: () =>
                     setState(() => _options.add(TextEditingController())),
               ),
             ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Mehrere Antworten erlauben'),
+            title: Text(tr.chatAllowMultipleAnswers),
             value: _multiple,
             onChanged: (v) => setState(() => _multiple = v),
           ),
@@ -991,9 +991,9 @@ class _PollEditorState extends State<_PollEditor> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Abbrechen'),
+        child: Text(tr.commonCancel),
       ),
-      FilledButton(onPressed: _send, child: const Text('Senden')),
+      FilledButton(onPressed: _send, child: Text(tr.commonSend)),
     ],
   );
 }

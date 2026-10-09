@@ -6,6 +6,7 @@
 //     --dart-define=FAMIO_NEW_URL=192.168.1.10:8775 \
 //     --dart-define=FAMIO_PASSWORD=…
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -21,6 +22,8 @@ const _password = String.fromEnvironment('FAMIO_PASSWORD');
 const _signInOnly = bool.fromEnvironment('FAMIO_SIGN_IN_ONLY');
 
 void main() {
+  // The tests read German texts, whatever the device speaks.
+  deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('moving to a new address keeps the session', (tester) async {

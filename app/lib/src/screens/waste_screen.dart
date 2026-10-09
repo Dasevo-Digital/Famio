@@ -59,28 +59,19 @@ class WasteScreen extends StatelessWidget {
         final date = DateFormat.MMMEd(appLanguage);
         return SectionPage(
           section: FamioSection.chores,
-          title: 'Abfallkalender',
-          subtitle: 'Wann welche Tonne raus muss',
+          title: tr.settingsWaste,
+          subtitle: tr.wasteWhenWhichBinHas,
           maxBodyWidth: 720,
           body: ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
-              const SoftCard(
-                child: Text(
-                  'Famio erinnert am Vorabend, wer welche Tonne rausstellt, '
-                  'und zeigt es auf der Startseite und der Wandanzeige. Die '
-                  'Abholtermine kommen aus dem Abfuhrkalender eurer Gemeinde '
-                  '– fast alle Entsorger bieten ihn zum Abonnieren an '
-                  '(„iCal“, „ICS“ oder „Kalender exportieren“ auf ihrer '
-                  'Webseite oder in ihrer App).',
-                ),
-              ),
+              SoftCard(child: Text(tr.wasteFamioRemindsYouEvening)),
               if (!mayEdit)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Nur Erwachsene können das ändern.'),
+                  child: Text(tr.sosOnlyAdultsCanChange),
                 ),
-              ListHeading('Abholtermine', color: accent),
+              ListHeading(tr.wasteCollectionDates, color: accent),
               RadioGroup<String?>(
                 groupValue: subs.any((x) => x.id == s.sourceId)
                     ? s.sourceId
@@ -93,18 +84,15 @@ class WasteScreen extends StatelessWidget {
                     RadioListTile<String?>(
                       value: null,
                       enabled: mayEdit,
-                      title: const Text('Automatisch erkennen'),
-                      subtitle: const Text(
-                        'Ganztägige Termine wie „Gelber Sack“, „Restmüll“ oder '
-                        '„Altpapier“ – auch selbst eingetragene',
-                      ),
+                      title: Text(tr.wasteDetectAutomatically),
+                      subtitle: Text(tr.wasteAllDayEventsLike),
                     ),
                     for (final sub in subs)
                       RadioListTile<String?>(
                         value: sub.id,
                         enabled: mayEdit,
                         title: Text(sub.name),
-                        subtitle: const Text('Alle Termine dieses Kalenders'),
+                        subtitle: Text(tr.wasteAllEventsCalendar),
                       ),
                   ],
                 ),
@@ -114,14 +102,14 @@ class WasteScreen extends StatelessWidget {
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     icon: const Icon(AppIcons.plus),
-                    label: const Text('Abfuhrkalender abonnieren'),
+                    label: Text(tr.wasteSubscribe),
                     onPressed: () async {
                       final id = await _subscribe(context, engine);
                       if (id != null) save(sourceId: id);
                     },
                   ),
                 ),
-              ListHeading('Wer stellt raus?', color: accent),
+              ListHeading(tr.wasteWhoPutsThemOut, color: accent),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Wrap(
@@ -152,15 +140,15 @@ class WasteScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Text(
                   s.memberIds.isEmpty
-                      ? 'Niemand gewählt: Alle Erwachsenen werden erinnert.'
-                      : 'Nur die Gewählten werden erinnert.',
+                      ? tr.wasteNobodyChosenAllAdults
+                      : tr.wasteOnlyThoseChosenReminded,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
               SwitchListTile(
                 secondary: const Icon(AppIcons.arrowsClockwise),
-                title: const Text('Wöchentlich abwechseln'),
-                subtitle: const Text('Jede Woche ist jemand anderes dran'),
+                title: Text(tr.wasteTakeTurnsWeekly),
+                subtitle: Text(tr.wasteEachWeekSSomeone),
                 value: s.rotate,
                 onChanged: mayEdit && s.memberIds.length > 1
                     ? (v) => save(rotate: v)
@@ -168,12 +156,19 @@ class WasteScreen extends StatelessWidget {
               ),
               ListTile(
                 leading: const Icon(AppIcons.bell),
-                title: const Text('Erinnerung am Vorabend'),
+                title: Text(tr.wasteReminderEveningBefore),
                 trailing: DropdownButton<int>(
                   value: s.remindHour,
                   items: [
                     for (var h = 15; h <= 22; h++)
-                      DropdownMenuItem(value: h, child: Text('$h:00 Uhr')),
+                      DropdownMenuItem(
+                        value: h,
+                        child: Text(
+                          DateFormat.jm(
+                            appLanguage,
+                          ).format(DateTime(2000, 1, 1, h)),
+                        ),
+                      ),
                   ],
                   onChanged: mayEdit
                       ? (v) => v == null ? null : save(remindHour: v)
@@ -185,19 +180,15 @@ class WasteScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   child: FilledButton.icon(
                     icon: const Icon(AppIcons.check),
-                    label: const Text('Erinnerungen einschalten'),
+                    label: Text(tr.wasteTurnReminders),
                     onPressed: () => save(),
                   ),
                 ),
-              ListHeading('Nächste Abholungen', color: accent),
+              ListHeading(tr.wasteNextCollections, color: accent),
               if (pickups.isEmpty)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text(
-                    'In den nächsten zwei Monaten keine Abholung gefunden. '
-                    'Ein neues Abo braucht ein paar Minuten, bis die Termine '
-                    'da sind.',
-                  ),
+                  child: Text(tr.wasteNoCollectionFoundNext),
                 ),
               for (final p in pickups)
                 ListTile(
@@ -233,7 +224,7 @@ class WasteScreen extends StatelessWidget {
         controllers: [url],
         child: StatefulBuilder(
           builder: (context, setState) => AlertDialog(
-            title: const Text('Abfuhrkalender abonnieren'),
+            title: Text(tr.wasteSubscribe),
             content: SizedBox(
               width: 420,
               child: TextField(
@@ -242,8 +233,8 @@ class WasteScreen extends StatelessWidget {
                 keyboardType: TextInputType.url,
                 autocorrect: false,
                 decoration: InputDecoration(
-                  labelText: 'Adresse des Kalenders (ICS)',
-                  hintText: 'https://… oder webcal://…',
+                  labelText: tr.wasteCalendarAddressIcs,
+                  hintText: tr.calendarHttpsWebcal,
                   errorText: error,
                 ),
               ),
@@ -251,7 +242,7 @@ class WasteScreen extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Abbrechen'),
+                child: Text(tr.commonCancel),
               ),
               FilledButton(
                 onPressed: () {
@@ -260,15 +251,12 @@ class WasteScreen extends StatelessWidget {
                   if (u == null ||
                       !schemes.contains(u.scheme) ||
                       u.host.isEmpty) {
-                    setState(
-                      () => error =
-                          'Adresse muss mit https:// oder webcal:// beginnen',
-                    );
+                    setState(() => error = tr.calendarAddressMustStartHttps);
                     return;
                   }
                   Navigator.pop(context, true);
                 },
-                child: const Text('Abonnieren'),
+                child: Text(tr.wasteSubscribe2),
               ),
             ],
           ),
@@ -280,7 +268,7 @@ class WasteScreen extends StatelessWidget {
     engine.saveCalendarSubscription(
       CalendarSubscription(
         id: id,
-        name: 'Abfallkalender',
+        name: tr.settingsWaste,
         url: url.text.trim(),
         color: famioPalette.last,
         ownerId: engine.memberId,

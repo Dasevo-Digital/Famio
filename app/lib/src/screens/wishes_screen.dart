@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 extension WishData on SyncEngine {
   List<Wish> get wishes =>
@@ -81,15 +82,17 @@ class _WishesScreenState extends State<WishesScreen> {
         final accent = c.strong(FamioSection.home);
         return SectionPage(
           section: FamioSection.home,
-          title: 'Wunschzettel',
+          title: tr.settingsWishes,
           subtitle: mine
-              ? 'Was du dir wünschst'
-              : 'Was sich ${engine.member(selected)?.displayName ?? ''} wünscht',
+              ? tr.wishesWhatYouWish
+              : tr.wishesWhatNameWishes(
+                  engine.member(selected)?.displayName ?? '',
+                ),
           maxBodyWidth: 720,
           floating: mine && !engine.iAmGuest
               ? AddButton(
                   color: accent,
-                  tooltip: 'Wunsch hinzufügen',
+                  tooltip: tr.wishesAddWish,
                   icon: AppIcons.plus,
                   onPressed: () => _edit(context, engine, null),
                 )
@@ -108,7 +111,9 @@ class _WishesScreenState extends State<WishesScreen> {
                         child: ChoiceChip(
                           avatar: MemberAvatar(m, radius: 10),
                           label: Text(
-                            m.id == engine.memberId ? 'Ich' : m.displayName,
+                            m.id == engine.memberId
+                                ? tr.shoppingMe
+                                : m.displayName,
                           ),
                           selected: m.id == selected,
                           onSelected: (_) => setState(() => _member = m.id),
@@ -122,11 +127,7 @@ class _WishesScreenState extends State<WishesScreen> {
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Text(
-                    mine
-                        ? 'Noch keine Wünsche. Die anderen sehen deine Liste '
-                              'und können still „Ich besorge das“ wählen – '
-                              'du erfährst nicht, wer was besorgt.'
-                        : 'Noch keine Wünsche.',
+                    mine ? tr.wishesNoWishesYetOthers : tr.wishesNoWishesYet,
                   ),
                 ),
               for (final w in wishes)
@@ -155,7 +156,7 @@ class _WishesScreenState extends State<WishesScreen> {
     final save = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(w == null ? 'Neuer Wunsch' : 'Wunsch bearbeiten'),
+        title: Text(w == null ? tr.wishesNewWish : tr.wishesEditWish),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -164,25 +165,23 @@ class _WishesScreenState extends State<WishesScreen> {
                 controller: title,
                 autofocus: true,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Was?'),
+                decoration: InputDecoration(labelText: tr.wishesWhat),
               ),
               TextField(
                 controller: link,
                 keyboardType: TextInputType.url,
-                decoration: const InputDecoration(labelText: 'Link (optional)'),
+                decoration: InputDecoration(labelText: tr.wishesLinkOptional),
               ),
               TextField(
                 controller: price,
-                decoration: const InputDecoration(
-                  labelText: 'Preis (optional)',
-                  hintText: 'z. B. ca. 25 €',
+                decoration: InputDecoration(
+                  labelText: tr.wishesPriceOptional,
+                  hintText: tr.wishesEGAbout25,
                 ),
               ),
               TextField(
                 controller: note,
-                decoration: const InputDecoration(
-                  labelText: 'Hinweis (Größe, Farbe …)',
-                ),
+                decoration: InputDecoration(labelText: tr.wishesNoteSizeColor),
               ),
             ],
           ),
@@ -199,15 +198,15 @@ class _WishesScreenState extends State<WishesScreen> {
                   delete: () => engine.deleteWish(w.id),
                 );
               },
-              child: const Text('Löschen'),
+              child: Text(tr.commonDelete),
             ),
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Speichern'),
+            child: Text(tr.commonSave),
           ),
         ],
       ),
@@ -276,7 +275,7 @@ class _WishCard extends StatelessWidget {
               ),
               if (wish.link.isNotEmpty)
                 IconButton(
-                  tooltip: 'Link öffnen',
+                  tooltip: tr.wishesOpenLink,
                   icon: const Icon(AppIcons.arrowSquareOut),
                   onPressed: () => launchUrl(
                     Uri.parse(
@@ -296,7 +295,9 @@ class _WishCard extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: Icon(wish.received ? AppIcons.rotateCcw : AppIcons.check),
-                label: Text(wish.received ? 'Doch noch wünschen' : 'Bekommen'),
+                label: Text(
+                  wish.received ? tr.wishesWishAgain : tr.wishesReceived,
+                ),
                 onPressed: () => engine.saveWish(
                   Wish(
                     id: wish.id,
@@ -314,7 +315,7 @@ class _WishCard extends StatelessWidget {
           else if (claim == null)
             FilledButton.tonalIcon(
               icon: const Icon(AppIcons.gift),
-              label: const Text('Ich besorge das'),
+              label: Text(tr.wishesILlGet),
               onPressed: () => engine.claimWish(wish),
             )
           else
@@ -325,15 +326,18 @@ class _WishCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     byMe
-                        ? 'Du besorgst das'
-                        : '${engine.member(claim!.claimedBy)?.displayName ?? 'Jemand'} besorgt das',
+                        ? tr.wishesYouReGetting
+                        : tr.wishesNameGetting(
+                            engine.member(claim!.claimedBy)?.displayName ??
+                                tr.commonSomeone,
+                          ),
                     style: TextStyle(color: c.inkSoft),
                   ),
                 ),
                 if (byMe)
                   TextButton(
                     onPressed: () => engine.releaseWish(wish.id),
-                    child: const Text('Freigeben'),
+                    child: Text(tr.wishesRelease),
                   ),
               ],
             ),

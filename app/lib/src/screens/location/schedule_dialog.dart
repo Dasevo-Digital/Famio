@@ -19,7 +19,7 @@ Future<LocationSchedule?> showLocationScheduleDialog(
   var busy = false;
   String? error;
   LocationSchedule? result = initial;
-  final labels = const ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  final labels = weekdaysShort();
 
   await showDialog<void>(
     context: context,

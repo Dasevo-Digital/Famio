@@ -49,7 +49,7 @@ String ago(DateTime t, {DateTime? now}) {
 
 String scheduleLabel(LocationSchedule? schedule) {
   if (schedule == null) return 'Immer teilen';
-  const names = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  final names = weekdaysShort();
   final days = schedule.weekdays.map((day) => names[day - 1]).join(', ');
   String clock(int minute) =>
       '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}';

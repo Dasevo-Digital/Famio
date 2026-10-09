@@ -4,6 +4,7 @@
 // the widget while the app ran under instrumentation (2026-09-27).
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/home_widget/widget_sync.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_widget/home_widget.dart';
@@ -11,6 +12,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() {
+  // The tests read German texts, whatever the device speaks.
+  deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('widget shows today', (tester) async {

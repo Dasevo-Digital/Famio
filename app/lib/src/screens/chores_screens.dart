@@ -13,6 +13,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import '../format.dart';
 
 part 'chores/accounts.dart';
 part 'chores/chore_editor.dart';
@@ -45,7 +46,7 @@ enum _Tab {
   final String label;
 }
 
-const _weekdayShort = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+List<String> get _weekdayShort => weekdaysShort();
 
 /// Chores with points, kids' routines, rewards and pocket money.
 class ChoresScreen extends StatefulWidget {

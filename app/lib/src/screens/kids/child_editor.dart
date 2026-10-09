@@ -54,9 +54,9 @@ class _ChildEditorState extends State<_ChildEditor> {
 
   void _save() {
     if (_name.text.trim().isEmpty || _birth == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte Name und Geburtstag angeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.kidsPleaseEnterNameBirthday)));
       return;
     }
     AppScope.engineOf(context).saveChild(
@@ -79,17 +79,15 @@ class _ChildEditorState extends State<_ChildEditor> {
       context: context,
       builder: (d) => AlertDialog(
         title: Text('${widget.existing!.name} entfernen?'),
-        content: const Text(
-          'Alle Einträge, Meilensteine und Messungen dieses Kindes werden gelöscht.',
-        ),
+        content: Text(tr.kidsAllEntriesMilestonesMeasurements),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -111,10 +109,10 @@ class _ChildEditorState extends State<_ChildEditor> {
     );
     return SectionPage(
       section: FamioSection.kids,
-      title: widget.existing == null ? 'Kind hinzufügen' : 'Profil bearbeiten',
+      title: widget.existing == null ? tr.kidsAddChild : tr.settingsEditProfile,
       actions: [
         ColorButton(
-          label: 'Speichern',
+          label: tr.commonSave,
           color: Color(_color),
           onPressed: _busy ? null : _save,
         ),
@@ -133,7 +131,7 @@ class _ChildEditorState extends State<_ChildEditor> {
                     bottom: 0,
                     child: BubbleButton(
                       icon: AppIcons.camera,
-                      tooltip: 'Foto wählen',
+                      tooltip: tr.kidsChoosePhoto,
                       onPressed: _busy ? null : _pickPhoto,
                       size: 38,
                     ),
@@ -147,16 +145,16 @@ class _ChildEditorState extends State<_ChildEditor> {
             controller: _name,
             textCapitalization: TextCapitalization.words,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: tr.commonName),
           ),
-          const ListHeading('Geburtstag'),
+          ListHeading(tr.commonBirthday),
           Align(
             alignment: Alignment.centerLeft,
             child: InputChip(
               avatar: const Icon(AppIcons.cake, size: 18),
               label: Text(
                 _birth == null
-                    ? 'Datum wählen'
+                    ? tr.commonPickDate
                     : DateFormat.yMMMMd(appLanguage).format(_birth!),
               ),
               onPressed: () async {
@@ -171,14 +169,14 @@ class _ChildEditorState extends State<_ChildEditor> {
               },
             ),
           ),
-          const ListHeading('Geschlecht'),
+          ListHeading(tr.kidsGender),
           Wrap(
             spacing: 8,
             children: [
               for (final (value, label) in [
-                (ChildSex.female, 'Mädchen'),
-                (ChildSex.male, 'Junge'),
-                (null, 'Keine Angabe'),
+                (ChildSex.female, tr.pregnancyGirl),
+                (ChildSex.male, tr.pregnancyBoy),
+                (null, tr.kidsNotSpecified),
               ])
                 ChoiceChip(
                   label: Text(label),
@@ -190,11 +188,11 @@ class _ChildEditorState extends State<_ChildEditor> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Nur für die WHO-Wachstumskurven.',
+              tr.kidsOnlyWhoGrowthCharts,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
-          const ListHeading('Farbe'),
+          ListHeading(tr.kidsColor),
           Wrap(
             spacing: 10,
             children: [
@@ -215,7 +213,7 @@ class _ChildEditorState extends State<_ChildEditor> {
                 ),
             ],
           ),
-          const ListHeading('Sorgeberechtigte'),
+          ListHeading(tr.kidsGuardians),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -234,8 +232,7 @@ class _ChildEditorState extends State<_ChildEditor> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Nur sie sehen Entwicklung, Vorsorge, Impfungen und Fotos und '
-              'werden erinnert. Niemand ausgewählt: die ganze Familie.',
+              tr.kidsOnlyTheySeeDevelopment,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -245,7 +242,7 @@ class _ChildEditorState extends State<_ChildEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.trash, size: 18),
-                label: const Text('Kind entfernen'),
+                label: Text(tr.kidsRemoveChild),
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),

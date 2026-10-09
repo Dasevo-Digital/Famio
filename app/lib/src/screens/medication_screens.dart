@@ -22,7 +22,7 @@ const _collections = {
   'members',
 };
 
-const _weekdayShort = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+List<String> get _weekdayShort => weekdaysShort();
 
 /// Medication plans: today's doses to tick off, supplies and refills.
 class MedicationScreen extends StatelessWidget {
@@ -35,12 +35,12 @@ class MedicationScreen extends StatelessWidget {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.health,
-      title: 'Medikamente',
-      subtitle: 'Einnahmen im Blick, Vorrat im Griff',
+      title: tr.commonMedications,
+      subtitle: tr.medsDosesViewSupplyUnder,
       actions: const [SyncStatusIcon()],
       floating: AddButton(
         color: color,
-        tooltip: 'Medikament hinzufügen',
+        tooltip: tr.medsAddMedication,
         onPressed: () => showMedicationEditor(context),
       ),
       body: DataBuilder(
@@ -61,19 +61,17 @@ class MedicationScreen extends StatelessWidget {
                 EmptyHint(
                   icon: AppIcons.pillBottle,
                   color: color,
-                  text:
-                      'Noch keine Medikamente.\nFamio erinnert an die '
-                      'Einnahme und warnt, bevor der Vorrat ausgeht.',
+                  text: tr.medsNoMedicationsYetFamio,
                 ),
               if (doses.isNotEmpty) ...[
-                ListHeading('Heute', color: color),
+                ListHeading(tr.commonToday, color: color),
                 for (final (m, at) in doses)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: _DoseTile(medication: m, at: at, engine: engine),
                   ),
               ],
-              if (meds.isNotEmpty) const ListHeading('Alle Medikamente'),
+              if (meds.isNotEmpty) ListHeading(tr.medsAllMedications),
               for (final m in meds)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -102,13 +100,7 @@ class _Disclaimer extends StatelessWidget {
           children: [
             Icon(AppIcons.info, color: c.strong(FamioSection.health)),
             const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Famio erinnert nur. Dosierung immer nach ärztlicher '
-                'Verordnung oder Beipackzettel. Bei Fragen: Apotheke, '
-                'ärztlicher Bereitschaftsdienst 116 117 – im Notfall 112.',
-              ),
-            ),
+            Expanded(child: Text(tr.medsFamioOnlyRemindsYou)),
           ],
         ),
       ),
@@ -136,11 +128,15 @@ class _DoseTile extends StatelessWidget {
         intake == null &&
         DateTime.now().isAfter(at.add(const Duration(minutes: 30)));
     final status = intake == null
-        ? (overdue ? 'noch offen' : null)
+        ? (overdue ? tr.medsStillOpen : null)
         : intake.skipped
-        ? 'ausgelassen'
-        : 'genommen ${timeLabel(intake.at)}'
-              '${intake.byId != engine.memberId ? ' · ${engine.member(intake.byId)?.displayName ?? ''}' : ''}';
+        ? tr.medsSkipped
+        : tr.medsTakenTime(
+            timeLabel(intake.at),
+            intake.byId != engine.memberId
+                ? ' · ${engine.member(intake.byId)?.displayName ?? ''}'
+                : '',
+          );
     return SoftCard(
       padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
       child: Row(
@@ -185,10 +181,10 @@ class _DoseTile extends StatelessWidget {
             TextButton(
               onPressed: () =>
                   engine.recordIntake(medication, scheduled: at, skipped: true),
-              child: const Text('Auslassen'),
+              child: Text(tr.medsSkip),
             ),
             IconButton.filled(
-              tooltip: 'Genommen',
+              tooltip: tr.medsTaken,
               style: IconButton.styleFrom(
                 backgroundColor: c.strong(FamioSection.health),
               ),
@@ -197,7 +193,7 @@ class _DoseTile extends StatelessWidget {
             ),
           ] else
             IconButton(
-              tooltip: 'Rückgängig',
+              tooltip: tr.commonUndo,
               icon: const Icon(AppIcons.rotateCcw),
               onPressed: () => engine.deleteIntake(intake.id),
             ),
@@ -221,7 +217,7 @@ class _MedicationCard extends StatelessWidget {
     ]);
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Steht auf „${lists.first.name}“')));
+    ).showSnackBar(SnackBar(content: Text(tr.medsList(lists.first.name))));
   }
 
   @override
@@ -236,7 +232,7 @@ class _MedicationCard extends StatelessWidget {
         left != null && (left <= 0 || (days != null && days <= m.refillDays));
     final last = m.asNeeded ? engine.intakes(m.id).firstOrNull : null;
     final schedule = m.asNeeded
-        ? 'bei Bedarf'
+        ? tr.medsNeeded
         : [
             m.times.join(', '),
             if (m.weekdays.isNotEmpty && m.weekdays.length < 7)
@@ -297,9 +293,11 @@ class _MedicationCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     left <= 0
-                        ? 'Vorrat aufgebraucht'
-                        : 'Noch ${_amount(left)} Stück'
-                              '${days == null ? '' : ' · reicht ca. $days Tage'}',
+                        ? tr.medsSupplyUsedUp
+                        : tr.medsCountLeftLasts(
+                            _amount(left),
+                            days == null ? '' : tr.medsLastsAboutDaysDays(days),
+                          ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: low ? c.danger : null,
                     ),
@@ -308,7 +306,7 @@ class _MedicationCard extends StatelessWidget {
                 if (low && engine.shoppingLists.isNotEmpty)
                   TextButton(
                     onPressed: () => _toShopping(context),
-                    child: const Text('Nachkaufen'),
+                    child: Text(tr.medsBuyMore),
                   ),
               ],
             ),
@@ -318,14 +316,14 @@ class _MedicationCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     last == null
-                        ? 'Noch nicht genommen'
-                        : 'Zuletzt ${dateTimeLabel(last.at)}',
+                        ? tr.medsNotTakenYet
+                        : tr.medsLastTime(dateTimeLabel(last.at)),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
                 TextButton.icon(
                   icon: const Icon(AppIcons.check, size: 18),
-                  label: const Text('Jetzt genommen'),
+                  label: Text(tr.medsTakenNow),
                   onPressed: () => engine.recordIntake(m),
                 ),
               ],
@@ -463,12 +461,12 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     return SectionPage(
       maxBodyWidth: 720,
       section: FamioSection.health,
-      title: _old == null ? 'Neues Medikament' : _old.name,
+      title: _old == null ? tr.medsNewMedication : _old.name,
       actions: [
         if (_old != null)
           BubbleButton(
             icon: AppIcons.trash,
-            tooltip: 'Löschen',
+            tooltip: tr.commonDelete,
             color: c.danger,
             onPressed: () {
               deleteWithUndo(
@@ -485,7 +483,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           ),
         BubbleButton(
           icon: AppIcons.check,
-          tooltip: 'Speichern',
+          tooltip: tr.commonSave,
           color: Colors.white,
           background: c.strong(FamioSection.health),
           onPressed: _save,
@@ -498,13 +496,13 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             controller: _name,
             autofocus: _old == null,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Medikament'),
+            decoration: InputDecoration(labelText: tr.kidsLogMedication),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _person,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Für wen?'),
+            decoration: InputDecoration(labelText: tr.medsWhom),
           ),
           const SizedBox(height: 6),
           Wrap(
@@ -521,21 +519,21 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           const SizedBox(height: 12),
           TextField(
             controller: _dose,
-            decoration: const InputDecoration(
-              labelText: 'Dosis laut Verordnung',
-              hintText: 'z. B. 1 Tablette, 5 ml',
-              helperText: 'Wie vom Arzt verordnet oder im Beipackzettel',
+            decoration: InputDecoration(
+              labelText: tr.medsDosePrescribed,
+              hintText: tr.medsEG1Tablet,
+              helperText: tr.medsPrescribedDoctorPackageLeaflet,
             ),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Nur bei Bedarf'),
-            subtitle: const Text('Ohne feste Zeiten und Erinnerungen'),
+            title: Text(tr.medsOnlyNeeded),
+            subtitle: Text(tr.medsWithoutFixedTimesReminders),
             value: _asNeeded,
             onChanged: (v) => setState(() => _asNeeded = v),
           ),
           if (!_asNeeded) ...[
-            const ListHeading('Einnahmezeiten (mit Erinnerung)'),
+            ListHeading(tr.medsTimesTakeReminder),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -548,7 +546,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                   ),
                 ActionChip(
                   avatar: const Icon(AppIcons.plus, size: 18),
-                  label: const Text('Zeit'),
+                  label: Text(tr.commonTime),
                   onPressed: _addTime,
                 ),
               ],
@@ -581,7 +579,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
               runSpacing: 8,
               children: [
                 InputChip(
-                  label: Text('Ab ${day.format(_start)}'),
+                  label: Text(tr.medsDate(day.format(_start))),
                   onPressed: () async {
                     final d = await _pickDay(_start);
                     if (d != null) setState(() => _start = d);
@@ -589,7 +587,9 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                 ),
                 InputChip(
                   label: Text(
-                    _end == null ? 'Dauerhaft' : 'Bis ${day.format(_end!)}',
+                    _end == null
+                        ? tr.medsPermanently
+                        : tr.medsUntilDate(day.format(_end!)),
                   ),
                   onPressed: () async {
                     final d = await _pickDay(_end ?? _start);
@@ -602,7 +602,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
               ],
             ),
           ],
-          const ListHeading('Vorrat'),
+          ListHeading(tr.conflictsPantry),
           Row(
             children: [
               Expanded(
@@ -611,9 +611,9 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Stück vorrätig',
-                    helperText: 'Leer lassen, wenn egal',
+                  decoration: InputDecoration(
+                    labelText: tr.medsPiecesStock,
+                    helperText: tr.medsLeaveEmptyIfDoesn,
                   ),
                 ),
               ),
@@ -624,9 +624,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Stück pro Einnahme',
-                  ),
+                  decoration: InputDecoration(labelText: tr.medsPiecesPerDose),
                 ),
               ),
             ],
@@ -634,18 +632,21 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Expanded(child: Text('Warnen, wenn der Vorrat reicht für')),
+              Expanded(child: Text(tr.medsWarnWhenSupplyLasts)),
               DropdownButton<int>(
                 value: _refillDays,
                 items: [
                   for (final d in [3, 5, 7, 10, 14, 21])
-                    DropdownMenuItem(value: d, child: Text('$d Tage')),
+                    DropdownMenuItem(
+                      value: d,
+                      child: Text(tr.commonDaysCount(d)),
+                    ),
                 ],
                 onChanged: (v) => setState(() => _refillDays = v ?? 7),
               ),
             ],
           ),
-          const ListHeading('Wer sieht es und wird erinnert?'),
+          ListHeading(tr.medsWhoSeesGetsReminded),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -664,8 +665,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Gesundheitsdaten: nur die Ausgewählten sehen dieses '
-            'Medikament.',
+            tr.medsHealthDataOnlyThose,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 12),
@@ -674,13 +674,13 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             minLines: 2,
             maxLines: 5,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Notizen',
-              hintText: 'z. B. zum Essen, verordnet von …',
+            decoration: InputDecoration(
+              labelText: tr.commonNotes,
+              hintText: tr.medsEGFoodPrescribed,
             ),
           ),
           if (_old != null) ...[
-            const ListHeading('Verlauf'),
+            ListHeading(tr.pregnancyHistory),
             for (final i in engine.intakes(_old.id).take(20))
               ListTile(
                 dense: true,
@@ -691,8 +691,8 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                 ),
                 title: Text(
                   i.skipped
-                      ? 'Ausgelassen (${timeLabel(i.scheduled ?? i.at)})'
-                      : 'Genommen ${dateTimeLabel(i.at)}',
+                      ? tr.medsSkippedTime(timeLabel(i.scheduled ?? i.at))
+                      : tr.medsTakenTime2(dateTimeLabel(i.at)),
                 ),
                 subtitle: Text(engine.member(i.byId)?.displayName ?? ''),
               ),

@@ -7,6 +7,7 @@
 //     --dart-define=FAMIO_USER=papa --dart-define=FAMIO_PASSWORD=...
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -17,6 +18,8 @@ const _user = String.fromEnvironment('FAMIO_USER');
 const _password = String.fromEnvironment('FAMIO_PASSWORD');
 
 void main() {
+  // The tests read German texts, whatever the device speaks.
+  deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> waitFor(

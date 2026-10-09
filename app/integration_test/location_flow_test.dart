@@ -14,6 +14,7 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/location/location_sharing.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,6 +35,8 @@ const _kidPassword = 'e2e-standort-123';
 const _code = '2468';
 
 void main() {
+  // The tests read German texts, whatever the device speaks.
+  deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> waitFor(

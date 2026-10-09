@@ -1,11 +1,11 @@
 part of '../chores_screens.dart';
 
-const _rewardPresets = [
-  ('📱', '30 Minuten Tablet', 10),
-  ('🍦', 'Eis essen', 15),
-  ('🎲', 'Spieleabend aussuchen', 20),
-  ('🌙', '30 Minuten später ins Bett', 25),
-  ('🎬', 'Kinobesuch', 50),
+List<(String, String, int)> get _rewardPresets => [
+  ('📱', tr.rewards30MinutesTablet, 10),
+  ('🍦', tr.rewardsEatIceCream, 15),
+  ('🎲', tr.rewardsChooseGameNight, 20),
+  ('🌙', tr.rewardsGoBed30Minutes, 25),
+  ('🎬', tr.rewardsTripCinema, 50),
 ];
 
 class _RewardsTab extends StatelessWidget {
@@ -22,9 +22,7 @@ class _RewardsTab extends StatelessWidget {
       if (balance < reward.cost) {
         messenger.showSnackBar(
           SnackBar(
-            content: Text(
-              'Dir fehlen noch ${reward.cost - balance} Punkte – weiter so!',
-            ),
+            content: Text(tr.rewardsYouStillNeedPoints(reward.cost - balance)),
           ),
         );
         return;
@@ -33,37 +31,35 @@ class _RewardsTab extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: Text('${reward.emoji} ${reward.title}'),
-          content: Text(
-            'Für ${reward.cost} Punkte einlösen? Deine Eltern bekommen '
-            'Bescheid.',
-          ),
+          content: Text(tr.rewardsRedeemCostPointsParents(reward.cost)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Wünschen'),
+              child: Text(tr.rewardsWish),
             ),
           ],
         ),
       );
       if (ok != true) return;
       engine.redeem(reward, me.id);
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Wunsch gesendet 🎁')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(tr.rewardsWishSent)));
       return;
     }
-    final who = await _pickMember(context, engine, 'Wer löst ein?');
+    final who = await _pickMember(context, engine, tr.rewardsWhoRedeems);
     if (who == null) return;
     final balance = engine.pointBalance(who);
     if (balance < reward.cost) {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            '${engine.member(who)?.displayName} hat nur $balance Punkte.',
+            tr.rewardsNameOnlyHasBalance(
+              engine.member(who)?.displayName,
+              balance,
+            ),
           ),
         ),
       );
@@ -71,7 +67,7 @@ class _RewardsTab extends StatelessWidget {
     }
     engine.redeem(reward, who);
     messenger.showSnackBar(
-      SnackBar(content: Text('${reward.title} eingelöst 🎁')),
+      SnackBar(content: Text(tr.rewardsTitleRedeemed(reward.title))),
     );
   }
 
@@ -87,8 +83,8 @@ class _RewardsTab extends StatelessWidget {
             icon: AppIcons.gift,
             color: color,
             text: engine.iAmAdult
-                ? 'Wofür lohnt sich das Sammeln? Ideen zum Übernehmen:'
-                : 'Noch keine Belohnungen – frag deine Eltern!',
+                ? tr.rewardsWhatWorthCollectingIdeas
+                : tr.rewardsNoRewardsYetAsk,
           ),
           if (engine.iAmAdult)
             for (final (emoji, title, cost) in _rewardPresets)
@@ -110,7 +106,7 @@ class _RewardsTab extends StatelessWidget {
                             cost: cost,
                           ),
                         ),
-                        child: const Text('Übernehmen'),
+                        child: Text(tr.commonApply),
                       ),
                     ],
                   ),
@@ -129,7 +125,10 @@ class _RewardsTab extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12),
             child: Row(
               children: [
-                Text('Du hast', style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  tr.rewardsYouHave,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(width: 8),
                 _PointsChip(balance, big: true),
               ],
@@ -159,7 +158,7 @@ class _RewardsTab extends StatelessWidget {
                     FilledButton(
                       style: FilledButton.styleFrom(backgroundColor: color),
                       onPressed: () => _redeem(context, r),
-                      child: const Text('Einlösen'),
+                      child: Text(tr.rewardsRedeem),
                     ),
                 ],
               ),
@@ -180,7 +179,9 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         scrollable: true,
-        title: Text(reward == null ? 'Neue Belohnung' : 'Belohnung bearbeiten'),
+        title: Text(
+          reward == null ? tr.rewardsNewReward : tr.rewardsEditReward,
+        ),
         content: SizedBox(
           width: 360,
           child: Column(
@@ -190,12 +191,12 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
                 controller: title,
                 autofocus: reward == null,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Belohnung'),
+                decoration: InputDecoration(labelText: tr.commonReward),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: emoji,
-                decoration: const InputDecoration(labelText: 'Emoji'),
+                decoration: InputDecoration(labelText: tr.rewardsEmoji),
               ),
               const SizedBox(height: 12),
               _Stepper(
@@ -220,11 +221,11 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
                 );
                 Navigator.pop(context);
               },
-              child: const Text('Löschen'),
+              child: Text(tr.commonDelete),
             ),
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () {
@@ -239,7 +240,7 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
               );
               Navigator.pop(context);
             },
-            child: const Text('Speichern'),
+            child: Text(tr.commonSave),
           ),
         ],
       ),

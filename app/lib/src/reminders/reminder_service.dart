@@ -38,10 +38,10 @@ class ReminderService {
     final plugin = FlutterLocalNotificationsPlugin();
     try {
       final ok = await plugin.initialize(
-        settings: const InitializationSettings(
+        settings: InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           macOS: DarwinInitializationSettings(),
-          linux: LinuxInitializationSettings(defaultActionName: 'Öffnen'),
+          linux: LinuxInitializationSettings(defaultActionName: tr.commonOpen),
           windows: WindowsInitializationSettings(
             appName: AppEnv.appName,
             appUserModelId: AppEnv.isDev
@@ -60,7 +60,7 @@ class ReminderService {
       final exact = await android?.canScheduleExactNotifications() ?? false;
       return ReminderService._(plugin, prefs).._exactAlarms = exact;
     } catch (e) {
-      debugPrint('Benachrichtigungen nicht verfügbar: $e');
+      debugPrint(tr.remindersNotificationsNotAvailableError(e));
       return null;
     }
   }
@@ -73,11 +73,11 @@ class ReminderService {
   static const _maxScheduled = 48;
   static const _prefsKey = 'reminders.scheduled';
 
-  static const _details = NotificationDetails(
+  static NotificationDetails get _details => NotificationDetails(
     android: AndroidNotificationDetails(
       'reminders',
-      'Erinnerungen',
-      channelDescription: 'Termine und Aufgaben',
+      tr.remindersChannel,
+      channelDescription: tr.remindersEventsTasks,
       importance: Importance.high,
       priority: Priority.high,
       // Lock screen shows only "Famio", not e.g. a child's check-up.
@@ -176,7 +176,7 @@ class ReminderService {
   void _reschedule() => _pending = _pending
       .then((_) => _apply())
       .catchError(
-        (Object e) => debugPrint('Erinnerungen planen fehlgeschlagen: $e'),
+        (Object e) => debugPrint(tr.remindersPlanningRemindersFailedError(e)),
       );
 
   Future<void> _apply() async {
@@ -316,12 +316,14 @@ class ReminderService {
           at: m.sentAt,
           title: '',
         ).notificationId,
-        title: ChatIds.isDirect(m.chatId) ? author : '$author · Familie',
+        title: ChatIds.isDirect(m.chatId)
+            ? author
+            : tr.remindersAuthorFamily(author),
         body: m.poll != null
             ? '📊 ${m.poll!.question}'
             : m.text.isNotEmpty
             ? m.text
-            : '📎 ${m.attachment?.name ?? 'Anhang'}',
+            : '📎 ${m.attachment?.name ?? tr.commonAttachment}',
         notificationDetails: _quiet() ? _quietDetails : _chatDetails,
       );
     }
@@ -346,7 +348,9 @@ class ReminderService {
       await _plugin.show(
         id: int.tryParse(a.id.substring(0, 7), radix: 16) ?? a.id.hashCode,
         title: AppEnv.appName,
-        body: a.text(engine.member(a.memberId)?.displayName ?? 'Jemand'),
+        body: a.text(
+          engine.member(a.memberId)?.displayName ?? tr.commonSomeone,
+        ),
         notificationDetails: _quiet(place: true)
             ? _quietDetails
             : _placeDetails,
@@ -354,11 +358,11 @@ class ReminderService {
     }
   }
 
-  static const _placeDetails = NotificationDetails(
+  static NotificationDetails get _placeDetails => NotificationDetails(
     android: AndroidNotificationDetails(
       'famio_places',
-      'Orte',
-      channelDescription: 'Wer ist wo angekommen oder losgegangen',
+      tr.remindersPlaces,
+      channelDescription: tr.remindersWhoArrivedWhereLeft,
       visibility: NotificationVisibility.private,
     ),
     macOS: DarwinNotificationDetails(),
@@ -366,11 +370,11 @@ class ReminderService {
     windows: WindowsNotificationDetails(),
   );
 
-  static const _chatDetails = NotificationDetails(
+  static NotificationDetails get _chatDetails => NotificationDetails(
     android: AndroidNotificationDetails(
       'chat',
-      'Chat',
-      channelDescription: 'Neue Nachrichten der Familie',
+      tr.sectionChat,
+      channelDescription: tr.remindersNewMessagesFamily,
       importance: Importance.high,
       priority: Priority.high,
       // Lock screen shows only "Famio", not e.g. a child's check-up.
@@ -382,11 +386,11 @@ class ReminderService {
   );
 
   /// An emergency (SOS): loud like an alarm clock, over the lock screen.
-  static const _alarmDetails = NotificationDetails(
+  static NotificationDetails get _alarmDetails => NotificationDetails(
     android: AndroidNotificationDetails(
       'sos',
-      'Notfall (SOS)',
-      channelDescription: 'Wenn jemand den Notfallknopf drückt',
+      tr.remindersEmergencySos,
+      channelDescription: tr.remindersWhenSomeonePressesEmergency,
       importance: Importance.max,
       priority: Priority.max,
       category: AndroidNotificationCategory.alarm,
@@ -405,10 +409,10 @@ class ReminderService {
 
   /// In the quiet time: listed, but no sound and no pop-up.
   static final _quietDetails = NotificationDetails(
-    android: const AndroidNotificationDetails(
+    android: AndroidNotificationDetails(
       'quiet',
-      'Ruhezeit',
-      channelDescription: 'Hinweise während der Ruhezeit, ohne Ton',
+      tr.pushQuietTime2,
+      channelDescription: tr.remindersNoticesDuringQuietTime,
       importance: Importance.low,
       priority: Priority.low,
       playSound: false,
@@ -430,13 +434,13 @@ class ReminderService {
     final o = r.occurrence;
     if (o != null) {
       final when = o.event.allDay
-          ? '${dayLabel(o.start)}, ganztägig'
+          ? tr.remindersDayAllDay(dayLabel(o.start))
           : dateTimeLabel(o.start);
       final location = o.event.location;
       return location.isEmpty ? when : '$when · $location';
     }
     final due = r.task?.due;
-    return due == null ? 'Aufgabe' : 'Aufgabe · fällig ${dayLabel(due)}';
+    return due == null ? tr.commonTask : tr.remindersTaskDueDue(dayLabel(due));
   }
 }
 
@@ -470,28 +474,30 @@ List<DueReminder> familyReminders(
           d.optional) {
         continue;
       }
-      final what = d.isCheckup ? d.id : 'Impfung ${d.title}';
+      final what = d.isCheckup ? d.id : tr.remindersVaccinationTitle(d.title);
       final appointment = d.appointment;
       if (appointment != null) {
         // A booked appointment replaces the "please book" reminders.
         final at = appointment.appointmentAt;
         final clock = appointment.time == null
             ? ''
-            : ' um ${appointment.time} Uhr';
+            : tr.remindersTime(appointment.time!);
         final dayBefore = at.subtract(const Duration(days: 1));
         add(
           'kid:${child.id}:${d.id}:appt:${appointment.date.toIso8601String()}',
           DateTime(dayBefore.year, dayBefore.month, dayBefore.day, 18),
-          'Morgen: $what für ${child.name}',
-          'Termin am ${DateFormat.yMd(appLanguage).format(at)}$clock. '
-              'Gelbes Heft bzw. Impfpass mitnehmen.',
+          tr.remindersTomorrowWhatName(what, child.name),
+          tr.remindersAppointmentDateClockBring(
+            DateFormat.yMd(appLanguage).format(at),
+            clock,
+          ),
         );
         if (appointment.time != null) {
           add(
             'kid:${child.id}:${d.id}:apptsoon:${at.toIso8601String()}',
             at.subtract(const Duration(hours: 1)),
-            '$what für ${child.name}$clock',
-            'Termin in einer Stunde.',
+            tr.remindersWhatNameClock(what, child.name, clock),
+            tr.remindersAppointmentOneHour,
           );
         }
         continue;
@@ -503,25 +509,26 @@ List<DueReminder> familyReminders(
         add(
           'kid:${child.id}:${d.id}:book',
           book,
-          'Termin für die ${d.id} von ${child.name} vereinbaren',
-          'Zeitraum ab ${DateFormat.yMd(appLanguage).format(d.from)} – '
-              'Praxen sind oft Wochen im Voraus ausgebucht.',
+          tr.remindersBookCheckupAppointmentName(d.id, child.name),
+          tr.remindersPeriodDatePracticesOften(
+            DateFormat.yMd(appLanguage).format(d.from),
+          ),
         );
       }
       add(
         'kid:${child.id}:${d.id}:start',
         nineOn(d.from),
-        '$what für ${child.name}',
+        tr.remindersWhatName(what, child.name),
         d.isCheckup
-            ? 'Zeitraum: ${d.subtitle}. Termin beim Kinderarzt vereinbaren.'
+            ? tr.remindersPeriodPeriodBookAppointment(d.subtitle)
             : d.subtitle,
       );
       if (d.isCheckup) {
         add(
           'kid:${child.id}:${d.id}:end',
           nineOn(d.to.subtract(const Duration(days: 7))),
-          '$what für ${child.name} – noch eine Woche',
-          'Der Zeitraum endet bald.',
+          tr.remindersWhatNameOneWeek(what, child.name),
+          tr.remindersPeriodEndsSoon,
         );
       }
     }
@@ -539,21 +546,21 @@ List<DueReminder> familyReminders(
     if (p.guardianIds.isNotEmpty && !p.guardianIds.contains(engine.memberId)) {
       continue;
     }
-    final who = p.name.isEmpty ? 'Schwangerschaft' : p.name;
+    final who = p.name.isEmpty ? tr.commonPregnancy : p.name;
     for (final t in pregnancyTasks) {
       if (p.done.contains(t.id)) continue;
       add(
         'preg:${p.id}:${t.id}',
         nineOn(p.dayOf(t.fromWeek)),
         '$who: ${t.title}',
-        'SSW ${t.fromWeek}–${t.toWeek}. ${t.info}',
+        tr.remindersWeekFromweekToweekInfo(t.fromWeek, t.toWeek, t.info),
       );
     }
     add(
       'preg:${p.id}:leave',
       nineOn(maternityLeave(p).subtract(const Duration(days: 14))),
-      '$who: Mutterschutz beginnt in 2 Wochen',
-      'Ab ${DateFormat.yMd(appLanguage).format(maternityLeave(p))}.',
+      tr.remindersWhoMaternityLeaveStarts(who),
+      tr.remindersDate(DateFormat.yMd(appLanguage).format(maternityLeave(p))),
     );
   }
   for (final b in familyBirthdays(engine)) {
@@ -561,13 +568,13 @@ List<DueReminder> familyReminders(
     add(
       'bday:${b.sourceId}:${day.year}:eve',
       DateTime(day.year, day.month, day.day - 1, 18),
-      'Morgen: ${b.headline(day)}',
-      'Geschenk oder Anruf nicht vergessen 🎁',
+      tr.remindersTomorrowWhat(b.headline(day)),
+      tr.remindersDonTForgetPresent,
     );
     add(
       'bday:${b.sourceId}:${day.year}',
       DateTime(day.year, day.month, day.day, 8),
-      'Heute: ${b.headline(day)} 🎂',
+      tr.remindersTodayWhat(b.headline(day)),
       '',
     );
   }
@@ -585,7 +592,10 @@ List<DueReminder> familyReminders(
         'routine:${r.id}:${dayKey(day)}',
         at,
         '${r.emoji} ${r.title}',
-        '${r.steps.length} Schritte${r.points > 0 ? ' · +${r.points} ⭐' : ''}',
+        tr.remindersCountStepsPoints(
+          r.steps.length,
+          r.points > 0 ? ' · +${r.points} ⭐' : '',
+        ),
       );
     }
     // Doses for the members caring for them, unless already recorded.
@@ -598,8 +608,10 @@ List<DueReminder> familyReminders(
         add(
           'med:${m.id}:${at.toIso8601String()}',
           at,
-          m.personName.isEmpty ? m.name : '${m.name} für ${m.personName}',
-          m.dose.isEmpty ? 'Einnahme' : m.dose,
+          m.personName.isEmpty
+              ? m.name
+              : tr.remindersMedicationPerson(m.name, m.personName),
+          m.dose.isEmpty ? tr.budgetIncome2 : m.dose,
         );
       }
     }
@@ -616,8 +628,8 @@ List<DueReminder> familyReminders(
       early
           ? nineOn(from.add(const Duration(days: 1)))
           : nineOn(from.add(Duration(days: days - m.refillDays))),
-      '${m.name} bald nachkaufen',
-      'Der Vorrat reicht noch etwa ${early ? max(0, days - 1) : m.refillDays} Tage.',
+      tr.remindersBuyMedicationAgainSoon(m.name),
+      tr.remindersSupplyLastsAboutDays(early ? max(0, days - 1) : m.refillDays),
     );
   }
   // Best-before dates, for the adults.
@@ -628,8 +640,8 @@ List<DueReminder> familyReminders(
       add(
         'pantry:${item.id}:${dayKey(best)}',
         DateTime(best.year, best.month, best.day - 1, 17),
-        '${item.name} bald verbrauchen',
-        'Mindestens haltbar bis morgen.',
+        tr.remindersUseUpItemSoon(item.name),
+        tr.remindersBestBeforeTomorrowLatest,
       );
     }
   }
@@ -641,15 +653,15 @@ List<DueReminder> familyReminders(
       add(
         'deadline:${d.id}:${dayKey(d.due)}:lead',
         nineOn(d.due.subtract(Duration(days: d.leadDays))),
-        '${d.area.emoji} ${d.label}: in ${d.leadDays} Tagen',
-        'Fällig am $when – rechtzeitig einen Termin machen.',
+        tr.remindersEmojiLabelDaysDays(d.area.emoji, d.label, d.leadDays),
+        tr.remindersDueDateMakeAppointment(when),
       );
     }
     add(
       'deadline:${d.id}:${dayKey(d.due)}',
       nineOn(d.due),
-      '${d.area.emoji} Heute fällig: ${d.label}',
-      d.note.isEmpty ? 'In Famio als erledigt markieren.' : d.note,
+      tr.remindersEmojiDueTodayLabel(d.area.emoji, d.label),
+      d.note.isEmpty ? tr.remindersMarkDoneFamio : d.note,
     );
   }
   // Packing lists: the evening before the trip, while I still have to pack.
@@ -676,8 +688,10 @@ List<DueReminder> familyReminders(
     add(
       'pack:${list.id}:${dayKey(start)}',
       DateTime(start.year, start.month, start.day - 1, 18),
-      '🧳 Morgen: ${trip.title}',
-      left == 1 ? 'Noch 1 Sache packen' : 'Noch $left Sachen packen',
+      tr.remindersTomorrowTrip(trip.title),
+      left == 1
+          ? tr.reminders1ThingLeftPack
+          : tr.remindersLeftThingsLeftPack(left),
     );
   }
   // Bins: the evening before, for whoever's turn it is.
@@ -691,8 +705,8 @@ List<DueReminder> familyReminders(
       add(
         'waste:${dayKey(p.day)}',
         DateTime(p.day.year, p.day.month, p.day.day - 1, hour),
-        'Morgen: ${p.label}',
-        'Du bist dran: bitte heute Abend rausstellen.',
+        tr.remindersTomorrowBin(p.label),
+        tr.remindersTurnPleasePutOut,
       );
     }
   }
@@ -703,8 +717,10 @@ List<DueReminder> familyReminders(
       add(
         'doc:${doc.id}:$days',
         nineOn(expires.subtract(Duration(days: days))),
-        '${doc.title} läuft ab',
-        'Gültig bis ${DateFormat.yMd(appLanguage).format(expires)} – rechtzeitig erneuern.',
+        tr.remindersTitleExpires(doc.title),
+        tr.remindersValidUntilDateRenew(
+          DateFormat.yMd(appLanguage).format(expires),
+        ),
       );
     }
   }
@@ -729,8 +745,8 @@ List<DueReminder> logReminders(Child child, List<ChildLog> logs) {
       DueReminder(
         key: 'log:${feeding!.id}',
         at: at,
-        title: 'Nächste Mahlzeit für ${child.name}',
-        body: 'Letzte Mahlzeit um ${time.format(feeding.start)}.',
+        title: tr.remindersNextMealName(child.name),
+        body: tr.remindersLastMealTime(time.format(feeding.start)),
       ),
     );
   }
@@ -745,10 +761,11 @@ List<DueReminder> logReminders(Child child, List<ChildLog> logs) {
         DueReminder(
           key: 'log:${l.id}',
           at: at,
-          title: '${l.medication} für ${child.name} wieder möglich',
-          body:
-              'Letzte Gabe um ${time.format(l.start)} – laut eingetragenem '
-              'Mindestabstand.',
+          title: tr.remindersMedicationPossibleAgainName(
+            l.medication,
+            child.name,
+          ),
+          body: tr.remindersLastDoseTimeAccording(time.format(l.start)),
         ),
       );
     }

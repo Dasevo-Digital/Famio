@@ -19,8 +19,8 @@ import '../format.dart';
 import '../l10n.dart';
 
 const _color = Color(0xFFB45BD6);
-final _date = DateFormat.yMMMd(appLanguage);
-final _short = DateFormat.Md(appLanguage);
+DateFormat get _date => DateFormat.yMMMd(appLanguage);
+DateFormat get _short => DateFormat.Md(appLanguage);
 
 /// Card at the top of the children's list.
 class PregnancyCard extends StatelessWidget {

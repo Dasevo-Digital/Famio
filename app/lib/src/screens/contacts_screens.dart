@@ -11,6 +11,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/phone.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _contactCollections = {
   Collections.contacts,
@@ -41,12 +42,12 @@ class ContactsScreen extends StatelessWidget {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.contacts,
-      title: 'Kontakte',
-      subtitle: 'Kinderarzt, Kita, Babysitter & Co.',
+      title: tr.sectionContacts,
+      subtitle: tr.contactsPediatricianDaycareBabysitterCo,
       actions: const [SyncStatusIcon()],
       floating: AddButton(
         color: color,
-        tooltip: 'Kontakt hinzufügen',
+        tooltip: tr.contactsAdd,
         onPressed: () => showContactEditor(context),
       ),
       body: DataBuilder(
@@ -57,11 +58,9 @@ class ContactsScreen extends StatelessWidget {
             return EmptyHint(
               icon: AppIcons.bookUser,
               color: color,
-              text:
-                  'Wichtige Nummern an einem Ort – für alle in der Familie,\n'
-                  'auch ohne Internet.',
+              text: tr.contactsImportantNumbersOnePlace,
               action: ColorButton(
-                label: 'Kontakt hinzufügen',
+                label: tr.contactsAdd,
                 color: color,
                 onPressed: () => showContactEditor(context),
               ),
@@ -122,7 +121,7 @@ class ContactCard extends StatelessWidget {
                 Text(
                   [
                     if (contact.phone.isNotEmpty) contact.phone,
-                    if (kids.isNotEmpty) 'für ${kids.join(', ')}',
+                    if (kids.isNotEmpty) tr.contactsKids(kids.join(', ')),
                     if (contact.note.isNotEmpty) contact.note,
                   ].join(' · '),
                   style: theme.textTheme.bodySmall,
@@ -135,19 +134,19 @@ class ContactCard extends StatelessWidget {
           if (contact.email.isNotEmpty)
             IconButton(
               icon: const Icon(AppIcons.paperPlaneRight),
-              tooltip: 'E-Mail schreiben',
+              tooltip: tr.contactsWriteEmail,
               onPressed: () => writeMail(context, contact.email),
             ),
           if (contact.phone2.isNotEmpty)
             IconButton(
               icon: const Icon(AppIcons.smartphone),
-              tooltip: 'Anrufen: ${contact.phone2}',
+              tooltip: tr.contactsCallPhone(contact.phone2),
               onPressed: () => callNumber(context, contact.phone2),
             ),
           if (contact.phone.isNotEmpty)
             IconButton.filledTonal(
               icon: const Icon(AppIcons.phone),
-              tooltip: 'Anrufen: ${contact.phone}',
+              tooltip: tr.contactsCallPhone(contact.phone),
               onPressed: () => callNumber(context, contact.phone),
             ),
         ],
@@ -201,9 +200,9 @@ class _ContactEditorState extends State<_ContactEditor> {
 
   void _save() {
     if (_name.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte einen Namen angeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.contactsPleaseEnterName)));
       return;
     }
     final contact = FamilyContact(
@@ -226,15 +225,15 @@ class _ContactEditorState extends State<_ContactEditor> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: Text('${widget.existing!.name} löschen?'),
+        title: Text(tr.contactsDeleteName(widget.existing!.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -257,9 +256,9 @@ class _ContactEditorState extends State<_ContactEditor> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.contacts,
-      title: widget.existing == null ? 'Neuer Kontakt' : 'Kontakt',
+      title: widget.existing == null ? tr.contactsNewContact : tr.commonContact,
       actions: [
-        ColorButton(label: 'Speichern', color: color, onPressed: _save),
+        ColorButton(label: tr.commonSave, color: color, onPressed: _save),
       ],
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
@@ -268,12 +267,12 @@ class _ContactEditorState extends State<_ContactEditor> {
             controller: _name,
             autofocus: widget.existing == null,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'z. B. Kinderarztpraxis Dr. Sommer',
+            decoration: InputDecoration(
+              labelText: tr.commonName,
+              hintText: tr.contactsEGDrSommer,
             ),
           ),
-          const ListHeading('Art'),
+          ListHeading(tr.contactsType),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -291,31 +290,31 @@ class _ContactEditorState extends State<_ContactEditor> {
           TextField(
             controller: _phone,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Telefon'),
+            decoration: InputDecoration(labelText: tr.contactsPhone),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _phone2,
             keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(
-              labelText: 'Weitere Nummer (optional)',
-              hintText: 'Mobil, Notfall, Praxis-Handy …',
+            decoration: InputDecoration(
+              labelText: tr.contactsOtherNumberOptional,
+              hintText: tr.contactsMobileEmergencyPracticeCell,
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _email,
             keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'E-Mail (optional)'),
+            decoration: InputDecoration(labelText: tr.contactsEmailOptional),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _address,
             minLines: 1,
             maxLines: 3,
-            decoration: const InputDecoration(labelText: 'Adresse (optional)'),
+            decoration: InputDecoration(labelText: tr.contactsAddressOptional),
           ),
-          const ListHeading('Geburtstag'),
+          ListHeading(tr.commonBirthday),
           BirthdayField(
             value: _birthday,
             onChanged: (v) => setState(() => _birthday = v),
@@ -326,13 +325,13 @@ class _ContactEditorState extends State<_ContactEditor> {
             minLines: 1,
             maxLines: 4,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Notiz (optional)',
-              hintText: 'Sprechzeiten, Kundennummer …',
+            decoration: InputDecoration(
+              labelText: tr.contactsNoteOptional,
+              hintText: tr.contactsOfficeHoursCustomerNumber,
             ),
           ),
           if (engine.children.isNotEmpty) ...[
-            const ListHeading('Gehört zu'),
+            ListHeading(tr.contactsBelongs),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -354,7 +353,7 @@ class _ContactEditorState extends State<_ContactEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.trash, size: 18),
-                label: const Text('Kontakt löschen'),
+                label: Text(tr.contactsDeleteContact),
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),

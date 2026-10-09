@@ -14,6 +14,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,8 @@ String totp(String secret, {int offset = 0}) {
 }
 
 void main() {
+  // The tests read German texts, whatever the device speaks.
+  deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   Future<void> waitFor(

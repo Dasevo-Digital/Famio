@@ -62,20 +62,12 @@ class _AccountsTab extends StatelessWidget {
 }
 
 String _allowanceLabel(Allowance? a) {
-  if (a == null || a.weeklyCents <= 0) return 'Kein Taschengeld eingestellt';
-  return '${formatEuro(a.weeklyCents)} pro Woche, '
-      '${_weekdayLong[a.payday - 1]}s';
+  if (a == null || a.weeklyCents <= 0) return tr.choresNoPocketMoneySet;
+  return tr.choresAmountPerWeekDay(
+    formatEuro(a.weeklyCents),
+    weekdayLong(a.payday),
+  );
 }
-
-const _weekdayLong = [
-  'Montag',
-  'Dienstag',
-  'Mittwoch',
-  'Donnerstag',
-  'Freitag',
-  'Samstag',
-  'Sonntag',
-];
 
 /// Points and pocket money of one member, with the adults' tools.
 class MemberAccountScreen extends StatelessWidget {
@@ -99,7 +91,7 @@ class MemberAccountScreen extends StatelessWidget {
         return SectionPage(
           maxBodyWidth: 720,
           section: FamioSection.chores,
-          title: member?.displayName ?? 'Konto',
+          title: member?.displayName ?? tr.settingsAccount,
           subtitle: _allowanceLabel(allowance),
           body: ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
@@ -111,7 +103,7 @@ class MemberAccountScreen extends StatelessWidget {
                       color: c.tint(FamioSection.chores),
                       child: Column(
                         children: [
-                          const Text('Punkte'),
+                          Text(tr.choresPoints),
                           Text(
                             '⭐ ${engine.pointBalance(memberId)}',
                             style: Theme.of(context).textTheme.headlineMedium,
@@ -126,7 +118,7 @@ class MemberAccountScreen extends StatelessWidget {
                       color: c.tint(FamioSection.budget),
                       child: Column(
                         children: [
-                          const Text('Taschengeld'),
+                          Text(tr.choresPocketMoney),
                           Text(
                             formatEuro(engine.moneyBalance(memberId)),
                             style: Theme.of(context).textTheme.headlineMedium,
@@ -145,31 +137,31 @@ class MemberAccountScreen extends StatelessWidget {
                   children: [
                     ActionChip(
                       avatar: const Icon(AppIcons.star, size: 18),
-                      label: const Text('Bonuspunkte'),
+                      label: Text(tr.choresBonusPoints),
                       onPressed: () => _bonus(context, engine),
                     ),
                     ActionChip(
                       avatar: const Icon(AppIcons.coins, size: 18),
-                      label: const Text('Buchung'),
+                      label: Text(tr.conflictsBooking),
                       onPressed: () => _booking(context, engine),
                     ),
                     ActionChip(
                       avatar: const Icon(AppIcons.gearSix, size: 18),
-                      label: const Text('Taschengeld einstellen'),
+                      label: Text(tr.choresSetPocketMoney),
                       onPressed: () => _settings(context, engine, allowance),
                     ),
                     if ((allowance?.centsPerPoint ?? 0) > 0 &&
                         engine.pointBalance(memberId) > 0)
                       ActionChip(
                         avatar: const Icon(AppIcons.handCoins, size: 18),
-                        label: const Text('Punkte eintauschen'),
+                        label: Text(tr.choresRedeemPoints),
                         onPressed: () => _convert(context, engine, allowance!),
                       ),
                   ],
                 ),
               ],
-              ListHeading('Punkte', color: color),
-              if (points.isEmpty) const Text('Noch keine Punkte.'),
+              ListHeading(tr.choresPoints, color: color),
+              if (points.isEmpty) Text(tr.choresNoPointsYet),
               for (final e in points.take(50))
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -178,8 +170,8 @@ class MemberAccountScreen extends StatelessWidget {
                     [
                       day.format(e.at),
                       switch (e.status) {
-                        PointStatus.pending => 'wartet',
-                        PointStatus.rejected => 'abgelehnt',
+                        PointStatus.pending => tr.choresWaiting,
+                        PointStatus.rejected => tr.choresDeclined,
                         PointStatus.approved => null,
                       },
                     ].nonNulls.join(' · '),
@@ -202,8 +194,8 @@ class MemberAccountScreen extends StatelessWidget {
                         )
                       : null,
                 ),
-              ListHeading('Taschengeld', color: color),
-              if (money.isEmpty) const Text('Noch keine Buchungen.'),
+              ListHeading(tr.choresPocketMoney, color: color),
+              if (money.isEmpty) Text(tr.choresNoTransactionsYet),
               for (final e in money.take(50))
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -226,7 +218,7 @@ class MemberAccountScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(
-                    'Lange drücken löscht einen Eintrag.',
+                    tr.choresLongPressDeletesEntry,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -238,19 +230,19 @@ class MemberAccountScreen extends StatelessWidget {
   }
 
   Future<void> _bonus(BuildContext context, SyncEngine engine) async {
-    final reason = TextEditingController(text: 'Bonus');
+    final reason = TextEditingController(text: tr.choresBonus);
     var points = 5;
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Punkte geben oder abziehen'),
+          title: Text(tr.choresGiveTakePoints),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: reason,
-                decoration: const InputDecoration(labelText: 'Wofür?'),
+                decoration: InputDecoration(labelText: tr.choresWhat),
               ),
               const SizedBox(height: 12),
               _Stepper(
@@ -264,11 +256,11 @@ class MemberAccountScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Buchen'),
+              child: Text(tr.choresBook),
             ),
           ],
         ),
@@ -280,7 +272,9 @@ class MemberAccountScreen extends StatelessWidget {
           id: newId(),
           memberId: memberId,
           points: points,
-          title: reason.text.trim().isEmpty ? 'Bonus' : reason.text.trim(),
+          title: reason.text.trim().isEmpty
+              ? tr.choresBonus
+              : reason.text.trim(),
           kind: PointKind.bonus,
           at: DateTime.now(),
           decidedBy: engine.memberId,
@@ -299,7 +293,7 @@ class MemberAccountScreen extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           scrollable: true,
-          title: const Text('Buchung'),
+          title: Text(tr.conflictsBooking),
           content: SizedBox(
             width: 340,
             child: Column(
@@ -327,17 +321,17 @@ class MemberAccountScreen extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Betrag',
+                  decoration: InputDecoration(
+                    labelText: tr.commonAmount,
                     suffixText: '€',
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: note,
-                  decoration: const InputDecoration(
-                    labelText: 'Notiz',
-                    hintText: 'z. B. Comic, von Oma',
+                  decoration: InputDecoration(
+                    labelText: tr.commonNote,
+                    hintText: tr.choresEGComicGrandma,
                   ),
                 ),
               ],
@@ -346,11 +340,11 @@ class MemberAccountScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Buchen'),
+              child: Text(tr.choresBook),
             ),
           ],
         ),
@@ -394,7 +388,7 @@ class MemberAccountScreen extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           scrollable: true,
-          title: const Text('Taschengeld'),
+          title: Text(tr.choresPocketMoney),
           content: SizedBox(
             width: 360,
             child: Column(
@@ -406,14 +400,14 @@ class MemberAccountScreen extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Pro Woche',
+                  decoration: InputDecoration(
+                    labelText: tr.choresPerWeek,
                     suffixText: '€',
-                    helperText: 'Leer lassen für kein Taschengeld',
+                    helperText: tr.choresLeaveEmptyNoPocket,
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text('Wird gebucht am'),
+                Text(tr.choresPaid),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
@@ -433,10 +427,10 @@ class MemberAccountScreen extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Wert eines Punktes',
+                  decoration: InputDecoration(
+                    labelText: tr.choresValueOnePoint,
                     suffixText: '€',
-                    helperText: 'z. B. 0,10 – leer: Punkte nicht eintauschbar',
+                    helperText: tr.choresEG010,
                   ),
                 ),
               ],
@@ -445,11 +439,11 @@ class MemberAccountScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
+              child: Text(tr.commonSave),
             ),
           ],
         ),
@@ -482,7 +476,7 @@ class MemberAccountScreen extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Punkte eintauschen'),
+          title: Text(tr.choresRedeemPoints),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -499,11 +493,11 @@ class MemberAccountScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Eintauschen'),
+              child: Text(tr.choresRedeem),
             ),
           ],
         ),

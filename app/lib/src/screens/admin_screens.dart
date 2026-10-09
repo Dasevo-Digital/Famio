@@ -71,19 +71,19 @@ class _AdminScreenState extends State<AdminScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.settings,
-      title: 'Server-Verwaltung',
+      title: tr.settingsServerAdministration,
       subtitle: state.serverUrl,
       actions: [
         BubbleButton(
           icon: AppIcons.arrowsClockwise,
-          tooltip: 'Aktualisieren',
+          tooltip: tr.commonRefresh,
           onPressed: _refresh,
         ),
       ],
       floating: _tab == _AdminTab.users
           ? AddButton(
               color: accent,
-              tooltip: 'Mitglied hinzufügen',
+              tooltip: tr.adminAddMember,
               icon: AppIcons.userPlus,
               onPressed: _chooseAdd,
             )
@@ -96,9 +96,9 @@ class _AdminScreenState extends State<AdminScreen> {
             selected: _tab,
             color: accent,
             label: (t) => switch (t) {
-              _AdminTab.users => 'Benutzer',
-              _AdminTab.settings => 'Einstellungen',
-              _AdminTab.status => 'Status',
+              _AdminTab.users => tr.adminUsers,
+              _AdminTab.settings => tr.sectionSettings,
+              _AdminTab.status => tr.adminStatus,
             },
             onChanged: (t) => setState(() => _tab = t),
           ),
@@ -165,14 +165,14 @@ class _AdminScreenState extends State<AdminScreen> {
           children: [
             ListTile(
               leading: const Icon(AppIcons.userPlus),
-              title: const Text('Einladen (QR-Code oder Link)'),
-              subtitle: const Text('Wählt Benutzername und Passwort selbst'),
+              title: Text(tr.adminInviteQrCodeLink),
+              subtitle: Text(tr.adminChoosesUsernamePasswordThemselves),
               onTap: () => Navigator.pop(context, 'invite'),
             ),
             ListTile(
               leading: const Icon(AppIcons.lockKey),
-              title: const Text('Direkt anlegen'),
-              subtitle: const Text('Du vergibst das Passwort'),
+              title: Text(tr.adminCreateDirectly),
+              subtitle: Text(tr.adminYouSetPassword),
               onTap: () => Navigator.pop(context, 'create'),
             ),
           ],
@@ -215,18 +215,18 @@ class _AdminScreenState extends State<AdminScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Familienmitglied hinzufügen',
+        title: tr.adminAddFamilyMember,
         controllers: [name, username, password],
         fields: [
           TextField(
             controller: name,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: tr.commonName),
           ),
           _UsernameField(
             controller: username,
-            label: 'Benutzername (für die Anmeldung)',
-            helper: 'Wird aus dem Namen vorgeschlagen',
+            label: tr.adminUsernameSigning,
+            helper: tr.adminSuggestedName,
           ),
           PasswordReveal(
             builder: (_, obscure, toggle) => TextField(
@@ -235,7 +235,7 @@ class _AdminScreenState extends State<AdminScreen> {
               contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Startpasswort (min. 8 Zeichen)',
+                labelText: tr.adminInitialPasswordMin8,
               ),
             ),
           ),
@@ -252,8 +252,8 @@ class _AdminScreenState extends State<AdminScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Administrator'),
-                  subtitle: const Text('Darf den Server verwalten'),
+                  title: Text(tr.settingsAdministrator),
+                  subtitle: Text(tr.adminMayManageServer),
                   value: isAdmin,
                   onChanged: !_canAdminister(role)
                       ? null
@@ -319,18 +319,11 @@ class _RolePicker extends StatelessWidget {
   final MemberRole role;
   final ValueChanged<MemberRole> onChanged;
 
-  static const _help = {
-    MemberRole.adult: 'Sieht und verwaltet alles, was für ihn freigegeben ist.',
-    MemberRole.child:
-        'Sammelt Punkte und Taschengeld; erledigte Ämter bestätigen die '
-        'Erwachsenen.',
-    MemberRole.guest:
-        'Z. B. Großeltern oder Babysitter: nur Kalender, Chat, Einkauf, '
-        'Aufgaben, Essen und Kontakte – keine Dokumente, Gesundheitsdaten, '
-        'Finanzen oder Standorte.',
-    MemberRole.service:
-        'Für Home Assistant und andere Anbindungen: sieht, was Erwachsene '
-        'sehen, erscheint aber nicht in Chats, Standorten und Auswahllisten.',
+  static Map<MemberRole, String> get _help => {
+    MemberRole.adult: tr.adminSeesManagesEverythingShared,
+    MemberRole.child: tr.adminCollectsPointsPocketMoney,
+    MemberRole.guest: tr.adminEGGrandparentsBabysitter,
+    MemberRole.service: tr.adminHomeAssistantOtherConnections,
   };
 
   @override
@@ -389,7 +382,7 @@ class _UserList extends StatelessWidget {
                     Text(
                       '@${u.member.username} · '
                       '${_devices(u.sessions.length)}'
-                      '${seen == null ? '' : ' · aktiv ${_ago(seen)}'}',
+                      '${seen == null ? '' : tr.adminActiveAgo(_ago(seen))}',
                       style: TextStyle(color: c.inkSoft),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -400,7 +393,7 @@ class _UserList extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         if (u.member.isAdmin)
-                          const _Badge('Administrator', AppIcons.shieldUser),
+                          _Badge(tr.settingsAdministrator, AppIcons.shieldUser),
                         if (u.member.role != MemberRole.adult)
                           _Badge(u.member.role.label, switch (u.member.role) {
                             MemberRole.guest => AppIcons.user,
@@ -410,9 +403,9 @@ class _UserList extends StatelessWidget {
                         if (u.homeAssistant)
                           const _Badge('Home Assistant', AppIcons.house),
                         if (!u.hasPassword)
-                          const _Badge('ohne Passwort', AppIcons.key),
+                          _Badge(tr.adminWithoutPassword, AppIcons.key),
                         if (u.twoFactor)
-                          const _Badge('Zwei-Faktor', AppIcons.shieldCheck),
+                          _Badge(tr.adminTwoFactor2, AppIcons.shieldCheck),
                         if (u.singleSignOn) const _Badge('SSO', AppIcons.logIn),
                       ],
                     ),

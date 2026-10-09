@@ -103,10 +103,10 @@
   "@setupDoneTotalDone": {
     "placeholders": {
       "done": {
-        "type": "Object"
+        "type": "Object?"
       },
       "total": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -117,10 +117,10 @@
   "@setupFinishSetupDoneTotal": {
     "placeholders": {
       "done": {
-        "type": "Object"
+        "type": "Object?"
       },
       "total": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -148,7 +148,7 @@
   "@caldavNameSMac": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -156,7 +156,7 @@
   "@caldavNameSIphone": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -173,7 +173,7 @@
   "@caldavProfileNotSavedError": {
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -181,7 +181,7 @@
   "@caldavDisconnectName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -211,7 +211,7 @@
   "@caldavBaseUrlAddressAbove": {
     "placeholders": {
       "user": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -225,7 +225,7 @@
   "@caldavNewPasswordName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -236,7 +236,7 @@
   "@caldavVisibleWho": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -273,7 +273,7 @@
   "@caldavEventsSynced": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -281,10 +281,10 @@
   "@caldavEventsSyncedLast": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       },
       "when": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -292,7 +292,7 @@
   "@adminSchoolHolidaysStateAlready": {
     "placeholders": {
       "state": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -300,7 +300,7 @@
   "@adminSchoolHolidaysState": {
     "placeholders": {
       "state": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -308,7 +308,7 @@
   "@adminSchoolHolidaysStateSubscribed": {
     "placeholders": {
       "state": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -342,13 +342,13 @@
   "@adminDeletedRecordsEntriesFiles": {
     "placeholders": {
       "records": {
-        "type": "Object"
+        "type": "Object?"
       },
       "files": {
-        "type": "Object"
+        "type": "Object?"
       },
       "more": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -356,7 +356,7 @@
   "@adminMembersMembers": {
     "placeholders": {
       "members": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -364,7 +364,7 @@
   "@adminDefaultValue": {
     "placeholders": {
       "value": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -375,7 +375,7 @@
   "@adminHintCalendarSubscriptionsGoogle": {
     "placeholders": {
       "hint": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -384,7 +384,7 @@
   "@adminHintCalendarFeedsImported": {
     "placeholders": {
       "hint": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -395,7 +395,7 @@
   "@adminSubscribeSchoolHolidaysRegion": {
     "placeholders": {
       "region": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -404,7 +404,7 @@
   "@adminHintNpmAlsoAdjust": {
     "placeholders": {
       "hint": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -419,7 +419,7 @@
   "@adminHintOldPrecisePoints": {
     "placeholders": {
       "hint": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -427,7 +427,7 @@
   "@commonDaysCount": {
     "placeholders": {
       "days": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -438,7 +438,7 @@
   "@adminWho": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -451,7 +451,7 @@
   "@adminHiddenAreas": {
     "placeholders": {
       "areas": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -479,7 +479,7 @@
   "@adminHttpsAddressWith": {
     "placeholders": {
       "placeholders": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -487,10 +487,10 @@
   "@kidsLogBreastfeedingSideState": {
     "placeholders": {
       "side": {
-        "type": "Object"
+        "type": "Object?"
       },
       "state": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -498,7 +498,7 @@
   "@kidsLogRunningDuration": {
     "placeholders": {
       "duration": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -506,7 +506,7 @@
   "@kidsLogAsleepDuration": {
     "placeholders": {
       "duration": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -514,7 +514,7 @@
   "@kidsLogSleepDuration": {
     "placeholders": {
       "duration": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -524,7 +524,7 @@
   "@kidsLogSolidsNote": {
     "placeholders": {
       "note": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -533,7 +533,7 @@
   "@kidsLogDiaperKind": {
     "placeholders": {
       "kind": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -547,7 +547,7 @@
   "@kidsLogAsleepSinceSince": {
     "placeholders": {
       "since": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -555,10 +555,10 @@
   "@kidsLogBreastfeedingSideSinceSince": {
     "placeholders": {
       "side": {
-        "type": "Object"
+        "type": "Object?"
       },
       "since": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -569,10 +569,10 @@
   "@kidsLogLastTimeLastStart": {
     "placeholders": {
       "last": {
-        "type": "Object"
+        "type": "Object?"
       },
       "next": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -594,10 +594,10 @@
   "@kidsLogLastFedSinceWhat": {
     "placeholders": {
       "since": {
-        "type": "Object"
+        "type": "Object?"
       },
       "what": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -605,7 +605,7 @@
   "@kidsLogNextSideSide": {
     "placeholders": {
       "side": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -613,7 +613,7 @@
   "@kidsLogDiaperSince": {
     "placeholders": {
       "since": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -621,7 +621,7 @@
   "@kidsLogAgainTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -635,10 +635,10 @@
   "@kidsLogUnitNote": {
     "placeholders": {
       "unit": {
-        "type": "Object"
+        "type": "Object?"
       },
       "note": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -660,10 +660,10 @@
   "@kidsLogAccordingMinimumIntervalEntered": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       },
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -676,7 +676,7 @@
   "@kidsLogEndEnd": {
     "placeholders": {
       "end": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -687,7 +687,7 @@
   "@kidsLogHoursH": {
     "placeholders": {
       "hours": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -699,7 +699,7 @@
   "@kidsLogTextFamioDoesNot": {
     "placeholders": {
       "text": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -708,7 +708,7 @@
   "@kidsLogAddKind": {
     "placeholders": {
       "kind": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -731,7 +731,7 @@
   "@calendarRevokeLinkName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -771,10 +771,10 @@
   "@calendarNameCountEventsLoaded": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       },
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -782,7 +782,7 @@
   "@commonRemoveName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -793,10 +793,10 @@
   "@calendarCountEventsUpdatedWhen": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       },
       "when": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -807,10 +807,10 @@
   "@calendarOwnerVisibleWho": {
     "placeholders": {
       "owner": {
-        "type": "Object"
+        "type": "Object?"
       },
       "who": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -927,13 +927,13 @@
   "@weatherTempTextFeelsLike": {
     "placeholders": {
       "temp": {
-        "type": "Object"
+        "type": "Object?"
       },
       "text": {
-        "type": "Object"
+        "type": "Object?"
       },
       "felt": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -941,13 +941,13 @@
   "@weatherTempTextDownLow": {
     "placeholders": {
       "temp": {
-        "type": "Object"
+        "type": "Object?"
       },
       "text": {
-        "type": "Object"
+        "type": "Object?"
       },
       "low": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -955,7 +955,7 @@
   "@weatherNameTonight": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -963,13 +963,13 @@
   "@weatherEmojiTempPlace": {
     "placeholders": {
       "emoji": {
-        "type": "Object"
+        "type": "Object?"
       },
       "temp": {
-        "type": "Object"
+        "type": "Object?"
       },
       "place": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -978,16 +978,16 @@
   "@weatherTextFeelsLikeFelt": {
     "placeholders": {
       "text": {
-        "type": "Object"
+        "type": "Object?"
       },
       "felt": {
-        "type": "Object"
+        "type": "Object?"
       },
       "wind": {
-        "type": "Object"
+        "type": "Object?"
       },
       "uv": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -995,7 +995,7 @@
   "@weatherWindSpeedKmH": {
     "placeholders": {
       "speed": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1003,7 +1003,7 @@
   "@weatherNightOutsideDownLow": {
     "placeholders": {
       "low": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1011,7 +1011,7 @@
   "@weatherDuringDayRulesThumb": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1063,16 +1063,16 @@
   "@conflictsDeletedWhoWhenChange": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       },
       "when": {
-        "type": "Object"
+        "type": "Object?"
       },
       "other": {
-        "type": "Object"
+        "type": "Object?"
       },
       "otherWhen": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1080,16 +1080,16 @@
   "@conflictsDeletedWhoWhenChanged": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       },
       "when": {
-        "type": "Object"
+        "type": "Object?"
       },
       "other": {
-        "type": "Object"
+        "type": "Object?"
       },
       "otherWhen": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1097,16 +1097,16 @@
   "@conflictsKeptVersionWhoWhen": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       },
       "when": {
-        "type": "Object"
+        "type": "Object?"
       },
       "other": {
-        "type": "Object"
+        "type": "Object?"
       },
       "otherWhen": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1118,7 +1118,7 @@
   "@conflictsBringBackVersionWho": {
     "placeholders": {
       "who": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1128,7 +1128,7 @@
   "@adminMemberSinceDate": {
     "placeholders": {
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1147,7 +1147,7 @@
   "@adminEGIfName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1159,7 +1159,7 @@
   "@adminNameCanTurnTheir": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1167,7 +1167,7 @@
   "@adminResetTwoFactorName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1175,7 +1175,7 @@
   "@adminAfterThatPasswordEnough": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1187,7 +1187,7 @@
   "@adminDevicesCount": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1196,7 +1196,7 @@
   "@adminNameWasSignedOut": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1207,7 +1207,7 @@
   "@adminRemoveName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1217,7 +1217,7 @@
   "@adminNewPasswordName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1228,7 +1228,7 @@
   "@adminPasswordChangedDevicesSigned": {
     "placeholders": {
       "devices": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1245,7 +1245,7 @@
   "@commonSignInWith": {
     "placeholders": {
       "provider": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1276,7 +1276,7 @@
   "@securityWhenSigningFamioAlso": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1284,7 +1284,7 @@
   "@securityProtectsAccountIfSomeone": {
     "placeholders": {
       "required": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1293,7 +1293,7 @@
   "@securityLinked": {
     "placeholders": {
       "linked": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1301,7 +1301,7 @@
   "@securityName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1310,7 +1310,7 @@
   "@securitySignProviderInsteadPassword": {
     "placeholders": {
       "provider": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1320,7 +1320,7 @@
   "@securityLinkProvider": {
     "placeholders": {
       "provider": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1330,7 +1330,7 @@
   "@securityAdministratorTurnedTwoFactor": {
     "placeholders": {
       "next": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1349,13 +1349,13 @@
   "@mealsCountIngredientsListAdded": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       },
       "list": {
-        "type": "Object"
+        "type": "Object?"
       },
       "added": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1363,7 +1363,7 @@
   "@mealsCountAdded": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1374,10 +1374,10 @@
   "@mealsHaveTotalPantry": {
     "placeholders": {
       "have": {
-        "type": "Object"
+        "type": "Object?"
       },
       "total": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1385,7 +1385,7 @@
   "@mealsCountIngredients": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1412,7 +1412,7 @@
   "@commonDeleteName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1459,7 +1459,7 @@
   "@adminPortPort": {
     "placeholders": {
       "port": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1476,7 +1476,7 @@
   "@adminBackupFaultyProblems": {
     "placeholders": {
       "problems": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1488,7 +1488,7 @@
   "@adminLastBackupAgo": {
     "placeholders": {
       "ago": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1496,10 +1496,10 @@
   "@adminCountVersionsSizeMb": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       },
       "size": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1507,7 +1507,7 @@
   "@adminFolderFolderEncryptedData": {
     "placeholders": {
       "folder": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1515,7 +1515,7 @@
   "@commonErrorWith": {
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1525,19 +1525,19 @@
   "@adminCheckedAgoCanRestored": {
     "placeholders": {
       "ago": {
-        "type": "Object"
+        "type": "Object?"
       },
       "records": {
-        "type": "Object"
+        "type": "Object?"
       },
       "users": {
-        "type": "Object"
+        "type": "Object?"
       },
       "files": {
-        "type": "Object"
+        "type": "Object?"
       },
       "partial": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1546,7 +1546,7 @@
   "@adminLastCheckFailedProblems": {
     "placeholders": {
       "problems": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1555,7 +1555,7 @@
   "@pushAddedButError": {
     "placeholders": {
       "error": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1579,7 +1579,7 @@
   "@pushTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1587,7 +1587,7 @@
   "@pushUntilTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1607,7 +1607,7 @@
   "@pushNamesTextsEG": {
     "placeholders": {
       "lock": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1625,7 +1625,7 @@
   "@pushTopicCopied": {
     "placeholders": {
       "topic": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1633,10 +1633,10 @@
   "@pushNtfyAppSubscribeTopic": {
     "placeholders": {
       "topic": {
-        "type": "Object"
+        "type": "Object?"
       },
       "server": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1644,7 +1644,7 @@
   "@pushServerServer": {
     "placeholders": {
       "server": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1675,7 +1675,7 @@
   "@sosNameHasSeenAlarm": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1696,7 +1696,7 @@
   "@sosFrom": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1704,7 +1704,7 @@
   "@sosSinceTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1712,7 +1712,7 @@
   "@sosNameComing": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1722,7 +1722,7 @@
   "@sosNameWay": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1730,10 +1730,10 @@
   "@sosEndedTimeName": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       },
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1742,7 +1742,7 @@
   "@sosTriggeredTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1750,10 +1750,10 @@
   "@sosLocationTimeAccuracy": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       },
       "accuracy": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1761,7 +1761,7 @@
   "@sosMetersM": {
     "placeholders": {
       "meters": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1769,7 +1769,7 @@
   "@sosBatteryBattery": {
     "placeholders": {
       "battery": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1779,7 +1779,7 @@
   "@commonCallName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1803,7 +1803,7 @@
   "@sosParentName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1814,7 +1814,7 @@
   "@sosNumberName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1823,7 +1823,7 @@
   "@commonClock": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1837,7 +1837,7 @@
   "@commonOpenCount": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1845,7 +1845,7 @@
   "@homeNameAllDone": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1855,7 +1855,7 @@
   "@homeNameBuyMoreSoon": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1866,7 +1866,7 @@
   "@homeDaysUntilTitle": {
     "placeholders": {
       "title": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1876,7 +1876,7 @@
   "@homeNamesSTurn": {
     "placeholders": {
       "names": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1885,7 +1885,7 @@
   "@homeCountChangesOverlappedPlease": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1896,7 +1896,7 @@
   "@homeCountNew": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1908,10 +1908,10 @@
   "@homeNameWeekWeek": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       },
       "week": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1919,7 +1919,7 @@
   "@commonDaysLeft": {
     "placeholders": {
       "days": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1928,7 +1928,7 @@
   "@homeAsleepSinceTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1936,7 +1936,7 @@
   "@homeSchoolUntilUntil": {
     "placeholders": {
       "until": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1944,7 +1944,7 @@
   "@homeFedSince": {
     "placeholders": {
       "since": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1952,10 +1952,10 @@
   "@homeWhatDate": {
     "placeholders": {
       "what": {
-        "type": "Object"
+        "type": "Object?"
       },
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1964,7 +1964,7 @@
   "@homeWhatDue": {
     "placeholders": {
       "what": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1973,7 +1973,7 @@
   "@homeYouCountWishes": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1981,7 +1981,7 @@
   "@homeFamilyCountWishes": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1991,7 +1991,7 @@
   "@homeCountNotes": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -1999,7 +1999,7 @@
   "@homeCountExpiring": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2008,7 +2008,7 @@
   "@homeCountDocumentsStoredSafely": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2020,7 +2020,7 @@
   "@homeCountOverLimit": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2028,7 +2028,7 @@
   "@homeSpendingMonth": {
     "placeholders": {
       "month": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2037,7 +2037,7 @@
   "@homeCategoryOverLimit": {
     "placeholders": {
       "category": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2045,10 +2045,10 @@
   "@pregnancyWeekWeekLeft": {
     "placeholders": {
       "week": {
-        "type": "Object"
+        "type": "Object?"
       },
       "left": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2057,7 +2057,7 @@
   "@pregnancyDaysDaysPastDue": {
     "placeholders": {
       "days": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2065,7 +2065,7 @@
   "@pregnancyBigLike": {
     "placeholders": {
       "like": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2076,10 +2076,10 @@
   "@pregnancyWeekWeekDueDate": {
     "placeholders": {
       "week": {
-        "type": "Object"
+        "type": "Object?"
       },
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2087,10 +2087,10 @@
   "@pregnancyWeekWD": {
     "placeholders": {
       "w": {
-        "type": "Object"
+        "type": "Object?"
       },
       "d": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2098,13 +2098,13 @@
   "@pregnancyWeekWeekPregnancyTrimester": {
     "placeholders": {
       "week": {
-        "type": "Object"
+        "type": "Object?"
       },
       "trimester": {
-        "type": "Object"
+        "type": "Object?"
       },
       "left": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2113,7 +2113,7 @@
   "@pregnancyBabyAboutBigLike": {
     "placeholders": {
       "like": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2121,10 +2121,10 @@
   "@pregnancyAboutLengthCmWeight": {
     "placeholders": {
       "length": {
-        "type": "Object"
+        "type": "Object?"
       },
       "weight": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2132,7 +2132,7 @@
   "@pregnancyWeightKg": {
     "placeholders": {
       "weight": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2140,7 +2140,7 @@
   "@pregnancyMaternityLeaveDate": {
     "placeholders": {
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2148,7 +2148,7 @@
   "@pregnancyDueDate": {
     "placeholders": {
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2161,16 +2161,16 @@
   "@pregnancyWeekFromweekToweek": {
     "placeholders": {
       "fromWeek": {
-        "type": "Object"
+        "type": "Object?"
       },
       "toWeek": {
-        "type": "Object"
+        "type": "Object?"
       },
       "from": {
-        "type": "Object"
+        "type": "Object?"
       },
       "to": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2179,10 +2179,10 @@
   "@pregnancyDoneTotal": {
     "placeholders": {
       "done": {
-        "type": "Object"
+        "type": "Object?"
       },
       "total": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2193,13 +2193,13 @@
   "@pregnancyCountContractionsLengthInterval": {
     "placeholders": {
       "count": {
-        "type": "Object"
+        "type": "Object?"
       },
       "length": {
-        "type": "Object"
+        "type": "Object?"
       },
       "interval": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2207,7 +2207,7 @@
   "@pregnancyTimeMinEach": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2215,7 +2215,7 @@
   "@pregnancyEveryTimeMin": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2228,7 +2228,7 @@
   "@pregnancyLengthTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2236,7 +2236,7 @@
   "@pregnancyIntervalTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2246,7 +2246,7 @@
   "@pregnancyBornDate": {
     "placeholders": {
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2265,7 +2265,7 @@
   "@pregnancyTodayWeekWeek": {
     "placeholders": {
       "week": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2283,7 +2283,7 @@
   "@kidsEmergencyName": {
     "placeholders": {
       "name": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2305,10 +2305,10 @@
   "@kidsAgeBornBorn": {
     "placeholders": {
       "age": {
-        "type": "Object"
+        "type": "Object?"
       },
       "born": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2316,10 +2316,10 @@
   "@kidsWeightKgDate": {
     "placeholders": {
       "weight": {
-        "type": "Object"
+        "type": "Object?"
       },
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2334,10 +2334,10 @@
   "@commonAtTime": {
     "placeholders": {
       "what": {
-        "type": "Object"
+        "type": "Object?"
       },
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2370,7 +2370,7 @@
   "@budgetMonthlyUntil": {
     "placeholders": {
       "until": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2378,7 +2378,7 @@
   "@budgetUntilDate": {
     "placeholders": {
       "date": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2387,7 +2387,7 @@
   "@budgetVisibleNames": {
     "placeholders": {
       "names": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2395,10 +2395,10 @@
   "@budgetSpentLimit": {
     "placeholders": {
       "spent": {
-        "type": "Object"
+        "type": "Object?"
       },
       "limit": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2439,7 +2439,7 @@
   "@listsLastTime": {
     "placeholders": {
       "time": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2453,7 +2453,7 @@
   "@listsEachFamioListChoose": {
     "placeholders": {
       "how": {
-        "type": "Object"
+        "type": "Object?"
       }
     }
   },
@@ -2474,5 +2474,1375 @@
   "budgetSalary": "Gehalt",
   "budgetChildBenefit": "Kindergeld",
   "budgetParentalAllowance": "Elterngeld",
-  "budgetOtherIncome": "Sonstige Einnahmen"
+  "budgetOtherIncome": "Sonstige Einnahmen",
+  "choresNoPocketMoneySet": "Kein Taschengeld eingestellt",
+  "choresAmountPerWeekDay": "{amount} pro Woche, {day}s",
+  "@choresAmountPerWeekDay": {
+    "placeholders": {
+      "amount": {
+        "type": "Object?"
+      },
+      "day": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresPoints": "Punkte",
+  "choresPocketMoney": "Taschengeld",
+  "choresBonusPoints": "Bonuspunkte",
+  "choresSetPocketMoney": "Taschengeld einstellen",
+  "choresRedeemPoints": "Punkte eintauschen",
+  "choresNoPointsYet": "Noch keine Punkte.",
+  "choresWaiting": "wartet",
+  "choresDeclined": "abgelehnt",
+  "choresNoTransactionsYet": "Noch keine Buchungen.",
+  "choresLongPressDeletesEntry": "Lange drücken löscht einen Eintrag.",
+  "choresBonus": "Bonus",
+  "choresGiveTakePoints": "Punkte geben oder abziehen",
+  "choresWhat": "Wofür?",
+  "choresBook": "Buchen",
+  "choresEGComicGrandma": "z. B. Comic, von Oma",
+  "choresPerWeek": "Pro Woche",
+  "choresLeaveEmptyNoPocket": "Leer lassen für kein Taschengeld",
+  "choresPaid": "Wird gebucht am",
+  "choresValueOnePoint": "Wert eines Punktes",
+  "choresEG010": "z. B. 0,10 – leer: Punkte nicht eintauschbar",
+  "choresRedeem": "Eintauschen",
+  "commonOpen": "Öffnen",
+  "remindersNotificationsNotAvailableError": "Benachrichtigungen nicht verfügbar: {error}",
+  "@remindersNotificationsNotAvailableError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersChannel": "Erinnerungen",
+  "remindersEventsTasks": "Termine und Aufgaben",
+  "remindersPlanningRemindersFailedError": "Erinnerungen planen fehlgeschlagen: {error}",
+  "@remindersPlanningRemindersFailedError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersAuthorFamily": "{author} · Familie",
+  "@remindersAuthorFamily": {
+    "placeholders": {
+      "author": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersPlaces": "Orte",
+  "remindersWhoArrivedWhereLeft": "Wer ist wo angekommen oder losgegangen",
+  "remindersNewMessagesFamily": "Neue Nachrichten der Familie",
+  "remindersEmergencySos": "Notfall (SOS)",
+  "remindersWhenSomeonePressesEmergency": "Wenn jemand den Notfallknopf drückt",
+  "remindersNoticesDuringQuietTime": "Hinweise während der Ruhezeit, ohne Ton",
+  "remindersDayAllDay": "{day}, ganztägig",
+  "@remindersDayAllDay": {
+    "placeholders": {
+      "day": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTaskDueDue": "Aufgabe · fällig {due}",
+  "@remindersTaskDueDue": {
+    "placeholders": {
+      "due": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersVaccinationTitle": "Impfung {title}",
+  "@remindersVaccinationTitle": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTime": " um {time} Uhr",
+  "@remindersTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTomorrowWhatName": "Morgen: {what} für {name}",
+  "@remindersTomorrowWhatName": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersAppointmentDateClockBring": "Termin am {date}{clock}. Gelbes Heft bzw. Impfpass mitnehmen.",
+  "@remindersAppointmentDateClockBring": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      },
+      "clock": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersWhatNameClock": "{what} für {name}{clock}",
+  "@remindersWhatNameClock": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      },
+      "clock": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersAppointmentOneHour": "Termin in einer Stunde.",
+  "remindersBookCheckupAppointmentName": "Termin für die {checkup} von {name} vereinbaren",
+  "@remindersBookCheckupAppointmentName": {
+    "placeholders": {
+      "checkup": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersPeriodDatePracticesOften": "Zeitraum ab {date} – Praxen sind oft Wochen im Voraus ausgebucht.",
+  "@remindersPeriodDatePracticesOften": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersWhatName": "{what} für {name}",
+  "@remindersWhatName": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersPeriodPeriodBookAppointment": "Zeitraum: {period}. Termin beim Kinderarzt vereinbaren.",
+  "@remindersPeriodPeriodBookAppointment": {
+    "placeholders": {
+      "period": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersWhatNameOneWeek": "{what} für {name} – noch eine Woche",
+  "@remindersWhatNameOneWeek": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersPeriodEndsSoon": "Der Zeitraum endet bald.",
+  "remindersWeekFromweekToweekInfo": "SSW {fromWeek}–{toWeek}. {info}",
+  "@remindersWeekFromweekToweekInfo": {
+    "placeholders": {
+      "fromWeek": {
+        "type": "Object?"
+      },
+      "toWeek": {
+        "type": "Object?"
+      },
+      "info": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersWhoMaternityLeaveStarts": "{who}: Mutterschutz beginnt in 2 Wochen",
+  "@remindersWhoMaternityLeaveStarts": {
+    "placeholders": {
+      "who": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersDate": "Ab {date}.",
+  "@remindersDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTomorrowWhat": "Morgen: {what}",
+  "@remindersTomorrowWhat": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersDonTForgetPresent": "Geschenk oder Anruf nicht vergessen 🎁",
+  "remindersTodayWhat": "Heute: {what} 🎂",
+  "@remindersTodayWhat": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersCountStepsPoints": "{count} Schritte{points}",
+  "@remindersCountStepsPoints": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "points": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersMedicationPerson": "{medication} für {person}",
+  "@remindersMedicationPerson": {
+    "placeholders": {
+      "medication": {
+        "type": "Object?"
+      },
+      "person": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersBuyMedicationAgainSoon": "{medication} bald nachkaufen",
+  "@remindersBuyMedicationAgainSoon": {
+    "placeholders": {
+      "medication": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersSupplyLastsAboutDays": "Der Vorrat reicht noch etwa {days} Tage.",
+  "@remindersSupplyLastsAboutDays": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersUseUpItemSoon": "{item} bald verbrauchen",
+  "@remindersUseUpItemSoon": {
+    "placeholders": {
+      "item": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersBestBeforeTomorrowLatest": "Mindestens haltbar bis morgen.",
+  "remindersEmojiLabelDaysDays": "{emoji} {label}: in {days} Tagen",
+  "@remindersEmojiLabelDaysDays": {
+    "placeholders": {
+      "emoji": {
+        "type": "Object?"
+      },
+      "label": {
+        "type": "Object?"
+      },
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersDueDateMakeAppointment": "Fällig am {date} – rechtzeitig einen Termin machen.",
+  "@remindersDueDateMakeAppointment": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersEmojiDueTodayLabel": "{emoji} Heute fällig: {label}",
+  "@remindersEmojiDueTodayLabel": {
+    "placeholders": {
+      "emoji": {
+        "type": "Object?"
+      },
+      "label": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersMarkDoneFamio": "In Famio als erledigt markieren.",
+  "remindersTomorrowTrip": "🧳 Morgen: {trip}",
+  "@remindersTomorrowTrip": {
+    "placeholders": {
+      "trip": {
+        "type": "Object?"
+      }
+    }
+  },
+  "reminders1ThingLeftPack": "Noch 1 Sache packen",
+  "remindersLeftThingsLeftPack": "Noch {left} Sachen packen",
+  "@remindersLeftThingsLeftPack": {
+    "placeholders": {
+      "left": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTomorrowBin": "Morgen: {bin}",
+  "@remindersTomorrowBin": {
+    "placeholders": {
+      "bin": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersTurnPleasePutOut": "Du bist dran: bitte heute Abend rausstellen.",
+  "remindersTitleExpires": "{title} läuft ab",
+  "@remindersTitleExpires": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersValidUntilDateRenew": "Gültig bis {date} – rechtzeitig erneuern.",
+  "@remindersValidUntilDateRenew": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersNextMealName": "Nächste Mahlzeit für {name}",
+  "@remindersNextMealName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersLastMealTime": "Letzte Mahlzeit um {time}.",
+  "@remindersLastMealTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersMedicationPossibleAgainName": "{medication} für {name} wieder möglich",
+  "@remindersMedicationPossibleAgainName": {
+    "placeholders": {
+      "medication": {
+        "type": "Object?"
+      },
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersLastDoseTimeAccording": "Letzte Gabe um {time} – laut eingetragenem Mindestabstand.",
+  "@remindersLastDoseTimeAccording": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "eventRepeatNever": "Nie",
+  "eventRepeatDaily": "Täglich",
+  "eventRepeatWeekly": "Wöchentlich",
+  "eventRepeatBiweekly": "Alle 2 Wochen",
+  "eventRepeatMonthly": "Monatlich",
+  "eventRepeatYearly": "Jährlich",
+  "eventStart": "Zum Beginn",
+  "event5MinutesBefore": "5 Minuten vorher",
+  "event15MinutesBefore": "15 Minuten vorher",
+  "event30MinutesBefore": "30 Minuten vorher",
+  "event1HourBefore": "1 Stunde vorher",
+  "event2HoursBefore": "2 Stunden vorher",
+  "event1DayBefore": "1 Tag vorher",
+  "eventDay8M": "Am Tag um 8:00",
+  "eventDayBefore6P": "Am Vortag um 18:00",
+  "event2DaysBefore6": "2 Tage vorher um 18:00",
+  "event1WeekBefore8": "1 Woche vorher um 8:00",
+  "commonEnterTitle": "Bitte einen Titel eingeben",
+  "eventSaveChange": "Änderung speichern",
+  "eventDelete": "Termin löschen",
+  "eventOnlyEvent": "Nur dieser Termin",
+  "eventAllEventsSeries": "Alle Termine der Serie",
+  "eventNewEvent": "Neuer Termin",
+  "eventEditEvent": "Termin bearbeiten",
+  "eventRepeat": "Wiederholen",
+  "eventEnds": "Endet",
+  "eventDate": "am {date}",
+  "@eventDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "eventMinutesMinutesBefore": "{minutes} Minuten vorher",
+  "@eventMinutesMinutesBefore": {
+    "placeholders": {
+      "minutes": {
+        "type": "Object?"
+      }
+    }
+  },
+  "commonPrivate": "Vertraulich",
+  "eventNotCalendarSubscriptionsGoogle": "Nicht in Kalender-Abos (Google, Apple …) – z. B. für Arzttermine",
+  "eventStartPageWallDisplay": "Auf der Startseite und der Wandanzeige: „Noch 12 Tage“",
+  "eventWhoDrives": "Wer fährt?",
+  "eventDropsOff": "Bringt",
+  "eventPicksUp": "Holt ab",
+  "eventNobodyAssigned": "Niemand eingeteilt",
+  "eventWhoTakingPart": "Wer ist dabei?",
+  "commonWholeFamily": "Ganze Familie",
+  "settingsAdministrator2": " · Administrator",
+  "settingsServerAdministration": "Server-Verwaltung",
+  "settingsOfflineMessage": "Offline: {message}",
+  "@settingsOfflineMessage": {
+    "placeholders": {
+      "message": {
+        "type": "Object?"
+      }
+    }
+  },
+  "commonServerUnreachable": "Server nicht erreichbar",
+  "settingsLastTime": "Zuletzt {time}",
+  "@settingsLastTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsAccountSessionsPersonalConnections": "Dein Konto, Sitzungen und persönlichen Verbindungen werden entfernt. Geteilte Familieneinträge bleiben für die anderen Mitglieder erhalten. Als letzter Administrator musst du zuerst die Verwaltung übergeben.",
+  "settingsAccountNameWasDeleted": "Konto {name} wurde gelöscht.",
+  "@settingsAccountNameWasDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsServerDoesNotOffer": "Der Server bietet kein HTTPS an (Port {port}). Server aktualisieren oder den Reverse-Proxy verwenden.",
+  "@settingsServerDoesNotOffer": {
+    "placeholders": {
+      "port": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsOnlyIfFamioServer": "Nur wenn euer Famio-Server umgezogen ist (z. B. auf einen Proxmox-Container) und die Daten mitgenommen hat. Du bleibst angemeldet.",
+  "settingsFamioExampleCom192": "famio.example.de oder 192.168.1.10",
+  "settingsHttpsServerSConfirmed": "HTTPS mit dem bestätigten Zertifikat des Servers ({pin}…).",
+  "@settingsHttpsServerSConfirmed": {
+    "placeholders": {
+      "pin": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsAddressEGAfter": "{address} – z. B. nach einem Umzug des Servers",
+  "@settingsAddressEGAfter": {
+    "placeholders": {
+      "address": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsEncryptedButWithoutSystem": "Verschlüsselt, aber ohne Schlüsselbund des Systems (z. B. Linux ohne KWallet/GNOME-Schlüsselbund) – der Schlüssel liegt ungeschützt in den Einstellungen.",
+  "settingsServerVersion": "Server {version}",
+  "@settingsServerVersion": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      }
+    }
+  },
+  "settingsNotReachable": "nicht erreichbar",
+  "settingsPhotosDocumentsViewingOffline": "Fotos und Dokumente zum Offline-Ansehen: {size} (höchstens {max}; was lange nicht angesehen wurde, fällt zuerst raus)",
+  "@settingsPhotosDocumentsViewingOffline": {
+    "placeholders": {
+      "size": {
+        "type": "Object?"
+      },
+      "max": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsDosesViewSupplyUnder": "Einnahmen im Blick, Vorrat im Griff",
+  "medsAddMedication": "Medikament hinzufügen",
+  "medsNoMedicationsYetFamio": "Noch keine Medikamente.\nFamio erinnert an die Einnahme und warnt, bevor der Vorrat ausgeht.",
+  "medsAllMedications": "Alle Medikamente",
+  "medsFamioOnlyRemindsYou": "Famio erinnert nur. Dosierung immer nach ärztlicher Verordnung oder Beipackzettel. Bei Fragen: Apotheke, ärztlicher Bereitschaftsdienst 116 117 – im Notfall 112.",
+  "medsStillOpen": "noch offen",
+  "medsSkipped": "ausgelassen",
+  "medsTakenTime": "genommen {time}{by}",
+  "@medsTakenTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      },
+      "by": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsSkip": "Auslassen",
+  "medsTaken": "Genommen",
+  "commonUndo": "Rückgängig",
+  "medsList": "Steht auf „{list}“",
+  "@medsList": {
+    "placeholders": {
+      "list": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsNeeded": "bei Bedarf",
+  "medsSupplyUsedUp": "Vorrat aufgebraucht",
+  "medsCountLeftLasts": "Noch {count} Stück{lasts}",
+  "@medsCountLeftLasts": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "lasts": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsLastsAboutDaysDays": " · reicht ca. {days} Tage",
+  "@medsLastsAboutDaysDays": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsBuyMore": "Nachkaufen",
+  "medsNotTakenYet": "Noch nicht genommen",
+  "medsLastTime": "Zuletzt {time}",
+  "@medsLastTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsTakenNow": "Jetzt genommen",
+  "medsNewMedication": "Neues Medikament",
+  "medsWhom": "Für wen?",
+  "medsDosePrescribed": "Dosis laut Verordnung",
+  "medsEG1Tablet": "z. B. 1 Tablette, 5 ml",
+  "medsPrescribedDoctorPackageLeaflet": "Wie vom Arzt verordnet oder im Beipackzettel",
+  "medsOnlyNeeded": "Nur bei Bedarf",
+  "medsWithoutFixedTimesReminders": "Ohne feste Zeiten und Erinnerungen",
+  "medsTimesTakeReminder": "Einnahmezeiten (mit Erinnerung)",
+  "medsDate": "Ab {date}",
+  "@medsDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsPermanently": "Dauerhaft",
+  "medsUntilDate": "Bis {date}",
+  "@medsUntilDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsPiecesStock": "Stück vorrätig",
+  "medsLeaveEmptyIfDoesn": "Leer lassen, wenn egal",
+  "medsPiecesPerDose": "Stück pro Einnahme",
+  "medsWarnWhenSupplyLasts": "Warnen, wenn der Vorrat reicht für",
+  "medsWhoSeesGetsReminded": "Wer sieht es und wird erinnert?",
+  "medsHealthDataOnlyThose": "Gesundheitsdaten: nur die Ausgewählten sehen dieses Medikament.",
+  "medsEGFoodPrescribed": "z. B. zum Essen, verordnet von …",
+  "medsSkippedTime": "Ausgelassen ({time})",
+  "@medsSkippedTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "medsTakenTime2": "Genommen {time}",
+  "@medsTakenTime2": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "tasksFilterOpen": "Offen",
+  "tasksFilterMine": "Meine",
+  "chatPollClosed": "beendet",
+  "tasksTogetherWeCanDo": "Gemeinsam schaffen wir das",
+  "commonConnectOtherApps": "Mit anderen Apps verbinden",
+  "tasksCreateTaskDetails": "Aufgabe mit Details anlegen",
+  "tasksNewTask": "Neue Aufgabe …",
+  "commonAdd": "Hinzufügen",
+  "tasksNothingDoEnjoyDay": "Nichts zu tun – genießt den Tag!",
+  "tasksNothingAssignedYouRight": "Dir ist gerade nichts zugewiesen.",
+  "tasksNothingDoneYet": "Noch nichts erledigt.",
+  "commonOverdue": "Überfällig",
+  "tasksComingUp": "Demnächst",
+  "tasksWithoutDate": "Ohne Datum",
+  "tasksTitleDoneDueAgain": "„{title}“ erledigt – wieder fällig {date}",
+  "@tasksTitleDoneDueAgain": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      },
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "tasksNewTask2": "Neue Aufgabe",
+  "tasksEditTask": "Aufgabe bearbeiten",
+  "tasksDue": "Fällig am …",
+  "tasksRemind": "Erinnern …",
+  "tasksReminderTime": "Erinnerung {time}",
+  "@tasksReminderTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "tasksDoNotRepeat": "Nicht wiederholen",
+  "tasksRepeat": "Wiederholen …",
+  "tasksChecklist": "Checkliste",
+  "tasksChecklistDoneTotal": "Checkliste ({done}/{total})",
+  "@tasksChecklistDoneTotal": {
+    "placeholders": {
+      "done": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
+  "tasksRemoveItem": "Punkt entfernen",
+  "tasksAddItemEG": "Punkt hinzufügen, z. B. Sonnencreme",
+  "tasksWhoTakesCare": "Wer kümmert sich?",
+  "commonEveryone": "Alle",
+  "shoppingNewShoppingList": "Neue Einkaufsliste",
+  "shoppingWhatDoWeNeed": "Was brauchen wir?",
+  "shoppingListTemplate": "Liste aus Vorlage",
+  "shoppingNewList": "Neue Liste",
+  "shoppingCreateFirstList": "Erste Liste anlegen",
+  "shoppingEmpty": "Leer",
+  "shoppingEverythingCart": "Alles im Wagen ✓",
+  "shoppingRenameList": "Liste umbenennen",
+  "shoppingNameSavedTemplate": "„{name}“ als Vorlage gespeichert",
+  "@shoppingNameSavedTemplate": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingListAllItsEntries": "Die Liste und alle Einträge werden gelöscht.",
+  "shoppingListNoLongerExists": "Diese Liste gibt es nicht mehr.",
+  "shoppingDoneTotalPacked": "{done} von {total} eingepackt",
+  "@shoppingDoneTotalPacked": {
+    "placeholders": {
+      "done": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingAllDone": "Alles erledigt",
+  "shopping1CheckedItemRemoved": "1 erledigter Artikel entfernt",
+  "shoppingCountCheckedItemsRemoved": "{count} erledigte Artikel entfernt",
+  "@shoppingCountCheckedItemsRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingRemoveCheckedItems": "Erledigte entfernen",
+  "shoppingRemoveAllCheckmarks": "Alle Haken entfernen",
+  "shoppingSaveTemplate": "Als Vorlage speichern",
+  "commonRename": "Umbenennen",
+  "shoppingDeleteList": "Liste löschen",
+  "shoppingAddEGDiving": "Hinzufügen, z. B. „Taucherbrille“",
+  "shoppingAddItemEG": "Artikel hinzufügen, z. B. „2 Milch“",
+  "shoppingMe": "Ich",
+  "shoppingPackedCount": "Eingepackt ({count})",
+  "@shoppingPackedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingCartCount": "Im Wagen ({count})",
+  "@shoppingCartCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingEveryone": "Für alle",
+  "shoppingMyThings": "Meine Sachen",
+  "shoppingEditItem": "Artikel bearbeiten",
+  "shoppingItem": "Artikel",
+  "shoppingEG2500": "z. B. 2, 500 g, 1 Packung",
+  "shoppingAisle": "Gang",
+  "shoppingEGWeeklyShopping": "z. B. Wocheneinkauf, Drogerie",
+  "commonOk": "OK",
+  "locationWithoutLocationAccessFamio": "Ohne Standortzugriff kann Famio nichts teilen. Du kannst ihn in den App-Einstellungen erlauben.",
+  "locationShareLocationBackgroundToo": "Standort auch im Hintergrund teilen?",
+  "locationSoThatFamioCan": "Damit Famio deinen Standort auch bei geschlossener App zuverlässig aktualisieren kann, braucht es den Standortzugriff „Immer zulassen“. Android öffnet dafür gleich seine Einstellungen.",
+  "commonLater": "Später",
+  "locationTurnSharing": "Freigabe aktivieren",
+  "locationYouShareOwnLocation": "Den eigenen Standort teilt man mit der Famio-App auf dem Handy (Android oder iPhone). Hier siehst du, wo die anderen sind.",
+  "locationShareMyLocation": "Meinen Standort teilen",
+  "locationFamilySeesMapWhere": "Deine Familie sieht auf der Karte, wo du bist, und bekommt Bescheid, wenn du an einem Ort ankommst. Positionen werden nach 7 Tagen gelöscht. Pausieren geht nur mit dem Eltern-Code.",
+  "locationShareLocation": "Standort teilen",
+  "locationLocationAccessMissingTap": "Standortzugriff fehlt – antippen zum Erlauben",
+  "locationBackgroundLocationNotActive": "Hintergrundortung ist nicht aktiv – der Standort wird nur bei geöffneter App zuverlässig aktualisiert",
+  "locationLocationTurnedOffPhone": "Standort ist am Handy ausgeschaltet",
+  "locationOnlyApproximateLocationAllowed": "Nur „ungefährer“ Standort erlaubt – kurze Wege bleiben unsichtbar. Antippen und „Genauen Standort“ einschalten",
+  "locationBatteryOptimizationCanStop": "Akku-Optimierung kann die Freigabe stoppen – antippen",
+  "locationNotificationsOff": "Benachrichtigungen sind aus",
+  "locationSharingPaused": "Freigabe pausiert",
+  "locationSharingOffSchedule": "Freigabe nach Zeitplan aus",
+  "locationLocationSharingRestricted": "Standortfreigabe eingeschränkt",
+  "locationYouShareLocation": "Du teilst deinen Standort",
+  "locationScheduleSchedule": "Zeitplan: {schedule}",
+  "@locationScheduleSchedule": {
+    "placeholders": {
+      "schedule": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationResume": "Fortsetzen",
+  "locationPause": "Pausieren",
+  "locationSchedule": "Zeitplan",
+  "commonEnd2": "Beenden",
+  "locationAlwaysAllowed": "Immer erlaubt",
+  "locationOnlyWhileAppOpen": "Nur bei geöffneter App",
+  "locationNotAllowed": "Nicht erlaubt",
+  "locationPermissionPermissionPrecision": "Berechtigung: {permission}{precision}",
+  "@locationPermissionPermissionPrecision": {
+    "placeholders": {
+      "permission": {
+        "type": "Object?"
+      },
+      "precision": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationPrecise": " · genau",
+  "locationApproximateOnly": " · nur ungefähr",
+  "locationLastGpsFixTime": "Letzter GPS-Fix: {time}",
+  "@locationLastGpsFixTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationLastSuccessfulPositionUpload": "Letzter erfolgreicher Positions-Upload: {time}",
+  "@locationLastSuccessfulPositionUpload": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationLastServerResponseTime": "Letzte Serverantwort: {time}{status}",
+  "@locationLastServerResponseTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      },
+      "status": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationLastTransferErrorTime": "Letzter Übertragungsfehler: {time}{error}",
+  "@locationLastTransferErrorTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      },
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationDiagnostics": "Diagnose",
+  "locationNever": "noch nie",
+  "chatMessagesFamily": "Nachrichten an die Familie",
+  "chatOneOneChats": "Einzelchats",
+  "chatSoonMoreFamilyMembers": "Sobald weitere Familienmitglieder dabei sind, könnt ihr euch hier auch einzeln schreiben.",
+  "chatNoMessagesYetSay": "Noch keine Nachrichten – sag Hallo! 👋",
+  "chatYou": "Du: ",
+  "chatDeleteMessage": "Nachricht löschen?",
+  "chatDisappearsEveryone": "Sie verschwindet für alle.",
+  "chatPrivateJustTwoYou": "Privat – nur ihr zwei",
+  "chatEveryoneFamily": "Alle in der Familie",
+  "chatQuietHereSoFar": "Noch ganz still hier.\nSchreib die erste Nachricht!",
+  "chatRead": " · gelesen",
+  "chatSendPhotoFile": "Foto oder Datei senden",
+  "chatPoll": "Umfrage",
+  "chatMessage": "Nachricht …",
+  "chatVote": "Stimme",
+  "chatVotes": "Stimmen",
+  "chatMultipleAnswersPossible": "mehrere Antworten möglich",
+  "chatQuestionLeastTwoAnswers": "Frage und mindestens zwei Antworten",
+  "chatQuestion": "Frage",
+  "chatEGWhereGo": "z. B. Wohin am Sonntag?",
+  "chatAnswerNumber": "Antwort {number}",
+  "@chatAnswerNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object?"
+      }
+    }
+  },
+  "chatAnswer": "Antwort",
+  "chatAllowMultipleAnswers": "Mehrere Antworten erlauben",
+  "pantryFridgePantryGlanceBarcode": "Kühlschrank & Vorratsschrank im Blick – mit Barcode-Scanner",
+  "pantryCountItems": "{count} Artikel",
+  "@pantryCountItems": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryCountRunningLow": "{count} werden knapp",
+  "@pantryCountRunningLow": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryCountExpiringSoon": "{count} laufen bald ab",
+  "@pantryCountExpiringSoon": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantrySearchingProduct": "Suche Produkt …",
+  "pantryStockAmount": "Vorrat: {amount}",
+  "@pantryStockAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryUsedUp1": "Verbraucht (−1)",
+  "pantryBought1": "Eingekauft (+1)",
+  "pantryEverythingAlreadyList": "Steht schon alles auf „{list}“",
+  "@pantryEverythingAlreadyList": {
+    "placeholders": {
+      "list": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryCountItemsPutList": "{count} Artikel auf „{list}“ gesetzt",
+  "@pantryCountItemsPutList": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "list": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryWhatSStillThere": "Was ist noch da?",
+  "pantryScanBarcode": "Barcode scannen",
+  "pantryAddItem": "Artikel hinzufügen",
+  "commonAll": "Alles",
+  "pantryNothingRecordedYetScan": "Noch nichts erfasst.\nScanne den Barcode einer Packung oder tippe auf +.",
+  "pantryNothingRecordedYetTap": "Noch nichts erfasst. Tippe auf +.",
+  "pantryUseSoon": "Bald verbrauchen",
+  "pantryRunningLow": "Wird knapp",
+  "pantryExpired": "abgelaufen",
+  "pantryBestBeforeToday": "MHD heute",
+  "pantryBestBeforeTomorrow": "MHD morgen",
+  "pantryBestBeforeDate": "MHD {date}",
+  "@pantryBestBeforeDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryOneLess": "Eins weniger",
+  "pantryOneMore": "Eins mehr",
+  "pantryEditPantryItem": "Vorrat bearbeiten",
+  "pantryIntoPantry": "In den Vorrat",
+  "pantryBarcodeBarcodeUnknown": "Barcode {barcode}{unknown}",
+  "@pantryBarcodeBarcodeUnknown": {
+    "placeholders": {
+      "barcode": {
+        "type": "Object?"
+      },
+      "unknown": {
+        "type": "Object?"
+      }
+    }
+  },
+  "pantryProductUnknownPleaseEnter": " – Produkt unbekannt, bitte Namen eintragen",
+  "pantryBrandOptional": "Marke (optional)",
+  "pantryUnit": "Einheit",
+  "pantryPiecesPacksL": "Stück, Packungen, l",
+  "pantryLow": "Knapp ab",
+  "pantryBestBefore": "Mindestens haltbar bis …",
+  "pantryCameraNotAvailablePlease": "Die Kamera ist nicht verfügbar. Bitte den Zugriff in den Einstellungen erlauben.",
+  "inviteInvitationFamioForname1": "Einladung zu Famio{forName}:\n1. Famio installieren und öffnen\n2. „Mit Einladung beitreten“ wählen\n3. Server: {server}\n   Code: {code}\nGültig bis {until}.",
+  "@inviteInvitationFamioForname1": {
+    "placeholders": {
+      "forName": {
+        "type": "Object?"
+      },
+      "server": {
+        "type": "Object?"
+      },
+      "code": {
+        "type": "Object?"
+      },
+      "until": {
+        "type": "Object?"
+      }
+    }
+  },
+  "inviteName": " für {name}",
+  "@inviteName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "inviteInvite": "Einladen",
+  "inviteWithoutPassingPassword": "Ohne Passwort weiterzugeben",
+  "inviteNewMemberChoosesTheir": "Das neue Mitglied wählt Benutzername und Passwort selbst. Die Einladung gilt 48 Stunden und nur einmal.",
+  "inviteNameSuggestion": "Name (Vorschlag)",
+  "inviteEGGrandmaErika": "z. B. Oma Erika",
+  "inviteCreateInvitation": "Einladung erstellen",
+  "inviteRoleValidUntilUntil": "{role} · gültig bis {until}",
+  "@inviteRoleValidUntilUntil": {
+    "placeholders": {
+      "role": {
+        "type": "Object?"
+      },
+      "until": {
+        "type": "Object?"
+      }
+    }
+  },
+  "inviteScanQrCodeFamio": "Mit Famio auf dem neuen Gerät den QR-Code scannen – oder den Text unten schicken.",
+  "inviteCopyInvitationText": "Einladungstext kopieren",
+  "inviteCopied": "Kopiert",
+  "inviteAnotherInvitation": "Weitere Einladung",
+  "inviteOpenInvitations": "Offene Einladungen",
+  "inviteRoleUntilUntil": "{role} · bis {until}",
+  "@inviteRoleUntilUntil": {
+    "placeholders": {
+      "role": {
+        "type": "Object?"
+      },
+      "until": {
+        "type": "Object?"
+      }
+    }
+  },
+  "inviteWithdraw": "Zurückziehen",
+  "inviteScanInvitation": "Einladung scannen",
+  "inviteNotFamioInvitationCode": "Das ist kein Famio-Einladungscode.",
+  "inviteJoin": "Mit Einladung beitreten",
+  "inviteScanQrCode": "QR-Code scannen",
+  "inviteInvitationText": "Oder aus dem Einladungstext:",
+  "inviteYouInvitedRole": "Du wirst als {role} eingeladen.",
+  "@inviteYouInvitedRole": {
+    "placeholders": {
+      "role": {
+        "type": "Object?"
+      }
+    }
+  },
+  "inviteChooseHowYouWant": "Wähle, wie du dich anmelden möchtest.",
+  "inviteName2": "Dein Name",
+  "invitePasswordLeast8Characters": "Passwort (mindestens 8 Zeichen)",
+  "inviteJoin2": "Beitreten",
+  "docsImportantThingsSafelyOne": "Wichtiges sicher an einem Ort",
+  "docsAdd": "Dokument hinzufügen",
+  "docsSearch": "Suchen …",
+  "docsAllCount": "Alle ({count})",
+  "@docsAllCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "docsIdsDoctorSLetters": "Ausweise, Arztbriefe, Zeugnisse, Verträge –\nhier findet ihr alles wieder.",
+  "commonNothingFound": "Nichts gefunden.",
+  "docsAddFirstDocument": "Erstes Dokument hinzufügen",
+  "commonVisibleTo": "Sichtbar für: {names}",
+  "@commonVisibleTo": {
+    "placeholders": {
+      "names": {
+        "type": "Object?"
+      }
+    }
+  },
+  "docsExpired": "Abgelaufen am",
+  "docsValidUntil": "Gültig bis",
+  "docsVisibleWholeFamily": "Sichtbar für die ganze Familie",
+  "docsDocumentRemovedEveryone": "Das Dokument wird für alle entfernt.",
+  "docsNewDocument": "Neues Dokument",
+  "docsEditDocument": "Dokument bearbeiten",
+  "commonCategory": "Kategorie",
+  "docsWhomDoesConcern": "Wen betrifft es?",
+  "docsValidUntilOptional": "Gültig bis (optional)",
+  "docsNoExpiryDate": "Kein Ablaufdatum",
+  "docsFamioRemindsYouGood": "Famio erinnert rechtzeitig vor dem Ablauf (z. B. beim Reisepass).",
+  "commonWhoMaySee": "Wer darf es sehen?",
+  "docsOnlyMe": "Nur ich",
+  "docsMe": "Ich und …",
+  "docsEGIdNumber": "z. B. Ausweisnummer, Ansprechpartner …",
+  "wishesWhatYouWish": "Was du dir wünschst",
+  "wishesWhatNameWishes": "Was sich {name} wünscht",
+  "@wishesWhatNameWishes": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wishesAddWish": "Wunsch hinzufügen",
+  "wishesNoWishesYetOthers": "Noch keine Wünsche. Die anderen sehen deine Liste und können still „Ich besorge das“ wählen – du erfährst nicht, wer was besorgt.",
+  "wishesNoWishesYet": "Noch keine Wünsche.",
+  "wishesNewWish": "Neuer Wunsch",
+  "wishesEditWish": "Wunsch bearbeiten",
+  "wishesWhat": "Was?",
+  "wishesLinkOptional": "Link (optional)",
+  "wishesPriceOptional": "Preis (optional)",
+  "wishesEGAbout25": "z. B. ca. 25 €",
+  "wishesNoteSizeColor": "Hinweis (Größe, Farbe …)",
+  "wishesOpenLink": "Link öffnen",
+  "wishesWishAgain": "Doch noch wünschen",
+  "wishesReceived": "Bekommen",
+  "wishesILlGet": "Ich besorge das",
+  "wishesYouReGetting": "Du besorgst das",
+  "wishesNameGetting": "{name} besorgt das",
+  "@wishesNameGetting": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wishesRelease": "Freigeben",
+  "kidsPleaseEnterNameBirthday": "Bitte Name und Geburtstag angeben",
+  "kidsAllEntriesMilestonesMeasurements": "Alle Einträge, Meilensteine und Messungen dieses Kindes werden gelöscht.",
+  "kidsChoosePhoto": "Foto wählen",
+  "commonBirthday": "Geburtstag",
+  "kidsGender": "Geschlecht",
+  "kidsNotSpecified": "Keine Angabe",
+  "kidsOnlyWhoGrowthCharts": "Nur für die WHO-Wachstumskurven.",
+  "kidsColor": "Farbe",
+  "kidsGuardians": "Sorgeberechtigte",
+  "kidsOnlyTheySeeDevelopment": "Nur sie sehen Entwicklung, Vorsorge, Impfungen und Fotos und werden erinnert. Niemand ausgewählt: die ganze Familie.",
+  "kidsRemoveChild": "Kind entfernen",
+  "deadlinesCarHousePets": "Auto, Haus und Haustiere",
+  "deadlinesAddDeadline": "Frist hinzufügen",
+  "deadlinesFamioRemindsYouGood": "Famio erinnert rechtzeitig an TÜV, Heizungswartung, Impfungen der Haustiere und alles, was regelmäßig wiederkommt. Ist es erledigt, rückt die Frist automatisch weiter.",
+  "deadlinesCarInspection": "HU/TÜV",
+  "deadlinesHeatingMaintenance": "Heizungswartung",
+  "deadlinesTestSmokeDetectors": "Rauchmelder testen",
+  "deadlinesDoneDate": "Erledigt am {date}",
+  "@deadlinesDoneDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesTitleDone": "„{title}“ erledigt",
+  "@deadlinesTitleDone": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesNextTimeDate": "Nächstes Mal: {date}",
+  "@deadlinesNextTimeDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesEveryMonth": "jeden Monat",
+  "deadlinesEveryYear": "jedes Jahr",
+  "deadlinesEvery2Years": "alle 2 Jahre",
+  "deadlinesEvery3Years": "alle 3 Jahre",
+  "deadlinesEveryMonthsMonths": "alle {months} Monate",
+  "@deadlinesEveryMonthsMonths": {
+    "placeholders": {
+      "months": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesNewDeadline": "Neue Frist",
+  "deadlinesEditDeadline": "Frist bearbeiten",
+  "deadlinesWhichCarOptional": "Welches Auto? (optional)",
+  "deadlinesWhichPetOptional": "Welches Tier? (optional)",
+  "deadlinesDue": "Fällig am",
+  "deadlinesOnce": "einmalig",
+  "deadlinesRemind": "Erinnern",
+  "deadlinesDayItself": "am Tag selbst",
+  "deadlinesDaysDaysBefore": "{days} Tage vorher",
+  "@deadlinesDaysDaysBefore": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesAdults": "Die Erwachsenen",
+  "deadlinesNoteGaragePhoneNumber": "Notiz (Werkstatt, Telefonnummer …)",
+  "commonRefresh": "Aktualisieren",
+  "adminAddMember": "Mitglied hinzufügen",
+  "adminUsers": "Benutzer",
+  "adminStatus": "Status",
+  "adminInviteQrCodeLink": "Einladen (QR-Code oder Link)",
+  "adminChoosesUsernamePasswordThemselves": "Wählt Benutzername und Passwort selbst",
+  "adminCreateDirectly": "Direkt anlegen",
+  "adminYouSetPassword": "Du vergibst das Passwort",
+  "adminAddFamilyMember": "Familienmitglied hinzufügen",
+  "adminUsernameSigning": "Benutzername (für die Anmeldung)",
+  "adminSuggestedName": "Wird aus dem Namen vorgeschlagen",
+  "adminInitialPasswordMin8": "Startpasswort (min. 8 Zeichen)",
+  "adminMayManageServer": "Darf den Server verwalten",
+  "adminSeesManagesEverythingShared": "Sieht und verwaltet alles, was für ihn freigegeben ist.",
+  "adminCollectsPointsPocketMoney": "Sammelt Punkte und Taschengeld; erledigte Ämter bestätigen die Erwachsenen.",
+  "adminEGGrandparentsBabysitter": "Z. B. Großeltern oder Babysitter: nur Kalender, Chat, Einkauf, Aufgaben, Essen und Kontakte – keine Dokumente, Gesundheitsdaten, Finanzen oder Standorte.",
+  "adminHomeAssistantOtherConnections": "Für Home Assistant und andere Anbindungen: sieht, was Erwachsene sehen, erscheint aber nicht in Chats, Standorten und Auswahllisten.",
+  "adminActiveAgo": " · aktiv {ago}",
+  "@adminActiveAgo": {
+    "placeholders": {
+      "ago": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminWithoutPassword": "ohne Passwort",
+  "adminTwoFactor2": "Zwei-Faktor",
+  "wasteWhenWhichBinHas": "Wann welche Tonne raus muss",
+  "wasteFamioRemindsYouEvening": "Famio erinnert am Vorabend, wer welche Tonne rausstellt, und zeigt es auf der Startseite und der Wandanzeige. Die Abholtermine kommen aus dem Abfuhrkalender eurer Gemeinde – fast alle Entsorger bieten ihn zum Abonnieren an („iCal“, „ICS“ oder „Kalender exportieren“ auf ihrer Webseite oder in ihrer App).",
+  "wasteCollectionDates": "Abholtermine",
+  "wasteDetectAutomatically": "Automatisch erkennen",
+  "wasteAllDayEventsLike": "Ganztägige Termine wie „Gelber Sack“, „Restmüll“ oder „Altpapier“ – auch selbst eingetragene",
+  "wasteAllEventsCalendar": "Alle Termine dieses Kalenders",
+  "wasteSubscribe": "Abfuhrkalender abonnieren",
+  "wasteWhoPutsThemOut": "Wer stellt raus?",
+  "wasteNobodyChosenAllAdults": "Niemand gewählt: Alle Erwachsenen werden erinnert.",
+  "wasteOnlyThoseChosenReminded": "Nur die Gewählten werden erinnert.",
+  "wasteTakeTurnsWeekly": "Wöchentlich abwechseln",
+  "wasteEachWeekSSomeone": "Jede Woche ist jemand anderes dran",
+  "wasteReminderEveningBefore": "Erinnerung am Vorabend",
+  "wasteTurnReminders": "Erinnerungen einschalten",
+  "wasteNextCollections": "Nächste Abholungen",
+  "wasteNoCollectionFoundNext": "In den nächsten zwei Monaten keine Abholung gefunden. Ein neues Abo braucht ein paar Minuten, bis die Termine da sind.",
+  "wasteCalendarAddressIcs": "Adresse des Kalenders (ICS)",
+  "wasteSubscribe2": "Abonnieren",
+  "kidsAddChild": "Kind hinzufügen",
+  "routinesRoutinesChecklistsPicturesE": "Routinen sind Checklisten mit Bildern, z. B. für morgens:\nAnziehen, Frühstücken, Zähne putzen …",
+  "routinesCreateMorningRoutine": "Morgenroutine anlegen",
+  "commonEveryoneLower": "alle",
+  "routinesCountSteps": "{count} Schritte",
+  "@routinesCountSteps": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "routinesNotToday": "heute nicht",
+  "routinesEveningRoutineTemplate": "Abendroutine aus Vorlage",
+  "routinesDonePointsPoints": "Geschafft! 🎉 +{points} Punkte",
+  "@routinesDonePointsPoints": {
+    "placeholders": {
+      "points": {
+        "type": "Object?"
+      }
+    }
+  },
+  "routinesDone": "Geschafft! 🎉",
+  "routinesMorningRoutine": "Morgenroutine",
+  "routinesGetUp": "Aufstehen",
+  "routinesToiletWashHands": "Toilette & Hände waschen",
+  "routinesGetDressed": "Anziehen",
+  "routinesHaveBreakfast": "Frühstücken",
+  "routinesBrushTeeth": "Zähne putzen",
+  "routinesPackBag": "Tasche packen",
+  "routinesEveningRoutine": "Abendroutine",
+  "routinesTidyUp": "Aufräumen",
+  "routinesWashBath": "Waschen / Baden",
+  "routinesPutPajamas": "Schlafanzug anziehen",
+  "routinesLayOutThingsTomorrow": "Sachen für morgen bereitlegen",
+  "routinesReadAloud": "Vorlesen",
+  "contactsPediatricianDaycareBabysitterCo": "Kinderarzt, Kita, Babysitter & Co.",
+  "contactsAdd": "Kontakt hinzufügen",
+  "contactsImportantNumbersOnePlace": "Wichtige Nummern an einem Ort – für alle in der Familie,\nauch ohne Internet.",
+  "contactsKids": "für {kids}",
+  "@contactsKids": {
+    "placeholders": {
+      "kids": {
+        "type": "Object?"
+      }
+    }
+  },
+  "contactsWriteEmail": "E-Mail schreiben",
+  "contactsCallPhone": "Anrufen: {phone}",
+  "@contactsCallPhone": {
+    "placeholders": {
+      "phone": {
+        "type": "Object?"
+      }
+    }
+  },
+  "contactsPleaseEnterName": "Bitte einen Namen angeben",
+  "contactsDeleteName": "{name} löschen?",
+  "@contactsDeleteName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "contactsNewContact": "Neuer Kontakt",
+  "contactsEGDrSommer": "z. B. Kinderarztpraxis Dr. Sommer",
+  "contactsType": "Art",
+  "contactsPhone": "Telefon",
+  "contactsOtherNumberOptional": "Weitere Nummer (optional)",
+  "contactsMobileEmergencyPracticeCell": "Mobil, Notfall, Praxis-Handy …",
+  "contactsEmailOptional": "E-Mail (optional)",
+  "contactsAddressOptional": "Adresse (optional)",
+  "contactsNoteOptional": "Notiz (optional)",
+  "contactsOfficeHoursCustomerNumber": "Sprechzeiten, Kundennummer …",
+  "contactsBelongs": "Gehört zu",
+  "contactsDeleteContact": "Kontakt löschen",
+  "rewards30MinutesTablet": "30 Minuten Tablet",
+  "rewardsEatIceCream": "Eis essen",
+  "rewardsChooseGameNight": "Spieleabend aussuchen",
+  "rewardsGoBed30Minutes": "30 Minuten später ins Bett",
+  "rewardsTripCinema": "Kinobesuch",
+  "rewardsYouStillNeedPoints": "Dir fehlen noch {points} Punkte – weiter so!",
+  "@rewardsYouStillNeedPoints": {
+    "placeholders": {
+      "points": {
+        "type": "Object?"
+      }
+    }
+  },
+  "rewardsRedeemCostPointsParents": "Für {cost} Punkte einlösen? Deine Eltern bekommen Bescheid.",
+  "@rewardsRedeemCostPointsParents": {
+    "placeholders": {
+      "cost": {
+        "type": "Object?"
+      }
+    }
+  },
+  "rewardsWish": "Wünschen",
+  "rewardsWishSent": "Wunsch gesendet 🎁",
+  "rewardsWhoRedeems": "Wer löst ein?",
+  "rewardsNameOnlyHasBalance": "{name} hat nur {balance} Punkte.",
+  "@rewardsNameOnlyHasBalance": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      },
+      "balance": {
+        "type": "Object?"
+      }
+    }
+  },
+  "rewardsTitleRedeemed": "{title} eingelöst 🎁",
+  "@rewardsTitleRedeemed": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "rewardsWhatWorthCollectingIdeas": "Wofür lohnt sich das Sammeln? Ideen zum Übernehmen:",
+  "rewardsNoRewardsYetAsk": "Noch keine Belohnungen – frag deine Eltern!",
+  "rewardsYouHave": "Du hast",
+  "rewardsNewReward": "Neue Belohnung",
+  "rewardsEditReward": "Belohnung bearbeiten",
+  "rewardsEmoji": "Emoji",
+  "connectFamilyOrganizer": "Euer Familien-Organizer",
+  "connectNewServerCreateFirst": "Neuer Server – lege das erste Konto an.\nEs wird Administrator.",
+  "connectNiceHaveYouHere": "Schön, dass du da bist!",
+  "connectServerAddress": "Server-Adresse",
+  "connectChangeServer": "Server ändern",
+  "connectPleaseEnterAddress": "Bitte Adresse eingeben",
+  "connectSetupCode": "Einrichtungscode",
+  "connectServerLogEG": "Steht im Server-Log, z. B.: docker logs famio",
+  "connectEnterCodeServerLog": "Code aus dem Server-Log eingeben",
+  "connectPleaseEnterUsername": "Bitte Benutzernamen eingeben",
+  "connectLeast8Characters": "Mindestens 8 Zeichen",
+  "connectCreateAccount": "Konto anlegen",
+  "connectSignFamioAccountHome": "Mit deinem Famio-Konto anmelden – Home Assistant merkt sich die Anmeldung für deinen Benutzer.",
+  "connectHomeAssistantOpenFamio": "Mit Home Assistant? Öffne Famio in der Seitenleiste, um ein Passwort für die App festzulegen.",
+  "connectConnectedSecurely": "Verschlüsselt verbunden",
+  "connectConnectedSecurelyCertificateConfirmed": "Verschlüsselt verbunden (Zertifikat bestätigt)",
+  "connectUnencryptedHomeNetworkServer": "Unverschlüsselt im Heimnetz – der Server bietet kein HTTPS an",
+  "rewardsRedeem": "Einlösen"
 }

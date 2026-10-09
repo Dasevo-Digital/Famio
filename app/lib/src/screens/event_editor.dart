@@ -30,16 +30,24 @@ Future<void> showEventEditor(
 }
 
 enum _Repeat {
-  none('Nie', null, 1),
-  daily('Täglich', RecurrenceFrequency.daily, 1),
-  weekly('Wöchentlich', RecurrenceFrequency.weekly, 1),
-  biweekly('Alle 2 Wochen', RecurrenceFrequency.weekly, 2),
-  monthly('Monatlich', RecurrenceFrequency.monthly, 1),
-  yearly('Jährlich', RecurrenceFrequency.yearly, 1);
+  none(null, 1),
+  daily(RecurrenceFrequency.daily, 1),
+  weekly(RecurrenceFrequency.weekly, 1),
+  biweekly(RecurrenceFrequency.weekly, 2),
+  monthly(RecurrenceFrequency.monthly, 1),
+  yearly(RecurrenceFrequency.yearly, 1);
 
-  const _Repeat(this.label, this.frequency, this.interval);
+  const _Repeat(this.frequency, this.interval);
 
-  final String label;
+  String get label => switch (this) {
+    none => tr.eventRepeatNever,
+    daily => tr.eventRepeatDaily,
+    weekly => tr.eventRepeatWeekly,
+    biweekly => tr.eventRepeatBiweekly,
+    monthly => tr.eventRepeatMonthly,
+    yearly => tr.eventRepeatYearly,
+  };
+
   final RecurrenceFrequency? frequency;
   final int interval;
 
@@ -56,22 +64,22 @@ enum _Repeat {
         );
 }
 
-const _timedReminders = {
-  0: 'Zum Beginn',
-  5: '5 Minuten vorher',
-  15: '15 Minuten vorher',
-  30: '30 Minuten vorher',
-  60: '1 Stunde vorher',
-  120: '2 Stunden vorher',
-  1440: '1 Tag vorher',
+Map<int, String> get _timedReminders => {
+  0: tr.eventStart,
+  5: tr.event5MinutesBefore,
+  15: tr.event15MinutesBefore,
+  30: tr.event30MinutesBefore,
+  60: tr.event1HourBefore,
+  120: tr.event2HoursBefore,
+  1440: tr.event1DayBefore,
 };
 
 /// Relative to midnight of the day; negative = after midnight.
-const _allDayReminders = {
-  -480: 'Am Tag um 8:00',
-  360: 'Am Vortag um 18:00',
-  1800: '2 Tage vorher um 18:00',
-  9600: '1 Woche vorher um 8:00',
+Map<int, String> get _allDayReminders => {
+  -480: tr.eventDay8M,
+  360: tr.eventDayBefore6P,
+  1800: tr.event2DaysBefore6,
+  9600: tr.event1WeekBefore8,
 };
 
 enum _Scope { this_, all }
@@ -282,9 +290,9 @@ class _EventEditorState extends State<_EventEditor> {
 
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte einen Titel eingeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.commonEnterTitle)));
       return;
     }
     final engine = AppScope.engineOf(context);
@@ -298,7 +306,7 @@ class _EventEditorState extends State<_EventEditor> {
         _edited(original.id).copyWith(exceptions: original.exceptions),
       );
     } else {
-      final scope = await _askScope('Änderung speichern');
+      final scope = await _askScope(tr.eventSaveChange);
       if (scope == null) return;
       if (scope == _Scope.this_) {
         // Detach this occurrence as a standalone event.
@@ -324,7 +332,7 @@ class _EventEditorState extends State<_EventEditor> {
     final engine = AppScope.engineOf(context);
     final original = _original!;
     if (_isSeries) {
-      final scope = await _askScope('Termin löschen');
+      final scope = await _askScope(tr.eventDelete);
       if (scope == null) return;
       if (scope == _Scope.this_) {
         engine.saveEvent(_skip(original, widget.occurrence!));
@@ -357,11 +365,11 @@ class _EventEditorState extends State<_EventEditor> {
       children: [
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, _Scope.this_),
-          child: const Text('Nur dieser Termin'),
+          child: Text(tr.eventOnlyEvent),
         ),
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, _Scope.all),
-          child: const Text('Alle Termine der Serie'),
+          child: Text(tr.eventAllEventsSeries),
         ),
       ],
     ),
@@ -399,10 +407,10 @@ class _EventEditorState extends State<_EventEditor> {
 
     return SectionPage(
       section: FamioSection.calendar,
-      title: _original == null ? 'Neuer Termin' : 'Termin bearbeiten',
+      title: _original == null ? tr.eventNewEvent : tr.eventEditEvent,
       actions: [
         ColorButton(
-          label: 'Speichern',
+          label: tr.commonSave,
           color: FamioColors.of(context).strong(FamioSection.calendar),
           onPressed: _save,
         ),
@@ -418,25 +426,25 @@ class _EventEditorState extends State<_EventEditor> {
                 controller: _title,
                 autofocus: _original == null,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(labelText: 'Titel'),
+                decoration: InputDecoration(labelText: tr.commonTitle),
               ),
               const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                 secondary: const Icon(AppIcons.sun),
-                title: const Text('Ganztägig'),
+                title: Text(tr.commonAllDay),
                 value: _allDay,
                 onChanged: _setAllDay,
               ),
               dateRow(
-                'Beginn',
+                tr.commonStart,
                 _start,
                 _pickStartDate,
                 () => _pickTime(start: true),
                 _start,
               ),
               dateRow(
-                'Ende',
+                tr.commonEnd,
                 _endDay,
                 _pickEndDate,
                 () => _pickTime(start: false),
@@ -445,8 +453,8 @@ class _EventEditorState extends State<_EventEditor> {
               const Divider(height: 32),
               DropdownButtonFormField<_Repeat>(
                 initialValue: _repeat,
-                decoration: const InputDecoration(
-                  labelText: 'Wiederholen',
+                decoration: InputDecoration(
+                  labelText: tr.eventRepeat,
                   prefixIcon: Icon(AppIcons.repeat),
                 ),
                 items: [
@@ -461,15 +469,7 @@ class _EventEditorState extends State<_EventEditor> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    for (final (i, label) in const [
-                      'Mo',
-                      'Di',
-                      'Mi',
-                      'Do',
-                      'Fr',
-                      'Sa',
-                      'So',
-                    ].indexed)
+                    for (final (i, label) in weekdaysShort().indexed)
                       FilterChip(
                         label: Text(label),
                         showCheckmark: false,
@@ -489,13 +489,13 @@ class _EventEditorState extends State<_EventEditor> {
                 Row(
                   children: [
                     const SizedBox(width: 12),
-                    const Text('Endet'),
+                    Text(tr.eventEnds),
                     const Spacer(),
                     InputChip(
                       label: Text(
                         _until == null
-                            ? 'Nie'
-                            : 'am ${dateFormat.format(_until!)}',
+                            ? tr.eventRepeatNever
+                            : tr.eventDate(dateFormat.format(_until!)),
                       ),
                       onPressed: () async {
                         final picked = await _pickDate(_until ?? _start);
@@ -513,18 +513,18 @@ class _EventEditorState extends State<_EventEditor> {
                 // Keep a stored value visible even if it is not a preset.
                 initialValue: _reminder,
                 key: ValueKey(_allDay),
-                decoration: const InputDecoration(
-                  labelText: 'Erinnerung',
+                decoration: InputDecoration(
+                  labelText: tr.commonReminder,
                   prefixIcon: Icon(AppIcons.bell),
                 ),
                 items: [
-                  const DropdownMenuItem(value: null, child: Text('Keine')),
+                  DropdownMenuItem(value: null, child: Text(tr.commonNone)),
                   for (final e in reminders.entries)
                     DropdownMenuItem(value: e.key, child: Text(e.value)),
                   if (_reminder != null && !reminders.containsKey(_reminder))
                     DropdownMenuItem(
                       value: _reminder,
-                      child: Text('$_reminder Minuten vorher'),
+                      child: Text(tr.eventMinutesMinutesBefore(_reminder!)),
                     ),
                 ],
                 onChanged: (v) => setState(() => _reminder = v),
@@ -532,31 +532,26 @@ class _EventEditorState extends State<_EventEditor> {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(AppIcons.lock),
-                title: const Text('Vertraulich'),
-                subtitle: const Text(
-                  'Nicht in Kalender-Abos (Google, Apple …) – z. B. für '
-                  'Arzttermine',
-                ),
+                title: Text(tr.commonPrivate),
+                subtitle: Text(tr.eventNotCalendarSubscriptionsGoogle),
                 value: _confidential,
                 onChanged: (v) => setState(() => _confidential = v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(AppIcons.partyPopper),
-                title: const Text('Countdown'),
-                subtitle: const Text(
-                  'Auf der Startseite und der Wandanzeige: „Noch 12 Tage“',
-                ),
+                title: Text(tr.homeCountdown),
+                subtitle: Text(tr.eventStartPageWallDisplay),
                 value: _countdown,
                 onChanged: (v) => setState(() => _countdown = v),
               ),
               const SizedBox(height: 8),
               if (!_allDay) ...[
-                Text('Wer fährt?', style: theme.textTheme.labelLarge),
+                Text(tr.eventWhoDrives, style: theme.textTheme.labelLarge),
                 const SizedBox(height: 8),
                 for (final (label, value, set) in [
-                  ('Bringt', _bringerId, (String? v) => _bringerId = v),
-                  ('Holt ab', _pickerId, (String? v) => _pickerId = v),
+                  (tr.eventDropsOff, _bringerId, (String? v) => _bringerId = v),
+                  (tr.eventPicksUp, _pickerId, (String? v) => _pickerId = v),
                 ])
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -570,9 +565,9 @@ class _EventEditorState extends State<_EventEditor> {
                         isDense: true,
                       ),
                       items: [
-                        const DropdownMenuItem(
+                        DropdownMenuItem(
                           value: null,
-                          child: Text('Niemand eingeteilt'),
+                          child: Text(tr.eventNobodyAssigned),
                         ),
                         for (final m in engine.members)
                           if (!m.isChild)
@@ -586,7 +581,7 @@ class _EventEditorState extends State<_EventEditor> {
                   ),
                 const SizedBox(height: 8),
               ],
-              Text('Wer ist dabei?', style: theme.textTheme.labelLarge),
+              Text(tr.eventWhoTakingPart, style: theme.textTheme.labelLarge),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
@@ -594,7 +589,7 @@ class _EventEditorState extends State<_EventEditor> {
                 children: [
                   ChoiceChip(
                     avatar: const Icon(AppIcons.usersThree, size: 18),
-                    label: const Text('Ganze Familie'),
+                    label: Text(tr.commonWholeFamily),
                     selected: _memberIds.isEmpty,
                     onSelected: (_) => setState(_memberIds.clear),
                   ),
@@ -613,8 +608,8 @@ class _EventEditorState extends State<_EventEditor> {
               const SizedBox(height: 16),
               TextField(
                 controller: _location,
-                decoration: const InputDecoration(
-                  labelText: 'Ort',
+                decoration: InputDecoration(
+                  labelText: tr.commonPlace,
                   prefixIcon: Icon(AppIcons.mapPin),
                 ),
               ),
@@ -624,8 +619,8 @@ class _EventEditorState extends State<_EventEditor> {
                 minLines: 2,
                 maxLines: 6,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Notizen',
+                decoration: InputDecoration(
+                  labelText: tr.commonNotes,
                   prefixIcon: Icon(AppIcons.note),
                 ),
               ),
@@ -639,7 +634,7 @@ class _EventEditorState extends State<_EventEditor> {
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     icon: const Icon(AppIcons.trash),
-                    label: const Text('Termin löschen'),
+                    label: Text(tr.eventDelete),
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),

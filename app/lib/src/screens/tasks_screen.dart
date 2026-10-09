@@ -16,13 +16,15 @@ import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 
 enum _Filter {
-  open('Offen'),
-  mine('Meine'),
-  done('Erledigt');
+  open,
+  mine,
+  done;
 
-  const _Filter(this.label);
-
-  final String label;
+  String get label => switch (this) {
+    open => tr.tasksFilterOpen,
+    mine => tr.tasksFilterMine,
+    done => tr.commonDoneCap,
+  };
 }
 
 class TasksScreen extends StatefulWidget {
@@ -66,13 +68,13 @@ class _TasksScreenState extends State<TasksScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.tasks,
-      title: 'Aufgaben',
-      subtitle: 'Gemeinsam schaffen wir das',
+      title: tr.sectionTasks,
+      subtitle: tr.tasksTogetherWeCanDo,
       actions: [
         if (canConnectLists(AppScope.of(context)))
           BubbleButton(
             icon: AppIcons.arrowsLeftRight,
-            tooltip: 'Mit anderen Apps verbinden',
+            tooltip: tr.commonConnectOtherApps,
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) =>
@@ -84,7 +86,7 @@ class _TasksScreenState extends State<TasksScreen> {
       ],
       floating: AddButton(
         color: color,
-        tooltip: 'Aufgabe mit Details anlegen',
+        tooltip: tr.tasksCreateTaskDetails,
         onPressed: () => showTaskEditor(context),
       ),
       body: DataBuilder(
@@ -108,11 +110,11 @@ class _TasksScreenState extends State<TasksScreen> {
                     focusNode: _quickAddFocus,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
-                      hintText: 'Neue Aufgabe …',
+                      hintText: tr.tasksNewTask,
                       prefixIcon: const Icon(AppIcons.plus, size: 20),
                       suffixIcon: BubbleButton(
                         icon: AppIcons.arrowUp,
-                        tooltip: 'Hinzufügen',
+                        tooltip: tr.commonAdd,
                         color: Colors.white,
                         background: color,
                         size: 38,
@@ -130,9 +132,9 @@ class _TasksScreenState extends State<TasksScreen> {
                             : AppIcons.confetti,
                         color: color,
                         text: switch (_filter) {
-                          _Filter.open => 'Nichts zu tun – genießt den Tag!',
-                          _Filter.mine => 'Dir ist gerade nichts zugewiesen.',
-                          _Filter.done => 'Noch nichts erledigt.',
+                          _Filter.open => tr.tasksNothingDoEnjoyDay,
+                          _Filter.mine => tr.tasksNothingAssignedYouRight,
+                          _Filter.done => tr.tasksNothingDoneYet,
                         },
                       )
                     : ListView(
@@ -144,7 +146,7 @@ class _TasksScreenState extends State<TasksScreen> {
                             if (title != null)
                               ListHeading(
                                 title,
-                                color: title == 'Überfällig'
+                                color: title == tr.commonOverdue
                                     ? Theme.of(context).colorScheme.error
                                     : null,
                               ),
@@ -206,10 +208,10 @@ class _TasksScreenState extends State<TasksScreen> {
           (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
     );
     return [
-      if (overdue.isNotEmpty) ('Überfällig', overdue),
-      if (dueToday.isNotEmpty) ('Heute', dueToday),
-      if (later.isNotEmpty) ('Demnächst', later),
-      if (undated.isNotEmpty) ('Ohne Datum', undated),
+      if (overdue.isNotEmpty) (tr.commonOverdue, overdue),
+      if (dueToday.isNotEmpty) (tr.commonToday, dueToday),
+      if (later.isNotEmpty) (tr.tasksComingUp, later),
+      if (undated.isNotEmpty) (tr.tasksWithoutDate, undated),
     ];
   }
 }
@@ -284,11 +286,13 @@ class _TaskTile extends StatelessWidget {
                       SnackBar(
                         persist: false,
                         content: Text(
-                          '„${task.title}“ erledigt – wieder fällig '
-                          '${DateFormat.MMMMEEEEd(appLanguage).format(next.due!)}',
+                          tr.tasksTitleDoneDueAgain(
+                            task.title,
+                            DateFormat.MMMMEEEEd(appLanguage).format(next.due!),
+                          ),
                         ),
                         action: SnackBarAction(
-                          label: 'Rückgängig',
+                          label: tr.commonUndo,
                           onPressed: () => engine.saveTask(task),
                         ),
                       ),
@@ -481,7 +485,7 @@ class _TaskEditorState extends State<_TaskEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              task == null ? 'Neue Aufgabe' : 'Aufgabe bearbeiten',
+              task == null ? tr.tasksNewTask2 : tr.tasksEditTask,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -489,7 +493,7 @@ class _TaskEditorState extends State<_TaskEditor> {
               controller: _title,
               autofocus: task == null,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Titel'),
+              decoration: InputDecoration(labelText: tr.commonTitle),
               onSubmitted: (_) => _save(),
             ),
             const SizedBox(height: 12),
@@ -498,7 +502,7 @@ class _TaskEditorState extends State<_TaskEditor> {
               minLines: 2,
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Notizen'),
+              decoration: InputDecoration(labelText: tr.commonNotes),
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -509,7 +513,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                   avatar: const Icon(AppIcons.calendarCheck, size: 18),
                   label: Text(
                     _due == null
-                        ? 'Fällig am …'
+                        ? tr.tasksDue
                         : DateFormat.MMMMEEEEd(appLanguage).format(_due!),
                   ),
                   onPressed: _pickDate,
@@ -521,8 +525,8 @@ class _TaskEditorState extends State<_TaskEditor> {
                   avatar: const Icon(AppIcons.alarm, size: 18),
                   label: Text(
                     _remindAt == null
-                        ? 'Erinnern …'
-                        : 'Erinnerung ${dateTimeLabel(_remindAt!)}',
+                        ? tr.tasksRemind
+                        : tr.tasksReminderTime(dateTimeLabel(_remindAt!)),
                   ),
                   onPressed: _pickReminder,
                   onDeleted: _remindAt == null
@@ -530,7 +534,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                       : () => setState(() => _remindAt = null),
                 ),
                 PopupMenuButton<(TaskRepeat?, int)>(
-                  tooltip: 'Wiederholen',
+                  tooltip: tr.eventRepeat,
                   initialValue: (_repeat, _repeatEvery),
                   onSelected: (v) => setState(() {
                     _repeat = v.$1;
@@ -541,7 +545,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                       PopupMenuItem(
                         value: (r, n),
                         child: Text(
-                          r == null ? 'Nicht wiederholen' : _cap(r.label(n)),
+                          r == null ? tr.tasksDoNotRepeat : _cap(r.label(n)),
                         ),
                       ),
                   ],
@@ -549,7 +553,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                     avatar: const Icon(AppIcons.repeat, size: 18),
                     label: Text(
                       _repeat == null
-                          ? 'Wiederholen …'
+                          ? tr.tasksRepeat
                           : _cap(_repeat!.label(_repeatEvery)),
                     ),
                   ),
@@ -558,8 +562,11 @@ class _TaskEditorState extends State<_TaskEditor> {
             ),
             ListHeading(
               _steps.isEmpty
-                  ? 'Checkliste'
-                  : 'Checkliste (${_steps.where((s) => s.done).length}/${_steps.length})',
+                  ? tr.tasksChecklist
+                  : tr.tasksChecklistDoneTotal(
+                      _steps.where((s) => s.done).length,
+                      _steps.length,
+                    ),
             ),
             for (final (i, step) in _steps.indexed)
               Row(
@@ -582,7 +589,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Punkt entfernen',
+                    tooltip: tr.tasksRemoveItem,
                     icon: Icon(AppIcons.x, size: 18, color: c.inkSoft),
                     onPressed: () => setState(() => _steps.removeAt(i)),
                   ),
@@ -592,23 +599,23 @@ class _TaskEditorState extends State<_TaskEditor> {
               controller: _newStep,
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Punkt hinzufügen, z. B. Sonnencreme',
+                hintText: tr.tasksAddItemEG,
                 suffixIcon: IconButton(
-                  tooltip: 'Hinzufügen',
+                  tooltip: tr.commonAdd,
                   icon: const Icon(AppIcons.plus),
                   onPressed: _addStep,
                 ),
               ),
               onSubmitted: (_) => _addStep(),
             ),
-            const ListHeading('Wer kümmert sich?'),
+            ListHeading(tr.tasksWhoTakesCare),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 ChoiceChip(
                   avatar: const Icon(AppIcons.usersThree, size: 18),
-                  label: const Text('Alle'),
+                  label: Text(tr.commonEveryone),
                   selected: _assigneeId == null,
                   selectedColor: c.tint(FamioSection.tasks),
                   onSelected: (_) => setState(() => _assigneeId = null),
@@ -629,7 +636,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                 if (task != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.error,
                     ),
@@ -644,7 +651,11 @@ class _TaskEditorState extends State<_TaskEditor> {
                     },
                   ),
                 const Spacer(),
-                ColorButton(label: 'Speichern', color: color, onPressed: _save),
+                ColorButton(
+                  label: tr.commonSave,
+                  color: color,
+                  onPressed: _save,
+                ),
               ],
             ),
           ],

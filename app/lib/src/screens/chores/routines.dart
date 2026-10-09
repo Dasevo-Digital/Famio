@@ -13,12 +13,10 @@ class _RoutinesTab extends StatelessWidget {
       return EmptyHint(
         icon: AppIcons.sunrise,
         color: c.strong(FamioSection.chores),
-        text:
-            'Routinen sind Checklisten mit Bildern, z. B. für morgens:\n'
-            'Anziehen, Frühstücken, Zähne putzen …',
+        text: tr.routinesRoutinesChecklistsPicturesE,
         action: engine.iAmAdult
             ? ColorButton(
-                label: 'Morgenroutine anlegen',
+                label: tr.routinesCreateMorningRoutine,
                 color: c.strong(FamioSection.chores),
                 icon: AppIcons.sunrise,
                 onPressed: () =>
@@ -42,7 +40,7 @@ class _RoutinesTab extends StatelessWidget {
                   final me = engine.me;
                   who = me != null && me.role != MemberRole.adult
                       ? me.id
-                      : await _pickMember(context, engine, 'Für wen?');
+                      : await _pickMember(context, engine, tr.medsWhom);
                 }
                 if (who != null && context.mounted) {
                   openRoutine(context, r, who);
@@ -62,11 +60,12 @@ class _RoutinesTab extends StatelessWidget {
                         ),
                         Text(
                           [
-                            engine.member(r.memberId)?.displayName ?? 'alle',
-                            '${r.steps.length} Schritte',
+                            engine.member(r.memberId)?.displayName ??
+                                tr.commonEveryoneLower,
+                            tr.routinesCountSteps(r.steps.length),
                             if (r.time != null) '⏰ ${r.time}',
                             if (r.points > 0) '+${r.points} ⭐',
-                            if (!r.dueOn(today)) 'heute nicht',
+                            if (!r.dueOn(today)) tr.routinesNotToday,
                           ].join(' · '),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
@@ -75,7 +74,7 @@ class _RoutinesTab extends StatelessWidget {
                   ),
                   if (engine.iAmAdult)
                     IconButton(
-                      tooltip: 'Bearbeiten',
+                      tooltip: tr.commonEdit,
                       icon: const Icon(AppIcons.pencilSimple),
                       onPressed: () => showRoutineEditor(context, routine: r),
                     ),
@@ -91,7 +90,7 @@ class _RoutinesTab extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.moonStar),
-                label: const Text('Abendroutine aus Vorlage'),
+                label: Text(tr.routinesEveningRoutineTemplate),
                 onPressed: () =>
                     showRoutineEditor(context, preset: _eveningPreset),
               ),
@@ -191,9 +190,9 @@ class RoutineRunScreen extends StatelessWidget {
             .where((r) => r.id == routineId)
             .firstOrNull;
         if (routine == null) {
-          return const SectionPage(
+          return SectionPage(
             section: FamioSection.chores,
-            title: 'Routine',
+            title: tr.commonRoutine,
             body: SizedBox.shrink(),
           );
         }
@@ -220,8 +219,8 @@ class RoutineRunScreen extends StatelessWidget {
                     color: c.tint(FamioSection.chores),
                     child: Text(
                       routine.points > 0
-                          ? 'Geschafft! 🎉 +${routine.points} Punkte'
-                          : 'Geschafft! 🎉',
+                          ? tr.routinesDonePointsPoints(routine.points)
+                          : tr.routinesDone,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
@@ -284,40 +283,40 @@ class RoutineRunScreen extends StatelessWidget {
   }
 }
 
-final _morningPreset = Routine(
+Routine get _morningPreset => Routine(
   id: '',
-  title: 'Morgenroutine',
+  title: tr.routinesMorningRoutine,
   emoji: '☀️',
   time: '07:00',
   weekdays: const {1, 2, 3, 4, 5},
   points: 2,
   steps: [
     for (final (e, t) in [
-      ('🛏️', 'Aufstehen'),
-      ('🚽', 'Toilette & Hände waschen'),
-      ('👕', 'Anziehen'),
-      ('🥣', 'Frühstücken'),
-      ('🪥', 'Zähne putzen'),
-      ('🎒', 'Tasche packen'),
+      ('🛏️', tr.routinesGetUp),
+      ('🚽', tr.routinesToiletWashHands),
+      ('👕', tr.routinesGetDressed),
+      ('🥣', tr.routinesHaveBreakfast),
+      ('🪥', tr.routinesBrushTeeth),
+      ('🎒', tr.routinesPackBag),
     ])
       RoutineStep(id: t, title: t, emoji: e),
   ],
 );
 
-final _eveningPreset = Routine(
+Routine get _eveningPreset => Routine(
   id: '',
-  title: 'Abendroutine',
+  title: tr.routinesEveningRoutine,
   emoji: '🌙',
   time: '19:00',
   points: 2,
   steps: [
     for (final (e, t) in [
-      ('🧸', 'Aufräumen'),
-      ('🛁', 'Waschen / Baden'),
-      ('👚', 'Schlafanzug anziehen'),
-      ('🪥', 'Zähne putzen'),
-      ('🎒', 'Sachen für morgen bereitlegen'),
-      ('📖', 'Vorlesen'),
+      ('🧸', tr.routinesTidyUp),
+      ('🛁', tr.routinesWashBath),
+      ('👚', tr.routinesPutPajamas),
+      ('🪥', tr.routinesBrushTeeth),
+      ('🎒', tr.routinesLayOutThingsTomorrow),
+      ('📖', tr.routinesReadAloud),
     ])
       RoutineStep(id: t, title: t, emoji: e),
   ],
