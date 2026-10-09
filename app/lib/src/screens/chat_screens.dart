@@ -103,8 +103,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     title: m.displayName,
                     leading: MemberAvatar(m, radius: 26),
                     engine: engine,
-                    selected:
-                        selected == ChatIds.direct(engine.memberId, m.id),
+                    selected: selected == ChatIds.direct(engine.memberId, m.id),
                     onTap: () => open(
                       ChatIds.direct(engine.memberId, m.id),
                       m.displayName,
@@ -876,7 +875,9 @@ class _PollView extends StatelessWidget {
                 TextButton(
                   style: TextButton.styleFrom(
                     foregroundColor: fg,
-                    visualDensity: VisualDensity.compact,
+                    // Compact padding, but a full 48 dp tap target.
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    minimumSize: const Size(48, 48),
                   ),
                   onPressed: () => engine.closePoll(message),
                   child: const Text('Beenden'),

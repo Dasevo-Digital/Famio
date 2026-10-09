@@ -381,7 +381,11 @@ class _EntryEditorState extends State<_EntryEditor> {
                               style: OutlinedButton.styleFrom(
                                 padding: EdgeInsets.zero,
                               ),
-                              child: const Icon(AppIcons.imageSquare, size: 30),
+                              // Read out by screen readers (icon only).
+                              child: const Tooltip(
+                                message: 'Foto hinzufügen',
+                                child: Icon(AppIcons.imageSquare, size: 30),
+                              ),
                             ),
                           ),
                   ],

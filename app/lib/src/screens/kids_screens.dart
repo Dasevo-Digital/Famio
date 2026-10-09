@@ -208,10 +208,9 @@ class _ChildCard extends StatelessWidget {
                   ageLabel(child),
                   style: theme.textTheme.bodyMedium?.copyWith(color: c.inkSoft),
                 ),
-                const SizedBox(height: 8),
                 Wrap(
                   spacing: 6,
-                  runSpacing: 6,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _Chip(
                       icon: AppIcons.star,
@@ -221,16 +220,24 @@ class _ChildCard extends StatelessWidget {
                     if (next != null)
                       GestureDetector(
                         onTap: () => showDueActions(context, child, next),
-                        child: _Chip(
-                          icon: next.isCheckup
-                              ? AppIcons.stethoscope
-                              : AppIcons.syringe,
-                          text: next.open
-                              ? '${next.isCheckup ? next.id : 'Impfung'} jetzt'
-                              : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
-                          color: next.open
-                              ? theme.colorScheme.error
-                              : c.inkSoft,
+                        behavior: HitTestBehavior.opaque,
+                        // The chip stays small; the finger may land around it.
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(minHeight: 48),
+                          child: Center(
+                            widthFactor: 1,
+                            child: _Chip(
+                              icon: next.isCheckup
+                                  ? AppIcons.stethoscope
+                                  : AppIcons.syringe,
+                              text: next.open
+                                  ? '${next.isCheckup ? next.id : 'Impfung'} jetzt'
+                                  : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
+                              color: next.open
+                                  ? theme.colorScheme.error
+                                  : c.inkSoft,
+                            ),
+                          ),
                         ),
                       ),
                   ],

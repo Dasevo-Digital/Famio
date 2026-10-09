@@ -1466,6 +1466,8 @@ void main() {
     await go(tester, 'Einstellungen');
     await go(tester, 'Server-Verwaltung');
     await go(tester, 'Mitglied hinzufügen');
+    // Invite or create directly.
+    await go(tester, 'Direkt anlegen');
     await tester.enterText(find.byType(TextField).first, 'Jürgen Müller');
     await tester.pumpAndSettle();
     expect(find.text('juergen.mueller'), findsOneWidget);

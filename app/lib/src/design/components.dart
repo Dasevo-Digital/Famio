@@ -152,10 +152,25 @@ class BubbleButton extends StatelessWidget {
   final Color? background;
   final double size;
 
+  /// Smaller bubbles still get a tap target of this size around them.
+  static const minTarget = 48.0;
+
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    final button = Material(
+    final small = size < minTarget;
+    final icon = SizedBox.square(
+      dimension: size,
+      child: Icon(
+        this.icon,
+        size: size * 0.48,
+        // White on a colored bubble follows the high-contrast mode.
+        color: color == Colors.white && background != null
+            ? c.onStrong
+            : color ?? c.ink,
+      ),
+    );
+    final bubble = Material(
       color: background ?? c.surface,
       shape: CircleBorder(
         side: background == null
@@ -164,22 +179,25 @@ class BubbleButton extends StatelessWidget {
       ),
       shadowColor: c.shadow,
       elevation: background == null ? 2 : 0,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onPressed,
-        child: SizedBox.square(
-          dimension: size,
-          child: Icon(
-            icon,
-            size: size * 0.48,
-            // White on a colored bubble follows the high-contrast mode.
-            color: color == Colors.white && background != null
-                ? c.onStrong
-                : color ?? c.ink,
-          ),
-        ),
-      ),
+      child: small
+          ? icon
+          : InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onPressed,
+              child: icon,
+            ),
     );
+    // A small bubble keeps its look, but the finger may hit around it.
+    final button = small
+        ? InkResponse(
+            onTap: onPressed,
+            radius: minTarget / 2,
+            child: SizedBox.square(
+              dimension: minTarget,
+              child: Center(child: bubble),
+            ),
+          )
+        : bubble;
     return tooltip == null ? button : Tooltip(message: tooltip!, child: button);
   }
 }

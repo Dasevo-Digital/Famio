@@ -350,51 +350,64 @@ class _DayCell extends StatelessWidget {
       ),
     );
 
-    return Padding(
-      padding: const EdgeInsets.all(1.5),
-      child: Material(
-        color: isSelected ? scheme.primaryContainer : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => onTap(day),
-          child: Padding(
-            padding: const EdgeInsets.all(3),
-            child: detailed
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      number,
-                      for (final o in occurrences.take(maxShown))
-                        _CellLabel(occurrence: o, engine: engine),
-                      if (occurrences.length > maxShown)
-                        Text(
-                          '+${occurrences.length - maxShown}',
-                          style: Theme.of(context).textTheme.labelSmall,
-                        ),
-                    ],
-                  )
-                : Column(
-                    children: [
-                      number,
-                      const SizedBox(height: 3),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+    // The month grid has fixed cells; its numbers grow only a little with
+    // large text (the agenda below shows everything at full size).
+    return MediaQuery.withClampedTextScaling(
+      maxScaleFactor: 1.3,
+      child: Padding(
+        padding: const EdgeInsets.all(1.5),
+        child: Material(
+          color: isSelected ? scheme.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => onTap(day),
+            child: Padding(
+              padding: const EdgeInsets.all(3),
+              child: detailed
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        number,
+                        for (final o in occurrences.take(maxShown))
+                          _CellLabel(occurrence: o, engine: engine),
+                        if (occurrences.length > maxShown)
+                          Text(
+                            '+${occurrences.length - maxShown}',
+                            style: Theme.of(context).textTheme.labelSmall,
+                          ),
+                      ],
+                    )
+                  // Squeezed cells (large text, low windows) shrink their
+                  // number and dots instead of overflowing.
+                  : FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.topCenter,
+                      child: Column(
                         children: [
-                          for (final o in occurrences.take(maxShown))
-                            Container(
-                              width: 6,
-                              height: 6,
-                              margin: const EdgeInsets.symmetric(horizontal: 1),
-                              decoration: BoxDecoration(
-                                color: eventColor(context, engine, o.event),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                          number,
+                          const SizedBox(height: 3),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              for (final o in occurrences.take(maxShown))
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 1,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: eventColor(context, engine, o.event),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+            ),
           ),
         ),
       ),

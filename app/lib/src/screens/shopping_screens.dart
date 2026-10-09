@@ -369,16 +369,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                       ? 'Hinzufügen, z. B. „Taucherbrille“'
                       : 'Artikel hinzufügen, z. B. „2 Milch“',
                   prefixIcon: const Icon(AppIcons.plus, size: 20),
-                  suffixIcon: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: BubbleButton(
-                      icon: AppIcons.arrowUp,
-                      tooltip: 'Hinzufügen',
-                      color: Colors.white,
-                      background: color,
-                      size: 38,
-                      onPressed: () => _add(engine),
-                    ),
+                  suffixIcon: BubbleButton(
+                    icon: AppIcons.arrowUp,
+                    tooltip: 'Hinzufügen',
+                    color: Colors.white,
+                    background: color,
+                    size: 38,
+                    onPressed: () => _add(engine),
                   ),
                 ),
                 onSubmitted: (_) => _add(engine),

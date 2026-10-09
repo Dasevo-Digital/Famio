@@ -109,16 +109,13 @@ class _TasksScreenState extends State<TasksScreen> {
                     decoration: InputDecoration(
                       hintText: 'Neue Aufgabe …',
                       prefixIcon: const Icon(AppIcons.plus, size: 20),
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: BubbleButton(
-                          icon: AppIcons.arrowUp,
-                          tooltip: 'Hinzufügen',
-                          color: Colors.white,
-                          background: color,
-                          size: 38,
-                          onPressed: () => _add(engine),
-                        ),
+                      suffixIcon: BubbleButton(
+                        icon: AppIcons.arrowUp,
+                        tooltip: 'Hinzufügen',
+                        color: Colors.white,
+                        background: color,
+                        size: 38,
+                        onPressed: () => _add(engine),
                       ),
                     ),
                     onSubmitted: (_) => _add(engine),

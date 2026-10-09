@@ -98,6 +98,7 @@ class TimetableView extends StatelessWidget {
                       child: _Cell(
                         timetable: t,
                         lesson: t.lesson(d, p),
+                        place: '${_days[d - 1]}, ${p + 1}. Stunde',
                         onTap: () => _editLesson(context, t, d, p),
                       ),
                     ),
@@ -224,11 +225,15 @@ class _Cell extends StatelessWidget {
   const _Cell({
     required this.timetable,
     required this.lesson,
+    required this.place,
     required this.onTap,
   });
 
   final Timetable timetable;
   final Lesson? lesson;
+
+  /// "Mo, 1. Stunde", for screen readers.
+  final String place;
   final VoidCallback onTap;
 
   @override
@@ -238,38 +243,42 @@ class _Cell extends StatelessWidget {
     final color = l == null
         ? c.surfaceSoft
         : subjectColor(timetable, l.subject);
-    return Material(
-      color: l == null ? c.surfaceSoft : color.withValues(alpha: 0.2),
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
+    return Semantics(
+      button: true,
+      label: l == null ? '$place: frei' : place,
+      child: Material(
+        color: l == null ? c.surfaceSoft : color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: SizedBox(
-          height: 52,
-          child: Center(
-            child: l == null
-                ? Icon(AppIcons.plus, size: 16, color: c.inkSoft)
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 2),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          l.subject,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.labelMedium,
-                        ),
-                        if (l.room.isNotEmpty)
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: SizedBox(
+            height: 52,
+            child: Center(
+              child: l == null
+                  ? Icon(AppIcons.plus, size: 16, color: c.inkSoft)
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 2),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
                           Text(
-                            l.room,
+                            l.subject,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall,
+                            style: Theme.of(context).textTheme.labelMedium,
                           ),
-                      ],
+                          if (l.room.isNotEmpty)
+                            Text(
+                              l.room,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
+            ),
           ),
         ),
       ),
