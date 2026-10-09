@@ -125,6 +125,7 @@ class FamioConfigFlow(ConfigFlow, domain=DOMAIN):
             self._url,
             pin=self._pin,
             cert_sha256=self._cert_sha256,
+            language=self.hass.config.language,
         )
         try:
             member = await self._client.login(

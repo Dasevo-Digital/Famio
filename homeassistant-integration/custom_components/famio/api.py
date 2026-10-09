@@ -148,8 +148,11 @@ class FamioClient:
         cert_sha256: str | None = None,
         on_certificate_renewed: Callable[[str], Awaitable[None] | None]
         | None = None,
+        language: str | None = None,
     ) -> None:
         self._session = session
+        # Home Assistant's language for the server's messages (de, en, es).
+        self.language = language
         self.url = url.rstrip("/")
         self.token = token
         self.pin = pin
@@ -185,6 +188,8 @@ class FamioClient:
         headers = {"accept": "application/json"}
         if self.token:
             headers["authorization"] = f"Bearer {self.token}"
+        if self.language:
+            headers["accept-language"] = self.language
         return headers
 
     async def request(

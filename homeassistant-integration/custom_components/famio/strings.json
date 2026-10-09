@@ -93,6 +93,12 @@
   "exceptions": {
     "no_entry": {
       "message": "Keine aktive Famio-Verbindung."
+    },
+    "delete_subscribed": {
+      "message": "Only Famio events can be deleted, not subscribed ones."
+    },
+    "delete_series": {
+      "message": "Please delete recurring events in the Famio app."
     }
   }
 }

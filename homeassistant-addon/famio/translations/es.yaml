@@ -1,0 +1,23 @@
+configuration:
+  mode:
+    name: Modo
+    description: >-
+      server – Famio funciona dentro de Home Assistant (los datos están aquí).
+      client – solo la barra lateral, conectada a tu servidor de Famio en otro
+      lugar (indica su dirección).
+  ingress_auth:
+    name: Iniciar sesión con el usuario de Home Assistant
+    description: >-
+      Solo en el modo "server": quien abre Famio en la barra lateral inicia
+      sesión con su usuario de Home Assistant.
+  server_url:
+    name: Dirección del servidor
+    description: >-
+      Solo en el modo "client": dirección de tu servidor de Famio, p. ej.
+      https://famio.example.org o https://192.168.1.20:8766
+  server_fingerprint:
+    name: Huella del certificado
+    description: >-
+      Solo para servidores de la red doméstica con certificado propio (puerto
+      8766): la huella del registro del servidor. Déjalo vacío con un
+      certificado de Let's Encrypt.

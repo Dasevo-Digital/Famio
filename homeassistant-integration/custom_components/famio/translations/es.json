@@ -1,0 +1,104 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Conectar con Famio",
+        "description": "Dirección del servidor de Famio (p. ej. 192.168.1.50 –se usa HTTPS en el puerto 8766– o https://famio.example.org) y una cuenta de Famio. Home Assistant ve lo que ve este miembro; lo mejor es crear una cuenta propia «Home Assistant». Se admite la verificación en dos pasos: el código se pide una vez.",
+        "data": {
+          "url": "Dirección del servidor",
+          "username": "Nombre de usuario",
+          "password": "Contraseña"
+        }
+      },
+      "certificate": {
+        "title": "Comprobar el certificado del servidor",
+        "description": "{url} usa su propio certificado. Compara la huella con el registro del servidor (p. ej. `journalctl -u famio` o `docker logs famio`) o con la app de Famio:\n\n`{fingerprint}`\n\nConfírmalo solo si coincide."
+      },
+      "two_factor": {
+        "title": "Verificación en dos pasos",
+        "description": "{username} inicia sesión con verificación en dos pasos. Introduce el código de 6 cifras de la app de autenticación (o un código de recuperación). Después Home Assistant mantiene la sesión: solo hará falta un código de nuevo si se cierra la sesión en Famio.",
+        "data": {
+          "code": "Código"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Volver a iniciar sesión en Famio",
+        "description": "Se cerró la sesión de {username} (p. ej. desde la app). Vuelve a introducir la contraseña.",
+        "data": {
+          "password": "Contraseña"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Servidor no accesible.",
+      "invalid_auth": "Nombre de usuario o contraseña incorrectos.",
+      "invalid_code": "El código no es correcto.",
+      "code_expired": "El inicio de sesión ha caducado. Vuelve a introducir la contraseña.",
+      "two_factor_setup": "Este miembro debe usar la verificación en dos pasos, pero aún no la ha configurado. Inicia sesión una vez con este miembro en una app de Famio, configúrala allí y vuelve a intentarlo.",
+      "invalid_cert": "El certificado del servidor no coincide con la huella confirmada.",
+      "invalid_url": "Dirección no válida.",
+      "unknown": "Error inesperado."
+    },
+    "abort": {
+      "already_configured": "Esta cuenta de Famio ya está conectada.",
+      "reauth_successful": "Sesión iniciada de nuevo."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "sos": {
+        "name": "Emergencia (SOS)"
+      }
+    },
+    "calendar": {
+      "calendar": {
+        "name": "Calendario"
+      }
+    },
+    "todo": {
+      "tasks": {
+        "name": "Tareas"
+      }
+    },
+    "sensor": {
+      "open_tasks": {
+        "name": "Tareas pendientes"
+      },
+      "my_tasks": {
+        "name": "Mis tareas"
+      },
+      "shopping": {
+        "name": "Compras pendientes"
+      },
+      "next_event": {
+        "name": "Próximo evento"
+      },
+      "points": {
+        "name": "Puntos"
+      }
+    }
+  },
+  "services": {
+    "dashboard": {
+      "name": "Crear panel",
+      "description": "Crea un panel familiar (calendario, eventos por persona, tareas y puntos, listas de la compra, mapa) en YAML. Pégalo en Ajustes → Paneles → Añadir panel → Nuevo panel → ⋮ → Editor de configuración en bruto.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Conexión de Famio",
+          "description": "Solo hace falta con varias conexiones de Famio."
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "no_entry": {
+      "message": "No hay ninguna conexión de Famio activa."
+    },
+    "delete_subscribed": {
+      "message": "Solo se pueden borrar eventos de Famio, no los suscritos."
+    },
+    "delete_series": {
+      "message": "Borra los eventos periódicos en la app de Famio."
+    }
+  }
+}

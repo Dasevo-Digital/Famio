@@ -43,6 +43,7 @@ def client_for(hass: HomeAssistant, entry: FamioConfigEntry) -> FamioClient:
         pin=entry.data.get(CONF_PIN),
         cert_sha256=entry.data.get(CONF_CERT_SHA256),
         on_certificate_renewed=renewed,
+        language=hass.config.language,
     )
 
 

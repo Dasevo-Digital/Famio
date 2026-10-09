@@ -30,6 +30,14 @@ ATTR_CONFIG_ENTRY = "config_entry_id"
 SCHEMA = vol.Schema({vol.Optional(ATTR_CONFIG_ENTRY): cv.string})
 
 
+# Titles in Home Assistant's language (English for the others).
+_TEXTS = {
+    "de": {"family": "Familie", "member": "Mitglied"},
+    "en": {"family": "Family", "member": "Member"},
+    "es": {"family": "Familia", "member": "Miembro"},
+}
+
+
 def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, Any]:
     """Lovelace configuration: family calendar, one column per member (next
     event, open tasks, points, their to-do list), shopping lists and map."""
@@ -40,6 +48,7 @@ def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, A
     def entity(domain: str, key: str) -> str | None:
         return registry.async_get_entity_id(domain, DOMAIN, f"{prefix}_{key}")
 
+    texts = _TEXTS.get(hass.config.language.split("-")[0], _TEXTS["en"])
     cards: list[dict[str, Any]] = []
     calendars = [entity("calendar", "calendar")] + [
         entity("calendar", f"member_{m['id']}_calendar") for m in data.family
@@ -66,7 +75,7 @@ def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, A
         stack: list[dict[str, Any]] = [
             {
                 "type": "heading",
-                "heading": member.get("displayName") or "Mitglied",
+                "heading": member.get("displayName") or texts["member"],
                 "icon": "mdi:account-heart",
             }
         ]
@@ -94,7 +103,7 @@ def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, A
         "title": "Famio",
         "views": [
             {
-                "title": "Familie",
+                "title": texts["family"],
                 "path": "famio",
                 "icon": "mdi:home-heart",
                 "cards": cards,

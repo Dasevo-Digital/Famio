@@ -93,6 +93,12 @@
   "exceptions": {
     "no_entry": {
       "message": "Keine aktive Famio-Verbindung."
+    },
+    "delete_subscribed": {
+      "message": "Nur Famio-Termine lassen sich löschen, keine abonnierten."
+    },
+    "delete_series": {
+      "message": "Serientermine bitte in der Famio-App löschen."
     }
   }
 }

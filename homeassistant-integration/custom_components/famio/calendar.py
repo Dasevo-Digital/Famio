@@ -17,7 +17,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .api import FamioError
-from .const import EVENTS
+from .const import DOMAIN, EVENTS
 from .coordinator import FamioConfigEntry, FamioCoordinator, parse_end, parse_start
 from .entity import FamioEntity, FamioMemberEntity
 
@@ -157,10 +157,12 @@ class FamioCalendar(FamioEntity, CalendarEntity):
         event = self.coordinator.data.collection(EVENTS).get(uid)
         if event is None:
             raise HomeAssistantError(
-                "Nur Famio-Termine lassen sich löschen, keine abonnierten."
+                translation_domain=DOMAIN, translation_key="delete_subscribed"
             )
         if event.get("recurrence"):
-            raise HomeAssistantError("Serientermine bitte in der Famio-App löschen.")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="delete_series"
+            )
         try:
             await self.coordinator.async_write(EVENTS, uid, None)
             await self.coordinator.async_request_refresh()
