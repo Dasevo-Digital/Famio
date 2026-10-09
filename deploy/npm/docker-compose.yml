@@ -4,9 +4,11 @@
 # can reach it, which is why trusting X-Forwarded-For is safe here.
 #
 #   1. Adjust FAMIO_PUBLIC_URL and the network name below.
-#   2. docker compose up -d
-#   3. docker logs famio   -> shows the setup code for the first account
-#   4. In NPM add a proxy host (see deploy/npm/README.md).
+#   2. The server runs as user 65532, not root; on Linux once:
+#      mkdir -p data keys && sudo chown -R 65532:65532 data keys
+#   3. docker compose up -d
+#   4. docker logs famio   -> shows the setup code for the first account
+#   5. In NPM add a proxy host (see deploy/npm/README.md).
 services:
   famio:
     build: ../..

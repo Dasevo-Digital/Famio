@@ -13,7 +13,11 @@ Future<void> main(List<String> args) async {
   final config = ServerConfig.load(args);
   if (config.healthcheck) exit(await _healthcheck(config.port));
   _privateFiles();
-  Directory(config.dataDir).createSync(recursive: true);
+  final keyPath = config.keyFile ?? p.join(config.dataDir, 'famio.key');
+  if (dataAccessProblem(config.dataDir, keyPath) case final problem?) {
+    stderr.writeln('FEHLER: $problem');
+    exit(77); // EX_NOPERM
+  }
   final webApp = WebApp.locate(config.webDir);
   if (config.clientMode && config.upstream == null) {
     stderr.writeln(
@@ -28,7 +32,6 @@ Future<void> main(List<String> args) async {
 
   // Encryption at rest: the key should live outside the data directory, so
   // that backups of the data alone are useless to a thief.
-  final keyPath = config.keyFile ?? p.join(config.dataDir, 'famio.key');
   final keySeparate = !p.isWithin(
     p.absolute(config.dataDir),
     p.absolute(keyPath),

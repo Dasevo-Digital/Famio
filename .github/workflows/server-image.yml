@@ -39,6 +39,8 @@ jobs:
         with:
           context: .
           platforms: ${{ matrix.platform }}
+          # The Supervisor mounts the add-on's /data as root.
+          build-args: FAMIO_UID=0
           push: true
           tags: |
             ghcr.io/${{ steps.owner.outputs.name }}/famio-${{ matrix.arch }}:${{ steps.version.outputs.version }}

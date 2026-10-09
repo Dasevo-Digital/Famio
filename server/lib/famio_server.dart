@@ -10,6 +10,7 @@ export 'src/calendar/calendar_access.dart';
 export 'src/calendar/calendar_feeds.dart';
 export 'src/calendar/calendar_importer.dart';
 export 'src/config.dart';
+export 'src/data_access.dart';
 export 'src/database.dart';
 export 'src/hub.dart';
 export 'src/files/file_store.dart';

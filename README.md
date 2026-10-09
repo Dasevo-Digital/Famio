@@ -96,7 +96,14 @@ Server-Endpunkte, nur einen Eintrag in `Collections` und ein Modell.
    bekannten Server-Revision – in einem Aufruf, seitenweise.
 3. Konflikte: pro Datensatz gewinnt die spätere Änderung (last-writer-wins).
    Die App korrigiert ihre Uhr mit der Serverzeit; der Server kappt Zeitstempel
-   aus der Zukunft.
+   aus der Zukunft. Jede Änderung nennt die Revision, auf der sie aufbaut: Hat
+   ein anderes Mitglied den Datensatz inzwischen geändert (z. B. weil ein Handy
+   offline war), hebt der Server die unterlegene Fassung in `conflicts` auf.
+   Beide sehen auf der Startseite „Änderungen haben sich überschnitten“ und
+   entscheiden – für Termine, Aufgaben, Notizen, Kontakte und Ähnliches, nicht
+   für Haken und Lesemarken. Unentschiedenes verfällt nach 60 Tagen.
+   Löschmarken hält der Server ein halbes Jahr; ein Gerät, das länger offline
+   war, lädt danach einmal alles neu.
 4. Über eine WebSocket-Verbindung (`/api/ws`) erfahren die anderen Geräte
    sofort von neuen Revisionen; zusätzlich wird jede Minute synchronisiert.
 
@@ -511,6 +518,15 @@ Home-Assistant-Seitenleiste meldet das Add-on an: als Server über den
 Home-Assistant-Benutzer, als Client (`mode: client`) mit dem Famio-Konto,
 dessen Sitzung das Add-on je Home-Assistant-Benutzer aufbewahrt.
 
+**Docker-Image ohne root:** Seit 1.0.11 läuft der Server im Image als
+Benutzer 65532. Unter Linux deshalb vor dem ersten Start – und einmalig beim
+Update von einem älteren Image, das `./data` und `./keys` als root angelegt
+hat – im Ordner der `docker-compose.yml` ausführen:
+`mkdir -p data keys && sudo chown -R 65532:65532 data keys`. Fehlt das, nennt
+der Server beim Start genau diesen Befehl und beendet sich. Mit einem
+benannten Docker-Volume statt Ordner ist nichts zu tun. Das Home-Assistant-Add-on bleibt bei root (Build-Argument
+`FAMIO_UID=0`), weil der Supervisor `/data` als root bereitstellt.
+
 Beim ersten Start ohne Konto schreibt der Server einen **Einrichtungscode**
 ins Log. Er wird bei jeder Ersteinrichtung verlangt, auch direkt im Heimnetz,
 damit kein anderes Gerät den frisch gestarteten Server übernehmen kann.
@@ -526,8 +542,12 @@ Fotos (`files.db`) nur in den 2 neuesten Ständen, damit der Platz reicht. Die
 Sicherung läuft neben dem Server, er bleibt erreichbar, und sie bricht ab,
 wenn der freie Platz nicht reicht. Die Kopien
 sind mit demselben Datenschlüssel verschlüsselt; zum Wiederherstellen werden
-also Sicherung **und** Schlüsseldatei gebraucht. In der Server-Verwaltung
-unter „Status“ stehen letzte Sicherung, Fehler und „Jetzt sichern“.
+also Sicherung **und** Schlüsseldatei gebraucht. Gleich nach dem Anlegen
+prüft der Server jede Sicherung, ohne sie zu verändern: beide Datenbanken mit
+dem Schlüssel öffnen, Integrität, Mitglieder vorhanden, jede Datei mit Inhalt,
+Vergleich mit dem aktuellen Stand (Ergebnis in `check.json` der Sicherung). In
+der Server-Verwaltung unter „Status“ stehen letzte Sicherung, Prüfergebnis,
+Fehler, „Jetzt sichern“ und „Sicherung prüfen“.
 
 Wiederherstellen (Famio vorher stoppen; die bisherigen Datenbanken werden nur
 beiseitegelegt):

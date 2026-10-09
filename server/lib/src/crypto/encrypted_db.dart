@@ -104,10 +104,17 @@ void _checkOwnerOnly(File file) {
 
 /// The key is as sensitive as the encrypted databases. Dart has no chmod API,
 /// so server platforms use the small POSIX utility and verify the result.
+/// The Docker image has no chmod; there the server's umask (077) already
+/// created the file as 0600, which the check below confirms.
 void _ensureOwnerOnly(File file) {
   if (Platform.isWindows) return;
-  final result = Process.runSync('chmod', ['600', file.path]);
-  if (result.exitCode != 0 ||
+  ProcessResult? result;
+  try {
+    result = Process.runSync('chmod', ['600', file.path]);
+  } on ProcessException {
+    result = null;
+  }
+  if ((result != null && result.exitCode != 0) ||
       (FileStat.statSync(file.path).mode & 0x1ff) != 0x180) {
     throw DataKeyException(
       'Schlüsseldatei ${file.path} muss die Rechte 0600 haben.',

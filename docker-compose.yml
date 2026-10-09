@@ -1,4 +1,7 @@
 # Standalone server (NAS, Raspberry Pi, any Docker host): docker compose up -d
+# The server runs as user 65532, not root. On Linux, before the first start
+# (and once when updating from an image before 1.0.11):
+#   mkdir -p data keys && sudo chown -R 65532:65532 data keys
 # Optional own map tiles: docker compose --profile maps up -d
 services:
   famio:

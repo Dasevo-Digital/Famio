@@ -16,9 +16,16 @@ RUN dart build cli -t bin/server.dart -o /out \
 # Distroless: glibc and CA certificates only (needed for fetching https
 # calendar subscriptions), no shell or package manager.
 FROM gcr.io/distroless/cc-debian12@sha256:e5d81ddde149641e2a9ba55be4545bc125c67de07508b03ba4c22e6eb0ded5aa
+# Runs as the unprivileged user "nonroot" (65532) of the base image. The
+# Home Assistant add-on gets /data from the Supervisor as root and is built
+# with --build-arg FAMIO_UID=0.
+ARG FAMIO_UID=65532
 COPY --from=build /out/bundle /opt/famio
-COPY --from=build /out/data /data
+# A new named volume takes over this owner, so a fresh install just works;
+# an existing ./data of a root container needs a one-time chown (README).
+COPY --from=build --chown=${FAMIO_UID}:${FAMIO_UID} /out/data /data
 ENV FAMIO_DATA_DIR=/data
+USER ${FAMIO_UID}:${FAMIO_UID}
 VOLUME /data
 EXPOSE 8765 8766
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
