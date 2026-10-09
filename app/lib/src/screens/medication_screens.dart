@@ -13,6 +13,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _collections = {
   Collections.medications,
@@ -243,7 +244,7 @@ class _MedicationCard extends StatelessWidget {
                   .map((d) => _weekdayShort[d - 1])
                   .join(', '),
             if (m.end != null)
-              'bis ${DateFormat('d.M.y', 'de').format(m.end!)}',
+              'bis ${DateFormat.yMd(appLanguage).format(m.end!)}',
           ].join(' · ');
     return SoftCard(
       onTap: () => showMedicationEditor(context, medication: m),
@@ -454,7 +455,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     final engine = AppScope.engineOf(context);
     final c = FamioColors.of(context);
     final tint = c.tint(FamioSection.health);
-    final day = DateFormat('d.M.y', 'de');
+    final day = DateFormat.yMd(appLanguage);
     final people = {
       for (final m in engine.members.where((m) => !m.isGuest)) m.displayName,
       for (final child in engine.children) child.name,

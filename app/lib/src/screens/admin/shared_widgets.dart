@@ -19,7 +19,7 @@ class DeviceTile extends StatelessWidget {
         session.current
             ? 'Dieses Gerät'
             : 'Zuletzt aktiv ${_ago(session.lastSeen)} · angemeldet '
-                  '${DateFormat('d.M.y', 'de').format(session.createdAt)}',
+                  '${DateFormat.yMd(appLanguage).format(session.createdAt)}',
       ),
       trailing: onSignOut == null
           ? null

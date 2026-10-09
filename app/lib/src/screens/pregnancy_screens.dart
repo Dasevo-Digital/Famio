@@ -15,10 +15,12 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import 'contacts_screens.dart';
 import 'kids_screens.dart';
+import '../format.dart';
+import '../l10n.dart';
 
 const _color = Color(0xFFB45BD6);
-final _date = DateFormat('d. MMM y', 'de');
-final _short = DateFormat('d.M.', 'de');
+final _date = DateFormat.yMMMd(appLanguage);
+final _short = DateFormat.Md(appLanguage);
 
 /// Card at the top of the children's list.
 class PregnancyCard extends StatelessWidget {
@@ -49,21 +51,23 @@ class PregnancyCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  p.name.isEmpty ? 'Schwangerschaft' : p.name,
+                  p.name.isEmpty ? tr.commonPregnancy : p.name,
                   style: theme.textTheme.headlineSmall,
                 ),
                 Text(
-                  'SSW ${weekLabel(p)} · '
-                  '${left > 0
-                      ? 'noch $left Tage'
-                      : left == 0
-                      ? 'heute ist ET'
-                      : '${-left} Tage über ET'}',
+                  tr.pregnancyWeekWeekLeft(
+                    weekLabel(p),
+                    left > 0
+                        ? tr.commonDaysLeft(left)
+                        : left == 0
+                        ? tr.pregnancyDueDateToday
+                        : tr.pregnancyDaysDaysPastDue(-left),
+                  ),
                   style: theme.textTheme.bodyMedium,
                 ),
                 if (week != null)
                   Text(
-                    'So groß wie ${week.like}',
+                    tr.pregnancyBigLike(week.like),
                     style: theme.textTheme.bodySmall,
                   ),
                 const SizedBox(height: 8),
@@ -87,14 +91,17 @@ class PregnancyCard extends StatelessWidget {
 }
 
 enum _Tab {
-  week('Woche'),
-  tasks('Termine'),
-  lists('Checklisten'),
-  contractions('Wehen');
+  week,
+  tasks,
+  lists,
+  contractions;
 
-  const _Tab(this.label);
-
-  final String label;
+  String get label => switch (this) {
+    week => tr.commonWeek,
+    tasks => tr.commonEvents,
+    lists => tr.pregnancyChecklists,
+    contractions => tr.pregnancyContractions,
+  };
 }
 
 class PregnancyScreen extends StatefulWidget {
@@ -116,9 +123,9 @@ class _PregnancyScreenState extends State<PregnancyScreen> {
       builder: (context, engine) {
         final p = engine.pregnancy(widget.pregnancyId);
         if (p == null) {
-          return const SectionPage(
+          return SectionPage(
             section: FamioSection.kids,
-            title: 'Schwangerschaft',
+            title: tr.commonPregnancy,
             body: SizedBox.shrink(),
           );
         }
@@ -127,12 +134,15 @@ class _PregnancyScreenState extends State<PregnancyScreen> {
         final tab = _tab ?? (w >= 36 ? _Tab.contractions : _Tab.week);
         return SectionPage(
           section: FamioSection.kids,
-          title: p.name.isEmpty ? 'Schwangerschaft' : p.name,
-          subtitle: 'SSW ${weekLabel(p)} · ET ${_date.format(p.dueDate)}',
+          title: p.name.isEmpty ? tr.commonPregnancy : p.name,
+          subtitle: tr.pregnancyWeekWeekDueDate(
+            weekLabel(p),
+            _date.format(p.dueDate),
+          ),
           actions: [
             BubbleButton(
               icon: AppIcons.pencilSimple,
-              tooltip: 'Bearbeiten',
+              tooltip: tr.commonEdit,
               onPressed: () => showPregnancyEditor(context, existing: p),
             ),
           ],
@@ -188,21 +198,33 @@ class _WeekView extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('SSW $w+$d', style: theme.textTheme.displaySmall),
               Text(
-                '${w + 1}. Schwangerschaftswoche · ${trimester(p)}. Drittel · '
-                '${left > 0 ? 'noch $left Tage' : 'ET erreicht'}',
+                tr.pregnancyWeekWD(w, d),
+                style: theme.textTheme.displaySmall,
+              ),
+              Text(
+                tr.pregnancyWeekWeekPregnancyTrimester(
+                  w + 1,
+                  trimester(p),
+                  left > 0
+                      ? tr.commonDaysLeft(left)
+                      : tr.pregnancyDueDateReached,
+                ),
               ),
               if (week != null) ...[
                 const SizedBox(height: 16),
                 Text(
-                  'Euer Baby ist ungefähr so groß wie ${week.like}',
+                  tr.pregnancyBabyAboutBigLike(week.like),
                   style: theme.textTheme.titleMedium,
                 ),
                 if (week.weightG > 0)
                   Text(
-                    'etwa ${week.lengthCm.toStringAsFixed(week.lengthCm < 10 ? 1 : 0).replaceAll('.', ',')} cm · '
-                    '${week.weightG >= 1000 ? '${(week.weightG / 1000).toStringAsFixed(1).replaceAll('.', ',')} kg' : '${week.weightG} g'}',
+                    tr.pregnancyAboutLengthCmWeight(
+                      decimal(week.lengthCm, week.lengthCm < 10 ? 1 : 0),
+                      week.weightG >= 1000
+                          ? tr.pregnancyWeightKg(decimal(week.weightG / 1000))
+                          : '${week.weightG} g',
+                    ),
                     style: theme.textTheme.bodySmall,
                   ),
                 const SizedBox(height: 8),
@@ -224,11 +246,13 @@ class _WeekView extends StatelessWidget {
           children: [
             Chip(
               avatar: const Icon(AppIcons.calendarBlank, size: 16),
-              label: Text('Mutterschutz ab ${_date.format(maternityLeave(p))}'),
+              label: Text(
+                tr.pregnancyMaternityLeaveDate(_date.format(maternityLeave(p))),
+              ),
             ),
             Chip(
               avatar: const Icon(AppIcons.star, size: 16),
-              label: Text('ET ${_date.format(p.dueDate)}'),
+              label: Text(tr.pregnancyDueDate(_date.format(p.dueDate))),
             ),
           ],
         ),
@@ -237,7 +261,7 @@ class _WeekView extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: ColorButton(
-              label: 'Baby ist da!',
+              label: tr.pregnancyBabyHere,
               icon: AppIcons.baby,
               color: _color,
               onPressed: () => _babyArrived(context, p),
@@ -245,8 +269,7 @@ class _WeekView extends StatelessWidget {
           ),
         const SizedBox(height: 12),
         Text(
-          'Größenangaben sind Durchschnittswerte. Maßgeblich sind Hebamme, '
-          'Frauenarzt und Mutterpass.',
+          tr.pregnancySizesAveragesWhatCounts,
           style: theme.textTheme.bodySmall,
         ),
       ],
@@ -268,10 +291,10 @@ class _TaskCard extends StatelessWidget {
     final state = taskState(p, t);
     final done = state == DueState.done;
     final (label, color) = switch (state) {
-      DueState.done => ('erledigt', const Color(0xFF2A9D6E)),
-      DueState.due => ('jetzt', theme.colorScheme.error),
-      DueState.late => ('überfällig', const Color(0xFFE8703A)),
-      _ => ('demnächst', FamioColors.of(context).inkSoft),
+      DueState.done => (tr.commonDoneLower, const Color(0xFF2A9D6E)),
+      DueState.due => (tr.pregnancyNow, theme.colorScheme.error),
+      DueState.late => (tr.pregnancyOverdue, const Color(0xFFE8703A)),
+      _ => (tr.pregnancySoon, FamioColors.of(context).inkSoft),
     };
     return SoftCard(
       padding: const EdgeInsets.fromLTRB(8, 10, 16, 10),
@@ -294,9 +317,12 @@ class _TaskCard extends StatelessWidget {
               children: [
                 Text(t.title, style: theme.textTheme.titleMedium),
                 Text(
-                  'SSW ${t.fromWeek}–${t.toWeek} · '
-                  '${_short.format(p.dayOf(t.fromWeek))} – '
-                  '${_short.format(p.dayOf(t.toWeek, 6))}',
+                  tr.pregnancyWeekFromweekToweek(
+                    t.fromWeek,
+                    t.toWeek,
+                    _short.format(p.dayOf(t.fromWeek)),
+                    _short.format(p.dayOf(t.toWeek, 6)),
+                  ),
                   style: theme.textTheme.bodySmall,
                 ),
                 Text(t.info, style: theme.textTheme.bodySmall),
@@ -324,8 +350,7 @@ class _TasksView extends StatelessWidget {
     padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
     children: [
       Text(
-        'Dazu kommen die regelmäßigen Vorsorgen: bis SSW 32 alle 4 Wochen, '
-        'danach alle 2 Wochen.',
+        tr.pregnancyAdditionThereRegularCheckups,
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 12),
@@ -360,8 +385,10 @@ class _ChecklistsView extends StatelessWidget {
                 initiallyExpanded: list.id == 'bag',
                 title: Text(list.title),
                 subtitle: Text(
-                  '${list.items.where((i) => p.done.contains(i.id)).length} '
-                  'von ${list.items.length}',
+                  tr.pregnancyDoneTotal(
+                    list.items.where((i) => p.done.contains(i.id)).length,
+                    list.items.length,
+                  ),
                 ),
                 children: [
                   for (final item in list.items)
@@ -460,7 +487,9 @@ class _ContractionsViewState extends State<_ContractionsView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  running ? 'Wehe vorbei' : 'Wehe beginnt',
+                  running
+                      ? tr.pregnancyContractionOver
+                      : tr.pregnancyContractionStarts,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                   ),
@@ -482,22 +511,24 @@ class _ContractionsViewState extends State<_ContractionsView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Letzte Stunde', style: theme.textTheme.titleMedium),
+              Text(tr.pregnancyLastHour, style: theme.textTheme.titleMedium),
               Text(
-                '${stats.count} Wehen'
-                '${stats.length == null ? '' : ' · je ${_mmss(stats.length!)} min'}'
-                '${stats.interval == null ? '' : ' · alle ${_mmss(stats.interval!)} min'}',
+                tr.pregnancyCountContractionsLengthInterval(
+                  stats.count,
+                  stats.length == null
+                      ? ''
+                      : tr.pregnancyTimeMinEach(_mmss(stats.length!)),
+                  stats.interval == null
+                      ? ''
+                      : tr.pregnancyEveryTimeMin(_mmss(stats.interval!)),
+                ),
                 style: theme.textTheme.bodyLarge,
               ),
               const SizedBox(height: 8),
               Text(
                 call
-                    ? 'Wehen alle 5 Minuten seit einer Stunde: jetzt Klinik '
-                          'oder Hebamme anrufen.'
-                    : 'Faustregel: alle 5 Minuten, je etwa 1 Minute, seit '
-                          'einer Stunde → Klinik oder Hebamme anrufen. '
-                          'Sofort bei Blasensprung, Blutung, starken '
-                          'Schmerzen oder weniger Kindsbewegungen.',
+                    ? tr.pregnancyContractionsEvery5Minutes
+                    : tr.pregnancyRuleThumbEvery5,
                 style: theme.textTheme.bodySmall?.copyWith(
                   fontWeight: call ? FontWeight.w800 : null,
                 ),
@@ -512,33 +543,35 @@ class _ContractionsViewState extends State<_ContractionsView> {
         if (contacts.isEmpty)
           TextButton.icon(
             icon: const Icon(AppIcons.plus, size: 18),
-            label: const Text('Hebamme oder Klinik als Kontakt anlegen'),
+            label: Text(tr.pregnancyAddMidwifeHospitalContact),
             onPressed: () =>
                 showContactEditor(context, role: ContactRole.midwife),
           ),
         if (list.isNotEmpty) ...[
-          const ListHeading('Verlauf'),
+          ListHeading(tr.pregnancyHistory),
           for (var i = list.length - 1; i >= 0 && i >= list.length - 20; i--)
             ListTile(
               dense: true,
               leading: Text(
-                DateFormat('HH:mm:ss').format(list[i].start),
+                DateFormat.jms(appLanguage).format(list[i].start),
                 style: theme.textTheme.labelLarge,
               ),
               title: Text(
                 list[i].length == null
-                    ? 'läuft'
-                    : 'Dauer ${_mmss(list[i].length!)}',
+                    ? tr.pregnancyRunning
+                    : tr.pregnancyLengthTime(_mmss(list[i].length!)),
               ),
               trailing: i == 0
                   ? null
                   : Text(
-                      'Abstand ${_mmss(list[i].start.difference(list[i - 1].start))}',
+                      tr.pregnancyIntervalTime(
+                        _mmss(list[i].start.difference(list[i - 1].start)),
+                      ),
                     ),
             ),
           TextButton(
             onPressed: () => engine.savePregnancy(p.copyWith(contractions: [])),
-            child: const Text('Verlauf leeren'),
+            child: Text(tr.pregnancyClearHistory),
           ),
         ],
       ],
@@ -556,7 +589,7 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
         scrollable: true,
-        title: const Text('Herzlichen Glückwunsch! 🎉'),
+        title: Text(tr.pregnancyCongratulations),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -565,12 +598,12 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
               controller: name,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: tr.commonName),
             ),
             const SizedBox(height: 12),
             InputChip(
               avatar: const Icon(AppIcons.cake, size: 18),
-              label: Text('Geboren am ${_date.format(born)}'),
+              label: Text(tr.pregnancyBornDate(_date.format(born))),
               onPressed: () async {
                 final picked = await showDatePicker(
                   context: context,
@@ -586,8 +619,8 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
               spacing: 8,
               children: [
                 for (final (v, l) in [
-                  (ChildSex.female, 'Mädchen'),
-                  (ChildSex.male, 'Junge'),
+                  (ChildSex.female, tr.pregnancyGirl),
+                  (ChildSex.male, tr.pregnancyBoy),
                 ])
                   ChoiceChip(
                     label: Text(l),
@@ -601,11 +634,11 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Kind anlegen'),
+            child: Text(tr.pregnancyAddChild),
           ),
         ],
       ),
@@ -663,9 +696,9 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
 
   void _save() {
     if (_due == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte den errechneten Termin angeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.pregnancyPleaseEnterDueDate)));
       return;
     }
     final engine = AppScope.engineOf(context);
@@ -685,15 +718,15 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: const Text('Schwangerschaft entfernen?'),
+        title: Text(tr.pregnancyRemovePregnancy),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            child: const Text('Entfernen'),
+            child: Text(tr.commonRemove),
           ),
         ],
       ),
@@ -709,9 +742,9 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
     final now = DateTime.now();
     return SectionPage(
       section: FamioSection.kids,
-      title: widget.existing == null ? 'Schwangerschaft' : 'Bearbeiten',
+      title: widget.existing == null ? tr.commonPregnancy : tr.commonEdit,
       actions: [
-        ColorButton(label: 'Speichern', color: _color, onPressed: _save),
+        ColorButton(label: tr.commonSave, color: _color, onPressed: _save),
       ],
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
@@ -719,12 +752,12 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
           TextField(
             controller: _name,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(
-              labelText: 'Name oder Spitzname (optional)',
-              hintText: 'z. B. Krümel',
+            decoration: InputDecoration(
+              labelText: tr.pregnancyNameNicknameOptional,
+              hintText: tr.pregnancyEGPeanut,
             ),
           ),
-          const ListHeading('Errechneter Termin (ET)'),
+          ListHeading(tr.pregnancyDueDate2),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -732,7 +765,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
               InputChip(
                 avatar: const Icon(AppIcons.calendarBlank, size: 18),
                 label: Text(
-                  _due == null ? 'Datum wählen' : _date.format(_due!),
+                  _due == null ? tr.commonPickDate : _date.format(_due!),
                 ),
                 onPressed: () async {
                   final picked = await showDatePicker(
@@ -746,11 +779,11 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
               ),
               ActionChip(
                 avatar: const Icon(AppIcons.calendarDot, size: 18),
-                label: const Text('Aus letzter Periode berechnen'),
+                label: Text(tr.pregnancyCalculateLastPeriod),
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    helpText: 'Erster Tag der letzten Periode',
+                    helpText: tr.pregnancyFirstDayLastPeriod,
                     initialDate: now.subtract(const Duration(days: 56)),
                     firstDate: now.subtract(const Duration(days: 300)),
                     lastDate: now,
@@ -772,11 +805,13 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
             Padding(
               padding: const EdgeInsets.only(top: 6, left: 4),
               child: Text(
-                'Heute: SSW ${weekLabel(Pregnancy(id: '', dueDate: _due!))}',
+                tr.pregnancyTodayWeekWeek(
+                  weekLabel(Pregnancy(id: '', dueDate: _due!)),
+                ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),
-          const ListHeading('Wer ist schwanger?'),
+          ListHeading(tr.pregnancyWhoPregnant),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -791,7 +826,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
                 ),
             ],
           ),
-          const ListHeading('Wer sieht es?'),
+          ListHeading(tr.commonWhoSeesIt),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -810,8 +845,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Nur sie sehen die Schwangerschaft und werden an Termine '
-              'erinnert – gut, wenn es noch eine Überraschung ist.',
+              tr.pregnancyOnlyTheySeePregnancy,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -821,7 +855,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.trash, size: 18),
-                label: const Text('Entfernen'),
+                label: Text(tr.commonRemove),
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),

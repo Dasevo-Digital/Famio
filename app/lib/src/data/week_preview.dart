@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 import 'package:intl/intl.dart';
 
 import 'family_data.dart';
+import '../l10n.dart';
 
 /// Sunday evening's look at the coming week for one member: their
 /// appointments, the lifts they drive, birthdays and holidays.
@@ -23,8 +24,8 @@ class WeekPreview {
 WeekPreview? buildWeekPreview(SyncEngine engine, DateTime monday) {
   final end = DateTime(monday.year, monday.month, monday.day + 7);
   final me = engine.memberId;
-  final day = DateFormat('E', 'de');
-  final time = DateFormat.Hm('de');
+  final day = DateFormat.E(appLanguage);
+  final time = DateFormat.jm(appLanguage);
   final items = [
     for (final o in engine.occurrences(monday, end))
       if (!o.start.isBefore(monday) &&

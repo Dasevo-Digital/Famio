@@ -50,9 +50,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Konto'), findsOneWidget);
 
+    // A new language rebuilds the app; it starts on the home page again.
     await state.setLanguage('en');
     await tester.pumpAndSettle();
     expect(find.text('Tasks'), findsWidgets);
+    await tester.tap(find.text('Settings').first);
+    await tester.pumpAndSettle();
     expect(find.text('Account'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('Language'),

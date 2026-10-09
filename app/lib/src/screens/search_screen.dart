@@ -19,6 +19,7 @@ import 'medication_screens.dart';
 import 'pantry_screens.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
+import '../l10n.dart';
 
 /// Searches everything on this device: events, tasks, shopping, recipes,
 /// documents, contacts, chat, pantry and medications.
@@ -123,7 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
       hidden: state.hiddenModules,
     ).toSet();
     final hits = searchFamily(engine, _query.text, sections: sections);
-    final day = DateFormat('d. MMM y', 'de');
+    final day = DateFormat.yMMMd(appLanguage);
     return SectionPage(
       section: FamioSection.home,
       title: 'Suchen',

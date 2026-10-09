@@ -76,7 +76,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     )) {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Schulferien ${state.label} sind schon abonniert'),
+          content: Text(tr.adminSchoolHolidaysStateAlready(state.label)),
         ),
       );
       return;
@@ -84,17 +84,14 @@ class _SettingsFormState extends State<_SettingsForm> {
     engine.saveCalendarSubscription(
       CalendarSubscription(
         id: newId(),
-        name: 'Schulferien ${state.label}',
+        name: tr.adminSchoolHolidaysState(state.label),
         url: state.schoolHolidaysUrl,
         color: 0xFF5B8DEF,
       ),
     );
     messenger.showSnackBar(
       SnackBar(
-        content: Text(
-          'Schulferien ${state.label} abonniert – sie erscheinen nach dem '
-          'nächsten Abgleich im Kalender.',
-        ),
+        content: Text(tr.adminSchoolHolidaysStateSubscribed(state.label)),
       ),
     );
   }
@@ -126,9 +123,9 @@ class _SettingsFormState extends State<_SettingsForm> {
             'holidayRegion': _region?.code,
           });
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Servereinstellungen gespeichert')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.adminServerSettingsSaved)));
       widget.onSaved(fresh);
     } on ApiError catch (e) {
       setState(() => _error = e.message);
@@ -150,7 +147,7 @@ class _SettingsFormState extends State<_SettingsForm> {
       builder: (context) => StatefulBuilder(
         builder: (context, setDialog) => AlertDialog(
           scrollable: true,
-          title: const Text('Bereiche'),
+          title: Text(tr.adminAreas),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -158,15 +155,14 @@ class _SettingsFormState extends State<_SettingsForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Was die Familie nicht nutzt, verschwindet aus Menü und '
-                  'Startseite – in allen Apps. Die Daten bleiben erhalten.',
+                  tr.adminWhatFamilyDoesNot,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 for (final s in optional)
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     secondary: Icon(s.icon),
-                    title: Text(s.label),
+                    title: Text(s.title(context)),
                     value: !hidden.contains(s.name),
                     onChanged: (on) => setDialog(
                       () => on ? hidden.remove(s.name) : hidden.add(s.name),
@@ -176,11 +172,8 @@ class _SettingsFormState extends State<_SettingsForm> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   secondary: const Icon(AppIcons.arrowsLeftRight),
-                  title: const Text('Listen-Anbindungen'),
-                  subtitle: const Text(
-                    'Mitglieder dürfen Aufgaben und Einkaufslisten mit '
-                    'Bring! und Microsoft To Do abgleichen.',
-                  ),
+                  title: Text(tr.adminListConnections),
+                  subtitle: Text(tr.adminMembersMaySyncTasks),
                   value: !hidden.contains(ServerSettings.listSyncModule),
                   onChanged: (on) => setDialog(
                     () => on
@@ -194,11 +187,11 @@ class _SettingsFormState extends State<_SettingsForm> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
+              child: Text(tr.commonSave),
             ),
           ],
         ),
@@ -213,7 +206,7 @@ class _SettingsFormState extends State<_SettingsForm> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Bereiche gespeichert')));
+      ).showSnackBar(SnackBar(content: Text(tr.adminAreasSaved)));
       widget.onSaved(fresh);
     } on ApiError catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -230,14 +223,10 @@ class _SettingsFormState extends State<_SettingsForm> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Eltern-Code',
+        title: tr.adminParentsCode,
         controllers: [code, repeat],
         fields: [
-          const Text(
-            'Mit diesem Code können Eltern die Standortfreigabe eines '
-            'Familienmitglieds pausieren oder auf einem Handy beenden. '
-            'Kindern nicht verraten.',
-          ),
+          Text(tr.adminCodeParentsCanPause),
           PasswordReveal(
             builder: (_, obscure, toggle) => TextField(
               controller: code,
@@ -246,7 +235,7 @@ class _SettingsFormState extends State<_SettingsForm> {
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Neuer Code (mind. 4 Zeichen)',
+                labelText: tr.adminNewCodeLeast4,
               ),
             ),
           ),
@@ -257,18 +246,14 @@ class _SettingsFormState extends State<_SettingsForm> {
               contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Code wiederholen',
+                labelText: tr.adminRepeatCode,
               ),
             ),
           ),
         ],
         onSubmit: () async {
           if (code.text != repeat.text) {
-            throw const ApiError(
-              0,
-              'mismatch',
-              'Die Codes stimmen nicht überein',
-            );
+            throw ApiError(0, 'mismatch', tr.adminCodesDoNotMatch);
           }
           await api.setLocationCode(code.text);
           saved = true;
@@ -283,21 +268,16 @@ class _SettingsFormState extends State<_SettingsForm> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Einstellungen zurücksetzen?'),
-        content: const Text(
-          'Öffentliche Adresse, Zeitzone, maximale Dateigröße und '
-          'Kartenserver gelten wieder so, wie sie in der Server-Konfiguration '
-          '(Umgebungsvariablen bzw. Add-on-Optionen) stehen. Daten, '
-          'Mitglieder und der Eltern-Code bleiben unverändert.',
-        ),
+        title: Text(tr.adminResetSettings),
+        content: Text(tr.adminPublicAddressTimeZone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Zurücksetzen'),
+            child: Text(tr.commonReset),
           ),
         ],
       ),
@@ -313,7 +293,7 @@ class _SettingsFormState extends State<_SettingsForm> {
         context,
       ).engine!.api.resetServerSettings();
       messenger.showSnackBar(
-        const SnackBar(content: Text('Einstellungen auf Standard gesetzt')),
+        SnackBar(content: Text(tr.adminSettingsResetDefault)),
       );
       widget.onSaved(fresh);
     } on ApiError catch (e) {
@@ -335,25 +315,19 @@ class _SettingsFormState extends State<_SettingsForm> {
       builder: (context) {
         final c = FamioColors.of(context);
         return FormDialog(
-          title: 'Alle Daten löschen?',
-          submitLabel: 'Endgültig löschen',
+          title: tr.adminDeleteAllData,
+          submitLabel: tr.adminDeletePermanently,
           controllers: [password, confirm],
           fields: [
             Text(
-              'Gelöscht werden alle Termine, Chats, Listen, Aufgaben, Ämter, '
-              'Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, '
-              'verbundene Kalender und Kalender-Links – auf dem Server und '
-              'beim nächsten Abgleich auf allen Geräten. Das lässt sich nicht '
-              'rückgängig machen; vorher eine Sicherung des Datenordners '
-              'anlegen.\n\nErhalten bleiben die Konten, Server-Einstellungen '
-              'und das HTTPS-Zertifikat.',
+              tr.adminDeletesAllEventsChats,
               style: TextStyle(color: c.inkSoft),
             ),
             StatefulBuilder(
               builder: (context, setState) => CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Auch alle anderen Mitglieder entfernen'),
-                subtitle: const Text('Nur dein Konto bleibt bestehen'),
+                title: Text(tr.adminAlsoRemoveAllOther),
+                subtitle: Text(tr.adminOnlyAccountRemains),
                 value: removeMembers,
                 onChanged: (v) => setState(() => removeMembers = v ?? false),
               ),
@@ -365,10 +339,8 @@ class _SettingsFormState extends State<_SettingsForm> {
                 contextMenuBuilder: PasswordReveal.contextMenu,
                 decoration: InputDecoration(
                   suffixIcon: toggle,
-                  labelText: 'Dein Passwort',
-                  helperText:
-                      'Leer lassen, wenn du dich nur über Home Assistant '
-                      'anmeldest.',
+                  labelText: tr.commonYourPassword,
+                  helperText: tr.adminLeaveEmptyIfYou,
                   helperMaxLines: 2,
                 ),
               ),
@@ -377,17 +349,15 @@ class _SettingsFormState extends State<_SettingsForm> {
               controller: confirm,
               autocorrect: false,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(
-                labelText: 'Zur Bestätigung LÖSCHEN eingeben',
-              ),
+              decoration: InputDecoration(labelText: tr.adminTypeDeleteConfirm),
             ),
           ],
           onSubmit: () async {
-            if (confirm.text.trim().toUpperCase() != 'LÖSCHEN') {
-              throw const ApiError(
+            if (confirm.text.trim().toUpperCase() != tr.adminWipeWord) {
+              throw ApiError(
                 0,
                 'confirmation_required',
-                'Bitte zur Bestätigung LÖSCHEN eingeben',
+                tr.adminPleaseTypeDeleteConfirm,
               );
             }
             result = await engine.api.wipeServerData(
@@ -407,8 +377,11 @@ class _SettingsFormState extends State<_SettingsForm> {
     messenger.showSnackBar(
       SnackBar(
         content: Text(
-          'Gelöscht: ${done.records} Einträge, ${done.files} Dateien'
-          '${done.members > 0 ? ', ${done.members} Mitglieder' : ''}',
+          tr.adminDeletedRecordsEntriesFiles(
+            done.records,
+            done.files,
+            done.members > 0 ? tr.adminMembersMembers(done.members) : '',
+          ),
         ),
       ),
     );
@@ -420,7 +393,7 @@ class _SettingsFormState extends State<_SettingsForm> {
     final o = widget.overview;
     final c = FamioColors.of(context);
     final accent = c.strong(FamioSection.settings);
-    String hint(String? v) => 'Standard: ${v ?? '–'}';
+    String hint(String? v) => tr.adminDefaultValue(v ?? '–');
     return Align(
       alignment: Alignment.topLeft,
       child: ConstrainedBox(
@@ -429,27 +402,25 @@ class _SettingsFormState extends State<_SettingsForm> {
           padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
           children: [
             Text(
-              'Änderungen gelten sofort für alle Geräte. Leere Felder nutzen den '
-              'Standard aus der Server-Konfiguration (Umgebungsvariablen bzw. '
-              'Add-on-Optionen).',
+              tr.adminChangesApplyImmediatelyAll,
               style: TextStyle(color: c.inkSoft),
             ),
-            ListHeading('Erreichbarkeit', color: accent),
+            ListHeading(tr.adminReachability, color: accent),
             TextField(
               controller: _publicUrl,
               keyboardType: TextInputType.url,
               autocorrect: false,
               decoration: InputDecoration(
-                labelText: 'Öffentliche Adresse',
+                labelText: tr.adminPublicAddress,
                 hintText: 'https://famio.example.org',
-                helperText:
-                    '${hint(o.defaults.publicUrl)}. Für Kalender-Abos (Google, '
-                    'iCloud) über den Reverse-Proxy.',
+                helperText: tr.adminHintCalendarSubscriptionsGoogle(
+                  hint(o.defaults.publicUrl),
+                ),
                 helperMaxLines: 3,
                 prefixIcon: const Icon(AppIcons.globe),
               ),
             ),
-            ListHeading('Familie', color: accent),
+            ListHeading(tr.settingsFamily, color: accent),
             Autocomplete<String>(
               initialValue: TextEditingValue(text: _zone),
               optionsBuilder: (value) {
@@ -464,11 +435,11 @@ class _SettingsFormState extends State<_SettingsForm> {
                     focusNode: focus,
                     onChanged: (v) => _zone = v,
                     decoration: InputDecoration(
-                      labelText: 'Zeitzone',
+                      labelText: tr.adminTimeZone,
                       hintText: 'Europe/Berlin',
-                      helperText:
-                          '${hint(o.defaults.timeZone)}. Für Kalender-Feeds und '
-                          'importierte Termine.',
+                      helperText: tr.adminHintCalendarFeedsImported(
+                        hint(o.defaults.timeZone),
+                      ),
                       helperMaxLines: 2,
                       prefixIcon: const Icon(AppIcons.clock),
                     ),
@@ -477,15 +448,15 @@ class _SettingsFormState extends State<_SettingsForm> {
             const SizedBox(height: 16),
             DropdownButtonFormField<GermanState?>(
               initialValue: _region,
-              decoration: const InputDecoration(
-                labelText: 'Bundesland',
-                helperText: 'Für die gesetzlichen Feiertage im Kalender',
+              decoration: InputDecoration(
+                labelText: tr.adminFederalState,
+                helperText: tr.adminPublicHolidaysCalendar,
                 prefixIcon: Icon(AppIcons.calendarBlank),
               ),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: null,
-                  child: Text('Keine Feiertage'),
+                  child: Text(tr.adminNoPublicHolidays),
                 ),
                 for (final s in GermanState.values)
                   DropdownMenuItem(value: s, child: Text(s.label)),
@@ -497,7 +468,9 @@ class _SettingsFormState extends State<_SettingsForm> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   icon: const Icon(AppIcons.cloudArrowDown, size: 18),
-                  label: Text('Schulferien ${_region!.label} abonnieren'),
+                  label: Text(
+                    tr.adminSubscribeSchoolHolidaysRegion(_region!.label),
+                  ),
                   onPressed: () => _subscribeSchoolHolidays(_region!),
                 ),
               ),
@@ -506,17 +479,17 @@ class _SettingsFormState extends State<_SettingsForm> {
               controller: _upload,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
-                labelText: 'Maximale Dateigröße (MB)',
-                helperText:
-                    '${hint('${o.defaults.maxUploadMb ?? 100} MB')}. Bei NPM auch '
-                    'client_max_body_size anpassen.',
+                labelText: tr.adminMaximumFileSizeMb,
+                helperText: tr.adminHintNpmAlsoAdjust(
+                  hint('${o.defaults.maxUploadMb ?? 100} MB'),
+                ),
                 helperMaxLines: 2,
                 prefixIcon: const Icon(AppIcons.upload),
               ),
             ),
             const SizedBox(height: 16),
             Text(
-              'Kartenanbieter',
+              tr.adminMapProvider,
               style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 6),
@@ -528,8 +501,8 @@ class _SettingsFormState extends State<_SettingsForm> {
                   ChoiceChip(
                     label: Text(switch (provider) {
                       MapTileProvider.openStreetMap => 'OpenStreetMap',
-                      MapTileProvider.martin => 'Eigener Martin-Server',
-                      MapTileProvider.custom => 'Eigene XYZ-Adresse',
+                      MapTileProvider.martin => tr.adminOwnMartinServer,
+                      MapTileProvider.custom => tr.adminOwnXyzAddress,
                     }),
                     selected: _mapProvider == provider,
                     onSelected: (_) => setState(() => _mapProvider = provider),
@@ -537,11 +510,9 @@ class _SettingsFormState extends State<_SettingsForm> {
               ],
             ),
             if (_mapProvider == MapTileProvider.openStreetMap)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 8),
-                child: Text(
-                  'Sofort nutzbar. Der öffentliche Dienst sieht den geladenen Kartenausschnitt.',
-                ),
+                child: Text(tr.adminReadyUsePublicService),
               )
             else ...[
               const SizedBox(height: 12),
@@ -551,13 +522,13 @@ class _SettingsFormState extends State<_SettingsForm> {
                 autocorrect: false,
                 decoration: InputDecoration(
                   labelText: _mapProvider == MapTileProvider.martin
-                      ? 'Martin-Kacheladresse'
-                      : 'XYZ-Kacheladresse',
+                      ? tr.adminMartinTileAddress
+                      : tr.adminXyzTileAddress,
                   hintText:
                       'https://karten.example.org/tiles/basemap/{z}/{x}/{y}',
                   helperText: _mapProvider == MapTileProvider.martin
-                      ? 'Martin stellt eigene PMTiles/MBTiles bereit. Docker: docker compose --profile maps up -d; danach die HTTPS-Adresse hier eintragen.'
-                      : 'HTTPS-Adresse mit {z}, {x} und {y}.',
+                      ? tr.adminMartinServesOwnPmtiles
+                      : tr.adminHttpsAddressWith('{z}, {x}, {y}'),
                   helperMaxLines: 3,
                   prefixIcon: const Icon(AppIcons.map),
                 ),
@@ -570,10 +541,9 @@ class _SettingsFormState extends State<_SettingsForm> {
               decoration: InputDecoration(
                 labelText: 'Standortverlauf (Tage)',
                 hintText: '7',
-                helperText:
-                    '${hint('${o.defaults.locationHistoryDays ?? 7} Tage')}. '
-                    'Alte, präzise Punkte und Ortsmeldungen werden automatisch '
-                    'gelöscht; der aktuelle Standort bleibt sichtbar.',
+                helperText: tr.adminHintOldPrecisePoints(
+                  hint(tr.commonDaysCount(o.defaults.locationHistoryDays ?? 7)),
+                ),
                 helperMaxLines: 3,
                 prefixIcon: const Icon(AppIcons.mapPin),
               ),
@@ -581,22 +551,16 @@ class _SettingsFormState extends State<_SettingsForm> {
             const SizedBox(height: 16),
             DropdownButtonFormField<TwoFactorPolicy?>(
               initialValue: _policy,
-              decoration: const InputDecoration(
-                labelText: 'Zwei-Faktor-Anmeldung verlangen',
-                helperText:
-                    'Betroffene richten beim nächsten Öffnen der App eine '
-                    'Authenticator-App ein; Single Sign-On zählt auch. Für '
-                    'Home Assistant ein eigenes Mitglied ohne Pflicht nutzen.',
+              decoration: InputDecoration(
+                labelText: tr.adminRequireTwoFactorSign,
+                helperText: tr.adminThoseAffectedSetUp,
                 helperMaxLines: 3,
                 prefixIcon: Icon(AppIcons.shieldCheck),
               ),
               items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('Nicht verlangt'),
-                ),
+                DropdownMenuItem(value: null, child: Text(tr.adminNotRequired)),
                 for (final p in TwoFactorPolicy.values)
-                  DropdownMenuItem(value: p, child: Text('Für ${p.label}')),
+                  DropdownMenuItem(value: p, child: Text(tr.adminWho(p.label))),
               ],
               onChanged: (p) => setState(() => _policy = p),
             ),
@@ -608,115 +572,112 @@ class _SettingsFormState extends State<_SettingsForm> {
             Align(
               alignment: Alignment.centerLeft,
               child: ColorButton(
-                label: 'Speichern',
+                label: tr.commonSave,
                 icon: AppIcons.check,
                 color: accent,
                 onPressed: _busy ? null : _save,
               ),
             ),
-            ListHeading('Anmeldung', color: accent),
+            ListHeading(tr.adminSign, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(AppIcons.logIn),
               title: const Text('Single Sign-On (OpenID Connect)'),
-              subtitle: const Text(
-                'Anmelden mit Authentik, Keycloak, Authelia, Google, Microsoft …',
-              ),
+              subtitle: Text(tr.adminSignAuthentikKeycloakAuthelia),
               trailing: TextButton(
                 onPressed: _busy ? null : () => showSsoDialog(context),
-                child: const Text('Einrichten'),
+                child: Text(tr.commonSetUp),
               ),
             ),
-            ListHeading('Bereiche', color: accent),
+            ListHeading(tr.adminAreas, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(AppIcons.dotsThreeCircle),
-              title: const Text('Bereiche ein- und ausblenden'),
+              title: Text(tr.adminShowHideAreas),
               subtitle: Text(
                 (o.settings.hiddenModules ?? const []).isEmpty
-                    ? 'Alle Bereiche sind sichtbar'
-                    : 'Ausgeblendet: ${[for (final s in FamioSection.values)
-                        if (o.settings.hiddenModules!.contains(s.name)) s.label, if (o.settings.hiddenModules!.contains(ServerSettings.listSyncModule)) 'Listen-Anbindungen'].join(', ')}',
+                    ? tr.adminAllAreasVisible
+                    : tr.adminHiddenAreas(
+                        [
+                          for (final s in FamioSection.values)
+                            if (o.settings.hiddenModules!.contains(s.name))
+                              s.title(context),
+                          if (o.settings.hiddenModules!.contains(
+                            ServerSettings.listSyncModule,
+                          ))
+                            tr.adminListConnections,
+                        ].join(', '),
+                      ),
               ),
               trailing: TextButton(
                 onPressed: _busy ? null : _editModules,
-                child: const Text('Ändern'),
+                child: Text(tr.commonChange),
               ),
             ),
-            ListHeading('Standort', color: accent),
+            ListHeading(tr.sectionLocation, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(AppIcons.lockKey),
-              title: const Text('Eltern-Code'),
+              title: Text(tr.adminParentsCode),
               subtitle: Text(
                 o.locationCodeSet
-                    ? 'Festgelegt. Nötig, um eine Standortfreigabe zu '
-                          'pausieren oder zu beenden.'
-                    : 'Noch nicht festgelegt – ohne Code kann niemand die '
-                          'Standortfreigabe pausieren.',
+                    ? tr.adminSetNeededPauseEnd
+                    : tr.adminNotSetYetWithout,
               ),
               trailing: TextButton(
                 onPressed: _busy ? null : _setCode,
-                child: Text(o.locationCodeSet ? 'Ändern' : 'Festlegen'),
+                child: Text(o.locationCodeSet ? tr.commonChange : tr.adminSet),
               ),
             ),
-            ListHeading('Nur auf dem Server änderbar', color: accent),
+            ListHeading(tr.adminOnlyChangeableServer, color: accent),
             _InfoRow(
               icon: AppIcons.shield,
-              label: 'Reverse-Proxy vertrauen',
-              value: o.trustProxy ? 'an' : 'aus',
-              note: 'FAMIO_TRUST_PROXY – aus Sicherheitsgründen nicht per App',
+              label: tr.adminTrustReverseProxy,
+              value: o.trustProxy ? tr.commonOn : tr.commonOff,
+              note: tr.adminFamioTrustProxyNot,
             ),
             _InfoRow(
               icon: AppIcons.house,
-              label: 'Home-Assistant-Anmeldung',
-              value: o.ingressAuth ? 'an' : 'aus',
-              note: 'Add-on-Option ingress_auth',
+              label: tr.adminHomeAssistantSign,
+              value: o.ingressAuth ? tr.commonOn : tr.commonOff,
+              note: tr.adminAddOptionIngressAuth,
             ),
-            ListHeading('Export', color: accent),
+            ListHeading(tr.commonExport, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(AppIcons.cloudArrowDown),
-              title: const Text('Familie exportieren'),
-              subtitle: const Text(
-                'Alle Daten und Dateien als ZIP, z. B. für einen Umzug',
-              ),
+              title: Text(tr.adminExportFamily),
+              subtitle: Text(tr.adminAllDataFilesZip),
               trailing: TextButton(
                 onPressed: _busy
                     ? null
                     : () => exportData(context, family: true),
-                child: const Text('Exportieren'),
+                child: Text(tr.adminExport),
               ),
             ),
-            ListHeading('Zurücksetzen', color: c.danger),
+            ListHeading(tr.commonReset, color: c.danger),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(AppIcons.arrowsClockwise),
-              title: const Text('Einstellungen auf Standard'),
-              subtitle: const Text(
-                'Adresse, Zeitzone, Dateigröße und Kartenserver wieder aus der '
-                'Server-Konfiguration nehmen. Daten und Eltern-Code bleiben.',
-              ),
+              title: Text(tr.adminSettingsDefault),
+              subtitle: Text(tr.adminTakeAddressTimeZone),
               trailing: TextButton(
                 onPressed: _busy ? null : _resetSettings,
-                child: const Text('Zurücksetzen'),
+                child: Text(tr.commonReset),
               ),
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: Icon(AppIcons.trash, color: c.danger),
               title: Text(
-                'Alle Daten löschen',
+                tr.adminDeleteAllData2,
                 style: TextStyle(color: c.danger),
               ),
-              subtitle: const Text(
-                'Termine, Chat, Listen, Dokumente, Fotos und alles Weitere '
-                'endgültig löschen – auf dem Server und allen Geräten.',
-              ),
+              subtitle: Text(tr.adminDeleteEventsChatLists),
               trailing: TextButton(
                 style: TextButton.styleFrom(foregroundColor: c.danger),
                 onPressed: _busy ? null : _wipe,
-                child: const Text('Löschen …'),
+                child: Text(tr.commonDeleteEllipsis),
               ),
             ),
           ],

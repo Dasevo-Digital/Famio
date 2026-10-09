@@ -54,7 +54,7 @@ void main() {
         ),
       );
     final (title, lines) = widgetLines(engine, now);
-    expect(title, 'Famio · Mo. 28.9.');
+    expect(title, 'Famio · Mo., 28.9.');
     expect(lines, [
       '17:30 Fußballtraining',
       '🍽 Pizza',

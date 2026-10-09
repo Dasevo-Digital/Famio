@@ -15,6 +15,7 @@ import '../widgets/sync_status_icon.dart';
 import 'calendar_connect_screen.dart';
 import 'event_editor.dart';
 import 'event_import_screen.dart';
+import '../l10n.dart';
 
 /// Month grid plus the agenda of the selected day; side by side when wide.
 class CalendarScreen extends StatefulWidget {
@@ -49,7 +50,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return SectionPage(
       section: FamioSection.calendar,
       title: 'Kalender',
-      subtitle: DateFormat('EEEE, d. MMMM', 'de').format(_selected),
+      subtitle: DateFormat.MMMMEEEEd(appLanguage).format(_selected),
       actions: [
         BubbleButton(
           icon: AppIcons.scanBarcode,
@@ -211,7 +212,9 @@ class _MonthGrid extends StatelessWidget {
     final start = _CalendarScreenState._gridStart(month);
     final weekdays = [
       for (var i = 0; i < 7; i++)
-        DateFormat.E('de').format(DateTime(2024, 1, 1 + i)), // 1.1.24 = Mo
+        DateFormat.E(
+          appLanguage,
+        ).format(DateTime(2024, 1, 1 + i)), // 1.1.24 = Mo
     ];
 
     return GestureDetector(
@@ -232,7 +235,7 @@ class _MonthGrid extends StatelessWidget {
                 ),
                 Expanded(
                   child: Text(
-                    DateFormat.yMMMM('de').format(month),
+                    DateFormat.yMMMM(appLanguage).format(month),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.titleMedium,
                   ),
@@ -464,7 +467,7 @@ class _DayAgenda extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
-            DateFormat('EEEE, d. MMMM', 'de').format(day),
+            DateFormat.MMMMEEEEd(appLanguage).format(day),
             style: theme.textTheme.titleMedium,
           ),
         ),

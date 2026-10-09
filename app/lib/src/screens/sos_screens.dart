@@ -18,6 +18,7 @@ import '../sos/sos_controller.dart';
 import '../sos/sos_device.dart';
 import '../widgets/data_builder.dart';
 import 'location_screens.dart' show tileLayer;
+import '../l10n.dart';
 
 const _sosRed = Color(0xFFD32F2F);
 
@@ -60,11 +61,7 @@ class _SosHoldButtonState extends State<SosHoldButton>
     if (tap && short) {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(
-          const SnackBar(
-            content: Text('Für einen Notruf 3 Sekunden gedrückt halten'),
-          ),
-        );
+        ..showSnackBar(SnackBar(content: Text(tr.sosHold3SecondsEmergency)));
     }
   }
 
@@ -79,7 +76,7 @@ class _SosHoldButtonState extends State<SosHoldButton>
     final size = widget.large ? 168.0 : 56.0;
     return Semantics(
       button: true,
-      label: 'Notfallknopf, drei Sekunden gedrückt halten',
+      label: tr.sosEmergencyButtonHoldThree,
       // Raw pointer events: no other gesture (scrolling, a card's long
       // press) can take the hold away; moving the finger cancels it.
       child: Listener(
@@ -167,9 +164,9 @@ Future<void> showCheckIn(BuildContext context) async {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Check-in', style: Theme.of(context).textTheme.titleLarge),
+          Text(tr.sosCheckIn, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 4),
-          const Text('Deine Eltern bekommen die Nachricht mit deinem Ort.'),
+          Text(tr.sosParentsGetMessageLocation),
           const SizedBox(height: 12),
           for (final text in LocationAlert.checkInTexts)
             Padding(
@@ -183,9 +180,9 @@ Future<void> showCheckIn(BuildContext context) async {
             controller: own,
             maxLength: 80,
             decoration: InputDecoration(
-              hintText: 'Oder eigener Text …',
+              hintText: tr.sosOwnText,
               suffixIcon: IconButton(
-                tooltip: 'Senden',
+                tooltip: tr.commonSend,
                 icon: const Icon(AppIcons.paperPlaneRight),
                 onPressed: () => Navigator.pop(context, own.text.trim()),
               ),
@@ -208,8 +205,8 @@ Future<void> showCheckIn(BuildContext context) async {
       SnackBar(
         content: Text(
           fix == null
-              ? 'Check-in gesendet (ohne Ort)'
-              : 'Check-in mit deinem Ort gesendet',
+              ? tr.sosCheckSentWithoutLocation
+              : tr.sosCheckSentLocation,
         ),
       ),
     );
@@ -233,12 +230,12 @@ class RecentCheckIns extends StatelessWidget {
             .toList()
           ..sort((a, b) => b.at.compareTo(a.at));
     if (checkIns.isEmpty) return const SizedBox.shrink();
-    final time = DateFormat('HH:mm');
+    final time = DateFormat.jm(appLanguage);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ListHeading(
-          'Check-ins',
+          tr.sosCheckIns,
           color: FamioColors.of(context).strong(FamioSection.location),
         ),
         for (final a in checkIns.take(5))
@@ -246,13 +243,15 @@ class RecentCheckIns extends StatelessWidget {
             contentPadding: const EdgeInsets.symmetric(horizontal: 4),
             leading: const Icon(AppIcons.mapPin),
             title: Text(
-              a.text(engine.member(a.memberId)?.displayName ?? 'Jemand'),
+              a.text(
+                engine.member(a.memberId)?.displayName ?? tr.commonSomeone,
+              ),
             ),
-            subtitle: Text('${time.format(a.at)} Uhr'),
+            subtitle: Text(tr.commonClock(time.format(a.at))),
             trailing: a.latitude == null
                 ? null
                 : IconButton(
-                    tooltip: 'In Karten-App öffnen',
+                    tooltip: tr.sosOpenInMaps,
                     icon: const Icon(AppIcons.arrowSquareOut),
                     onPressed: () => launchUrl(
                       Uri.parse(
@@ -285,16 +284,13 @@ class SosCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Notfall?', style: theme.textTheme.titleLarge),
+                Text(tr.sosEmergency, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 6),
-                const Text(
-                  'Halte den roten Knopf 3 Sekunden lang. Deine Eltern '
-                  'bekommen sofort einen Alarm und sehen, wo du bist.',
-                ),
+                Text(tr.sosHoldRedButton3),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.mapPin, size: 18),
-                  label: const Text('Check-in: „Alles ok“'),
+                  label: Text(tr.sosCheckAllOkay),
                   onPressed: () => showCheckIn(context),
                 ),
               ],
@@ -363,7 +359,7 @@ class _SosCountdownState extends State<_SosCountdown> {
             children: [
               const Spacer(),
               Text(
-                'Notruf in',
+                tr.sosEmergencyCall,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.headlineSmall?.copyWith(
                   color: Colors.white,
@@ -381,12 +377,12 @@ class _SosCountdownState extends State<_SosCountdown> {
               const Spacer(),
               _BigButton(
                 icon: AppIcons.siren,
-                label: 'Sofort auslösen',
+                label: tr.sosTriggerNow,
                 onPressed: () => Navigator.of(context).pop(true),
               ),
               _BigButton(
                 icon: AppIcons.x,
-                label: 'Abbrechen',
+                label: tr.commonCancel,
                 onPressed: () => Navigator.of(context).pop(false),
               ),
             ],
@@ -475,26 +471,19 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
               ? engine.member(alert!.comingBy)?.displayName
               : null;
           final (title, text) = switch (_c.step) {
-            SosStep.starting => ('Alarm wird gesendet …', 'Einen Moment.'),
+            SosStep.starting => (tr.sosSendingAlarm, tr.sosOneMoment),
             SosStep.sent when coming != null => (
               '$coming kommt!',
-              '$coming hat deinen Alarm gesehen und ist unterwegs.',
+              tr.sosNameHasSeenAlarm(coming),
             ),
-            SosStep.sent => (
-              'Alarm gesendet',
-              'Deine Familie wurde alarmiert und sieht, wo du bist.',
-            ),
+            SosStep.sent => (tr.sosAlarmSent, tr.sosFamilyWasAlertedSees),
             SosStep.offline => (
-              'Kein Internet',
+              tr.sosNoInternet,
               _c.smsSent
-                  ? 'Deine Eltern haben eine SMS mit deinem Standort '
-                        'bekommen.'
-                  : 'Der Alarm konnte nicht gesendet werden. Ruf an!',
+                  ? tr.sosParentsGotTextMessage
+                  : tr.sosAlarmCouldNotSent,
             ),
-            SosStep.failed => (
-              'Alarm nicht gesendet',
-              'Der Server hat den Alarm nicht angenommen. Ruf an!',
-            ),
+            SosStep.failed => (tr.sosAlarmNotSent, tr.sosServerDidNotAccept),
           };
           return Scaffold(
             backgroundColor: coming != null ? const Color(0xFF2E7D32) : _sosRed,
@@ -531,30 +520,30 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
                     if (_c.callNumber != null)
                       _BigButton(
                         icon: AppIcons.phoneCall,
-                        label: 'Anrufen',
+                        label: tr.commonCall,
                         onPressed: () => SosDevice.call(_c.callNumber!),
                       ),
                     if (_c.sirenOn)
                       _BigButton(
                         icon: AppIcons.bellOff,
-                        label: 'Sirene aus',
+                        label: tr.sosSirenOff,
                         onPressed: () => _c.siren(false),
                       )
                     else
                       _BigButton(
                         icon: AppIcons.siren,
-                        label: 'Sirene an',
+                        label: tr.sosSiren,
                         onPressed: () => _c.siren(true),
                       ),
                     _BigButton(
                       icon: AppIcons.shieldCheck,
-                      label: 'Ich bin sicher – Alarm beenden',
+                      label: tr.sosIAmSafeEnd,
                       onPressed: _resolve,
                     ),
                     TextButton(
                       onPressed: () => Navigator.of(context).pop(),
-                      child: const Text(
-                        'Zurück zu Famio (Alarm läuft weiter)',
+                      child: Text(
+                        tr.sosBackFamioAlarmKeeps,
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -630,15 +619,23 @@ class SosBanner extends StatelessWidget {
                     leading: const Icon(AppIcons.siren),
                     title: Text(
                       a.memberId == engine.memberId
-                          ? 'Dein Notruf läuft'
-                          : 'SOS von ${engine.member(a.memberId)?.displayName ?? 'Jemand'}',
+                          ? tr.sosEmergencyCallRunning
+                          : tr.sosFrom(
+                              engine.member(a.memberId)?.displayName ??
+                                  tr.commonSomeone,
+                            ),
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                     subtitle: Text(
                       [
-                        'seit ${DateFormat('HH:mm').format(a.startedAt)} Uhr',
+                        tr.sosSinceTime(
+                          DateFormat.jm(appLanguage).format(a.startedAt),
+                        ),
                         if (a.state == SosState.coming)
-                          '${engine.member(a.comingBy)?.displayName ?? 'Jemand'} kommt',
+                          tr.sosNameComing(
+                            engine.member(a.comingBy)?.displayName ??
+                                tr.commonSomeone,
+                          ),
                       ].join(' · '),
                     ),
                     trailing: const Icon(AppIcons.caretRight),
@@ -676,14 +673,14 @@ class SosAlertScreen extends StatelessWidget {
       builder: (context, engine) {
         final record = engine.record(Collections.sosAlerts, alertId);
         if (record == null) {
-          return const Scaffold(body: Center(child: Text('Nicht gefunden')));
+          return Scaffold(body: Center(child: Text(tr.sosNotFound)));
         }
         final a = SosAlert.fromRecord(record);
-        final name = engine.member(a.memberId)?.displayName ?? 'Jemand';
+        final name = engine.member(a.memberId)?.displayName ?? tr.commonSomeone;
         final phone = SosSettings.fromRecord(
           engine.record(Collections.sosSettings, SosSettings.recordId),
         ).phones[a.memberId];
-        final time = DateFormat('HH:mm');
+        final time = DateFormat.jm(appLanguage);
         final messenger = ScaffoldMessenger.of(context);
         Future<void> run(Future<void> Function() action) async {
           try {
@@ -698,27 +695,33 @@ class SosAlertScreen extends StatelessWidget {
           appBar: AppBar(
             backgroundColor: a.open ? _sosRed : null,
             foregroundColor: a.open ? Colors.white : null,
-            title: Text('SOS von $name'),
+            title: Text(tr.sosFrom(name)),
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
               Text(switch (a.state) {
-                SosState.active => 'Noch niemand hat reagiert.',
-                SosState.coming =>
-                  '${engine.member(a.comingBy)?.displayName ?? 'Jemand'} ist unterwegs.',
-                SosState.resolved =>
-                  'Beendet um ${time.format(a.resolvedAt ?? a.startedAt)} Uhr '
-                      'von ${engine.member(a.resolvedBy)?.displayName ?? 'jemandem'}.',
+                SosState.active => tr.sosNobodyHasReactedYet,
+                SosState.coming => tr.sosNameWay(
+                  engine.member(a.comingBy)?.displayName ?? tr.commonSomeone,
+                ),
+                SosState.resolved => tr.sosEndedTimeName(
+                  time.format(a.resolvedAt ?? a.startedAt),
+                  engine.member(a.resolvedBy)?.displayName ?? tr.sosSomeone,
+                ),
               }, style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 4),
               Text(
                 [
-                  'Ausgelöst um ${time.format(a.startedAt)} Uhr',
+                  tr.sosTriggeredTime(time.format(a.startedAt)),
                   if (a.positionAt != null)
-                    'Standort von ${time.format(a.positionAt!)} Uhr'
-                        '${a.accuracy == null ? '' : ' (± ${a.accuracy!.round()} m)'}',
-                  if (a.battery != null) 'Akku ${a.battery} %',
+                    tr.sosLocationTimeAccuracy(
+                      time.format(a.positionAt!),
+                      a.accuracy == null
+                          ? ''
+                          : tr.sosMetersM(a.accuracy!.round()),
+                    ),
+                  if (a.battery != null) tr.sosBatteryBattery(a.battery!),
                 ].join(' · '),
               ),
               const SizedBox(height: 12),
@@ -765,7 +768,7 @@ class SosAlertScreen extends StatelessWidget {
                   ),
                 )
               else
-                const SoftCard(child: Text('Der Standort ist noch unbekannt.')),
+                SoftCard(child: Text(tr.sosLocationStillUnknown)),
               const SizedBox(height: 16),
               if (a.open && a.state == SosState.active)
                 FilledButton.icon(
@@ -774,14 +777,14 @@ class SosAlertScreen extends StatelessWidget {
                     minimumSize: const Size.fromHeight(52),
                   ),
                   icon: const Icon(AppIcons.check),
-                  label: const Text('Ich komme'),
+                  label: Text(tr.sosIMComing),
                   onPressed: () => run(() => engine.api.sosComing(a.id)),
                 ),
               if (phone != null) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.phoneCall),
-                  label: Text('$name anrufen'),
+                  label: Text(tr.commonCallName(name)),
                   onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
                 ),
               ],
@@ -789,7 +792,7 @@ class SosAlertScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.mapPin),
-                  label: const Text('In Karten-App öffnen'),
+                  label: Text(tr.sosOpenInMaps),
                   onPressed: () =>
                       launchUrl(
                         Uri.parse(
@@ -807,7 +810,7 @@ class SosAlertScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => run(() => engine.api.sosResolve(a.id)),
-                  child: const Text('Notfall beenden'),
+                  child: Text(tr.sosEndEmergency),
                 ),
               ],
             ],
@@ -842,9 +845,9 @@ class _ReachabilityState extends State<_Reachability> {
         final reach = snapshot.data;
         if (reach == null) {
           return snapshot.hasError
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.all(12),
-                  child: Text('Nur mit Verbindung zum Server sichtbar.'),
+                  child: Text(tr.sosOnlyVisibleConnectionServer),
                 )
               : const LinearProgressIndicator();
         }
@@ -862,12 +865,10 @@ class _ReachabilityState extends State<_Reachability> {
                     r.reachable
                         ? [
                             if (r.ownPush != null)
-                              'Famio-Benachrichtigungen aktiv',
-                            if (r.ntfy > 0) 'über ntfy',
+                              tr.sosFamioNotificationsActive,
+                            if (r.ntfy > 0) tr.sosThroughNtfy,
                           ].join(' · ')
-                        : 'Empfängt keine Alarme – auf dem Handy unter '
-                              'Einstellungen → Benachrichtigungen „Direkt '
-                              'über Famio“ einschalten (iPhone: ntfy).',
+                        : tr.sosReceivesNoAlarmsPhone,
                   ),
                 ),
           ],
@@ -907,56 +908,42 @@ class SosSettingsScreen extends StatelessWidget {
         final accent = FamioColors.of(context).strong(FamioSection.settings);
         return SectionPage(
           section: FamioSection.settings,
-          title: 'Notfallknopf',
-          subtitle: 'SOS-Alarm an die Eltern',
+          title: tr.settingsSos,
+          subtitle: tr.sosSosAlarmParents,
           maxBodyWidth: 720,
           body: ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
-              const SoftCard(
-                child: Text(
-                  'Auf der Startseite (für Kinder groß) gibt es einen roten '
-                  'SOS-Knopf. 3 Sekunden gedrückt halten: Alle Erwachsenen '
-                  'bekommen einen lauten Alarm – auch in der Ruhezeit – und '
-                  'sehen den Standort, eine halbe Stunde lang laufend. '
-                  'Mit „Ich komme“ sieht das Kind, dass Hilfe unterwegs ist.',
-                ),
-              ),
+              SoftCard(child: Text(tr.sosStartPageBigKids)),
               if (!mayEdit)
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Nur Erwachsene können das ändern.'),
+                  child: Text(tr.sosOnlyAdultsCanChange),
                 ),
               SwitchListTile(
                 secondary: const Icon(AppIcons.siren),
-                title: const Text('Sirene am Handy'),
-                subtitle: const Text(
-                  'Lauter Ton, auch bei Lautlos (iPhone: solange Famio offen '
-                  'ist). Aus: stiller Alarm.',
-                ),
+                title: Text(tr.sosSirenPhone),
+                subtitle: Text(tr.sosLoudSoundEvenWhen),
                 value: s.siren,
                 onChanged: mayEdit ? (v) => save(s.copyWith(siren: v)) : null,
               ),
               SwitchListTile(
                 secondary: const Icon(AppIcons.chatsCircle),
-                title: const Text('SMS ohne Internet (Android)'),
-                subtitle: const Text(
-                  'Ist das Handy offline, geht eine SMS mit dem Standort an '
-                  'die Eltern.',
-                ),
+                title: Text(tr.sosTextMessageWithoutInternet),
+                subtitle: Text(tr.sosIfPhoneOfflineText),
                 value: s.sms,
                 onChanged: mayEdit ? (v) => save(s.copyWith(sms: v)) : null,
               ),
               if (mayEdit) ...[
-                ListHeading('Wer bekommt Alarme?', color: accent),
+                ListHeading(tr.sosWhoGetsAlarms, color: accent),
                 _Reachability(members: others),
               ],
-              ListHeading('Telefonnummern', color: accent),
+              ListHeading(tr.sosPhoneNumbers, color: accent),
               for (final m in others)
                 ListTile(
                   leading: const Icon(AppIcons.phone),
                   title: Text(m.displayName),
-                  subtitle: Text(s.phones[m.id] ?? 'keine Nummer'),
+                  subtitle: Text(s.phones[m.id] ?? tr.sosNoNumber),
                   trailing: mayEdit ? const Icon(AppIcons.pencilSimple) : null,
                   onTap: !mayEdit
                       ? null
@@ -977,7 +964,7 @@ class SosSettingsScreen extends StatelessWidget {
                           );
                         },
                 ),
-              ListHeading('Wen ruft der Knopf an?', color: accent),
+              ListHeading(tr.sosWhomDoesButtonCall, color: accent),
               for (final m in others)
                 ListTile(
                   title: Text(m.displayName),
@@ -997,7 +984,12 @@ class SosSettingsScreen extends StatelessWidget {
                       DropdownMenuItem(
                         value: '',
                         child: Text(
-                          'Elternteil (${engine.member(s.callMember(m.id, adults))?.displayName ?? 'keiner mit Nummer'})',
+                          tr.sosParentName(
+                            engine
+                                    .member(s.callMember(m.id, adults))
+                                    ?.displayName ??
+                                tr.sosNobodyNumber,
+                          ),
                         ),
                       ),
                       for (final a in adults)
@@ -1006,13 +998,13 @@ class SosSettingsScreen extends StatelessWidget {
                             value: a.id,
                             child: Text(a.displayName),
                           ),
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: SosSettings.emergency,
-                        child: Text('Notruf 112'),
+                        child: Text(tr.sosEmergency112),
                       ),
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: SosSettings.none,
-                        child: Text('Nicht anrufen'),
+                        child: Text(tr.sosDoNotCall),
                       ),
                     ],
                   ),
@@ -1033,21 +1025,21 @@ class SosSettingsScreen extends StatelessWidget {
     return showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Nummer von $name'),
+        title: Text(tr.sosNumberName(name)),
         content: TextField(
           controller: controller,
           autofocus: true,
           keyboardType: TextInputType.phone,
-          decoration: const InputDecoration(hintText: 'z. B. 0170 1234567'),
+          decoration: InputDecoration(hintText: tr.sosEG01701234567),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Speichern'),
+            child: Text(tr.commonSave),
           ),
         ],
       ),

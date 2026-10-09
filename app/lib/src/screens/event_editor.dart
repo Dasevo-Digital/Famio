@@ -12,6 +12,7 @@ import '../widgets/event_comments.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
 import 'list_templates.dart';
+import '../l10n.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
 /// [occurrence] (which may be one appearance of a series).
@@ -370,7 +371,7 @@ class _EventEditorState extends State<_EventEditor> {
   Widget build(BuildContext context) {
     final engine = AppScope.engineOf(context);
     final theme = Theme.of(context);
-    final dateFormat = DateFormat('E, d. MMM y', 'de');
+    final dateFormat = DateFormat.yMMMEd(appLanguage);
     final reminders = _allDay ? _allDayReminders : _timedReminders;
 
     Widget dateRow(

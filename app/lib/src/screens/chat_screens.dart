@@ -14,6 +14,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
+import '../l10n.dart';
 
 const _chatCollections = {
   Collections.chatMessages,
@@ -223,7 +224,7 @@ class _ChatTile extends StatelessWidget {
 
 String _shortTime(DateTime t) => DateUtils.isSameDay(t, DateTime.now())
     ? timeLabel(t)
-    : DateFormat('d.M.', 'de').format(t);
+    : DateFormat.Md(appLanguage).format(t);
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.chatId, required this.title});

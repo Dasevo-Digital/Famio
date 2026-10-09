@@ -9,17 +9,19 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/password_reveal.dart';
+import '../l10n.dart';
 
 /// Asks for the code of the authenticator app – or a recovery code.
 /// Returns null if cancelled. [error] is shown above the field (e.g. after
 /// a wrong code).
 Future<String?> askTwoFactorCode(
   BuildContext context, {
-  String title = 'Bestätigungscode',
+  String? title,
   String? error,
 }) => showDialog<String>(
   context: context,
-  builder: (context) => _CodeDialog(title: title, error: error),
+  builder: (context) =>
+      _CodeDialog(title: title ?? tr.securityConfirmationCode, error: error),
 );
 
 class _CodeDialog extends StatefulWidget {
@@ -60,10 +62,8 @@ class _CodeDialogState extends State<_CodeDialog> {
           children: [
             Text(
               _recovery
-                  ? 'Einen deiner Wiederherstellungscodes eingeben. Jeder Code '
-                        'funktioniert nur einmal.'
-                  : 'Den 6-stelligen Code aus deiner Authenticator-App '
-                        'eingeben.',
+                  ? tr.securityEnterOneRecoveryCodes
+                  : tr.securityEnter6DigitCode,
               style: TextStyle(color: c.inkSoft),
             ),
             if (widget.error != null) ...[
@@ -84,7 +84,7 @@ class _CodeDialogState extends State<_CodeDialog> {
                   : const [AutofillHints.oneTimeCode],
               maxLength: _recovery ? 12 : 6,
               decoration: InputDecoration(
-                labelText: _recovery ? 'Wiederherstellungscode' : 'Code',
+                labelText: _recovery ? tr.securityRecoveryCode : tr.commonCode,
                 hintText: _recovery ? 'abcde-12345' : '123456',
                 prefixIcon: const Icon(AppIcons.key),
                 counterText: '',
@@ -100,8 +100,8 @@ class _CodeDialogState extends State<_CodeDialog> {
                 }),
                 child: Text(
                   _recovery
-                      ? 'Code aus der App verwenden'
-                      : 'Handy nicht zur Hand? Wiederherstellungscode',
+                      ? tr.securityUseCodeApp
+                      : tr.securityPhoneNotHandRecovery,
                 ),
               ),
             ),
@@ -111,9 +111,9 @@ class _CodeDialogState extends State<_CodeDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
-        FilledButton(onPressed: _submit, child: const Text('Bestätigen')),
+        FilledButton(onPressed: _submit, child: Text(tr.commonConfirm)),
       ],
     );
   }
@@ -135,8 +135,8 @@ Future<void> runSsoInBrowser(
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
-      title: Text('Anmelden mit $label'),
-      content: const Row(
+      title: Text(tr.commonSignInWith(label)),
+      content: Row(
         children: [
           SizedBox(
             width: 24,
@@ -144,12 +144,7 @@ Future<void> runSsoInBrowser(
             child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
           SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Die Anmeldung läuft im Browser. Danach geht es hier '
-              'automatisch weiter.',
-            ),
-          ),
+          Expanded(child: Text(tr.securitySigningHappensBrowserAfterwards)),
         ],
       ),
       actions: [
@@ -158,7 +153,7 @@ Future<void> runSsoInBrowser(
             cancelled = true;
             Navigator.pop(context);
           },
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
       ],
     ),
@@ -167,7 +162,7 @@ Future<void> runSsoInBrowser(
   try {
     await run((url) async {
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-        throw const ApiError(0, 'browser', 'Browser ließ sich nicht öffnen');
+        throw ApiError(0, 'browser', tr.commonBrowserFailed);
       }
     }, () => cancelled);
   } finally {
@@ -191,13 +186,7 @@ class RecoveryCodes extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Falls dein Handy verloren geht, kommst du mit einem dieser Codes '
-          'trotzdem hinein – jeder funktioniert einmal. Jetzt sicher '
-          'aufbewahren (Passwortmanager oder ausgedruckt). Sie werden nur '
-          'dieses eine Mal angezeigt.',
-          style: TextStyle(color: c.inkSoft),
-        ),
+        Text(tr.securityIfYouLosePhone, style: TextStyle(color: c.inkSoft)),
         const SizedBox(height: 12),
         SoftCard(
           child: SelectableText(
@@ -210,13 +199,13 @@ class RecoveryCodes extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             icon: const Icon(AppIcons.copy, size: 18),
-            label: const Text('Kopieren'),
+            label: Text(tr.commonCopy),
             onPressed: () async {
               await Clipboard.setData(ClipboardData(text: codes.join('\n')));
               if (context.mounted) {
                 ScaffoldMessenger.of(
                   context,
-                ).showSnackBar(const SnackBar(content: Text('Codes kopiert')));
+                ).showSnackBar(SnackBar(content: Text(tr.securityCodesCopied)));
               }
             },
           ),
@@ -296,7 +285,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
     if (widget.embedded) return body;
     return SectionPage(
       section: FamioSection.settings,
-      title: 'Zwei-Faktor einrichten',
+      title: tr.securitySetUpTwoFactor,
       maxBodyWidth: 560,
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
@@ -319,7 +308,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
               Icon(AppIcons.shieldCheck, color: c.strong(FamioSection.tasks)),
               const SizedBox(width: 8),
               Text(
-                'Zwei-Faktor ist eingeschaltet',
+                tr.securityTwoFactor,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ],
@@ -330,7 +319,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
           Align(
             alignment: Alignment.centerLeft,
             child: ColorButton(
-              label: 'Codes gesichert – fertig',
+              label: tr.securityCodesSavedDone,
               icon: AppIcons.check,
               color: accent,
               onPressed: _done,
@@ -355,12 +344,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '1. Den QR-Code mit einer Authenticator-App scannen (z. B. '
-          '2FAS, Aegis, Google Authenticator, Microsoft Authenticator oder '
-          'dem Passwortmanager).',
-          style: TextStyle(color: c.inkSoft),
-        ),
+        Text(tr.security1ScanQrCode, style: TextStyle(color: c.inkSoft)),
         const SizedBox(height: 16),
         Center(
           child: Container(
@@ -373,10 +357,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Text(
-          'Oder den Schlüssel von Hand eingeben:',
-          style: TextStyle(color: c.inkSoft),
-        ),
+        Text(tr.securityEnterKeyHand, style: TextStyle(color: c.inkSoft)),
         Row(
           children: [
             Expanded(
@@ -386,7 +367,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
               ),
             ),
             IconButton(
-              tooltip: 'Schlüssel kopieren',
+              tooltip: tr.securityCopyKey,
               icon: const Icon(AppIcons.copy, size: 18),
               onPressed: () =>
                   Clipboard.setData(ClipboardData(text: setup.secret)),
@@ -397,23 +378,20 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             icon: const Icon(AppIcons.link, size: 18),
-            label: const Text('In Authenticator-App auf diesem Gerät öffnen'),
+            label: Text(tr.securityOpenAuthenticatorAppDevice),
             onPressed: () => launchUrl(Uri.parse(setup.uri)),
           ),
         ),
         const SizedBox(height: 16),
-        Text(
-          '2. Den Code eingeben, den die App jetzt anzeigt:',
-          style: TextStyle(color: c.inkSoft),
-        ),
+        Text(tr.security2EnterCodeApp, style: TextStyle(color: c.inkSoft)),
         const SizedBox(height: 8),
         TextField(
           controller: _code,
           keyboardType: TextInputType.number,
           autofillHints: const [AutofillHints.oneTimeCode],
           maxLength: 6,
-          decoration: const InputDecoration(
-            labelText: 'Code',
+          decoration: InputDecoration(
+            labelText: tr.commonCode,
             hintText: '123456',
             prefixIcon: Icon(AppIcons.key),
             counterText: '',
@@ -428,7 +406,7 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
         Align(
           alignment: Alignment.centerLeft,
           child: ColorButton(
-            label: 'Einschalten',
+            label: tr.commonTurnOn,
             icon: AppIcons.shieldCheck,
             color: accent,
             onPressed: _busy ? null : _confirm,
@@ -482,16 +460,13 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Zwei-Faktor ausschalten?'),
+        title: Text(tr.securityTurnOffTwoFactor),
         content: SizedBox(
           width: 380,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Danach reicht wieder das Passwort allein. Zur Sicherheit '
-                'Passwort und aktuellen Code eingeben.',
-              ),
+              Text(tr.securityAfterThatPasswordAlone),
               const SizedBox(height: 12),
               PasswordReveal(
                 builder: (_, obscure, toggle) => TextField(
@@ -499,7 +474,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   obscureText: obscure,
                   contextMenuBuilder: PasswordReveal.contextMenu,
                   decoration: InputDecoration(
-                    labelText: 'Passwort',
+                    labelText: tr.commonPassword,
                     suffixIcon: toggle,
                   ),
                 ),
@@ -508,8 +483,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
               TextField(
                 controller: code,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Code oder Wiederherstellungscode',
+                decoration: InputDecoration(
+                  labelText: tr.securityCodeOrRecoveryCode,
                 ),
               ),
             ],
@@ -518,14 +493,14 @@ class _SecurityScreenState extends State<SecurityScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: FamioColors.of(context).danger,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Ausschalten'),
+            child: Text(tr.commonTurnOff),
           ),
         ],
       ),
@@ -536,7 +511,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     if (ok != true) return;
     try {
       await _api.disableTotp(password: input.password, code: input.code);
-      _say('Zwei-Faktor ausgeschaltet');
+      _say(tr.securityTwoFactorTurnedOff);
     } on ApiError catch (e) {
       _say(e.message);
     }
@@ -544,7 +519,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
   }
 
   Future<void> _newCodes() async {
-    final code = await askTwoFactorCode(context, title: 'Neue Codes');
+    final code = await askTwoFactorCode(context, title: tr.securityNewCodes);
     if (code == null || !mounted) return;
     try {
       final codes = await _api.newRecoveryCodes(code);
@@ -552,12 +527,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Neue Wiederherstellungscodes'),
+          title: Text(tr.securityNewRecoveryCodes),
           content: SizedBox(width: 380, child: RecoveryCodes(codes)),
           actions: [
             FilledButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Gesichert'),
+              child: Text(tr.securitySaved),
             ),
           ],
         ),
@@ -594,7 +569,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Future<void> _unlink() async {
     try {
       await _api.unlinkSso();
-      _say('Verknüpfung gelöst');
+      _say(tr.adminLinkRemoved);
     } on ApiError catch (e) {
       _say(e.message);
     }
@@ -607,7 +582,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final accent = c.strong(FamioSection.settings);
     return SectionPage(
       section: FamioSection.settings,
-      title: 'Anmeldung & Sicherheit',
+      title: tr.settingsSecurity,
       maxBodyWidth: 760,
       body: FutureBuilder(
         future: _status,
@@ -625,24 +600,22 @@ class _SecurityScreenState extends State<SecurityScreen> {
               bottom: listBottomPadding(context),
             ),
             children: [
-              ListHeading('Zwei-Faktor-Anmeldung', color: accent),
+              ListHeading(tr.securityTwoFactorSignIn, color: accent),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: Icon(
                   status.enabled ? AppIcons.shieldCheck : AppIcons.shield,
                   color: status.enabled ? c.strong(FamioSection.tasks) : null,
                 ),
-                title: Text(status.enabled ? 'Eingeschaltet' : 'Aus'),
+                title: Text(status.enabled ? tr.securityOn : tr.securityOff),
                 subtitle: Text(
                   status.enabled
-                      ? 'Beim Anmelden fragt Famio zusätzlich nach dem Code '
-                            'aus deiner Authenticator-App. Noch '
-                            '${status.recoveryCodesLeft} Wiederherstellungs'
-                            'codes übrig.'
-                      : 'Schützt dein Konto, falls jemand dein Passwort '
-                            'kennt: Beim Anmelden braucht es zusätzlich einen '
-                            'Code aus einer Authenticator-App.'
-                            '${status.required ? ' Für dein Konto Pflicht.' : ''}',
+                      ? tr.securityWhenSigningFamioAlso(
+                          status.recoveryCodesLeft,
+                        )
+                      : tr.securityProtectsAccountIfSomeone(
+                          status.required ? tr.securityRequiredAccount : '',
+                        ),
                 ),
               ),
               Wrap(
@@ -652,7 +625,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     ? [
                         OutlinedButton.icon(
                           icon: const Icon(AppIcons.key, size: 18),
-                          label: const Text('Neue Wiederherstellungscodes'),
+                          label: Text(tr.securityNewRecoveryCodes),
                           onPressed: _newCodes,
                         ),
                         if (!status.required)
@@ -661,13 +634,13 @@ class _SecurityScreenState extends State<SecurityScreen> {
                               foregroundColor: c.danger,
                             ),
                             icon: const Icon(AppIcons.trash, size: 18),
-                            label: const Text('Ausschalten'),
+                            label: Text(tr.commonTurnOff),
                             onPressed: _disable,
                           ),
                       ]
                     : [
                         ColorButton(
-                          label: 'Einrichten',
+                          label: tr.commonSetUp,
                           icon: AppIcons.qrCode,
                           color: accent,
                           onPressed: _setUp,
@@ -681,14 +654,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   leading: const Icon(AppIcons.logIn),
                   title: Text(
                     status.singleSignOn
-                        ? 'Verknüpft'
-                              '${status.singleSignOnName == null ? '' : ' mit ${status.singleSignOnName}'}'
-                        : 'Nicht verknüpft',
+                        ? tr.securityLinked(
+                            status.singleSignOnName == null
+                                ? ''
+                                : tr.securityName(status.singleSignOnName!),
+                          )
+                        : tr.securityNotLinked,
                   ),
                   subtitle: Text(
-                    'Anmelden mit ${status.singleSignOnLabel ?? 'dem Anbieter'} '
-                    'statt Passwort – auf dem Anmeldebildschirm. Die '
-                    'Zwei-Faktor-Prüfung übernimmt dann der Anbieter.',
+                    tr.securitySignProviderInsteadPassword(
+                      status.singleSignOnLabel ?? tr.securityProvider,
+                    ),
                   ),
                 ),
                 Wrap(
@@ -699,15 +675,15 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         icon: const Icon(AppIcons.link, size: 18),
                         label: Text(
                           status.singleSignOn
-                              ? 'Neu verknüpfen'
-                              : 'Mit $label verknüpfen',
+                              ? tr.securityLinkAgain
+                              : tr.securityLinkProvider(label),
                         ),
                         onPressed: () => _link(label),
                       ),
                     if (status.singleSignOn)
                       OutlinedButton.icon(
                         icon: const Icon(AppIcons.unlink, size: 18),
-                        label: const Text('Verknüpfung lösen'),
+                        label: Text(tr.securityRemoveLink),
                         onPressed: _unlink,
                       ),
                   ],
@@ -765,13 +741,13 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
     final accent = c.strong(FamioSection.settings);
     return SectionPage(
       section: FamioSection.settings,
-      title: 'Zwei-Faktor-Anmeldung',
-      subtitle: 'Für dein Konto Pflicht',
+      title: tr.securityTwoFactorSignIn,
+      subtitle: tr.securityRequiredAccount2,
       maxBodyWidth: 560,
       actions: [
         BubbleButton(
           icon: AppIcons.signOut,
-          tooltip: 'Abmelden',
+          tooltip: tr.settingsSignOut,
           onPressed: () => state.signOut(),
         ),
       ],
@@ -779,8 +755,11 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
         children: [
           Text(
-            'Ein Administrator hat die Zwei-Faktor-Anmeldung für dein Konto '
-            'eingeschaltet. ${gate?.verifyNeeded ?? false ? 'Bitte auf diesem Gerät einmal mit dem Code aus deiner Authenticator-App bestätigen.' : 'Richte sie jetzt ein – danach geht es gleich weiter.'}',
+            tr.securityAdministratorTurnedTwoFactor(
+              gate?.verifyNeeded ?? false
+                  ? tr.securityPleaseConfirmOnceDevice
+                  : tr.securitySetUpNowThen,
+            ),
           ),
           const SizedBox(height: 16),
           if (gate?.verifyNeeded ?? false) ...[
@@ -789,8 +768,8 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
               autofocus: true,
               keyboardType: TextInputType.visiblePassword,
               autofillHints: const [AutofillHints.oneTimeCode],
-              decoration: const InputDecoration(
-                labelText: 'Code oder Wiederherstellungscode',
+              decoration: InputDecoration(
+                labelText: tr.securityCodeOrRecoveryCode,
                 prefixIcon: Icon(AppIcons.key),
               ),
               onSubmitted: (_) => _verify(),
@@ -803,7 +782,7 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: ColorButton(
-                label: 'Bestätigen',
+                label: tr.commonConfirm,
                 icon: AppIcons.check,
                 color: accent,
                 onPressed: _busy ? null : _verify,

@@ -12,6 +12,7 @@ import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 (IconData, Color) categoryLook(DocumentCategory c) => switch (c) {
   DocumentCategory.identity => (
@@ -220,7 +221,7 @@ class _DocumentCard extends StatelessWidget {
                       ),
                       child: Text(
                         '${expires.isBefore(DateTime.now()) ? 'Abgelaufen am' : 'Gültig bis'} '
-                        '${DateFormat('d.M.y', 'de').format(expires)}',
+                        '${DateFormat.yMd(appLanguage).format(expires)}',
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: soon
                               ? theme.colorScheme.onErrorContainer
@@ -515,7 +516,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
               label: Text(
                 _expires == null
                     ? 'Kein Ablaufdatum'
-                    : DateFormat('d. MMMM y', 'de').format(_expires!),
+                    : DateFormat.yMMMMd(appLanguage).format(_expires!),
               ),
               onPressed: () async {
                 final now = DateTime.now();

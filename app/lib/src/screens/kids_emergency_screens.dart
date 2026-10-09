@@ -12,16 +12,14 @@ import '../widgets/data_builder.dart';
 import '../widgets/phone.dart';
 import 'contacts_screens.dart';
 import 'kids_log_screens.dart';
+import '../format.dart';
+import '../l10n.dart';
 
 /// Numbers that work everywhere in Germany.
-const emergencyNumbers = [
-  ('112', 'Notruf', 'Rettungsdienst und Feuerwehr'),
-  (
-    '116117',
-    'Ärztlicher Bereitschaftsdienst',
-    '116 117 – wenn die Praxis zu hat',
-  ),
-  ('03019240', 'Giftnotruf', '030 19240 – bundesweit erreichbar'),
+List<(String, String, String)> get emergencyNumbers => [
+  ('112', tr.kidsEmergency, tr.kidsAmbulanceFireBrigade),
+  ('116117', tr.kidsOutHoursMedicalService, tr.kids116117WhenPractice),
+  ('03019240', tr.kidsPoisonControl, tr.kids03019240ReachableNationwide),
 ];
 
 /// The emergency page of [child]: works offline from the local copy.
@@ -51,9 +49,9 @@ class EmergencyScreen extends StatelessWidget {
       builder: (context, engine) {
         final child = engine.child(childId);
         if (child == null) {
-          return const SectionPage(
+          return SectionPage(
             section: FamioSection.kids,
-            title: 'Notfall',
+            title: tr.kidsEmergencyTitle,
             body: SizedBox.shrink(),
           );
         }
@@ -82,7 +80,7 @@ class EmergencyScreen extends StatelessWidget {
         final others = engine.contacts
             .where((c) => c.childIds.contains(child.id) && c.id != doctor?.id)
             .toList();
-        final time = DateFormat('d.M. HH:mm', 'de');
+        final time = DateFormat.Md(appLanguage).add_jm();
 
         Widget fact(String label, String value, {bool important = false}) =>
             value.trim().isEmpty
@@ -111,12 +109,12 @@ class EmergencyScreen extends StatelessWidget {
 
         return SectionPage(
           section: FamioSection.kids,
-          title: 'Notfall: ${child.name}',
-          subtitle: 'Funktioniert auch ohne Internet',
+          title: tr.kidsEmergencyName(child.name),
+          subtitle: tr.kidsAlsoWorksWithoutInternet,
           actions: [
             BubbleButton(
               icon: AppIcons.pencilSimple,
-              tooltip: 'Notfalldaten bearbeiten',
+              tooltip: tr.kidsEditEmergencyData,
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => _EmergencyEditor(child: child),
@@ -192,16 +190,16 @@ class EmergencyScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Am Telefon: die 5 W-Fragen',
+                      tr.kidsPhone5WQuestions,
                       style: theme.textTheme.titleMedium,
                     ),
                     const SizedBox(height: 6),
-                    for (final (w, text) in const [
-                      ('Wo', 'ist es passiert? Adresse, Stockwerk'),
-                      ('Was', 'ist passiert?'),
-                      ('Wie viele', 'sind betroffen?'),
-                      ('Welche', 'Verletzungen oder Beschwerden?'),
-                      ('Warten', 'auf Rückfragen – nicht selbst auflegen!'),
+                    for (final (w, text) in [
+                      (tr.kidsWhere, tr.kidsDidHappenAddressFloor),
+                      (tr.kidsWhat, tr.kidsHappened),
+                      (tr.kidsHowMany, tr.kidsAffected),
+                      (tr.kidsWhich, tr.kidsInjuriesSymptoms),
+                      (tr.kidsWait, tr.kidsQuestionsDoNotHang),
                     ])
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 2),
@@ -230,31 +228,39 @@ class EmergencyScreen extends StatelessWidget {
                     Text(child.name, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 6),
                     fact(
-                      'Alter',
-                      '${ageLabel(child)} (geb. ${DateFormat('d.M.y', 'de').format(child.birthDate)})',
+                      tr.kidsAge,
+                      tr.kidsAgeBornBorn(
+                        ageLabel(child),
+                        DateFormat.yMd(appLanguage).format(child.birthDate),
+                      ),
                     ),
                     if (weight != null)
                       fact(
-                        'Gewicht',
-                        '${weight.weightKg!.toStringAsFixed(1).replaceAll('.', ',')} kg '
-                            '(${DateFormat('d.M.y', 'de').format(weight.date)})',
+                        tr.kidsLogWeight,
+                        tr.kidsWeightKgDate(
+                          decimal(weight.weightKg!),
+                          DateFormat.yMd(appLanguage).format(weight.date),
+                        ),
                       ),
-                    fact('Allergien', info.allergies, important: true),
-                    fact('Vorerkrankungen', info.conditions, important: true),
-                    fact('Dauermedikamente', info.medications),
-                    fact('Blutgruppe', info.bloodType),
-                    fact('Krankenkasse', info.insurance),
-                    fact('Versichertennr.', info.insuranceNumber),
-                    fact('Hinweise', info.note),
+                    fact(tr.kidsAllergies, info.allergies, important: true),
+                    fact(tr.kidsPreexisting, info.conditions, important: true),
+                    fact(tr.kidsLongTermMedication, info.medications),
+                    fact(tr.kidsBloodType, info.bloodType),
+                    fact(tr.kidsInsurance, info.insurance),
+                    fact(tr.kidsInsuranceNo, info.insuranceNumber),
+                    fact(tr.kidsNotes, info.note),
                     if (lastTemp?.temperatureC != null)
                       fact(
-                        'Temperatur',
-                        '${logText(lastTemp!)} um ${time.format(lastTemp.start)}',
+                        tr.kidsLogTemperature,
+                        tr.commonAtTime(
+                          logText(lastTemp!),
+                          time.format(lastTemp.start),
+                        ),
                       ),
                     for (final m in recentMeds)
                       fact(
-                        'Zuletzt gegeben',
-                        '${logText(m)} um ${time.format(m.start)}',
+                        tr.kidsLastGiven,
+                        tr.commonAtTime(logText(m), time.format(m.start)),
                         important: true,
                       ),
                     if (info.isEmpty)
@@ -262,9 +268,7 @@ class EmergencyScreen extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 8),
                         child: FilledButton.tonalIcon(
                           icon: const Icon(AppIcons.pencilSimple),
-                          label: const Text(
-                            'Allergien, Kinderarzt & Co. eintragen',
-                          ),
+                          label: Text(tr.kidsAddAllergiesPediatricianCo),
                           onPressed: () => Navigator.of(context).push(
                             MaterialPageRoute<void>(
                               builder: (_) => _EmergencyEditor(child: child),
@@ -276,7 +280,7 @@ class EmergencyScreen extends StatelessWidget {
                 ),
               ),
               if (others.isNotEmpty) ...[
-                const ListHeading('Weitere Kontakte'),
+                ListHeading(tr.kidsOtherContacts),
                 for (final c in others)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
@@ -285,9 +289,7 @@ class EmergencyScreen extends StatelessWidget {
               ],
               const SizedBox(height: 12),
               Text(
-                'Erste Hilfe am Kind lernt man am besten in einem Kurs '
-                '(z. B. DRK, Johanniter, Malteser). Famio ersetzt keinen '
-                'ärztlichen Rat.',
+                tr.kidsFirstAidChildrenBest,
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -387,11 +389,11 @@ class _EmergencyEditorState extends State<_EmergencyEditor> {
         );
     return SectionPage(
       section: FamioSection.kids,
-      title: 'Notfalldaten',
+      title: tr.kidsEmergencyData,
       subtitle: widget.child.name,
       actions: [
         ColorButton(
-          label: 'Speichern',
+          label: tr.commonSave,
           color: FamioColors.of(context).strong(FamioSection.kids),
           onPressed: _save,
         ),
@@ -399,7 +401,7 @@ class _EmergencyEditorState extends State<_EmergencyEditor> {
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
         children: [
-          const ListHeading('Kinderarzt'),
+          ListHeading(tr.kidsPediatrician),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -413,7 +415,7 @@ class _EmergencyEditorState extends State<_EmergencyEditor> {
                 ),
               ActionChip(
                 avatar: const Icon(AppIcons.plus, size: 16),
-                label: const Text('Neu'),
+                label: Text(tr.commonNew),
                 onPressed: () async {
                   final created = await showContactEditor(
                     context,
@@ -426,20 +428,15 @@ class _EmergencyEditorState extends State<_EmergencyEditor> {
             ],
           ),
           const SizedBox(height: 16),
-          field(_allergies, 'Allergien', hint: 'z. B. Erdnüsse, Penicillin'),
-          field(
-            _conditions,
-            'Vorerkrankungen',
-            hint: 'z. B. Asthma, Herzfehler, Fieberkrämpfe',
-          ),
-          field(_medications, 'Dauermedikamente'),
-          field(_blood, 'Blutgruppe'),
-          field(_insurance, 'Krankenkasse'),
-          field(_insuranceNumber, 'Versichertennummer'),
-          field(_note, 'Weitere Hinweise', hint: 'z. B. Impfpass liegt …'),
+          field(_allergies, tr.kidsAllergies, hint: tr.kidsEGPeanutsPenicillin),
+          field(_conditions, tr.kidsPreexisting, hint: tr.kidsEGAsthmaHeart),
+          field(_medications, tr.kidsLongTermMedication),
+          field(_blood, tr.kidsBloodType),
+          field(_insurance, tr.kidsInsurance),
+          field(_insuranceNumber, tr.kidsInsuranceNumber),
+          field(_note, tr.kidsOtherNotes, hint: tr.kidsEGVaccinationRecord),
           Text(
-            'Sichtbar für die Sorgeberechtigten des Kindes, gespeichert '
-            'verschlüsselt auf eurem Server und auf den Geräten.',
+            tr.kidsVisibleChildSGuardians,
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ],

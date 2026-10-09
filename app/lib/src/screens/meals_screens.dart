@@ -14,6 +14,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _collections = {
   Collections.recipes,
@@ -29,12 +30,13 @@ DateTime _monday(DateTime d) {
 }
 
 enum _Tab {
-  week('Wochenplan'),
-  recipes('Rezepte');
+  week,
+  recipes;
 
-  const _Tab(this.label);
-
-  final String label;
+  String get label => switch (this) {
+    week => tr.mealsWeekPlan,
+    recipes => tr.mealsRecipes,
+  };
 }
 
 /// Recipes and the weekly meal plan.
@@ -61,12 +63,12 @@ class _MealsScreenState extends State<MealsScreen> {
     final color = FamioColors.of(context).strong(FamioSection.meals);
     return SectionPage(
       section: FamioSection.meals,
-      title: 'Essen',
-      subtitle: 'Wochenplan und Familienrezepte',
+      title: tr.sectionMeals,
+      subtitle: tr.mealsWeekPlanFamilyRecipes,
       actions: const [SyncStatusIcon()],
       floating: AddButton(
         color: color,
-        tooltip: _tab == _Tab.week ? 'Essen planen' : 'Rezept hinzufügen',
+        tooltip: _tab == _Tab.week ? tr.mealsPlanMeal : tr.mealsAddRecipe,
         onPressed: () => _tab == _Tab.week
             ? showMealEditor(context, day: DateUtils.dateOnly(DateTime.now()))
             : showRecipeEditor(context),
@@ -126,21 +128,21 @@ class _WeekPlan extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(AppIcons.caretLeft),
-              tooltip: 'Vorige Woche',
+              tooltip: tr.mealsPreviousWeek,
               onPressed: () =>
                   onWeek(DateTime(week.year, week.month, week.day - 7)),
             ),
             Expanded(
               child: Text(
-                '${DateFormat('d. MMM', 'de').format(week)} – '
-                '${DateFormat('d. MMM', 'de').format(end.subtract(const Duration(days: 1)))}',
+                '${DateFormat.MMMd(appLanguage).format(week)} – '
+                '${DateFormat.MMMd(appLanguage).format(end.subtract(const Duration(days: 1)))}',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
             ),
             IconButton(
               icon: const Icon(AppIcons.caretRight),
-              tooltip: 'Nächste Woche',
+              tooltip: tr.mealsNextWeek,
               onPressed: () =>
                   onWeek(DateTime(week.year, week.month, week.day + 7)),
             ),
@@ -151,7 +153,7 @@ class _WeekPlan extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               icon: const Icon(AppIcons.basket, size: 18),
-              label: const Text('Zutaten der Woche auf die Einkaufsliste'),
+              label: Text(tr.mealsPutWeekSIngredients),
               onPressed: () => _toShopping(context, engine, [
                 for (final m in withRecipes)
                   ..._scaled(engine.recipe(m.recipeId)!, m.servings),
@@ -175,13 +177,13 @@ class _WeekPlan extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            DateFormat('EEEE, d.M.', 'de').format(day),
+                            DateFormat.MMMMEEEEd(appLanguage).format(day),
                             style: theme.textTheme.titleMedium,
                           ),
                         ),
                         IconButton(
                           icon: const Icon(AppIcons.plus),
-                          tooltip: 'Essen planen',
+                          tooltip: tr.mealsPlanMeal,
                           onPressed: () => showMealEditor(context, day: day),
                         ),
                       ],
@@ -227,7 +229,7 @@ class _WeekPlan extends StatelessWidget {
                                   AppIcons.pencilSimple,
                                   size: 18,
                                 ),
-                                tooltip: 'Ändern',
+                                tooltip: tr.commonChange,
                                 onPressed: () => showMealEditor(
                                   context,
                                   day: day,
@@ -272,7 +274,7 @@ Future<void> _toShopping(
   if (lists.length == 1) {
     list = lists.single;
   } else if (lists.isEmpty) {
-    list = ShoppingList(id: newId(), name: 'Einkauf');
+    list = ShoppingList(id: newId(), name: tr.sectionShopping);
     engine.saveShoppingList(list);
   } else {
     list = await showModalBottomSheet<ShoppingList>(
@@ -282,7 +284,7 @@ Future<void> _toShopping(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(title: Text('Auf welche Liste?')),
+            ListTile(title: Text(tr.commonWhichList)),
             for (final l in lists)
               ListTile(
                 leading: const Icon(AppIcons.basket),
@@ -299,8 +301,11 @@ Future<void> _toShopping(
   messenger.showSnackBar(
     SnackBar(
       content: Text(
-        '${items.length} Zutaten auf „${list.name}“'
-        '${added < items.length ? ' (${items.length - added} ergänzt)' : ''}',
+        tr.mealsCountIngredientsListAdded(
+          items.length,
+          list.name,
+          added < items.length ? tr.mealsCountAdded(items.length - added) : '',
+        ),
       ),
     ),
   );
@@ -342,11 +347,9 @@ class _RecipeList extends StatelessWidget {
           return EmptyHint(
             icon: AppIcons.cookingPot,
             color: color,
-            text:
-                'Sammelt eure Lieblingsrezepte – selbst geschrieben oder\n'
-                'von Chefkoch & Co. übernommen.',
+            text: tr.mealsCollectFavoriteRecipesWritten,
             action: ColorButton(
-              label: 'Rezept hinzufügen',
+              label: tr.mealsAddRecipe,
               color: color,
               onPressed: () => showRecipeEditor(context),
             ),
@@ -357,9 +360,9 @@ class _RecipeList extends StatelessWidget {
           children: [
             TextField(
               controller: search,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixIcon: Icon(AppIcons.magnifyingGlass),
-                hintText: 'Rezept oder Zutat suchen',
+                hintText: tr.mealsSearchRecipeIngredient,
               ),
             ),
             const SizedBox(height: 12),
@@ -398,10 +401,15 @@ class _RecipeList extends StatelessWidget {
                               [
                                 if (pantry.isNotEmpty && stock[r.id]!.total > 0)
                                   stock[r.id]!.missing.isEmpty
-                                      ? 'alles im Vorrat'
-                                      : '${stock[r.id]!.have.length}/${stock[r.id]!.total} im Vorrat'
+                                      ? tr.mealsEverythingPantry
+                                      : tr.mealsHaveTotalPantry(
+                                          stock[r.id]!.have.length,
+                                          stock[r.id]!.total,
+                                        )
                                 else
-                                  '${r.ingredients.length} Zutaten',
+                                  tr.mealsCountIngredients(
+                                    r.ingredients.length,
+                                  ),
                                 if (r.minutes != null) '${r.minutes} min',
                                 ...r.tags,
                               ].join(' · '),
@@ -446,9 +454,9 @@ class _RecipeScreenState extends State<RecipeScreen> {
       builder: (context, engine) {
         final r = engine.recipe(widget.recipeId);
         if (r == null) {
-          return const SectionPage(
+          return SectionPage(
             section: FamioSection.meals,
-            title: 'Rezept',
+            title: tr.commonRecipe,
             body: SizedBox.shrink(),
           );
         }
@@ -470,14 +478,14 @@ class _RecipeScreenState extends State<RecipeScreen> {
             BubbleButton(
               icon: AppIcons.heart,
               color: r.favorite ? const Color(0xFFDB4A7E) : null,
-              tooltip: r.favorite ? 'Kein Favorit mehr' : 'Favorit',
+              tooltip: r.favorite ? tr.mealsNoLongerFavorite : tr.mealsFavorite,
               onPressed: () =>
                   engine.saveRecipe(r.copyWith(favorite: !r.favorite)),
             ),
             const SizedBox(width: 8),
             BubbleButton(
               icon: AppIcons.pencilSimple,
-              tooltip: 'Bearbeiten',
+              tooltip: tr.commonEdit,
               onPressed: () => showRecipeEditor(context, existing: r),
             ),
           ],
@@ -495,11 +503,11 @@ class _RecipeScreenState extends State<RecipeScreen> {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text('Portionen', style: theme.textTheme.titleMedium),
+                  Text(tr.mealsServings, style: theme.textTheme.titleMedium),
                   const Spacer(),
                   IconButton.filledTonal(
                     icon: const Text('−', style: TextStyle(fontSize: 20)),
-                    tooltip: 'Weniger',
+                    tooltip: tr.mealsFewer,
                     onPressed: servings <= 1
                         ? null
                         : () => setState(() => _servings = servings - 1),
@@ -514,12 +522,12 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   ),
                   IconButton.filledTonal(
                     icon: const Icon(AppIcons.plus),
-                    tooltip: 'Mehr',
+                    tooltip: tr.navMore,
                     onPressed: () => setState(() => _servings = servings + 1),
                   ),
                 ],
               ),
-              const ListHeading('Zutaten'),
+              ListHeading(tr.mealsIngredients),
               SoftCard(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -545,7 +553,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                             Expanded(child: Text(i.name)),
                             if (pantry.isNotEmpty && inPantry(i, pantry))
                               Tooltip(
-                                message: 'Im Vorrat',
+                                message: tr.mealsPantry,
                                 child: Icon(
                                   AppIcons.check,
                                   size: 18,
@@ -567,7 +575,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                       engine.stockOf(r, pantry).have.isNotEmpty &&
                       engine.stockOf(r, pantry).missing.isNotEmpty)
                     ColorButton(
-                      label: 'Fehlendes auf die Einkaufsliste',
+                      label: tr.mealsMissingItemsShoppingList,
                       icon: AppIcons.basket,
                       color: color,
                       onPressed: () => _toShopping(context, engine, [
@@ -577,8 +585,8 @@ class _RecipeScreenState extends State<RecipeScreen> {
                     ),
                   ColorButton(
                     label: pantry.isEmpty
-                        ? 'Auf die Einkaufsliste'
-                        : 'Alles auf die Einkaufsliste',
+                        ? tr.mealsShoppingList
+                        : tr.mealsEverythingShoppingList,
                     icon: AppIcons.basket,
                     color: color,
                     onPressed: () =>
@@ -586,7 +594,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   ),
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.calendarBlank),
-                    label: const Text('Einplanen'),
+                    label: Text(tr.mealsSchedule),
                     onPressed: () => showMealEditor(
                       context,
                       day: DateUtils.dateOnly(DateTime.now()),
@@ -597,7 +605,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                 ],
               ),
               if (steps.isNotEmpty) ...[
-                const ListHeading('Zubereitung'),
+                ListHeading(tr.mealsPreparation),
                 for (final (n, step) in steps.indexed)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 10),
@@ -711,7 +719,7 @@ class _MealEditorState extends State<_MealEditor> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Essen planen', style: theme.textTheme.titleLarge),
+            Text(tr.mealsPlanMeal, style: theme.textTheme.titleLarge),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -719,7 +727,7 @@ class _MealEditorState extends State<_MealEditor> {
               children: [
                 InputChip(
                   avatar: const Icon(AppIcons.calendarBlank, size: 18),
-                  label: Text(DateFormat('EEEE, d.M.', 'de').format(_day)),
+                  label: Text(DateFormat.MMMMEEEEd(appLanguage).format(_day)),
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -742,11 +750,11 @@ class _MealEditorState extends State<_MealEditor> {
             DropdownButtonFormField<String?>(
               initialValue: _recipeId,
               isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Rezept'),
+              decoration: InputDecoration(labelText: tr.commonRecipe),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: null,
-                  child: Text('Kein Rezept – nur Text'),
+                  child: Text(tr.mealsNoRecipeJustText),
                 ),
                 for (final r in recipes)
                   DropdownMenuItem(value: r.id, child: Text(r.title)),
@@ -759,16 +767,16 @@ class _MealEditorState extends State<_MealEditor> {
                 controller: _title,
                 autofocus: widget.existing == null && widget.recipe == null,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Was gibt es?',
-                  hintText: 'z. B. Reste, Pizza bestellen',
+                decoration: InputDecoration(
+                  labelText: tr.mealsWhatSDinner,
+                  hintText: tr.mealsEGLeftoversOrder,
                 ),
               ),
             ] else ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Text('Portionen'),
+                  Text(tr.mealsServings),
                   const Spacer(),
                   for (final n in [2, 3, 4, 5, 6])
                     Padding(
@@ -790,7 +798,7 @@ class _MealEditorState extends State<_MealEditor> {
                 if (widget.existing != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Entfernen'),
+                    label: Text(tr.commonRemove),
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -805,7 +813,11 @@ class _MealEditorState extends State<_MealEditor> {
                     },
                   ),
                 const Spacer(),
-                ColorButton(label: 'Speichern', color: color, onPressed: _save),
+                ColorButton(
+                  label: tr.commonSave,
+                  color: color,
+                  onPressed: _save,
+                ),
               ],
             ),
           ],
@@ -874,24 +886,24 @@ class _RecipeEditorState extends State<_RecipeEditor> {
       context: context,
       builder: (context) => AlertDialog(
         scrollable: true,
-        title: const Text('Rezept von einer Webseite'),
+        title: Text(tr.mealsRecipeWebsite),
         content: TextField(
           controller: url,
           autofocus: true,
           keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
-            labelText: 'Adresse',
+          decoration: InputDecoration(
+            labelText: tr.commonAddress,
             hintText: 'https://www.chefkoch.de/rezepte/…',
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, url.text.trim()),
-            child: const Text('Übernehmen'),
+            child: Text(tr.commonApply),
           ),
         ],
       ),
@@ -904,9 +916,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
       final r = await importRecipe(uri, id: _id);
       if (r == null) {
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text('Auf dieser Seite wurde kein Rezept gefunden.'),
-          ),
+          SnackBar(content: Text(tr.mealsNoRecipeWasFound)),
         );
         return;
       }
@@ -919,9 +929,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         _source.text = r.source;
       });
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Seite nicht erreichbar.')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -974,15 +982,15 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: Text('„${widget.existing!.title}“ löschen?'),
+        title: Text(tr.commonDeleteName(widget.existing!.title)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -1003,10 +1011,10 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     final color = FamioColors.of(context).strong(FamioSection.meals);
     return SectionPage(
       section: FamioSection.meals,
-      title: widget.existing == null ? 'Neues Rezept' : 'Rezept bearbeiten',
+      title: widget.existing == null ? tr.mealsNewRecipe : tr.mealsEditRecipe,
       actions: [
         ColorButton(
-          label: 'Speichern',
+          label: tr.commonSave,
           color: color,
           onPressed: _busy ? null : _save,
         ),
@@ -1020,12 +1028,14 @@ class _RecipeEditorState extends State<_RecipeEditor> {
             children: [
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.globe),
-                label: const Text('Von Webseite übernehmen'),
+                label: Text(tr.mealsTakeWebsite),
                 onPressed: _busy ? null : _import,
               ),
               OutlinedButton.icon(
                 icon: const Icon(AppIcons.camera),
-                label: Text(_photo == null ? 'Foto' : 'Foto ändern'),
+                label: Text(
+                  _photo == null ? tr.commonPhoto : tr.mealsChangePhoto,
+                ),
                 onPressed: _busy ? null : _pickPhoto,
               ),
               if (_busy)
@@ -1039,7 +1049,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
           TextField(
             controller: _title,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Titel'),
+            decoration: InputDecoration(labelText: tr.commonTitle),
           ),
           const SizedBox(height: 12),
           Row(
@@ -1048,7 +1058,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
                 child: TextField(
                   controller: _servings,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Portionen'),
+                  decoration: InputDecoration(labelText: tr.mealsServings),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1056,7 +1066,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
                 child: TextField(
                   controller: _minutes,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Minuten'),
+                  decoration: InputDecoration(labelText: tr.mealsMinutes),
                 ),
               ),
             ],
@@ -1066,9 +1076,9 @@ class _RecipeEditorState extends State<_RecipeEditor> {
             controller: _ingredients,
             minLines: 4,
             maxLines: 14,
-            decoration: const InputDecoration(
-              labelText: 'Zutaten – eine pro Zeile',
-              hintText: '250 g Mehl\n500 ml Milch\n3 Eier',
+            decoration: InputDecoration(
+              labelText: tr.mealsIngredientsOnePerLine,
+              hintText: tr.meals250GFlour500,
               alignLabelWithHint: true,
             ),
           ),
@@ -1078,25 +1088,25 @@ class _RecipeEditorState extends State<_RecipeEditor> {
             minLines: 4,
             maxLines: 20,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Zubereitung – ein Schritt pro Zeile',
+            decoration: InputDecoration(
+              labelText: tr.mealsPreparationOneStepPer,
               alignLabelWithHint: true,
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _tags,
-            decoration: const InputDecoration(
-              labelText: 'Stichworte (optional)',
-              hintText: 'schnell, vegetarisch, Kinderliebling',
+            decoration: InputDecoration(
+              labelText: tr.mealsTagsOptional,
+              hintText: tr.mealsQuickVegetarianKidsFavorite,
             ),
           ),
           const SizedBox(height: 12),
           TextField(
             controller: _source,
-            decoration: const InputDecoration(
-              labelText: 'Quelle (optional)',
-              hintText: 'Webseite oder „Oma Inge“',
+            decoration: InputDecoration(
+              labelText: tr.mealsSourceOptional,
+              hintText: tr.mealsWebsiteGrandmaInge,
             ),
           ),
           if (widget.existing != null) ...[
@@ -1105,7 +1115,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.trash, size: 18),
-                label: const Text('Rezept löschen'),
+                label: Text(tr.mealsDeleteRecipe),
                 style: TextButton.styleFrom(
                   foregroundColor: Theme.of(context).colorScheme.error,
                 ),

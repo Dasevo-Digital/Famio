@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../design/app_icons.dart';
+import '../l10n.dart';
 
 /// "12. Juni 1985" or "12. Juni".
 String birthdayLabel(Birthday b) {
   final date = b.inYear(b.year ?? 2000);
   return b.year == null
-      ? DateFormat('d. MMMM', 'de').format(date)
-      : DateFormat('d. MMMM y', 'de').format(date);
+      ? DateFormat.MMMMd(appLanguage).format(date)
+      : DateFormat.yMMMMd(appLanguage).format(date);
 }
 
 /// Picks a birthday; the year may stay unknown.

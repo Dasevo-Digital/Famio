@@ -15,6 +15,7 @@ import '../data/ocr.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../l10n.dart';
 
 /// Appointments from a photo of a letter, an invitation or pasted text:
 /// recognised on the device, checked by hand, then added.
@@ -163,10 +164,10 @@ class _EventImportScreenState extends State<EventImportScreen> {
   }
 
   static String _when(EventSuggestion e) {
-    final day = DateFormat('E, d. MMM y', 'de');
+    final day = DateFormat.yMMMEd(appLanguage);
     if (!e.allDay) {
-      return '${day.format(e.start)}, ${DateFormat.Hm('de').format(e.start)}'
-          '–${DateFormat.Hm('de').format(e.end)} Uhr';
+      return '${day.format(e.start)}, ${DateFormat.jm(appLanguage).format(e.start)}'
+          '–${DateFormat.jm(appLanguage).format(e.end)} Uhr';
     }
     final last = e.end.subtract(const Duration(days: 1));
     return DateUtils.isSameDay(e.start, last)

@@ -11,6 +11,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
+import '../l10n.dart';
 
 /// The bins: which calendar has the pickup days, who puts them out (by
 /// turns if wanted) and when Famio reminds on the evening before.
@@ -55,7 +56,7 @@ class WasteScreen extends StatelessWidget {
             .wastePickups(today, today.add(const Duration(days: 60)))
             .take(8)
             .toList();
-        final date = DateFormat('EEE, d. MMM', 'de');
+        final date = DateFormat.MMMEd(appLanguage);
         return SectionPage(
           section: FamioSection.chores,
           title: 'Abfallkalender',

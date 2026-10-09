@@ -20,6 +20,7 @@ import 'kids_log_screens.dart';
 import 'pregnancy_screens.dart';
 import 'timetable_view.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 part 'kids/child_editor.dart';
 part 'kids/child_screen.dart';
@@ -43,7 +44,7 @@ const _kidsCollections = {
 Color childColorOf(BuildContext context, Child child) =>
     _childColor(context, child);
 
-final _date = DateFormat('d. MMM y', 'de');
+final _date = DateFormat.yMMMd(appLanguage);
 
 Color _childColor(BuildContext context, Child child) => child.color == null
     ? FamioColors.of(context).strong(FamioSection.kids)
@@ -232,7 +233,7 @@ class _ChildCard extends StatelessWidget {
                                   : AppIcons.syringe,
                               text: next.open
                                   ? '${next.isCheckup ? next.id : 'Impfung'} jetzt'
-                                  : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
+                                  : '${next.id} ab ${DateFormat.Md(appLanguage).format(next.from)}',
                               color: next.open
                                   ? theme.colorScheme.error
                                   : c.inkSoft,

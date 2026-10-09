@@ -17,6 +17,7 @@ import '../widgets/form_dialog.dart';
 import '../widgets/password_reveal.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/section_header.dart';
+import '../l10n.dart';
 
 // --- calendar apps connecting to Famio (CalDAV server) ----------------------
 
@@ -52,25 +53,22 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => FormDialog(
-          title: 'Neues App-Passwort',
-          submitLabel: 'Erstellen',
+          title: tr.caldavNewAppPassword,
+          submitLabel: tr.commonCreate,
           controllers: [name],
           fields: [
             TextField(
               controller: name,
               autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Für welches Gerät?',
-                hintText: 'z. B. iPhone von Mama',
+              decoration: InputDecoration(
+                labelText: tr.caldavWhichDevice,
+                hintText: tr.caldavEGMomS,
               ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Vertrauliche Termine zeigen'),
-              subtitle: const Text(
-                'Nur für eigene Geräte. Die Kalender-App speichert die '
-                'Termine auf dem Gerät.',
-              ),
+              title: Text(tr.caldavShowPrivateEvents),
+              subtitle: Text(tr.caldavOnlyOwnDevicesCalendar),
               value: confidential,
               onChanged: (v) => setState(() => confidential = v),
             ),
@@ -103,9 +101,9 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
       text: kIsWeb
           ? ''
           : Platform.isMacOS
-          ? 'Mac von ${state.me!.displayName}'
+          ? tr.caldavNameSMac(state.me!.displayName)
           : Platform.isIOS
-          ? 'iPhone von ${state.me!.displayName}'
+          ? tr.caldavNameSIphone(state.me!.displayName)
           : '',
     );
     final address = TextEditingController(
@@ -115,27 +113,26 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Apple-Gerät einrichten',
-        submitLabel: 'Profil erstellen',
+        title: tr.caldavSetUpAppleDevice,
+        submitLabel: tr.caldavCreateProfile,
         controllers: [name, address],
         fields: [
           TextField(
             controller: name,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Für welches Gerät?',
-              hintText: 'z. B. iPhone von Mama',
+            decoration: InputDecoration(
+              labelText: tr.caldavWhichDevice,
+              hintText: tr.caldavEGMomS,
             ),
           ),
           TextField(
             controller: address,
             keyboardType: TextInputType.url,
             decoration: InputDecoration(
-              labelText: 'Serveradresse für dieses Gerät',
+              labelText: tr.caldavServerAddressDevice,
               helperText: local.host == 'localhost' || local.host == '127.0.0.1'
-                  ? '„localhost“ gilt nur für diesen Mac – für andere Geräte '
-                        'die Adresse im Heimnetz eintragen.'
-                  : 'So, wie das Gerät den Server erreicht.',
+                  ? tr.caldavLocalhostOnlyWorksMac
+                  : tr.caldavWayDeviceReachesServer,
               helperMaxLines: 3,
             ),
           ),
@@ -153,18 +150,14 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
     _reload();
     try {
       final saved = await FilePicker.saveFile(
-        dialogTitle: 'Profil für Apple Kalender sichern',
+        dialogTitle: tr.caldavSaveProfileAppleCalendar,
         fileName: profile.fileName,
         bytes: Uint8List.fromList(utf8.encode(profile.profile)),
         mimeType: 'application/x-apple-aspen-config',
       );
       if (saved == null) {
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Nicht gesichert – das App-Passwort unten wieder trennen.',
-            ),
-          ),
+          SnackBar(content: Text(tr.caldavNotSavedDisconnectApp)),
         );
         return;
       }
@@ -175,16 +168,14 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
           duration: const Duration(seconds: 10),
           content: Text(
             !kIsWeb && Platform.isMacOS
-                ? 'Systemeinstellungen → Allgemein → Geräteverwaltung → '
-                      '„Famio-Kalender“ installieren, danach die Datei löschen.'
-                : 'Profil gesichert: auf dem Apple-Gerät öffnen und '
-                      'installieren, danach die Datei löschen.',
+                ? tr.caldavSystemSettingsGeneralDevice
+                : tr.caldavProfileSavedOpenInstall,
           ),
         ),
       );
     } catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text('Profil nicht gesichert ($e)')),
+        SnackBar(content: Text(tr.caldavProfileNotSavedError(e))),
       );
     }
   }
@@ -193,19 +184,16 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('„${p.name}“ trennen?'),
-        content: const Text(
-          'Die Kalender-App auf diesem Gerät kann sich danach nicht mehr '
-          'mit Famio verbinden.',
-        ),
+        title: Text(tr.caldavDisconnectName(p.name)),
+        content: Text(tr.caldavCalendarAppThatDevice),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Trennen'),
+            child: Text(tr.commonDisconnect),
           ),
         ],
       ),
@@ -234,10 +222,10 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
         if (snapshot.hasError) {
           return ListTile(
             leading: const Icon(AppIcons.cloudSlash),
-            title: const Text('Nur mit Verbindung zum Server verfügbar'),
+            title: Text(tr.commonOnlyWithServer),
             trailing: TextButton(
               onPressed: _reload,
-              child: const Text('Erneut'),
+              child: Text(tr.commonAgain),
             ),
           );
         }
@@ -250,7 +238,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
         final (passwords, publicUrl) = snapshot.data!;
         final local = state.engine!.api.baseUrl;
         final user = state.me!.username;
-        final dateFormat = DateFormat('d.M.yy, HH:mm', 'de');
+        final dateFormat = DateFormat.yMd(appLanguage).add_jm();
 
         Widget address(String label, Uri base) => ListTile(
           dense: true,
@@ -261,14 +249,14 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
           ),
           trailing: IconButton(
             icon: const Icon(AppIcons.copy),
-            tooltip: 'Adresse kopieren',
+            tooltip: tr.caldavCopyAddress,
             onPressed: () {
               Clipboard.setData(
                 ClipboardData(text: base.resolve('dav/').toString()),
               );
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Adresse kopiert')));
+              ).showSnackBar(SnackBar(content: Text(tr.caldavAddressCopied)));
             },
           ),
         );
@@ -285,24 +273,22 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (publicUrl != null)
-                      address('Serveradresse (überall)', publicUrl),
+                      address(tr.caldavServerAddressEverywhere, publicUrl),
                     address(
                       publicUrl == null
-                          ? 'Serveradresse'
+                          ? tr.commonServerAddress
                           : 'Serveradresse (Heimnetz)',
                       local,
                     ),
                     ListTile(
                       dense: true,
-                      title: const Text('Benutzername'),
+                      title: Text(tr.commonUsername),
                       subtitle: SelectableText(user),
                     ),
                     if (local.scheme == 'https' && state.certificatePin != null)
                       ListTile(
                         dense: true,
-                        title: const Text(
-                          'Zertifikat (SHA-256) zum Vergleichen',
-                        ),
+                        title: Text(tr.caldavCertificateSha256Compare),
                         subtitle: SelectableText(
                           state.certificatePin!,
                           style: const TextStyle(
@@ -322,14 +308,14 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                 subtitle: Text(
                   [
                     p.lastUsed == null
-                        ? 'noch nicht benutzt'
+                        ? tr.caldavNotUsedYet
                         : 'zuletzt ${dateFormat.format(p.lastUsed!)}',
-                    if (p.includeConfidential) 'mit vertraulichen Terminen',
+                    if (p.includeConfidential) tr.caldavPrivateEvents,
                   ].join(' · '),
                 ),
                 trailing: IconButton(
                   icon: const Icon(AppIcons.trash),
-                  tooltip: 'Trennen',
+                  tooltip: tr.commonDisconnect,
                   onPressed: () => _delete(p),
                 ),
               ),
@@ -341,45 +327,35 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                 children: [
                   FilledButton.icon(
                     icon: const Icon(AppIcons.devices),
-                    label: const Text('Apple-Gerät einrichten'),
+                    label: Text(tr.caldavSetUpAppleDevice),
                     onPressed: () => _appleProfile(local, publicUrl),
                   ),
                   FilledButton.tonalIcon(
                     icon: const Icon(AppIcons.key),
-                    label: const Text('App-Passwort erstellen'),
+                    label: Text(tr.caldavCreateAppPassword),
                     onPressed: _create,
                   ),
                 ],
               ),
             ),
-            HelpSteps('So geht’s mit Mac, iPhone und iPad', [
-              '„Apple-Gerät einrichten“ erstellt ein Profil mit eigenem '
-                  'App-Passwort (und dem Zertifikat des Servers). Es bringt '
-                  'die Termine in Apple Kalender und Aufgaben und '
-                  'Einkaufslisten in Apple Erinnerungen.',
-              'Mac: Profil sichern, es öffnet sich in den '
-                  'Systemeinstellungen → Allgemein → Geräteverwaltung → '
-                  '„Famio-Kalender“ doppelklicken → Installieren.',
-              'iPhone/iPad: Profil in „Dateien“ sichern, dort antippen, dann '
-                  'Einstellungen → „Profil geladen“ → Installieren.',
-              'Die Profildatei danach löschen – sie enthält das Passwort.',
-              'Unterwegs klappt das nur mit der Internet-Adresse oder VPN.',
+            HelpSteps(tr.caldavHowWorksMacIphone, [
+              tr.caldavSetUpAppleDevice2,
+              tr.caldavMacSaveProfileOpens,
+              tr.caldavIphoneIpadSaveProfile,
+              tr.caldavDeleteProfileFileAfterwards,
+              tr.caldavGoOnlyWorksInternet,
             ]),
-            HelpSteps('So geht’s auf Android (DAVx⁵)', [
-              'DAVx⁵ aus dem Play Store oder F-Droid installieren.',
-              '„+“ → „Mit URL und Benutzername anmelden“.',
-              'Basis-URL: die Adresse von oben, Benutzername „$user“, '
-                  'Passwort: das App-Passwort.',
-              'Kalender „Famio“ auswählen – er erscheint dann im Google- '
-                  'oder Samsung-Kalender auf dem Handy.',
+            HelpSteps(tr.caldavHowWorksAndroidDavx, [
+              tr.caldavInstallDavxPlayStore,
+              tr.caldavLoginUrlUserName,
+              tr.caldavBaseUrlAddressAbove(user),
+              tr.caldavSelectFamioCalendarThen,
             ]),
             if (passwords.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Pro Gerät ein eigenes App-Passwort – so lässt sich jedes '
-                  'einzeln trennen. Dein Famio-Passwort funktioniert hier '
-                  'bewusst nicht.',
+                  tr.caldavOneAppPasswordPer,
                   style: theme.textTheme.bodySmall,
                 ),
               ),
@@ -399,7 +375,7 @@ class _SecretDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Dein App-Passwort'),
+      title: Text(tr.caldavAppPassword),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,22 +388,18 @@ class _SecretDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Jetzt in der Kalender-App als Passwort eingeben. Famio zeigt es '
-            'nur dieses eine Mal an. Groß-/Kleinschreibung und Bindestriche '
-            'sind egal.',
-          ),
+          Text(tr.caldavEnterNowPasswordCalendar),
         ],
       ),
       actions: [
         TextButton.icon(
           icon: const Icon(AppIcons.copy),
-          label: const Text('Kopieren'),
+          label: Text(tr.commonCopy),
           onPressed: () => Clipboard.setData(ClipboardData(text: secret)),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Fertig'),
+          child: Text(tr.commonDone),
         ),
       ],
     );
@@ -489,7 +461,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Neues Passwort für „${a.name}“',
+        title: tr.caldavNewPasswordName(a.name),
         controllers: [password],
         fields: [
           PasswordReveal(
@@ -500,7 +472,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Passwort',
+                labelText: tr.commonPassword,
               ),
             ),
           ),
@@ -530,19 +502,16 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('„${a.name}“ trennen?'),
-        content: const Text(
-          'Termine, die von dort kamen, verschwinden aus Famio. Der andere '
-          'Kalender behält alles, auch die Termine aus Famio.',
-        ),
+        title: Text(tr.caldavDisconnectName(a.name)),
+        content: Text(tr.caldavEventsThatCameThere),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Trennen'),
+            child: Text(tr.commonDisconnect),
           ),
         ],
       ),
@@ -556,17 +525,17 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
   Widget build(BuildContext context) {
     final api = AppScope.of(context).engine!.api;
     final c = FamioColors.of(context);
-    final dateFormat = DateFormat('d.M., HH:mm', 'de');
+    final dateFormat = DateFormat.Md(appLanguage).add_jm();
     return FutureBuilder(
       future: _accounts,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return ListTile(
             leading: const Icon(AppIcons.cloudSlash),
-            title: const Text('Nur mit Verbindung zum Server verfügbar'),
+            title: Text(tr.commonOnlyWithServer),
             trailing: TextButton(
               onPressed: _reload,
-              child: const Text('Erneut'),
+              child: Text(tr.commonAgain),
             ),
           );
         }
@@ -587,10 +556,16 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
                   a.error ??
                       [
                         '${a.username} · ${Uri.tryParse(a.serverUrl)?.host ?? a.serverUrl}',
-                        '${a.linkedEvents} Termine abgeglichen'
-                            '${a.lastSync == null ? '' : ', zuletzt ${dateFormat.format(a.lastSync!)}'}',
-                        if (a.onlyMine) 'nur meine Termine',
-                        'Sichtbar für: ${sharingLabel(AppScope.engineOf(context), a.sharing)}',
+                        a.lastSync == null
+                            ? tr.caldavEventsSynced(a.linkedEvents)
+                            : tr.caldavEventsSyncedLast(
+                                a.linkedEvents,
+                                dateFormat.format(a.lastSync!),
+                              ),
+                        if (a.onlyMine) tr.caldavOnlyMyEvents,
+                        tr.caldavVisibleWho(
+                          sharingLabel(AppScope.engineOf(context), a.sharing),
+                        ),
                       ].join('\n'),
                   style: a.error == null ? null : TextStyle(color: c.danger),
                 ),
@@ -606,7 +581,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
                         children: [
                           IconButton(
                             icon: const Icon(AppIcons.arrowsClockwise),
-                            tooltip: 'Jetzt abgleichen',
+                            tooltip: tr.commonSyncNow,
                             onPressed: () =>
                                 _run(a.id, () => api.syncCalDavAccount(a.id)),
                           ),
@@ -625,22 +600,22 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
                             },
                             itemBuilder: (_) => [
                               if (!a.google)
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'password',
-                                  child: Text('Passwort ändern'),
+                                  child: Text(tr.settingsChangePassword),
                                 ),
                               CheckedPopupMenuItem(
                                 value: 'mine',
                                 checked: a.onlyMine,
-                                child: const Text('Nur meine Termine senden'),
+                                child: Text(tr.caldavOnlySendMyEvents),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'share',
-                                child: Text('Teilen …'),
+                                child: Text(tr.caldavShare),
                               ),
-                              const PopupMenuItem(
+                              PopupMenuItem(
                                 value: 'remove',
-                                child: Text('Trennen'),
+                                child: Text(tr.commonDisconnect),
                               ),
                             ],
                           ),
@@ -653,7 +628,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
                 alignment: Alignment.centerLeft,
                 child: FilledButton.tonalIcon(
                   icon: const Icon(AppIcons.arrowsLeftRight),
-                  label: const Text('Kalender verbinden'),
+                  label: Text(tr.caldavConnectCalendar),
                   onPressed: _connect,
                 ),
               ),
@@ -666,55 +641,35 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
 }
 
 enum _Provider {
-  google(
-    'Google',
-    '',
-    '',
-    'Google braucht einen eigenen, kostenlosen Zugang in der Google Cloud '
-        'Console (einmalig, siehe Anleitung). Danach meldest du dich im '
-        'Browser bei Google an.',
-  ),
-  icloud(
-    'iCloud',
-    'https://caldav.icloud.com',
-    'Apple-ID (E-Mail)',
-    'App-spezifisches Passwort: appleid.apple.com → Anmelden und Sicherheit '
-        '→ App-spezifische Passwörter. Dein normales Apple-Passwort '
-        'funktioniert nicht.',
-  ),
-  nextcloud(
-    'Nextcloud',
-    'https://cloud.example.org/remote.php/dav',
-    'Benutzername',
-    'Am besten ein App-Passwort: Nextcloud → Einstellungen → Sicherheit → '
-        'Neues App-Passwort erstellen.',
-  ),
-  mailbox(
-    'mailbox.org',
-    'https://dav.mailbox.org',
-    'E-Mail-Adresse',
-    'Dein mailbox.org-Passwort oder ein App-Passwort.',
-  ),
-  posteo(
-    'Posteo',
-    'https://posteo.de:8443',
-    'E-Mail-Adresse',
-    'Dein Posteo-Passwort.',
-  ),
-  other(
-    'Andere',
-    '',
-    'Benutzername',
-    'Adresse des CalDAV-Servers, z. B. von Synology, Radicale oder deinem '
-        'Anbieter.',
-  );
+  google('Google', ''),
+  icloud('iCloud', 'https://caldav.icloud.com'),
+  nextcloud('Nextcloud', 'https://cloud.example.org/remote.php/dav'),
+  mailbox('mailbox.org', 'https://dav.mailbox.org'),
+  posteo('Posteo', 'https://posteo.de:8443'),
+  other('', '');
 
-  const _Provider(this.label, this.url, this.userLabel, this.hint);
+  const _Provider(this._name, this.url);
 
-  final String label;
+  final String _name;
   final String url;
-  final String userLabel;
-  final String hint;
+
+  String get label => this == other ? tr.commonOther : _name;
+
+  String get userLabel => switch (this) {
+    google => '',
+    icloud => tr.caldavAppleIdEmail,
+    mailbox || posteo => tr.commonEmailAddress,
+    nextcloud || other => tr.commonUsername,
+  };
+
+  String get hint => switch (this) {
+    google => tr.caldavGoogleNeedsItsOwn,
+    icloud => tr.caldavAppSpecificPasswordAppleid,
+    nextcloud => tr.caldavPreferablyAppPasswordNextcloud,
+    mailbox => tr.caldavMailboxOrgPasswordApp,
+    posteo => tr.caldavPosteoPassword,
+    other => tr.caldavAddressCaldavServerE,
+  };
 }
 
 class _ConnectCalDavPage extends StatefulWidget {
@@ -764,11 +719,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
         clientId: _clientId.text,
         open: (url) async {
           if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-            throw const ApiError(
-              0,
-              'browser',
-              'Browser ließ sich nicht öffnen',
-            );
+            throw ApiError(0, 'browser', tr.commonBrowserFailed);
           }
         },
       );
@@ -853,8 +804,8 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
     final calendars = _calendars;
     return SectionPage(
       section: FamioSection.calendar,
-      title: 'Kalender verbinden',
-      subtitle: 'Termine in beide Richtungen abgleichen',
+      title: tr.caldavConnectCalendar,
+      subtitle: tr.caldavSyncEventsBothDirections,
       bodyPadding: EdgeInsets.zero,
       body: Center(
         child: ConstrainedBox(
@@ -881,21 +832,12 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
               const SizedBox(height: 12),
               Text(_provider.hint, style: theme.textTheme.bodySmall),
               if (_provider == _Provider.google) ...[
-                const HelpSteps('So legst du den Google-Zugang an (einmalig)', [
-                  'console.cloud.google.com öffnen und ein Projekt anlegen, '
-                      'z. B. „Famio“.',
-                  '„APIs & Dienste“ → „Bibliothek“: „Google Calendar API“ und '
-                      '„CalDAV API“ aktivieren.',
-                  '„OAuth-Zustimmungsbildschirm“: Typ „Extern“, App-Name '
-                      'Famio, deine E-Mail; unter Zielgruppe den '
-                      'Veröffentlichungsstatus auf „In Produktion“ setzen '
-                      '(sonst läuft der Zugang nach 7 Tagen ab).',
-                  '„Anmeldedaten“ → „Anmeldedaten erstellen“ → „OAuth-Client-ID“ '
-                      '→ Anwendungstyp „Desktop-App“.',
-                  'Client-ID und Clientschlüssel hier eintragen und „Bei Google '
-                      'anmelden“ tippen. Google warnt, die App sei nicht '
-                      'überprüft – das ist dein eigenes Projekt: „Erweitert“ → '
-                      '„Weiter zu Famio“.',
+                HelpSteps(tr.caldavHowCreateGoogleAccess, [
+                  tr.caldavOpenConsoleCloudGoogle,
+                  tr.caldavApisServicesLibraryEnable,
+                  tr.caldavOauthConsentScreenType,
+                  tr.caldavCredentialsCreateCredentialsOauth,
+                  tr.caldavEnterClientIdClient,
                 ]),
                 const SizedBox(height: 12),
                 TextField(
@@ -915,7 +857,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                     autocorrect: false,
                     decoration: InputDecoration(
                       suffixIcon: toggle,
-                      labelText: 'Clientschlüssel',
+                      labelText: tr.caldavClientSecret,
                       prefixIcon: Icon(AppIcons.key),
                     ),
                   ),
@@ -925,7 +867,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                   alignment: Alignment.centerLeft,
                   child: FilledButton.tonalIcon(
                     icon: const Icon(AppIcons.globe),
-                    label: const Text('Bei Google anmelden'),
+                    label: Text(tr.caldavSignGoogle),
                     onPressed: _busy ? null : _googleLogin,
                   ),
                 ),
@@ -934,8 +876,8 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                 TextField(
                   controller: _url,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'Serveradresse',
+                  decoration: InputDecoration(
+                    labelText: tr.commonServerAddress,
                     prefixIcon: Icon(AppIcons.globe),
                   ),
                 ),
@@ -956,7 +898,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                     contextMenuBuilder: PasswordReveal.contextMenu,
                     decoration: InputDecoration(
                       suffixIcon: toggle,
-                      labelText: 'Passwort',
+                      labelText: tr.commonPassword,
                       prefixIcon: Icon(AppIcons.key),
                     ),
                     onSubmitted: (_) => _search(),
@@ -967,7 +909,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                   alignment: Alignment.centerLeft,
                   child: FilledButton.tonalIcon(
                     icon: const Icon(AppIcons.magnifyingGlass),
-                    label: const Text('Kalender suchen'),
+                    label: Text(tr.caldavFindCalendars),
                     onPressed: _busy ? null : _search,
                   ),
                 ),
@@ -982,7 +924,10 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
               ],
               if (calendars != null) ...[
                 const SizedBox(height: 20),
-                Text('Welcher Kalender?', style: theme.textTheme.titleMedium),
+                Text(
+                  tr.caldavWhichCalendar,
+                  style: theme.textTheme.titleMedium,
+                ),
                 RadioGroup<String>(
                   groupValue: _selected?.url,
                   onChanged: (url) => setState(
@@ -1003,9 +948,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                           ),
                           title: Text(cal.name),
                           subtitle: cal.readOnly
-                              ? const Text(
-                                  'Nur lesbar – bitte als Abo einbinden',
-                                )
+                              ? Text(tr.caldavReadOnlyPleaseAdd)
                               : null,
                         ),
                     ],
@@ -1014,17 +957,14 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                 const SizedBox(height: 8),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Nur meine Termine senden'),
-                  subtitle: const Text(
-                    'Termine, bei denen du dabei bist, und Termine für die '
-                    'ganze Familie.',
-                  ),
+                  title: Text(tr.caldavOnlySendMyEvents),
+                  subtitle: Text(tr.caldavEventsYouTakePart),
                   value: _onlyMine,
                   onChanged: (v) => setState(() => _onlyMine = v),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Termine von dort sehen',
+                  tr.caldavSeeEventsThere,
                   style: theme.textTheme.titleSmall,
                 ),
                 const SizedBox(height: 8),
@@ -1035,20 +975,17 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Das kannst du später jederzeit ändern. Ein Admin kann '
-                  'geteilte Kalender für einzelne Mitglieder ausblenden.',
+                  tr.caldavYouCanChangeAny,
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Vertrauliche Termine werden nie übertragen. Termine, die '
-                  'Famio nicht genau abbilden kann (z. B. „jeden 2. Dienstag“), '
-                  'erscheinen schreibgeschützt.',
+                  tr.caldavPrivateEventsNeverTransferred,
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 ColorButton(
-                  label: 'Verbinden',
+                  label: tr.commonConnect,
                   color: c.strong(FamioSection.calendar),
                   onPressed: _busy || _selected == null ? null : _connect,
                 ),

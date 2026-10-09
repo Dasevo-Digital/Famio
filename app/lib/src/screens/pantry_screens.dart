@@ -17,6 +17,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _collections = {
   Collections.pantryItems,
@@ -296,7 +297,7 @@ class _PantryTile extends StatelessWidget {
         ? 'MHD heute'
         : days == 1
         ? 'MHD morgen'
-        : 'MHD ${DateFormat('d.M.', 'de').format(item.bestBefore!)}';
+        : 'MHD ${DateFormat.Md(appLanguage).format(item.bestBefore!)}';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SoftCard(
@@ -520,7 +521,7 @@ class _PantryEditorState extends State<_PantryEditor> {
                 label: Text(
                   _bestBefore == null
                       ? 'Mindestens haltbar bis …'
-                      : 'MHD ${DateFormat('d.M.y', 'de').format(_bestBefore!)}',
+                      : 'MHD ${DateFormat.yMd(appLanguage).format(_bestBefore!)}',
                 ),
                 onPressed: () async {
                   final now = DateTime.now();

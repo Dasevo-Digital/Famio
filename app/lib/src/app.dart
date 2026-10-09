@@ -21,6 +21,9 @@ class FamioApp extends StatelessWidget {
       child: ListenableBuilder(
         listenable: Listenable.merge([state.highContrast, state.language]),
         builder: (context, _) => MaterialApp(
+          // A new language rebuilds everything, also the texts of widgets
+          // that would otherwise stay as they are.
+          key: ValueKey(appLanguage),
           title: AppEnv.appName,
           debugShowCheckedModeBanner: false,
           theme: famioTheme(
@@ -38,7 +41,7 @@ class FamioApp extends StatelessWidget {
             highContrast: true,
           ),
           scrollBehavior: const FamioScrollBehavior(),
-          locale: Locale(state.language.value),
+          locale: Locale(appLanguage),
           supportedLocales: L10n.supportedLocales,
           localizationsDelegates: const [
             L10n.delegate,
@@ -119,19 +122,12 @@ class _InsecureVaultConsentState extends State<_InsecureVaultConsent> {
                 const Icon(Icons.warning_amber_rounded, size: 56),
                 const SizedBox(height: 20),
                 Text(
-                  'Kein System-Schlüsselbund verfügbar',
+                  tr.appNoSystemKeychainAvailable,
                   style: Theme.of(context).textTheme.headlineSmall,
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Famio kann Anmeldung und lokalen Datenbankschlüssel auf '
-                  'diesem System nicht geschützt speichern. Wenn du '
-                  'fortfährst, liegen diese Geheimnisse lesbar in den '
-                  'Anwendungseinstellungen. Richte möglichst zuerst KWallet '
-                  'oder den GNOME-Schlüsselbund ein und starte Famio neu.',
-                  textAlign: TextAlign.center,
-                ),
+                Text(tr.appFamioCannotStoreSign, textAlign: TextAlign.center),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
                   Text(_error!, textAlign: TextAlign.center),
@@ -145,7 +141,7 @@ class _InsecureVaultConsentState extends State<_InsecureVaultConsent> {
                           height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Ungeschützte Speicherung erlauben'),
+                      : Text(tr.appAllowUnprotectedStorage),
                 ),
               ],
             ),

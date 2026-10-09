@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:famio_client/famio_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n.dart';
 
 /// One hour (or the current conditions) of the forecast.
 class WeatherHour {
@@ -96,18 +97,18 @@ class WeatherForecast {
 
 /// German description of a WMO weather code.
 String weatherText(int code) => switch (code) {
-  0 => 'Klar',
-  1 => 'Überwiegend klar',
-  2 => 'Teils bewölkt',
-  3 => 'Bewölkt',
-  45 || 48 => 'Nebel',
-  >= 51 && <= 57 => 'Nieselregen',
-  >= 61 && <= 67 => 'Regen',
-  >= 71 && <= 77 => 'Schnee',
-  >= 80 && <= 82 => 'Regenschauer',
-  85 || 86 => 'Schneeschauer',
-  >= 95 => 'Gewitter',
-  _ => 'Wetter',
+  0 => tr.weatherClear,
+  1 => tr.weatherMostlyClear,
+  2 => tr.weatherPartlyCloudy,
+  3 => tr.weatherCloudy,
+  45 || 48 => tr.weatherFog,
+  >= 51 && <= 57 => tr.weatherDrizzle,
+  >= 61 && <= 67 => tr.weatherRain,
+  >= 71 && <= 77 => tr.weatherSnow,
+  >= 80 && <= 82 => tr.weatherRainShowers,
+  85 || 86 => tr.weatherSnowShowers,
+  >= 95 => tr.weatherThunderstorm,
+  _ => tr.weatherWeather,
 };
 
 String weatherEmoji(int code) => switch (code) {
@@ -129,7 +130,7 @@ Place? weatherPlace(List<Place> places) =>
     places
         .where(
           (p) => RegExp(
-            r'zuhause|zu hause|home|daheim',
+            r'zuhause|zu hause|home|daheim|casa|hogar',
             caseSensitive: false,
           ).hasMatch(p.name),
         )
@@ -274,92 +275,86 @@ ClothingAdvice clothingAdvice(
 
   final (summary, items) = switch (felt) {
     >= 26 => (
-      'luftig',
+      tr.weatherAiry,
       [
-        baby ? 'Kurzarm-Body' : 'T-Shirt oder Top',
-        if (!baby) 'kurze Hose oder Kleid',
-        'Sonnenhut mit Nackenschutz',
+        baby ? tr.weatherShortSleevedBodysuit : tr.weatherTShirtTop,
+        if (!baby) tr.weatherShortsDress,
+        tr.weatherSunHatNeckProtection,
       ],
     ),
     >= 20 => (
-      'leicht',
+      tr.weatherLight,
       [
-        baby ? 'Body kurz + dünne Hose' : 'T-Shirt',
-        if (!baby) 'dünne lange Hose oder Rock',
-        'Sonnenhut',
-        if (baby) 'dünne Jacke oder Decke im Schatten',
+        baby ? tr.weatherShortBodysuitThinPants : tr.weatherTShirt,
+        if (!baby) tr.weatherThinLongPantsSkirt,
+        tr.weatherSunHat,
+        if (baby) tr.weatherThinJacketBlanketShade,
       ],
     ),
     >= 15 => (
-      'Übergang',
+      tr.weatherBetween,
       [
-        baby ? 'Langarm-Body + Strampler' : 'Langarmshirt',
-        if (!baby) 'lange Hose',
-        baby ? 'Strickjacke' : 'dünne Jacke oder Pulli',
-        if (toddler) 'dünne Mütze bei Wind',
+        baby ? tr.weatherLongSleevedBodysuitRomper : tr.weatherLongSleevedShirt,
+        if (!baby) tr.weatherLongPants,
+        baby ? tr.weatherCardigan : tr.weatherThinJacketSweater,
+        if (toddler) tr.weatherThinHatWhenWindy,
       ],
     ),
     >= 10 => (
-      'Jacke',
+      tr.weatherJacket,
       [
-        baby ? 'Langarm-Body + Pulli' : 'Pulli',
-        'Übergangsjacke',
-        'Mütze',
-        if (baby) 'Söckchen oder Schühchen',
+        baby ? tr.weatherLongSleevedBodysuitSweater : tr.weatherSweater,
+        tr.weatherLightJacket,
+        tr.weatherHat,
+        if (baby) tr.weatherSocksBooties,
       ],
     ),
     >= 5 => (
-      'warm',
+      tr.weatherWarm,
       [
-        baby ? 'Wollbody + Pulli' : 'Pulli',
-        baby ? 'gefütterter Overall' : 'warme Jacke',
-        'Mütze',
-        'Schal oder Halstuch',
-        if (baby) 'Fußsack oder Decke',
+        baby ? tr.weatherWoolBodysuitSweater : tr.weatherSweater,
+        baby ? tr.weatherLinedSnowsuit : tr.weatherWarmJacket,
+        tr.weatherHat,
+        tr.weatherScarfNeckerchief,
+        if (baby) tr.weatherFootmuffBlanket,
       ],
     ),
     >= 0 => (
-      'Winter',
+      tr.weatherWinter,
       [
-        baby ? 'Wollbody + Strumpfhose' : 'Thermo-Unterhemd oder Pulli',
-        baby ? 'Winteroverall' : 'Winterjacke',
-        'Wintermütze',
-        'Handschuhe',
-        'Schal',
-        if (baby) 'warmer Fußsack',
+        baby
+            ? tr.weatherWoolBodysuitTights
+            : tr.weatherThermalUndershirtSweater,
+        baby ? tr.weatherWinterSnowsuit : tr.weatherWinterJacket,
+        tr.weatherWinterHat,
+        tr.weatherGloves,
+        tr.weatherScarf,
+        if (baby) tr.weatherWarmFootmuff,
       ],
     ),
     _ => (
-      'eisig',
+      tr.weatherIcy,
       [
-        'Woll-Unterwäsche',
+        tr.weatherWoolUnderwear,
         baby
-            ? 'dicker Winteroverall'
-            : 'Schneeanzug oder Winterjacke + Schneehose',
-        'dicke Mütze',
-        'Fäustlinge',
-        'Schal',
-        'gefütterte Winterschuhe',
-        if (baby) 'Fußsack, nicht zu lange draußen',
+            ? tr.weatherThickWinterSnowsuit
+            : tr.weatherSnowsuitWinterJacketSnow,
+        tr.weatherThickHat,
+        tr.weatherMittens,
+        tr.weatherScarf,
+        tr.weatherLinedWinterBoots,
+        if (baby) tr.weatherFootmuffNotOutsideToo,
       ],
     ),
   };
   final extras = [
     if (snow)
-      toddler
-          ? 'Schnee: Matschhose und Stiefel'
-          : 'Schnee: Schneehose und Stiefel'
+      toddler ? tr.weatherSnowRainPantsBoots : tr.weatherSnowSnowPantsBoots
     else if (rain)
-      baby
-          ? 'Regen: Regenschutz für Kinderwagen oder Trage'
-          : 'Regen: Regenjacke, Matschhose, Gummistiefel',
-    if (wind && felt < 20) 'Windig: winddichte Jacke, Ohren bedecken',
-    if (uv >= 3)
-      baby
-          ? 'Sonne: Babys unter 1 Jahr in den Schatten, Sonnenhut'
-          : 'Sonne: Sonnencreme (LSF 30+), Sonnenhut',
-    if (baby && felt < 15)
-      'Babys: eine Schicht mehr als du – Nacken fühlen, nicht die Hände',
+      baby ? tr.weatherRainRainCoverStroller : tr.weatherRainRainJacketRain,
+    if (wind && felt < 20) tr.weatherWindyWindproofJacketCover,
+    if (uv >= 3) baby ? tr.weatherSunBabiesUnder1 : tr.weatherSunSunscreenSpf30,
+    if (baby && felt < 15) tr.weatherBabiesOneLayerMore,
   ];
   return ClothingAdvice(summary: summary, items: items, extras: extras);
 }
@@ -419,51 +414,51 @@ NightAdvice? nightAdvice(Child child, WeatherForecast w, {DateTime? at}) {
   final baby = months < 12;
   final (summary, items) = switch (low) {
     >= 20 => (
-      'sehr warm',
+      tr.weatherVeryWarm,
       [
         if (bag) ...[
-          'Kurzarm-Body',
-          'höchstens Schlafsack 0,5 TOG – bei über 26 °C im Zimmer nur Body',
+          tr.weatherShortSleevedBodysuit,
+          tr.weatherSleepingBag05,
         ] else ...[
-          'kurzer Schlafanzug',
-          'Laken statt Bettdecke',
+          tr.weatherShortPajamas,
+          tr.weatherSheetInsteadDuvet,
         ],
       ],
     ),
     >= 15 => (
-      'mild',
+      tr.weatherMild,
       [
         if (bag) ...[
-          baby ? 'Langarm-Body' : 'dünner Schlafanzug',
-          'Schlafsack 1,0 TOG',
+          baby ? tr.weatherLongSleevedBodysuit : tr.weatherThinPajamas,
+          tr.weatherSleepingBag10,
         ] else ...[
-          'dünner Schlafanzug',
-          'leichte Sommerdecke',
+          tr.weatherThinPajamas,
+          tr.weatherLightSummerBlanket,
         ],
       ],
     ),
     >= 8 => (
-      'kühl',
+      tr.weatherCool,
       [
         if (bag) ...[
-          baby ? 'Langarm-Body + Schlafanzug' : 'langer Schlafanzug',
-          'Schlafsack 2,5 TOG',
+          baby ? tr.weatherLongSleevedBodysuitPajamas : tr.weatherLongPajamas,
+          tr.weatherSleepingBag25,
         ] else ...[
-          'langer Schlafanzug',
-          'normale Bettdecke',
+          tr.weatherLongPajamas,
+          tr.weatherNormalDuvet,
         ],
       ],
     ),
     _ => (
-      'kalt',
+      tr.weatherCold,
       [
         if (bag) ...[
-          baby ? 'Langarm-Body + warmer Schlafanzug' : 'warmer Schlafanzug',
-          'Schlafsack 2,5–3,5 TOG',
+          baby ? tr.weatherLongSleevedBodysuitWarm : tr.weatherWarmPajamas,
+          tr.weatherSleepingBag252,
         ] else ...[
-          'warmer langer Schlafanzug',
-          'Socken',
-          'warme Bettdecke',
+          tr.weatherWarmLongPajamas,
+          tr.weatherSocks,
+          tr.weatherWarmDuvet,
         ],
       ],
     ),
@@ -473,9 +468,9 @@ NightAdvice? nightAdvice(Child child, WeatherForecast w, {DateTime? at}) {
     summary: summary,
     items: items,
     hints: [
-      if (baby) 'Babys: ohne Decke, Kissen und Mütze schlafen lassen',
-      'Warm genug? Nacken fühlen, nicht die Hände – Schlafzimmer ideal 16–20 °C',
-      if (low >= 20) 'Warme Nacht: lüften, Zimmer abdunkeln',
+      if (baby) tr.weatherBabiesLetThemSleep,
+      tr.weatherWarmEnoughFeelNeck,
+      if (low >= 20) tr.weatherWarmNightAirRoom,
     ],
   );
 }

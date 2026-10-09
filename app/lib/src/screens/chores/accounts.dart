@@ -95,7 +95,7 @@ class MemberAccountScreen extends StatelessWidget {
         final money = engine.moneyOf(memberId);
         final allowance = engine.allowance(memberId);
         final adult = engine.iAmAdult;
-        final day = DateFormat('d.M.', 'de');
+        final day = DateFormat.Md(appLanguage);
         return SectionPage(
           maxBodyWidth: 720,
           section: FamioSection.chores,

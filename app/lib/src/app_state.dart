@@ -19,6 +19,7 @@ import 'reminders/reminder_service.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
 import 'platform/browser.dart';
+import 'l10n.dart';
 
 /// A server address checked by [AppState.resolveServer]: what to connect
 /// to, the certificate to pin and what the server reported.
@@ -49,13 +50,17 @@ class AppState extends ChangeNotifier {
   /// The wall display shows family photos after a while without touch.
   bool get kioskPhotos => _prefs.getBool('kiosk.photos') ?? true;
 
-  /// Language of the app on this device: German (default) or English
-  /// (preview while not everything is translated).
-  final language = ValueNotifier('de');
+  /// Language setting of this device: 'system' (the device's language if
+  /// Famio speaks it, otherwise English) or one of [appLanguages].
+  final language = ValueNotifier('system');
 
   Future<void> setLanguage(String value) async {
-    language.value = value == 'en' ? 'en' : 'de';
-    await _prefs.setString('language', language.value);
+    final choice = appLanguages.containsKey(value) ? value : 'system';
+    useLanguage(resolveLanguage(choice));
+    language.value = choice;
+    await _prefs.setString('language', choice);
+    // Notifications already planned are in the old language.
+    _reminders?.refresh();
   }
 
   /// Sunday evening's notification about the coming week.
@@ -173,7 +178,9 @@ class AppState extends ChangeNotifier {
     _lifecycle;
     _prefs = await SharedPreferences.getInstance();
     highContrast.value = _prefs.getBool('highContrast') ?? false;
-    language.value = _prefs.getString('language') == 'en' ? 'en' : 'de';
+    final choice = _prefs.getString('language');
+    language.value = appLanguages.containsKey(choice) ? choice! : 'system';
+    useLanguage(resolveLanguage(language.value));
     if (kIsWeb) return _initWeb();
     try {
       vault = await SecureVault.open(_prefs);
@@ -279,11 +286,7 @@ class AppState extends ChangeNotifier {
   Future<ResolvedServer> _resolveHttps(Uri url, TrustCertificate trust) async {
     final fingerprint = await FamioApiClient.untrustedCertificate(url);
     if (fingerprint != null && !await trust(fingerprint)) {
-      throw const ApiError(
-        0,
-        'untrusted',
-        'Zertifikat nicht bestätigt – Verbindung abgebrochen.',
-      );
+      throw ApiError(0, 'untrusted', tr.appCertificateNotConfirmedConnection);
     }
     final client = _client(url.toString(), fingerprint);
     return ResolvedServer(
@@ -300,12 +303,7 @@ class AppState extends ChangeNotifier {
     // The web app uses the connection of its own page.
     if (!kIsWeb &&
         FamioApiClient.transportSecurity(uri) == TransportSecurity.insecure) {
-      throw const ApiError(
-        0,
-        'insecure',
-        'Über das Internet nur verschlüsselt: bitte die Adresse mit '
-            'https:// angeben (z. B. über den Reverse-Proxy).',
-      );
+      throw ApiError(0, 'insecure', tr.appOverInternetOnlyEncrypted);
     }
     return FamioApiClient(url, token: token, pinnedCertificate: pin);
   }
@@ -373,11 +371,7 @@ class AppState extends ChangeNotifier {
       }
     }
     if (!cancelled()) {
-      throw const ApiError(
-        0,
-        'sso_timeout',
-        'Die Anmeldung im Browser wurde nicht abgeschlossen.',
-      );
+      throw ApiError(0, 'sso_timeout', tr.appSigningThroughBrowserWas);
     }
   }
 
@@ -489,19 +483,10 @@ class AppState extends ChangeNotifier {
       there = await _client(server.url, server.pin, token: token).me();
     } on ApiError catch (e) {
       if (e.status != 401) rethrow;
-      throw const ApiError(
-        401,
-        'unauthorized',
-        'Dieser Server kennt deine Anmeldung nicht – ist es wirklich euer '
-            'umgezogener Famio-Server? Sonst abmelden und neu verbinden.',
-      );
+      throw ApiError(401, 'unauthorized', tr.appServerDoesNotKnow);
     }
     if (there.id != member.id) {
-      throw const ApiError(
-        409,
-        'other_member',
-        'Dort bist du als jemand anderes angemeldet.',
-      );
+      throw ApiError(409, 'other_member', tr.appYouSignedThereSomeone);
     }
     await _stopSession();
     await _startSession(server.url, token, there, pin: server.pin);
@@ -637,7 +622,7 @@ class AppState extends ChangeNotifier {
     );
     engine.statusChanges.listen((status) {
       if (status.state == SyncState.unauthorized && this.engine == engine) {
-        signOut(notice: 'Deine Sitzung ist abgelaufen. Bitte neu anmelden.');
+        signOut(notice: tr.appSessionHasExpiredPlease);
       }
       if (status.state == SyncState.offline && pin != null) {
         _checkCertificate(normalized, pin);

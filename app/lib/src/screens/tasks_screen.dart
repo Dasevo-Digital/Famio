@@ -13,6 +13,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 enum _Filter {
   open('Offen'),
@@ -232,7 +233,7 @@ class _TaskTile extends StatelessWidget {
         ).isBefore(DateUtils.dateOnly(DateTime.now()));
     final remind = task.remindAt;
     final subtitle = [
-      if (task.due != null) DateFormat('E, d. MMM', 'de').format(task.due!),
+      if (task.due != null) DateFormat.MMMEd(appLanguage).format(task.due!),
       if (task.repeat case final r?) '↻ ${r.label(task.repeatEvery)}',
       if (task.checklistProgress case final p?) '☑ $p',
       if (!task.done && remind != null && remind.isAfter(DateTime.now()))
@@ -284,7 +285,7 @@ class _TaskTile extends StatelessWidget {
                         persist: false,
                         content: Text(
                           '„${task.title}“ erledigt – wieder fällig '
-                          '${DateFormat('EEEE, d. MMMM', 'de').format(next.due!)}',
+                          '${DateFormat.MMMMEEEEd(appLanguage).format(next.due!)}',
                         ),
                         action: SnackBarAction(
                           label: 'Rückgängig',
@@ -509,7 +510,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                   label: Text(
                     _due == null
                         ? 'Fällig am …'
-                        : DateFormat('EEEE, d. MMMM', 'de').format(_due!),
+                        : DateFormat.MMMMEEEEd(appLanguage).format(_due!),
                   ),
                   onPressed: _pickDate,
                   onDeleted: _due == null

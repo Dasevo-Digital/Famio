@@ -11,6 +11,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 const _collections = {
   Collections.budgetEntries,
@@ -59,12 +60,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.budget,
-      title: 'Finanzen',
-      subtitle: 'Haushaltsbuch der Familie',
+      title: tr.sectionBudget,
+      subtitle: tr.budgetFamilySHouseholdBook,
       actions: [
         BubbleButton(
           icon: AppIcons.gearSix,
-          tooltip: 'Wer sieht es, Limits',
+          tooltip: tr.budgetWhoSeesLimits,
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const _BudgetSettings()),
           ),
@@ -74,7 +75,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
       ],
       floating: AddButton(
         color: color,
-        tooltip: 'Buchung hinzufügen',
+        tooltip: tr.budgetAddBooking,
         onPressed: () => showBudgetEntryEditor(context),
       ),
       body: DataBuilder(
@@ -87,11 +88,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
             return EmptyHint(
               icon: AppIcons.wallet,
               color: color,
-              text:
-                  'Behaltet Einnahmen und Ausgaben im Blick –\n'
-                  'mit Limits pro Kategorie. Wer es sieht, legt ihr fest.',
+              text: tr.budgetKeepEyeIncomeExpenses,
               action: ColorButton(
-                label: 'Erste Buchung',
+                label: tr.budgetFirstBooking,
                 color: color,
                 onPressed: () => showBudgetEntryEditor(context),
               ),
@@ -112,21 +111,21 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 children: [
                   IconButton(
                     icon: const Icon(AppIcons.caretLeft),
-                    tooltip: 'Voriger Monat',
+                    tooltip: tr.budgetPreviousMonth,
                     onPressed: () => setState(
                       () => _month = DateTime(_month.year, _month.month - 1),
                     ),
                   ),
                   Expanded(
                     child: Text(
-                      DateFormat('MMMM y', 'de').format(_month),
+                      DateFormat.yMMMM(appLanguage).format(_month),
                       textAlign: TextAlign.center,
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
                   IconButton(
                     icon: const Icon(AppIcons.caretRight),
-                    tooltip: 'Nächster Monat',
+                    tooltip: tr.budgetNextMonth,
                     onPressed: () => setState(
                       () => _month = DateTime(_month.year, _month.month + 1),
                     ),
@@ -140,10 +139,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   runSpacing: 12,
                   children: [
                     for (final (label, cents, col) in [
-                      ('Einnahmen', m.income, color),
-                      ('Ausgaben', m.expenses, const Color(0xFFE8703A)),
+                      (tr.budgetIncome, m.income, color),
+                      (tr.budgetExpenses, m.expenses, const Color(0xFFE8703A)),
                       (
-                        'Saldo',
+                        tr.homeBalance,
                         m.balance,
                         m.balance < 0 ? theme.colorScheme.error : color,
                       ),
@@ -164,7 +163,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 ),
               ),
               if (categories.isNotEmpty) ...[
-                const ListHeading('Ausgaben nach Kategorie'),
+                ListHeading(tr.budgetExpensesCategory),
                 SoftCard(
                   child: Column(
                     children: [
@@ -179,10 +178,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   ),
                 ),
               ],
-              const ListHeading('Buchungen'),
+              ListHeading(tr.budgetBookings),
               if (m.entries.isEmpty)
                 Text(
-                  'Keine Buchungen in diesem Monat.',
+                  tr.budgetNoBookingsMonth,
                   style: theme.textTheme.bodySmall,
                 ),
               for (final e in m.entries)
@@ -193,13 +192,23 @@ class _BudgetScreenState extends State<BudgetScreen> {
                     color: e.income ? color : const Color(0xFFE8703A),
                     size: 38,
                   ),
-                  title: Text(e.note.isEmpty ? e.category : e.note),
+                  title: Text(
+                    e.note.isEmpty ? categoryLabel(e.category) : e.note,
+                  ),
                   subtitle: Text(
                     [
-                      if (e.note.isNotEmpty) e.category,
+                      if (e.note.isNotEmpty) categoryLabel(e.category),
                       e.monthly
-                          ? 'monatlich${e.until == null ? '' : ' bis ${DateFormat('M/y').format(e.until!)}'}'
-                          : DateFormat('d.M.', 'de').format(e.date),
+                          ? tr.budgetMonthlyUntil(
+                              e.until == null
+                                  ? ''
+                                  : tr.budgetUntilDate(
+                                      DateFormat.yM(
+                                        appLanguage,
+                                      ).format(e.until!),
+                                    ),
+                            )
+                          : DateFormat.Md(appLanguage).format(e.date),
                       ?engine.member(e.memberId)?.displayName,
                     ].join(' · '),
                   ),
@@ -214,8 +223,13 @@ class _BudgetScreenState extends State<BudgetScreen> {
               const SizedBox(height: 12),
               Text(
                 settings.memberIds.isEmpty
-                    ? 'Sichtbar für die ganze Familie – über ⚙ einschränken.'
-                    : 'Sichtbar für: ${[for (final id in settings.memberIds) ?engine.member(id)?.displayName].join(', ')}.',
+                    ? tr.budgetVisibleWholeFamilyRestrict
+                    : tr.budgetVisibleNames(
+                        [
+                          for (final id in settings.memberIds)
+                            ?engine.member(id)?.displayName,
+                        ].join(', '),
+                      ),
                 style: theme.textTheme.bodySmall,
               ),
             ],
@@ -225,6 +239,26 @@ class _BudgetScreenState extends State<BudgetScreen> {
     );
   }
 }
+
+/// The name of a budget category in the app's language. Entries keep the
+/// German name of the default categories; own ones stay as they are.
+String categoryLabel(String category) => switch (category) {
+  'Lebensmittel' => tr.budgetGroceries,
+  'Haushalt' => tr.budgetHousehold,
+  'Wohnen' => tr.budgetHousing,
+  'Mobilität' => tr.budgetMobility,
+  'Kinder' => tr.budgetKids,
+  'Gesundheit' => tr.budgetHealth,
+  'Freizeit' => tr.budgetLeisure,
+  'Kleidung' => tr.budgetClothing,
+  'Versicherungen' => tr.budgetInsurance,
+  'Sonstiges' => tr.budgetOther,
+  'Gehalt' => tr.budgetSalary,
+  'Kindergeld' => tr.budgetChildBenefit,
+  'Elterngeld' => tr.budgetParentalAllowance,
+  'Sonstige Einnahmen' => tr.budgetOtherIncome,
+  _ => category,
+};
 
 /// Icon of a budget category (own categories: wallet or piggy bank).
 IconData categoryIcon(String category, {bool income = false}) =>
@@ -282,10 +316,10 @@ class _CategoryBar extends StatelessWidget {
             children: [
               Icon(categoryIcon(category), size: 16, color: c.inkSoft),
               const SizedBox(width: 8),
-              Expanded(child: Text(category)),
+              Expanded(child: Text(categoryLabel(category))),
               Text(
                 hasLimit
-                    ? '${formatEuro(spent)} von ${formatEuro(limit!)}'
+                    ? tr.budgetSpentLimit(formatEuro(spent), formatEuro(limit!))
                     : '${formatEuro(spent)} · ${(value * 100).round()} %',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: over ? color : null,
@@ -357,9 +391,9 @@ class _EntryEditorState extends State<_EntryEditor> {
   void _save({DateTime? until}) {
     final cents = parseEuro(_amount.text);
     if (cents == null || cents == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Bitte einen Betrag angeben')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.budgetPleaseEnterAmount)));
       return;
     }
     AppScope.engineOf(context).saveBudgetEntry(
@@ -400,9 +434,9 @@ class _EntryEditorState extends State<_EntryEditor> {
           children: [
             SegmentedButton<bool>(
               showSelectedIcon: false,
-              segments: const [
-                ButtonSegment(value: false, label: Text('Ausgabe')),
-                ButtonSegment(value: true, label: Text('Einnahme')),
+              segments: [
+                ButtonSegment(value: false, label: Text(tr.budgetExpense)),
+                ButtonSegment(value: true, label: Text(tr.budgetIncome2)),
               ],
               selected: {_income},
               onSelectionChanged: (s) => setState(() => _income = s.first),
@@ -415,8 +449,8 @@ class _EntryEditorState extends State<_EntryEditor> {
                 decimal: true,
               ),
               style: theme.textTheme.headlineSmall,
-              decoration: const InputDecoration(
-                labelText: 'Betrag',
+              decoration: InputDecoration(
+                labelText: tr.commonAmount,
                 suffixText: '€',
               ),
             ),
@@ -427,7 +461,7 @@ class _EntryEditorState extends State<_EntryEditor> {
               children: [
                 for (final cat in categories)
                   ChoiceChip(
-                    label: Text(cat),
+                    label: Text(categoryLabel(cat)),
                     selected: _category == cat,
                     onSelected: (_) => setState(() => _category = cat),
                   ),
@@ -437,9 +471,9 @@ class _EntryEditorState extends State<_EntryEditor> {
             TextField(
               controller: _note,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Wofür? (optional)',
-                hintText: 'z. B. Wocheneinkauf, Miete, Schwimmkurs',
+              decoration: InputDecoration(
+                labelText: tr.budgetWhatOptional,
+                hintText: tr.budgetEGWeeklyShopping,
               ),
             ),
             const SizedBox(height: 12),
@@ -451,7 +485,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                 InputChip(
                   avatar: const Icon(AppIcons.calendarBlank, size: 18),
                   label: Text(
-                    '${_monthly ? 'Ab ' : ''}${DateFormat('d.M.y', 'de').format(_date)}',
+                    '${_monthly ? tr.budgetFrom : ''}${DateFormat.yMd(appLanguage).format(_date)}',
                   ),
                   onPressed: () async {
                     final picked = await showDatePicker(
@@ -465,7 +499,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                 ),
                 FilterChip(
                   avatar: const Icon(AppIcons.repeat, size: 16),
-                  label: const Text('Monatlich'),
+                  label: Text(tr.budgetMonthly),
                   selected: _monthly,
                   onSelected: (v) => setState(() => _monthly = v),
                 ),
@@ -485,7 +519,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                 if (widget.existing != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -508,11 +542,11 @@ class _EntryEditorState extends State<_EntryEditor> {
                     // Keeps the past months, stops after this one.
                     onPressed: () =>
                         _save(until: DateTime(now.year, now.month + 1, 0)),
-                    child: const Text('Nach diesem Monat beenden'),
+                    child: Text(tr.budgetEndAfterMonth),
                   ),
                 const Spacer(),
                 ColorButton(
-                  label: 'Speichern',
+                  label: tr.commonSave,
                   color: color,
                   onPressed: () => _save(),
                 ),
@@ -575,10 +609,10 @@ class _BudgetSettingsState extends State<_BudgetSettings> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.budget,
-      title: 'Budget-Einstellungen',
+      title: tr.budgetBudgetSettings,
       actions: [
         ColorButton(
-          label: 'Speichern',
+          label: tr.commonSave,
           color: FamioColors.of(context).strong(FamioSection.budget),
           onPressed: _save,
         ),
@@ -586,7 +620,7 @@ class _BudgetSettingsState extends State<_BudgetSettings> {
       body: ListView(
         padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
         children: [
-          const ListHeading('Wer sieht das Budget?'),
+          ListHeading(tr.budgetWhoSeesBudget),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -605,12 +639,11 @@ class _BudgetSettingsState extends State<_BudgetSettings> {
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 4),
             child: Text(
-              'Niemand ausgewählt: die ganze Familie. Der Server gibt die '
-              'Buchungen nur an die Ausgewählten heraus.',
+              tr.budgetNobodySelectedWholeFamily,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
-          const ListHeading('Monatliche Limits'),
+          ListHeading(tr.budgetMonthlyLimits),
           for (final c in expenseCategories)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -619,7 +652,10 @@ class _BudgetSettingsState extends State<_BudgetSettings> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: InputDecoration(labelText: c, suffixText: '€'),
+                decoration: InputDecoration(
+                  labelText: categoryLabel(c),
+                  suffixText: '€',
+                ),
               ),
             ),
         ],

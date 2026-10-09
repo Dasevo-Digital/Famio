@@ -4,14 +4,14 @@ part of '../location_screens.dart';
 String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
   now ??= DateTime.now();
   if (l == null) return 'Teilt keinen Standort';
-  final time = DateFormat('HH:mm', 'de');
+  final time = DateFormat.jm(appLanguage);
   switch (l.state) {
     case SharingState.paused:
       final until = l.pausedUntil;
       if (until == null) return 'Pausiert';
       return DateUtils.isSameDay(until, now)
           ? 'Pausiert bis ${time.format(until)} Uhr'
-          : 'Pausiert bis ${DateFormat('E, HH:mm', 'de').format(until)} Uhr';
+          : 'Pausiert bis ${DateFormat.E(appLanguage).add_jm().format(until)} Uhr';
     case SharingState.denied:
       return 'Standortzugriff auf dem Handy fehlt';
     case SharingState.off:
@@ -44,7 +44,7 @@ String ago(DateTime t, {DateTime? now}) {
   if (d.inMinutes < 2) return 'gerade eben';
   if (d.inMinutes < 60) return 'vor ${d.inMinutes} Min.';
   if (d.inHours < 24) return 'vor ${d.inHours} Std.';
-  return DateFormat('d.M., HH:mm', 'de').format(t);
+  return DateFormat.Md(appLanguage).add_jm().format(t);
 }
 
 String scheduleLabel(LocationSchedule? schedule) {

@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../l10n.dart';
 
 /// The setup checklist for admins: what is done, what is missing and where
 /// to change it. Loaded from the server each time it is shown.
@@ -32,7 +33,7 @@ class _SetupChecklistState extends State<SetupChecklist> {
         final steps = snapshot.data;
         if (steps == null) {
           return snapshot.hasError
-              ? const Text('Einrichtung: Status nicht verfügbar')
+              ? Text(tr.setupSetupStatusNotAvailable)
               : const LinearProgressIndicator();
         }
         final done = steps.where((s) => s.done).length;
@@ -45,13 +46,13 @@ class _SetupChecklistState extends State<SetupChecklist> {
                   Expanded(
                     child: Text(
                       done == steps.length
-                          ? 'Alles eingerichtet'
-                          : '$done von ${steps.length} erledigt',
+                          ? tr.setupEverythingSetUp
+                          : tr.setupDoneTotalDone(done, steps.length),
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
                   IconButton(
-                    tooltip: 'Erneut prüfen',
+                    tooltip: tr.commonCheckAgain,
                     icon: const Icon(AppIcons.arrowsClockwise),
                     onPressed: () => setState(() => _steps = _load()),
                   ),
@@ -70,7 +71,9 @@ class _SetupChecklistState extends State<SetupChecklist> {
                         color: s.done
                             ? c.strong(FamioSection.tasks)
                             : theme.colorScheme.error,
-                        semanticLabel: s.done ? 'erledigt' : 'offen',
+                        semanticLabel: s.done
+                            ? tr.commonDoneLower
+                            : tr.commonOpenLower,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -165,12 +168,12 @@ class _SetupBannerState extends State<SetupBanner> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Einrichtung abschließen ($done von ${steps.length})',
+                    tr.setupFinishSetupDoneTotal(done, steps.length),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Ausblenden',
+                  tooltip: tr.commonHide,
                   icon: const Icon(AppIcons.x),
                   onPressed: () async {
                     final prefs = await SharedPreferences.getInstance();

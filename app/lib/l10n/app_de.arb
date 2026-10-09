@@ -96,6 +96,2383 @@
   "settingsStorageClear": "Leeren",
   "settingsLanguage": "Sprache",
   "navMore": "Mehr",
-  "languageEnglishPreview": "Englisch (Vorschau, noch nicht alles übersetzt)",
-  "languageGerman": "Deutsch"
+  "languageSystem": "Wie das Gerät",
+  "setupSetupStatusNotAvailable": "Einrichtung: Status nicht verfügbar",
+  "setupEverythingSetUp": "Alles eingerichtet",
+  "setupDoneTotalDone": "{done} von {total} erledigt",
+  "@setupDoneTotalDone": {
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonCheckAgain": "Erneut prüfen",
+  "commonDoneLower": "erledigt",
+  "commonOpenLower": "offen",
+  "setupFinishSetupDoneTotal": "Einrichtung abschließen ({done} von {total})",
+  "@setupFinishSetupDoneTotal": {
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonHide": "Ausblenden",
+  "commonToday": "Heute",
+  "commonTomorrow": "Morgen",
+  "commonYesterday": "Gestern",
+  "appNoSystemKeychainAvailable": "Kein System-Schlüsselbund verfügbar",
+  "appFamioCannotStoreSign": "Famio kann Anmeldung und lokalen Datenbankschlüssel auf diesem System nicht geschützt speichern. Wenn du fortfährst, liegen diese Geheimnisse lesbar in den Anwendungseinstellungen. Richte möglichst zuerst KWallet oder den GNOME-Schlüsselbund ein und starte Famio neu.",
+  "appAllowUnprotectedStorage": "Ungeschützte Speicherung erlauben",
+  "appCertificateNotConfirmedConnection": "Zertifikat nicht bestätigt – Verbindung abgebrochen.",
+  "appOverInternetOnlyEncrypted": "Über das Internet nur verschlüsselt: bitte die Adresse mit https:// angeben (z. B. über den Reverse-Proxy).",
+  "appSigningThroughBrowserWas": "Die Anmeldung im Browser wurde nicht abgeschlossen.",
+  "appServerDoesNotKnow": "Dieser Server kennt deine Anmeldung nicht – ist es wirklich euer umgezogener Famio-Server? Sonst abmelden und neu verbinden.",
+  "appYouSignedThereSomeone": "Dort bist du als jemand anderes angemeldet.",
+  "appSessionHasExpiredPlease": "Deine Sitzung ist abgelaufen. Bitte neu anmelden.",
+  "commonBack": "Zurück",
+  "caldavNewAppPassword": "Neues App-Passwort",
+  "commonCreate": "Erstellen",
+  "caldavWhichDevice": "Für welches Gerät?",
+  "caldavEGMomS": "z. B. iPhone von Mama",
+  "caldavShowPrivateEvents": "Vertrauliche Termine zeigen",
+  "caldavOnlyOwnDevicesCalendar": "Nur für eigene Geräte. Die Kalender-App speichert die Termine auf dem Gerät.",
+  "caldavNameSMac": "Mac von {name}",
+  "@caldavNameSMac": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavNameSIphone": "iPhone von {name}",
+  "@caldavNameSIphone": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavSetUpAppleDevice": "Apple-Gerät einrichten",
+  "caldavCreateProfile": "Profil erstellen",
+  "caldavServerAddressDevice": "Serveradresse für dieses Gerät",
+  "caldavLocalhostOnlyWorksMac": "„localhost“ gilt nur für diesen Mac – für andere Geräte die Adresse im Heimnetz eintragen.",
+  "caldavWayDeviceReachesServer": "So, wie das Gerät den Server erreicht.",
+  "caldavSaveProfileAppleCalendar": "Profil für Apple Kalender sichern",
+  "caldavNotSavedDisconnectApp": "Nicht gesichert – das App-Passwort unten wieder trennen.",
+  "caldavSystemSettingsGeneralDevice": "Systemeinstellungen → Allgemein → Geräteverwaltung → „Famio-Kalender“ installieren, danach die Datei löschen.",
+  "caldavProfileSavedOpenInstall": "Profil gesichert: auf dem Apple-Gerät öffnen und installieren, danach die Datei löschen.",
+  "caldavProfileNotSavedError": "Profil nicht gesichert ({error})",
+  "@caldavProfileNotSavedError": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavDisconnectName": "„{name}“ trennen?",
+  "@caldavDisconnectName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavCalendarAppThatDevice": "Die Kalender-App auf diesem Gerät kann sich danach nicht mehr mit Famio verbinden.",
+  "commonDisconnect": "Trennen",
+  "commonOnlyWithServer": "Nur mit Verbindung zum Server verfügbar",
+  "commonAgain": "Erneut",
+  "caldavCopyAddress": "Adresse kopieren",
+  "caldavAddressCopied": "Adresse kopiert",
+  "caldavServerAddressEverywhere": "Serveradresse (überall)",
+  "commonServerAddress": "Serveradresse",
+  "commonUsername": "Benutzername",
+  "caldavCertificateSha256Compare": "Zertifikat (SHA-256) zum Vergleichen",
+  "caldavNotUsedYet": "noch nicht benutzt",
+  "caldavPrivateEvents": "mit vertraulichen Terminen",
+  "caldavCreateAppPassword": "App-Passwort erstellen",
+  "caldavHowWorksMacIphone": "So geht’s mit Mac, iPhone und iPad",
+  "caldavSetUpAppleDevice2": "„Apple-Gerät einrichten“ erstellt ein Profil mit eigenem App-Passwort (und dem Zertifikat des Servers). Es bringt die Termine in Apple Kalender und Aufgaben und Einkaufslisten in Apple Erinnerungen.",
+  "caldavMacSaveProfileOpens": "Mac: Profil sichern, es öffnet sich in den Systemeinstellungen → Allgemein → Geräteverwaltung → „Famio-Kalender“ doppelklicken → Installieren.",
+  "caldavIphoneIpadSaveProfile": "iPhone/iPad: Profil in „Dateien“ sichern, dort antippen, dann Einstellungen → „Profil geladen“ → Installieren.",
+  "caldavDeleteProfileFileAfterwards": "Die Profildatei danach löschen – sie enthält das Passwort.",
+  "caldavGoOnlyWorksInternet": "Unterwegs klappt das nur mit der Internet-Adresse oder VPN.",
+  "caldavHowWorksAndroidDavx": "So geht’s auf Android (DAVx⁵)",
+  "caldavInstallDavxPlayStore": "DAVx⁵ aus dem Play Store oder F-Droid installieren.",
+  "caldavLoginUrlUserName": "„+“ → „Mit URL und Benutzername anmelden“.",
+  "caldavBaseUrlAddressAbove": "Basis-URL: die Adresse von oben, Benutzername „{user}“, Passwort: das App-Passwort.",
+  "@caldavBaseUrlAddressAbove": {
+    "placeholders": {
+      "user": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavSelectFamioCalendarThen": "Kalender „Famio“ auswählen – er erscheint dann im Google- oder Samsung-Kalender auf dem Handy.",
+  "caldavOneAppPasswordPer": "Pro Gerät ein eigenes App-Passwort – so lässt sich jedes einzeln trennen. Dein Famio-Passwort funktioniert hier bewusst nicht.",
+  "caldavAppPassword": "Dein App-Passwort",
+  "caldavEnterNowPasswordCalendar": "Jetzt in der Kalender-App als Passwort eingeben. Famio zeigt es nur dieses eine Mal an. Groß-/Kleinschreibung und Bindestriche sind egal.",
+  "commonCopy": "Kopieren",
+  "commonDone": "Fertig",
+  "caldavNewPasswordName": "Neues Passwort für „{name}“",
+  "@caldavNewPasswordName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonPassword": "Passwort",
+  "caldavEventsThatCameThere": "Termine, die von dort kamen, verschwinden aus Famio. Der andere Kalender behält alles, auch die Termine aus Famio.",
+  "caldavOnlyMyEvents": "nur meine Termine",
+  "caldavVisibleWho": "Sichtbar für: {who}",
+  "@caldavVisibleWho": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonSyncNow": "Jetzt abgleichen",
+  "caldavOnlySendMyEvents": "Nur meine Termine senden",
+  "caldavShare": "Teilen …",
+  "caldavConnectCalendar": "Kalender verbinden",
+  "caldavGoogleNeedsItsOwn": "Google braucht einen eigenen, kostenlosen Zugang in der Google Cloud Console (einmalig, siehe Anleitung). Danach meldest du dich im Browser bei Google an.",
+  "caldavAppSpecificPasswordAppleid": "App-spezifisches Passwort: appleid.apple.com → Anmelden und Sicherheit → App-spezifische Passwörter. Dein normales Apple-Passwort funktioniert nicht.",
+  "caldavPreferablyAppPasswordNextcloud": "Am besten ein App-Passwort: Nextcloud → Einstellungen → Sicherheit → Neues App-Passwort erstellen.",
+  "caldavMailboxOrgPasswordApp": "Dein mailbox.org-Passwort oder ein App-Passwort.",
+  "caldavPosteoPassword": "Dein Posteo-Passwort.",
+  "commonOther": "Andere",
+  "caldavAddressCaldavServerE": "Adresse des CalDAV-Servers, z. B. von Synology, Radicale oder deinem Anbieter.",
+  "commonBrowserFailed": "Browser ließ sich nicht öffnen",
+  "caldavSyncEventsBothDirections": "Termine in beide Richtungen abgleichen",
+  "caldavHowCreateGoogleAccess": "So legst du den Google-Zugang an (einmalig)",
+  "caldavOpenConsoleCloudGoogle": "console.cloud.google.com öffnen und ein Projekt anlegen, z. B. „Famio“.",
+  "caldavApisServicesLibraryEnable": "„APIs & Dienste“ → „Bibliothek“: „Google Calendar API“ und „CalDAV API“ aktivieren.",
+  "caldavOauthConsentScreenType": "„OAuth-Zustimmungsbildschirm“: Typ „Extern“, App-Name Famio, deine E-Mail; unter Zielgruppe den Veröffentlichungsstatus auf „In Produktion“ setzen (sonst läuft der Zugang nach 7 Tagen ab).",
+  "caldavCredentialsCreateCredentialsOauth": "„Anmeldedaten“ → „Anmeldedaten erstellen“ → „OAuth-Client-ID“ → Anwendungstyp „Desktop-App“.",
+  "caldavEnterClientIdClient": "Client-ID und Clientschlüssel hier eintragen und „Bei Google anmelden“ tippen. Google warnt, die App sei nicht überprüft – das ist dein eigenes Projekt: „Erweitert“ → „Weiter zu Famio“.",
+  "caldavClientSecret": "Clientschlüssel",
+  "caldavSignGoogle": "Bei Google anmelden",
+  "caldavFindCalendars": "Kalender suchen",
+  "caldavWhichCalendar": "Welcher Kalender?",
+  "caldavReadOnlyPleaseAdd": "Nur lesbar – bitte als Abo einbinden",
+  "caldavEventsYouTakePart": "Termine, bei denen du dabei bist, und Termine für die ganze Familie.",
+  "caldavSeeEventsThere": "Termine von dort sehen",
+  "caldavYouCanChangeAny": "Das kannst du später jederzeit ändern. Ein Admin kann geteilte Kalender für einzelne Mitglieder ausblenden.",
+  "caldavPrivateEventsNeverTransferred": "Vertrauliche Termine werden nie übertragen. Termine, die Famio nicht genau abbilden kann (z. B. „jeden 2. Dienstag“), erscheinen schreibgeschützt.",
+  "commonConnect": "Verbinden",
+  "caldavEventsSynced": "{count} Termine abgeglichen",
+  "@caldavEventsSynced": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "caldavEventsSyncedLast": "{count} Termine abgeglichen, zuletzt {when}",
+  "@caldavEventsSyncedLast": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "when": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSchoolHolidaysStateAlready": "Schulferien {state} sind schon abonniert",
+  "@adminSchoolHolidaysStateAlready": {
+    "placeholders": {
+      "state": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSchoolHolidaysState": "Schulferien {state}",
+  "@adminSchoolHolidaysState": {
+    "placeholders": {
+      "state": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSchoolHolidaysStateSubscribed": "Schulferien {state} abonniert – sie erscheinen nach dem nächsten Abgleich im Kalender.",
+  "@adminSchoolHolidaysStateSubscribed": {
+    "placeholders": {
+      "state": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminServerSettingsSaved": "Servereinstellungen gespeichert",
+  "adminAreas": "Bereiche",
+  "adminWhatFamilyDoesNot": "Was die Familie nicht nutzt, verschwindet aus Menü und Startseite – in allen Apps. Die Daten bleiben erhalten.",
+  "adminListConnections": "Listen-Anbindungen",
+  "adminMembersMaySyncTasks": "Mitglieder dürfen Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do abgleichen.",
+  "commonSave": "Speichern",
+  "adminAreasSaved": "Bereiche gespeichert",
+  "adminParentsCode": "Eltern-Code",
+  "adminCodeParentsCanPause": "Mit diesem Code können Eltern die Standortfreigabe eines Familienmitglieds pausieren oder auf einem Handy beenden. Kindern nicht verraten.",
+  "adminNewCodeLeast4": "Neuer Code (mind. 4 Zeichen)",
+  "adminRepeatCode": "Code wiederholen",
+  "adminCodesDoNotMatch": "Die Codes stimmen nicht überein",
+  "adminResetSettings": "Einstellungen zurücksetzen?",
+  "adminPublicAddressTimeZone": "Öffentliche Adresse, Zeitzone, maximale Dateigröße und Kartenserver gelten wieder so, wie sie in der Server-Konfiguration (Umgebungsvariablen bzw. Add-on-Optionen) stehen. Daten, Mitglieder und der Eltern-Code bleiben unverändert.",
+  "commonReset": "Zurücksetzen",
+  "adminSettingsResetDefault": "Einstellungen auf Standard gesetzt",
+  "adminDeleteAllData": "Alle Daten löschen?",
+  "adminDeletePermanently": "Endgültig löschen",
+  "adminDeletesAllEventsChats": "Gelöscht werden alle Termine, Chats, Listen, Aufgaben, Ämter, Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, verbundene Kalender und Kalender-Links – auf dem Server und beim nächsten Abgleich auf allen Geräten. Das lässt sich nicht rückgängig machen; vorher eine Sicherung des Datenordners anlegen.\n\nErhalten bleiben die Konten, Server-Einstellungen und das HTTPS-Zertifikat.",
+  "adminAlsoRemoveAllOther": "Auch alle anderen Mitglieder entfernen",
+  "adminOnlyAccountRemains": "Nur dein Konto bleibt bestehen",
+  "commonYourPassword": "Dein Passwort",
+  "adminLeaveEmptyIfYou": "Leer lassen, wenn du dich nur über Home Assistant anmeldest.",
+  "adminTypeDeleteConfirm": "Zur Bestätigung LÖSCHEN eingeben",
+  "adminWipeWord": "LÖSCHEN",
+  "adminPleaseTypeDeleteConfirm": "Bitte zur Bestätigung LÖSCHEN eingeben",
+  "adminDeletedRecordsEntriesFiles": "Gelöscht: {records} Einträge, {files} Dateien{more}",
+  "@adminDeletedRecordsEntriesFiles": {
+    "placeholders": {
+      "records": {
+        "type": "Object"
+      },
+      "files": {
+        "type": "Object"
+      },
+      "more": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminMembersMembers": ", {members} Mitglieder",
+  "@adminMembersMembers": {
+    "placeholders": {
+      "members": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminDefaultValue": "Standard: {value}",
+  "@adminDefaultValue": {
+    "placeholders": {
+      "value": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminChangesApplyImmediatelyAll": "Änderungen gelten sofort für alle Geräte. Leere Felder nutzen den Standard aus der Server-Konfiguration (Umgebungsvariablen bzw. Add-on-Optionen).",
+  "adminReachability": "Erreichbarkeit",
+  "adminPublicAddress": "Öffentliche Adresse",
+  "adminHintCalendarSubscriptionsGoogle": "{hint}. Für Kalender-Abos (Google, iCloud) über den Reverse-Proxy.",
+  "@adminHintCalendarSubscriptionsGoogle": {
+    "placeholders": {
+      "hint": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminTimeZone": "Zeitzone",
+  "adminHintCalendarFeedsImported": "{hint}. Für Kalender-Feeds und importierte Termine.",
+  "@adminHintCalendarFeedsImported": {
+    "placeholders": {
+      "hint": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminFederalState": "Bundesland",
+  "adminPublicHolidaysCalendar": "Für die gesetzlichen Feiertage im Kalender",
+  "adminNoPublicHolidays": "Keine Feiertage",
+  "adminSubscribeSchoolHolidaysRegion": "Schulferien {region} abonnieren",
+  "@adminSubscribeSchoolHolidaysRegion": {
+    "placeholders": {
+      "region": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminMaximumFileSizeMb": "Maximale Dateigröße (MB)",
+  "adminHintNpmAlsoAdjust": "{hint}. Bei NPM auch client_max_body_size anpassen.",
+  "@adminHintNpmAlsoAdjust": {
+    "placeholders": {
+      "hint": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminMapProvider": "Kartenanbieter",
+  "adminOwnMartinServer": "Eigener Martin-Server",
+  "adminOwnXyzAddress": "Eigene XYZ-Adresse",
+  "adminReadyUsePublicService": "Sofort nutzbar. Der öffentliche Dienst sieht den geladenen Kartenausschnitt.",
+  "adminMartinTileAddress": "Martin-Kacheladresse",
+  "adminXyzTileAddress": "XYZ-Kacheladresse",
+  "adminMartinServesOwnPmtiles": "Martin stellt eigene PMTiles/MBTiles bereit. Docker: docker compose --profile maps up -d; danach die HTTPS-Adresse hier eintragen.",
+  "adminHintOldPrecisePoints": "{hint}. Alte, präzise Punkte und Ortsmeldungen werden automatisch gelöscht; der aktuelle Standort bleibt sichtbar.",
+  "@adminHintOldPrecisePoints": {
+    "placeholders": {
+      "hint": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonDaysCount": "{days} Tage",
+  "@commonDaysCount": {
+    "placeholders": {
+      "days": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminRequireTwoFactorSign": "Zwei-Faktor-Anmeldung verlangen",
+  "adminThoseAffectedSetUp": "Betroffene richten beim nächsten Öffnen der App eine Authenticator-App ein; Single Sign-On zählt auch. Für Home Assistant ein eigenes Mitglied ohne Pflicht nutzen.",
+  "adminNotRequired": "Nicht verlangt",
+  "adminWho": "Für {who}",
+  "@adminWho": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSign": "Anmeldung",
+  "adminSignAuthentikKeycloakAuthelia": "Anmelden mit Authentik, Keycloak, Authelia, Google, Microsoft …",
+  "commonSetUp": "Einrichten",
+  "adminShowHideAreas": "Bereiche ein- und ausblenden",
+  "adminAllAreasVisible": "Alle Bereiche sind sichtbar",
+  "adminHiddenAreas": "Ausgeblendet: {areas}",
+  "@adminHiddenAreas": {
+    "placeholders": {
+      "areas": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonChange": "Ändern",
+  "adminSetNeededPauseEnd": "Festgelegt. Nötig, um eine Standortfreigabe zu pausieren oder zu beenden.",
+  "adminNotSetYetWithout": "Noch nicht festgelegt – ohne Code kann niemand die Standortfreigabe pausieren.",
+  "adminSet": "Festlegen",
+  "adminOnlyChangeableServer": "Nur auf dem Server änderbar",
+  "adminTrustReverseProxy": "Reverse-Proxy vertrauen",
+  "commonOn": "an",
+  "commonOff": "aus",
+  "adminFamioTrustProxyNot": "FAMIO_TRUST_PROXY – aus Sicherheitsgründen nicht per App",
+  "adminHomeAssistantSign": "Home-Assistant-Anmeldung",
+  "adminAddOptionIngressAuth": "Add-on-Option ingress_auth",
+  "commonExport": "Export",
+  "adminExportFamily": "Familie exportieren",
+  "adminAllDataFilesZip": "Alle Daten und Dateien als ZIP, z. B. für einen Umzug",
+  "adminExport": "Exportieren",
+  "adminSettingsDefault": "Einstellungen auf Standard",
+  "adminTakeAddressTimeZone": "Adresse, Zeitzone, Dateigröße und Kartenserver wieder aus der Server-Konfiguration nehmen. Daten und Eltern-Code bleiben.",
+  "adminDeleteAllData2": "Alle Daten löschen",
+  "adminDeleteEventsChatLists": "Termine, Chat, Listen, Dokumente, Fotos und alles Weitere endgültig löschen – auf dem Server und allen Geräten.",
+  "commonDeleteEllipsis": "Löschen …",
+  "adminHttpsAddressWith": "HTTPS-Adresse mit {placeholders}.",
+  "@adminHttpsAddressWith": {
+    "placeholders": {
+      "placeholders": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogBreastfeedingSideState": "Stillen {side} · {state}",
+  "@kidsLogBreastfeedingSideState": {
+    "placeholders": {
+      "side": {
+        "type": "Object"
+      },
+      "state": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogRunningDuration": "läuft seit {duration}",
+  "@kidsLogRunningDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogAsleepDuration": "Schläft seit {duration}",
+  "@kidsLogAsleepDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogSleepDuration": "Schlaf · {duration}",
+  "@kidsLogSleepDuration": {
+    "placeholders": {
+      "duration": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogBottle": "Fläschchen",
+  "kidsLogSolids": "Beikost",
+  "kidsLogSolidsNote": "Beikost · {note}",
+  "@kidsLogSolidsNote": {
+    "placeholders": {
+      "note": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogPumped": "Abgepumpt",
+  "kidsLogDiaperKind": "Windel {kind}",
+  "@kidsLogDiaperKind": {
+    "placeholders": {
+      "kind": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogTemperature": "Temperatur",
+  "kidsLogMedication": "Medikament",
+  "kidsLogSymptom": "Symptom",
+  "kidsLogBathed": "Gebadet",
+  "kidsLogNoEntriesYetTap": "Noch keine Einträge. Tippe oben auf Stillen, Fläschchen, Schlaf oder Windel – beide Eltern sehen alles sofort.",
+  "kidsLogFamioDoesNotReplace": "Famio ersetzt keinen ärztlichen Rat. Dosierungen nur nach Kinderarzt oder Beipackzettel.",
+  "kidsLogAsleepSinceSince": "Schläft seit {since}",
+  "@kidsLogAsleepSinceSince": {
+    "placeholders": {
+      "since": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogBreastfeedingSideSinceSince": "Stillen {side} seit {since}",
+  "@kidsLogBreastfeedingSideSinceSince": {
+    "placeholders": {
+      "side": {
+        "type": "Object"
+      },
+      "since": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogSwitchSide": "Seite wechseln",
+  "kidsLogStop": "Stopp",
+  "kidsLogStartBreastfeeding": "Stillen starten",
+  "kidsLogLastTimeLastStart": "Zuletzt {last} – heute zuerst {next}.",
+  "@kidsLogLastTimeLastStart": {
+    "placeholders": {
+      "last": {
+        "type": "Object"
+      },
+      "next": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogRightLower": "rechts",
+  "kidsLogLeftLower": "links",
+  "kidsLogLeft": "Links",
+  "kidsLogRight": "Rechts",
+  "kidsLogAddAfterwards": "Nachtragen",
+  "kidsLogDiaper": "Windel",
+  "kidsLogBreastfeeding": "Stillen",
+  "kidsLogBreastfeedingRunning": "Stillen läuft",
+  "kidsLogSleep": "Schlafen",
+  "kidsLogWokeUp": "Aufgewacht",
+  "kidsLogPump": "Abpumpen",
+  "kidsLogBath": "Baden",
+  "kidsLogBathAdded": "Baden eingetragen",
+  "kidsLogWeight": "Gewicht",
+  "kidsLogLastFedSinceWhat": "Zuletzt gefüttert {since} ({what})",
+  "@kidsLogLastFedSinceWhat": {
+    "placeholders": {
+      "since": {
+        "type": "Object"
+      },
+      "what": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogNextSideSide": "Nächste Seite: {side}",
+  "@kidsLogNextSideSide": {
+    "placeholders": {
+      "side": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogDiaperSince": "Windel {since}",
+  "@kidsLogDiaperSince": {
+    "placeholders": {
+      "since": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogAgainTime": " · wieder ab {time}",
+  "@kidsLogAgainTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogPossibleAgain": " · wieder möglich",
+  "kidsLogMeals": "Mahlzeiten",
+  "kidsLogMilk": "Milch",
+  "kidsLogSleepNoun": "Schlaf",
+  "kidsLogDiapers": "Windeln",
+  "kidsLogHighestTemp": "Höchste Temp.",
+  "kidsLogUnitNote": "in {unit}{note}",
+  "@kidsLogUnitNote": {
+    "placeholders": {
+      "unit": {
+        "type": "Object"
+      },
+      "note": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogDailyMaximum": " (Tageshöchstwert)",
+  "kidsLogCough": "Husten",
+  "kidsLogRunnyNose": "Schnupfen",
+  "kidsLogRash": "Ausschlag",
+  "kidsLogVomiting": "Erbrechen",
+  "kidsLogDiarrhea": "Durchfall",
+  "kidsLogTummyAche": "Bauchweh",
+  "kidsLogTeething": "Zahnen",
+  "kidsLogInjury": "Verletzung",
+  "kidsLogPleaseEnterTemperatureBetween": "Bitte eine Temperatur zwischen 30 und 45 °C eingeben",
+  "kidsLogPleaseEnterMedication": "Bitte das Medikament angeben",
+  "commonEndBeforeStart": "Das Ende liegt vor dem Beginn",
+  "kidsLogDose": "Dosis",
+  "kidsLogDirectedDoctorPackageLeaflet": "laut Arzt/Beipackzettel",
+  "kidsLogAccordingMinimumIntervalEntered": "„{name}“ laut eingetragenem Mindestabstand frühestens wieder ab {time}.",
+  "@kidsLogAccordingMinimumIntervalEntered": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      },
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogRemindMeWhenPossible": "Erinnern, wenn wieder möglich",
+  "kidsLogNeedsMinimumInterval": "Braucht einen Mindestabstand",
+  "commonStart": "Beginn",
+  "commonTime": "Zeit",
+  "kidsLogStillRunning": "Läuft noch",
+  "kidsLogEndEnd": "Ende: {end}",
+  "@kidsLogEndEnd": {
+    "placeholders": {
+      "end": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLogWhatWas": "Was gab es?",
+  "kidsLogReminderNextMeal": "Erinnerung an die nächste Mahlzeit",
+  "commonNone": "Keine",
+  "kidsLogHoursH": "in {hours} h",
+  "@kidsLogHoursH": {
+    "placeholders": {
+      "hours": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonDelete": "Löschen",
+  "kidsLogPleaseGetMedicalHelp": "Bitte ärztliche Hilfe holen",
+  "kidsLogContactPediatrician": "Kinderarzt kontaktieren",
+  "kidsLogFever": "Fieber",
+  "kidsLogTextFamioDoesNot": "{text}\n\nFamio ersetzt keinen ärztlichen Rat.",
+  "@kidsLogTextFamioDoesNot": {
+    "placeholders": {
+      "text": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonUnderstood": "Verstanden",
+  "kidsLogAddKind": "{kind} eintragen",
+  "@kidsLogAddKind": {
+    "placeholders": {
+      "kind": {
+        "type": "Object"
+      }
+    }
+  },
+  "calendarConnectCalendarAppsDirectly": "Kalender-Apps direkt verbinden",
+  "calendarAppleCalendarMacIphone": "Apple Kalender (Mac, iPhone), Thunderbird oder DAVx⁵ auf Android zeigen die Famio-Termine an – und du kannst sie dort auch anlegen und ändern (CalDAV).",
+  "calendarSyncGoogleIcloudNextcloud": "Mit Google, iCloud, Nextcloud & Co. abgleichen",
+  "calendarFamioServerSyncsEvents": "Der Famio-Server gleicht Termine mit einem Kalender dort in beide Richtungen ab, alle 15 Minuten und nach jeder Änderung. Vertrauliche Termine bleiben in Famio.",
+  "calendarShowFamioOtherCalendars": "Famio in anderen Kalendern anzeigen",
+  "calendarPrivateLinkThatYou": "Ein privater Link, den du in Google Kalender, Apple Kalender oder Outlook abonnierst. Änderungen in Famio erscheinen dort automatisch (nur lesend).",
+  "calendarShowOtherCalendarsFamio": "Andere Kalender in Famio anzeigen",
+  "calendarSchoolCalendarDutyRoster": "Schulkalender, Dienstplan oder dein Google- bzw. iCloud-Kalender: Der Famio-Server ruft sie alle 30 Minuten ab. Die Termine sind in Famio schreibgeschützt.",
+  "calendarNewCalendarLink": "Neuer Kalender-Link",
+  "calendarNameOtherCalendar": "Name im anderen Kalender",
+  "calendarAllEvents": "Alle Termine",
+  "calendarOnlyMine": "Nur meine",
+  "calendarAllFamilyEvents": "Alle Familientermine.",
+  "calendarShowOnlyBusy": "Nur „Belegt“ zeigen",
+  "calendarWithoutTitlePlaceNotes": "Ohne Titel, Ort und Notizen – Google/Apple erfahren nur, wann ihr keine Zeit habt. Vertrauliche Termine fehlen immer.",
+  "calendarRevokeLinkName": "Link „{name}“ widerrufen?",
+  "@calendarRevokeLinkName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "calendarCalendarsThatSubscribedLink": "Kalender, die diesen Link abonniert haben, erhalten keine Termine mehr.",
+  "commonRevoke": "Widerrufen",
+  "calendarGoogleCalendarAppleCalendar": "Google Kalender und Apple-Kalender-Abos über iCloud laden den Link von ihren eigenen Servern. Dafür muss Famio per HTTPS aus dem Internet erreichbar sein (z. B. über Nginx Proxy Manager) und am Server FAMIO_PUBLIC_URL gesetzt werden. Ohne das klappen nur Abos, die das Gerät selbst lädt – etwa auf dem iPhone über die Einstellungen, im Heimnetz.",
+  "calendarCreateLink": "Link erstellen",
+  "calendarHowWorksGoogleCalendar": "So geht’s in Google Kalender",
+  "calendarOpenGoogleInBrowser": "calendar.google.com im Browser öffnen.",
+  "calendarLeftOtherCalendarsTap": "Links bei „Weitere Kalender“ auf + → „Per URL“.",
+  "calendarPasteCopiedLinkAdd": "Den kopierten Link einfügen und „Kalender hinzufügen“.",
+  "calendarGoogleOnlyUpdatesSubscriptions": "Google aktualisiert Abos nur alle paar Stunden.",
+  "calendarHowWorksAppleCalendar": "So geht’s in Apple Kalender (Mac)",
+  "calendarCalendarAppFileNew": "Kalender-App → Ablage → Neues Kalenderabonnement …",
+  "calendarPasteCopiedLink": "Den kopierten Link einfügen.",
+  "calendarAutoRefreshChooseE": "Bei „Automatisch aktualisieren“ z. B. „Alle 5 Minuten“ wählen.",
+  "calendarChooseMyMacLocation": "Als Ort „Auf meinem Mac“ wählen. „iCloud“ funktioniert nur, wenn Famio aus dem Internet erreichbar ist – sonst meldet der Kalender „Anfrage fehlgeschlagen“.",
+  "calendarHowWorksIphoneIpad": "So geht’s auf iPhone und iPad",
+  "calendarSettingsCalendarAccountsAdd": "Einstellungen → Kalender → Accounts → Account hinzufügen.",
+  "calendarOtherAddSubscribedCalendar": "„Andere“ → „Kalenderabo hinzufügen“.",
+  "calendarIphoneLoadsLinkItself": "Das iPhone lädt den Link selbst – im Heimnetz klappt das, unterwegs nur mit öffentlicher Adresse oder VPN.",
+  "calendarAllEvents2": "alle Termine",
+  "calendarOnlyMine2": "nur meine",
+  "calendarOnlyBusy": ", nur „Belegt“",
+  "calendarCopyLink": "Link kopieren",
+  "calendarLinkCopied": "Link kopiert",
+  "calendarWebcalLinkCopied": "webcal-Link kopiert",
+  "calendarCopyWebcal": "Als webcal:// kopieren",
+  "calendarSubscribeCalendar": "Kalender abonnieren",
+  "calendarEditSubscription": "Abo bearbeiten",
+  "commonName": "Name",
+  "calendarIcsAddress": "ICS-Adresse",
+  "calendarHttpsWebcal": "https://… oder webcal://…",
+  "calendarWhoSeesEvents": "Wer sieht die Termine?",
+  "calendarAddressMustStartHttps": "Adresse muss mit https:// oder webcal:// beginnen",
+  "calendarNameCountEventsLoaded": "{name}: {count} Termine geladen",
+  "@calendarNameCountEventsLoaded": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      },
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonRemoveName": "„{name}“ entfernen?",
+  "@commonRemoveName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "calendarImportedEventsDisappearEveryone": "Die importierten Termine verschwinden für alle, mit denen er geteilt ist. Der Originalkalender bleibt unverändert.",
+  "commonRemove": "Entfernen",
+  "calendarWillLoadedNextSync": "Wird beim nächsten Abgleich geladen …",
+  "calendarCountEventsUpdatedWhen": "{count} Termine · aktualisiert {when}",
+  "@calendarCountEventsUpdatedWhen": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "when": {
+        "type": "Object"
+      }
+    }
+  },
+  "calendarYou": "dir",
+  "calendarSomeone": "jemandem",
+  "calendarWholeFamily": "Für die ganze Familie",
+  "calendarOwnerVisibleWho": "Von {owner} · sichtbar für: {who}",
+  "@calendarOwnerVisibleWho": {
+    "placeholders": {
+      "owner": {
+        "type": "Object"
+      },
+      "who": {
+        "type": "Object"
+      }
+    }
+  },
+  "calendarFetchNow": "Jetzt abrufen",
+  "calendarGetAddressGoogleCalendar": "Adresse aus Google Kalender holen",
+  "calendarCalendarYouWantSettings": "Beim gewünschten Kalender ⋮ → „Einstellungen und Freigabe“.",
+  "calendarVeryBottomCopySecret": "Ganz unten „Privatadresse im iCal-Format“ kopieren.",
+  "calendarAddressSecretAnyoneLink": "Diese Adresse ist geheim – jeder mit dem Link sieht die Termine.",
+  "calendarGetAddressAppleIcloud": "Adresse aus Apple iCloud holen",
+  "calendarOpenCalendarAppMac": "Kalender-App auf dem Mac oder iCloud.com öffnen.",
+  "calendarCalendarTapShareEnable": "Beim Kalender auf „Teilen“ → „Öffentlicher Kalender“ aktivieren.",
+  "calendarCopyWebcalLinkShown": "Den angezeigten webcal://-Link kopieren.",
+  "calendarOtherSources": "Andere Quellen",
+  "calendarManySchoolsClubsWaste": "Viele Schulen, Vereine und Abfallkalender bieten einen ICS- oder „iCal“-Link zum Abonnieren an.",
+  "calendarOutlookPublishCalendarUse": "Outlook: Kalender veröffentlichen und den ICS-Link verwenden.",
+  "caldavAppleIdEmail": "Apple-ID (E-Mail)",
+  "commonEmailAddress": "E-Mail-Adresse",
+  "weatherClear": "Klar",
+  "weatherMostlyClear": "Überwiegend klar",
+  "weatherPartlyCloudy": "Teils bewölkt",
+  "weatherCloudy": "Bewölkt",
+  "weatherFog": "Nebel",
+  "weatherDrizzle": "Nieselregen",
+  "weatherRain": "Regen",
+  "weatherSnow": "Schnee",
+  "weatherRainShowers": "Regenschauer",
+  "weatherSnowShowers": "Schneeschauer",
+  "weatherThunderstorm": "Gewitter",
+  "weatherWeather": "Wetter",
+  "weatherAiry": "luftig",
+  "weatherShortSleevedBodysuit": "Kurzarm-Body",
+  "weatherTShirtTop": "T-Shirt oder Top",
+  "weatherShortsDress": "kurze Hose oder Kleid",
+  "weatherSunHatNeckProtection": "Sonnenhut mit Nackenschutz",
+  "weatherLight": "leicht",
+  "weatherShortBodysuitThinPants": "Body kurz + dünne Hose",
+  "weatherTShirt": "T-Shirt",
+  "weatherThinLongPantsSkirt": "dünne lange Hose oder Rock",
+  "weatherSunHat": "Sonnenhut",
+  "weatherThinJacketBlanketShade": "dünne Jacke oder Decke im Schatten",
+  "weatherBetween": "Übergang",
+  "weatherLongSleevedBodysuitRomper": "Langarm-Body + Strampler",
+  "weatherLongSleevedShirt": "Langarmshirt",
+  "weatherLongPants": "lange Hose",
+  "weatherCardigan": "Strickjacke",
+  "weatherThinJacketSweater": "dünne Jacke oder Pulli",
+  "weatherThinHatWhenWindy": "dünne Mütze bei Wind",
+  "weatherJacket": "Jacke",
+  "weatherLongSleevedBodysuitSweater": "Langarm-Body + Pulli",
+  "weatherSweater": "Pulli",
+  "weatherLightJacket": "Übergangsjacke",
+  "weatherHat": "Mütze",
+  "weatherSocksBooties": "Söckchen oder Schühchen",
+  "weatherWarm": "warm",
+  "weatherWoolBodysuitSweater": "Wollbody + Pulli",
+  "weatherLinedSnowsuit": "gefütterter Overall",
+  "weatherWarmJacket": "warme Jacke",
+  "weatherScarfNeckerchief": "Schal oder Halstuch",
+  "weatherFootmuffBlanket": "Fußsack oder Decke",
+  "weatherWinter": "Winter",
+  "weatherWoolBodysuitTights": "Wollbody + Strumpfhose",
+  "weatherThermalUndershirtSweater": "Thermo-Unterhemd oder Pulli",
+  "weatherWinterSnowsuit": "Winteroverall",
+  "weatherWinterJacket": "Winterjacke",
+  "weatherWinterHat": "Wintermütze",
+  "weatherGloves": "Handschuhe",
+  "weatherScarf": "Schal",
+  "weatherWarmFootmuff": "warmer Fußsack",
+  "weatherIcy": "eisig",
+  "weatherWoolUnderwear": "Woll-Unterwäsche",
+  "weatherThickWinterSnowsuit": "dicker Winteroverall",
+  "weatherSnowsuitWinterJacketSnow": "Schneeanzug oder Winterjacke + Schneehose",
+  "weatherThickHat": "dicke Mütze",
+  "weatherMittens": "Fäustlinge",
+  "weatherLinedWinterBoots": "gefütterte Winterschuhe",
+  "weatherFootmuffNotOutsideToo": "Fußsack, nicht zu lange draußen",
+  "weatherSnowRainPantsBoots": "Schnee: Matschhose und Stiefel",
+  "weatherSnowSnowPantsBoots": "Schnee: Schneehose und Stiefel",
+  "weatherRainRainCoverStroller": "Regen: Regenschutz für Kinderwagen oder Trage",
+  "weatherRainRainJacketRain": "Regen: Regenjacke, Matschhose, Gummistiefel",
+  "weatherWindyWindproofJacketCover": "Windig: winddichte Jacke, Ohren bedecken",
+  "weatherSunBabiesUnder1": "Sonne: Babys unter 1 Jahr in den Schatten, Sonnenhut",
+  "weatherSunSunscreenSpf30": "Sonne: Sonnencreme (LSF 30+), Sonnenhut",
+  "weatherBabiesOneLayerMore": "Babys: eine Schicht mehr als du – Nacken fühlen, nicht die Hände",
+  "weatherVeryWarm": "sehr warm",
+  "weatherSleepingBag05": "höchstens Schlafsack 0,5 TOG – bei über 26 °C im Zimmer nur Body",
+  "weatherShortPajamas": "kurzer Schlafanzug",
+  "weatherSheetInsteadDuvet": "Laken statt Bettdecke",
+  "weatherMild": "mild",
+  "weatherLongSleevedBodysuit": "Langarm-Body",
+  "weatherThinPajamas": "dünner Schlafanzug",
+  "weatherSleepingBag10": "Schlafsack 1,0 TOG",
+  "weatherLightSummerBlanket": "leichte Sommerdecke",
+  "weatherCool": "kühl",
+  "weatherLongSleevedBodysuitPajamas": "Langarm-Body + Schlafanzug",
+  "weatherLongPajamas": "langer Schlafanzug",
+  "weatherSleepingBag25": "Schlafsack 2,5 TOG",
+  "weatherNormalDuvet": "normale Bettdecke",
+  "weatherCold": "kalt",
+  "weatherLongSleevedBodysuitWarm": "Langarm-Body + warmer Schlafanzug",
+  "weatherWarmPajamas": "warmer Schlafanzug",
+  "weatherSleepingBag252": "Schlafsack 2,5–3,5 TOG",
+  "weatherWarmLongPajamas": "warmer langer Schlafanzug",
+  "weatherSocks": "Socken",
+  "weatherWarmDuvet": "warme Bettdecke",
+  "weatherBabiesLetThemSleep": "Babys: ohne Decke, Kissen und Mütze schlafen lassen",
+  "weatherWarmEnoughFeelNeck": "Warm genug? Nacken fühlen, nicht die Hände – Schlafzimmer ideal 16–20 °C",
+  "weatherWarmNightAirRoom": "Warme Nacht: lüften, Zimmer abdunkeln",
+  "weatherWhatShouldKidsWear": "Was sollen die Kinder anziehen? Famio fragt dafür das Wetter bei Open-Meteo ab – übertragen werden nur die ungefähren Koordinaten eures Orts „Zuhause“ (auf ~1 km gerundet).",
+  "weatherTurnWeather": "Wetter einschalten",
+  "weatherUnderLocationPlacesAdd": "Lege unter Standort → Orte einen Ort „Zuhause“ an – dafür gibt es dann das Wetter.",
+  "weatherWeatherNotReachableRight": "Wetter gerade nicht erreichbar.",
+  "weatherTempTextFeelsLike": "{temp} · {text} · gefühlt {felt}",
+  "@weatherTempTextFeelsLike": {
+    "placeholders": {
+      "temp": {
+        "type": "Object"
+      },
+      "text": {
+        "type": "Object"
+      },
+      "felt": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherTempTextDownLow": "{temp} · {text} · 🌙 nachts bis {low}",
+  "@weatherTempTextDownLow": {
+    "placeholders": {
+      "temp": {
+        "type": "Object"
+      },
+      "text": {
+        "type": "Object"
+      },
+      "low": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherNameTonight": "{name} heute Nacht: ",
+  "@weatherNameTonight": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherEmojiTempPlace": "{emoji} {temp} in {place}",
+  "@weatherEmojiTempPlace": {
+    "placeholders": {
+      "emoji": {
+        "type": "Object"
+      },
+      "temp": {
+        "type": "Object"
+      },
+      "place": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonClose": "Schließen",
+  "weatherTextFeelsLikeFelt": "{text} · gefühlt {felt}{wind}{uv}",
+  "@weatherTextFeelsLikeFelt": {
+    "placeholders": {
+      "text": {
+        "type": "Object"
+      },
+      "felt": {
+        "type": "Object"
+      },
+      "wind": {
+        "type": "Object"
+      },
+      "uv": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherWindSpeedKmH": " · Wind {speed} km/h",
+  "@weatherWindSpeedKmH": {
+    "placeholders": {
+      "speed": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherNightOutsideDownLow": "🌙 Für die Nacht · draußen bis {low}",
+  "@weatherNightOutsideDownLow": {
+    "placeholders": {
+      "low": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherDuringDayRulesThumb": "Tagsüber: Faustregeln für die nächsten 3 Stunden nach gefühlter Temperatur. Nachts: nach der Tiefsttemperatur draußen – entscheidend ist die Zimmertemperatur. Wetterdaten: Open-Meteo.com (CC BY 4.0), Stand {time}.",
+  "@weatherDuringDayRulesThumb": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "weatherTurnOffWeatherDevice": "Wetter auf diesem Gerät ausschalten",
+  "commonEvent": "Termin",
+  "commonTask": "Aufgabe",
+  "commonNote": "Notiz",
+  "commonContact": "Kontakt",
+  "commonRecipe": "Rezept",
+  "conflictsMealPlan": "Essensplan",
+  "commonChild": "Kind",
+  "conflictsKidsEntry": "Kinder-Eintrag",
+  "commonPregnancy": "Schwangerschaft",
+  "commonTimetable": "Stundenplan",
+  "conflictsBooking": "Buchung",
+  "commonDocument": "Dokument",
+  "commonChore": "Amt",
+  "commonRoutine": "Routine",
+  "commonReward": "Belohnung",
+  "conflictsListTemplate": "Listen-Vorlage",
+  "conflictsPantry": "Vorrat",
+  "commonWish": "Wunsch",
+  "commonDeadline": "Frist",
+  "commonShoppingList": "Einkaufsliste",
+  "commonTitle": "Titel",
+  "commonText": "Text",
+  "commonNotes": "Notizen",
+  "commonHint": "Hinweis",
+  "commonEnd": "Ende",
+  "commonAllDay": "Ganztägig",
+  "commonPlace": "Ort",
+  "commonDue": "Fällig",
+  "commonDoneCap": "Erledigt",
+  "commonQuantity": "Menge",
+  "commonAmount": "Betrag",
+  "commonWho": "Wer",
+  "commonResponsible": "Zuständig",
+  "commonRepeat": "Wiederholung",
+  "commonReminder": "Erinnerung",
+  "commonEntry": "Eintrag",
+  "commonYesLower": "ja",
+  "commonNoLower": "nein",
+  "conflictsOverlappingChanges": "Überschnittene Änderungen",
+  "conflictsTwoVersionsYouDecide": "Zwei Fassungen – du entscheidest",
+  "conflictsHereSomeoneChangedSomething": "Hier hat jemand etwas geändert, ohne die Änderung eines anderen zu sehen – meist, weil ein Handy offline war. Famio hat die neuere Fassung behalten und die andere hier aufgehoben. Wer entscheidet, entscheidet für beide.",
+  "conflictsNothingDecide": "Nichts zu entscheiden.",
+  "conflictsSomeoneElse": "jemand anderem",
+  "conflictsDeletedWhoWhenChange": "Gelöscht von {who} ({when}); die Änderung von {other} ({otherWhen}) ist aufgehoben.",
+  "@conflictsDeletedWhoWhenChange": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      },
+      "when": {
+        "type": "Object"
+      },
+      "other": {
+        "type": "Object"
+      },
+      "otherWhen": {
+        "type": "Object"
+      }
+    }
+  },
+  "conflictsDeletedWhoWhenChanged": "Gelöscht von {who} ({when}), gleichzeitig geändert von {other} ({otherWhen}) – es ist noch da.",
+  "@conflictsDeletedWhoWhenChanged": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      },
+      "when": {
+        "type": "Object"
+      },
+      "other": {
+        "type": "Object"
+      },
+      "otherWhen": {
+        "type": "Object"
+      }
+    }
+  },
+  "conflictsKeptVersionWhoWhen": "Behalten: die Fassung von {who} ({when}). Aufgehoben: die von {other} ({otherWhen}).",
+  "@conflictsKeptVersionWhoWhen": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      },
+      "when": {
+        "type": "Object"
+      },
+      "other": {
+        "type": "Object"
+      },
+      "otherWhen": {
+        "type": "Object"
+      }
+    }
+  },
+  "conflictsInstead": "  statt  ",
+  "conflictsKeepDeleted": "Gelöscht lassen",
+  "conflictsLeaveLike": "So lassen",
+  "conflictsDeleteAfterAll": "Doch löschen",
+  "conflictsBringBackVersionWho": "Fassung von {who} zurückholen",
+  "@conflictsBringBackVersionWho": {
+    "placeholders": {
+      "who": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminMemberDeleted": "Mitglied gelöscht",
+  "commonMember": "Mitglied",
+  "adminMemberSinceDate": "Mitglied seit {date}",
+  "@adminMemberSinceDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonEdit": "Bearbeiten",
+  "adminCreatedThroughHomeAssistant": "Über Home Assistant angelegt. Die Anmeldung in Home Assistant funktioniert immer; ein Passwort ist nur für die Apps nötig.",
+  "adminRole": "Rolle",
+  "adminMayChange": "Darf ändern",
+  "adminLikeAdultCreateChange": "Wie ein Erwachsener: Termine, Aufgaben, Listen … anlegen, ändern und löschen.",
+  "adminOnlyTickOffTasks": "Nur Aufgaben, Ämter und Routinen abhaken und Einkaufslisten führen – z. B. für eine Wandanzeige oder Sprachbefehle.",
+  "adminSeesEverythingSharedFamily": "Sieht alles für die Familie Freigegebene, ändert nichts. Am sichersten für Home Assistant.",
+  "adminMayManageMembersChange": "Darf Mitglieder verwalten und Servereinstellungen ändern",
+  "adminResetPassword": "Passwort zurücksetzen",
+  "adminSetPassword": "Passwort festlegen",
+  "adminSetsPasswordAnewWithout": "Setzt dein Passwort neu, ohne das alte",
+  "adminEGIfName": "Z. B. wenn {name} es vergessen hat",
+  "@adminEGIfName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminTwoFactor": "Zwei-Faktor eingeschaltet",
+  "adminTwoFactorOff": "Zwei-Faktor aus",
+  "adminLostPhoneNoRecovery": "Handy verloren und keine Wiederherstellungscodes? Zurücksetzen, dann reicht wieder das Passwort.",
+  "adminTurnUnderSettingsSign": "Einschalten unter Einstellungen → Anmeldung & Sicherheit",
+  "adminNameCanTurnTheir": "{name} kann sie in den eigenen Einstellungen einschalten.",
+  "@adminNameCanTurnTheir": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminResetTwoFactorName": "Zwei-Faktor von {name} zurücksetzen?",
+  "@adminResetTwoFactorName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminAfterThatPasswordEnough": "Danach reicht zum Anmelden wieder das Passwort, bis {name} sie neu einrichtet.",
+  "@adminAfterThatPasswordEnough": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminTwoFactorReset": "Zwei-Faktor zurückgesetzt",
+  "adminLinkedSingleSign": "Mit Single Sign-On verknüpft",
+  "adminLinkRemoved": "Verknüpfung gelöst",
+  "adminUnlink": "Lösen",
+  "adminDevicesCount": "Geräte ({count})",
+  "@adminDevicesCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSignedOutAllOther": "Alle anderen Geräte abgemeldet",
+  "adminNameWasSignedOut": "{name} wurde überall abgemeldet",
+  "@adminNameWasSignedOut": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSignOutOthers": "Andere abmelden",
+  "adminSignOutEverywhere": "Überall abmelden",
+  "adminNotSignedAnyDevice": "Auf keinem Gerät angemeldet.",
+  "adminRemoveName": "{name} entfernen",
+  "@adminRemoveName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminDeleteAccountSignOut": "Konto löschen und auf allen Geräten abmelden",
+  "adminEditMember": "Mitglied bearbeiten",
+  "adminNewPasswordName": "Neues Passwort für {name}",
+  "@adminNewPasswordName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminSignOutOtherDevices": "Andere Geräte abmelden",
+  "adminSignOutAllDevices": "Auf allen Geräten abmelden",
+  "adminPasswordChanged": "Passwort geändert",
+  "adminPasswordChangedDevicesSigned": "Passwort geändert, {devices} abgemeldet",
+  "@adminPasswordChangedDevicesSigned": {
+    "placeholders": {
+      "devices": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminAccountDeletedSignedOut": "Das Konto wird gelöscht und auf allen Geräten abgemeldet. Aufgaben, Termine und Listen bleiben erhalten.",
+  "securityConfirmationCode": "Bestätigungscode",
+  "securityEnterOneRecoveryCodes": "Einen deiner Wiederherstellungscodes eingeben. Jeder Code funktioniert nur einmal.",
+  "securityEnter6DigitCode": "Den 6-stelligen Code aus deiner Authenticator-App eingeben.",
+  "securityRecoveryCode": "Wiederherstellungscode",
+  "commonCode": "Code",
+  "securityUseCodeApp": "Code aus der App verwenden",
+  "securityPhoneNotHandRecovery": "Handy nicht zur Hand? Wiederherstellungscode",
+  "commonConfirm": "Bestätigen",
+  "commonSignInWith": "Anmelden mit {provider}",
+  "@commonSignInWith": {
+    "placeholders": {
+      "provider": {
+        "type": "Object"
+      }
+    }
+  },
+  "securitySigningHappensBrowserAfterwards": "Die Anmeldung läuft im Browser. Danach geht es hier automatisch weiter.",
+  "securityIfYouLosePhone": "Falls dein Handy verloren geht, kommst du mit einem dieser Codes trotzdem hinein – jeder funktioniert einmal. Jetzt sicher aufbewahren (Passwortmanager oder ausgedruckt). Sie werden nur dieses eine Mal angezeigt.",
+  "securityCodesCopied": "Codes kopiert",
+  "securitySetUpTwoFactor": "Zwei-Faktor einrichten",
+  "securityTwoFactor": "Zwei-Faktor ist eingeschaltet",
+  "securityCodesSavedDone": "Codes gesichert – fertig",
+  "security1ScanQrCode": "1. Den QR-Code mit einer Authenticator-App scannen (z. B. 2FAS, Aegis, Google Authenticator, Microsoft Authenticator oder dem Passwortmanager).",
+  "securityEnterKeyHand": "Oder den Schlüssel von Hand eingeben:",
+  "securityCopyKey": "Schlüssel kopieren",
+  "securityOpenAuthenticatorAppDevice": "In Authenticator-App auf diesem Gerät öffnen",
+  "security2EnterCodeApp": "2. Den Code eingeben, den die App jetzt anzeigt:",
+  "commonTurnOn": "Einschalten",
+  "securityTurnOffTwoFactor": "Zwei-Faktor ausschalten?",
+  "securityAfterThatPasswordAlone": "Danach reicht wieder das Passwort allein. Zur Sicherheit Passwort und aktuellen Code eingeben.",
+  "securityCodeOrRecoveryCode": "Code oder Wiederherstellungscode",
+  "commonTurnOff": "Ausschalten",
+  "securityTwoFactorTurnedOff": "Zwei-Faktor ausgeschaltet",
+  "securityNewCodes": "Neue Codes",
+  "securityNewRecoveryCodes": "Neue Wiederherstellungscodes",
+  "securitySaved": "Gesichert",
+  "securityTwoFactorSignIn": "Zwei-Faktor-Anmeldung",
+  "securityOn": "Eingeschaltet",
+  "securityOff": "Aus",
+  "securityWhenSigningFamioAlso": "Beim Anmelden fragt Famio zusätzlich nach dem Code aus deiner Authenticator-App. Noch {count} Wiederherstellungscodes übrig.",
+  "@securityWhenSigningFamioAlso": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityProtectsAccountIfSomeone": "Schützt dein Konto, falls jemand dein Passwort kennt: Beim Anmelden braucht es zusätzlich einen Code aus einer Authenticator-App.{required}",
+  "@securityProtectsAccountIfSomeone": {
+    "placeholders": {
+      "required": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityRequiredAccount": " Für dein Konto Pflicht.",
+  "securityLinked": "Verknüpft{linked}",
+  "@securityLinked": {
+    "placeholders": {
+      "linked": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityName": " mit {name}",
+  "@securityName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityNotLinked": "Nicht verknüpft",
+  "securitySignProviderInsteadPassword": "Anmelden mit {provider} statt Passwort – auf dem Anmeldebildschirm. Die Zwei-Faktor-Prüfung übernimmt dann der Anbieter.",
+  "@securitySignProviderInsteadPassword": {
+    "placeholders": {
+      "provider": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityProvider": "dem Anbieter",
+  "securityLinkAgain": "Neu verknüpfen",
+  "securityLinkProvider": "Mit {provider} verknüpfen",
+  "@securityLinkProvider": {
+    "placeholders": {
+      "provider": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityRemoveLink": "Verknüpfung lösen",
+  "securityRequiredAccount2": "Für dein Konto Pflicht",
+  "securityAdministratorTurnedTwoFactor": "Ein Administrator hat die Zwei-Faktor-Anmeldung für dein Konto eingeschaltet. {next}",
+  "@securityAdministratorTurnedTwoFactor": {
+    "placeholders": {
+      "next": {
+        "type": "Object"
+      }
+    }
+  },
+  "securityPleaseConfirmOnceDevice": "Bitte auf diesem Gerät einmal mit dem Code aus deiner Authenticator-App bestätigen.",
+  "securitySetUpNowThen": "Richte sie jetzt ein – danach geht es gleich weiter.",
+  "mealsWeekPlan": "Wochenplan",
+  "mealsRecipes": "Rezepte",
+  "mealsWeekPlanFamilyRecipes": "Wochenplan und Familienrezepte",
+  "mealsPlanMeal": "Essen planen",
+  "mealsAddRecipe": "Rezept hinzufügen",
+  "mealsPreviousWeek": "Vorige Woche",
+  "mealsNextWeek": "Nächste Woche",
+  "mealsPutWeekSIngredients": "Zutaten der Woche auf die Einkaufsliste",
+  "commonWhichList": "Auf welche Liste?",
+  "mealsCountIngredientsListAdded": "{count} Zutaten auf „{list}“{added}",
+  "@mealsCountIngredientsListAdded": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "list": {
+        "type": "Object"
+      },
+      "added": {
+        "type": "Object"
+      }
+    }
+  },
+  "mealsCountAdded": " ({count} ergänzt)",
+  "@mealsCountAdded": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "mealsCollectFavoriteRecipesWritten": "Sammelt eure Lieblingsrezepte – selbst geschrieben oder\nvon Chefkoch & Co. übernommen.",
+  "mealsSearchRecipeIngredient": "Rezept oder Zutat suchen",
+  "mealsEverythingPantry": "alles im Vorrat",
+  "mealsHaveTotalPantry": "{have}/{total} im Vorrat",
+  "@mealsHaveTotalPantry": {
+    "placeholders": {
+      "have": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "mealsCountIngredients": "{count} Zutaten",
+  "@mealsCountIngredients": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "mealsNoLongerFavorite": "Kein Favorit mehr",
+  "mealsFavorite": "Favorit",
+  "mealsServings": "Portionen",
+  "mealsFewer": "Weniger",
+  "mealsIngredients": "Zutaten",
+  "mealsPantry": "Im Vorrat",
+  "mealsMissingItemsShoppingList": "Fehlendes auf die Einkaufsliste",
+  "mealsShoppingList": "Auf die Einkaufsliste",
+  "mealsEverythingShoppingList": "Alles auf die Einkaufsliste",
+  "mealsSchedule": "Einplanen",
+  "mealsPreparation": "Zubereitung",
+  "mealsNoRecipeJustText": "Kein Rezept – nur Text",
+  "mealsWhatSDinner": "Was gibt es?",
+  "mealsEGLeftoversOrder": "z. B. Reste, Pizza bestellen",
+  "mealsRecipeWebsite": "Rezept von einer Webseite",
+  "commonAddress": "Adresse",
+  "commonApply": "Übernehmen",
+  "mealsNoRecipeWasFound": "Auf dieser Seite wurde kein Rezept gefunden.",
+  "mealsPageNotReachable": "Seite nicht erreichbar.",
+  "commonDeleteName": "„{name}“ löschen?",
+  "@commonDeleteName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "mealsNewRecipe": "Neues Rezept",
+  "mealsEditRecipe": "Rezept bearbeiten",
+  "mealsTakeWebsite": "Von Webseite übernehmen",
+  "commonPhoto": "Foto",
+  "mealsChangePhoto": "Foto ändern",
+  "mealsMinutes": "Minuten",
+  "mealsIngredientsOnePerLine": "Zutaten – eine pro Zeile",
+  "meals250GFlour500": "250 g Mehl\n500 ml Milch\n3 Eier",
+  "mealsPreparationOneStepPer": "Zubereitung – ein Schritt pro Zeile",
+  "mealsTagsOptional": "Stichworte (optional)",
+  "mealsQuickVegetarianKidsFavorite": "schnell, vegetarisch, Kinderliebling",
+  "mealsSourceOptional": "Quelle (optional)",
+  "mealsWebsiteGrandmaInge": "Webseite oder „Oma Inge“",
+  "mealsDeleteRecipe": "Rezept löschen",
+  "commonShoppingLists": "Einkaufslisten",
+  "adminShoppingItems": "Einkaufsartikel",
+  "commonEvents": "Termine",
+  "adminCalendarSubscriptions": "Kalender-Abos",
+  "adminImportedEvents": "Importierte Termine",
+  "adminChatMessages": "Chat-Nachrichten",
+  "adminKidsEntries": "Kinder-Einträge",
+  "adminRunningSince": "Läuft seit",
+  "commonMembers": "Mitglieder",
+  "adminSignedDevices": "Angemeldete Geräte",
+  "adminConnectedRightNow": "Gerade verbunden",
+  "adminDatabase": "Datenbank",
+  "commonFiles": "Dateien",
+  "adminCheckNewVersion": "Nach neuer Version suchen",
+  "adminSetup": "Einrichtung",
+  "adminBackups": "Sicherungen",
+  "commonEntries": "Einträge",
+  "adminNoEntriesYet": "Noch keine Einträge.",
+  "adminSecurity": "Sicherheit",
+  "adminDataServer": "Daten auf dem Server",
+  "adminEncrypted": "verschlüsselt",
+  "adminUnencrypted": "unverschlüsselt",
+  "adminKeyDataFolderPut": "Schlüssel liegt im Datenordner – FAMIO_KEY_FILE woanders hin legen und getrennt sichern",
+  "adminKeySeparateData": "Schlüssel getrennt von den Daten",
+  "adminHttpsHomeNetwork": "HTTPS im Heimnetz",
+  "adminPortPort": "Port {port}",
+  "@adminPortPort": {
+    "placeholders": {
+      "port": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminUnencryptedAccess": "Unverschlüsselter Zugriff",
+  "adminBlocked": "gesperrt",
+  "adminAllowed": "erlaubt",
+  "adminFamioRequireTlsTrue": "FAMIO_REQUIRE_TLS=true, sobald alle Geräte HTTPS nutzen",
+  "adminCertificateFingerprintCompareWhen": "Zertifikat-Fingerabdruck (zum Vergleich beim Verbinden):",
+  "adminActiveConfiguration": "Aktive Konfiguration",
+  "commonNoneLower": "keine",
+  "adminMaxFileSize": "Max. Dateigröße",
+  "adminBackupCheckedCanRestored": "Sicherung geprüft: lässt sich wiederherstellen",
+  "adminBackupFaultyProblems": "Sicherung fehlerhaft: {problems}",
+  "@adminBackupFaultyProblems": {
+    "placeholders": {
+      "problems": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminBackupCreated": "Sicherung erstellt",
+  "adminBackupsStatusNotAvailable": "Sicherungen: Status nicht verfügbar",
+  "adminTurnedOffFamioBackup": "Ausgeschaltet (FAMIO_BACKUP_DIR=off). Sichere das Datenverzeichnis dann anders, z. B. mit Proxmox oder Home Assistant.",
+  "adminNoBackupYet": "Noch keine Sicherung",
+  "adminLastBackupAgo": "Letzte Sicherung {ago}",
+  "@adminLastBackupAgo": {
+    "placeholders": {
+      "ago": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminCountVersionsSizeMb": "{count} Stände · {size} MB · jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt (Dokumente und Fotos in den 2 neuesten)",
+  "@adminCountVersionsSizeMb": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "size": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminFolderFolderEncryptedData": "Ordner: {folder} – verschlüsselt mit dem Datenschlüssel; zum Wiederherstellen werden die Sicherung und die Schlüsseldatei gebraucht.",
+  "@adminFolderFolderEncryptedData": {
+    "placeholders": {
+      "folder": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonErrorWith": "Fehler: {error}",
+  "@commonErrorWith": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminBackUpNow": "Jetzt sichern",
+  "adminCheckBackup": "Sicherung prüfen",
+  "adminCheckedAgoCanRestored": "Geprüft{ago}: lässt sich wiederherstellen ({records} Einträge, {users} Mitglieder, {files} Dateien{partial})",
+  "@adminCheckedAgoCanRestored": {
+    "placeholders": {
+      "ago": {
+        "type": "Object"
+      },
+      "records": {
+        "type": "Object"
+      },
+      "users": {
+        "type": "Object"
+      },
+      "files": {
+        "type": "Object"
+      },
+      "partial": {
+        "type": "Object"
+      }
+    }
+  },
+  "adminWithoutFileContents": ", ohne Dateiinhalte",
+  "adminLastCheckFailedProblems": "Letzte Prüfung fehlgeschlagen: {problems}",
+  "@adminLastCheckFailedProblems": {
+    "placeholders": {
+      "problems": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushTestMessageSentDid": "Testnachricht gesendet – kam sie an?",
+  "pushAddedButError": "Hinzugefügt, aber: {error}",
+  "@pushAddedButError": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushTestMessageSent": "Testnachricht gesendet",
+  "pushNotifications": "Benachrichtigungen",
+  "pushMessagesTasksEventsRequests": "Nachrichten, Aufgaben, Termine & Anfragen",
+  "pushAlternativelyThroughNtfy": "Alternativ: über ntfy",
+  "pushAddDevice": "Gerät hinzufügen",
+  "pushIphonesIfYouAlready": "Für iPhones oder wenn du ntfy schon nutzt",
+  "push1InstallFreeApp": "1. Die kostenlose App „ntfy“ installieren (Play Store, F-Droid oder App Store).\n2. Hier ein Gerät hinzufügen – Famio erzeugt ein geheimes Thema.\n3. Dieses Thema in ntfy abonnieren.\n\nFamio meldet dann neue Nachrichten, Aufgaben für dich, Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen. Ohne „Details“ erfährt der Push-Server nur „Neue Nachricht“ o. Ä. – nie Namen oder Inhalte.",
+  "commonLoadingFailed": "Laden fehlgeschlagen",
+  "pushDetails": "mit Details",
+  "pushWithoutDetails": "ohne Details",
+  "pushSendTest": "Test senden",
+  "pushQuietTime": "Ruhezeit ab",
+  "pushQuietTimeUntil": "Ruhezeit bis",
+  "pushQuietTime2": "Ruhezeit",
+  "pushDuringTimeMessagesNew": "In dieser Zeit kommen Nachrichten, neue Termine und Aufgaben ohne Ton an – auf allen deinen Geräten und über ntfy. Erinnerungen, die du selbst gestellt hast (Termine, Medikamente), bleiben laut.",
+  "pushTurnQuietTime": "Ruhezeit einschalten",
+  "pushTime": "ab {time} Uhr",
+  "@pushTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushUntilTime": "bis {time} Uhr",
+  "@pushUntilTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushPlaceNotificationsLoudAnyway": "Ortsmeldungen trotzdem laut",
+  "pushEGMiaHas": "z. B. „Mia ist zu Hause angekommen“",
+  "pushWeekPreview": "Wochenvorschau",
+  "pushSundays6PM": "Sonntags um 18 Uhr: deine Termine, Fahrten und Geburtstage der nächsten Woche",
+  "pushNotPossible": "Nicht möglich",
+  "pushNotificationsNotAvailableDevice": "Benachrichtigungen sind auf diesem Gerät nicht verfügbar.",
+  "pushDirectlyThroughFamio": "Direkt über Famio",
+  "pushFamioKeepsConnectionServer": "Famio hält im Hintergrund eine Verbindung zu deinem Server – auch wenn die App geschlossen ist. Ohne ntfy, ohne Google; alles bleibt auf deinem Server. Android zeigt dafür dauerhaft „Famio ist bereit“ an – gedrückt halten, um es auszublenden.",
+  "pushLongFamioRunningReports": "Solange Famio läuft, meldet es Neues, auch im Hintergrund. Ohne ntfy – alles bleibt auf deinem Server.",
+  "pushPhone": "Auf diesem Handy",
+  "pushDevice": "Auf diesem Gerät",
+  "pushShowContents": "Inhalte anzeigen",
+  "pushNamesTextsEG": "Namen und Texte, z. B. die Chat-Nachricht. Aus: nur „Neue Nachricht“ o. Ä.{lock}",
+  "@pushNamesTextsEG": {
+    "placeholders": {
+      "lock": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushLockScreenNeverShows": " Der Sperrbildschirm zeigt nie Inhalte.",
+  "pushAndroidDoesNotAllow": "Android erlaubt Famio keine Benachrichtigungen.",
+  "pushBatteryOptimizationAndroidMay": "Akku-Optimierung ist an – Android kann die Verbindung dann trennen.",
+  "pushExempt": "Ausnehmen",
+  "pushTestMessageItsWay": "Testnachricht unterwegs",
+  "commonPhone": "Handy",
+  "pushDeviceName": "Name des Geräts",
+  "pushNtfyTopicAddress": "ntfy-Thema (Adresse)",
+  "pushOwnNtfyServerAdjust": "Eigener ntfy-Server? Adresse anpassen. Den Namen geheim halten – wer ihn kennt, kann mitlesen.",
+  "pushCopyTopic": "Thema kopieren",
+  "pushTopicCopied": "„{topic}“ kopiert",
+  "@pushTopicCopied": {
+    "placeholders": {
+      "topic": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushNtfyAppSubscribeTopic": "In der ntfy-App: + → Thema „{topic}“ abonnieren{server}.",
+  "@pushNtfyAppSubscribeTopic": {
+    "placeholders": {
+      "topic": {
+        "type": "Object"
+      },
+      "server": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushServerServer": " (Server: {server})",
+  "@pushServerServer": {
+    "placeholders": {
+      "server": {
+        "type": "Object"
+      }
+    }
+  },
+  "pushAccessTokenOptional": "Zugangstoken (optional)",
+  "pushOnlyProtectedNtfyServers": "Nur bei geschützten ntfy-Servern (tk_…)",
+  "pushShowDetails": "Details anzeigen",
+  "pushSendNamesTextsToo": "Namen und Texte mitsenden. Nur mit eigenem ntfy-Server empfohlen.",
+  "pushAddTest": "Hinzufügen & testen",
+  "sosHold3SecondsEmergency": "Für einen Notruf 3 Sekunden gedrückt halten",
+  "sosEmergencyButtonHoldThree": "Notfallknopf, drei Sekunden gedrückt halten",
+  "sosCheckIn": "Check-in",
+  "sosParentsGetMessageLocation": "Deine Eltern bekommen die Nachricht mit deinem Ort.",
+  "sosOwnText": "Oder eigener Text …",
+  "commonSend": "Senden",
+  "sosCheckSentWithoutLocation": "Check-in gesendet (ohne Ort)",
+  "sosCheckSentLocation": "Check-in mit deinem Ort gesendet",
+  "sosCheckIns": "Check-ins",
+  "commonSomeone": "Jemand",
+  "sosOpenInMaps": "In Karten-App öffnen",
+  "sosEmergency": "Notfall?",
+  "sosHoldRedButton3": "Halte den roten Knopf 3 Sekunden lang. Deine Eltern bekommen sofort einen Alarm und sehen, wo du bist.",
+  "sosCheckAllOkay": "Check-in: „Alles ok“",
+  "sosEmergencyCall": "Notruf in",
+  "sosTriggerNow": "Sofort auslösen",
+  "sosSendingAlarm": "Alarm wird gesendet …",
+  "sosOneMoment": "Einen Moment.",
+  "sosNameHasSeenAlarm": "{name} hat deinen Alarm gesehen und ist unterwegs.",
+  "@sosNameHasSeenAlarm": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosAlarmSent": "Alarm gesendet",
+  "sosFamilyWasAlertedSees": "Deine Familie wurde alarmiert und sieht, wo du bist.",
+  "sosNoInternet": "Kein Internet",
+  "sosParentsGotTextMessage": "Deine Eltern haben eine SMS mit deinem Standort bekommen.",
+  "sosAlarmCouldNotSent": "Der Alarm konnte nicht gesendet werden. Ruf an!",
+  "sosAlarmNotSent": "Alarm nicht gesendet",
+  "sosServerDidNotAccept": "Der Server hat den Alarm nicht angenommen. Ruf an!",
+  "commonCall": "Anrufen",
+  "sosSirenOff": "Sirene aus",
+  "sosSiren": "Sirene an",
+  "sosIAmSafeEnd": "Ich bin sicher – Alarm beenden",
+  "sosBackFamioAlarmKeeps": "Zurück zu Famio (Alarm läuft weiter)",
+  "sosEmergencyCallRunning": "Dein Notruf läuft",
+  "sosFrom": "SOS von {name}",
+  "@sosFrom": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosSinceTime": "seit {time} Uhr",
+  "@sosSinceTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosNameComing": "{name} kommt",
+  "@sosNameComing": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosNotFound": "Nicht gefunden",
+  "sosNobodyHasReactedYet": "Noch niemand hat reagiert.",
+  "sosNameWay": "{name} ist unterwegs.",
+  "@sosNameWay": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosEndedTimeName": "Beendet um {time} Uhr von {name}.",
+  "@sosEndedTimeName": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      },
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosSomeone": "jemandem",
+  "sosTriggeredTime": "Ausgelöst um {time} Uhr",
+  "@sosTriggeredTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosLocationTimeAccuracy": "Standort von {time} Uhr{accuracy}",
+  "@sosLocationTimeAccuracy": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      },
+      "accuracy": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosMetersM": " (± {meters} m)",
+  "@sosMetersM": {
+    "placeholders": {
+      "meters": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosBatteryBattery": "Akku {battery} %",
+  "@sosBatteryBattery": {
+    "placeholders": {
+      "battery": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosLocationStillUnknown": "Der Standort ist noch unbekannt.",
+  "sosIMComing": "Ich komme",
+  "commonCallName": "{name} anrufen",
+  "@commonCallName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosEndEmergency": "Notfall beenden",
+  "sosOnlyVisibleConnectionServer": "Nur mit Verbindung zum Server sichtbar.",
+  "sosFamioNotificationsActive": "Famio-Benachrichtigungen aktiv",
+  "sosThroughNtfy": "über ntfy",
+  "sosReceivesNoAlarmsPhone": "Empfängt keine Alarme – auf dem Handy unter Einstellungen → Benachrichtigungen „Direkt über Famio“ einschalten (iPhone: ntfy).",
+  "sosSosAlarmParents": "SOS-Alarm an die Eltern",
+  "sosStartPageBigKids": "Auf der Startseite (für Kinder groß) gibt es einen roten SOS-Knopf. 3 Sekunden gedrückt halten: Alle Erwachsenen bekommen einen lauten Alarm – auch in der Ruhezeit – und sehen den Standort, eine halbe Stunde lang laufend. Mit „Ich komme“ sieht das Kind, dass Hilfe unterwegs ist.",
+  "sosOnlyAdultsCanChange": "Nur Erwachsene können das ändern.",
+  "sosSirenPhone": "Sirene am Handy",
+  "sosLoudSoundEvenWhen": "Lauter Ton, auch bei Lautlos (iPhone: solange Famio offen ist). Aus: stiller Alarm.",
+  "sosTextMessageWithoutInternet": "SMS ohne Internet (Android)",
+  "sosIfPhoneOfflineText": "Ist das Handy offline, geht eine SMS mit dem Standort an die Eltern.",
+  "sosWhoGetsAlarms": "Wer bekommt Alarme?",
+  "sosPhoneNumbers": "Telefonnummern",
+  "sosNoNumber": "keine Nummer",
+  "sosWhomDoesButtonCall": "Wen ruft der Knopf an?",
+  "sosParentName": "Elternteil ({name})",
+  "@sosParentName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosNobodyNumber": "keiner mit Nummer",
+  "sosEmergency112": "Notruf 112",
+  "sosDoNotCall": "Nicht anrufen",
+  "sosNumberName": "Nummer von {name}",
+  "@sosNumberName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "sosEG01701234567": "z. B. 0170 1234567",
+  "commonClock": "{time} Uhr",
+  "@commonClock": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeGoodNight": "Gute Nacht",
+  "homeGoodMorning": "Guten Morgen",
+  "homeHello": "Hallo",
+  "homeGoodEvening": "Guten Abend",
+  "commonSearch": "Suchen",
+  "homeWallDisplay": "Wandanzeige",
+  "commonOpenCount": "{count} offen",
+  "@commonOpenCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeNameAllDone": "{name}: alles erledigt 🎉",
+  "@homeNameAllDone": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonMedications": "Medikamente",
+  "homeAllTakenToday": "Heute alles genommen ✓",
+  "homeNameBuyMoreSoon": "{name}: bald nachkaufen",
+  "@homeNameBuyMoreSoon": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeNothingPlannedToday": "Heute steht nichts an. 🌤",
+  "commonAllDayLower": "ganztägig",
+  "homeCountdown": "Countdown",
+  "homeDaysUntilTitle": "Tage bis {title}",
+  "@homeDaysUntilTitle": {
+    "placeholders": {
+      "title": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeBins": "Tonnen",
+  "homeSTurn": "Du bist dran",
+  "homeNamesSTurn": "{names} ist dran",
+  "@homeNamesSTurn": {
+    "placeholders": {
+      "names": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeChangeOverlappedPleaseTake": "Eine Änderung hat sich überschnitten – bitte ansehen",
+  "homeCountChangesOverlappedPlease": "{count} Änderungen haben sich überschnitten – bitte ansehen",
+  "@homeCountChangesOverlappedPlease": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonDeadlines": "Fristen",
+  "homeAllDoneGreat": "Alles erledigt – super! 🎉",
+  "homeNoShoppingListYet": "Noch keine Einkaufsliste.",
+  "homeCountNew": "{count} neu",
+  "@homeCountNew": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeNoMessagesYet": "Noch keine Nachrichten.",
+  "commonAttachment": "Anhang",
+  "homeWhoWhere": "Wo ist wer?",
+  "homeNobodySharesTheirLocation": "Noch teilt niemand seinen Standort.",
+  "homeNameWeekWeek": "{name} · SSW {week}",
+  "@homeNameWeekWeek": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      },
+      "week": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonDaysLeft": "noch {days} Tage",
+  "@commonDaysLeft": {
+    "placeholders": {
+      "days": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeAddChildKeepTrack": "Lege ein Kind an, um die Entwicklung festzuhalten.",
+  "homeAsleepSinceTime": "schläft seit {time}",
+  "@homeAsleepSinceTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeSchoolUntilUntil": "Schule bis {until}",
+  "@homeSchoolUntilUntil": {
+    "placeholders": {
+      "until": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeFedSince": "gefüttert {since}",
+  "@homeFedSince": {
+    "placeholders": {
+      "since": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeWhatDate": "{what} am {date}",
+  "@homeWhatDate": {
+    "placeholders": {
+      "what": {
+        "type": "Object"
+      },
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonVaccination": "Impfung",
+  "homeWhatDue": "{what} fällig",
+  "@homeWhatDue": {
+    "placeholders": {
+      "what": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeWhatDoYouWish": "Was wünscht ihr euch? Die anderen besorgen es heimlich.",
+  "homeYouCountWishes": "Du: {count} Wünsche",
+  "@homeYouCountWishes": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeFamilyCountWishes": "Familie: {count} Wünsche",
+  "@homeFamilyCountWishes": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonPinboard": "Pinnwand",
+  "homeNotesEveryoneWiFi": "Notizen für alle: WLAN, Babysitter, Müllabfuhr …",
+  "homeCountNotes": "{count} Notizen",
+  "@homeCountNotes": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeCountExpiring": "{count} läuft ab",
+  "@homeCountExpiring": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeNoDocumentsYet": "Noch keine Dokumente.",
+  "homeCountDocumentsStoredSafely": "{count} Dokumente sicher abgelegt.",
+  "@homeCountDocumentsStoredSafely": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonBirthdays": "Geburtstage",
+  "homeToday": "heute 🎉",
+  "commonTomorrowLower": "morgen",
+  "commonTodayLower": "heute",
+  "homeCountOverLimit": "{count} über Limit",
+  "@homeCountOverLimit": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeSpendingMonth": "Ausgaben {month}",
+  "@homeSpendingMonth": {
+    "placeholders": {
+      "month": {
+        "type": "Object"
+      }
+    }
+  },
+  "homeBalance": "Saldo",
+  "homeCategoryOverLimit": "{category} über Limit",
+  "@homeCategoryOverLimit": {
+    "placeholders": {
+      "category": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyWeekWeekLeft": "SSW {week} · {left}",
+  "@pregnancyWeekWeekLeft": {
+    "placeholders": {
+      "week": {
+        "type": "Object"
+      },
+      "left": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyDueDateToday": "heute ist ET",
+  "pregnancyDaysDaysPastDue": "{days} Tage über ET",
+  "@pregnancyDaysDaysPastDue": {
+    "placeholders": {
+      "days": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyBigLike": "So groß wie {like}",
+  "@pregnancyBigLike": {
+    "placeholders": {
+      "like": {
+        "type": "Object"
+      }
+    }
+  },
+  "commonWeek": "Woche",
+  "pregnancyChecklists": "Checklisten",
+  "pregnancyContractions": "Wehen",
+  "pregnancyWeekWeekDueDate": "SSW {week} · ET {date}",
+  "@pregnancyWeekWeekDueDate": {
+    "placeholders": {
+      "week": {
+        "type": "Object"
+      },
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyWeekWD": "SSW {w}+{d}",
+  "@pregnancyWeekWD": {
+    "placeholders": {
+      "w": {
+        "type": "Object"
+      },
+      "d": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyWeekWeekPregnancyTrimester": "{week}. Schwangerschaftswoche · {trimester}. Drittel · {left}",
+  "@pregnancyWeekWeekPregnancyTrimester": {
+    "placeholders": {
+      "week": {
+        "type": "Object"
+      },
+      "trimester": {
+        "type": "Object"
+      },
+      "left": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyDueDateReached": "ET erreicht",
+  "pregnancyBabyAboutBigLike": "Euer Baby ist ungefähr so groß wie {like}",
+  "@pregnancyBabyAboutBigLike": {
+    "placeholders": {
+      "like": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyAboutLengthCmWeight": "etwa {length} cm · {weight}",
+  "@pregnancyAboutLengthCmWeight": {
+    "placeholders": {
+      "length": {
+        "type": "Object"
+      },
+      "weight": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyWeightKg": "{weight} kg",
+  "@pregnancyWeightKg": {
+    "placeholders": {
+      "weight": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyMaternityLeaveDate": "Mutterschutz ab {date}",
+  "@pregnancyMaternityLeaveDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyDueDate": "ET {date}",
+  "@pregnancyDueDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyBabyHere": "Baby ist da!",
+  "pregnancySizesAveragesWhatCounts": "Größenangaben sind Durchschnittswerte. Maßgeblich sind Hebamme, Frauenarzt und Mutterpass.",
+  "pregnancyNow": "jetzt",
+  "pregnancyOverdue": "überfällig",
+  "pregnancySoon": "demnächst",
+  "pregnancyWeekFromweekToweek": "SSW {fromWeek}–{toWeek} · {from} – {to}",
+  "@pregnancyWeekFromweekToweek": {
+    "placeholders": {
+      "fromWeek": {
+        "type": "Object"
+      },
+      "toWeek": {
+        "type": "Object"
+      },
+      "from": {
+        "type": "Object"
+      },
+      "to": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyAdditionThereRegularCheckups": "Dazu kommen die regelmäßigen Vorsorgen: bis SSW 32 alle 4 Wochen, danach alle 2 Wochen.",
+  "pregnancyDoneTotal": "{done} von {total}",
+  "@pregnancyDoneTotal": {
+    "placeholders": {
+      "done": {
+        "type": "Object"
+      },
+      "total": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyContractionOver": "Wehe vorbei",
+  "pregnancyContractionStarts": "Wehe beginnt",
+  "pregnancyLastHour": "Letzte Stunde",
+  "pregnancyCountContractionsLengthInterval": "{count} Wehen{length}{interval}",
+  "@pregnancyCountContractionsLengthInterval": {
+    "placeholders": {
+      "count": {
+        "type": "Object"
+      },
+      "length": {
+        "type": "Object"
+      },
+      "interval": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyTimeMinEach": " · je {time} min",
+  "@pregnancyTimeMinEach": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyEveryTimeMin": " · alle {time} min",
+  "@pregnancyEveryTimeMin": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyContractionsEvery5Minutes": "Wehen alle 5 Minuten seit einer Stunde: jetzt Klinik oder Hebamme anrufen.",
+  "pregnancyRuleThumbEvery5": "Faustregel: alle 5 Minuten, je etwa 1 Minute, seit einer Stunde → Klinik oder Hebamme anrufen. Sofort bei Blasensprung, Blutung, starken Schmerzen oder weniger Kindsbewegungen.",
+  "pregnancyAddMidwifeHospitalContact": "Hebamme oder Klinik als Kontakt anlegen",
+  "pregnancyHistory": "Verlauf",
+  "pregnancyRunning": "läuft",
+  "pregnancyLengthTime": "Dauer {time}",
+  "@pregnancyLengthTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyIntervalTime": "Abstand {time}",
+  "@pregnancyIntervalTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyClearHistory": "Verlauf leeren",
+  "pregnancyCongratulations": "Herzlichen Glückwunsch! 🎉",
+  "pregnancyBornDate": "Geboren am {date}",
+  "@pregnancyBornDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyGirl": "Mädchen",
+  "pregnancyBoy": "Junge",
+  "pregnancyAddChild": "Kind anlegen",
+  "pregnancyPleaseEnterDueDate": "Bitte den errechneten Termin angeben",
+  "pregnancyRemovePregnancy": "Schwangerschaft entfernen?",
+  "pregnancyNameNicknameOptional": "Name oder Spitzname (optional)",
+  "pregnancyEGPeanut": "z. B. Krümel",
+  "pregnancyDueDate2": "Errechneter Termin (ET)",
+  "commonPickDate": "Datum wählen",
+  "pregnancyCalculateLastPeriod": "Aus letzter Periode berechnen",
+  "pregnancyFirstDayLastPeriod": "Erster Tag der letzten Periode",
+  "pregnancyTodayWeekWeek": "Heute: SSW {week}",
+  "@pregnancyTodayWeekWeek": {
+    "placeholders": {
+      "week": {
+        "type": "Object"
+      }
+    }
+  },
+  "pregnancyWhoPregnant": "Wer ist schwanger?",
+  "commonWhoSeesIt": "Wer sieht es?",
+  "pregnancyOnlyTheySeePregnancy": "Nur sie sehen die Schwangerschaft und werden an Termine erinnert – gut, wenn es noch eine Überraschung ist.",
+  "kidsEmergency": "Notruf",
+  "kidsAmbulanceFireBrigade": "Rettungsdienst und Feuerwehr",
+  "kidsOutHoursMedicalService": "Ärztlicher Bereitschaftsdienst",
+  "kids116117WhenPractice": "116 117 – wenn die Praxis zu hat",
+  "kidsPoisonControl": "Giftnotruf",
+  "kids03019240ReachableNationwide": "030 19240 – bundesweit erreichbar",
+  "kidsEmergencyTitle": "Notfall",
+  "kidsEmergencyName": "Notfall: {name}",
+  "@kidsEmergencyName": {
+    "placeholders": {
+      "name": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsAlsoWorksWithoutInternet": "Funktioniert auch ohne Internet",
+  "kidsEditEmergencyData": "Notfalldaten bearbeiten",
+  "kidsPhone5WQuestions": "Am Telefon: die 5 W-Fragen",
+  "kidsWhere": "Wo",
+  "kidsDidHappenAddressFloor": "ist es passiert? Adresse, Stockwerk",
+  "kidsWhat": "Was",
+  "kidsHappened": "ist passiert?",
+  "kidsHowMany": "Wie viele",
+  "kidsAffected": "sind betroffen?",
+  "kidsWhich": "Welche",
+  "kidsInjuriesSymptoms": "Verletzungen oder Beschwerden?",
+  "kidsWait": "Warten",
+  "kidsQuestionsDoNotHang": "auf Rückfragen – nicht selbst auflegen!",
+  "kidsAge": "Alter",
+  "kidsAgeBornBorn": "{age} (geb. {born})",
+  "@kidsAgeBornBorn": {
+    "placeholders": {
+      "age": {
+        "type": "Object"
+      },
+      "born": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsWeightKgDate": "{weight} kg ({date})",
+  "@kidsWeightKgDate": {
+    "placeholders": {
+      "weight": {
+        "type": "Object"
+      },
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsAllergies": "Allergien",
+  "kidsPreexisting": "Vorerkrankungen",
+  "kidsLongTermMedication": "Dauermedikamente",
+  "kidsBloodType": "Blutgruppe",
+  "kidsInsurance": "Krankenkasse",
+  "kidsInsuranceNo": "Versichertennr.",
+  "kidsNotes": "Hinweise",
+  "commonAtTime": "{what} um {time}",
+  "@commonAtTime": {
+    "placeholders": {
+      "what": {
+        "type": "Object"
+      },
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "kidsLastGiven": "Zuletzt gegeben",
+  "kidsAddAllergiesPediatricianCo": "Allergien, Kinderarzt & Co. eintragen",
+  "kidsOtherContacts": "Weitere Kontakte",
+  "kidsFirstAidChildrenBest": "Erste Hilfe am Kind lernt man am besten in einem Kurs (z. B. DRK, Johanniter, Malteser). Famio ersetzt keinen ärztlichen Rat.",
+  "kidsEmergencyData": "Notfalldaten",
+  "kidsPediatrician": "Kinderarzt",
+  "commonNew": "Neu",
+  "kidsEGPeanutsPenicillin": "z. B. Erdnüsse, Penicillin",
+  "kidsEGAsthmaHeart": "z. B. Asthma, Herzfehler, Fieberkrämpfe",
+  "kidsInsuranceNumber": "Versichertennummer",
+  "kidsOtherNotes": "Weitere Hinweise",
+  "kidsEGVaccinationRecord": "z. B. Impfpass liegt …",
+  "kidsVisibleChildSGuardians": "Sichtbar für die Sorgeberechtigten des Kindes, gespeichert verschlüsselt auf eurem Server und auf den Geräten.",
+  "budgetFamilySHouseholdBook": "Haushaltsbuch der Familie",
+  "budgetWhoSeesLimits": "Wer sieht es, Limits",
+  "budgetAddBooking": "Buchung hinzufügen",
+  "budgetKeepEyeIncomeExpenses": "Behaltet Einnahmen und Ausgaben im Blick –\nmit Limits pro Kategorie. Wer es sieht, legt ihr fest.",
+  "budgetFirstBooking": "Erste Buchung",
+  "budgetPreviousMonth": "Voriger Monat",
+  "budgetNextMonth": "Nächster Monat",
+  "budgetIncome": "Einnahmen",
+  "budgetExpenses": "Ausgaben",
+  "budgetExpensesCategory": "Ausgaben nach Kategorie",
+  "budgetBookings": "Buchungen",
+  "budgetNoBookingsMonth": "Keine Buchungen in diesem Monat.",
+  "budgetMonthlyUntil": "monatlich{until}",
+  "@budgetMonthlyUntil": {
+    "placeholders": {
+      "until": {
+        "type": "Object"
+      }
+    }
+  },
+  "budgetUntilDate": " bis {date}",
+  "@budgetUntilDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object"
+      }
+    }
+  },
+  "budgetVisibleWholeFamilyRestrict": "Sichtbar für die ganze Familie – über ⚙ einschränken.",
+  "budgetVisibleNames": "Sichtbar für: {names}.",
+  "@budgetVisibleNames": {
+    "placeholders": {
+      "names": {
+        "type": "Object"
+      }
+    }
+  },
+  "budgetSpentLimit": "{spent} von {limit}",
+  "@budgetSpentLimit": {
+    "placeholders": {
+      "spent": {
+        "type": "Object"
+      },
+      "limit": {
+        "type": "Object"
+      }
+    }
+  },
+  "budgetPleaseEnterAmount": "Bitte einen Betrag angeben",
+  "budgetExpense": "Ausgabe",
+  "budgetIncome2": "Einnahme",
+  "budgetWhatOptional": "Wofür? (optional)",
+  "budgetEGWeeklyShopping": "z. B. Wocheneinkauf, Miete, Schwimmkurs",
+  "budgetFrom": "Ab ",
+  "budgetMonthly": "Monatlich",
+  "budgetEndAfterMonth": "Nach diesem Monat beenden",
+  "budgetBudgetSettings": "Budget-Einstellungen",
+  "budgetWhoSeesBudget": "Wer sieht das Budget?",
+  "budgetNobodySelectedWholeFamily": "Niemand ausgewählt: die ganze Familie. Der Server gibt die Buchungen nur an die Ausgewählten heraus.",
+  "budgetMonthlyLimits": "Monatliche Limits",
+  "listsConnectBring": "Bring! verbinden",
+  "commonSignIn": "Anmelden",
+  "listsBringHasNoOfficial": "Bring! hat keine offizielle Schnittstelle. Famio nutzt die der Bring!-Apps (wie Home Assistant); sie kann sich jederzeit ändern, dann pausiert der Abgleich. Famio speichert nur ein Anmelde-Token, nicht dein Passwort.",
+  "listsBringPassword": "Bring!-Passwort",
+  "listsConnectMsTodo": "Microsoft To Do verbinden",
+  "commonNext": "Weiter",
+  "listsOnceFamilyMicrosoftEntra": "Einmalig für die Familie: Im Microsoft-Entra-Portal (entra.microsoft.com) unter „App-Registrierungen“ eine neue App anlegen – Kontotyp „Konten in einem beliebigen Organisationsverzeichnis und persönliche Microsoft-Konten“, unter „Authentifizierung“ „Öffentliche Clientflows zulassen“ einschalten. Die Anwendungs-ID (Client-ID) hier eintragen.",
+  "listsApplicationClientId": "Anwendungs-ID (Client-ID)",
+  "listsSyncingEndsEntriesStay": "Der Abgleich endet. Einträge bleiben auf beiden Seiten erhalten.",
+  "listsDeletedList": "gelöschte Liste",
+  "listsConnectLists": "Listen verbinden",
+  "listsBringMicrosoftDoApple": "Bring!, Microsoft To Do, Apple Erinnerungen",
+  "listsAppleRemindersThunderbirdCo": "Apple Erinnerungen, Thunderbird & Co.",
+  "listsTasksShoppingListsAppear": "Aufgaben und Einkaufslisten erscheinen dort als Listen, sobald das Gerät per CalDAV mit Famio verbunden ist – am Mac und iPhone über „Apple-Gerät einrichten“.",
+  "listsConnectCalendar": "Zu „Kalender verbinden“",
+  "listsSyncBringMicrosoftDo": "Mit Bring! und Microsoft To Do abgleichen",
+  "listsFamioServerSyncsChosen": "Der Famio-Server gleicht die gewählten Listen in beide Richtungen ab, alle 5 Minuten und kurz nach jeder Änderung. Haben beide Seiten denselben Eintrag geändert, gewinnt die neuere Änderung.",
+  "listsTurnedOffFamily": "In dieser Familie ausgeschaltet",
+  "listsAdultAdminRightsCan": "Ein Erwachsener mit Verwaltungsrechten kann es in der Server-Verwaltung einschalten.",
+  "listsNoListAssignedYet": "Noch keine Liste zugeordnet",
+  "listsListThere": "Liste dort",
+  "listsLastTime": "Zuletzt {time}",
+  "@listsLastTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object"
+      }
+    }
+  },
+  "listsAssignLists": "Listen zuordnen …",
+  "listsSignMicrosoft": "Bei Microsoft anmelden",
+  "listsOpenPageEnterCode": "Öffne die Seite und gib diesen Code ein:",
+  "listsCopyCode": "Code kopieren",
+  "listsWaitingConfirmation": "Warte auf die Bestätigung …",
+  "listsNotReachable": "Nicht erreichbar",
+  "listsEachFamioListChoose": "Wähle zu jeder Famio-Liste die Liste dort. Einträge, die auf beiden Seiten gleich heißen, werden beim ersten Abgleich {how}.",
+  "@listsEachFamioListChoose": {
+    "placeholders": {
+      "how": {
+        "type": "Object"
+      }
+    }
+  },
+  "listsMerged": "zusammengeführt",
+  "listsBothKept": "beide behalten",
+  "listsDoNotSync": "Nicht abgleichen",
+  "listsSyncing": "Gleiche ab …",
+  "budgetGroceries": "Lebensmittel",
+  "budgetHousehold": "Haushalt",
+  "budgetHousing": "Wohnen",
+  "budgetMobility": "Mobilität",
+  "budgetKids": "Kinder",
+  "budgetHealth": "Gesundheit",
+  "budgetLeisure": "Freizeit",
+  "budgetClothing": "Kleidung",
+  "budgetInsurance": "Versicherungen",
+  "budgetOther": "Sonstiges",
+  "budgetSalary": "Gehalt",
+  "budgetChildBenefit": "Kindergeld",
+  "budgetParentalAllowance": "Elterngeld",
+  "budgetOtherIncome": "Sonstige Einnahmen"
 }

@@ -32,17 +32,18 @@ import 'deadlines_screen.dart';
 import 'conflicts_screen.dart';
 import '../widgets/setup_checklist.dart';
 import 'sos_screens.dart';
+import '../l10n.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   static String _greeting(DateTime now) => switch (now.hour) {
-    < 5 => 'Gute Nacht',
-    < 11 => 'Guten Morgen',
-    < 17 => 'Hallo',
-    < 22 => 'Guten Abend',
-    _ => 'Gute Nacht',
+    < 5 => tr.homeGoodNight,
+    < 11 => tr.homeGoodMorning,
+    < 17 => tr.homeHello,
+    < 22 => tr.homeGoodEvening,
+    _ => tr.homeGoodNight,
   };
 
   @override
@@ -52,7 +53,7 @@ class HomeScreen extends StatelessWidget {
     return SectionPage(
       section: FamioSection.home,
       title: '${_greeting(now)}, ${me.displayName}!',
-      subtitle: DateFormat('EEEE, d. MMMM', 'de').format(now),
+      subtitle: DateFormat.MMMMEEEEd(appLanguage).format(now),
       actions: [
         // Children get the big button on the page itself.
         if (!me.isGuest && !me.isService && !me.isChild)
@@ -62,21 +63,21 @@ class HomeScreen extends StatelessWidget {
           ),
         BubbleButton(
           icon: AppIcons.magnifyingGlass,
-          tooltip: 'Suchen',
+          tooltip: tr.commonSearch,
           onPressed: () => Navigator.of(
             context,
           ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
         ),
         BubbleButton(
           icon: AppIcons.tv,
-          tooltip: 'Wandanzeige',
+          tooltip: tr.homeWallDisplay,
           onPressed: () => openKiosk(context),
         ),
         const SyncStatusIcon(),
         MemberAvatar(
           me,
           radius: 22,
-          tooltip: 'Mein Profil',
+          tooltip: tr.settingsMyProfile,
           onTap: () => showProfileEditor(context),
         ),
       ],
@@ -227,8 +228,8 @@ class _ChoresTile extends StatelessWidget {
     final pending = engine.iAmAdult ? engine.pendingPoints.length : 0;
     return _Tile(
       section: FamioSection.chores,
-      title: 'Ämter',
-      badge: pending > 0 ? '$pending offen' : null,
+      title: tr.sectionChores,
+      badge: pending > 0 ? tr.commonOpenCount(pending) : null,
       child: Column(
         children: [
           for (final p in people.take(4))
@@ -243,7 +244,7 @@ class _ChoresTile extends StatelessWidget {
               ];
               return _Line(
                 open.isEmpty
-                    ? '${p.displayName}: alles erledigt 🎉'
+                    ? tr.homeNameAllDone(p.displayName)
                     : '${p.displayName}: ${open.map((c) => '${c.emoji} ${c.title}').join(', ')}',
                 leading: MemberAvatar(p, radius: 11),
                 trailing: '⭐ ${engine.pointBalance(p.id)}',
@@ -276,17 +277,17 @@ class _MedsTile extends StatelessWidget {
     ];
     return _Tile(
       section: FamioSection.health,
-      title: 'Medikamente',
-      badge: doses.isEmpty ? null : '${doses.length} offen',
+      title: tr.commonMedications,
+      badge: doses.isEmpty ? null : tr.commonOpenCount(doses.length),
       child: Column(
         children: [
-          if (doses.isEmpty) const _Line('Heute alles genommen ✓', dim: true),
+          if (doses.isEmpty) _Line(tr.homeAllTakenToday, dim: true),
           for (final (m, at) in doses.take(3))
             _Line(
               [m.name, if (m.personName.isNotEmpty) m.personName].join(' · '),
               trailing: timeLabel(at),
             ),
-          for (final m in low.take(2)) _Line('${m.name}: bald nachkaufen'),
+          for (final m in low.take(2)) _Line(tr.homeNameBuyMoreSoon(m.name)),
         ],
       ),
     );
@@ -425,13 +426,12 @@ class _TodayTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.calendar,
-      title: 'Heute',
+      title: tr.commonToday,
       badge: todays.isEmpty ? null : '${todays.length}',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (todays.isEmpty)
-            const _Line('Heute steht nichts an. 🌤', dim: true),
+          if (todays.isEmpty) _Line(tr.homeNothingPlannedToday, dim: true),
           for (final o in todays.take(4))
             _Line(
               // My lift today stands out.
@@ -440,7 +440,9 @@ class _TodayTile extends StatelessWidget {
                   ? '🚗 ${o.event.title}'
                   : o.event.title,
               leading: _Dot(c.strong(FamioSection.calendar)),
-              trailing: o.event.allDay ? 'ganztägig' : timeLabel(o.start),
+              trailing: o.event.allDay
+                  ? tr.commonAllDayLower
+                  : timeLabel(o.start),
             ),
           if (upcoming.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -474,7 +476,7 @@ class _CountdownTile extends StatelessWidget {
     final accent = c.strong(FamioSection.calendar);
     return _Tile(
       section: FamioSection.calendar,
-      title: 'Countdown',
+      title: tr.homeCountdown,
       icon: AppIcons.partyPopper,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -497,7 +499,7 @@ class _CountdownTile extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
                     first.days > 1
-                        ? 'Tage bis ${first.occurrence.event.title}'
+                        ? tr.homeDaysUntilTitle(first.occurrence.event.title)
                         : '${first.occurrence.event.title}: '
                               '${countdownLabel(first.occurrence, first.days, now)}! 🎉',
                     maxLines: 2,
@@ -537,7 +539,7 @@ class _WasteTile extends StatelessWidget {
     final mine = who.any((m) => m.id == engine.memberId);
     return _Tile(
       section: FamioSection.chores,
-      title: 'Tonnen',
+      title: tr.homeBins,
       icon: AppIcons.recycle,
       onTap: () => Navigator.of(
         context,
@@ -549,8 +551,8 @@ class _WasteTile extends StatelessWidget {
           if (who.isNotEmpty)
             _Line(
               mine
-                  ? 'Du bist dran'
-                  : '${who.map((m) => m.displayName).join(', ')} ist dran',
+                  ? tr.homeSTurn
+                  : tr.homeNamesSTurn(who.map((m) => m.displayName).join(', ')),
               leading: MemberAvatar(who.first, radius: 10),
               dim: true,
             ),
@@ -581,9 +583,8 @@ class _ConflictBanner extends StatelessWidget {
           Expanded(
             child: Text(
               count == 1
-                  ? 'Eine Änderung hat sich überschnitten – bitte ansehen'
-                  : '$count Änderungen haben sich überschnitten – bitte '
-                        'ansehen',
+                  ? tr.homeChangeOverlappedPleaseTake
+                  : tr.homeCountChangesOverlappedPlease(count),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
@@ -607,7 +608,7 @@ class _DeadlinesTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.tasks,
-      title: 'Fristen',
+      title: tr.commonDeadlines,
       icon: AppIcons.wrench,
       badge: '${soon.length}',
       onTap: () => Navigator.of(
@@ -650,12 +651,11 @@ class _TasksTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.tasks,
-      title: 'Aufgaben',
+      title: tr.sectionTasks,
       badge: open.isEmpty ? null : '${open.length}',
       child: Column(
         children: [
-          if (open.isEmpty)
-            const _Line('Alles erledigt – super! 🎉', dim: true),
+          if (open.isEmpty) _Line(tr.homeAllDoneGreat, dim: true),
           for (final t in open.take(4))
             _Line(
               t.title,
@@ -687,12 +687,11 @@ class _ShoppingTile extends StatelessWidget {
     );
     return _Tile(
       section: FamioSection.shopping,
-      title: 'Einkauf',
+      title: tr.sectionShopping,
       badge: total == 0 ? null : '$total',
       child: Column(
         children: [
-          if (lists.isEmpty)
-            const _Line('Noch keine Einkaufsliste.', dim: true),
+          if (lists.isEmpty) _Line(tr.homeNoShoppingListYet, dim: true),
           for (final l in lists.take(4))
             _Line(
               l.name,
@@ -701,8 +700,9 @@ class _ShoppingTile extends StatelessWidget {
                 size: 18,
                 color: c.strong(FamioSection.shopping),
               ),
-              trailing:
-                  '${engine.shoppingItems(l.id).where((i) => !i.checked).length} offen',
+              trailing: tr.commonOpenCount(
+                engine.shoppingItems(l.id).where((i) => !i.checked).length,
+              ),
             ),
         ],
       ),
@@ -728,14 +728,14 @@ class _ChatTile extends StatelessWidget {
     final author = engine.member(last?.authorId);
     return _Tile(
       section: FamioSection.chat,
-      title: 'Chat',
-      badge: unread == 0 ? null : '$unread neu',
+      title: tr.sectionChat,
+      badge: unread == 0 ? null : tr.homeCountNew(unread),
       child: last == null
-          ? const _Line('Noch keine Nachrichten.', dim: true)
+          ? _Line(tr.homeNoMessagesYet, dim: true)
           : _Line(
               last.text.isNotEmpty
                   ? last.text
-                  : '📎 ${last.attachment?.name ?? 'Anhang'}',
+                  : '📎 ${last.attachment?.name ?? tr.commonAttachment}',
               leading: author == null ? null : MemberAvatar(author, radius: 12),
               trailing: timeLabel(last.sentAt),
             ),
@@ -758,11 +758,11 @@ class _WhereTile extends StatelessWidget {
     ];
     return _Tile(
       section: FamioSection.location,
-      title: 'Wo ist wer?',
+      title: tr.homeWhoWhere,
       child: Column(
         children: [
           if (sharing.isEmpty)
-            const _Line('Noch teilt niemand seinen Standort.', dim: true),
+            _Line(tr.homeNobodySharesTheirLocation, dim: true),
           for (final (m, l) in sharing.take(5))
             _Line(
               '${m.displayName}: '
@@ -787,24 +787,24 @@ class _KidsTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.kids,
-      title: 'Kinder',
+      title: tr.sectionKids,
       child: Column(
         children: [
           for (final p in engine.activePregnancies)
             _Line(
-              '${p.name.isEmpty ? 'Schwangerschaft' : p.name} · SSW ${weekLabel(p)}',
+              tr.homeNameWeekWeek(
+                p.name.isEmpty ? tr.commonPregnancy : p.name,
+                weekLabel(p),
+              ),
               leading: Icon(
                 AppIcons.heart,
                 size: 18,
                 color: c.strong(FamioSection.kids),
               ),
-              trailing: 'noch ${daysToGo(p)} Tage',
+              trailing: tr.commonDaysLeft(daysToGo(p)),
             ),
           if (kids.isEmpty && engine.activePregnancies.isEmpty)
-            const _Line(
-              'Lege ein Kind an, um die Entwicklung festzuhalten.',
-              dim: true,
-            ),
+            _Line(tr.homeAddChildKeepTrack, dim: true),
           for (final k in kids)
             () {
               final next = nextDue(k, engine.childEntries(k.id));
@@ -821,12 +821,12 @@ class _KidsTile extends StatelessWidget {
                   ? engine.timetable(k.id)?.endOf(now.weekday)
                   : null;
               final status = sleeping != null
-                  ? 'schläft seit ${timeLabel(sleeping.start)}'
+                  ? tr.homeAsleepSinceTime(timeLabel(sleeping.start))
                   : school != null
-                  ? 'Schule bis $school'
+                  ? tr.homeSchoolUntilUntil(school)
                   : fed != null &&
                         DateTime.now().difference(fed.start).inHours < 12
-                  ? 'gefüttert ${sinceLabel(fed.end ?? fed.start)}'
+                  ? tr.homeFedSince(sinceLabel(fed.end ?? fed.start))
                   : null;
               return _Line(
                 status == null
@@ -840,11 +840,17 @@ class _KidsTile extends StatelessWidget {
                 trailing: next == null
                     ? null
                     : next.appointment != null
-                    ? '${next.isCheckup ? next.id : 'Impfung'} am '
-                          '${DateFormat('d.M.', 'de').format(next.appointment!.date)}'
+                    ? tr.homeWhatDate(
+                        next.isCheckup ? next.id : tr.commonVaccination,
+                        DateFormat.Md(
+                          appLanguage,
+                        ).format(next.appointment!.date),
+                      )
                     : next.open
-                    ? '${next.isCheckup ? next.id : 'Impfung'} fällig'
-                    : '${next.id} ab ${DateFormat('d.M.', 'de').format(next.from)}',
+                    ? tr.homeWhatDue(
+                        next.isCheckup ? next.id : tr.commonVaccination,
+                      )
+                    : '${next.id} ab ${DateFormat.Md(appLanguage).format(next.from)}',
               );
             }(),
         ],
@@ -865,7 +871,7 @@ class _WishesTile extends StatelessWidget {
     final others = open.length - mine;
     return _Tile(
       section: FamioSection.home,
-      title: 'Wunschzettel',
+      title: tr.settingsWishes,
       icon: AppIcons.gift,
       onTap: () => Navigator.of(
         context,
@@ -874,10 +880,10 @@ class _WishesTile extends StatelessWidget {
         children: [
           _Line(
             open.isEmpty
-                ? 'Was wünscht ihr euch? Die anderen besorgen es heimlich.'
+                ? tr.homeWhatDoYouWish
                 : [
-                    if (mine > 0) 'Du: $mine Wünsche',
-                    if (others > 0) 'Familie: $others Wünsche',
+                    if (mine > 0) tr.homeYouCountWishes(mine),
+                    if (others > 0) tr.homeFamilyCountWishes(others),
                   ].join(' · '),
             dim: open.isEmpty,
           ),
@@ -898,7 +904,7 @@ class _NotesTile extends StatelessWidget {
     final pinned = notes.where((n) => n.pinned).toList();
     return _Tile(
       section: FamioSection.home,
-      title: 'Pinnwand',
+      title: tr.commonPinboard,
       icon: AppIcons.note,
       onTap: () => Navigator.of(
         context,
@@ -908,8 +914,8 @@ class _NotesTile extends StatelessWidget {
           if (pinned.isEmpty)
             _Line(
               notes.isEmpty
-                  ? 'Notizen für alle: WLAN, Babysitter, Müllabfuhr …'
-                  : '${notes.length} Notizen',
+                  ? tr.homeNotesEveryoneWiFi
+                  : tr.homeCountNotes(notes.length),
               dim: true,
             ),
           for (final n in pinned.take(3))
@@ -941,15 +947,15 @@ class _DocumentsTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.documents,
-      title: 'Dokumente',
-      badge: expiring.isEmpty ? null : '${expiring.length} läuft ab',
+      title: tr.sectionDocuments,
+      badge: expiring.isEmpty ? null : tr.homeCountExpiring(expiring.length),
       child: Column(
         children: [
           if (expiring.isEmpty)
             _Line(
               docs.isEmpty
-                  ? 'Noch keine Dokumente.'
-                  : '${docs.length} Dokumente sicher abgelegt.',
+                  ? tr.homeNoDocumentsYet
+                  : tr.homeCountDocumentsStoredSafely(docs.length),
               dim: true,
             ),
           for (final d in expiring.take(3))
@@ -961,7 +967,7 @@ class _DocumentsTile extends StatelessWidget {
                 color: c.strong(FamioSection.documents),
               ),
               trailing:
-                  'bis ${DateFormat('d.M.yy', 'de').format(d.expiresAt!)}',
+                  'bis ${DateFormat.yMd(appLanguage).format(d.expiresAt!)}',
             ),
         ],
       ),
@@ -994,7 +1000,7 @@ class _BirthdaysTile extends StatelessWidget {
     final c = FamioColors.of(context);
     return _Tile(
       section: FamioSection.calendar,
-      title: 'Geburtstage',
+      title: tr.commonBirthdays,
       child: Column(
         children: [
           for (final (b, day) in upcomingBirthdays(engine, now).take(4))
@@ -1006,10 +1012,10 @@ class _BirthdaysTile extends StatelessWidget {
                 color: c.strong(FamioSection.calendar),
               ),
               trailing: day == today
-                  ? 'heute 🎉'
+                  ? tr.homeToday
                   : day.difference(today).inDays == 1
-                  ? 'morgen'
-                  : DateFormat('E d.M.', 'de').format(day),
+                  ? tr.commonTomorrowLower
+                  : DateFormat.MEd(appLanguage).format(day),
             ),
         ],
       ),
@@ -1032,7 +1038,7 @@ class _MealsTile extends StatelessWidget {
     );
     return _Tile(
       section: FamioSection.meals,
-      title: 'Essen',
+      title: tr.sectionMeals,
       child: Column(
         children: [
           for (final m in meals.take(4))
@@ -1044,7 +1050,7 @@ class _MealsTile extends StatelessWidget {
                 color: c.strong(FamioSection.meals),
               ),
               trailing:
-                  '${m.date == today ? 'heute' : 'morgen'} · ${m.slot.label}',
+                  '${m.date == today ? tr.commonTodayLower : tr.commonTomorrowLower} · ${m.slot.label}',
             ),
         ],
       ),
@@ -1068,16 +1074,17 @@ class _BudgetTile extends StatelessWidget {
     ];
     return _Tile(
       section: FamioSection.budget,
-      title: 'Finanzen',
-      badge: over.isEmpty ? null : '${over.length} über Limit',
+      title: tr.sectionBudget,
+      badge: over.isEmpty ? null : tr.homeCountOverLimit(over.length),
       child: Column(
         children: [
           _Line(
-            'Ausgaben ${DateFormat('MMMM', 'de').format(now)}',
+            tr.homeSpendingMonth(DateFormat.MMMM(appLanguage).format(now)),
             trailing: formatEuro(m.expenses),
           ),
-          _Line('Saldo', trailing: formatEuro(m.balance)),
-          for (final cat in over.take(2)) _Line('$cat über Limit', dim: true),
+          _Line(tr.homeBalance, trailing: formatEuro(m.balance)),
+          for (final cat in over.take(2))
+            _Line(tr.homeCategoryOverLimit(categoryLabel(cat)), dim: true),
         ],
       ),
     );

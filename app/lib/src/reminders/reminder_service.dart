@@ -22,6 +22,7 @@ import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
 import '../environment.dart';
+import '../l10n.dart';
 
 /// Turns calendar and task reminders into local notifications on this device.
 ///
@@ -482,7 +483,7 @@ List<DueReminder> familyReminders(
           'kid:${child.id}:${d.id}:appt:${appointment.date.toIso8601String()}',
           DateTime(dayBefore.year, dayBefore.month, dayBefore.day, 18),
           'Morgen: $what für ${child.name}',
-          'Termin am ${DateFormat('d.M.y', 'de').format(at)}$clock. '
+          'Termin am ${DateFormat.yMd(appLanguage).format(at)}$clock. '
               'Gelbes Heft bzw. Impfpass mitnehmen.',
         );
         if (appointment.time != null) {
@@ -503,7 +504,7 @@ List<DueReminder> familyReminders(
           'kid:${child.id}:${d.id}:book',
           book,
           'Termin für die ${d.id} von ${child.name} vereinbaren',
-          'Zeitraum ab ${DateFormat('d.M.y', 'de').format(d.from)} – '
+          'Zeitraum ab ${DateFormat.yMd(appLanguage).format(d.from)} – '
               'Praxen sind oft Wochen im Voraus ausgebucht.',
         );
       }
@@ -552,7 +553,7 @@ List<DueReminder> familyReminders(
       'preg:${p.id}:leave',
       nineOn(maternityLeave(p).subtract(const Duration(days: 14))),
       '$who: Mutterschutz beginnt in 2 Wochen',
-      'Ab ${DateFormat('d.M.y', 'de').format(maternityLeave(p))}.',
+      'Ab ${DateFormat.yMd(appLanguage).format(maternityLeave(p))}.',
     );
   }
   for (final b in familyBirthdays(engine)) {
@@ -635,7 +636,7 @@ List<DueReminder> familyReminders(
   // Deadlines (car, house, pets): ahead of time and on the day.
   for (final d in engine.deadlines) {
     if (d.done || !engine.deadlineIsMine(d)) continue;
-    final when = DateFormat('d.M.y', 'de').format(d.due);
+    final when = DateFormat.yMd(appLanguage).format(d.due);
     if (d.leadDays > 0) {
       add(
         'deadline:${d.id}:${dayKey(d.due)}:lead',
@@ -703,7 +704,7 @@ List<DueReminder> familyReminders(
         'doc:${doc.id}:$days',
         nineOn(expires.subtract(Duration(days: days))),
         '${doc.title} läuft ab',
-        'Gültig bis ${DateFormat('d.M.y', 'de').format(expires)} – rechtzeitig erneuern.',
+        'Gültig bis ${DateFormat.yMd(appLanguage).format(expires)} – rechtzeitig erneuern.',
       );
     }
   }
@@ -714,7 +715,7 @@ List<DueReminder> familyReminders(
 /// one) and "medicine possible again" (latest dose per medicine).
 List<DueReminder> logReminders(Child child, List<ChildLog> logs) {
   final result = <DueReminder>[];
-  final time = DateFormat('HH:mm', 'de');
+  final time = DateFormat.jm(appLanguage);
   final feeding = logs
       .where(
         (l) =>

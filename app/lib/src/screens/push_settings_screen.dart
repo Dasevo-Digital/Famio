@@ -10,6 +10,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../push/own_push.dart';
+import '../l10n.dart';
 
 /// Push notifications: directly from the Famio server (own push) or
 /// through ntfy.
@@ -38,8 +39,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
       SnackBar(
         content: Text(
           added.lastError == null
-              ? 'Testnachricht gesendet – kam sie an?'
-              : 'Hinzugefügt, aber: ${added.lastError}',
+              ? tr.pushTestMessageSentDid
+              : tr.pushAddedButError(added.lastError!),
         ),
       ),
     );
@@ -53,7 +54,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
         context,
       ).engine!.api.testPushTarget(t.id);
       messenger.showSnackBar(
-        SnackBar(content: Text(error ?? 'Testnachricht gesendet')),
+        SnackBar(content: Text(error ?? tr.pushTestMessageSent)),
       );
     } on ApiError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
@@ -73,8 +74,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
     return SectionPage(
       maxBodyWidth: 720,
       section: FamioSection.settings,
-      title: 'Benachrichtigungen',
-      subtitle: 'Nachrichten, Aufgaben, Termine & Anfragen',
+      title: tr.pushNotifications,
+      subtitle: tr.pushMessagesTasksEventsRequests,
 
       body: FutureBuilder<List<PushTarget>>(
         future: _targets,
@@ -89,11 +90,11 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
               const SizedBox(height: 12),
               const _WeekPreviewCard(),
               ListHeading(
-                'Alternativ: über ntfy',
+                tr.pushAlternativelyThroughNtfy,
                 color: accent,
                 trailing: TextButton.icon(
                   icon: const Icon(AppIcons.plus, size: 18),
-                  label: const Text('Gerät hinzufügen'),
+                  label: Text(tr.pushAddDevice),
                   onPressed: _add,
                 ),
               ),
@@ -103,21 +104,11 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Für iPhones oder wenn du ntfy schon nutzt',
+                      tr.pushIphonesIfYouAlready,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 6),
-                    const Text(
-                      '1. Die kostenlose App „ntfy“ installieren (Play Store, '
-                      'F-Droid oder App Store).\n'
-                      '2. Hier ein Gerät hinzufügen – Famio erzeugt ein '
-                      'geheimes Thema.\n'
-                      '3. Dieses Thema in ntfy abonnieren.\n\n'
-                      'Famio meldet dann neue Nachrichten, Aufgaben für dich, '
-                      'Termin-Kommentare, Ämter-Anfragen und Ortsmeldungen. '
-                      'Ohne „Details“ erfährt der Push-Server nur „Neue '
-                      'Nachricht“ o. Ä. – nie Namen oder Inhalte.',
-                    ),
+                    Text(tr.push1InstallFreeApp),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(
@@ -138,7 +129,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                   child: Text(
                     snapshot.error is ApiError
                         ? (snapshot.error! as ApiError).message
-                        : 'Laden fehlgeschlagen',
+                        : tr.commonLoadingFailed,
                   ),
                 ),
               if (snapshot.connectionState == ConnectionState.waiting)
@@ -159,7 +150,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                   subtitle: Text(
                     [
                       t.url,
-                      t.details ? 'mit Details' : 'ohne Details',
+                      t.details ? tr.pushDetails : tr.pushWithoutDetails,
                       ?t.lastError,
                     ].join('\n'),
                   ),
@@ -167,12 +158,12 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                   trailing: Wrap(
                     children: [
                       IconButton(
-                        tooltip: 'Test senden',
+                        tooltip: tr.pushSendTest,
                         icon: const Icon(AppIcons.paperPlaneRight),
                         onPressed: () => _test(t),
                       ),
                       IconButton(
-                        tooltip: 'Entfernen',
+                        tooltip: tr.commonRemove,
                         icon: Icon(AppIcons.trash, color: c.danger),
                         onPressed: () => _delete(t),
                       ),
@@ -237,7 +228,7 @@ class _QuietHoursCardState extends State<QuietHoursCard> {
     final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: minutes ~/ 60, minute: minutes % 60),
-      helpText: start ? 'Ruhezeit ab' : 'Ruhezeit bis',
+      helpText: start ? tr.pushQuietTime : tr.pushQuietTimeUntil,
     );
     if (picked == null) return;
     final value = picked.hour * 60 + picked.minute;
@@ -255,19 +246,13 @@ class _QuietHoursCardState extends State<QuietHoursCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Ruhezeit', style: theme.textTheme.titleMedium),
+          Text(tr.pushQuietTime2, style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(
-            'In dieser Zeit kommen Nachrichten, neue Termine und Aufgaben '
-            'ohne Ton an – auf allen deinen Geräten und über ntfy. '
-            'Erinnerungen, die du selbst gestellt hast (Termine, '
-            'Medikamente), bleiben laut.',
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(tr.pushDuringTimeMessagesNew, style: theme.textTheme.bodySmall),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(AppIcons.moon),
-            title: const Text('Ruhezeit einschalten'),
+            title: Text(tr.pushTurnQuietTime),
             value: q.enabled,
             onChanged: _busy ? null : (v) => _save(q.copyWith(enabled: v)),
           ),
@@ -279,20 +264,20 @@ class _QuietHoursCardState extends State<QuietHoursCard> {
               children: [
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.clock, size: 18),
-                  label: Text('ab ${QuietHours.format(q.start)} Uhr'),
+                  label: Text(tr.pushTime(QuietHours.format(q.start))),
                   onPressed: _busy ? null : () => _pick(start: true),
                 ),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.clock, size: 18),
-                  label: Text('bis ${QuietHours.format(q.end)} Uhr'),
+                  label: Text(tr.pushUntilTime(QuietHours.format(q.end))),
                   onPressed: _busy ? null : () => _pick(start: false),
                 ),
               ],
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Ortsmeldungen trotzdem laut'),
-              subtitle: const Text('z. B. „Mia ist zu Hause angekommen“'),
+              title: Text(tr.pushPlaceNotificationsLoudAnyway),
+              subtitle: Text(tr.pushEGMiaHas),
               value: q.placesLoud,
               onChanged: _busy ? null : (v) => _save(q.copyWith(placesLoud: v)),
             ),
@@ -316,11 +301,8 @@ class _WeekPreviewCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: SwitchListTile(
         secondary: const Icon(AppIcons.calendarRange),
-        title: const Text('Wochenvorschau'),
-        subtitle: const Text(
-          'Sonntags um 18 Uhr: deine Termine, Fahrten und Geburtstage der '
-          'nächsten Woche',
-        ),
+        title: Text(tr.pushWeekPreview),
+        subtitle: Text(tr.pushSundays6PM),
         value: state.weekPreview,
         onChanged: state.setWeekPreview,
       ),
@@ -375,7 +357,7 @@ class _OwnPushCardState extends State<_OwnPushCard>
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } on PlatformException catch (e) {
       messenger.showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Nicht möglich')),
+        SnackBar(content: Text(e.message ?? tr.pushNotPossible)),
       );
     } finally {
       await _load();
@@ -390,11 +372,9 @@ class _OwnPushCardState extends State<_OwnPushCard>
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     if (push == null) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.all(16),
-        child: Text(
-          'Benachrichtigungen sind auf diesem Gerät nicht verfügbar.',
-        ),
+        child: Text(tr.pushNotificationsNotAvailableDevice),
       );
     }
     final enabled = status?.enabled ?? push.active;
@@ -403,25 +383,17 @@ class _OwnPushCardState extends State<_OwnPushCard>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Direkt über Famio', style: theme.textTheme.titleMedium),
+          Text(tr.pushDirectlyThroughFamio, style: theme.textTheme.titleMedium),
           const SizedBox(height: 4),
           Text(
             OwnPush.native
-                ? 'Famio hält im Hintergrund eine Verbindung zu deinem '
-                      'Server – auch wenn die App geschlossen ist. Ohne ntfy, '
-                      'ohne Google; alles bleibt auf deinem Server. Android '
-                      'zeigt dafür dauerhaft „Famio ist bereit“ an – gedrückt '
-                      'halten, um es auszublenden.'
-                : 'Solange Famio läuft, meldet es Neues, auch im '
-                      'Hintergrund. Ohne ntfy – alles bleibt auf deinem '
-                      'Server.',
+                ? tr.pushFamioKeepsConnectionServer
+                : tr.pushLongFamioRunningReports,
             style: theme.textTheme.bodySmall,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(
-              OwnPush.native ? 'Auf diesem Handy' : 'Auf diesem Gerät',
-            ),
+            title: Text(OwnPush.native ? tr.pushPhone : tr.pushDevice),
             value: enabled,
             onChanged: _busy || status == null
                 ? null
@@ -429,11 +401,11 @@ class _OwnPushCardState extends State<_OwnPushCard>
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Inhalte anzeigen'),
+            title: Text(tr.pushShowContents),
             subtitle: Text(
-              'Namen und Texte, z. B. die Chat-Nachricht. Aus: nur „Neue '
-              'Nachricht“ o. Ä.'
-              '${OwnPush.native ? ' Der Sperrbildschirm zeigt nie Inhalte.' : ''}',
+              tr.pushNamesTextsEG(
+                OwnPush.native ? tr.pushLockScreenNeverShows : '',
+              ),
             ),
             value: status?.details ?? true,
             onChanged: _busy || status == null
@@ -445,8 +417,8 @@ class _OwnPushCardState extends State<_OwnPushCard>
               _Hint(
                 icon: AppIcons.warningCircle,
                 color: c.danger,
-                text: 'Android erlaubt Famio keine Benachrichtigungen.',
-                action: 'Einstellungen',
+                text: tr.pushAndroidDoesNotAllow,
+                action: tr.sectionSettings,
                 onPressed: () => _run(
                   () => const MethodChannel(
                     'famio/location',
@@ -457,10 +429,8 @@ class _OwnPushCardState extends State<_OwnPushCard>
               _Hint(
                 icon: AppIcons.warningCircle,
                 color: c.danger,
-                text:
-                    'Akku-Optimierung ist an – Android kann die Verbindung '
-                    'dann trennen.',
-                action: 'Ausnehmen',
+                text: tr.pushBatteryOptimizationAndroidMay,
+                action: tr.pushExempt,
                 onPressed: () => _run(
                   () => const MethodChannel(
                     'famio/location',
@@ -473,16 +443,14 @@ class _OwnPushCardState extends State<_OwnPushCard>
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.paperPlaneRight, size: 18),
-                label: const Text('Test senden'),
+                label: Text(tr.pushSendTest),
                 onPressed: _busy
                     ? null
                     : () => _run(() async {
                         await push.test();
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Testnachricht unterwegs'),
-                            ),
+                            SnackBar(content: Text(tr.pushTestMessageItsWay)),
                           );
                         }
                       }),
@@ -537,7 +505,7 @@ class _AddTargetDialogState extends State<_AddTargetDialog> {
     return 'famio-${List.generate(20, (_) => chars[random.nextInt(chars.length)]).join()}';
   }
 
-  final _name = TextEditingController(text: 'Handy');
+  final _name = TextEditingController(text: tr.commonPhone);
   final _url = TextEditingController(text: 'https://ntfy.sh/${_topic()}');
   final _token = TextEditingController();
   var _details = false;
@@ -577,7 +545,7 @@ class _AddTargetDialogState extends State<_AddTargetDialog> {
     final topic = Uri.tryParse(_url.text)?.pathSegments.lastOrNull ?? '';
     return AlertDialog(
       scrollable: true,
-      title: const Text('Gerät hinzufügen'),
+      title: Text(tr.pushAddDevice),
       content: SizedBox(
         width: 420,
         child: Column(
@@ -586,51 +554,52 @@ class _AddTargetDialogState extends State<_AddTargetDialog> {
           children: [
             TextField(
               controller: _name,
-              decoration: const InputDecoration(labelText: 'Name des Geräts'),
+              decoration: InputDecoration(labelText: tr.pushDeviceName),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _url,
               onChanged: (_) => setState(() {}),
               decoration: InputDecoration(
-                labelText: 'ntfy-Thema (Adresse)',
-                helperText:
-                    'Eigener ntfy-Server? Adresse anpassen. Den Namen geheim '
-                    'halten – wer ihn kennt, kann mitlesen.',
+                labelText: tr.pushNtfyTopicAddress,
+                helperText: tr.pushOwnNtfyServerAdjust,
                 helperMaxLines: 3,
                 suffixIcon: IconButton(
-                  tooltip: 'Thema kopieren',
+                  tooltip: tr.pushCopyTopic,
                   icon: const Icon(AppIcons.copy),
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: topic));
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text('„$topic“ kopiert')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr.pushTopicCopied(topic))),
+                    );
                   },
                 ),
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'In der ntfy-App: + → Thema „$topic“ abonnieren'
-              '${Uri.tryParse(_url.text)?.host == 'ntfy.sh' ? '' : ' (Server: ${Uri.tryParse(_url.text)?.origin ?? ''})'}.',
+              tr.pushNtfyAppSubscribeTopic(
+                topic,
+                Uri.tryParse(_url.text)?.host == 'ntfy.sh'
+                    ? ''
+                    : tr.pushServerServer(
+                        Uri.tryParse(_url.text)?.origin ?? '',
+                      ),
+              ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 12),
             TextField(
               controller: _token,
-              decoration: const InputDecoration(
-                labelText: 'Zugangstoken (optional)',
-                helperText: 'Nur bei geschützten ntfy-Servern (tk_…)',
+              decoration: InputDecoration(
+                labelText: tr.pushAccessTokenOptional,
+                helperText: tr.pushOnlyProtectedNtfyServers,
               ),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Details anzeigen'),
-              subtitle: const Text(
-                'Namen und Texte mitsenden. Nur mit eigenem ntfy-Server '
-                'empfohlen.',
-              ),
+              title: Text(tr.pushShowDetails),
+              subtitle: Text(tr.pushSendNamesTextsToo),
               value: _details,
               onChanged: (v) => setState(() => _details = v),
             ),
@@ -645,11 +614,11 @@ class _AddTargetDialogState extends State<_AddTargetDialog> {
       actions: [
         TextButton(
           onPressed: _busy ? null : () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
         FilledButton(
           onPressed: _busy ? null : _submit,
-          child: const Text('Hinzufügen & testen'),
+          child: Text(tr.pushAddTest),
         ),
       ],
     );

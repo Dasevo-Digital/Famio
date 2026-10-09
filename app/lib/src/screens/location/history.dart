@@ -35,7 +35,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
     final days = [
       for (var i = 0; i < 7; i++) today.subtract(Duration(days: i)),
     ];
-    final time = DateFormat('HH:mm', 'de');
+    final time = DateFormat.jm(appLanguage);
     return SectionPage(
       section: FamioSection.location,
       title: 'Verlauf',
@@ -59,7 +59,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                             ? 'Heute'
                             : d == today.subtract(const Duration(days: 1))
                             ? 'Gestern'
-                            : DateFormat('E d.M.', 'de').format(d),
+                            : DateFormat.MEd(appLanguage).format(d),
                       ),
                       selected: d == _day,
                       onSelected: (_) => _pick(d),

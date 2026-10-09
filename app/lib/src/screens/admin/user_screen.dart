@@ -25,8 +25,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     _user = _api.adminUsers().then(
       (all) => all.firstWhere(
         (u) => u.member.id == widget.userId,
-        orElse: () =>
-            throw const ApiError(404, 'not_found', 'Mitglied gelöscht'),
+        orElse: () => throw ApiError(404, 'not_found', tr.adminMemberDeleted),
       ),
     );
   }
@@ -59,7 +58,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         return SectionPage(
           maxBodyWidth: 960,
           section: FamioSection.settings,
-          title: user?.member.displayName ?? 'Mitglied',
+          title: user?.member.displayName ?? tr.commonMember,
           subtitle: user == null ? null : '@${user.member.username}',
           body: ApiFutureView(
             snapshot: snapshot,
@@ -95,7 +94,9 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         Text(
-                          'Mitglied seit ${DateFormat('d. MMMM y', 'de').format(u.createdAt)}',
+                          tr.adminMemberSinceDate(
+                            DateFormat.yMMMMd(appLanguage).format(u.createdAt),
+                          ),
                           style: TextStyle(color: c.inkSoft),
                         ),
                       ],
@@ -103,7 +104,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                   ),
                   BubbleButton(
                     icon: AppIcons.pencilSimple,
-                    tooltip: 'Bearbeiten',
+                    tooltip: tr.commonEdit,
                     onPressed: () => _edit(u),
                   ),
                 ],
@@ -111,16 +112,14 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
               if (u.homeAssistant) ...[
                 const SizedBox(height: 12),
                 Text(
-                  'Über Home Assistant angelegt. Die Anmeldung in Home '
-                  'Assistant funktioniert immer; ein Passwort ist nur für die '
-                  'Apps nötig.',
+                  tr.adminCreatedThroughHomeAssistant,
                   style: TextStyle(color: c.inkSoft),
                 ),
               ],
             ],
           ),
         ),
-        ListHeading('Rolle', color: accent),
+        ListHeading(tr.adminRole, color: accent),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _RolePicker(
@@ -135,7 +134,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           ),
         ),
         if (m.isService) ...[
-          ListHeading('Darf ändern', color: accent),
+          ListHeading(tr.adminMayChange, color: accent),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -155,16 +154,9 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(switch (m.serviceAccess) {
-                  ServiceAccess.full =>
-                    'Wie ein Erwachsener: Termine, Aufgaben, Listen … '
-                        'anlegen, ändern und löschen.',
-                  ServiceAccess.everyday =>
-                    'Nur Aufgaben, Ämter und Routinen abhaken und '
-                        'Einkaufslisten führen – z. B. für eine '
-                        'Wandanzeige oder Sprachbefehle.',
-                  ServiceAccess.readOnly =>
-                    'Sieht alles für die Familie Freigegebene, ändert '
-                        'nichts. Am sichersten für Home Assistant.',
+                  ServiceAccess.full => tr.adminLikeAdultCreateChange,
+                  ServiceAccess.everyday => tr.adminOnlyTickOffTasks,
+                  ServiceAccess.readOnly => tr.adminSeesEverythingSharedFamily,
                 }, style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
@@ -172,27 +164,25 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         ],
         SwitchListTile(
           secondary: const Icon(AppIcons.shieldUser),
-          title: const Text('Administrator'),
-          subtitle: const Text(
-            'Darf Mitglieder verwalten und Servereinstellungen ändern',
-          ),
+          title: Text(tr.settingsAdministrator),
+          subtitle: Text(tr.adminMayManageMembersChange),
           value: m.isAdmin,
           onChanged: _canAdminister(m.role)
               ? (v) => _run(() => _api.updateUser(m.id, isAdmin: v))
               : null,
         ),
-        ListHeading('Kalender', color: accent),
+        ListHeading(tr.sectionCalendar, color: accent),
         _MemberCalendars(member: m, isMe: isMe),
-        ListHeading('Anmeldung', color: accent),
+        ListHeading(tr.adminSign, color: accent),
         ListTile(
           leading: const Icon(AppIcons.password),
           title: Text(
-            u.hasPassword ? 'Passwort zurücksetzen' : 'Passwort festlegen',
+            u.hasPassword ? tr.adminResetPassword : tr.adminSetPassword,
           ),
           subtitle: Text(
             isMe
-                ? 'Setzt dein Passwort neu, ohne das alte'
-                : 'Z. B. wenn ${m.displayName} es vergessen hat',
+                ? tr.adminSetsPasswordAnewWithout
+                : tr.adminEGIfName(m.displayName),
           ),
           onTap: () => _resetPassword(u, isMe: isMe),
         ),
@@ -201,58 +191,55 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             u.twoFactor ? AppIcons.shieldCheck : AppIcons.shield,
             color: u.twoFactor ? c.strong(FamioSection.tasks) : null,
           ),
-          title: Text(
-            u.twoFactor ? 'Zwei-Faktor eingeschaltet' : 'Zwei-Faktor aus',
-          ),
+          title: Text(u.twoFactor ? tr.adminTwoFactor : tr.adminTwoFactorOff),
           subtitle: Text(
             u.twoFactor
-                ? 'Handy verloren und keine Wiederherstellungscodes? '
-                      'Zurücksetzen, dann reicht wieder das Passwort.'
+                ? tr.adminLostPhoneNoRecovery
                 : isMe
-                ? 'Einschalten unter Einstellungen → Anmeldung & Sicherheit'
-                : '${m.displayName} kann sie in den eigenen Einstellungen '
-                      'einschalten.',
+                ? tr.adminTurnUnderSettingsSign
+                : tr.adminNameCanTurnTheir(m.displayName),
           ),
           trailing: u.twoFactor
               ? TextButton(
                   onPressed: () => _confirmThen(
-                    'Zwei-Faktor von ${m.displayName} zurücksetzen?',
-                    'Danach reicht zum Anmelden wieder das Passwort, bis '
-                        '${m.displayName} sie neu einrichtet.',
-                    'Zurücksetzen',
+                    tr.adminResetTwoFactorName(m.displayName),
+                    tr.adminAfterThatPasswordEnough(m.displayName),
+                    tr.commonReset,
                     () => _run(
                       () => _api.resetTwoFactor(m.id),
-                      done: 'Zwei-Faktor zurückgesetzt',
+                      done: tr.adminTwoFactorReset,
                     ),
                   ),
-                  child: const Text('Zurücksetzen'),
+                  child: Text(tr.commonReset),
                 )
               : null,
         ),
         if (u.singleSignOn)
           ListTile(
             leading: const Icon(AppIcons.logIn),
-            title: const Text('Mit Single Sign-On verknüpft'),
+            title: Text(tr.adminLinkedSingleSign),
             trailing: TextButton(
               onPressed: () => _run(
                 () => _api.unlinkUserSso(m.id),
-                done: 'Verknüpfung gelöst',
+                done: tr.adminLinkRemoved,
               ),
-              child: const Text('Lösen'),
+              child: Text(tr.adminUnlink),
             ),
           ),
         ListHeading(
-          'Geräte (${u.sessions.length})',
+          tr.adminDevicesCount(u.sessions.length),
           color: accent,
           trailing: u.sessions.length > (isMe ? 1 : 0)
               ? TextButton(
                   onPressed: () => _run(
                     () => _api.signOutUser(m.id),
                     done: isMe
-                        ? 'Alle anderen Geräte abgemeldet'
-                        : '${m.displayName} wurde überall abgemeldet',
+                        ? tr.adminSignedOutAllOther
+                        : tr.adminNameWasSignedOut(m.displayName),
                   ),
-                  child: Text(isMe ? 'Andere abmelden' : 'Überall abmelden'),
+                  child: Text(
+                    isMe ? tr.adminSignOutOthers : tr.adminSignOutEverywhere,
+                  ),
                 )
               : null,
         ),
@@ -260,7 +247,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              'Auf keinem Gerät angemeldet.',
+              tr.adminNotSignedAnyDevice,
               style: TextStyle(color: c.inkSoft),
             ),
           ),
@@ -276,12 +263,10 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           ListTile(
             leading: Icon(AppIcons.userMinus, color: c.danger),
             title: Text(
-              '${m.displayName} entfernen',
+              tr.adminRemoveName(m.displayName),
               style: TextStyle(color: c.danger),
             ),
-            subtitle: const Text(
-              'Konto löschen und auf allen Geräten abmelden',
-            ),
+            subtitle: Text(tr.adminDeleteAccountSignOut),
             onTap: () => _remove(u),
           ),
         ],
@@ -303,7 +288,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
@@ -324,15 +309,15 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Mitglied bearbeiten',
+        title: tr.adminEditMember,
         controllers: [name, username],
         fields: [
           TextField(
             controller: name,
             textCapitalization: TextCapitalization.words,
-            decoration: const InputDecoration(labelText: 'Anzeigename'),
+            decoration: InputDecoration(labelText: tr.settingsDisplayName),
           ),
-          _UsernameField(controller: username, label: 'Benutzername'),
+          _UsernameField(controller: username, label: tr.commonUsername),
           StatefulBuilder(
             builder: (context, setState) => AvatarColorPicker(
               selected: color,
@@ -369,8 +354,8 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Neues Passwort für ${u.member.displayName}',
-        submitLabel: 'Festlegen',
+        title: tr.adminNewPasswordName(u.member.displayName),
+        submitLabel: tr.adminSet,
         controllers: [password],
         fields: [
           PasswordReveal(
@@ -381,7 +366,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Neues Passwort (min. 8 Zeichen)',
+                labelText: tr.settingsNewPassword,
               ),
             ),
           ),
@@ -389,7 +374,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             builder: (context, setState) => CheckboxListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
-                isMe ? 'Andere Geräte abmelden' : 'Auf allen Geräten abmelden',
+                isMe ? tr.adminSignOutOtherDevices : tr.adminSignOutAllDevices,
               ),
               value: signOut,
               onChanged: (v) => setState(() => signOut = v ?? true),
@@ -409,8 +394,8 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     await _run(
       () async {},
       done: signedOut == 0
-          ? 'Passwort geändert'
-          : 'Passwort geändert, ${_devices(signedOut)} abgemeldet',
+          ? tr.adminPasswordChanged
+          : tr.adminPasswordChangedDevicesSigned(_devices(signedOut)),
     );
   }
 
@@ -419,21 +404,18 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('${u.member.displayName} entfernen?'),
-        content: const Text(
-          'Das Konto wird gelöscht und auf allen Geräten abgemeldet. '
-          'Aufgaben, Termine und Listen bleiben erhalten.',
-        ),
+        content: Text(tr.adminAccountDeletedSignedOut),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             style: FilledButton.styleFrom(
               backgroundColor: FamioColors.of(context).danger,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Entfernen'),
+            child: Text(tr.commonRemove),
           ),
         ],
       ),

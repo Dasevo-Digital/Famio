@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'app_icons.dart';
 
 import 'palette.dart';
+import '../l10n.dart';
 
 /// Page layout used by every section: a large friendly title on a soft
 /// colored blob instead of a Material app bar.
@@ -72,7 +73,7 @@ class SectionPage extends StatelessWidget {
                           padding: const EdgeInsets.only(right: 12),
                           child: BubbleButton(
                             icon: AppIcons.caretLeft,
-                            tooltip: 'Zurück',
+                            tooltip: tr.commonBack,
                             onPressed: () => Navigator.of(context).maybePop(),
                           ),
                         ),

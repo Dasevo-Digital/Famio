@@ -296,7 +296,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                     InputChip(
                       avatar: const Icon(AppIcons.calendarBlank, size: 18),
                       label: Text(
-                        'Am ${DateFormat('d. MMMM y', 'de').format(_date)}',
+                        'Am ${DateFormat.yMMMMd(appLanguage).format(_date)}',
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(

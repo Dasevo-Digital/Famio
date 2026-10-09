@@ -14,6 +14,7 @@ import '../widgets/dispose_with.dart';
 import 'caldav_screens.dart';
 import '../widgets/section_header.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 /// Connects Famio with Google Calendar, Apple Calendar & co. via ICS links:
 /// publishing Famio events (feeds) and showing external calendars
@@ -25,43 +26,35 @@ class CalendarConnectScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionPage(
       section: FamioSection.calendar,
-      title: 'Kalender verbinden',
+      title: tr.caldavConnectCalendar,
       subtitle: 'Apple, iCloud, Google, Outlook & Co.',
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
             padding: const EdgeInsets.only(bottom: 120),
-            children: const [
+            children: [
               SectionHeader(
-                'Kalender-Apps direkt verbinden',
-                'Apple Kalender (Mac, iPhone), Thunderbird oder DAVx⁵ auf '
-                    'Android zeigen die Famio-Termine an – und du kannst sie '
-                    'dort auch anlegen und ändern (CalDAV).',
+                tr.calendarConnectCalendarAppsDirectly,
+                tr.calendarAppleCalendarMacIphone,
               ),
               CalDavAppsSection(),
               Divider(height: 40),
               SectionHeader(
-                'Mit Google, iCloud, Nextcloud & Co. abgleichen',
-                'Der Famio-Server gleicht Termine mit einem Kalender dort in '
-                    'beide Richtungen ab, alle 15 Minuten und nach jeder '
-                    'Änderung. Vertrauliche Termine bleiben in Famio.',
+                tr.calendarSyncGoogleIcloudNextcloud,
+                tr.calendarFamioServerSyncsEvents,
               ),
               CalDavAccountsSection(),
               Divider(height: 40),
               SectionHeader(
-                'Famio in anderen Kalendern anzeigen',
-                'Ein privater Link, den du in Google Kalender, Apple Kalender '
-                    'oder Outlook abonnierst. Änderungen in Famio erscheinen '
-                    'dort automatisch (nur lesend).',
+                tr.calendarShowFamioOtherCalendars,
+                tr.calendarPrivateLinkThatYou,
               ),
               _FeedsSection(),
               Divider(height: 40),
               SectionHeader(
-                'Andere Kalender in Famio anzeigen',
-                'Schulkalender, Dienstplan oder dein Google- bzw. '
-                    'iCloud-Kalender: Der Famio-Server ruft sie alle 30 '
-                    'Minuten ab. Die Termine sind in Famio schreibgeschützt.',
+                tr.calendarShowOtherCalendarsFamio,
+                tr.calendarSchoolCalendarDutyRoster,
               ),
               _SubscriptionsSection(),
             ],
@@ -101,27 +94,27 @@ class _FeedsSectionState extends State<_FeedsSection> {
         controllers: [name],
         child: StatefulBuilder(
           builder: (context, setState) => AlertDialog(
-            title: const Text('Neuer Kalender-Link'),
+            title: Text(tr.calendarNewCalendarLink),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 TextField(
                   controller: name,
-                  decoration: const InputDecoration(
-                    labelText: 'Name im anderen Kalender',
+                  decoration: InputDecoration(
+                    labelText: tr.calendarNameOtherCalendar,
                   ),
                 ),
                 const SizedBox(height: 16),
                 SegmentedButton<FeedScope>(
-                  segments: const [
+                  segments: [
                     ButtonSegment(
                       value: FeedScope.all,
-                      label: Text('Alle Termine'),
+                      label: Text(tr.calendarAllEvents),
                     ),
                     ButtonSegment(
                       value: FeedScope.mine,
-                      label: Text('Nur meine'),
+                      label: Text(tr.calendarOnlyMine),
                     ),
                   ],
                   selected: {scope},
@@ -130,19 +123,14 @@ class _FeedsSectionState extends State<_FeedsSection> {
                 const SizedBox(height: 8),
                 Text(
                   scope == FeedScope.all
-                      ? 'Alle Familientermine.'
-                      : 'Termine, bei denen du dabei bist, und Termine für '
-                            'die ganze Familie.',
+                      ? tr.calendarAllFamilyEvents
+                      : tr.caldavEventsYouTakePart,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('Nur „Belegt“ zeigen'),
-                  subtitle: const Text(
-                    'Ohne Titel, Ort und Notizen – Google/Apple erfahren '
-                    'nur, wann ihr keine Zeit habt. Vertrauliche Termine '
-                    'fehlen immer.',
-                  ),
+                  title: Text(tr.calendarShowOnlyBusy),
+                  subtitle: Text(tr.calendarWithoutTitlePlaceNotes),
                   value: hideDetails,
                   onChanged: (v) => setState(() => hideDetails = v),
                 ),
@@ -151,11 +139,11 @@ class _FeedsSectionState extends State<_FeedsSection> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Abbrechen'),
+                child: Text(tr.commonCancel),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Erstellen'),
+                child: Text(tr.commonCreate),
               ),
             ],
           ),
@@ -178,19 +166,16 @@ class _FeedsSectionState extends State<_FeedsSection> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Link „${feed.name}“ widerrufen?'),
-        content: const Text(
-          'Kalender, die diesen Link abonniert haben, erhalten keine '
-          'Termine mehr.',
-        ),
+        title: Text(tr.calendarRevokeLinkName(feed.name)),
+        content: Text(tr.calendarCalendarsThatSubscribedLink),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Widerrufen'),
+            child: Text(tr.commonRevoke),
           ),
         ],
       ),
@@ -224,11 +209,11 @@ class _FeedsSectionState extends State<_FeedsSection> {
         if (snapshot.hasError) {
           return ListTile(
             leading: const Icon(AppIcons.cloudSlash),
-            title: const Text('Nur mit Verbindung zum Server verfügbar'),
+            title: Text(tr.commonOnlyWithServer),
             subtitle: Text('${snapshot.error}'),
             trailing: TextButton(
               onPressed: _reload,
-              child: const Text('Erneut'),
+              child: Text(tr.commonAgain),
             ),
           );
         }
@@ -253,13 +238,7 @@ class _FeedsSectionState extends State<_FeedsSection> {
                   color: FamioColors.of(context).tint(FamioSection.home),
                   padding: const EdgeInsets.all(14),
                   child: Text(
-                    'Google Kalender und Apple-Kalender-Abos über iCloud laden '
-                    'den Link von ihren eigenen Servern. Dafür muss Famio per '
-                    'HTTPS aus dem Internet erreichbar sein (z. B. über Nginx '
-                    'Proxy Manager) und am Server FAMIO_PUBLIC_URL gesetzt '
-                    'werden. Ohne das klappen nur Abos, die das Gerät selbst '
-                    'lädt – etwa auf dem iPhone über die Einstellungen, im '
-                    'Heimnetz.',
+                    tr.calendarGoogleCalendarAppleCalendar,
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -276,31 +255,28 @@ class _FeedsSectionState extends State<_FeedsSection> {
                 alignment: Alignment.centerLeft,
                 child: FilledButton.tonalIcon(
                   icon: const Icon(AppIcons.link),
-                  label: const Text('Link erstellen'),
+                  label: Text(tr.calendarCreateLink),
                   onPressed: _create,
                 ),
               ),
             ),
-            const HelpSteps('So geht’s in Google Kalender', [
-              'calendar.google.com im Browser öffnen.',
-              'Links bei „Weitere Kalender“ auf + → „Per URL“.',
-              'Den kopierten Link einfügen und „Kalender hinzufügen“.',
-              'Google aktualisiert Abos nur alle paar Stunden.',
+            HelpSteps(tr.calendarHowWorksGoogleCalendar, [
+              tr.calendarOpenGoogleInBrowser,
+              tr.calendarLeftOtherCalendarsTap,
+              tr.calendarPasteCopiedLinkAdd,
+              tr.calendarGoogleOnlyUpdatesSubscriptions,
             ]),
-            const HelpSteps('So geht’s in Apple Kalender (Mac)', [
-              'Kalender-App → Ablage → Neues Kalenderabonnement …',
-              'Den kopierten Link einfügen.',
-              'Bei „Automatisch aktualisieren“ z. B. „Alle 5 Minuten“ wählen.',
-              'Als Ort „Auf meinem Mac“ wählen. „iCloud“ funktioniert nur, '
-                  'wenn Famio aus dem Internet erreichbar ist – sonst meldet '
-                  'der Kalender „Anfrage fehlgeschlagen“.',
+            HelpSteps(tr.calendarHowWorksAppleCalendar, [
+              tr.calendarCalendarAppFileNew,
+              tr.calendarPasteCopiedLink,
+              tr.calendarAutoRefreshChooseE,
+              tr.calendarChooseMyMacLocation,
             ]),
-            const HelpSteps('So geht’s auf iPhone und iPad', [
-              'Einstellungen → Kalender → Accounts → Account hinzufügen.',
-              '„Andere“ → „Kalenderabo hinzufügen“.',
-              'Den kopierten Link einfügen.',
-              'Das iPhone lädt den Link selbst – im Heimnetz klappt das, '
-                  'unterwegs nur mit öffentlicher Adresse oder VPN.',
+            HelpSteps(tr.calendarHowWorksIphoneIpad, [
+              tr.calendarSettingsCalendarAccountsAdd,
+              tr.calendarOtherAddSubscribedCalendar,
+              tr.calendarPasteCopiedLink,
+              tr.calendarIphoneLoadsLinkItself,
             ]),
           ],
         );
@@ -329,8 +305,8 @@ class _FeedTile extends StatelessWidget {
       leading: const Icon(AppIcons.link),
       title: Text(
         '${feed.name} · '
-        '${feed.scope == FeedScope.all ? 'alle Termine' : 'nur meine'}'
-        '${feed.hideDetails ? ', nur „Belegt“' : ''}',
+        '${feed.scope == FeedScope.all ? tr.calendarAllEvents2 : tr.calendarOnlyMine2}'
+        '${feed.hideDetails ? tr.calendarOnlyBusy : ''}',
       ),
       subtitle: SelectableText(
         url.toString(),
@@ -342,12 +318,12 @@ class _FeedTile extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(AppIcons.copy),
-            tooltip: 'Link kopieren',
+            tooltip: tr.calendarCopyLink,
             onPressed: () {
               Clipboard.setData(ClipboardData(text: url.toString()));
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('Link kopiert')));
+              ).showSnackBar(SnackBar(content: Text(tr.calendarLinkCopied)));
             },
           ),
           PopupMenuButton<String>(
@@ -355,18 +331,18 @@ class _FeedTile extends StatelessWidget {
               if (v == 'webcal') {
                 Clipboard.setData(ClipboardData(text: webcal.toString()));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('webcal-Link kopiert')),
+                  SnackBar(content: Text(tr.calendarWebcalLinkCopied)),
                 );
               } else {
                 onRevoke();
               }
             },
-            itemBuilder: (_) => const [
+            itemBuilder: (_) => [
               PopupMenuItem(
                 value: 'webcal',
-                child: Text('Als webcal:// kopieren'),
+                child: Text(tr.calendarCopyWebcal),
               ),
-              PopupMenuItem(value: 'revoke', child: Text('Widerrufen')),
+              PopupMenuItem(value: 'revoke', child: Text(tr.commonRevoke)),
             ],
           ),
         ],
@@ -401,7 +377,9 @@ class _SubscriptionsSection extends StatelessWidget {
         child: StatefulBuilder(
           builder: (context, setState) => AlertDialog(
             title: Text(
-              existing == null ? 'Kalender abonnieren' : 'Abo bearbeiten',
+              existing == null
+                  ? tr.calendarSubscribeCalendar
+                  : tr.calendarEditSubscription,
             ),
             content: SizedBox(
               width: 420,
@@ -412,8 +390,8 @@ class _SubscriptionsSection extends StatelessWidget {
                   TextField(
                     controller: name,
                     autofocus: existing == null,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
+                    decoration: InputDecoration(
+                      labelText: tr.commonName,
                       hintText: 'z. B. Schule, Dienstplan',
                     ),
                   ),
@@ -423,8 +401,8 @@ class _SubscriptionsSection extends StatelessWidget {
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     decoration: InputDecoration(
-                      labelText: 'ICS-Adresse',
-                      hintText: 'https://… oder webcal://…',
+                      labelText: tr.calendarIcsAddress,
+                      hintText: tr.calendarHttpsWebcal,
                       errorText: error,
                     ),
                   ),
@@ -453,7 +431,7 @@ class _SubscriptionsSection extends StatelessWidget {
                   if (owned) ...[
                     const SizedBox(height: 16),
                     Text(
-                      'Wer sieht die Termine?',
+                      tr.calendarWhoSeesEvents,
                       style: Theme.of(context).textTheme.titleSmall,
                     ),
                     const SizedBox(height: 8),
@@ -469,7 +447,7 @@ class _SubscriptionsSection extends StatelessWidget {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Abbrechen'),
+                child: Text(tr.commonCancel),
               ),
               FilledButton(
                 onPressed: () {
@@ -478,15 +456,12 @@ class _SubscriptionsSection extends StatelessWidget {
                   if (u == null ||
                       !schemes.contains(u.scheme) ||
                       u.host.isEmpty) {
-                    setState(
-                      () => error =
-                          'Adresse muss mit https:// oder webcal:// beginnen',
-                    );
+                    setState(() => error = tr.calendarAddressMustStartHttps);
                     return;
                   }
                   Navigator.pop(context, true);
                 },
-                child: const Text('Speichern'),
+                child: Text(tr.commonSave),
               ),
             ],
           ),
@@ -497,7 +472,9 @@ class _SubscriptionsSection extends StatelessWidget {
       engine.saveCalendarSubscription(
         CalendarSubscription(
           id: existing?.id ?? newId(),
-          name: name.text.trim().isEmpty ? 'Kalender' : name.text.trim(),
+          name: name.text.trim().isEmpty
+              ? tr.sectionCalendar
+              : name.text.trim(),
           url: url.text.trim(),
           color: color,
           ownerId: owned ? existing?.ownerId ?? engine.memberId : null,
@@ -517,7 +494,8 @@ class _SubscriptionsSection extends StatelessWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            status.error ?? '${sub.name}: ${status.eventCount} Termine geladen',
+            status.error ??
+                tr.calendarNameCountEventsLoaded(sub.name, status.eventCount),
           ),
         ),
       );
@@ -531,19 +509,16 @@ class _SubscriptionsSection extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('„${sub.name}“ entfernen?'),
-        content: const Text(
-          'Die importierten Termine verschwinden für alle, mit denen er '
-          'geteilt ist. Der Originalkalender bleibt unverändert.',
-        ),
+        title: Text(tr.commonRemoveName(sub.name)),
+        content: Text(tr.calendarImportedEventsDisappearEveryone),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Entfernen'),
+            child: Text(tr.commonRemove),
           ),
         ],
       ),
@@ -575,20 +550,27 @@ class _SubscriptionsSection extends StatelessWidget {
                 final status = engine.subscriptionStatus(sub.id);
                 final error = status?.error;
                 final subtitle = status == null
-                    ? 'Wird beim nächsten Abgleich geladen …'
+                    ? tr.calendarWillLoadedNextSync
                     : error ??
-                          '${status.eventCount} Termine · aktualisiert '
-                              '${status.lastSync == null ? '–' : dateTimeLabel(status.lastSync!)}';
+                          tr.calendarCountEventsUpdatedWhen(
+                            status.eventCount,
+                            status.lastSync == null
+                                ? '–'
+                                : dateTimeLabel(status.lastSync!),
+                          );
                 final mine = sub.editableBy(engine.memberId);
                 final owner = sub.ownerId == null
                     ? null
                     : sub.ownerId == engine.memberId
-                    ? 'dir'
-                    : engine.member(sub.ownerId)?.displayName ?? 'jemandem';
+                    ? tr.calendarYou
+                    : engine.member(sub.ownerId)?.displayName ??
+                          tr.calendarSomeone;
                 final who = owner == null
-                    ? 'Für die ganze Familie'
-                    : 'Von $owner · sichtbar für: '
-                          '${sharingLabel(engine, sub.sharing)}';
+                    ? tr.calendarWholeFamily
+                    : tr.calendarOwnerVisibleWho(
+                        owner,
+                        sharingLabel(engine, sub.sharing),
+                      );
                 return ListTile(
                   leading: CircleAvatar(
                     radius: 10,
@@ -608,13 +590,13 @@ class _SubscriptionsSection extends StatelessWidget {
                     children: [
                       IconButton(
                         icon: const Icon(AppIcons.arrowsClockwise),
-                        tooltip: 'Jetzt abrufen',
+                        tooltip: tr.calendarFetchNow,
                         onPressed: () => _refresh(context, sub),
                       ),
                       if (mine)
                         IconButton(
                           icon: const Icon(AppIcons.trash),
-                          tooltip: 'Entfernen',
+                          tooltip: tr.commonRemove,
                           onPressed: () => _delete(context, sub),
                         ),
                     ],
@@ -628,26 +610,25 @@ class _SubscriptionsSection extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: FilledButton.tonalIcon(
                 icon: const Icon(AppIcons.plus),
-                label: const Text('Kalender abonnieren'),
+                label: Text(tr.calendarSubscribeCalendar),
                 onPressed: () => _edit(context),
               ),
             ),
           ),
-          const HelpSteps('Adresse aus Google Kalender holen', [
-            'calendar.google.com im Browser öffnen.',
-            'Beim gewünschten Kalender ⋮ → „Einstellungen und Freigabe“.',
-            'Ganz unten „Privatadresse im iCal-Format“ kopieren.',
-            'Diese Adresse ist geheim – jeder mit dem Link sieht die Termine.',
+          HelpSteps(tr.calendarGetAddressGoogleCalendar, [
+            tr.calendarOpenGoogleInBrowser,
+            tr.calendarCalendarYouWantSettings,
+            tr.calendarVeryBottomCopySecret,
+            tr.calendarAddressSecretAnyoneLink,
           ]),
-          const HelpSteps('Adresse aus Apple iCloud holen', [
-            'Kalender-App auf dem Mac oder iCloud.com öffnen.',
-            'Beim Kalender auf „Teilen“ → „Öffentlicher Kalender“ aktivieren.',
-            'Den angezeigten webcal://-Link kopieren.',
+          HelpSteps(tr.calendarGetAddressAppleIcloud, [
+            tr.calendarOpenCalendarAppMac,
+            tr.calendarCalendarTapShareEnable,
+            tr.calendarCopyWebcalLinkShown,
           ]),
-          const HelpSteps('Andere Quellen', [
-            'Viele Schulen, Vereine und Abfallkalender bieten einen '
-                'ICS- oder „iCal“-Link zum Abonnieren an.',
-            'Outlook: Kalender veröffentlichen und den ICS-Link verwenden.',
+          HelpSteps(tr.calendarOtherSources, [
+            tr.calendarManySchoolsClubsWaste,
+            tr.calendarOutlookPublishCalendarUse,
           ]),
         ],
       ),

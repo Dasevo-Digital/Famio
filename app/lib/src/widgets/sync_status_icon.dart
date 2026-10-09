@@ -6,6 +6,7 @@ import '../design/app_icons.dart';
 import '../app_state.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../l10n.dart';
 
 /// Cloud bubble showing the sync state; tapping it syncs immediately.
 class SyncStatusIcon extends StatelessWidget {
@@ -42,7 +43,7 @@ class SyncStatusIcon extends StatelessWidget {
             FamioSection.tasks.strong,
             status.lastSync == null
                 ? 'Synchronisiert'
-                : 'Synchronisiert um ${DateFormat.Hm('de').format(status.lastSync!)}',
+                : 'Synchronisiert um ${DateFormat.jm(appLanguage).format(status.lastSync!)}',
           ),
         };
         return BubbleButton(

@@ -157,7 +157,7 @@ class _ChildEditorState extends State<_ChildEditor> {
               label: Text(
                 _birth == null
                     ? 'Datum wählen'
-                    : DateFormat('d. MMMM y', 'de').format(_birth!),
+                    : DateFormat.yMMMMd(appLanguage).format(_birth!),
               ),
               onPressed: () async {
                 final now = DateTime.now();

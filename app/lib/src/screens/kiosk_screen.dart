@@ -22,6 +22,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import 'chores_screens.dart';
+import '../l10n.dart';
 
 /// Opens the wall display (kitchen tablet).
 Future<void> openKiosk(BuildContext context) =>
@@ -162,7 +163,7 @@ class _KioskScreenState extends State<KioskScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              DateFormat.Hm('de').format(_now),
+                              DateFormat.jm(appLanguage).format(_now),
                               style: theme.textTheme.displayLarge?.copyWith(
                                 fontFamily: 'Fredoka',
                                 fontWeight: FontWeight.w600,
@@ -174,9 +175,8 @@ class _KioskScreenState extends State<KioskScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: Text(
-                                  DateFormat(
-                                    'EEEE, d. MMMM',
-                                    'de',
+                                  DateFormat.MMMMEEEEd(
+                                    appLanguage,
                                   ).format(_now),
                                   style: theme.textTheme.headlineSmall
                                       ?.copyWith(color: c.inkSoft),
@@ -661,7 +661,7 @@ class _PeopleBoard extends StatelessWidget {
                       ? 'überfällig'
                       : DateUtils.isSameDay(due, today)
                       ? 'heute'
-                      : DateFormat('E d.M.', 'de').format(due),
+                      : DateFormat.MEd(appLanguage).format(due),
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: late ? c.danger : c.inkSoft,
                   ),
@@ -920,7 +920,7 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  DateFormat.Hm('de').format(now),
+                  DateFormat.jm(appLanguage).format(now),
                   style: theme.textTheme.displayMedium?.copyWith(
                     color: Colors.white,
                     fontFamily: 'Fredoka',
@@ -930,7 +930,7 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
                 ),
                 if (next != null)
                   Text(
-                    '${DateFormat.Hm('de').format(next.start)} ${next.event.title}',
+                    '${DateFormat.jm(appLanguage).format(next.start)} ${next.event.title}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       shadows: shadow,

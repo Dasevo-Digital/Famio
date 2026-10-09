@@ -8,6 +8,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import 'weather.dart';
+import '../l10n.dart';
 
 String _deg(double v) => '${v.round()}°';
 
@@ -99,7 +100,7 @@ class _WeatherTileState extends State<WeatherTile> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      kids.isEmpty ? 'Wetter' : 'Wetter & Kleidung',
+                      kids.isEmpty ? tr.weatherWeather : 'Wetter & Kleidung',
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -120,9 +121,7 @@ class _WeatherTileState extends State<WeatherTile> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Was sollen die Kinder anziehen? Famio fragt dafür das Wetter '
-              'bei Open-Meteo ab – übertragen werden nur die ungefähren '
-              'Koordinaten eures Orts „Zuhause“ (auf ~1 km gerundet).',
+              tr.weatherWhatShouldKidsWear,
               style: theme.textTheme.bodySmall,
             ),
             const SizedBox(height: 10),
@@ -132,7 +131,7 @@ class _WeatherTileState extends State<WeatherTile> {
                 if (mounted) setState(() {});
                 _load(force: true);
               },
-              child: const Text('Wetter einschalten'),
+              child: Text(tr.weatherTurnWeather),
             ),
           ],
         ),
@@ -141,8 +140,7 @@ class _WeatherTileState extends State<WeatherTile> {
     if (place == null) {
       return frame(
         Text(
-          'Lege unter Standort → Orte einen Ort „Zuhause“ an – dafür gibt '
-          'es dann das Wetter.',
+          tr.weatherUnderLocationPlacesAdd,
           style: theme.textTheme.bodySmall,
         ),
       );
@@ -153,7 +151,7 @@ class _WeatherTileState extends State<WeatherTile> {
         _loading
             ? const LinearProgressIndicator()
             : Text(
-                'Wetter gerade nicht erreichbar.',
+                tr.weatherWeatherNotReachableRight,
                 style: theme.textTheme.bodySmall,
               ),
       );
@@ -172,10 +170,16 @@ class _WeatherTileState extends State<WeatherTile> {
         children: [
           Text(
             night.isEmpty
-                ? '${_deg(f.now.temperature)} · ${weatherText(f.now.code)} · '
-                      'gefühlt ${_deg(f.now.apparent)}'
-                : '${_deg(f.now.temperature)} · ${weatherText(f.now.code)} · '
-                      '🌙 nachts bis ${_deg(night.values.first.low)}',
+                ? tr.weatherTempTextFeelsLike(
+                    _deg(f.now.temperature),
+                    weatherText(f.now.code),
+                    _deg(f.now.apparent),
+                  )
+                : tr.weatherTempTextDownLow(
+                    _deg(f.now.temperature),
+                    weatherText(f.now.code),
+                    _deg(night.values.first.low),
+                  ),
             style: theme.textTheme.bodyLarge,
           ),
           for (final k in kids.take(4))
@@ -186,7 +190,7 @@ class _WeatherTileState extends State<WeatherTile> {
                   children: [
                     TextSpan(
                       text: night.containsKey(k.id)
-                          ? '${k.name} heute Nacht: '
+                          ? tr.weatherNameTonight(k.name)
                           : '${k.name}: ',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
@@ -236,21 +240,32 @@ class _WeatherTileState extends State<WeatherTile> {
                   children: [
                     Expanded(
                       child: Text(
-                        '${weatherEmoji(f.now.code)} ${_deg(f.now.temperature)} in ${place.name}',
+                        tr.weatherEmojiTempPlace(
+                          weatherEmoji(f.now.code),
+                          _deg(f.now.temperature),
+                          place.name,
+                        ),
                         style: theme.textTheme.headlineSmall,
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Schließen',
+                      tooltip: tr.commonClose,
                       icon: const Icon(AppIcons.x),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
                 Text(
-                  '${weatherText(f.now.code)} · gefühlt ${_deg(f.now.apparent)}'
-                  '${f.now.windKmh == null ? '' : ' · Wind ${f.now.windKmh!.round()} km/h'}'
-                  '${f.now.uvIndex == null ? '' : ' · UV ${f.now.uvIndex!.toStringAsFixed(0)}'}',
+                  tr.weatherTextFeelsLikeFelt(
+                    weatherText(f.now.code),
+                    _deg(f.now.apparent),
+                    f.now.windKmh == null
+                        ? ''
+                        : tr.weatherWindSpeedKmH(f.now.windKmh!.round()),
+                    f.now.uvIndex == null
+                        ? ''
+                        : ' · UV ${f.now.uvIndex!.toStringAsFixed(0)}',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 SizedBox(
@@ -270,7 +285,7 @@ class _WeatherTileState extends State<WeatherTile> {
                           child: Column(
                             children: [
                               Text(
-                                DateFormat('HH', 'de').format(h.time),
+                                DateFormat.j(appLanguage).format(h.time),
                                 style: theme.textTheme.labelSmall,
                               ),
                               Text(weatherEmoji(h.code)),
@@ -315,7 +330,9 @@ class _WeatherTileState extends State<WeatherTile> {
                 if (kids.isNotEmpty && nightAdvice(kids.first, f) != null) ...[
                   const SizedBox(height: 24),
                   Text(
-                    '🌙 Für die Nacht · draußen bis ${_deg(nightAdvice(kids.first, f)!.low)}',
+                    tr.weatherNightOutsideDownLow(
+                      _deg(nightAdvice(kids.first, f)!.low),
+                    ),
                     style: theme.textTheme.titleLarge,
                   ),
                   for (final k in kids)
@@ -343,10 +360,9 @@ class _WeatherTileState extends State<WeatherTile> {
                 ],
                 const SizedBox(height: 16),
                 Text(
-                  'Tagsüber: Faustregeln für die nächsten 3 Stunden nach gefühlter '
-                  'Temperatur. Nachts: nach der Tiefsttemperatur draußen – '
-                  'entscheidend ist die Zimmertemperatur. Wetterdaten: Open-Meteo.com (CC BY 4.0), '
-                  'Stand ${DateFormat('HH:mm', 'de').format(f.fetched)}.',
+                  tr.weatherDuringDayRulesThumb(
+                    DateFormat.jm(appLanguage).format(f.fetched),
+                  ),
                   style: theme.textTheme.bodySmall,
                 ),
                 TextButton(
@@ -355,7 +371,7 @@ class _WeatherTileState extends State<WeatherTile> {
                     if (context.mounted) Navigator.pop(context);
                     if (mounted) setState(() => _forecast = null);
                   },
-                  child: const Text('Wetter auf diesem Gerät ausschalten'),
+                  child: Text(tr.weatherTurnOffWeatherDevice),
                 ),
               ],
             ),

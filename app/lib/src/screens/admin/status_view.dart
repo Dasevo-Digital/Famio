@@ -5,17 +5,17 @@ class _StatusView extends StatelessWidget {
 
   final ServerOverview overview;
 
-  static const _collectionLabels = {
-    Collections.tasks: 'Aufgaben',
-    Collections.shoppingLists: 'Einkaufslisten',
-    Collections.shoppingItems: 'Einkaufsartikel',
-    Collections.events: 'Termine',
-    Collections.calendarSubscriptions: 'Kalender-Abos',
-    Collections.externalEvents: 'Importierte Termine',
-    Collections.chatMessages: 'Chat-Nachrichten',
-    Collections.documents: 'Dokumente',
-    Collections.children: 'Kinder',
-    Collections.childEntries: 'Kinder-Einträge',
+  static Map<String, String> get _collectionLabels => {
+    Collections.tasks: tr.sectionTasks,
+    Collections.shoppingLists: tr.commonShoppingLists,
+    Collections.shoppingItems: tr.adminShoppingItems,
+    Collections.events: tr.commonEvents,
+    Collections.calendarSubscriptions: tr.adminCalendarSubscriptions,
+    Collections.externalEvents: tr.adminImportedEvents,
+    Collections.chatMessages: tr.adminChatMessages,
+    Collections.documents: tr.sectionDocuments,
+    Collections.children: tr.sectionKids,
+    Collections.childEntries: tr.adminKidsEntries,
   };
 
   @override
@@ -30,27 +30,27 @@ class _StatusView extends StatelessWidget {
           spacing: 12,
           runSpacing: 12,
           children: [
-            _Stat(AppIcons.hardDrives, 'Version', o.version),
+            _Stat(AppIcons.hardDrives, tr.settingsVersion, o.version),
             _Stat(
               AppIcons.activity,
-              'Läuft seit',
+              tr.adminRunningSince,
               _ago(o.startedAt, suffix: false),
             ),
-            _Stat(AppIcons.usersThree, 'Mitglieder', '${o.memberCount}'),
-            _Stat(AppIcons.devices, 'Angemeldete Geräte', '${o.sessionCount}'),
+            _Stat(AppIcons.usersThree, tr.commonMembers, '${o.memberCount}'),
+            _Stat(AppIcons.devices, tr.adminSignedDevices, '${o.sessionCount}'),
             _Stat(
               AppIcons.arrowsClockwise,
-              'Gerade verbunden',
+              tr.adminConnectedRightNow,
               '${o.connectedClients}',
             ),
             _Stat(
               AppIcons.database,
-              'Datenbank',
+              tr.adminDatabase,
               fileSizeLabel(o.databaseBytes),
             ),
             _Stat(
               AppIcons.folderOpen,
-              'Dateien',
+              tr.commonFiles,
               '${o.fileCount} · ${fileSizeLabel(o.fileBytes)}',
             ),
           ],
@@ -61,17 +61,17 @@ class _StatusView extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               icon: const Icon(AppIcons.cloudArrowDown),
-              label: const Text('Nach neuer Version suchen'),
+              label: Text(tr.adminCheckNewVersion),
               onPressed: () =>
                   showUpdateCheck(context, serverVersion: o.version),
             ),
           ),
         ),
-        ListHeading('Einrichtung', color: accent),
+        ListHeading(tr.adminSetup, color: accent),
         const SetupChecklist(),
-        ListHeading('Sicherungen', color: accent),
+        ListHeading(tr.adminBackups, color: accent),
         const _BackupCard(),
-        ListHeading('Einträge', color: accent),
+        ListHeading(tr.commonEntries, color: accent),
         SoftCard(
           child: Column(
             children: [
@@ -79,46 +79,44 @@ class _StatusView extends StatelessWidget {
                 if (_collectionLabels[key] case final label?)
                   _InfoRow(label: label, value: '$value'),
               if (o.recordCounts.isEmpty)
-                Text(
-                  'Noch keine Einträge.',
-                  style: TextStyle(color: c.inkSoft),
-                ),
+                Text(tr.adminNoEntriesYet, style: TextStyle(color: c.inkSoft)),
             ],
           ),
         ),
-        ListHeading('Sicherheit', color: accent),
+        ListHeading(tr.adminSecurity, color: accent),
         SoftCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _InfoRow(
                 icon: AppIcons.database,
-                label: 'Daten auf dem Server',
-                value: o.encryptedAtRest ? 'verschlüsselt' : 'unverschlüsselt',
+                label: tr.adminDataServer,
+                value: o.encryptedAtRest
+                    ? tr.adminEncrypted
+                    : tr.adminUnencrypted,
                 note: o.encryptedAtRest && !o.keySeparate
-                    ? 'Schlüssel liegt im Datenordner – FAMIO_KEY_FILE '
-                          'woanders hin legen und getrennt sichern'
+                    ? tr.adminKeyDataFolderPut
                     : o.encryptedAtRest
-                    ? 'Schlüssel getrennt von den Daten'
+                    ? tr.adminKeySeparateData
                     : null,
               ),
               _InfoRow(
                 icon: AppIcons.lock,
-                label: 'HTTPS im Heimnetz',
-                value: o.tlsPort == null ? 'aus' : 'Port ${o.tlsPort}',
+                label: tr.adminHttpsHomeNetwork,
+                value: o.tlsPort == null
+                    ? tr.commonOff
+                    : tr.adminPortPort(o.tlsPort!),
               ),
               _InfoRow(
                 icon: AppIcons.shield,
-                label: 'Unverschlüsselter Zugriff',
-                value: o.requireTls ? 'gesperrt' : 'erlaubt',
-                note: o.requireTls
-                    ? null
-                    : 'FAMIO_REQUIRE_TLS=true, sobald alle Geräte HTTPS nutzen',
+                label: tr.adminUnencryptedAccess,
+                value: o.requireTls ? tr.adminBlocked : tr.adminAllowed,
+                note: o.requireTls ? null : tr.adminFamioRequireTlsTrue,
               ),
               if (o.tlsFingerprint case final fp?) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Zertifikat-Fingerabdruck (zum Vergleich beim Verbinden):',
+                  tr.adminCertificateFingerprintCompareWhen,
                   style: TextStyle(color: c.inkSoft),
                 ),
                 const SizedBox(height: 4),
@@ -133,17 +131,20 @@ class _StatusView extends StatelessWidget {
             ],
           ),
         ),
-        ListHeading('Aktive Konfiguration', color: accent),
+        ListHeading(tr.adminActiveConfiguration, color: accent),
         SoftCard(
           child: Column(
             children: [
-              _InfoRow(label: 'Zeitzone', value: o.effective.timeZone ?? '–'),
               _InfoRow(
-                label: 'Öffentliche Adresse',
-                value: o.effective.publicUrl ?? 'keine',
+                label: tr.adminTimeZone,
+                value: o.effective.timeZone ?? '–',
               ),
               _InfoRow(
-                label: 'Max. Dateigröße',
+                label: tr.adminPublicAddress,
+                value: o.effective.publicUrl ?? tr.commonNoneLower,
+              ),
+              _InfoRow(
+                label: tr.adminMaxFileSize,
                 value: '${o.effective.maxUploadMb} MB',
               ),
             ],
@@ -178,9 +179,10 @@ class _BackupCardState extends State<_BackupCard> {
         SnackBar(
           content: Text(
             c['ok'] == true
-                ? 'Sicherung geprüft: lässt sich wiederherstellen'
-                : 'Sicherung fehlerhaft: '
-                      '${(c['problems'] as List? ?? const []).join('; ')}',
+                ? tr.adminBackupCheckedCanRestored
+                : tr.adminBackupFaultyProblems(
+                    (c['problems'] as List? ?? const []).join('; '),
+                  ),
           ),
         ),
       );
@@ -201,9 +203,7 @@ class _BackupCardState extends State<_BackupCard> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await AppScope.read(context).engine!.api.backupNow();
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Sicherung erstellt')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(tr.adminBackupCreated)));
     } on ApiError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
@@ -225,14 +225,11 @@ class _BackupCardState extends State<_BackupCard> {
         final s = snapshot.data;
         if (s == null) {
           return snapshot.hasError
-              ? const Text('Sicherungen: Status nicht verfügbar')
+              ? Text(tr.adminBackupsStatusNotAvailable)
               : const LinearProgressIndicator();
         }
         if (s['enabled'] != true) {
-          return const Text(
-            'Ausgeschaltet (FAMIO_BACKUP_DIR=off). Sichere das Datenverzeichnis '
-            'dann anders, z. B. mit Proxmox oder Home Assistant.',
-          );
+          return Text(tr.adminTurnedOffFamioBackup);
         }
         final backups = (s['backups'] as List? ?? const []).cast<Map>();
         final last = DateTime.tryParse(s['lastAt'] as String? ?? '');
@@ -248,26 +245,25 @@ class _BackupCardState extends State<_BackupCard> {
             children: [
               Text(
                 last == null
-                    ? 'Noch keine Sicherung'
-                    : 'Letzte Sicherung ${_ago(last)}',
+                    ? tr.adminNoBackupYet
+                    : tr.adminLastBackupAgo(_ago(last)),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 4),
               Text(
-                '${backups.length} Stände · ${(bytes / 1024 / 1024).toStringAsFixed(1)} MB · '
-                'jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt '
-                '(Dokumente und Fotos in den 2 neuesten)',
+                tr.adminCountVersionsSizeMb(
+                  backups.length,
+                  decimal(bytes / 1024 / 1024),
+                ),
               ),
               Text(
-                'Ordner: ${s['dir']} – verschlüsselt mit dem Datenschlüssel; '
-                'zum Wiederherstellen werden die Sicherung und die '
-                'Schlüsseldatei gebraucht.',
+                tr.adminFolderFolderEncryptedData('${s['dir']}'),
                 style: theme.textTheme.bodySmall,
               ),
               if (error != null) ...[
                 const SizedBox(height: 4),
                 Text(
-                  'Fehler: $error',
+                  tr.commonErrorWith(error),
                   style: TextStyle(color: theme.colorScheme.error),
                 ),
               ],
@@ -282,13 +278,13 @@ class _BackupCardState extends State<_BackupCard> {
                 children: [
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.hardDrives, size: 18),
-                    label: const Text('Jetzt sichern'),
+                    label: Text(tr.adminBackUpNow),
                     onPressed: _busy ? null : _now,
                   ),
                   if (backups.isNotEmpty)
                     OutlinedButton.icon(
                       icon: const Icon(AppIcons.check, size: 18),
-                      label: const Text('Sicherung prüfen'),
+                      label: Text(tr.adminCheckBackup),
                       onPressed: _busy ? null : _check,
                     ),
                 ],
@@ -328,11 +324,16 @@ class _BackupCheckLine extends StatelessWidget {
           child: Text(
             [
               ok
-                  ? 'Geprüft${at == null ? '' : ' ${_ago(at)}'}: lässt sich '
-                        'wiederherstellen (${check['records']} Einträge, '
-                        '${check['users']} Mitglieder, ${check['files']} '
-                        'Dateien${check['filesChecked'] == true ? '' : ', ohne Dateiinhalte'})'
-                  : 'Letzte Prüfung fehlgeschlagen: ${problems.join('; ')}',
+                  ? tr.adminCheckedAgoCanRestored(
+                      at == null ? '' : ' ${_ago(at)}',
+                      '${check['records']}',
+                      '${check['users']}',
+                      '${check['files']}',
+                      check['filesChecked'] == true
+                          ? ''
+                          : tr.adminWithoutFileContents,
+                    )
+                  : tr.adminLastCheckFailedProblems(problems.join('; ')),
               ...notes,
             ].join('\n'),
             style: theme.textTheme.bodySmall?.copyWith(color: color),

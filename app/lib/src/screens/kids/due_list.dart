@@ -100,8 +100,8 @@ class _DueList extends StatelessWidget {
                                     ? 'Erledigt · Datum unbekannt'
                                     : 'Am ${_date.format(d.entry!.date)}'
                               : kind == ChildEntryKind.checkup
-                              ? '${d.subtitle} · ${DateFormat('d.M.y', 'de').format(d.from)} – ${DateFormat('d.M.y', 'de').format(d.to)}'
-                              : 'Empfohlen ab ${DateFormat('d.M.y', 'de').format(d.from)}'
+                              ? '${d.subtitle} · ${DateFormat.yMd(appLanguage).format(d.from)} – ${DateFormat.yMd(appLanguage).format(d.to)}'
+                              : 'Empfohlen ab ${DateFormat.yMd(appLanguage).format(d.from)}'
                                     '${vaccinationById(d.id)?.note.isNotEmpty ?? false ? ' · ${vaccinationById(d.id)!.note}' : ''}',
                           style: theme.textTheme.bodySmall,
                         ),
@@ -267,7 +267,7 @@ Future<void> _showAppointmentActions(
               label: Text(
                 doneOn == today
                     ? 'Heute erledigt'
-                    : 'Erledigt am ${DateFormat('d.M.', 'de').format(doneOn)}',
+                    : 'Erledigt am ${DateFormat.Md(appLanguage).format(doneOn)}',
               ),
               onPressed: () => Navigator.pop(context, 'done'),
             ),

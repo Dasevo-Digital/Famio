@@ -15,9 +15,11 @@ import '../design/theme.dart';
 import '../widgets/member_avatar.dart';
 import 'kids_screens.dart';
 import '../widgets/undo_delete.dart';
+import '../format.dart';
+import '../l10n.dart';
 
-final _time = DateFormat('HH:mm', 'de');
-final _day = DateFormat('EEEE, d. MMMM', 'de');
+final _time = DateFormat.jm(appLanguage);
+final _day = DateFormat.MMMMEEEEd(appLanguage);
 
 /// Look of each log kind: icon and color.
 (IconData, Color) logLook(LogKind kind) => switch (kind) {
@@ -33,37 +35,41 @@ final _day = DateFormat('EEEE, d. MMMM', 'de');
   LogKind.bath => (AppIcons.bath, const Color(0xFF3AA8C9)),
 };
 
-String _temp(double t) => '${t.toStringAsFixed(1).replaceAll('.', ',')} °C';
+String _temp(double t) => '${decimal(t)} °C';
 
 /// One line describing [l], e.g. "Fläschchen · 120 ml Pre-/Folgemilch".
 String logText(ChildLog l, [DateTime? now]) => switch (l.kind) {
-  LogKind.breast =>
-    'Stillen ${l.side?.label ?? ''} · '
-        '${l.running ? 'läuft seit ${durationLabel(l.duration(now))}' : durationLabel(l.duration())}',
+  LogKind.breast => tr.kidsLogBreastfeedingSideState(
+    l.side?.label ?? '',
+    l.running
+        ? tr.kidsLogRunningDuration(durationLabel(l.duration(now)))
+        : durationLabel(l.duration()),
+  ),
   LogKind.sleep =>
     l.running
-        ? 'Schläft seit ${durationLabel(l.duration(now))}'
-        : 'Schlaf · ${durationLabel(l.duration())}',
+        ? tr.kidsLogAsleepDuration(durationLabel(l.duration(now)))
+        : tr.kidsLogSleepDuration(durationLabel(l.duration())),
   LogKind.bottle => [
-    'Fläschchen',
+    tr.kidsLogBottle,
     if (l.amountMl != null) '${l.amountMl} ml',
     ?l.milk?.label,
   ].join(' · '),
-  LogKind.solids => l.note.isEmpty ? 'Beikost' : 'Beikost · ${l.note}',
+  LogKind.solids =>
+    l.note.isEmpty ? tr.kidsLogSolids : tr.kidsLogSolidsNote(l.note),
   LogKind.pumping => [
-    'Abgepumpt',
+    tr.kidsLogPumped,
     if (l.amountMl != null) '${l.amountMl} ml',
     ?l.side?.label,
   ].join(' · '),
-  LogKind.diaper => 'Windel ${l.diaper?.label ?? ''}'.trim(),
+  LogKind.diaper => tr.kidsLogDiaperKind(l.diaper?.label ?? '').trim(),
   LogKind.temperature =>
-    l.temperatureC == null ? 'Temperatur' : _temp(l.temperatureC!),
+    l.temperatureC == null ? tr.kidsLogTemperature : _temp(l.temperatureC!),
   LogKind.medication => [
-    l.medication.isEmpty ? 'Medikament' : l.medication,
+    l.medication.isEmpty ? tr.kidsLogMedication : l.medication,
     if (l.dose.isNotEmpty) l.dose,
   ].join(' · '),
-  LogKind.symptom => l.symptom.isEmpty ? 'Symptom' : l.symptom,
-  LogKind.bath => 'Gebadet',
+  LogKind.symptom => l.symptom.isEmpty ? tr.kidsLogSymptom : l.symptom,
+  LogKind.bath => tr.kidsLogBathed,
 };
 
 /// Rebuilds every [interval]: the stopwatch of a running timer each
@@ -147,8 +153,7 @@ class ChildLogView extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
-                  'Noch keine Einträge. Tippe oben auf Stillen, Fläschchen, '
-                  'Schlaf oder Windel – beide Eltern sehen alles sofort.',
+                  tr.kidsLogNoEntriesYetTap,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -159,8 +164,7 @@ class ChildLogView extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             Text(
-              'Famio ersetzt keinen ärztlichen Rat. Dosierungen nur nach '
-              'Kinderarzt oder Beipackzettel.',
+              tr.kidsLogFamioDoesNotReplace,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -174,9 +178,9 @@ String _dayLabel(DateTime day, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   final diff = today.difference(day).inDays;
   return diff == 0
-      ? 'Heute'
+      ? tr.commonToday
       : diff == 1
-      ? 'Gestern'
+      ? tr.commonYesterday
       : _day.format(day);
 }
 
@@ -202,8 +206,11 @@ class _RunningCard extends StatelessWidget {
               children: [
                 Text(
                   log.kind == LogKind.sleep
-                      ? 'Schläft seit ${_time.format(log.start)}'
-                      : 'Stillen ${log.side?.label ?? ''} seit ${_time.format(log.start)}',
+                      ? tr.kidsLogAsleepSinceSince(_time.format(log.start))
+                      : tr.kidsLogBreastfeedingSideSinceSince(
+                          log.side?.label ?? '',
+                          _time.format(log.start),
+                        ),
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 _Ticker(
@@ -227,7 +234,7 @@ class _RunningCard extends StatelessWidget {
           if (log.kind == LogKind.breast)
             BubbleButton(
               icon: AppIcons.arrowsLeftRight,
-              tooltip: 'Seite wechseln',
+              tooltip: tr.kidsLogSwitchSide,
               onPressed: () {
                 final at = DateTime.now();
                 engine.saveChildLog(log.copyWith(end: at));
@@ -247,7 +254,7 @@ class _RunningCard extends StatelessWidget {
             ),
           const SizedBox(width: 8),
           ColorButton(
-            label: 'Stopp',
+            label: tr.kidsLogStop,
             icon: AppIcons.stop,
             color: color,
             onPressed: () {
@@ -311,12 +318,17 @@ class _QuickButtons extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Stillen starten',
+                  tr.kidsLogStartBreastfeeding,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 if (next != null)
                   Text(
-                    'Zuletzt ${next == BreastSide.left ? 'rechts' : 'links'} – heute zuerst ${next.label}.',
+                    tr.kidsLogLastTimeLastStart(
+                      next == BreastSide.left
+                          ? tr.kidsLogRightLower
+                          : tr.kidsLogLeftLower,
+                      next.label,
+                    ),
                   ),
                 const SizedBox(height: 16),
                 Row(
@@ -327,13 +339,17 @@ class _QuickButtons extends StatelessWidget {
                             ? FilledButton(
                                 onPressed: () => Navigator.pop(context, s),
                                 child: Text(
-                                  s == BreastSide.left ? 'Links' : 'Rechts',
+                                  s == BreastSide.left
+                                      ? tr.kidsLogLeft
+                                      : tr.kidsLogRight,
                                 ),
                               )
                             : OutlinedButton(
                                 onPressed: () => Navigator.pop(context, s),
                                 child: Text(
-                                  s == BreastSide.left ? 'Links' : 'Rechts',
+                                  s == BreastSide.left
+                                      ? tr.kidsLogLeft
+                                      : tr.kidsLogRight,
                                 ),
                               ),
                       ),
@@ -347,7 +363,7 @@ class _QuickButtons extends StatelessWidget {
                     Navigator.pop(context);
                     showLogEditor(context, child: child, kind: LogKind.breast);
                   },
-                  child: const Text('Nachtragen'),
+                  child: Text(tr.kidsLogAddAfterwards),
                 ),
               ],
             ),
@@ -379,7 +395,10 @@ class _QuickButtons extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('Windel', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  tr.kidsLogDiaper,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 10,
@@ -408,7 +427,9 @@ class _QuickButtons extends StatelessWidget {
         <(LogKind?, String, IconData, Color, VoidCallback, VoidCallback?)>[
           (
             LogKind.breast,
-            nursing == null ? 'Stillen' : 'Stillen läuft',
+            nursing == null
+                ? tr.kidsLogBreastfeeding
+                : tr.kidsLogBreastfeedingRunning,
             logLook(LogKind.breast).$1,
             logLook(LogKind.breast).$2,
             breast,
@@ -416,7 +437,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.bottle,
-            'Fläschchen',
+            tr.kidsLogBottle,
             logLook(LogKind.bottle).$1,
             logLook(LogKind.bottle).$2,
             () => showLogEditor(context, child: child, kind: LogKind.bottle),
@@ -424,7 +445,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.sleep,
-            sleeping == null ? 'Schlafen' : 'Aufgewacht',
+            sleeping == null ? tr.kidsLogSleep : tr.kidsLogWokeUp,
             sleeping == null ? AppIcons.moon : AppIcons.sun,
             logLook(LogKind.sleep).$2,
             () {
@@ -438,7 +459,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.diaper,
-            'Windel',
+            tr.kidsLogDiaper,
             logLook(LogKind.diaper).$1,
             logLook(LogKind.diaper).$2,
             diaper,
@@ -446,7 +467,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.solids,
-            'Beikost',
+            tr.kidsLogSolids,
             logLook(LogKind.solids).$1,
             logLook(LogKind.solids).$2,
             () => showLogEditor(context, child: child, kind: LogKind.solids),
@@ -454,7 +475,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.temperature,
-            'Temperatur',
+            tr.kidsLogTemperature,
             logLook(LogKind.temperature).$1,
             logLook(LogKind.temperature).$2,
             () =>
@@ -463,7 +484,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.medication,
-            'Medikament',
+            tr.kidsLogMedication,
             logLook(LogKind.medication).$1,
             logLook(LogKind.medication).$2,
             () =>
@@ -472,7 +493,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.symptom,
-            'Symptom',
+            tr.kidsLogSymptom,
             logLook(LogKind.symptom).$1,
             logLook(LogKind.symptom).$2,
             () => showLogEditor(context, child: child, kind: LogKind.symptom),
@@ -480,7 +501,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.pumping,
-            'Abpumpen',
+            tr.kidsLogPump,
             logLook(LogKind.pumping).$1,
             logLook(LogKind.pumping).$2,
             () => showLogEditor(context, child: child, kind: LogKind.pumping),
@@ -488,18 +509,18 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.bath,
-            'Baden',
+            tr.kidsLogBath,
             logLook(LogKind.bath).$1,
             logLook(LogKind.bath).$2,
             () {
               quick(LogKind.bath);
-              snack('Baden eingetragen');
+              snack(tr.kidsLogBathAdded);
             },
             () => showLogEditor(context, child: child, kind: LogKind.bath),
           ),
           (
             null,
-            'Gewicht',
+            tr.kidsLogWeight,
             AppIcons.ruler,
             const Color(0xFF2A9D6E),
             () => showEntryEditor(
@@ -585,20 +606,22 @@ class _StatusCard extends StatelessWidget {
         (
           logLook(feeding.kind).$1,
           logLook(feeding.kind).$2,
-          'Zuletzt gefüttert ${sinceLabel(feeding.end ?? feeding.start, now)} '
-              '(${logText(feeding, now)})',
+          tr.kidsLogLastFedSinceWhat(
+            sinceLabel(feeding.end ?? feeding.start, now),
+            logText(feeding, now),
+          ),
         ),
       if (side != null)
         (
           logLook(LogKind.breast).$1,
           logLook(LogKind.breast).$2,
-          'Nächste Seite: ${side.label}',
+          tr.kidsLogNextSideSide(side.label),
         ),
       if (diaper != null)
         (
           logLook(LogKind.diaper).$1,
           logLook(LogKind.diaper).$2,
-          'Windel ${sinceLabel(diaper.start, now)}',
+          tr.kidsLogDiaperSince(sinceLabel(diaper.start, now)),
         ),
       if (temp?.temperatureC != null &&
           now.difference(temp!.start).inHours < 48)
@@ -617,8 +640,8 @@ class _StatusCard extends StatelessWidget {
                 '${next == null
                     ? ''
                     : next.isAfter(now)
-                    ? ' · wieder ab ${_time.format(next)}'
-                    : ' · wieder möglich'}',
+                    ? tr.kidsLogAgainTime(_time.format(next))
+                    : tr.kidsLogPossibleAgain}',
           );
         }(),
     ];
@@ -660,18 +683,20 @@ class _TodayCard extends StatelessWidget {
     final s = summary;
     final theme = Theme.of(context);
     final items = <(String, String)>[
-      ('Mahlzeiten', '${s.feedings}'),
-      if (s.milkMl > 0) ('Milch', '${s.milkMl} ml'),
-      if (s.breast > Duration.zero) ('Stillen', durationLabel(s.breast)),
-      ('Schlaf', durationLabel(s.sleep)),
-      ('Windeln', '${s.wet} nass · ${s.dirty} voll'),
-      if (s.maxTemperature != null) ('Höchste Temp.', _temp(s.maxTemperature!)),
+      (tr.kidsLogMeals, '${s.feedings}'),
+      if (s.milkMl > 0) (tr.kidsLogMilk, '${s.milkMl} ml'),
+      if (s.breast > Duration.zero)
+        (tr.kidsLogBreastfeeding, durationLabel(s.breast)),
+      (tr.kidsLogSleepNoun, durationLabel(s.sleep)),
+      (tr.kidsLogDiapers, '${s.wet} nass · ${s.dirty} voll'),
+      if (s.maxTemperature != null)
+        (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
     ];
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Heute', style: theme.textTheme.titleMedium),
+          Text(tr.commonToday, style: theme.textTheme.titleMedium),
           const SizedBox(height: 8),
           Wrap(
             spacing: 18,
@@ -694,16 +719,23 @@ class _TodayCard extends StatelessWidget {
 }
 
 enum _Series {
-  milk('Milch', 'ml'),
-  feedings('Mahlzeiten', ''),
-  sleep('Schlaf', 'h'),
-  diapers('Windeln', ''),
-  temperature('Temperatur', '°C');
+  milk('ml'),
+  feedings(''),
+  sleep('h'),
+  diapers(''),
+  temperature('°C');
 
-  const _Series(this.label, this.unit);
+  const _Series(this.unit);
 
-  final String label;
   final String unit;
+
+  String get label => switch (this) {
+    milk => tr.kidsLogMilk,
+    feedings => tr.kidsLogMeals,
+    sleep => tr.kidsLogSleepNoun,
+    diapers => tr.kidsLogDiapers,
+    temperature => tr.kidsLogTemperature,
+  };
 }
 
 class _WeekChart extends StatefulWidget {
@@ -773,14 +805,16 @@ class _WeekChartState extends State<_WeekChart> {
               size: Size.infinite,
               painter: _BarPainter(
                 values: values,
-                labels: [for (final d in days) DateFormat('E', 'de').format(d)],
+                labels: [
+                  for (final d in days) DateFormat.E(appLanguage).format(d),
+                ],
                 color: color,
                 grid: c.line,
                 label: c.inkSoft,
                 format: (v) => _series == _Series.temperature
-                    ? (v == 0 ? '–' : v.toStringAsFixed(1).replaceAll('.', ','))
+                    ? (v == 0 ? '–' : decimal(v))
                     : _series == _Series.sleep
-                    ? v.toStringAsFixed(1).replaceAll('.', ',')
+                    ? decimal(v)
                     : v.round().toString(),
                 baseline: _series == _Series.temperature ? 36 : 0,
               ),
@@ -788,7 +822,10 @@ class _WeekChartState extends State<_WeekChart> {
           ),
           if (_series.unit.isNotEmpty)
             Text(
-              'in ${_series.unit}${_series == _Series.temperature ? ' (Tageshöchstwert)' : ''}',
+              tr.kidsLogUnitNote(
+                _series.unit,
+                _series == _Series.temperature ? tr.kidsLogDailyMaximum : '',
+              ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
         ],
@@ -954,15 +991,15 @@ Future<void> showLogEditor(
   builder: (_) => _LogEditor(child: child, kind: kind, existing: existing),
 );
 
-const _symptoms = [
-  'Husten',
-  'Schnupfen',
-  'Ausschlag',
-  'Erbrechen',
-  'Durchfall',
-  'Bauchweh',
-  'Zahnen',
-  'Verletzung',
+List<String> get _symptoms => [
+  tr.kidsLogCough,
+  tr.kidsLogRunnyNose,
+  tr.kidsLogRash,
+  tr.kidsLogVomiting,
+  tr.kidsLogDiarrhea,
+  tr.kidsLogTummyAche,
+  tr.kidsLogTeething,
+  tr.kidsLogInjury,
 ];
 
 class _LogEditor extends StatefulWidget {
@@ -987,16 +1024,20 @@ class _LogEditorState extends State<_LogEditor> {
     text: _old?.amountMl?.toString() ?? '',
   );
   late final _temp = TextEditingController(
-    text: _old?.temperatureC?.toStringAsFixed(1).replaceAll('.', ',') ?? '',
+    text: switch (_old?.temperatureC) {
+      final t? => decimal(t),
+      null => '',
+    },
   );
   late final _medication = TextEditingController(text: _old?.medication ?? '');
   late final _dose = TextEditingController(text: _old?.dose ?? '');
   late final _interval = TextEditingController(
     text: _old?.minIntervalHours == null
         ? ''
-        : _old!.minIntervalHours!
-              .toStringAsFixed(_old.minIntervalHours! % 1 == 0 ? 0 : 1)
-              .replaceAll('.', ','),
+        : decimal(
+            _old!.minIntervalHours!,
+            _old.minIntervalHours! % 1 == 0 ? 0 : 1,
+          ),
   );
   late final _symptom = TextEditingController(text: _old?.symptom ?? '');
   late final _note = TextEditingController(text: _old?.note ?? '');
@@ -1066,15 +1107,15 @@ class _LogEditorState extends State<_LogEditor> {
     final temp = _parse(_temp);
     if (kind == LogKind.temperature &&
         (temp == null || temp < 30 || temp > 45)) {
-      _snack('Bitte eine Temperatur zwischen 30 und 45 °C eingeben');
+      _snack(tr.kidsLogPleaseEnterTemperatureBetween);
       return;
     }
     if (kind == LogKind.medication && _medication.text.trim().isEmpty) {
-      _snack('Bitte das Medikament angeben');
+      _snack(tr.kidsLogPleaseEnterMedication);
       return;
     }
     if (kind.timed && _end != null && !_end!.isAfter(_start)) {
-      _snack('Das Ende liegt vor dem Beginn');
+      _snack(tr.commonEndBeforeStart);
       return;
     }
     final interval = _parse(_interval);
@@ -1130,7 +1171,7 @@ class _LogEditorState extends State<_LogEditor> {
     final (icon, color) = logLook(kind);
     final engine = AppScope.engineOf(context);
     final logs = engine.childLogs(widget.child.id);
-    final dateTime = DateFormat('d.M. HH:mm', 'de');
+    final dateTime = DateFormat.Md(appLanguage).add_jm();
     final temp = _parse(_temp);
     final advice =
         kind == LogKind.temperature && temp != null && temp >= 35 && temp <= 45
@@ -1175,7 +1216,7 @@ class _LogEditorState extends State<_LogEditor> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    '${kind.label}${_old == null ? ' eintragen' : ''}',
+                    _old == null ? tr.kidsLogAddKind(kind.label) : kind.label,
                     style: theme.textTheme.titleLarge,
                   ),
                 ),
@@ -1185,9 +1226,15 @@ class _LogEditorState extends State<_LogEditor> {
             if (kind == LogKind.breast || kind == LogKind.pumping) ...[
               SegmentedButton<BreastSide>(
                 showSelectedIcon: false,
-                segments: const [
-                  ButtonSegment(value: BreastSide.left, label: Text('Links')),
-                  ButtonSegment(value: BreastSide.right, label: Text('Rechts')),
+                segments: [
+                  ButtonSegment(
+                    value: BreastSide.left,
+                    label: Text(tr.kidsLogLeft),
+                  ),
+                  ButtonSegment(
+                    value: BreastSide.right,
+                    label: Text(tr.kidsLogRight),
+                  ),
                 ],
                 selected: {?_side},
                 emptySelectionAllowed: kind == LogKind.pumping,
@@ -1255,8 +1302,8 @@ class _LogEditorState extends State<_LogEditor> {
                 autofocus: _old == null,
                 textCapitalization: TextCapitalization.sentences,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(
-                  labelText: 'Medikament',
+                decoration: InputDecoration(
+                  labelText: tr.kidsLogMedication,
                   hintText: 'z. B. Fiebersaft',
                 ),
               ),
@@ -1272,11 +1319,10 @@ class _LogEditorState extends State<_LogEditor> {
                           _dose.text = m.dose;
                           _interval.text = m.minIntervalHours == null
                               ? ''
-                              : m.minIntervalHours!
-                                    .toStringAsFixed(
-                                      m.minIntervalHours! % 1 == 0 ? 0 : 1,
-                                    )
-                                    .replaceAll('.', ',');
+                              : decimal(
+                                  m.minIntervalHours!,
+                                  m.minIntervalHours! % 1 == 0 ? 0 : 1,
+                                );
                         }),
                       ),
                   ],
@@ -1287,9 +1333,9 @@ class _LogEditorState extends State<_LogEditor> {
                   Expanded(
                     child: TextField(
                       controller: _dose,
-                      decoration: const InputDecoration(
-                        labelText: 'Dosis',
-                        hintText: 'laut Arzt/Beipackzettel',
+                      decoration: InputDecoration(
+                        labelText: tr.kidsLogDose,
+                        hintText: tr.kidsLogDirectedDoctorPackageLeaflet,
                       ),
                     ),
                   ),
@@ -1307,16 +1353,16 @@ class _LogEditorState extends State<_LogEditor> {
                 const SizedBox(height: 8),
                 _AdviceBox(
                   level: FeverLevel.doctor,
-                  text:
-                      '„${_medication.text.trim()}“ laut eingetragenem Mindestabstand '
-                      'frühestens wieder ab '
-                      '${dateTime.format(nextDose)}.',
+                  text: tr.kidsLogAccordingMinimumIntervalEntered(
+                    _medication.text.trim(),
+                    dateTime.format(nextDose),
+                  ),
                 ),
               ],
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Erinnern, wenn wieder möglich'),
-                subtitle: const Text('Braucht einen Mindestabstand'),
+                title: Text(tr.kidsLogRemindMeWhenPossible),
+                subtitle: Text(tr.kidsLogNeedsMinimumInterval),
                 value: _remindDose,
                 onChanged: (v) => setState(() => _remindDose = v),
               ),
@@ -1338,7 +1384,7 @@ class _LogEditorState extends State<_LogEditor> {
               TextField(
                 controller: _symptom,
                 onChanged: (_) => setState(() {}),
-                decoration: const InputDecoration(labelText: 'Symptom'),
+                decoration: InputDecoration(labelText: tr.kidsLogSymptom),
               ),
               const SizedBox(height: 12),
             ],
@@ -1349,7 +1395,7 @@ class _LogEditorState extends State<_LogEditor> {
                 InputChip(
                   avatar: const Icon(AppIcons.clock, size: 18),
                   label: Text(
-                    '${kind.timed ? 'Beginn' : 'Zeit'}: ${dateTime.format(_start)}',
+                    '${kind.timed ? tr.commonStart : tr.commonTime}: ${dateTime.format(_start)}',
                   ),
                   onPressed: () async {
                     final t = await _pick(_start);
@@ -1361,8 +1407,8 @@ class _LogEditorState extends State<_LogEditor> {
                     avatar: const Icon(AppIcons.stop, size: 18),
                     label: Text(
                       _end == null
-                          ? 'Läuft noch'
-                          : 'Ende: ${dateTime.format(_end!)}',
+                          ? tr.kidsLogStillRunning
+                          : tr.kidsLogEndEnd(dateTime.format(_end!)),
                     ),
                     onPressed: () async {
                       final t = await _pick(_end ?? DateTime.now());
@@ -1381,14 +1427,14 @@ class _LogEditorState extends State<_LogEditor> {
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
                 labelText: kind == LogKind.solids
-                    ? 'Was gab es?'
+                    ? tr.kidsLogWhatWas
                     : 'Notiz (optional)',
               ),
             ),
             if (_feeding) ...[
               const SizedBox(height: 12),
               Text(
-                'Erinnerung an die nächste Mahlzeit',
+                tr.kidsLogReminderNextMeal,
                 style: theme.textTheme.labelLarge,
               ),
               const SizedBox(height: 6),
@@ -1399,8 +1445,8 @@ class _LogEditorState extends State<_LogEditor> {
                     ChoiceChip(
                       label: Text(
                         h == null
-                            ? 'Keine'
-                            : 'in ${h.toString().replaceAll('.0', '').replaceAll('.', ',')} h',
+                            ? tr.commonNone
+                            : tr.kidsLogHoursH(decimal(h, h % 1 == 0 ? 0 : 1)),
                       ),
                       selected: _remindHours == h,
                       onSelected: (_) => setState(() => _remindHours = h),
@@ -1414,7 +1460,7 @@ class _LogEditorState extends State<_LogEditor> {
                 if (_old != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
                     ),
@@ -1428,7 +1474,11 @@ class _LogEditorState extends State<_LogEditor> {
                     },
                   ),
                 const Spacer(),
-                ColorButton(label: 'Speichern', color: color, onPressed: _save),
+                ColorButton(
+                  label: tr.commonSave,
+                  color: color,
+                  onPressed: _save,
+                ),
               ],
             ),
           ],
@@ -1485,16 +1535,16 @@ Future<void> showFeverAdvice(
     ),
     title: Text(
       level == FeverLevel.urgent
-          ? 'Bitte ärztliche Hilfe holen'
+          ? tr.kidsLogPleaseGetMedicalHelp
           : level == FeverLevel.doctor
-          ? 'Kinderarzt kontaktieren'
-          : 'Fieber',
+          ? tr.kidsLogContactPediatrician
+          : tr.kidsLogFever,
     ),
-    content: Text('$text\n\nFamio ersetzt keinen ärztlichen Rat.'),
+    content: Text(tr.kidsLogTextFamioDoesNot(text)),
     actions: [
       FilledButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Verstanden'),
+        child: Text(tr.commonUnderstood),
       ),
     ],
   ),

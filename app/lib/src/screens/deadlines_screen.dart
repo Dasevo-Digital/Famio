@@ -13,8 +13,9 @@ import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
-final _date = DateFormat('d.M.y', 'de');
+final _date = DateFormat.yMd(appLanguage);
 
 /// TÜV, boiler service, the dog's vaccination: dates that come back and
 /// must not be missed, with a reminder ahead of time.

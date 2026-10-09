@@ -330,7 +330,7 @@ String _choreSchedule(Chore chore, SyncEngine engine) {
     ChoreRepeat.once =>
       chore.date == null
           ? 'Einmalig'
-          : 'Am ${DateFormat('E, d. MMM', 'de').format(chore.date!)}',
+          : 'Am ${DateFormat.MMMEd(appLanguage).format(chore.date!)}',
     ChoreRepeat.weekly => 'Einmal pro Woche',
     ChoreRepeat.daily =>
       chore.weekdays.isEmpty || chore.weekdays.length == 7

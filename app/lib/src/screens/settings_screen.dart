@@ -258,15 +258,14 @@ class SettingsScreen extends StatelessWidget {
               value: state.language.value,
               items: [
                 DropdownMenuItem(
-                  value: 'de',
-                  child: Text(context.l10n.languageGerman),
+                  value: 'system',
+                  child: Text(context.l10n.languageSystem),
                 ),
-                DropdownMenuItem(
-                  value: 'en',
-                  child: Text(context.l10n.languageEnglishPreview),
-                ),
+                for (final MapEntry(key: code, value: name)
+                    in appLanguages.entries)
+                  DropdownMenuItem(value: code, child: Text(name)),
               ],
-              onChanged: (v) => state.setLanguage(v ?? 'de'),
+              onChanged: (v) => state.setLanguage(v ?? 'system'),
             ),
           ),
           if (!kIsWeb && state.files != null) const _DeviceStorageTile(),
@@ -297,7 +296,7 @@ class SettingsScreen extends StatelessWidget {
                   SyncState.offline =>
                     'Offline: ${status.message ?? 'Server nicht erreichbar'}',
                   _ when last != null =>
-                    'Zuletzt ${DateFormat('d. MMM, HH:mm', 'de').format(last)}',
+                    'Zuletzt ${DateFormat.MMMd(appLanguage).add_jm().format(last)}',
                   _ => 'Noch nicht synchronisiert',
                 }),
                 onTap: engine.sync,

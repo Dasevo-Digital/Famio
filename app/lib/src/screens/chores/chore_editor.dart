@@ -151,7 +151,7 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                 alignment: Alignment.centerLeft,
                 child: InputChip(
                   avatar: const Icon(AppIcons.calendarCheck, size: 18),
-                  label: Text(DateFormat('EEEE, d. MMMM', 'de').format(_date)),
+                  label: Text(DateFormat.MMMMEEEEd(appLanguage).format(_date)),
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,

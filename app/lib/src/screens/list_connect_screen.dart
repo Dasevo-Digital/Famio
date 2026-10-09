@@ -15,6 +15,7 @@ import '../widgets/form_dialog.dart';
 import '../widgets/password_reveal.dart';
 import 'calendar_connect_screen.dart';
 import '../widgets/section_header.dart';
+import '../l10n.dart';
 
 /// Whether this member may connect lists in other apps.
 bool canConnectLists(AppState state) =>
@@ -68,23 +69,18 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Bring! verbinden',
-        submitLabel: 'Anmelden',
+        title: tr.listsConnectBring,
+        submitLabel: tr.commonSignIn,
         controllers: [email, password],
         fields: [
-          const Text(
-            'Bring! hat keine offizielle Schnittstelle. Famio nutzt die der '
-            'Bring!-Apps (wie Home Assistant); sie kann sich jederzeit '
-            'ändern, dann pausiert der Abgleich. Famio speichert nur ein '
-            'Anmelde-Token, nicht dein Passwort.',
-          ),
+          Text(tr.listsBringHasNoOfficial),
           const SizedBox(height: 12),
           TextField(
             controller: email,
             autofocus: true,
             keyboardType: TextInputType.emailAddress,
             autofillHints: const [AutofillHints.email],
-            decoration: const InputDecoration(labelText: 'E-Mail-Adresse'),
+            decoration: InputDecoration(labelText: tr.commonEmailAddress),
           ),
           PasswordReveal(
             builder: (_, obscure, toggle) => TextField(
@@ -92,7 +88,7 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
               obscureText: obscure,
               contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
-                labelText: 'Bring!-Passwort',
+                labelText: tr.listsBringPassword,
                 suffixIcon: toggle,
               ),
             ),
@@ -118,24 +114,17 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
     await showDialog<void>(
       context: context,
       builder: (context) => FormDialog(
-        title: 'Microsoft To Do verbinden',
-        submitLabel: 'Weiter',
+        title: tr.listsConnectMsTodo,
+        submitLabel: tr.commonNext,
         controllers: [clientId],
         fields: [
-          const Text(
-            'Einmalig für die Familie: Im Microsoft-Entra-Portal '
-            '(entra.microsoft.com) unter „App-Registrierungen“ eine neue App '
-            'anlegen – Kontotyp „Konten in einem beliebigen '
-            'Organisationsverzeichnis und persönliche Microsoft-Konten“, '
-            'unter „Authentifizierung“ „Öffentliche Clientflows zulassen“ '
-            'einschalten. Die Anwendungs-ID (Client-ID) hier eintragen.',
-          ),
+          Text(tr.listsOnceFamilyMicrosoftEntra),
           const SizedBox(height: 12),
           TextField(
             controller: clientId,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Anwendungs-ID (Client-ID)',
+            decoration: InputDecoration(
+              labelText: tr.listsApplicationClientId,
               hintText: '00000000-0000-0000-0000-000000000000',
             ),
           ),
@@ -171,18 +160,16 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('„${a.name}“ trennen?'),
-        content: const Text(
-          'Der Abgleich endet. Einträge bleiben auf beiden Seiten erhalten.',
-        ),
+        title: Text(tr.caldavDisconnectName(a.name)),
+        content: Text(tr.listsSyncingEndsEntriesStay),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Trennen'),
+            child: Text(tr.commonDisconnect),
           ),
         ],
       ),
@@ -198,26 +185,24 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
     final engine = state.engine!;
     final c = FamioColors.of(context);
     final enabled = canConnectLists(state);
-    final date = DateFormat('d.M., HH:mm', 'de');
+    final date = DateFormat.Md(appLanguage).add_jm();
     String famioName(String id) => id == ListAccount.tasksList
-        ? 'Aufgaben'
+        ? tr.sectionTasks
         : engine.shoppingLists.where((l) => l.id == id).firstOrNull?.name ??
-              'gelöschte Liste';
+              tr.listsDeletedList;
     return SectionPage(
       section: widget.section,
-      title: 'Listen verbinden',
-      subtitle: 'Bring!, Microsoft To Do, Apple Erinnerungen',
+      title: tr.listsConnectLists,
+      subtitle: tr.listsBringMicrosoftDoApple,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
             padding: const EdgeInsets.only(bottom: 120),
             children: [
-              const SectionHeader(
-                'Apple Erinnerungen, Thunderbird & Co.',
-                'Aufgaben und Einkaufslisten erscheinen dort als Listen, '
-                    'sobald das Gerät per CalDAV mit Famio verbunden ist – '
-                    'am Mac und iPhone über „Apple-Gerät einrichten“.',
+              SectionHeader(
+                tr.listsAppleRemindersThunderbirdCo,
+                tr.listsTasksShoppingListsAppear,
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -225,7 +210,7 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
                     icon: const Icon(AppIcons.arrowsLeftRight),
-                    label: const Text('Zu „Kalender verbinden“'),
+                    label: Text(tr.listsConnectCalendar),
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) => const CalendarConnectScreen(),
@@ -235,21 +220,15 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                 ),
               ),
               const Divider(height: 40),
-              const SectionHeader(
-                'Mit Bring! und Microsoft To Do abgleichen',
-                'Der Famio-Server gleicht die gewählten Listen in beide '
-                    'Richtungen ab, alle 5 Minuten und kurz nach jeder '
-                    'Änderung. Haben beide Seiten denselben Eintrag '
-                    'geändert, gewinnt die neuere Änderung.',
+              SectionHeader(
+                tr.listsSyncBringMicrosoftDo,
+                tr.listsFamioServerSyncsChosen,
               ),
               if (!enabled)
-                const ListTile(
+                ListTile(
                   leading: Icon(AppIcons.eyeSlash),
-                  title: Text('In dieser Familie ausgeschaltet'),
-                  subtitle: Text(
-                    'Ein Erwachsener mit Verwaltungsrechten kann es in der '
-                    'Server-Verwaltung einschalten.',
-                  ),
+                  title: Text(tr.listsTurnedOffFamily),
+                  subtitle: Text(tr.listsAdultAdminRightsCan),
                 )
               else
                 FutureBuilder(
@@ -258,12 +237,10 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                     if (snapshot.hasError) {
                       return ListTile(
                         leading: const Icon(AppIcons.cloudSlash),
-                        title: const Text(
-                          'Nur mit Verbindung zum Server verfügbar',
-                        ),
+                        title: Text(tr.commonOnlyWithServer),
                         trailing: TextButton(
                           onPressed: _reload,
-                          child: const Text('Erneut'),
+                          child: Text(tr.commonAgain),
                         ),
                       );
                     }
@@ -286,13 +263,13 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                               [
                                 if (a.lastError != null) a.lastError!,
                                 if (a.links.isEmpty)
-                                  'Noch keine Liste zugeordnet'
+                                  tr.listsNoListAssignedYet
                                 else
                                   for (final l in a.links)
                                     '${famioName(l.famioList)} ↔ '
-                                        '${l.remoteName.isEmpty ? 'Liste dort' : l.remoteName}',
+                                        '${l.remoteName.isEmpty ? tr.listsListThere : l.remoteName}',
                                 if (a.lastSync != null)
-                                  'Zuletzt ${date.format(a.lastSync!)}',
+                                  tr.listsLastTime(date.format(a.lastSync!)),
                               ].join('\n'),
                               style: a.lastError == null
                                   ? null
@@ -314,25 +291,25 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                                         icon: const Icon(
                                           AppIcons.arrowsClockwise,
                                         ),
-                                        tooltip: 'Jetzt abgleichen',
+                                        tooltip: tr.commonSyncNow,
                                         onPressed: () => _run(
                                           a.id,
                                           () => _api.syncListAccount(a.id),
                                         ),
                                       ),
                                       PopupMenuButton<String>(
-                                        tooltip: 'Mehr',
+                                        tooltip: tr.navMore,
                                         onSelected: (v) => v == 'links'
                                             ? _editLinks(a)
                                             : _remove(a),
-                                        itemBuilder: (_) => const [
+                                        itemBuilder: (_) => [
                                           PopupMenuItem(
                                             value: 'links',
-                                            child: Text('Listen zuordnen …'),
+                                            child: Text(tr.listsAssignLists),
                                           ),
                                           PopupMenuItem(
                                             value: 'remove',
-                                            child: Text('Trennen'),
+                                            child: Text(tr.commonDisconnect),
                                           ),
                                         ],
                                       ),
@@ -350,12 +327,12 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                             children: [
                               FilledButton.tonalIcon(
                                 icon: const Icon(AppIcons.basket),
-                                label: const Text('Bring! verbinden'),
+                                label: Text(tr.listsConnectBring),
                                 onPressed: _connectBring,
                               ),
                               FilledButton.tonalIcon(
                                 icon: const Icon(AppIcons.listChecks),
-                                label: const Text('Microsoft To Do verbinden'),
+                                label: Text(tr.listsConnectMsTodo),
                                 onPressed: _connectMicrosoft,
                               ),
                             ],
@@ -422,12 +399,12 @@ class _DeviceLoginDialogState extends State<_DeviceLoginDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return AlertDialog(
-      title: const Text('Bei Microsoft anmelden'),
+      title: Text(tr.listsSignMicrosoft),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Öffne die Seite und gib diesen Code ein:'),
+          Text(tr.listsOpenPageEnterCode),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -437,7 +414,7 @@ class _DeviceLoginDialogState extends State<_DeviceLoginDialog> {
               ),
               IconButton(
                 icon: const Icon(AppIcons.copy),
-                tooltip: 'Code kopieren',
+                tooltip: tr.listsCopyCode,
                 onPressed: () => Clipboard.setData(
                   ClipboardData(text: widget.login.userCode),
                 ),
@@ -454,7 +431,7 @@ class _DeviceLoginDialogState extends State<_DeviceLoginDialog> {
           ),
           const SizedBox(height: 8),
           if (_error == null)
-            const Row(
+            Row(
               children: [
                 SizedBox(
                   width: 16,
@@ -462,7 +439,7 @@ class _DeviceLoginDialogState extends State<_DeviceLoginDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 ),
                 SizedBox(width: 12),
-                Expanded(child: Text('Warte auf die Bestätigung …')),
+                Expanded(child: Text(tr.listsWaitingConfirmation)),
               ],
             )
           else
@@ -472,7 +449,7 @@ class _DeviceLoginDialogState extends State<_DeviceLoginDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
       ],
     );
@@ -527,7 +504,7 @@ class _LinksPageState extends State<_LinksPage> {
   Widget build(BuildContext context) {
     final engine = AppScope.of(context).engine!;
     final famio = [
-      if (!widget.account.isBring) (ListAccount.tasksList, 'Aufgaben'),
+      if (!widget.account.isBring) (ListAccount.tasksList, tr.sectionTasks),
       for (final l in engine.shoppingLists) (l.id, l.name),
     ];
     return Scaffold(
@@ -541,7 +518,7 @@ class _LinksPageState extends State<_LinksPage> {
               child: Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
-                  error is ApiError ? error.message : 'Nicht erreichbar',
+                  error is ApiError ? error.message : tr.listsNotReachable,
                 ),
               ),
             );
@@ -554,9 +531,9 @@ class _LinksPageState extends State<_LinksPage> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'Wähle zu jeder Famio-Liste die Liste dort. Einträge, die '
-                'auf beiden Seiten gleich heißen, werden beim ersten Abgleich '
-                '${widget.account.isBring ? 'zusammengeführt' : 'beide behalten'}.',
+                tr.listsEachFamioListChoose(
+                  widget.account.isBring ? tr.listsMerged : tr.listsBothKept,
+                ),
               ),
               const SizedBox(height: 16),
               for (final (id, name) in famio)
@@ -568,9 +545,9 @@ class _LinksPageState extends State<_LinksPage> {
                         : null,
                     decoration: InputDecoration(labelText: name),
                     items: [
-                      const DropdownMenuItem(
+                      DropdownMenuItem(
                         value: null,
-                        child: Text('Nicht abgleichen'),
+                        child: Text(tr.listsDoNotSync),
                       ),
                       for (final r in remote)
                         DropdownMenuItem(value: r.id, child: Text(r.name)),
@@ -588,7 +565,7 @@ class _LinksPageState extends State<_LinksPage> {
                 alignment: Alignment.centerRight,
                 child: FilledButton(
                   onPressed: _saving ? null : () => _save(remote),
-                  child: Text(_saving ? 'Gleiche ab …' : 'Speichern'),
+                  child: Text(_saving ? tr.listsSyncing : tr.commonSave),
                 ),
               ),
             ],

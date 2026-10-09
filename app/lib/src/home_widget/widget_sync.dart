@@ -7,6 +7,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_data.dart';
+import '../l10n.dart';
 
 /// Title and up to five lines for the "Famio heute" widget: today's events,
 /// meals, own tasks, shopping and a sleeping baby. Nothing more private –
@@ -14,7 +15,7 @@ import '../data/family_data.dart';
 (String, List<String>) widgetLines(SyncEngine engine, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   final tomorrow = today.add(const Duration(days: 1));
-  final time = DateFormat('HH:mm', 'de');
+  final time = DateFormat.jm(appLanguage);
   final lines = <String>[];
   final events = engine
       .occurrences(today, tomorrow)
@@ -59,7 +60,7 @@ import '../data/family_data.dart';
     }
   }
   return (
-    'Famio · ${DateFormat('E d.M.', 'de').format(now)}',
+    'Famio · ${DateFormat.MEd(appLanguage).format(now)}',
     lines.take(5).toList(),
   );
 }
