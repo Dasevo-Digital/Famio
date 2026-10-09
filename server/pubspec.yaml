@@ -1,6 +1,6 @@
 name: famio_server
 description: Famio sync server (standalone or Home Assistant add-on).
-version: 1.0.10
+version: 1.0.11
 publish_to: none
 # repository: https://github.com/my_org/my_repo
 
