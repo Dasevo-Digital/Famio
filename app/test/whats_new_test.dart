@@ -42,6 +42,17 @@ void main() {
     for (final e in entries) {
       expect(e.points.length, inInclusiveRange(1, 8), reason: e.version);
     }
+    // English and Spanish: the same versions with the same points.
+    for (final language in ['en', 'es']) {
+      final translated = parseChangelog(
+        File('CHANGELOG.$language.md').readAsStringSync(),
+      );
+      expect(
+        [for (final e in translated) (e.version, e.points.length)],
+        [for (final e in entries) (e.version, e.points.length)],
+        reason: language,
+      );
+    }
   });
 
   testWidgets('after an update once, not after a fresh install', (

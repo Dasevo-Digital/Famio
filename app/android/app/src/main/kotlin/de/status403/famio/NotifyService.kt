@@ -78,36 +78,34 @@ class NotifyService : Service() {
             manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL,
-                    "Verbindung",
+                    getString(R.string.channel_connection),
                     NotificationManager.IMPORTANCE_MIN,
                 ).apply {
-                    description = "Zeigt an, dass Famio Benachrichtigungen empfängt. " +
-                        "Kann ausgeblendet werden."
+                    description = getString(R.string.channel_connection_description)
                     setShowBadge(false)
                 },
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     MESSAGES,
-                    "Nachrichten & Hinweise",
+                    getString(R.string.channel_messages),
                     NotificationManager.IMPORTANCE_HIGH,
-                ).apply { description = "Neue Nachrichten, Aufgaben, Termine und Anfragen" },
+                ).apply { description = getString(R.string.channel_messages_description) },
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     QUIET,
-                    "Ruhezeit",
+                    getString(R.string.channel_quiet),
                     NotificationManager.IMPORTANCE_LOW,
-                ).apply { description = "Hinweise während der eigenen Ruhezeit, ohne Ton" },
+                ).apply { description = getString(R.string.channel_quiet_description) },
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     ALARM,
-                    "Notfall (SOS)",
+                    getString(R.string.channel_sos),
                     NotificationManager.IMPORTANCE_HIGH,
                 ).apply {
-                    description = "Wenn jemand aus der Familie den Notfallknopf drückt – " +
-                        "laut, auch bei „Nicht stören“"
+                    description = getString(R.string.channel_sos_description)
                     setSound(
                         RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
                         AudioAttributes.Builder()
@@ -265,7 +263,7 @@ class NotifyService : Service() {
                             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                         )
                         @Suppress("DEPRECATION")
-                        addAction(Notification.Action.Builder(null, "Ruhe", stop).build())
+                        addAction(Notification.Action.Builder(null, getString(R.string.action_silence), stop).build())
                         setDeleteIntent(stop)
                         setContentIntent(stop)
                     }
@@ -297,8 +295,8 @@ class NotifyService : Service() {
         getSystemService(NotificationManager::class.java).notify(
             NOTIFICATION_ID + 1,
             builder(MESSAGES)
-                .setContentTitle("Benachrichtigungen beendet")
-                .setContentText("Das Gerät wurde abgemeldet. In Famio neu einschalten.")
+                .setContentTitle(getString(R.string.notifications_ended))
+                .setContentText(getString(R.string.device_signed_out))
                 .setAutoCancel(true)
                 .build(),
         )
@@ -409,8 +407,8 @@ class NotifyService : Service() {
 
     private fun connectionNotification(): Notification =
         builder(CHANNEL)
-            .setContentTitle("Famio ist bereit")
-            .setContentText("Empfängt Benachrichtigungen – gedrückt halten zum Ausblenden")
+            .setContentTitle(getString(R.string.famio_ready))
+            .setContentText(getString(R.string.famio_ready_text))
             .setOngoing(true)
             .build()
 }

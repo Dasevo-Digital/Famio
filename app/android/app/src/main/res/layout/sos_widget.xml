@@ -27,7 +27,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Notruf"
+            android:text="@string/sos_short"
             android:textColor="#FFFFFFFF"
             android:textSize="12sp"
             android:textStyle="bold"

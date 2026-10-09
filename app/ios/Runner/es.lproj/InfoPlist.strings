@@ -1,0 +1,6 @@
+/* Permission texts (es); German is also in Info.plist. */
+"NSLocationWhenInUseUsageDescription" = "Famio muestra a tu familia dónde estás, solo si activas «Compartir ubicación» o pulsas el botón de emergencia.";
+"NSLocationAlwaysAndWhenInUseUsageDescription" = "Para que tu familia vea tu ubicación también con Famio cerrado. Se puede pausar con el código de los padres.";
+"NSCameraUsageDescription" = "Para fotos en el chat, en documentos y recuerdos, y para escanear códigos de barras de la despensa.";
+"NSPhotoLibraryUsageDescription" = "Para compartir fotos en el chat y en documentos.";
+"NSLocalNetworkUsageDescription" = "Famio se conecta con el servidor de Famio de tu red doméstica.";

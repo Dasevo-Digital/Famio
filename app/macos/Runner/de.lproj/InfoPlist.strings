@@ -1,0 +1,2 @@
+/* Permission texts (de); German is also in Info.plist. */
+"NSCameraUsageDescription" = "Famio scannt Barcodes von Lebensmitteln für den Vorrat.";

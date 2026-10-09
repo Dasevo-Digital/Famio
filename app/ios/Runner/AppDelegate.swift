@@ -815,9 +815,19 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   /// The device was signed out on the server: stop for good.
   private func revoked() {
     stop()
+    // In the app's language (de, en, es; see the InfoPlist.strings).
+    let texts: [String: (String, String)] = [
+      "de": ("Standortfreigabe beendet", "Das Gerät wurde abgemeldet. In Famio neu einschalten."),
+      "en": ("Location sharing ended", "The device was signed out. Turn it on again in Famio."),
+      "es": (
+        "Ubicación compartida terminada",
+        "Se ha cerrado la sesión del dispositivo. Vuelve a activarlo en Famio."
+      ),
+    ]
+    let (title, body) = texts[Bundle.main.preferredLocalizations.first ?? "en"] ?? texts["en"]!
     let content = UNMutableNotificationContent()
-    content.title = "Standortfreigabe beendet"
-    content.body = "Das Gerät wurde abgemeldet. In Famio neu einschalten."
+    content.title = title
+    content.body = body
     UNUserNotificationCenter.current().add(
       UNNotificationRequest(identifier: "famio-location-revoked", content: content, trigger: nil))
   }

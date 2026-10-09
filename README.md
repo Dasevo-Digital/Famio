@@ -629,15 +629,35 @@ Release-Ordner; `tool/publish_gitea_release.sh` prüft sie vor dem Upload und
 legt sie am Tag `v*` ab. Das Token bleibt ausschließlich in
 `GITEA_TOKEN` außerhalb des Repositories.
 
-**Sprachen:** Deutsch ist Standard; Englisch ist als Vorschau wählbar
-(Einstellungen → Sprache). Die Texte stehen in `app/lib/l10n/app_de.arb`
-(Vorlage) und `app_en.arb`, der Code nutzt `context.l10n.<schlüssel>`; der
-generierte Code entsteht bei `flutter pub get`. `dart run tool/l10n_report.dart`
-(in `app/`) zeigt, wie viele Texte noch fest im Code stehen.
+**Sprachen:** Famio spricht Deutsch, Englisch und Spanisch. Ohne Auswahl
+folgt die App der Sprache des Geräts (andere Sprachen: Englisch); unter
+Einstellungen → Sprache lässt sie sich festlegen.
+
+- App-Texte: `app/lib/l10n/app_de.arb` (Vorlage), `app_en.arb`,
+  `app_es.arb`; der Code nutzt `tr.<schlüssel>` (oder
+  `context.l10n.<schlüssel>`), Datumsangaben folgen `appLanguage`. Der
+  generierte Code entsteht bei `flutter pub get`.
+- Kataloge und Meldungen aus `famio_shared`, `famio_client` und dem Server
+  (Rollen, Meilensteine, Impfungen, Feiertage, Fehlermeldungen …) sind im
+  Code deutsch; die Übersetzungen stehen in
+  `packages/famio_shared/lib/src/i18n/en.dart` und `es.dart` (Hook
+  `sharedTexts`).
+- Der Server antwortet in der Sprache, die App oder Browser im
+  `Accept-Language` schicken, und merkt sich die Sprache jedes Mitglieds für
+  Push-Nachrichten.
+- Android-, iOS- und macOS-eigene Texte (Benachrichtigungskanäle, Widgets,
+  Berechtigungen) liegen in `res/values*/strings.xml` und
+  `*.lproj/InfoPlist.strings`.
+- Tests prüfen, dass alle drei Sprachen vollständig sind
+  (`app/test/l10n_test.dart`, `shared_texts_test.dart`,
+  `untranslated_test.dart`, `server/test/i18n_test.dart`);
+  `dart run tool/l10n_report.dart` (in `app/`) zeigt, ob noch Texte fest im
+  Code stehen.
 
 **Was ist neu:** Je Version stehen ein bis acht Punkte in Nutzersprache in
-[`app/CHANGELOG.md`](app/CHANGELOG.md). `dart run tool/check_versions.dart`
-(auch vor jedem Push und in der CI) verlangt den Abschnitt zur Version in
-`VERSION`; `--notes` gibt ihn für den Anfang des Release-Textes aus. Die App
+[`app/CHANGELOG.md`](app/CHANGELOG.md), übersetzt in `CHANGELOG.en.md` und
+`CHANGELOG.es.md`. `dart run tool/check_versions.dart` (auch vor jedem Push
+und in der CI) verlangt den Abschnitt zur Version in `VERSION` in allen drei
+Dateien; `--notes` gibt ihn für den Anfang des Release-Textes aus. Die App
 zeigt den Abschnitt nach einem Update einmal an, unter Einstellungen → „Was
 ist neu?“ jederzeit.

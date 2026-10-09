@@ -42,8 +42,19 @@ List<ChangelogEntry> parseChangelog(String text) {
   return entries;
 }
 
-Future<List<ChangelogEntry>> loadChangelog() async =>
-    parseChangelog(await rootBundle.loadString('CHANGELOG.md'));
+/// The changelog in the app's language (German if there is none).
+Future<List<ChangelogEntry>> loadChangelog() async {
+  if (appLanguage != 'de') {
+    try {
+      return parseChangelog(
+        await rootBundle.loadString('CHANGELOG.$appLanguage.md'),
+      );
+    } catch (_) {
+      // No translation shipped: German.
+    }
+  }
+  return parseChangelog(await rootBundle.loadString('CHANGELOG.md'));
+}
 
 /// Shows what is new in [entries] (the first expanded).
 Future<void> showWhatsNew(BuildContext context, List<ChangelogEntry> entries) =>

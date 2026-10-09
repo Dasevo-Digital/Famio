@@ -149,16 +149,16 @@ class LocationService : Service(), LocationListener {
             manager.createNotificationChannel(
                 NotificationChannel(
                     CHANNEL,
-                    "Standortfreigabe",
+                    getString(R.string.channel_location),
                     NotificationManager.IMPORTANCE_LOW,
-                ).apply { description = "Zeigt an, dass Famio den Standort teilt" },
+                ).apply { description = getString(R.string.channel_location_description) },
             )
             manager.createNotificationChannel(
                 NotificationChannel(
                     ALERT_CHANNEL,
-                    "Orte",
+                    getString(R.string.channel_places),
                     NotificationManager.IMPORTANCE_DEFAULT,
-                ).apply { description = "Wer ist wo angekommen oder losgegangen" },
+                ).apply { description = getString(R.string.channel_places_description) },
             )
         }
     }
@@ -524,10 +524,10 @@ class LocationService : Service(), LocationListener {
                 }
             } catch (e: IOException) {
                 // Offline: keep the positions for the next attempt.
-                recordTransferError("Netzwerkfehler")
+                recordTransferError(getString(R.string.error_network))
             } catch (e: Exception) {
                 // Unexpected answer; try again with the next heartbeat.
-                recordTransferError("Übertragungsfehler")
+                recordTransferError(getString(R.string.error_transfer))
             } finally {
                 if (wake.isHeld) wake.release()
             }
@@ -612,8 +612,8 @@ class LocationService : Service(), LocationListener {
         manager.notify(
             NOTIFICATION_ID + 1,
             builder(ALERT_CHANNEL)
-                .setContentTitle("Standortfreigabe beendet")
-                .setContentText("Das Gerät wurde abgemeldet. In Famio neu einschalten.")
+                .setContentTitle(getString(R.string.location_sharing_ended))
+                .setContentText(getString(R.string.device_signed_out))
                 .setAutoCancel(true)
                 .build(),
         )
@@ -672,16 +672,19 @@ class LocationService : Service(), LocationListener {
                 val until = prefs.getString("pausedUntil", null)
                     ?.let { runCatching { parseIso(it) }.getOrNull() }
                 if (until == null) {
-                    "Pausiert"
+                    getString(R.string.location_paused)
                 } else {
-                    "Pausiert bis ${SimpleDateFormat("HH:mm", Locale.GERMANY).format(until)} Uhr"
+                    getString(
+                        R.string.location_paused_until,
+                        android.text.format.DateFormat.getTimeFormat(this).format(until),
+                    )
                 }
             }
-            !hasPermission(this) -> "Standortzugriff fehlt – in Famio erlauben"
-            else -> "Deine Familie sieht, wo du bist"
+            !hasPermission(this) -> getString(R.string.location_permission_missing)
+            else -> getString(R.string.location_visible)
         }
         return builder(CHANNEL)
-            .setContentTitle("Famio teilt deinen Standort")
+            .setContentTitle(getString(R.string.location_sharing_title))
             .setContentText(text)
             .setOngoing(true)
             .build()

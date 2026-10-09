@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spanish. -->
+<resources>
+    <string name="widget_description">Eventos, comidas y compras de hoy</string>
+    <string name="sos_widget_description">Botón de emergencia: alarma a los padres con ubicación</string>
+    <string name="sos_widget_label">Activar emergencia de Famio</string>
+    <string name="sos_widget_name">Emergencia de Famio</string>
+    <string name="today_widget_name">Famio hoy</string>
+    <string name="widget_nothing_today">Hoy no hay nada previsto 🌈</string>
+    <string name="sos_short">Emergencia</string>
+    <string name="sos_shortcut_long">Activar emergencia de Famio</string>
+    <string name="permission_busy">La solicitud ya está en curso</string>
+    <string name="channel_connection">Conexión</string>
+    <string name="channel_connection_description">Indica que Famio recibe notificaciones. Se puede ocultar.</string>
+    <string name="channel_messages">Mensajes y avisos</string>
+    <string name="channel_messages_description">Mensajes nuevos, tareas, eventos y solicitudes</string>
+    <string name="channel_quiet">Horas de silencio</string>
+    <string name="channel_quiet_description">Avisos durante tus horas de silencio, sin sonido</string>
+    <string name="channel_sos">Emergencia (SOS)</string>
+    <string name="channel_sos_description">Cuando alguien de la familia pulsa el botón de emergencia: con sonido, incluso en «No molestar»</string>
+    <string name="action_silence">Silencio</string>
+    <string name="notifications_ended">Notificaciones desactivadas</string>
+    <string name="device_signed_out">Se ha cerrado la sesión del dispositivo. Vuelve a activarlo en Famio.</string>
+    <string name="famio_ready">Famio está listo</string>
+    <string name="famio_ready_text">Recibe notificaciones: mantén pulsado para ocultar</string>
+    <string name="channel_sos_running">Emergencia en curso</string>
+    <string name="channel_sos_running_description">Durante una emergencia: Famio envía la ubicación a la familia</string>
+    <string name="sos_active">Emergencia activa</string>
+    <string name="sos_active_text">Tu ubicación se envía continuamente a tu familia.</string>
+    <string name="channel_location">Ubicación compartida</string>
+    <string name="channel_location_description">Indica que Famio comparte la ubicación</string>
+    <string name="channel_places">Lugares</string>
+    <string name="channel_places_description">Quién ha llegado o salido de dónde</string>
+    <string name="error_network">Error de red</string>
+    <string name="error_transfer">Error de transmisión</string>
+    <string name="location_sharing_ended">Ubicación compartida terminada</string>
+    <string name="location_paused">En pausa</string>
+    <string name="location_paused_until">En pausa hasta las %1$s</string>
+    <string name="location_permission_missing">Falta el acceso a la ubicación: permítelo en Famio</string>
+    <string name="location_visible">Tu familia ve dónde estás</string>
+    <string name="location_sharing_title">Famio comparte tu ubicación</string>
+</resources>

@@ -48,8 +48,8 @@ class MainActivity : FlutterActivity() {
         runCatching {
             val manager = getSystemService(android.content.pm.ShortcutManager::class.java)
             val shortcut = android.content.pm.ShortcutInfo.Builder(this, "sos")
-                .setShortLabel("Notruf")
-                .setLongLabel("Famio-Notruf auslösen")
+                .setShortLabel(getString(R.string.sos_short))
+                .setLongLabel(getString(R.string.sos_shortcut_long))
                 .setIcon(android.graphics.drawable.Icon.createWithResource(this, R.mipmap.ic_launcher))
                 .setIntent(sosIntent(this))
                 .build()
@@ -126,6 +126,22 @@ class MainActivity : FlutterActivity() {
                     }
                     else -> result.notImplemented()
                 }
+            }
+        // The language chosen in Famio, so notification channels, widgets
+        // and the system settings follow it (Android 13 and later).
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/language")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "set") return@setMethodCallHandler result.notImplemented()
+                if (Build.VERSION.SDK_INT >= 33) {
+                    val tag = call.argument<String>("language")
+                    getSystemService(android.app.LocaleManager::class.java).applicationLocales =
+                        if (tag.isNullOrEmpty()) {
+                            android.os.LocaleList.getEmptyLocaleList()
+                        } else {
+                            android.os.LocaleList.forLanguageTags(tag)
+                        }
+                }
+                result.success(null)
             }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/notify")
             .setMethodCallHandler { call, result ->
@@ -226,7 +242,7 @@ class MainActivity : FlutterActivity() {
      */
     private fun requestPermission(background: Boolean, result: MethodChannel.Result) {
         if (permissionResult != null) {
-            result.error("busy", "Anfrage läuft bereits", null)
+            result.error("busy", getString(R.string.permission_busy), null)
             return
         }
         val wanted = if (background && Build.VERSION.SDK_INT >= 29) {

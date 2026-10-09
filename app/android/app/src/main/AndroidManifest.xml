@@ -26,6 +26,7 @@
     <uses-feature android:name="android.hardware.telephony" android:required="false" />
     <application
         android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
@@ -67,7 +68,7 @@
             android:name=".SosTileService"
             android:exported="true"
             android:icon="@drawable/ic_launcher_monochrome"
-            android:label="Famio Notruf"
+            android:label="@string/sos_widget_name"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
@@ -85,7 +86,7 @@
         <receiver
             android:name=".FamioWidgetProvider"
             android:exported="true"
-            android:label="Famio heute">
+            android:label="@string/today_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -97,7 +98,7 @@
         <receiver
             android:name=".SosWidgetProvider"
             android:exported="true"
-            android:label="Famio Notruf">
+            android:label="@string/sos_widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -61,6 +62,17 @@ class AppState extends ChangeNotifier {
     await _prefs.setString('language', choice);
     // Notifications already planned are in the old language.
     _reminders?.refresh();
+    // Android's own texts (notification channels, widgets) follow too;
+    // without waiting, nothing answers in tests.
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      unawaited(
+        const MethodChannel('famio/language')
+            .invokeMethod<void>('set', {
+              'language': choice == 'system' ? null : choice,
+            })
+            .catchError((Object _) {}),
+      );
+    }
   }
 
   /// Sunday evening's notification about the coming week.

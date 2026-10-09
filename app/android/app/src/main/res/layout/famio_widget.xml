@@ -27,7 +27,7 @@
         android:id="@+id/widget_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Heute steht nichts an 🌈"
+        android:text="@string/widget_nothing_today"
         android:textColor="#FF6E7393"
         android:textSize="14sp" />
 </LinearLayout>

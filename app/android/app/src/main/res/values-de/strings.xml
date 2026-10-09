@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- German. -->
+<resources>
+    <string name="widget_description">Termine, Essen und Einkauf von heute</string>
+    <string name="sos_widget_description">Notfallknopf: Alarm an die Eltern mit Standort</string>
+    <string name="sos_widget_label">Famio Notruf auslösen</string>
+    <string name="sos_widget_name">Famio Notruf</string>
+    <string name="today_widget_name">Famio heute</string>
+    <string name="widget_nothing_today">Heute steht nichts an 🌈</string>
+    <string name="sos_short">Notruf</string>
+    <string name="sos_shortcut_long">Famio-Notruf auslösen</string>
+    <string name="permission_busy">Anfrage läuft bereits</string>
+    <string name="channel_connection">Verbindung</string>
+    <string name="channel_connection_description">Zeigt an, dass Famio Benachrichtigungen empfängt. Kann ausgeblendet werden.</string>
+    <string name="channel_messages">Nachrichten &amp; Hinweise</string>
+    <string name="channel_messages_description">Neue Nachrichten, Aufgaben, Termine und Anfragen</string>
+    <string name="channel_quiet">Ruhezeit</string>
+    <string name="channel_quiet_description">Hinweise während der eigenen Ruhezeit, ohne Ton</string>
+    <string name="channel_sos">Notfall (SOS)</string>
+    <string name="channel_sos_description">Wenn jemand aus der Familie den Notfallknopf drückt – laut, auch bei „Nicht stören“</string>
+    <string name="action_silence">Ruhe</string>
+    <string name="notifications_ended">Benachrichtigungen beendet</string>
+    <string name="device_signed_out">Das Gerät wurde abgemeldet. In Famio neu einschalten.</string>
+    <string name="famio_ready">Famio ist bereit</string>
+    <string name="famio_ready_text">Empfängt Benachrichtigungen – gedrückt halten zum Ausblenden</string>
+    <string name="channel_sos_running">Notruf läuft</string>
+    <string name="channel_sos_running_description">Während eines Notrufs: Famio sendet den Standort an die Familie</string>
+    <string name="sos_active">Notruf aktiv</string>
+    <string name="sos_active_text">Dein Standort geht laufend an deine Familie.</string>
+    <string name="channel_location">Standortfreigabe</string>
+    <string name="channel_location_description">Zeigt an, dass Famio den Standort teilt</string>
+    <string name="channel_places">Orte</string>
+    <string name="channel_places_description">Wer ist wo angekommen oder losgegangen</string>
+    <string name="error_network">Netzwerkfehler</string>
+    <string name="error_transfer">Übertragungsfehler</string>
+    <string name="location_sharing_ended">Standortfreigabe beendet</string>
+    <string name="location_paused">Pausiert</string>
+    <string name="location_paused_until">Pausiert bis %1$s Uhr</string>
+    <string name="location_permission_missing">Standortzugriff fehlt – in Famio erlauben</string>
+    <string name="location_visible">Deine Familie sieht, wo du bist</string>
+    <string name="location_sharing_title">Famio teilt deinen Standort</string>
+</resources>

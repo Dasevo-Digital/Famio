@@ -1,6 +1,8 @@
-// How far the English translation has come: counts German texts still
-// written directly in lib/ (outside lib/l10n), per file, and the texts
-// already in the ARB files.
+// What is left to translate: counts German texts still written directly
+// in lib/ (outside lib/l10n), per file, and the texts in the ARB files.
+// Some stay German on purpose: stored values (budget categories, packing
+// categories), words the parsers look for and the German section names
+// used in tests.
 //
 //   dart run tool/l10n_report.dart [--top 20]
 import 'dart:convert';

@@ -97,8 +97,12 @@ class SosLocationService : Service() {
         val manager = getSystemService(NotificationManager::class.java)
         if (Build.VERSION.SDK_INT >= 26) {
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Notruf läuft", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Während eines Notrufs: Famio sendet den Standort an die Familie"
+                NotificationChannel(
+                    CHANNEL,
+                    getString(R.string.channel_sos_running),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = getString(R.string.channel_sos_running_description)
                 },
             )
         }
@@ -116,8 +120,8 @@ class SosLocationService : Service() {
         }
         val notification = builder
             .setSmallIcon(R.drawable.ic_launcher_monochrome)
-            .setContentTitle("Notruf aktiv")
-            .setContentText("Dein Standort geht laufend an deine Familie.")
+            .setContentTitle(getString(R.string.sos_active))
+            .setContentText(getString(R.string.sos_active_text))
             .setContentIntent(open)
             .setOngoing(true)
             .build()

@@ -1,7 +1,8 @@
 import 'dart:io';
 
 /// Checks that every place carries the version in `VERSION` and that
-/// `app/CHANGELOG.md` has its user notes (one to eight points).
+/// `app/CHANGELOG.md` and its English and Spanish versions have the user
+/// notes (one to eight points).
 ///
 ///   dart run tool/check_versions.dart            check (pre-push, CI)
 ///   dart run tool/check_versions.dart --notes    print this version's notes
@@ -41,24 +42,33 @@ void main(List<String> args) {
       failed = true;
     }
   }
-  final notes = changelogSection(expected);
-  final points = notes == null
-      ? 0
-      : RegExp(r'^- ', multiLine: true).allMatches(notes).length;
-  if (points < 1 || points > 8) {
-    stderr.writeln(
-      'app/CHANGELOG.md: ${notes == null ? 'kein Abschnitt' : '$points Punkte'} '
-      'für $expected (erwartet: „## $expected – …“ mit 1 bis 8 Punkten in '
-      'Nutzersprache)',
-    );
-    failed = true;
+  for (final file in changelogs) {
+    final notes = changelogSection(expected, file: file);
+    final points = notes == null
+        ? 0
+        : RegExp(r'^- ', multiLine: true).allMatches(notes).length;
+    if (points < 1 || points > 8) {
+      stderr.writeln(
+        '$file: ${notes == null ? 'kein Abschnitt' : '$points Punkte'} '
+        'für $expected (erwartet: „## $expected – …“ mit 1 bis 8 Punkten in '
+        'Nutzersprache)',
+      );
+      failed = true;
+    }
   }
   if (failed) exitCode = 1;
 }
 
-/// The section `## <version>` of app/CHANGELOG.md with its heading, or null.
-String? changelogSection(String version) {
-  final text = File('app/CHANGELOG.md').readAsStringSync();
+/// The app's user notes: German, English and Spanish.
+const changelogs = [
+  'app/CHANGELOG.md',
+  'app/CHANGELOG.en.md',
+  'app/CHANGELOG.es.md',
+];
+
+/// The section `## <version>` of [file] with its heading, or null.
+String? changelogSection(String version, {String file = 'app/CHANGELOG.md'}) {
+  final text = File(file).readAsStringSync();
   final start = RegExp(
     '^## ${RegExp.escape(version)}(\\s|\$)',
     multiLine: true,
