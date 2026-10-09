@@ -31,6 +31,7 @@ import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
 import 'backup/backup_job.dart';
+import 'metrics.dart';
 import 'family/invites.dart';
 import 'family/sos.dart';
 import 'hub.dart';
@@ -98,6 +99,8 @@ class FamioApi {
     this.sos,
     this.invites,
     this.backups,
+    this.metrics,
+    this.metricsToken,
     required this.mfa,
     this.sso,
     this.webApp,
@@ -164,6 +167,10 @@ class FamioApi {
   /// Nightly backups; null when switched off.
   final BackupJob? backups;
 
+  /// Counters for `/metrics`; the endpoint exists only with [metricsToken].
+  final ServerMetrics? metrics;
+  final String? metricsToken;
+
   /// Location sharing of the members' phones.
   final LocationService? locations;
 
@@ -206,6 +213,7 @@ class FamioApi {
       ..get('/app/<path|.*>', _webApp)
       ..get('/api/panel', _panel)
       ..get('/api/health', _health)
+      ..get('/metrics', _metrics)
       ..post('/api/auth/setup', _setup)
       ..post('/api/auth/login', _login)
       ..post('/api/auth/login/two-factor', _loginTwoFactor)
@@ -327,7 +335,8 @@ class FamioApi {
         lists?.poke();
       },
     );
-    return const Pipeline()
+    return Pipeline()
+        .addMiddleware(metrics?.middleware ?? (inner) => inner)
         .addMiddleware(_compressJson)
         .addMiddleware(_securityHeaders)
         .addMiddleware(_errors)
@@ -353,6 +362,7 @@ class FamioApi {
     final syncRequest = SyncRequest.fromJson(await _body(request));
     final before = records.currentRev;
     final response = records.sync(syncRequest, member.id);
+    metrics?.syncRequests++;
     advanceRepeatingTasks(records, [
       for (final c in syncRequest.changes)
         if (c.collection == Collections.tasks) c.id,
@@ -499,7 +509,9 @@ class FamioApi {
   Handler _tlsGuard(Handler inner) => (request) {
     final path = request.url.path;
     if (requireTls &&
-        (path.startsWith('api/') || CalDavServer.handles(request)) &&
+        (path.startsWith('api/') ||
+            path == 'metrics' ||
+            CalDavServer.handles(request)) &&
         path != 'api/health' &&
         !_encrypted(request)) {
       final peer =

@@ -62,6 +62,17 @@ Future<void> main(List<String> args) async {
     locationHistoryDays: config.locationHistoryDays,
     maxStorageMb: config.maxStorageMb,
     backupDir: config.backupDir,
+    metricsToken: switch (config.metricsToken) {
+      final t? when t.length >= 16 => t,
+      final _? => () {
+        stderr.writeln(
+          'WARNUNG: FAMIO_METRICS_TOKEN ist kürzer als 16 Zeichen – '
+          '/metrics bleibt aus.',
+        );
+        return null;
+      }(),
+      null => null,
+    },
     allowPrivateCalendarHosts: config.allowPrivateCalendarHosts,
     allowPrivatePushHosts: config.allowPrivatePushHosts,
     dataKey: key,

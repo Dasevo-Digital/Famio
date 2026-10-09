@@ -109,6 +109,11 @@ class RecordStore {
       row['collection'] as String: row['n'] as int,
   };
 
+  /// Deletion marks still kept (see [purgeDeleted]).
+  int deletedCount() =>
+      _db.select('SELECT count(*) FROM records WHERE deleted = 1').first.columnAt(0)
+          as int;
+
   /// Never goes back, also when the newest record was a cleaned-up
   /// deletion mark (see [purgedRev]).
   int get currentRev => max(

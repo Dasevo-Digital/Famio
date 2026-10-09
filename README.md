@@ -509,6 +509,18 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 | `FAMIO_REQUIRE_TLS` | Klartext-API aus dem Netz sperren (Standard `true`; `false` nur befristet für alte Clients) |
 | `FAMIO_TLS_NAMES` | Zusätzliche Hostnamen/IP-Adressen für das HTTPS-Zertifikat (Port 8766), z. B. `192.168.1.5,famio.fritz.box` |
 | `FAMIO_WEB_DIR` | Ordner der Web-App (Standard: `web/` neben `bin/` im Server-Paket) |
+| `FAMIO_METRICS_TOKEN` | Schaltet `/metrics` ein (mindestens 16 Zeichen, als Bearer-Token mitschicken) |
+
+**Überwachung:** Mit `FAMIO_METRICS_TOKEN` liefert der Server unter `/metrics`
+Kennzahlen im Prometheus-Format – ohne Namen oder Inhalte: Version, Laufzeit,
+Speicher, Mitglieder je Rolle, Zahl der Einträge und Löschmarken, offene
+Konflikte, verbundene Geräte, Dateien, Datenbankgröße, fehlerhafte
+Kalender-Abos, Sicherungen (Alter, Fehler, Prüfergebnis), Antworten je
+Statusklasse, Sync-Anfragen und Push-Zustellungen. Aus dem Netz nur über HTTPS
+(Port 8766 oder Reverse-Proxy), z. B. für Uptime Kuma („HTTP(s) – Keyword“ auf
+`famio_backup_check_ok 1` mit Header `Authorization: Bearer …`) oder
+Prometheus (`authorization: credentials: …`). Ohne Token gibt es den Endpunkt
+nicht.
 
 **Web-App:** Jeder Server liefert die App unter `/app/` aus (gebaut mit
 `app/tool/build_web.sh`, landet in `server/web` und damit in allen

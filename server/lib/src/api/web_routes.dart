@@ -12,6 +12,128 @@ extension _WebRoutes on FamioApi {
     if (sso case final sso? when sso.enabled) 'sso': sso.config!.buttonLabel,
   });
 
+  /// Prometheus metrics without family data. Only with FAMIO_METRICS_TOKEN
+  /// (as bearer token); otherwise the endpoint does not exist.
+  Response _metrics(Request request) {
+    final expected = metricsToken;
+    final m = metrics;
+    if (expected == null || m == null) return Response.notFound('');
+    final given = _bearer(request) ?? '';
+    if (!_constantTimeEquals(given, expected)) {
+      return Response(401, headers: {'www-authenticate': 'Bearer'});
+    }
+    final w = MetricsWriter();
+    final now = DateTime.now();
+    w
+      ..add('famio_info', 'Version of the server', 'gauge', [
+        (labels: {'version': serverVersion}, value: 1),
+      ])
+      ..gauge(
+        'famio_uptime_seconds',
+        'Seconds since the server started',
+        now.difference(m.startedAt).inSeconds,
+      )
+      ..gauge(
+        'famio_process_resident_memory_bytes',
+        'Resident memory of the server process',
+        residentMemory(),
+      );
+    final roles = <String, int>{for (final r in MemberRole.values) r.name: 0};
+    for (final member in accounts.members()) {
+      roles[member.role.name] = roles[member.role.name]! + 1;
+    }
+    w.add('famio_members', 'Family members by role', 'gauge', [
+      for (final e in roles.entries) (labels: {'role': e.key}, value: e.value),
+    ]);
+    final counts = records.counts();
+    w
+      ..gauge(
+        'famio_records',
+        'Live records (all collections)',
+        counts.values.fold<int>(0, (a, b) => a + b),
+      )
+      ..gauge(
+        'famio_records_deleted',
+        'Deletion marks kept for devices that were offline',
+        records.deletedCount(),
+      )
+      ..gauge('famio_revision', 'Current sync revision', records.currentRev)
+      ..gauge(
+        'famio_conflicts_open',
+        'Changes that crossed and wait for a decision',
+        counts[Collections.conflicts] ?? 0,
+      )
+      ..gauge(
+        'famio_websocket_clients',
+        'Connected devices (WebSocket)',
+        hub.connectedClients,
+      );
+    final (fileCount, fileBytes) = files.usage();
+    w
+      ..gauge('famio_files', 'Stored uploads', fileCount)
+      ..gauge('famio_files_bytes', 'Size of stored uploads', fileBytes);
+    if (dbSize case final size?) {
+      w.gauge('famio_database_bytes', 'Size of the main database', size());
+    }
+    final calendarErrors = [
+      for (final r in records.all(Collections.calendarSyncStatus))
+        if (r.data['error'] != null) r,
+    ].length;
+    w.gauge(
+      'famio_calendar_subscription_errors',
+      'Calendar subscriptions whose last import failed',
+      calendarErrors,
+    );
+    if (backups case final job?) {
+      final list = job.list();
+      final status = job.status();
+      final check = status['lastCheck'] as Map?;
+      w
+        ..gauge('famio_backups', 'Stored backups', list.length)
+        ..gauge(
+          'famio_backup_last_timestamp_seconds',
+          'Time of the newest backup (0: none)',
+          (list.firstOrNull?.at.millisecondsSinceEpoch ?? 0) ~/ 1000,
+        )
+        ..gauge(
+          'famio_backup_failed',
+          '1 if the last backup attempt failed',
+          status['lastError'] == null ? 0 : 1,
+        )
+        ..gauge(
+          'famio_backup_check_ok',
+          '1 if the last tested backup can be restored (-1: never tested)',
+          check == null ? -1 : (check['ok'] == true ? 1 : 0),
+        );
+    }
+    w
+      ..add(
+        'famio_http_responses_total',
+        'Responses by status class',
+        'counter',
+        [
+          for (final e in m.responses.entries)
+            (labels: {'class': e.key}, value: e.value),
+        ],
+      )
+      ..counter(
+        'famio_sync_requests_total',
+        'Sync requests answered',
+        m.syncRequests,
+      )
+      ..add('famio_push_total', 'Push messages via ntfy', 'counter', [
+        (labels: {'result': 'sent'}, value: m.pushSent),
+        (labels: {'result': 'failed'}, value: m.pushFailed),
+      ]);
+    return Response.ok(
+      w.toString(),
+      headers: {
+        'content-type': 'text/plain; version=0.0.4; charset=utf-8',
+        'cache-control': 'no-store',
+      },
+    );
+  }
+
   Response _wsTicket(Request request) {
     _auth(request);
     // Home Assistant's sidebar signs the WebSocket in itself.

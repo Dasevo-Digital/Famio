@@ -55,6 +55,7 @@ class PushService {
     http.Client? client,
     RemoteUrlPolicy? urlPolicy,
     this.onOperationalError,
+    this.onSent,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null,
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
@@ -67,6 +68,9 @@ class PushService {
   final bool _ownsClient;
   final RemoteUrlPolicy _urlPolicy;
   final void Function(String event)? onOperationalError;
+
+  /// Called after each attempt to send to ntfy (for the metrics).
+  final void Function({required bool ok})? onSent;
 
   /// Famio's own push (see NoticeBox): gets every notice for the members
   /// allowed to see it, whether or not they use ntfy.
@@ -494,6 +498,7 @@ class PushService {
       error,
       row['id'],
     ]);
+    onSent?.call(ok: error == null);
     return error;
   }
 

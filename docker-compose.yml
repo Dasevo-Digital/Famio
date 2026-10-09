@@ -45,6 +45,8 @@ services:
       # FAMIO_MAX_UPLOAD_MB: "100"
       # Precise location history is deleted server-side after this period.
       # FAMIO_LOCATION_HISTORY_DAYS: "7"
+      # Prometheus metrics at /metrics (no family data), with this token:
+      # FAMIO_METRICS_TOKEN: "at-least-16-characters"
 
   # Optional, deliberately separated map service. It is not started by the
   # normal `docker compose up -d`, needs no Famio credentials and sees no

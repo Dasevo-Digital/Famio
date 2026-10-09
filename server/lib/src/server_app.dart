@@ -24,6 +24,7 @@ import 'export/data_export.dart';
 import 'lists/list_sync.dart';
 import 'dav/google_oauth.dart';
 import 'backup/backup_job.dart';
+import 'metrics.dart';
 import 'family/invites.dart';
 import 'family/sos.dart';
 import 'family/allowance_job.dart';
@@ -63,6 +64,7 @@ class FamioServerApp {
     Uri? googleBase,
     WebApp? webApp,
     String? backupDir,
+    String? metricsToken,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -164,6 +166,7 @@ class FamioServerApp {
       client: httpClient,
       urlPolicy: RemoteUrlPolicy(allowPrivateNetwork: allowPrivatePushHosts),
       onOperationalError: auditLog,
+      onSent: metrics.pushResult,
     );
     notices = NoticeBox(db);
     sos = SosService(records: records, accounts: accounts, push: push);
@@ -211,6 +214,8 @@ class FamioServerApp {
       ingressAuth: ingressAuth,
       trustProxy: trustProxy,
       dbSize: _dbSize,
+      metrics: metrics,
+      metricsToken: metricsToken,
       compactDatabase: _compact,
       auditLog: auditLog,
       requireTls: requireTls,
@@ -240,10 +245,12 @@ class FamioServerApp {
     http.Client? httpClient,
     Uri? googleBase,
     WebApp? webApp,
+    String? metricsToken,
   }) {
     initTimeZones();
     return FamioServerApp(
       db: openFamioDatabase(':memory:'),
+      metricsToken: metricsToken,
       location: tz.getLocation('Europe/Berlin'),
       dataDir: Directory.systemTemp.createTempSync('famio_test_').path,
       httpClient: httpClient,
@@ -287,6 +294,9 @@ class FamioServerApp {
 
   /// Nightly backups; null when switched off (`FAMIO_BACKUP_DIR=off`).
   late final BackupJob? backups;
+
+  /// Counters for `/metrics` (see [FamioApi.metricsToken]).
+  final metrics = ServerMetrics();
   late final AllowanceJob allowances;
   late final Mfa mfa;
   late final SsoService sso;
