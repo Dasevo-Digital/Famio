@@ -23,7 +23,9 @@ PRODUCT_COPYRIGHT = Copyright © 2026 de.status403. All rights reserved.
 
 // Signing of this Mac's builds (also debug and test builds), e.g. with a
 // free Apple ID's "Apple Development" certificate, so the Keychain keeps
-// "Immer erlauben" across builds. Optional and not part of the repository:
+// "Immer erlauben" across builds. Published builds are signed ad hoc
+// afterwards (tool/sign_macos.sh --adhoc), so the certificate's name never
+// ships. Optional and not part of the repository:
 //   CODE_SIGN_STYLE = Manual
 //   CODE_SIGN_IDENTITY = Apple Development
 //   DEVELOPMENT_TEAM = <team id>

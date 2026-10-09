@@ -450,6 +450,13 @@ Beide Apps haben getrennte Daten, Schlüsselbund-Einträge und Server. Auf Andro
 gibt es dieselbe Trennung als Build-Variante: `flutter build apk --flavor prod`
 (Famio) bzw. `--flavor dev` („Famio Dev“, `de.status403.famio.dev`); Tests
 auf einem Gerät mit echter Famio nur über `app/tool/android_dev_test.sh`.
+Veröffentlichte macOS-Builds sind ad hoc signiert: nach `flutter build macos
+--release` und vor dem Zippen `app/tool/sign_macos.sh --adhoc
+build/macos/Build/Products/Release/Famio.app`. Das ersetzt jede Signatur im
+Bündel, auch die eines lokalen `Signing.xcconfig`, sodass weder Name noch
+E-Mail-Adresse noch Team-ID eines Zertifikats im Download stehen.
+`mac_install.sh` signiert die App auf diesem Mac danach wieder mit der lokalen
+Identität, damit der Schlüsselbund nicht nach jedem Update fragt.
 Release-APKs werden mit einem eigenen Schlüssel signiert, wenn
 `~/Famio/keys/android/key.properties` (oder `FAMIO_SIGNING`) existiert. Der
 Build-Ordner heißt `build.noindex` (mit `build` als Verweis), damit Spotlight

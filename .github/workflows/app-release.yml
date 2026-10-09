@@ -79,6 +79,7 @@ jobs:
         if: matrix.target == 'macos'
         run: |
           flutter build macos --release
+          tool/sign_macos.sh --adhoc build/macos/Build/Products/Release/Famio.app
           ditto -c -k --keepParent build/macos/Build/Products/Release/Famio.app "$GITHUB_WORKSPACE/famio-macos.zip"
       - name: Android
         if: matrix.target == 'android'

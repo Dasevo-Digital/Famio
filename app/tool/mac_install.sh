@@ -8,6 +8,9 @@
 #                                       build in ~/Desktop/Famio-Release-v…
 #                                       (default: the newest release)
 #
+# Both are signed with this Mac's identity (tool/sign_macos.sh): released
+# builds are ad hoc, and the Keychain would ask again after every update.
+#
 # Both land in /Applications; build products stay out of Spotlight
 # (build → build.noindex), so Spotlight shows exactly these two apps.
 set -eu
@@ -73,6 +76,7 @@ prod)
   TMP="$(mktemp -d)"
   ditto -x -k "$ZIP" "$TMP"
   codesign --verify --deep --strict "$TMP/Famio.app"
+  tool/sign_macos.sh "$TMP/Famio.app"
   replace_app "$TMP/Famio.app" /Applications/Famio.app
   rm -rf "$TMP"
   echo "Installiert: /Applications/Famio.app aus $ZIP"
