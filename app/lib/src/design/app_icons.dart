@@ -187,4 +187,5 @@ abstract final class AppIcons {
   static const IconData pawPrint = LucideIcons.pawPrint;
   static const IconData recycle = LucideIcons.recycle;
   static const IconData wrench = LucideIcons.wrench;
+  static const IconData languages = LucideIcons.languages;
 }

@@ -49,6 +49,15 @@ class AppState extends ChangeNotifier {
   /// The wall display shows family photos after a while without touch.
   bool get kioskPhotos => _prefs.getBool('kiosk.photos') ?? true;
 
+  /// Language of the app on this device: German (default) or English
+  /// (preview while not everything is translated).
+  final language = ValueNotifier('de');
+
+  Future<void> setLanguage(String value) async {
+    language.value = value == 'en' ? 'en' : 'de';
+    await _prefs.setString('language', language.value);
+  }
+
   /// Sunday evening's notification about the coming week.
   bool get weekPreview => _prefs.getBool('reminders.weekPreview') ?? true;
 
@@ -164,6 +173,7 @@ class AppState extends ChangeNotifier {
     _lifecycle;
     _prefs = await SharedPreferences.getInstance();
     highContrast.value = _prefs.getBool('highContrast') ?? false;
+    language.value = _prefs.getString('language') == 'en' ? 'en' : 'de';
     if (kIsWeb) return _initWeb();
     try {
       vault = await SecureVault.open(_prefs);

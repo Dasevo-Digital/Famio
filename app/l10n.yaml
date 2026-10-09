@@ -1,0 +1,8 @@
+# German is the template; English follows (tool/l10n_report.dart shows
+# what is still hard-coded). Generated code lands next to the ARB files and
+# is not committed (flutter pub get creates it).
+arb-dir: lib/l10n
+template-arb-file: app_de.arb
+output-localization-file: app_localizations.dart
+output-class: L10n
+nullable-getter: false

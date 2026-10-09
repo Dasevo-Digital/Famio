@@ -629,6 +629,12 @@ Release-Ordner; `tool/publish_gitea_release.sh` prüft sie vor dem Upload und
 legt sie am Tag `v*` ab. Das Token bleibt ausschließlich in
 `GITEA_TOKEN` außerhalb des Repositories.
 
+**Sprachen:** Deutsch ist Standard; Englisch ist als Vorschau wählbar
+(Einstellungen → Sprache). Die Texte stehen in `app/lib/l10n/app_de.arb`
+(Vorlage) und `app_en.arb`, der Code nutzt `context.l10n.<schlüssel>`; der
+generierte Code entsteht bei `flutter pub get`. `dart run tool/l10n_report.dart`
+(in `app/`) zeigt, wie viele Texte noch fest im Code stehen.
+
 **Was ist neu:** Je Version stehen ein bis acht Punkte in Nutzersprache in
 [`app/CHANGELOG.md`](app/CHANGELOG.md). `dart run tool/check_versions.dart`
 (auch vor jedem Push und in der CI) verlangt den Abschnitt zur Version in

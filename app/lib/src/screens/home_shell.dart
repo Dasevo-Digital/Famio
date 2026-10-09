@@ -30,6 +30,7 @@ import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 import '../environment.dart';
 import '../widgets/whats_new.dart';
+import '../l10n.dart';
 
 Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.home => const HomeScreen(),
@@ -497,7 +498,7 @@ class _RailItem extends StatelessWidget {
                             ? FontWeight.w800
                             : FontWeight.w700,
                       ),
-                      child: Text(section.label),
+                      child: Text(section.title(context)),
                     ),
                   ],
                 ],
@@ -510,8 +511,8 @@ class _RailItem extends StatelessWidget {
     return showLabel
         ? item
         : Tooltip(
-            message: section.label,
-            child: Semantics(label: section.label, child: item),
+            message: section.title(context),
+            child: Semantics(label: section.title(context), child: item),
           );
   }
 }
@@ -562,7 +563,7 @@ class _FloatingBar extends StatelessWidget {
               Expanded(
                 child: _BarItem(
                   icon: s.icon,
-                  label: s.label,
+                  label: s.title(context),
                   color: c.strong(s),
                   tint: c.tint(s),
                   selected: s == current,
@@ -573,7 +574,7 @@ class _FloatingBar extends StatelessWidget {
             Expanded(
               child: _BarItem(
                 icon: AppIcons.dotsThreeCircle,
-                label: inMore ? current.label : 'Mehr',
+                label: inMore ? current.title(context) : context.l10n.navMore,
                 color: inMore ? c.strong(current) : c.inkSoft,
                 tint: inMore ? c.tint(current) : c.surfaceSoft,
                 selected: inMore,
@@ -676,7 +677,7 @@ class _MoreTile extends StatelessWidget {
               FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Text(
-                  section.label,
+                  section.title(context),
                   maxLines: 1,
                   style: Theme.of(context).textTheme.labelLarge,
                 ),

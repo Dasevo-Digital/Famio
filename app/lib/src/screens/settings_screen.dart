@@ -33,6 +33,7 @@ import '../widgets/data_export.dart';
 import 'deadlines_screen.dart';
 import 'waste_screen.dart';
 import '../widgets/whats_new.dart';
+import '../l10n.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -75,7 +76,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 BubbleButton(
                   icon: AppIcons.pencilSimple,
-                  tooltip: 'Profil bearbeiten',
+                  tooltip: context.l10n.settingsEditProfile,
                   onPressed: () => showProfileEditor(context),
                 ),
               ],
@@ -106,7 +107,7 @@ class SettingsScreen extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         Text(
-                          'Benutzer, Geräte & Servereinstellungen',
+                          context.l10n.settingsServerAdminSubtitle,
                           style: TextStyle(color: c.inkSoft),
                         ),
                       ],
@@ -117,16 +118,14 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ],
-          ListHeading('Konto', color: accent),
+          ListHeading(context.l10n.settingsAccount, color: accent),
           if (state.panelMode == 'server')
             // Home Assistant signs in here; the page of the add-on sets a
             // password for the phone and computer apps.
             ListTile(
               leading: const Icon(AppIcons.password),
-              title: const Text('Famio-Apps verbinden'),
-              subtitle: const Text(
-                'Adresse und Passwort für die Apps auf Handy und Computer',
-              ),
+              title: Text(context.l10n.settingsConnectApps),
+              subtitle: Text(context.l10n.settingsConnectAppsSubtitle),
               onTap: () => launchUrl(
                 Uri.parse(state.serverUrl!).replace(query: 'info'),
                 webOnlyWindowName: '_self',
@@ -135,27 +134,27 @@ class SettingsScreen extends StatelessWidget {
           else
             ListTile(
               leading: const Icon(AppIcons.password),
-              title: const Text('Passwort ändern'),
+              title: Text(context.l10n.settingsChangePassword),
               onTap: () => _changePassword(context),
             ),
           ListTile(
             leading: const Icon(AppIcons.cloudArrowDown),
-            title: const Text('Meine Daten exportieren'),
-            subtitle: const Text('Alles, was du siehst, als ZIP-Datei'),
+            title: Text(context.l10n.settingsExport),
+            subtitle: Text(context.l10n.settingsExportSubtitle),
             onTap: () => exportData(context),
           ),
           ListTile(
             leading: const Icon(AppIcons.shieldCheck),
-            title: const Text('Anmeldung & Sicherheit'),
-            subtitle: const Text('Zwei-Faktor-Anmeldung, Single Sign-On'),
+            title: Text(context.l10n.settingsSecurity),
+            subtitle: Text(context.l10n.settingsSecuritySubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const SecurityScreen()),
             ),
           ),
           ListTile(
             leading: const Icon(AppIcons.devices),
-            title: const Text('Meine Geräte'),
-            subtitle: const Text('Wo du angemeldet bist'),
+            title: Text(context.l10n.settingsMyDevices),
+            subtitle: Text(context.l10n.settingsMyDevicesSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const MyDevicesScreen()),
             ),
@@ -163,10 +162,11 @@ class SettingsScreen extends StatelessWidget {
           if (HomeWidgetSync.supported)
             ListTile(
               leading: const Icon(AppIcons.smartphone),
-              title: const Text('Widget auf den Startbildschirm'),
-              subtitle: const Text('Termine, Essen und Einkauf von heute'),
+              title: Text(context.l10n.settingsWidget),
+              subtitle: Text(context.l10n.settingsWidgetSubtitle),
               onTap: () async {
                 final messenger = ScaffoldMessenger.of(context);
+                final l = context.l10n;
                 if (await HomeWidget.isRequestPinWidgetSupported() == true) {
                   await HomeWidget.requestPinWidget(
                     qualifiedAndroidName:
@@ -174,19 +174,15 @@ class SettingsScreen extends StatelessWidget {
                   );
                 } else {
                   messenger.showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Startbildschirm lange drücken → Widgets → Famio.',
-                      ),
-                    ),
+                    SnackBar(content: Text(l.settingsWidgetHint)),
                   );
                 }
               },
             ),
           ListTile(
             leading: const Icon(AppIcons.gift),
-            title: const Text('Wunschzettel'),
-            subtitle: const Text('Deine Wünsche und die der Familie'),
+            title: Text(context.l10n.settingsWishes),
+            subtitle: Text(context.l10n.settingsWishesSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const WishesScreen()),
             ),
@@ -195,8 +191,8 @@ class SettingsScreen extends StatelessWidget {
           if (!me.isGuest) ...[
             ListTile(
               leading: const Icon(AppIcons.wrench),
-              title: const Text('Fristen & Wartung'),
-              subtitle: const Text('TÜV, Heizung, Tierarzt – mit Erinnerung'),
+              title: Text(context.l10n.settingsDeadlines),
+              subtitle: Text(context.l10n.settingsDeadlinesSubtitle),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const DeadlinesScreen(),
@@ -205,8 +201,8 @@ class SettingsScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(AppIcons.recycle),
-              title: const Text('Abfallkalender'),
-              subtitle: const Text('Wer wann welche Tonne rausstellt'),
+              title: Text(context.l10n.settingsWaste),
+              subtitle: Text(context.l10n.settingsWasteSubtitle),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(builder: (_) => const WasteScreen()),
               ),
@@ -214,8 +210,8 @@ class SettingsScreen extends StatelessWidget {
           ],
           ListTile(
             leading: const Icon(AppIcons.siren),
-            title: const Text('Notfallknopf'),
-            subtitle: const Text('Sirene, Anruf, Telefonnummern'),
+            title: Text(context.l10n.settingsSos),
+            subtitle: Text(context.l10n.settingsSosSubtitle),
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(
                 builder: (_) => const SosSettingsScreen(),
@@ -226,46 +222,58 @@ class SettingsScreen extends StatelessWidget {
           if (!kIsWeb)
             ListTile(
               leading: const Icon(AppIcons.bellRing),
-              title: const Text('Push-Benachrichtigungen'),
-              subtitle: const Text('Direkt über Famio oder über ntfy'),
+              title: Text(context.l10n.settingsPush),
+              subtitle: Text(context.l10n.settingsPushSubtitle),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => const PushSettingsScreen(),
                 ),
               ),
             ),
-          ListHeading('Dieses Gerät', color: accent),
+          ListHeading(context.l10n.settingsThisDevice, color: accent),
           ListTile(
             leading: const Icon(AppIcons.tv),
-            title: const Text('Wandanzeige öffnen'),
-            subtitle: const Text(
-              'Großer Tagesüberblick fürs Küchen-Tablet, bleibt an',
-            ),
+            title: Text(context.l10n.settingsOpenKiosk),
+            subtitle: Text(context.l10n.settingsOpenKioskSubtitle),
             onTap: () => openKiosk(context),
           ),
           if (!kIsWeb)
             SwitchListTile(
               secondary: const Icon(AppIcons.monitor),
-              title: const Text('Beim Start als Wandanzeige öffnen'),
+              title: Text(context.l10n.settingsKioskAutostart),
               value: state.kioskAutostart,
               onChanged: state.setKioskAutostart,
             ),
           SwitchListTile(
             secondary: const Icon(AppIcons.contrast),
-            title: const Text('Hoher Kontrast'),
-            subtitle: const Text(
-              'Kräftigere Farben und dunklere Schrift statt Pastell – '
-              'leichter lesbar bei Sonne, kleiner Schrift oder schwachen '
-              'Augen. Gilt nur für dieses Gerät.',
-            ),
+            title: Text(context.l10n.settingsHighContrast),
+            subtitle: Text(context.l10n.settingsHighContrastSubtitle),
             value: state.highContrast.value,
             onChanged: state.setHighContrast,
           ),
+          ListTile(
+            leading: const Icon(AppIcons.languages),
+            title: Text(context.l10n.settingsLanguage),
+            trailing: DropdownButton<String>(
+              value: state.language.value,
+              items: [
+                DropdownMenuItem(
+                  value: 'de',
+                  child: Text(context.l10n.languageGerman),
+                ),
+                DropdownMenuItem(
+                  value: 'en',
+                  child: Text(context.l10n.languageEnglishPreview),
+                ),
+              ],
+              onChanged: (v) => state.setLanguage(v ?? 'de'),
+            ),
+          ),
           if (!kIsWeb && state.files != null) const _DeviceStorageTile(),
-          ListHeading('Synchronisation', color: accent),
+          ListHeading(context.l10n.settingsSync, color: accent),
           ListTile(
             leading: const Icon(AppIcons.hardDrives),
-            title: const Text('Server'),
+            title: Text(context.l10n.settingsServer),
             subtitle: Text(
               state.panelMode == 'server'
                   ? 'Famio in Home Assistant'
@@ -283,7 +291,7 @@ class SettingsScreen extends StatelessWidget {
               final last = status.lastSync;
               return ListTile(
                 leading: const Icon(AppIcons.arrowsClockwise),
-                title: const Text('Jetzt synchronisieren'),
+                title: Text(context.l10n.settingsSyncNow),
                 subtitle: Text(switch (status.state) {
                   SyncState.syncing => 'Läuft …',
                   SyncState.offline =>
@@ -296,7 +304,7 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
-          ListHeading('Familie', color: accent),
+          ListHeading(context.l10n.settingsFamily, color: accent),
           DataBuilder(
             collections: const {'members'},
             builder: (context, engine) => Column(
@@ -320,7 +328,10 @@ class SettingsScreen extends StatelessWidget {
           if (state.canSignOut)
             ListTile(
               leading: Icon(AppIcons.signOut, color: c.danger),
-              title: Text('Abmelden', style: TextStyle(color: c.danger)),
+              title: Text(
+                context.l10n.settingsSignOut,
+                style: TextStyle(color: c.danger),
+              ),
               subtitle: Text(
                 state.panelMode == 'client'
                     ? 'Home Assistant vergisst deine Anmeldung'
@@ -344,20 +355,18 @@ class SettingsScreen extends StatelessWidget {
           ListTile(
             leading: Icon(AppIcons.userMinus, color: c.danger),
             title: Text(
-              'Mein Konto löschen',
+              context.l10n.settingsDeleteAccount,
               style: TextStyle(color: c.danger),
             ),
-            subtitle: const Text(
-              'Zugang und persönliche Verbindungen entfernen',
-            ),
+            subtitle: Text(context.l10n.settingsDeleteAccountSubtitle),
             onTap: () => _deleteAccount(context),
           ),
-          ListHeading('Über Famio', color: accent),
+          ListHeading(context.l10n.settingsAbout, color: accent),
           VersionTile(api: engine.api),
           ListTile(
             leading: const Icon(AppIcons.sparkle),
-            title: const Text('Was ist neu?'),
-            subtitle: const Text('Die letzten Versionen in Kürze'),
+            title: Text(context.l10n.settingsWhatsNew),
+            subtitle: Text(context.l10n.settingsWhatsNewSubtitle),
             onTap: () async {
               final entries = await loadChangelog();
               if (context.mounted) {
@@ -387,7 +396,7 @@ class SettingsScreen extends StatelessWidget {
               contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Aktuelles Passwort',
+                labelText: context.l10n.settingsCurrentPassword,
               ),
             ),
           ),
@@ -398,7 +407,7 @@ class SettingsScreen extends StatelessWidget {
               contextMenuBuilder: PasswordReveal.contextMenu,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Neues Passwort (min. 8 Zeichen)',
+                labelText: context.l10n.settingsNewPassword,
               ),
             ),
           ),
@@ -437,15 +446,15 @@ class SettingsScreen extends StatelessWidget {
               autofocus: true,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Passwort zur Bestätigung',
+                labelText: context.l10n.settingsPasswordConfirm,
               ),
             ),
           ),
           TextField(
             controller: code,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Zwei-Faktor-Code (falls aktiviert)',
+            decoration: InputDecoration(
+              labelText: context.l10n.settingsTwoFactorCode,
             ),
           ),
         ],
@@ -481,7 +490,9 @@ Future<void> showProfileEditor(BuildContext context) async {
         TextField(
           controller: name,
           textCapitalization: TextCapitalization.words,
-          decoration: const InputDecoration(labelText: 'Anzeigename'),
+          decoration: InputDecoration(
+            labelText: context.l10n.settingsDisplayName,
+          ),
         ),
         StatefulBuilder(
           builder: (context, setState) => AvatarColorPicker(
@@ -582,14 +593,13 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
   Future<void> _encrypt() async {
     final state = AppScope.read(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
     setState(() => _busy = true);
     try {
       await state.encryptConnection(
         trust: (fingerprint) => confirmCertificate(context, fingerprint),
       );
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Verbindung ist jetzt verschlüsselt')),
-      );
+      messenger.showSnackBar(SnackBar(content: Text(l.settingsNowEncrypted)));
     } on ApiError catch (e) {
       messenger.showSnackBar(
         SnackBar(
@@ -610,6 +620,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
   Future<void> _move() async {
     final state = AppScope.read(context);
     final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
     final address = TextEditingController(
       text: Uri.tryParse(widget.url ?? '')?.host ?? '',
     );
@@ -618,7 +629,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
       builder: (context) => DisposeWith(
         controllers: [address],
         child: AlertDialog(
-          title: const Text('Server-Adresse ändern'),
+          title: Text(l.settingsChangeServer),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -636,8 +647,8 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
                   autofocus: true,
                   autocorrect: false,
                   keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    labelText: 'Neue Server-Adresse',
+                  decoration: InputDecoration(
+                    labelText: l.settingsNewServerAddress,
                     hintText: 'famio.example.de oder 192.168.1.10',
                   ),
                   onSubmitted: (v) => Navigator.pop(context, v),
@@ -648,11 +659,11 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
+              child: Text(l.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, address.text),
-              child: const Text('Wechseln'),
+              child: Text(l.settingsSwitch),
             ),
           ],
         ),
@@ -666,13 +677,13 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
         trust: (fingerprint) => confirmCertificate(context, fingerprint),
       );
       messenger.showSnackBar(
-        const SnackBar(content: Text('Verbunden mit der neuen Adresse')),
+        SnackBar(content: Text(l.settingsConnectedNewAddress)),
       );
     } on ApiError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
     } on FormatException {
       messenger.showSnackBar(
-        const SnackBar(content: Text('Ungültige Server-Adresse')),
+        SnackBar(content: Text(l.settingsInvalidServerAddress)),
       );
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -727,13 +738,13 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
                       )
                     : FilledButton(
                         onPressed: _encrypt,
-                        child: const Text('Jetzt verschlüsseln'),
+                        child: Text(context.l10n.settingsEncryptNow),
                       ))
               : null,
         ),
         ListTile(
           leading: const Icon(AppIcons.arrowsLeftRight),
-          title: const Text('Server-Adresse ändern'),
+          title: Text(context.l10n.settingsChangeServer),
           subtitle: Text(
             '${Uri.tryParse(url)?.authority ?? url} – z. B. nach einem '
             'Umzug des Servers',
@@ -747,7 +758,7 @@ class _ConnectionSecurityTileState extends State<_ConnectionSecurityTile> {
                 ? c.strong(FamioSection.tasks)
                 : c.strong(FamioSection.home),
           ),
-          title: const Text('Daten auf diesem Gerät'),
+          title: Text(context.l10n.settingsLocalData),
           subtitle: Text(
             state.vault.secure
                 ? 'Verschlüsselt; Schlüssel und Anmeldung im Schlüsselbund '
@@ -821,7 +832,7 @@ class _DeviceStorageTileState extends State<_DeviceStorageTile> {
     String mb(int bytes) => '${(bytes / (1024 * 1024)).round()} MB';
     return ListTile(
       leading: const Icon(AppIcons.database),
-      title: const Text('Speicher auf diesem Gerät'),
+      title: Text(context.l10n.settingsStorage),
       subtitle: Text(
         'Fotos und Dokumente zum Offline-Ansehen: ${mb(files.size)} '
         '(höchstens ${mb(files.maxBytes)}; was lange nicht angesehen wurde, '
@@ -834,26 +845,23 @@ class _DeviceStorageTileState extends State<_DeviceStorageTile> {
                 final ok = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Speicher leeren?'),
-                    content: const Text(
-                      'Fotos und Dokumente werden beim nächsten Ansehen neu '
-                      'geladen. Auf dem Server bleibt alles erhalten.',
-                    ),
+                    title: Text(context.l10n.settingsStorageClearConfirm),
+                    content: Text(context.l10n.settingsStorageClearHint),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Abbrechen'),
+                        child: Text(context.l10n.commonCancel),
                       ),
                       FilledButton(
                         onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Leeren'),
+                        child: Text(context.l10n.settingsStorageClear),
                       ),
                     ],
                   ),
                 );
                 if (ok == true) setState(files.clear);
               },
-        child: const Text('Leeren'),
+        child: Text(context.l10n.settingsStorageClear),
       ),
     );
   }

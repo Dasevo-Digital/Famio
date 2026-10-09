@@ -7,6 +7,7 @@ import 'screens/security_screens.dart';
 import 'screens/connect_screen.dart';
 import 'screens/home_shell.dart';
 import 'environment.dart';
+import 'l10n.dart';
 
 class FamioApp extends StatelessWidget {
   const FamioApp({super.key, required this.state});
@@ -17,13 +18,19 @@ class FamioApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppScope(
       state: state,
-      child: ValueListenableBuilder(
-        valueListenable: state.highContrast,
-        builder: (context, highContrast, _) => MaterialApp(
+      child: ListenableBuilder(
+        listenable: Listenable.merge([state.highContrast, state.language]),
+        builder: (context, _) => MaterialApp(
           title: AppEnv.appName,
           debugShowCheckedModeBanner: false,
-          theme: famioTheme(Brightness.light, highContrast: highContrast),
-          darkTheme: famioTheme(Brightness.dark, highContrast: highContrast),
+          theme: famioTheme(
+            Brightness.light,
+            highContrast: state.highContrast.value,
+          ),
+          darkTheme: famioTheme(
+            Brightness.dark,
+            highContrast: state.highContrast.value,
+          ),
           // "Kontrast erhöhen" in the system settings (iOS, macOS) as well.
           highContrastTheme: famioTheme(Brightness.light, highContrast: true),
           highContrastDarkTheme: famioTheme(
@@ -31,9 +38,12 @@ class FamioApp extends StatelessWidget {
             highContrast: true,
           ),
           scrollBehavior: const FamioScrollBehavior(),
-          locale: const Locale('de'),
-          supportedLocales: const [Locale('de')],
-          localizationsDelegates: GlobalMaterialLocalizations.delegates,
+          locale: Locale(state.language.value),
+          supportedLocales: L10n.supportedLocales,
+          localizationsDelegates: const [
+            L10n.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
           // The development build says so on every screen.
           builder: AppEnv.isDev
               ? (context, child) => Banner(
