@@ -41,3 +41,8 @@ String weekdayLong(int weekday) =>
 List<String> weekdaysShort([int count = 7]) => [
   for (var d = 1; d <= count; d++) weekdayShort(d),
 ];
+
+/// [number] (as Dart writes it) with the decimal mark of the app's
+/// language.
+String decimalMark(String number) =>
+    appLanguage == 'en' ? number : number.replaceAll('.', ',');

@@ -3844,5 +3844,552 @@
   "connectConnectedSecurely": "Verschlüsselt verbunden",
   "connectConnectedSecurelyCertificateConfirmed": "Verschlüsselt verbunden (Zertifikat bestätigt)",
   "connectUnencryptedHomeNetworkServer": "Unverschlüsselt im Heimnetz – der Server bietet kein HTTPS an",
-  "rewardsRedeem": "Einlösen"
+  "rewardsRedeem": "Einlösen",
+  "kidsTabTimeline": "Zeitstrahl",
+  "kidsTabLog": "Protokoll",
+  "kidsTabMilestones": "Meilensteine",
+  "kidsTabCheckups": "Vorsorge",
+  "kidsTabVaccinations": "Impfungen",
+  "kidsTabGrowth": "Wachstum",
+  "kidsMilestone": "Meilenstein",
+  "kidsMeasurement": "Messung",
+  "kidsCaptureMemory": "Erinnerung festhalten",
+  "kidsMemory": "Erinnerung",
+  "kidsAppointmentPlanned": "Termin geplant",
+  "kidsWhatHappened": "Was ist passiert?",
+  "kidsEGFirstWord": "z. B. Erstes Wort: „Mama“",
+  "kidsMeasurementsCheckupOptional": "Messwerte der Untersuchung (optional)",
+  "kidsHeightCm": "Größe (cm)",
+  "kidsWeightKg": "Gewicht (kg)",
+  "kidsHeadCm": "Kopf (cm)",
+  "kidsDateUnknown": "Datum unbekannt",
+  "kidsDate": "Am {date}",
+  "@kidsDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsTimeOptional": "Uhrzeit (optional)",
+  "kidsTime": "Um {time} Uhr",
+  "@kidsTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsRemovePhoto": "Foto entfernen",
+  "kidsAddPhoto": "Foto hinzufügen",
+  "kidsSaveAppointment": "Termin speichern",
+  "kidsDone": "Geschafft!",
+  "commonUntitled": "(ohne Titel)",
+  "kidsChildNoLongerExists": "Dieses Kind gibt es nicht mehr.",
+  "kidsAgeBornBorn2": "{age} · geboren am {born}",
+  "@kidsAgeBornBorn2": {
+    "placeholders": {
+      "age": {
+        "type": "Object?"
+      },
+      "born": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsPeriodsGermanChildHealth": "Zeiträume laut gelbem Kinderuntersuchungsheft. Den Termin am besten früh beim Kinderarzt vereinbaren.",
+  "kidsBasedStikoVaccinationCalendar": "Orientierung nach dem STIKO-Impfkalender (Stand 2025). Maßgeblich sind Kinderarzt und Impfpass.",
+  "kidsWhatDone": "{what} erledigt",
+  "@kidsWhatDone": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsVaccinationTitleDose": "Impfung: {title} ({dose})",
+  "@kidsVaccinationTitleDose": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      },
+      "dose": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsHeadSizeCm": "Kopf {size} cm",
+  "@kidsHeadSizeCm": {
+    "placeholders": {
+      "size": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationTipAddPlacesLike": "Tipp: Lege Orte wie Zuhause oder Schule an (oben rechts) – dann meldet Famio, wer angekommen oder losgegangen ist.",
+  "locationBatteryBattery": "{battery} % Akku",
+  "@locationBatteryBattery": {
+    "placeholders": {
+      "battery": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationAskCheck": "Um Check-in bitten",
+  "locationRingPhone": "Handy klingeln lassen",
+  "locationNameWasAsked": "{name} wurde gefragt.",
+  "@locationNameWasAsked": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationNameSPhoneRings": "{name}s Handy klingelt eine halbe Minute.",
+  "@locationNameSPhoneRings": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationSentButNameS": "Gesendet – aber {name}s Handy empfängt gerade keine Famio-Benachrichtigungen. Dort unter Einstellungen → Benachrichtigungen „Direkt über Famio“ einschalten.",
+  "@locationSentButNameS": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "location1Hour": "1 Stunde",
+  "location3Hours": "3 Stunden",
+  "locationUntilTomorrowMorning": "Bis morgen früh",
+  "locationUntilResumed": "Bis zum Fortsetzen",
+  "locationEndLocationSharing": "Standortfreigabe beenden",
+  "locationPauseNameSLocation": "Standort von {name} pausieren",
+  "@locationPauseNameSLocation": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationLocationNoLongerShared": "Auf diesem Handy wird der Standort nicht mehr geteilt. Dafür braucht es den Eltern-Code.",
+  "locationNeedsParentsCode": "Dafür braucht es den Eltern-Code.",
+  "placesReportArrivalsDepartures": "Ankommen und Losgehen melden",
+  "placesNoPlacesYetHome": "Noch keine Orte. Zuhause, Schule, Kita, Sportverein: Famio meldet, wer angekommen oder losgegangen ist.",
+  "placesRadiusMRadiusNotify": "{radius} m Umkreis{notify}",
+  "@placesRadiusMRadiusNotify": {
+    "placeholders": {
+      "radius": {
+        "type": "Object?"
+      },
+      "notify": {
+        "type": "Object?"
+      }
+    }
+  },
+  "placesYouNotified": " · du wirst benachrichtigt",
+  "placesNoCurrentPositionYours": "Keine aktuelle Position von dir – tippe stattdessen auf die Karte.",
+  "placesPleaseEnterNameTap": "Bitte einen Namen eingeben und auf die Karte tippen",
+  "placesNewPlace": "Neuer Ort",
+  "placesEditPlace": "Ort bearbeiten",
+  "placesEGSchool": "z. B. Schule",
+  "placesTapMapSetCenter": "Auf die Karte tippen, um die Mitte festzulegen.",
+  "placesMyPosition": "Meine Position",
+  "placesRadiusRadiusM": "Umkreis: {radius} m",
+  "@placesRadiusRadiusM": {
+    "placeholders": {
+      "radius": {
+        "type": "Object?"
+      }
+    }
+  },
+  "placesNotifyMe": "Mich benachrichtigen",
+  "placesWhenSomeoneArrivesLeaves": "Wenn jemand ankommt oder losgeht",
+  "placesDeletePlace": "Ort löschen",
+  "calendarRecognizeEventsPhotoText": "Termine aus Foto oder Text erkennen",
+  "calendarConnectGoogleAppleCalendar": "Mit Google/Apple Kalender verbinden",
+  "calendarNoEvents": "Keine Termine",
+  "calendarAdminsSetFederalState": "Das Bundesland stellen Admins in der Server-Verwaltung ein.",
+  "calendarWhatChangeProfileChild": "{what}. Ändern im Profil, beim Kind oder unter Kontakte.",
+  "@calendarWhatChangeProfileChild": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "calendarConnectedCalendarReadOnly": "Aus einem verbundenen Kalender – in Famio nur lesbar, weil Famio diese Wiederholung nicht genau abbilden kann. Dort ändern.",
+  "calendarSourceReadOnlyMake": "Aus „{source}“ – nur lesbar. Änderungen im Originalkalender vornehmen.",
+  "@calendarSourceReadOnlyMake": {
+    "placeholders": {
+      "source": {
+        "type": "Object?"
+      }
+    }
+  },
+  "calendarSubscription": "Abo",
+  "calendarPublicHoliday": "Feiertag",
+  "calendarConnectedCalendar": "Verbundener Kalender",
+  "calendarSubscribed": "Abonniert",
+  "kidsAgeMonthsShort": "{months} Mon.",
+  "@kidsAgeMonthsShort": {
+    "placeholders": {
+      "months": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsAgeYearsShort": "{years} J.",
+  "@kidsAgeYearsShort": {
+    "placeholders": {
+      "years": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminDeviceCount": "{n, plural, =1{1 Gerät} other{{n} Geräte}}",
+  "@adminDeviceCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "agoJustNow": "gerade eben",
+  "agoMoment": "eben",
+  "agoMinutes": "{n} Min.",
+  "@agoMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "Object?"
+      }
+    }
+  },
+  "agoHours": "{n} Std.",
+  "@agoHours": {
+    "placeholders": {
+      "n": {
+        "type": "Object?"
+      }
+    }
+  },
+  "agoAgo": "vor {text}",
+  "@agoAgo": {
+    "placeholders": {
+      "text": {
+        "type": "Object?"
+      }
+    }
+  },
+  "agoDaysAgo": "vor {n, plural, =1{1 Tag} other{{n} Tagen}}",
+  "@agoDaysAgo": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{n, plural, =1{1 Tag} other{{n} Tage}}",
+  "@agoDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "adminUnknownDevice": "Unbekanntes Gerät",
+  "adminLastActiveSeenSigned": "Zuletzt aktiv {seen} · angemeldet {since}",
+  "@adminLastActiveSeenSigned": {
+    "placeholders": {
+      "seen": {
+        "type": "Object?"
+      },
+      "since": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminServerNotReachableAdministration": "Server nicht erreichbar. Die Verwaltung braucht eine Verbindung.",
+  "commonRetry": "Erneut versuchen",
+  "importNoTextWasFound": "Im PDF wurde kein Text gefunden.",
+  "importNoTextWasRecognized": "Auf dem Bild wurde kein Text erkannt.",
+  "importNoEventsFoundText": "Keine Termine im Text gefunden.",
+  "importTakenLine": "Übernommen aus: {line}",
+  "@importTakenLine": {
+    "placeholders": {
+      "line": {
+        "type": "Object?"
+      }
+    }
+  },
+  "import1EventAdded": "1 Termin eingetragen",
+  "importCountEventsAdded": "{count} Termine eingetragen",
+  "@importCountEventsAdded": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "importDay": "{day}, {from}–{to} Uhr",
+  "@importDay": {
+    "placeholders": {
+      "day": {
+        "type": "Object?"
+      },
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "importDayAllDay": "{day}, ganztägig",
+  "@importDayAllDay": {
+    "placeholders": {
+      "day": {
+        "type": "Object?"
+      }
+    }
+  },
+  "importRecognizeEvents": "Termine erkennen",
+  "importParentsLetterInvitationEmail": "Aus Elternbrief, Einladung oder Mail",
+  "importFamioReadsDatesTimes": "Famio liest Daten und Uhrzeiten aus dem Text und schlägt Termine vor. Die Erkennung läuft auf diesem Gerät; nichts wird hochgeladen. Prüfe die Vorschläge vor dem Übernehmen.",
+  "importTakePhoto": "Foto aufnehmen",
+  "importChoosePicture": "Bild wählen",
+  "importChoosePdf": "PDF wählen",
+  "importClipboard": "Aus der Zwischenablage",
+  "importPasteTextHere": "Oder Text hier einfügen",
+  "importEGParentsEvening": "z. B. „Elternabend am 16.10. um 19 Uhr“",
+  "importFindEvents": "Termine suchen",
+  "importTakeOver1Event": "1 Termin übernehmen",
+  "importTakeOverCountEvents": "{count} Termine übernehmen",
+  "@importTakeOverCountEvents": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "ssoSingleSignSaved": "Single Sign-On gespeichert",
+  "ssoProviderEGAuthentik": "Beim Anbieter (z. B. Authentik: „Anwendungen → OAuth2/OpenID-Provider“) eine vertrauliche Anwendung anlegen und diese Weiterleitungs-Adresse eintragen:",
+  "ssoFirstEnterSavePublic": "Zuerst unter Einstellungen die öffentliche Adresse eintragen und speichern.",
+  "ssoProviderAddressIssuer": "Anbieter-Adresse (Issuer)",
+  "ssoSavedLeaveEmptyKeep": "Gespeichert – leer lassen, um es zu behalten",
+  "ssoNameButton": "Name auf dem Knopf",
+  "ssoSignSignScreen": "„Mit … anmelden“ auf dem Anmeldebildschirm",
+  "ssoMatchIdenticalUsernames": "Gleiche Benutzernamen zuordnen",
+  "ssoWhoeverHasSameUsername": "Wer beim Anbieter denselben Benutzernamen hat, wird ohne vorheriges Verknüpfen angemeldet. Nur einschalten, wenn dort niemand Fremdes Konten anlegen kann.",
+  "kioskShowTopic": "Nach Themen anzeigen",
+  "kioskShowPerson": "Nach Personen anzeigen",
+  "kioskShowNoPhotos": "Keine Fotos zeigen",
+  "kioskShowPhotosWhenNobody": "Fotos zeigen, wenn niemand tippt",
+  "kioskCloseWallDisplay": "Wandanzeige beenden",
+  "kioskTodayWhat": "🎂 Heute: {what}",
+  "@kioskTodayWhat": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kioskNothingPlanned": "Nichts geplant",
+  "kioskChoresRoutines": "Ämter & Routinen",
+  "kioskNoChoresYet": "Noch keine Ämter",
+  "kioskNothingBuy": "Nichts zu besorgen ✓",
+  "kioskCountMore": "… und {count} mehr",
+  "@kioskCountMore": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kioskMealsToday": "Essen heute",
+  "kioskNothingPlannedYet": "Noch nichts geplant",
+  "kioskFreeToday": "Heute frei 🎈",
+  "kioskCountMore2": "… und {count} weitere",
+  "@kioskCountMore2": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "notesNotesFamily": "Notizen für die Familie",
+  "notesAddNote": "Notiz anlegen",
+  "notesNoNotesYetExample": "Noch keine Notizen. Zum Beispiel: WLAN für Gäste, Infos für den Babysitter, wann die Müllabfuhr kommt.",
+  "notesNewNote": "Neue Notiz",
+  "notesEditNote": "Notiz bearbeiten",
+  "notesEGWiFi": "z. B. WLAN für Gäste",
+  "notesPinStartPage": "Auf der Startseite anheften",
+  "notesWholeFamilyGuestsToo": "Ganze Familie (auch Gäste)",
+  "choresNewChore": "Neues Amt",
+  "choresEditChore": "Amt bearbeiten",
+  "choresWhatNeedsDoing": "Was ist zu tun?",
+  "choresEGEmptyDishwasher": "z. B. Spülmaschine ausräumen",
+  "choresHowOften": "Wie oft?",
+  "choresWho": "Wer?",
+  "choresNobodySelectedAnyoneMay": "Niemand ausgewählt: jeder darf es übernehmen.",
+  "choresOrderOrderWhenTaking": "Reihenfolge = Reihenfolge beim Abwechseln.",
+  "choresTakeTurns": "Abwechseln",
+  "choresEachDaySSomeone": "Jeden Tag ist jemand anderes dran",
+  "choresEGDuringHolidays": "z. B. in den Ferien",
+  "choresNoChoresYetDecide": "Noch keine Ämter.\nLegt fest, wer was im Haushalt übernimmt – mit Punkten für die Kinder.",
+  "choresNoChoresYetAsk": "Noch keine Ämter – frag deine Eltern!",
+  "choresCreateFirstChore": "Erstes Amt anlegen",
+  "choresWaitingConfirmation": "Wartet auf deine Bestätigung",
+  "choresNameWishesTitle": "{name} wünscht sich {title}",
+  "@choresNameWishesTitle": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      },
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresPointsPoints": "+{points} Punkte",
+  "@choresPointsPoints": {
+    "placeholders": {
+      "points": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresPointsPointsBalanceBalance": "{points} Punkte · Kontostand ⭐ {balance}",
+  "@choresPointsPointsBalanceBalance": {
+    "placeholders": {
+      "points": {
+        "type": "Object?"
+      },
+      "balance": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresDecline": "Ablehnen",
+  "choresWhoDid": "Wer hat es erledigt?",
+  "choresGreatParentsWillConfirm": "Super! Deine Eltern bestätigen die Punkte. ⭐",
+  "choresWeek": "diese Woche",
+  "choresWaitingConfirmation2": "wartet auf Bestätigung",
+  "choresDone": "erledigt{by}",
+  "@choresDone": {
+    "placeholders": {
+      "by": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresName": " von {name}",
+  "@choresName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresOnce": "Einmalig",
+  "choresDate": "Am {date}",
+  "@choresDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresOnceWeek": "Einmal pro Woche",
+  "choresTakingTurnsNames": "abwechselnd {names}",
+  "@choresTakingTurnsNames": {
+    "placeholders": {
+      "names": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueDueNow": "jetzt fällig",
+  "dueCanStillDone": "noch nachholbar",
+  "dueNotRecorded": "nicht eingetragen",
+  "duePeriodOver": "Zeitraum vorbei",
+  "dueAddCountEarlierWhat": "{count} frühere {what} nachtragen",
+  "@dueAddCountEarlierWhat": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueCheckups": "Vorsorgen",
+  "dueVaccinations": "Impfungen",
+  "dueDoneDateUnknown": "Erledigt · Datum unbekannt",
+  "dueRecommendedDateNote": "Empfohlen ab {date}{note}",
+  "@dueRecommendedDateNote": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      },
+      "note": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueAppointmentDateTime": "Termin am {date}{time}",
+  "@dueAppointmentDateTime": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      },
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueVaccination": "Impfung: {title}",
+  "@dueVaccination": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueDoneToday": "Heute erledigt",
+  "dueOtherDateMeasurementsNote": "Anderes Datum, Messwerte, Notiz …",
+  "dueAddAppointment": "Termin eintragen …",
+  "dueDoneDateUnknown2": "Erledigt, Datum unbekannt",
+  "dueDoneDate": "Erledigt am {date}",
+  "@dueDoneDate": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueChangeAppointment": "Termin ändern …",
+  "dueCancelAppointment": "Termin absagen",
+  "dueWhatCanceled": "„{what}“ abgesagt",
+  "@dueWhatCanceled": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "dueAddEarlierCheckups": "Frühere Vorsorgen nachtragen",
+  "dueAddEarlierVaccinations": "Frühere Impfungen nachtragen",
+  "dueRecordDoneWithoutExact": "Als erledigt eintragen, ohne genaues Datum. Das Datum lässt sich später einzeln ergänzen (z. B. aus dem gelben Heft oder dem Impfpass).",
+  "dueAddCount": "{count} eintragen",
+  "@dueAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  }
 }

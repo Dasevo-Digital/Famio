@@ -18,6 +18,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import '../format.dart';
 
 const _collections = {
   Collections.pantryItems,
@@ -398,9 +399,8 @@ class _PantryEditorState extends State<_PantryEditor> {
   late var _place = widget.initial.place;
   late DateTime? _bestBefore = widget.initial.bestBefore;
 
-  static String _num(double v) => v == v.roundToDouble()
-      ? v.toInt().toString()
-      : v.toString().replaceAll('.', ',');
+  static String _num(double v) =>
+      v == v.roundToDouble() ? v.toInt().toString() : decimalMark(v.toString());
 
   static double? _parse(String t) =>
       double.tryParse(t.trim().replaceAll(',', '.'));
@@ -583,11 +583,7 @@ class _PantryEditorState extends State<_PantryEditor> {
 
 /// Full screen camera that returns the first product barcode it sees.
 class BarcodeScanScreen extends StatefulWidget {
-  const BarcodeScanScreen({
-    super.key,
-    this.qr = false,
-    this.title,
-  });
+  const BarcodeScanScreen({super.key, this.qr = false, this.title});
 
   /// Scan QR codes (e.g. an invitation) instead of product barcodes.
   final bool qr;

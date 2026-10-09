@@ -334,9 +334,8 @@ class _MedicationCard extends StatelessWidget {
   }
 }
 
-String _amount(double v) => v == v.roundToDouble()
-    ? v.toInt().toString()
-    : v.toStringAsFixed(1).replaceAll('.', ',');
+String _amount(double v) =>
+    v == v.roundToDouble() ? v.toInt().toString() : decimal(v);
 
 Future<void> showMedicationEditor(
   BuildContext context, {

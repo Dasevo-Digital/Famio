@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app_state.dart';
 import '../platform/browser.dart';
 import '../design/palette.dart';
+import '../format.dart';
 
 /// A file picked by the user, ready for upload.
 class PickedFile {
@@ -210,5 +211,5 @@ IconData fileIcon(String mime) => switch (mime) {
 String fileSizeLabel(int bytes) {
   if (bytes < 1024) return '$bytes B';
   if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  return '${(bytes / (1024 * 1024)).toStringAsFixed(1).replaceAll('.', ',')} MB';
+  return '${decimal(bytes / (1024 * 1024))} MB';
 }

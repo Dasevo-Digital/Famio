@@ -21,6 +21,7 @@ import 'pregnancy_screens.dart';
 import 'timetable_view.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import '../format.dart';
 
 part 'kids/child_editor.dart';
 part 'kids/child_screen.dart';
@@ -52,10 +53,10 @@ Color _childColor(BuildContext context, Child child) => child.color == null
 
 String _months(double m) {
   if (m < 36) {
-    return '${m % 1 == 0 ? m.toInt() : m.toStringAsFixed(1).replaceAll('.', ',')} Mon.';
+    return tr.kidsAgeMonthsShort(decimal(m, m % 1 == 0 ? 0 : 1));
   }
   final years = m / 12;
-  return '${years % 1 == 0 ? years.toInt() : years.toStringAsFixed(1).replaceAll('.', ',')} J.';
+  return tr.kidsAgeYearsShort(decimal(years, years % 1 == 0 ? 0 : 1));
 }
 
 /// All children of the family.

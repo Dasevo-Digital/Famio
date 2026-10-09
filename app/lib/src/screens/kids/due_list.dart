@@ -18,17 +18,17 @@ class _DueList extends StatelessWidget {
     final theme = Theme.of(context);
     final c = FamioColors.of(context);
     (String, Color) look(DueState s) => switch (s) {
-      DueState.done => ('erledigt', const Color(0xFF2A9D6E)),
-      DueState.due => ('jetzt fällig', theme.colorScheme.error),
-      DueState.late => ('noch nachholbar', const Color(0xFFE8703A)),
+      DueState.done => (tr.commonDoneLower, const Color(0xFF2A9D6E)),
+      DueState.due => (tr.dueDueNow, theme.colorScheme.error),
+      DueState.late => (tr.dueCanStillDone, const Color(0xFFE8703A)),
       DueState.missed => (
         kind == ChildEntryKind.vaccination
-            ? 'nicht eingetragen'
-            : 'Zeitraum vorbei',
+            ? tr.dueNotRecorded
+            : tr.duePeriodOver,
         c.inkSoft,
       ),
-      DueState.upcoming => ('demnächst', c.inkSoft),
-      DueState.planned => ('Termin', const Color(0xFF3587D6)),
+      DueState.upcoming => (tr.pregnancySoon, c.inkSoft),
+      DueState.planned => (tr.commonEvent, const Color(0xFF3587D6)),
     };
     // Hide far-future items for small children to keep the list short.
     final horizon = DateTime.now().add(const Duration(days: 730));
@@ -48,7 +48,12 @@ class _DueList extends StatelessWidget {
             child: TextButton.icon(
               icon: const Icon(AppIcons.checkSquareOffset, size: 18),
               label: Text(
-                '${past.length} frühere ${kind == ChildEntryKind.checkup ? 'Vorsorgen' : 'Impfungen'} nachtragen',
+                tr.dueAddCountEarlierWhat(
+                  past.length,
+                  kind == ChildEntryKind.checkup
+                      ? tr.dueCheckups
+                      : tr.dueVaccinations,
+                ),
               ),
               onPressed: () => _markPast(context, child, kind, past),
             ),
@@ -97,12 +102,17 @@ class _DueList extends StatelessWidget {
                               ? _appointmentLabel(d.appointment!)
                               : d.state == DueState.done
                               ? d.entry!.dateUnknown
-                                    ? 'Erledigt · Datum unbekannt'
-                                    : 'Am ${_date.format(d.entry!.date)}'
+                                    ? tr.dueDoneDateUnknown
+                                    : tr.kidsDate(_date.format(d.entry!.date))
                               : kind == ChildEntryKind.checkup
                               ? '${d.subtitle} · ${DateFormat.yMd(appLanguage).format(d.from)} – ${DateFormat.yMd(appLanguage).format(d.to)}'
-                              : 'Empfohlen ab ${DateFormat.yMd(appLanguage).format(d.from)}'
-                                    '${vaccinationById(d.id)?.note.isNotEmpty ?? false ? ' · ${vaccinationById(d.id)!.note}' : ''}',
+                              : tr.dueRecommendedDateNote(
+                                  DateFormat.yMd(appLanguage).format(d.from),
+                                  vaccinationById(d.id)?.note.isNotEmpty ??
+                                          false
+                                      ? ' · ${vaccinationById(d.id)!.note}'
+                                      : '',
+                                ),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
@@ -135,9 +145,10 @@ class _DueList extends StatelessWidget {
 }
 
 /// "Termin am 7. Oktober 2026 um 9:30 Uhr".
-String _appointmentLabel(ChildEntry e) =>
-    'Termin am ${_date.format(e.date)}'
-    '${e.time == null ? '' : ' um ${e.time} Uhr'}';
+String _appointmentLabel(ChildEntry e) => tr.dueAppointmentDateTime(
+  _date.format(e.date),
+  e.time == null ? '' : tr.remindersTime(e.time),
+);
 
 /// What to do with a check-up or vaccination: mark as done today, on
 /// another day or without a known date, or book an appointment; done ones
@@ -162,7 +173,7 @@ Future<void> showDueActions(
     );
   }
   final engine = AppScope.engineOf(context);
-  final title = item.isCheckup ? item.title : 'Impfung: ${item.title}';
+  final title = item.isCheckup ? item.title : tr.dueVaccination(item.title);
   final choice = await showModalBottomSheet<String>(
     context: context,
     // Above the floating navigation bar.
@@ -179,25 +190,25 @@ Future<void> showDueActions(
             const SizedBox(height: 16),
             FilledButton.icon(
               icon: const Icon(AppIcons.check),
-              label: const Text('Heute erledigt'),
+              label: Text(tr.dueDoneToday),
               onPressed: () => Navigator.pop(context, 'today'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(AppIcons.calendarBlank),
-              label: const Text('Anderes Datum, Messwerte, Notiz …'),
+              label: Text(tr.dueOtherDateMeasurementsNote),
               onPressed: () => Navigator.pop(context, 'editor'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(AppIcons.clock),
-              label: const Text('Termin eintragen …'),
+              label: Text(tr.dueAddAppointment),
               onPressed: () => Navigator.pop(context, 'appointment'),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context, 'unknown'),
-              child: const Text('Erledigt, Datum unbekannt'),
+              child: Text(tr.dueDoneDateUnknown2),
             ),
           ],
         ),
@@ -228,7 +239,7 @@ Future<void> showDueActions(
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${item.isCheckup ? item.id : item.title} erledigt'),
+        content: Text(tr.kidsWhatDone(item.isCheckup ? item.id : item.title)),
       ),
     );
   }
@@ -245,7 +256,7 @@ Future<void> _showAppointmentActions(
   final today = DateUtils.dateOnly(DateTime.now());
   // Done on the appointment day, unless it still lies ahead.
   final doneOn = appointment.date.isAfter(today) ? today : appointment.date;
-  final title = item.isCheckup ? item.title : 'Impfung: ${item.title}';
+  final title = item.isCheckup ? item.title : tr.dueVaccination(item.title);
   final choice = await showModalBottomSheet<String>(
     context: context,
     useRootNavigator: true,
@@ -266,21 +277,21 @@ Future<void> _showAppointmentActions(
               icon: const Icon(AppIcons.check),
               label: Text(
                 doneOn == today
-                    ? 'Heute erledigt'
-                    : 'Erledigt am ${DateFormat.Md(appLanguage).format(doneOn)}',
+                    ? tr.dueDoneToday
+                    : tr.dueDoneDate(DateFormat.Md(appLanguage).format(doneOn)),
               ),
               onPressed: () => Navigator.pop(context, 'done'),
             ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               icon: const Icon(AppIcons.calendarBlank),
-              label: const Text('Termin ändern …'),
+              label: Text(tr.dueChangeAppointment),
               onPressed: () => Navigator.pop(context, 'editor'),
             ),
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => Navigator.pop(context, 'cancel'),
-              child: const Text('Termin absagen'),
+              child: Text(tr.dueCancelAppointment),
             ),
           ],
         ),
@@ -299,7 +310,7 @@ Future<void> _showAppointmentActions(
     case 'cancel':
       deleteWithUndo(
         context,
-        message: '„${_appointmentLabel(appointment)}“ abgesagt',
+        message: tr.dueWhatCanceled(_appointmentLabel(appointment)),
         collections: const {Collections.childEntries},
         delete: () => engine.deleteChildEntry(appointment.id),
       );
@@ -317,7 +328,7 @@ Future<void> _showAppointmentActions(
       );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${item.isCheckup ? item.id : item.title} erledigt'),
+          content: Text(tr.kidsWhatDone(item.isCheckup ? item.id : item.title)),
         ),
       );
   }
@@ -338,17 +349,13 @@ Future<void> _markPast(
         scrollable: true,
         title: Text(
           kind == ChildEntryKind.checkup
-              ? 'Frühere Vorsorgen nachtragen'
-              : 'Frühere Impfungen nachtragen',
+              ? tr.dueAddEarlierCheckups
+              : tr.dueAddEarlierVaccinations,
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Als erledigt eintragen, ohne genaues Datum. Das Datum lässt '
-              'sich später einzeln ergänzen (z. B. aus dem gelben Heft oder '
-              'dem Impfpass).',
-            ),
+            Text(tr.dueRecordDoneWithoutExact),
             const SizedBox(height: 8),
             for (final d in items)
               CheckboxListTile(
@@ -368,11 +375,11 @@ Future<void> _markPast(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text('${selected.length} eintragen'),
+            child: Text(tr.dueAddCount(selected.length)),
           ),
         ],
       ),

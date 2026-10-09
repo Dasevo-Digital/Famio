@@ -1,17 +1,23 @@
 part of '../kids_screens.dart';
 
 enum _Tab {
-  timeline('Zeitstrahl'),
-  log('Protokoll'),
-  milestones('Meilensteine'),
-  checkups('Vorsorge'),
-  vaccinations('Impfungen'),
-  growth('Wachstum'),
-  timetable('Stundenplan');
+  timeline,
+  log,
+  milestones,
+  checkups,
+  vaccinations,
+  growth,
+  timetable;
 
-  const _Tab(this.label);
-
-  final String label;
+  String get label => switch (this) {
+    timeline => tr.kidsTabTimeline,
+    log => tr.kidsTabLog,
+    milestones => tr.kidsTabMilestones,
+    checkups => tr.kidsTabCheckups,
+    vaccinations => tr.kidsTabVaccinations,
+    growth => tr.kidsTabGrowth,
+    timetable => tr.commonTimetable,
+  };
 }
 
 /// One child's development: timeline, milestones, check-ups, vaccinations,
@@ -35,10 +41,10 @@ class _ChildScreenState extends State<ChildScreen> {
       builder: (context, engine) {
         final child = engine.child(widget.childId);
         if (child == null) {
-          return const SectionPage(
+          return SectionPage(
             section: FamioSection.kids,
-            title: 'Kind',
-            body: Center(child: Text('Dieses Kind gibt es nicht mehr.')),
+            title: tr.commonChild,
+            body: Center(child: Text(tr.kidsChildNoLongerExists)),
           );
         }
         final entries = engine.childEntries(child.id);
@@ -50,25 +56,27 @@ class _ChildScreenState extends State<ChildScreen> {
         return SectionPage(
           section: FamioSection.kids,
           title: child.name,
-          subtitle:
-              '${ageLabel(child)} · geboren am ${_date.format(child.birthDate)}',
+          subtitle: tr.kidsAgeBornBorn2(
+            ageLabel(child),
+            _date.format(child.birthDate),
+          ),
           actions: [
             BubbleButton(
               icon: AppIcons.siren,
-              tooltip: 'Notfall',
+              tooltip: tr.kidsEmergencyTitle,
               color: Theme.of(context).colorScheme.error,
               onPressed: () => showEmergency(context, child),
             ),
             const SizedBox(width: 8),
             BubbleButton(
               icon: AppIcons.pencilSimple,
-              tooltip: 'Bearbeiten',
+              tooltip: tr.commonEdit,
               onPressed: () => showChildEditor(context, existing: child),
             ),
           ],
           floating: AddButton(
             color: color,
-            tooltip: 'Erinnerung festhalten',
+            tooltip: tr.kidsCaptureMemory,
             icon: AppIcons.sparkle,
             onPressed: () => showEntryEditor(
               context,
@@ -121,17 +129,13 @@ class _ChildScreenState extends State<ChildScreen> {
                     child: child,
                     items: checkupPlan(child, entries),
                     kind: ChildEntryKind.checkup,
-                    hint:
-                        'Zeiträume laut gelbem Kinderuntersuchungsheft. Den Termin '
-                        'am besten früh beim Kinderarzt vereinbaren.',
+                    hint: tr.kidsPeriodsGermanChildHealth,
                   ),
                   _Tab.vaccinations => _DueList(
                     child: child,
                     items: vaccinationPlan(child, entries),
                     kind: ChildEntryKind.vaccination,
-                    hint:
-                        'Orientierung nach dem STIKO-Impfkalender (Stand 2025). '
-                        'Maßgeblich sind Kinderarzt und Impfpass.',
+                    hint: tr.kidsBasedStikoVaccinationCalendar,
                   ),
                   _Tab.growth => _GrowthView(
                     child: child,
@@ -188,22 +192,19 @@ class _TimelineItem {
 
 String _entryTitle(ChildEntry e) => switch (e.kind) {
   ChildEntryKind.milestone => milestoneById(e.refId)?.title ?? e.title,
-  ChildEntryKind.checkup =>
-    '${checkupById(e.refId)?.title ?? e.refId} erledigt',
+  ChildEntryKind.checkup => tr.kidsWhatDone(
+    checkupById(e.refId)?.title ?? e.refId,
+  ),
   ChildEntryKind.vaccination => () {
     final v = vaccinationById(e.refId);
-    return v == null ? e.title : 'Impfung: ${v.title} (${v.dose})';
+    return v == null ? e.title : tr.kidsVaccinationTitleDose(v.title, v.dose);
   }(),
   ChildEntryKind.measurement => [
     if (e.heightCm != null) '${_num(e.heightCm!)} cm',
     if (e.weightKg != null) '${_num(e.weightKg!)} kg',
-    if (e.headCm != null) 'Kopf ${_num(e.headCm!)} cm',
+    if (e.headCm != null) tr.kidsHeadSizeCm(_num(e.headCm!)),
   ].join(' · '),
   ChildEntryKind.memory => e.title,
 };
 
-String _num(double v) =>
-    (v % 1 == 0 ? v.toInt().toString() : v.toStringAsFixed(1)).replaceAll(
-      '.',
-      ',',
-    );
+String _num(double v) => decimal(v, v % 1 == 0 ? 0 : 1);

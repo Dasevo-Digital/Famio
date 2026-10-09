@@ -8,8 +8,8 @@ class PlacesScreen extends StatelessWidget {
     final me = AppScope.of(context).me!;
     return SectionPage(
       section: FamioSection.location,
-      title: 'Orte',
-      subtitle: 'Ankommen und Losgehen melden',
+      title: tr.remindersPlaces,
+      subtitle: tr.placesReportArrivalsDepartures,
       // This is an extended FAB rather than [AddButton]; it needs the same
       // clearance above the phone navigation bar.
       floating: Padding(
@@ -17,7 +17,7 @@ class PlacesScreen extends StatelessWidget {
         child: FloatingActionButton.extended(
           heroTag: 'add-place',
           icon: const Icon(AppIcons.plus),
-          label: const Text('Ort'),
+          label: Text(tr.commonPlace),
           onPressed: () => _edit(context, null),
         ),
       ),
@@ -29,9 +29,7 @@ class PlacesScreen extends StatelessWidget {
             return EmptyHint(
               icon: AppIcons.mapPin,
               color: FamioColors.of(context).strong(FamioSection.location),
-              text:
-                  'Noch keine Orte. Zuhause, Schule, Kita, Sportverein: '
-                  'Famio meldet, wer angekommen oder losgegangen ist.',
+              text: tr.placesNoPlacesYetHome,
             );
           }
           return ListView(
@@ -51,8 +49,12 @@ class PlacesScreen extends StatelessWidget {
                   ),
                   title: Text(p.name),
                   subtitle: Text(
-                    '${p.radius.round()} m Umkreis'
-                    '${p.notifyMemberIds.contains(me.id) ? ' · du wirst benachrichtigt' : ''}',
+                    tr.placesRadiusMRadiusNotify(
+                      p.radius.round(),
+                      p.notifyMemberIds.contains(me.id)
+                          ? tr.placesYouNotified
+                          : '',
+                    ),
                   ),
                   onTap: () => _edit(context, p),
                 ),
@@ -107,13 +109,9 @@ class _PlaceEditorState extends State<PlaceEditor> {
     final state = AppScope.read(context);
     final mine = state.engine!.memberLocations[state.me!.id];
     if (mine == null || !mine.hasPosition) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Keine aktuelle Position von dir – tippe stattdessen auf die Karte.',
-          ),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.placesNoCurrentPositionYours)));
       return;
     }
     final point = LatLng(mine.latitude!, mine.longitude!);
@@ -126,11 +124,9 @@ class _PlaceEditorState extends State<PlaceEditor> {
     final me = AppScope.read(context).me!;
     final center = _center;
     if (_name.text.trim().isEmpty || center == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bitte einen Namen eingeben und auf die Karte tippen'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.placesPleaseEnterNameTap)));
       return;
     }
     final notify = {...?widget.place?.notifyMemberIds};
@@ -156,11 +152,11 @@ class _PlaceEditorState extends State<PlaceEditor> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Löschen'),
+            child: Text(tr.commonDelete),
           ),
         ],
       ),
@@ -184,9 +180,9 @@ class _PlaceEditorState extends State<PlaceEditor> {
             : null);
     return SectionPage(
       section: FamioSection.location,
-      title: widget.place == null ? 'Neuer Ort' : 'Ort bearbeiten',
+      title: widget.place == null ? tr.placesNewPlace : tr.placesEditPlace,
       actions: [
-        ColorButton(label: 'Speichern', color: accent, onPressed: _save),
+        ColorButton(label: tr.commonSave, color: accent, onPressed: _save),
       ],
       bodyPadding: EdgeInsets.zero,
       body: ListView(
@@ -196,14 +192,14 @@ class _PlaceEditorState extends State<PlaceEditor> {
             controller: _name,
             autofocus: widget.place == null,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(
-              labelText: 'Name',
-              hintText: 'z. B. Schule',
+            decoration: InputDecoration(
+              labelText: tr.commonName,
+              hintText: tr.placesEGSchool,
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            'Auf die Karte tippen, um die Mitte festzulegen.',
+            tr.placesTapMapSetCenter,
             style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -239,11 +235,11 @@ class _PlaceEditorState extends State<PlaceEditor> {
             alignment: Alignment.centerLeft,
             child: TextButton.icon(
               icon: const Icon(AppIcons.locate),
-              label: const Text('Meine Position'),
+              label: Text(tr.placesMyPosition),
               onPressed: _useMyPosition,
             ),
           ),
-          Text('Umkreis: ${_radius.round()} m'),
+          Text(tr.placesRadiusRadiusM(_radius.round())),
           Slider(
             // Logarithmic: fine steps for small, coarse for large places.
             value: math.log(_radius),
@@ -255,8 +251,8 @@ class _PlaceEditorState extends State<PlaceEditor> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             secondary: const Icon(AppIcons.bell),
-            title: const Text('Mich benachrichtigen'),
-            subtitle: const Text('Wenn jemand ankommt oder losgeht'),
+            title: Text(tr.placesNotifyMe),
+            subtitle: Text(tr.placesWhenSomeoneArrivesLeaves),
             value: _notify,
             onChanged: (v) => setState(() => _notify = v),
           ),
@@ -266,7 +262,7 @@ class _PlaceEditorState extends State<PlaceEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.trash),
-                label: const Text('Ort löschen'),
+                label: Text(tr.placesDeletePlace),
                 style: TextButton.styleFrom(foregroundColor: c.danger),
                 onPressed: _delete,
               ),

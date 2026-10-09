@@ -3,24 +3,37 @@ import 'package:famio_client/famio_client.dart';
 import '../design/palette.dart';
 import 'family_data.dart';
 import 'family_extras.dart';
+import '../l10n.dart';
 
 /// What a search hit is.
 enum SearchKind {
-  event(FamioSection.calendar, 'Termine'),
-  task(FamioSection.tasks, 'Aufgaben'),
-  shopping(FamioSection.shopping, 'Einkauf'),
-  recipe(FamioSection.meals, 'Rezepte'),
-  document(FamioSection.documents, 'Dokumente'),
-  contact(FamioSection.contacts, 'Kontakte'),
-  chat(FamioSection.chat, 'Chat'),
-  pantry(FamioSection.shopping, 'Vorrat'),
-  medication(FamioSection.health, 'Medikamente'),
-  note(FamioSection.home, 'Pinnwand');
+  event(FamioSection.calendar),
+  task(FamioSection.tasks),
+  shopping(FamioSection.shopping),
+  recipe(FamioSection.meals),
+  document(FamioSection.documents),
+  contact(FamioSection.contacts),
+  chat(FamioSection.chat),
+  pantry(FamioSection.shopping),
+  medication(FamioSection.health),
+  note(FamioSection.home);
 
-  const SearchKind(this.section, this.label);
+  const SearchKind(this.section);
+
+  String get label => switch (this) {
+    event => tr.commonEvents,
+    task => tr.sectionTasks,
+    shopping => tr.sectionShopping,
+    recipe => tr.mealsRecipes,
+    document => tr.sectionDocuments,
+    contact => tr.sectionContacts,
+    chat => tr.sectionChat,
+    pantry => tr.conflictsPantry,
+    medication => tr.commonMedications,
+    note => tr.commonPinboard,
+  };
 
   final FamioSection section;
-  final String label;
 }
 
 class SearchHit {
@@ -109,7 +122,7 @@ List<SearchHit> searchFamily(
       SearchHit(
         kind: kind,
         id: id,
-        title: title.isEmpty ? '(ohne Titel)' : title,
+        title: title.isEmpty ? tr.commonUntitled : title,
         detail: detail,
         at: at,
         score: score,
@@ -138,7 +151,7 @@ List<SearchHit> searchFamily(
         t.id,
         t.title,
         [t.notes],
-        detail: t.done ? 'erledigt' : '',
+        detail: t.done ? tr.commonDoneLower : '',
         at: t.due ?? t.createdAt,
       );
     }

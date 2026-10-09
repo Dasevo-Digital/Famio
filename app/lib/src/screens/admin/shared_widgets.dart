@@ -10,22 +10,24 @@ class DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    final device = session.device ?? 'Unbekanntes Gerät';
+    final device = session.device ?? tr.adminUnknownDevice;
     final mobile = RegExp('android|ios', caseSensitive: false).hasMatch(device);
     return ListTile(
       leading: Icon(mobile ? AppIcons.smartphone : AppIcons.laptop),
       title: Text(_deviceLabel(device)),
       subtitle: Text(
         session.current
-            ? 'Dieses Gerät'
-            : 'Zuletzt aktiv ${_ago(session.lastSeen)} · angemeldet '
-                  '${DateFormat.yMd(appLanguage).format(session.createdAt)}',
+            ? tr.settingsThisDevice
+            : tr.adminLastActiveSeenSigned(
+                _ago(session.lastSeen),
+                DateFormat.yMd(appLanguage).format(session.createdAt),
+              ),
       ),
       trailing: onSignOut == null
           ? null
           : IconButton(
               icon: Icon(AppIcons.signOut, color: c.danger),
-              tooltip: 'Abmelden',
+              tooltip: tr.settingsSignOut,
               onPressed: onSignOut,
             ),
     );
@@ -64,7 +66,7 @@ class AvatarColorPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Farbe', style: TextStyle(color: c.inkSoft)),
+        Text(tr.kidsColor, style: TextStyle(color: c.inkSoft)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 10,
@@ -124,29 +126,26 @@ class ApiFutureView<T> extends StatelessWidget {
         color: FamioColors.of(context).strong(FamioSection.settings),
         text: error is ApiError
             ? error.message
-            : 'Server nicht erreichbar. Die Verwaltung braucht eine Verbindung.',
-        action: TextButton(
-          onPressed: onRetry,
-          child: const Text('Erneut versuchen'),
-        ),
+            : tr.adminServerNotReachableAdministration,
+        action: TextButton(onPressed: onRetry, child: Text(tr.commonRetry)),
       );
     }
     return const Center(child: CircularProgressIndicator());
   }
 }
 
-String _devices(int n) => n == 1 ? '1 Gerät' : '$n Geräte';
+String _devices(int n) => tr.adminDeviceCount(n);
 
 /// "vor 5 Min." style relative time.
 String _ago(DateTime t, {bool suffix = true}) {
   final d = DateTime.now().difference(t);
-  final text = switch (d) {
-    _ when d.inMinutes < 1 => suffix ? 'gerade eben' : 'eben',
-    _ when d.inHours < 1 => '${d.inMinutes} Min.',
-    _ when d.inDays < 1 => '${d.inHours} Std.',
-    _ when d.inDays < 30 => d.inDays == 1 ? '1 Tag' : '${d.inDays} Tagen',
-    _ => dayLabel(t),
-  };
-  if (d.inMinutes < 1 || d.inDays >= 30) return text;
-  return suffix ? 'vor $text' : text.replaceAll('Tagen', 'Tage');
+  if (d.inMinutes < 1) return suffix ? tr.agoJustNow : tr.agoMoment;
+  if (d.inDays >= 30) return dayLabel(t);
+  if (d.inDays >= 1) {
+    return suffix ? tr.agoDaysAgo(d.inDays) : tr.agoDays(d.inDays);
+  }
+  final text = d.inHours < 1
+      ? tr.agoMinutes(d.inMinutes)
+      : tr.agoHours(d.inHours);
+  return suffix ? tr.agoAgo(text) : text;
 }

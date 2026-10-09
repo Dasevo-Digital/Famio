@@ -76,9 +76,9 @@ class _SsoDialogState extends State<_SsoDialog> {
       );
       if (!mounted) return;
       setState(() => _apply(json));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Single Sign-On gespeichert')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.ssoSingleSignSaved)));
       Navigator.pop(context);
     } on ApiError catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -114,9 +114,7 @@ class _SsoDialogState extends State<_SsoDialog> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Beim Anbieter (z. B. Authentik: „Anwendungen → OAuth2/'
-                      'OpenID-Provider“) eine vertrauliche Anwendung anlegen '
-                      'und diese Weiterleitungs-Adresse eintragen:',
+                      tr.ssoProviderEGAuthentik,
                       style: TextStyle(color: c.inkSoft),
                     ),
                     const SizedBox(height: 6),
@@ -132,7 +130,7 @@ class _SsoDialogState extends State<_SsoDialog> {
                             ),
                           ),
                           IconButton(
-                            tooltip: 'Kopieren',
+                            tooltip: tr.commonCopy,
                             icon: const Icon(AppIcons.copy, size: 18),
                             onPressed: () => Clipboard.setData(
                               ClipboardData(text: redirect),
@@ -142,8 +140,7 @@ class _SsoDialogState extends State<_SsoDialog> {
                       )
                     else
                       Text(
-                        'Zuerst unter Einstellungen die öffentliche Adresse '
-                        'eintragen und speichern.',
+                        tr.ssoFirstEnterSavePublic,
                         style: TextStyle(color: c.danger),
                       ),
                     const SizedBox(height: 12),
@@ -151,8 +148,8 @@ class _SsoDialogState extends State<_SsoDialog> {
                       controller: _issuer,
                       keyboardType: TextInputType.url,
                       autocorrect: false,
-                      decoration: const InputDecoration(
-                        labelText: 'Anbieter-Adresse (Issuer)',
+                      decoration: InputDecoration(
+                        labelText: tr.ssoProviderAddressIssuer,
                         hintText:
                             'https://auth.example.de/application/o/famio/',
                       ),
@@ -172,7 +169,7 @@ class _SsoDialogState extends State<_SsoDialog> {
                         decoration: InputDecoration(
                           labelText: 'Client-Secret',
                           helperText: _secretSet
-                              ? 'Gespeichert – leer lassen, um es zu behalten'
+                              ? tr.ssoSavedLeaveEmptyKeep
                               : null,
                           suffixIcon: toggle,
                         ),
@@ -181,22 +178,17 @@ class _SsoDialogState extends State<_SsoDialog> {
                     const SizedBox(height: 12),
                     TextField(
                       controller: _label,
-                      decoration: const InputDecoration(
-                        labelText: 'Name auf dem Knopf',
+                      decoration: InputDecoration(
+                        labelText: tr.ssoNameButton,
                         hintText: 'Authentik',
-                        helperText:
-                            '„Mit … anmelden“ auf dem Anmeldebildschirm',
+                        helperText: tr.ssoSignSignScreen,
                       ),
                     ),
                     const SizedBox(height: 8),
                     SwitchListTile(
                       contentPadding: EdgeInsets.zero,
-                      title: const Text('Gleiche Benutzernamen zuordnen'),
-                      subtitle: const Text(
-                        'Wer beim Anbieter denselben Benutzernamen hat, wird '
-                        'ohne vorheriges Verknüpfen angemeldet. Nur einschalten, '
-                        'wenn dort niemand Fremdes Konten anlegen kann.',
-                      ),
+                      title: Text(tr.ssoMatchIdenticalUsernames),
+                      subtitle: Text(tr.ssoWhoeverHasSameUsername),
                       value: _match,
                       onChanged: (v) => setState(() => _match = v),
                     ),
@@ -213,15 +205,15 @@ class _SsoDialogState extends State<_SsoDialog> {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: c.danger),
             onPressed: _busy ? null : _remove,
-            child: const Text('Entfernen'),
+            child: Text(tr.commonRemove),
           ),
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
         FilledButton(
           onPressed: _busy || _loading || _redirect == null ? null : _save,
-          child: const Text('Speichern'),
+          child: Text(tr.commonSave),
         ),
       ],
     );

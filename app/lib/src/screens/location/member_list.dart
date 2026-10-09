@@ -56,8 +56,7 @@ class _MemberList extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(12),
             child: Text(
-              'Tipp: Lege Orte wie Zuhause oder Schule an (oben rechts) – '
-              'dann meldet Famio, wer angekommen oder losgegangen ist.',
+              tr.locationTipAddPlacesLike,
               style: theme.textTheme.bodySmall,
             ),
           ),
@@ -106,7 +105,7 @@ class _MemberTile extends StatelessWidget {
         [
           sharingLabel(l, place),
           if (l?.battery != null && l!.state != SharingState.paused)
-            '${l.battery} % Akku',
+            tr.locationBatteryBattery(l.battery),
         ].join(' · '),
         style: warn ? TextStyle(color: c.danger) : null,
       ),
@@ -133,22 +132,25 @@ class _MemberTile extends StatelessWidget {
               },
               itemBuilder: (_) => [
                 if (canHistory)
-                  const PopupMenuItem(value: 'history', child: Text('Verlauf')),
+                  PopupMenuItem(
+                    value: 'history',
+                    child: Text(tr.pregnancyHistory),
+                  ),
                 if (canManage && l != null && l.state != SharingState.paused)
-                  const PopupMenuItem(value: 'pause', child: Text('Pausieren')),
+                  PopupMenuItem(value: 'pause', child: Text(tr.locationPause)),
                 if (canManage && l?.state == SharingState.paused)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'resume',
-                    child: Text('Fortsetzen'),
+                    child: Text(tr.locationResume),
                   ),
                 if (canAsk && !isMe) ...[
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'checkin',
-                    child: Text('Um Check-in bitten'),
+                    child: Text(tr.locationAskCheck),
                   ),
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'ring',
-                    child: Text('Handy klingeln lassen'),
+                    child: Text(tr.locationRingPhone),
                   ),
                 ],
               ],
@@ -162,7 +164,7 @@ class _MemberTile extends StatelessWidget {
     try {
       await AppScope.read(context).engine!.api.requestCheckIn(member.id);
       messenger.showSnackBar(
-        SnackBar(content: Text('${member.displayName} wurde gefragt.')),
+        SnackBar(content: Text(tr.locationNameWasAsked(member.displayName))),
       );
     } on ApiError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
@@ -182,11 +184,8 @@ class _MemberTile extends StatelessWidget {
         SnackBar(
           content: Text(
             reach == null || reach.reachable
-                ? '${member.displayName}s Handy klingelt eine halbe Minute.'
-                : 'Gesendet – aber ${member.displayName}s Handy empfängt '
-                      'gerade keine Famio-Benachrichtigungen. Dort unter '
-                      'Einstellungen → Benachrichtigungen „Direkt über '
-                      'Famio“ einschalten.',
+                ? tr.locationNameSPhoneRings(member.displayName)
+                : tr.locationSentButNameS(member.displayName),
           ),
         ),
       );
@@ -233,26 +232,25 @@ Future<bool> showPauseDialog(
   final now = DateTime.now();
   final morning = DateTime(now.year, now.month, now.day + 1, 7);
   final choices = <String, Duration?>{
-    '1 Stunde': const Duration(hours: 1),
-    '3 Stunden': const Duration(hours: 3),
-    'Bis morgen früh': morning.difference(now),
-    'Bis zum Fortsetzen': null,
+    tr.location1Hour: const Duration(hours: 1),
+    tr.location3Hours: const Duration(hours: 3),
+    tr.locationUntilTomorrowMorning: morning.difference(now),
+    tr.locationUntilResumed: null,
   };
   await showDialog<void>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => FormDialog(
         title: stopOnThisDevice
-            ? 'Standortfreigabe beenden'
-            : 'Standort von ${member.displayName} pausieren',
-        submitLabel: stopOnThisDevice ? 'Beenden' : 'Pausieren',
+            ? tr.locationEndLocationSharing
+            : tr.locationPauseNameSLocation(member.displayName),
+        submitLabel: stopOnThisDevice ? tr.commonEnd2 : tr.locationPause,
         controllers: [code],
         fields: [
           Text(
             stopOnThisDevice
-                ? 'Auf diesem Handy wird der Standort nicht mehr geteilt. '
-                      'Dafür braucht es den Eltern-Code.'
-                : 'Dafür braucht es den Eltern-Code.',
+                ? tr.locationLocationNoLongerShared
+                : tr.locationNeedsParentsCode,
           ),
           if (!stopOnThisDevice)
             Wrap(
@@ -276,7 +274,7 @@ Future<bool> showPauseDialog(
               keyboardType: TextInputType.visiblePassword,
               decoration: InputDecoration(
                 suffixIcon: toggle,
-                labelText: 'Eltern-Code',
+                labelText: tr.adminParentsCode,
                 prefixIcon: Icon(AppIcons.lockKey),
               ),
             ),

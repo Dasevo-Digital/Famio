@@ -49,19 +49,19 @@ class _CalendarScreenState extends State<CalendarScreen> {
     final c = FamioColors.of(context);
     return SectionPage(
       section: FamioSection.calendar,
-      title: 'Kalender',
+      title: tr.sectionCalendar,
       subtitle: DateFormat.MMMMEEEEd(appLanguage).format(_selected),
       actions: [
         BubbleButton(
           icon: AppIcons.scanBarcode,
-          tooltip: 'Termine aus Foto oder Text erkennen',
+          tooltip: tr.calendarRecognizeEventsPhotoText,
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const EventImportScreen()),
           ),
         ),
         BubbleButton(
           icon: AppIcons.arrowsLeftRight,
-          tooltip: 'Mit Google/Apple Kalender verbinden',
+          tooltip: tr.calendarConnectGoogleAppleCalendar,
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(
               builder: (_) => const CalendarConnectScreen(),
@@ -70,14 +70,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         BubbleButton(
           icon: AppIcons.calendarDot,
-          tooltip: 'Heute',
+          tooltip: tr.commonToday,
           onPressed: () => _select(DateUtils.dateOnly(DateTime.now())),
         ),
         const SyncStatusIcon(),
       ],
       floating: AddButton(
         color: c.strong(FamioSection.calendar),
-        tooltip: 'Neuer Termin',
+        tooltip: tr.eventNewEvent,
         onPressed: () => showEventEditor(context, day: _selected),
       ),
       body: DataBuilder(
@@ -230,7 +230,7 @@ class _MonthGrid extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(AppIcons.caretLeft),
-                  tooltip: 'Voriger Monat',
+                  tooltip: tr.budgetPreviousMonth,
                   onPressed: () => onChangeMonth(-1),
                 ),
                 Expanded(
@@ -242,7 +242,7 @@ class _MonthGrid extends StatelessWidget {
                 ),
                 IconButton(
                   icon: const Icon(AppIcons.caretRight),
-                  tooltip: 'Nächster Monat',
+                  tooltip: tr.budgetNextMonth,
                   onPressed: () => onChangeMonth(1),
                 ),
               ],
@@ -475,7 +475,7 @@ class _DayAgenda extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Keine Termine',
+              tr.calendarNoEvents,
               style: TextStyle(color: theme.colorScheme.outline),
             ),
           ),
@@ -541,17 +541,19 @@ class _OccurrenceTile extends StatelessWidget {
                   Expanded(
                     child: Text(
                       isHolidaySource(e.sourceId)
-                          ? 'Das Bundesland stellen Admins in der '
-                                'Server-Verwaltung ein.'
+                          ? tr.calendarAdminsSetFederalState
                           : isBirthdaySource(e.sourceId)
-                          ? '${engine.birthdayOf(e.sourceId)?.headline(occurrence.start) ?? 'Geburtstag'}. '
-                                'Ändern im Profil, beim Kind oder unter Kontakte.'
+                          ? tr.calendarWhatChangeProfileChild(
+                              engine
+                                      .birthdayOf(e.sourceId)
+                                      ?.headline(occurrence.start) ??
+                                  tr.commonBirthday,
+                            )
                           : FamilyData.isCalDavSource(e.sourceId)
-                          ? 'Aus einem verbundenen Kalender – in Famio nur '
-                                'lesbar, weil Famio diese Wiederholung nicht '
-                                'genau abbilden kann. Dort ändern.'
-                          : 'Aus „${source?.name ?? 'Abo'}“ – nur lesbar. '
-                                'Änderungen im Originalkalender vornehmen.',
+                          ? tr.calendarConnectedCalendarReadOnly
+                          : tr.calendarSourceReadOnlyMake(
+                              source?.name ?? tr.calendarSubscription,
+                            ),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),
@@ -566,7 +568,7 @@ class _OccurrenceTile extends StatelessWidget {
 
   String _timeText() {
     final e = occurrence.event;
-    if (e.allDay) return 'ganztägig';
+    if (e.allDay) return tr.commonAllDayLower;
     final startsToday = DateUtils.isSameDay(occurrence.start, day);
     final endsToday = DateUtils.isSameDay(occurrence.end, day);
     final from = startsToday ? timeLabel(occurrence.start) : '…';
@@ -655,13 +657,13 @@ class _OccurrenceTile extends StatelessWidget {
             if (e.sourceId != null)
               Tooltip(
                 message: isHolidaySource(e.sourceId)
-                    ? 'Feiertag'
+                    ? tr.calendarPublicHoliday
                     : isBirthdaySource(e.sourceId)
-                    ? 'Geburtstag'
+                    ? tr.commonBirthday
                     : engine.calendarSubscription(e.sourceId)?.name ??
                           (FamilyData.isCalDavSource(e.sourceId)
-                              ? 'Verbundener Kalender'
-                              : 'Abonniert'),
+                              ? tr.calendarConnectedCalendar
+                              : tr.calendarSubscribed),
                 child: Icon(
                   isBirthdaySource(e.sourceId)
                       ? AppIcons.cake
@@ -671,7 +673,7 @@ class _OccurrenceTile extends StatelessWidget {
               )
             else if (members.isEmpty)
               Tooltip(
-                message: 'Ganze Familie',
+                message: tr.commonWholeFamily,
                 child: Icon(
                   AppIcons.usersThree,
                   color: theme.colorScheme.outline,

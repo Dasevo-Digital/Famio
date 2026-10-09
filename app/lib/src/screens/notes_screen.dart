@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 /// Paper colours of the pinboard.
 const noteColors = [
@@ -35,24 +36,21 @@ class NotesScreen extends StatelessWidget {
         final c = FamioColors.of(context);
         return SectionPage(
           section: FamioSection.home,
-          title: 'Pinnwand',
-          subtitle: 'Notizen für die Familie',
+          title: tr.commonPinboard,
+          subtitle: tr.notesNotesFamily,
           maxBodyWidth: 960,
           floating: canWrite
               ? AddButton(
                   color: c.strong(FamioSection.home),
-                  tooltip: 'Notiz anlegen',
+                  tooltip: tr.notesAddNote,
                   icon: AppIcons.plus,
                   onPressed: () => showNoteEditor(context),
                 )
               : null,
           body: notes.isEmpty
-              ? const Padding(
+              ? Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text(
-                    'Noch keine Notizen. Zum Beispiel: WLAN für Gäste, '
-                    'Infos für den Babysitter, wann die Müllabfuhr kommt.',
-                  ),
+                  child: Text(tr.notesNoNotesYetExample),
                 )
               : LayoutBuilder(
                   builder: (context, constraints) {
@@ -216,7 +214,7 @@ class _NoteEditorState extends State<_NoteEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              note == null ? 'Neue Notiz' : 'Notiz bearbeiten',
+              note == null ? tr.notesNewNote : tr.notesEditNote,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -224,9 +222,9 @@ class _NoteEditorState extends State<_NoteEditor> {
               controller: _title,
               autofocus: note == null,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Titel',
-                hintText: 'z. B. WLAN für Gäste',
+              decoration: InputDecoration(
+                labelText: tr.commonTitle,
+                hintText: tr.notesEGWiFi,
               ),
             ),
             const SizedBox(height: 12),
@@ -235,7 +233,7 @@ class _NoteEditorState extends State<_NoteEditor> {
               minLines: 3,
               maxLines: 10,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Text'),
+              decoration: InputDecoration(labelText: tr.commonText),
             ),
             const SizedBox(height: 12),
             Row(
@@ -263,28 +261,28 @@ class _NoteEditorState extends State<_NoteEditor> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Auf der Startseite anheften'),
+              title: Text(tr.notesPinStartPage),
               value: _pinned,
               onChanged: (v) => setState(() => _pinned = v),
             ),
-            const ListHeading('Wer darf sie sehen?'),
+            ListHeading(tr.commonWhoMaySee),
             RadioGroup<_Audience>(
               groupValue: _audience,
               onChanged: (v) => setState(() => _audience = v!),
               child: Column(
                 children: [
-                  const RadioListTile(
+                  RadioListTile(
                     value: _Audience.family,
-                    title: Text('Ganze Familie (auch Gäste)'),
+                    title: Text(tr.notesWholeFamilyGuestsToo),
                   ),
-                  const RadioListTile(
+                  RadioListTile(
                     value: _Audience.me,
-                    title: Text('Nur ich'),
+                    title: Text(tr.docsOnlyMe),
                   ),
                   if (others.isNotEmpty)
-                    const RadioListTile(
+                    RadioListTile(
                       value: _Audience.selected,
-                      title: Text('Ich und …'),
+                      title: Text(tr.docsMe),
                     ),
                 ],
               ),
@@ -311,7 +309,7 @@ class _NoteEditorState extends State<_NoteEditor> {
                 if (note != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     onPressed: () {
                       Navigator.pop(context);
                       deleteWithUndo(
@@ -323,7 +321,7 @@ class _NoteEditorState extends State<_NoteEditor> {
                     },
                   ),
                 const Spacer(),
-                FilledButton(onPressed: _save, child: const Text('Speichern')),
+                FilledButton(onPressed: _save, child: Text(tr.commonSave)),
               ],
             ),
           ],

@@ -108,15 +108,16 @@ class _EntryEditorState extends State<_EntryEditor> {
 
   String get _heading => switch (widget.kind) {
     ChildEntryKind.milestone =>
-      milestoneById(widget.refId)?.title ?? 'Meilenstein',
-    ChildEntryKind.checkup => checkupById(widget.refId)?.title ?? 'Vorsorge',
+      milestoneById(widget.refId)?.title ?? tr.kidsMilestone,
+    ChildEntryKind.checkup =>
+      checkupById(widget.refId)?.title ?? tr.kidsTabCheckups,
     ChildEntryKind.vaccination => () {
       final v = vaccinationById(widget.refId);
-      return v == null ? 'Impfung' : '${v.title} – ${v.dose}';
+      return v == null ? tr.commonVaccination : '${v.title} – ${v.dose}';
     }(),
-    ChildEntryKind.measurement => 'Messung',
+    ChildEntryKind.measurement => tr.kidsMeasurement,
     ChildEntryKind.memory =>
-      widget.existing == null ? 'Erinnerung festhalten' : 'Erinnerung',
+      widget.existing == null ? tr.kidsCaptureMemory : tr.kidsMemory,
   };
 
   double? _parse(TextEditingController c) =>
@@ -209,7 +210,7 @@ class _EntryEditorState extends State<_EntryEditor> {
               PillTabs<bool>(
                 values: const [false, true],
                 selected: _planned,
-                label: (p) => p ? 'Termin geplant' : 'Erledigt',
+                label: (p) => p ? tr.kidsAppointmentPlanned : tr.commonDoneCap,
                 color: color,
                 onChanged: (p) => setState(() {
                   _planned = p;
@@ -224,9 +225,9 @@ class _EntryEditorState extends State<_EntryEditor> {
                 controller: _title,
                 autofocus: widget.existing == null,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'Was ist passiert?',
-                  hintText: 'z. B. Erstes Wort: „Mama“',
+                decoration: InputDecoration(
+                  labelText: tr.kidsWhatHappened,
+                  hintText: tr.kidsEGFirstWord,
                 ),
               ),
               const SizedBox(height: 12),
@@ -236,7 +237,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: Text(
-                    'Messwerte der Untersuchung (optional)',
+                    tr.kidsMeasurementsCheckupOptional,
                     style: theme.textTheme.labelLarge,
                   ),
                 ),
@@ -248,9 +249,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Größe (cm)',
-                      ),
+                      decoration: InputDecoration(labelText: tr.kidsHeightCm),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -260,9 +259,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(
-                        labelText: 'Gewicht (kg)',
-                      ),
+                      decoration: InputDecoration(labelText: tr.kidsWeightKg),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -272,7 +269,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                       keyboardType: const TextInputType.numberWithOptions(
                         decimal: true,
                       ),
-                      decoration: const InputDecoration(labelText: 'Kopf (cm)'),
+                      decoration: InputDecoration(labelText: tr.kidsHeadCm),
                     ),
                   ),
                 ],
@@ -282,7 +279,7 @@ class _EntryEditorState extends State<_EntryEditor> {
             if (_datedItem && !_planned)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Datum unbekannt'),
+                title: Text(tr.kidsDateUnknown),
                 value: _dateUnknown,
                 onChanged: (v) => setState(() => _dateUnknown = v),
               ),
@@ -296,7 +293,9 @@ class _EntryEditorState extends State<_EntryEditor> {
                     InputChip(
                       avatar: const Icon(AppIcons.calendarBlank, size: 18),
                       label: Text(
-                        'Am ${DateFormat.yMMMMd(appLanguage).format(_date)}',
+                        tr.kidsDate(
+                          DateFormat.yMMMMd(appLanguage).format(_date),
+                        ),
                       ),
                       onPressed: () async {
                         final picked = await showDatePicker(
@@ -313,8 +312,8 @@ class _EntryEditorState extends State<_EntryEditor> {
                         avatar: const Icon(AppIcons.clock, size: 18),
                         label: Text(
                           _time == null
-                              ? 'Uhrzeit (optional)'
-                              : 'Um ${_time!.format(context)} Uhr',
+                              ? tr.kidsTimeOptional
+                              : tr.kidsTime(_time!.format(context)),
                         ),
                         onDeleted: _time == null
                             ? null
@@ -337,7 +336,7 @@ class _EntryEditorState extends State<_EntryEditor> {
               minLines: 2,
               maxLines: 5,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Notiz (optional)'),
+              decoration: InputDecoration(labelText: tr.contactsNoteOptional),
             ),
             if (allowsPhotos) ...[
               const SizedBox(height: 12),
@@ -360,7 +359,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                               top: 2,
                               child: BubbleButton(
                                 icon: AppIcons.x,
-                                tooltip: 'Foto entfernen',
+                                tooltip: tr.kidsRemovePhoto,
                                 size: 26,
                                 onPressed: () =>
                                     setState(() => _photos.remove(p)),
@@ -382,8 +381,8 @@ class _EntryEditorState extends State<_EntryEditor> {
                                 padding: EdgeInsets.zero,
                               ),
                               // Read out by screen readers (icon only).
-                              child: const Tooltip(
-                                message: 'Foto hinzufügen',
+                              child: Tooltip(
+                                message: tr.kidsAddPhoto,
                                 child: Icon(AppIcons.imageSquare, size: 30),
                               ),
                             ),
@@ -400,11 +399,11 @@ class _EntryEditorState extends State<_EntryEditor> {
                     icon: const Icon(AppIcons.trash, size: 18),
                     label: Text(
                       widget.existing!.planned
-                          ? 'Termin löschen'
+                          ? tr.eventDelete
                           : widget.kind == ChildEntryKind.memory ||
                                 widget.kind == ChildEntryKind.measurement
-                          ? 'Löschen'
-                          : 'Zurücksetzen',
+                          ? tr.commonDelete
+                          : tr.commonReset,
                     ),
                     style: TextButton.styleFrom(
                       foregroundColor: theme.colorScheme.error,
@@ -419,12 +418,12 @@ class _EntryEditorState extends State<_EntryEditor> {
                 const Spacer(),
                 ColorButton(
                   label: _planned
-                      ? 'Termin speichern'
+                      ? tr.kidsSaveAppointment
                       : widget.existing == null &&
                             widget.kind != ChildEntryKind.memory &&
                             widget.kind != ChildEntryKind.measurement
-                      ? 'Geschafft!'
-                      : 'Speichern',
+                      ? tr.kidsDone
+                      : tr.commonSave,
                   color: color,
                   onPressed: _uploading ? null : _save,
                 ),

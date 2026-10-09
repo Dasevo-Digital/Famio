@@ -68,7 +68,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (text == null) {
-      setState(() => _message = 'Im PDF wurde kein Text gefunden.');
+      setState(() => _message = tr.importNoTextWasFound);
       return;
     }
     _text.text = text;
@@ -106,7 +106,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     if (text == null) {
-      setState(() => _message = 'Auf dem Bild wurde kein Text erkannt.');
+      setState(() => _message = tr.importNoTextWasRecognized);
       return;
     }
     _text.text = text;
@@ -129,7 +129,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
       _chosen
         ..clear()
         ..addAll(List.generate(found.length, (i) => i));
-      _message = found.isEmpty ? 'Keine Termine im Text gefunden.' : null;
+      _message = found.isEmpty ? tr.importNoEventsFoundText : null;
     });
   }
 
@@ -148,7 +148,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
           start: e.start,
           end: e.end,
           allDay: e.allDay,
-          notes: 'Übernommen aus: ${e.line}',
+          notes: tr.importTakenLine(e.line),
         ),
       );
       added++;
@@ -156,7 +156,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          added == 1 ? '1 Termin eingetragen' : '$added Termine eingetragen',
+          added == 1 ? tr.import1EventAdded : tr.importCountEventsAdded(added),
         ),
       ),
     );
@@ -166,12 +166,15 @@ class _EventImportScreenState extends State<EventImportScreen> {
   static String _when(EventSuggestion e) {
     final day = DateFormat.yMMMEd(appLanguage);
     if (!e.allDay) {
-      return '${day.format(e.start)}, ${DateFormat.jm(appLanguage).format(e.start)}'
-          '–${DateFormat.jm(appLanguage).format(e.end)} Uhr';
+      return tr.importDay(
+        day.format(e.start),
+        DateFormat.jm(appLanguage).format(e.start),
+        DateFormat.jm(appLanguage).format(e.end),
+      );
     }
     final last = e.end.subtract(const Duration(days: 1));
     return DateUtils.isSameDay(e.start, last)
-        ? '${day.format(e.start)}, ganztägig'
+        ? tr.importDayAllDay(day.format(e.start))
         : '${day.format(e.start)} – ${day.format(last)}';
   }
 
@@ -182,20 +185,14 @@ class _EventImportScreenState extends State<EventImportScreen> {
     final found = _found;
     return SectionPage(
       section: FamioSection.calendar,
-      title: 'Termine erkennen',
-      subtitle: 'Aus Elternbrief, Einladung oder Mail',
+      title: tr.importRecognizeEvents,
+      subtitle: tr.importParentsLetterInvitationEmail,
       maxBodyWidth: 720,
       body: ListView(
         padding: EdgeInsets.only(bottom: listBottomPadding(context)),
         children: [
           if (found == null) ...[
-            const SoftCard(
-              child: Text(
-                'Famio liest Daten und Uhrzeiten aus dem Text und schlägt '
-                'Termine vor. Die Erkennung läuft auf diesem Gerät; nichts '
-                'wird hochgeladen. Prüfe die Vorschläge vor dem Übernehmen.',
-              ),
-            ),
+            SoftCard(child: Text(tr.importFamioReadsDatesTimes)),
             const SizedBox(height: 12),
             Wrap(
               spacing: 8,
@@ -204,24 +201,24 @@ class _EventImportScreenState extends State<EventImportScreen> {
                 if (Ocr.available && _camera)
                   FilledButton.icon(
                     icon: const Icon(AppIcons.camera),
-                    label: const Text('Foto aufnehmen'),
+                    label: Text(tr.importTakePhoto),
                     onPressed: _busy ? null : () => _photo(camera: true),
                   ),
                 if (Ocr.available)
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.image),
-                    label: const Text('Bild wählen'),
+                    label: Text(tr.importChoosePicture),
                     onPressed: _busy ? null : () => _photo(camera: false),
                   ),
                 if (Ocr.available)
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.fileText),
-                    label: const Text('PDF wählen'),
+                    label: Text(tr.importChoosePdf),
                     onPressed: _busy ? null : _pdf,
                   ),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.clipboardList),
-                  label: const Text('Aus der Zwischenablage'),
+                  label: Text(tr.importClipboard),
                   onPressed: _busy
                       ? null
                       : () async {
@@ -239,9 +236,9 @@ class _EventImportScreenState extends State<EventImportScreen> {
               controller: _text,
               minLines: 4,
               maxLines: 12,
-              decoration: const InputDecoration(
-                labelText: 'Oder Text hier einfügen',
-                hintText: 'z. B. „Elternabend am 16.10. um 19 Uhr“',
+              decoration: InputDecoration(
+                labelText: tr.importPasteTextHere,
+                hintText: tr.importEGParentsEvening,
               ),
             ),
             const SizedBox(height: 8),
@@ -249,7 +246,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
               alignment: Alignment.centerRight,
               child: FilledButton(
                 onPressed: _busy ? null : _analyse,
-                child: const Text('Termine suchen'),
+                child: Text(tr.importFindEvents),
               ),
             ),
           ] else ...[
@@ -273,9 +270,9 @@ class _EventImportScreenState extends State<EventImportScreen> {
                           children: [
                             TextField(
                               controller: _titles[i],
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 isDense: true,
-                                labelText: 'Titel',
+                                labelText: tr.commonTitle,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -302,15 +299,15 @@ class _EventImportScreenState extends State<EventImportScreen> {
               children: [
                 TextButton(
                   onPressed: () => setState(() => _found = null),
-                  child: const Text('Zurück'),
+                  child: Text(tr.commonBack),
                 ),
                 const Spacer(),
                 FilledButton(
                   onPressed: _chosen.isEmpty ? null : _add,
                   child: Text(
                     _chosen.length == 1
-                        ? '1 Termin übernehmen'
-                        : '${_chosen.length} Termine übernehmen',
+                        ? tr.importTakeOver1Event
+                        : tr.importTakeOverCountEvents(_chosen.length),
                   ),
                 ),
               ],

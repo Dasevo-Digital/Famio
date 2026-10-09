@@ -98,7 +98,7 @@ class _ChoreEditorState extends State<_ChoreEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              chore == null ? 'Neues Amt' : 'Amt bearbeiten',
+              chore == null ? tr.choresNewChore : tr.choresEditChore,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
@@ -106,9 +106,9 @@ class _ChoreEditorState extends State<_ChoreEditor> {
               controller: _title,
               autofocus: chore == null,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Was ist zu tun?',
-                hintText: 'z. B. Spülmaschine ausräumen',
+              decoration: InputDecoration(
+                labelText: tr.choresWhatNeedsDoing,
+                hintText: tr.choresEGEmptyDishwasher,
               ),
             ),
             const SizedBox(height: 12),
@@ -117,14 +117,14 @@ class _ChoreEditorState extends State<_ChoreEditor> {
               selected: _emoji,
               onSelected: (e) => setState(() => _emoji = e),
             ),
-            const ListHeading('Punkte'),
+            ListHeading(tr.choresPoints),
             _Stepper(
               value: _points,
               min: 0,
               max: 100,
               onChanged: (v) => setState(() => _points = v),
             ),
-            const ListHeading('Wie oft?'),
+            ListHeading(tr.choresHowOften),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -164,11 +164,11 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                 ),
               ),
             ],
-            const ListHeading('Wer?'),
+            ListHeading(tr.choresWho),
             Text(
               _members.isEmpty
-                  ? 'Niemand ausgewählt: jeder darf es übernehmen.'
-                  : 'Reihenfolge = Reihenfolge beim Abwechseln.',
+                  ? tr.choresNobodySelectedAnyoneMay
+                  : tr.choresOrderOrderWhenTaking,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 8),
@@ -198,11 +198,11 @@ class _ChoreEditorState extends State<_ChoreEditor> {
             if (_members.length > 1)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Abwechseln'),
+                title: Text(tr.choresTakeTurns),
                 subtitle: Text(
                   _repeat == ChoreRepeat.weekly
-                      ? 'Jede Woche ist jemand anderes dran'
-                      : 'Jeden Tag ist jemand anderes dran',
+                      ? tr.wasteEachWeekSSomeone
+                      : tr.choresEachDaySSomeone,
                 ),
                 value: _rotate,
                 onChanged: (v) => setState(() => _rotate = v),
@@ -210,8 +210,8 @@ class _ChoreEditorState extends State<_ChoreEditor> {
             if (chore != null)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Pausieren'),
-                subtitle: const Text('z. B. in den Ferien'),
+                title: Text(tr.locationPause),
+                subtitle: Text(tr.choresEGDuringHolidays),
                 value: _paused,
                 onChanged: (v) => setState(() => _paused = v),
               ),
@@ -221,7 +221,7 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                 if (chore != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
                       deleteWithUndo(
@@ -235,7 +235,7 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                   ),
                 const Spacer(),
                 ColorButton(
-                  label: 'Speichern',
+                  label: tr.commonSave,
                   color: c.strong(FamioSection.chores),
                   onPressed: _save,
                 ),
@@ -308,7 +308,7 @@ class _Stepper extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [
       IconButton.outlined(
-        tooltip: 'Weniger',
+        tooltip: tr.mealsFewer,
         icon: const Icon(AppIcons.minus),
         onPressed: value - step < min ? null : () => onChanged(value - step),
       ),
@@ -321,7 +321,7 @@ class _Stepper extends StatelessWidget {
         ),
       ),
       IconButton.outlined(
-        tooltip: 'Mehr',
+        tooltip: tr.navMore,
         icon: const Icon(AppIcons.plus),
         onPressed: value + step > max ? null : () => onChanged(value + step),
       ),

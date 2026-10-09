@@ -24,12 +24,11 @@ class _TodayTab extends StatelessWidget {
         icon: AppIcons.trophy,
         color: color,
         text: engine.iAmAdult
-            ? 'Noch keine Ämter.\nLegt fest, wer was im Haushalt übernimmt – '
-                  'mit Punkten für die Kinder.'
-            : 'Noch keine Ämter – frag deine Eltern!',
+            ? tr.choresNoChoresYetDecide
+            : tr.choresNoChoresYetAsk,
         action: engine.iAmAdult
             ? ColorButton(
-                label: 'Erstes Amt anlegen',
+                label: tr.choresCreateFirstChore,
                 color: color,
                 icon: AppIcons.plus,
                 onPressed: () => showChoreEditor(context),
@@ -41,7 +40,7 @@ class _TodayTab extends StatelessWidget {
       padding: EdgeInsets.only(bottom: listBottomPadding(context)),
       children: [
         if (pending.isNotEmpty) ...[
-          ListHeading('Wartet auf deine Bestätigung', color: color),
+          ListHeading(tr.choresWaitingConfirmation, color: color),
           for (final e in pending)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -51,7 +50,7 @@ class _TodayTab extends StatelessWidget {
         for (final person in people)
           _PersonToday(person: person, engine: engine, day: today),
         if (shared.isNotEmpty) ...[
-          const ListHeading('Für alle'),
+          ListHeading(tr.shoppingEveryone),
           for (final chore in shared)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -90,28 +89,33 @@ class _PendingTile extends StatelessWidget {
               children: [
                 Text(
                   entry.kind == PointKind.reward
-                      ? '${who?.displayName ?? '?'} wünscht sich ${entry.title}'
+                      ? tr.choresNameWishesTitle(
+                          who?.displayName ?? '?',
+                          entry.title,
+                        )
                       : '${who?.displayName ?? '?'}: ${entry.title}',
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 Text(
                   entry.points > 0
-                      ? '+${entry.points} Punkte'
-                      : '${entry.points} Punkte · Kontostand ⭐ '
-                            '${engine.pointBalance(entry.memberId)}',
+                      ? tr.choresPointsPoints(entry.points)
+                      : tr.choresPointsPointsBalanceBalance(
+                          entry.points,
+                          engine.pointBalance(entry.memberId),
+                        ),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
           ),
           IconButton(
-            tooltip: 'Ablehnen',
+            tooltip: tr.choresDecline,
             color: c.danger,
             icon: const Icon(AppIcons.x),
             onPressed: () => engine.decidePoints(entry, approve: false),
           ),
           IconButton.filled(
-            tooltip: 'Bestätigen',
+            tooltip: tr.commonConfirm,
             style: IconButton.styleFrom(
               backgroundColor: c.strong(FamioSection.chores),
             ),
@@ -169,7 +173,7 @@ class _PersonToday extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(left: 4, bottom: 4),
             child: Text(
-              'Heute frei 🎈',
+              tr.kioskFreeToday,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
@@ -226,17 +230,15 @@ class _ChoreTile extends StatelessWidget {
       if (me != null && me.role != MemberRole.adult) {
         who = me.id;
       } else {
-        who = await _pickMember(context, engine, 'Wer hat es erledigt?');
+        who = await _pickMember(context, engine, tr.choresWhoDid);
       }
     }
     if (who == null) return;
     engine.completeChore(chore, day, who);
     if (context.mounted && engine.me?.role == MemberRole.child) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Super! Deine Eltern bestätigen die Punkte. ⭐'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.choresGreatParentsWillConfirm)));
     }
   }
 
@@ -249,11 +251,14 @@ class _ChoreTile extends StatelessWidget {
         !engine.iAmGuest &&
         (engine.iAmAdult || forMember == null || forMember == engine.memberId);
     final status = switch (done?.status) {
-      null => chore.repeat == ChoreRepeat.weekly ? 'diese Woche' : null,
-      PointStatus.pending => 'wartet auf Bestätigung',
-      PointStatus.approved =>
-        'erledigt${done!.memberId != forMember ? ' von ${engine.member(done.memberId)?.displayName ?? '?'}' : ''}',
-      PointStatus.rejected => 'abgelehnt',
+      null => chore.repeat == ChoreRepeat.weekly ? tr.choresWeek : null,
+      PointStatus.pending => tr.choresWaitingConfirmation2,
+      PointStatus.approved => tr.choresDone(
+        done!.memberId != forMember
+            ? tr.choresName(engine.member(done.memberId)?.displayName ?? '?')
+            : '',
+      ),
+      PointStatus.rejected => tr.choresDeclined,
     };
     return SoftCard(
       padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
@@ -329,12 +334,12 @@ String _choreSchedule(Chore chore, SyncEngine engine) {
   final when = switch (chore.repeat) {
     ChoreRepeat.once =>
       chore.date == null
-          ? 'Einmalig'
-          : 'Am ${DateFormat.MMMEd(appLanguage).format(chore.date!)}',
-    ChoreRepeat.weekly => 'Einmal pro Woche',
+          ? tr.choresOnce
+          : tr.choresDate(DateFormat.MMMEd(appLanguage).format(chore.date!)),
+    ChoreRepeat.weekly => tr.choresOnceWeek,
     ChoreRepeat.daily =>
       chore.weekdays.isEmpty || chore.weekdays.length == 7
-          ? 'Täglich'
+          ? tr.eventRepeatDaily
           : (chore.weekdays.toList()..sort())
                 .map((d) => _weekdayShort[d - 1])
                 .join(', '),
@@ -343,9 +348,9 @@ String _choreSchedule(Chore chore, SyncEngine engine) {
     for (final id in chore.memberIds) engine.member(id)?.displayName ?? '?',
   ];
   final who = names.isEmpty
-      ? 'alle'
+      ? tr.commonEveryoneLower
       : chore.rotate
-      ? 'abwechselnd ${names.join(' → ')}'
+      ? tr.choresTakingTurnsNames(names.join(' → '))
       : names.join(', ');
   return '$when · $who';
 }

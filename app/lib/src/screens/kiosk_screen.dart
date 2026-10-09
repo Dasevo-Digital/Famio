@@ -188,8 +188,8 @@ class _KioskScreenState extends State<KioskScreen> {
                                   ? AppIcons.layoutGrid
                                   : AppIcons.usersThree,
                               tooltip: byPerson
-                                  ? 'Nach Themen anzeigen'
-                                  : 'Nach Personen anzeigen',
+                                  ? tr.kioskShowTopic
+                                  : tr.kioskShowPerson,
                               onPressed: () =>
                                   state.setKioskByPerson(!byPerson),
                             ),
@@ -200,8 +200,8 @@ class _KioskScreenState extends State<KioskScreen> {
                                     ? AppIcons.image
                                     : AppIcons.imageBroken,
                                 tooltip: state.kioskPhotos
-                                    ? 'Keine Fotos zeigen'
-                                    : 'Fotos zeigen, wenn niemand tippt',
+                                    ? tr.kioskShowNoPhotos
+                                    : tr.kioskShowPhotosWhenNobody,
                                 onPressed: () =>
                                     state.setKioskPhotos(!state.kioskPhotos),
                               ),
@@ -209,7 +209,7 @@ class _KioskScreenState extends State<KioskScreen> {
                             ],
                             BubbleButton(
                               icon: AppIcons.x,
-                              tooltip: 'Wandanzeige beenden',
+                              tooltip: tr.kioskCloseWallDisplay,
                               onPressed: () => Navigator.pop(context),
                             ),
                           ],
@@ -225,7 +225,7 @@ class _KioskScreenState extends State<KioskScreen> {
                               child: SoftCard(
                                 color: c.tint(FamioSection.kids),
                                 child: Text(
-                                  '🎂 Heute: ${b.headline(day)}',
+                                  tr.kioskTodayWhat(b.headline(day)),
                                   style: theme.textTheme.headlineSmall,
                                 ),
                               ),
@@ -418,7 +418,7 @@ class _EventsPanel extends StatelessWidget {
           padding: const EdgeInsets.only(top: 4),
           child: Text(label, style: Theme.of(context).textTheme.labelLarge),
         ),
-        if (items.isEmpty) const _BigLine('Nichts geplant', dim: true),
+        if (items.isEmpty) _BigLine(tr.kioskNothingPlanned, dim: true),
         for (final o in items.take(6))
           _BigLine(
             o.event.title,
@@ -446,8 +446,11 @@ class _EventsPanel extends StatelessWidget {
 
     return _Panel(
       section: FamioSection.calendar,
-      title: 'Termine',
-      children: [...day(today, 'Heute'), ...day(tomorrow, 'Morgen')],
+      title: tr.commonEvents,
+      children: [
+        ...day(today, tr.commonToday),
+        ...day(tomorrow, tr.commonTomorrow),
+      ],
     );
   }
 }
@@ -466,10 +469,10 @@ class _ChoresPanel extends StatelessWidget {
     final canTick = !engine.iAmGuest;
     return _Panel(
       section: FamioSection.chores,
-      title: 'Ämter & Routinen',
+      title: tr.kioskChoresRoutines,
       children: [
         if (engine.chores.isEmpty && engine.routines.isEmpty)
-          const _BigLine('Noch keine Ämter', dim: true),
+          _BigLine(tr.kioskNoChoresYet, dim: true),
         for (final p in people) ...[
           Padding(
             padding: const EdgeInsets.only(top: 6, bottom: 2),
@@ -552,16 +555,16 @@ class _ShoppingPanel extends StatelessWidget {
         : engine.shoppingItems(list.id).where((i) => !i.checked).toList();
     return _Panel(
       section: FamioSection.shopping,
-      title: list?.name ?? 'Einkauf',
+      title: list?.name ?? tr.sectionShopping,
       children: [
-        if (open.isEmpty) const _BigLine('Nichts zu besorgen ✓', dim: true),
+        if (open.isEmpty) _BigLine(tr.kioskNothingBuy, dim: true),
         for (final i in open.take(10))
           _BigLine(
             i.quantity.isEmpty ? i.name : '${i.quantity} ${i.name}',
             leading: const Text('•', style: TextStyle(fontSize: 18)),
           ),
         if (open.length > 10)
-          _BigLine('… und ${open.length - 10} mehr', dim: true),
+          _BigLine(tr.kioskCountMore(open.length - 10), dim: true),
       ],
     );
   }
@@ -582,9 +585,9 @@ class _MealsPanel extends StatelessWidget {
     );
     return _Panel(
       section: FamioSection.meals,
-      title: 'Essen heute',
+      title: tr.kioskMealsToday,
       children: [
-        if (meals.isEmpty) const _BigLine('Noch nichts geplant', dim: true),
+        if (meals.isEmpty) _BigLine(tr.kioskNothingPlannedYet, dim: true),
         for (final m in meals)
           _BigLine(
             engine.recipe(m.recipeId)?.title ?? m.title,
@@ -658,9 +661,9 @@ class _PeopleBoard extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 8),
                 child: Text(
                   late
-                      ? 'überfällig'
+                      ? tr.pregnancyOverdue
                       : DateUtils.isSameDay(due, today)
-                      ? 'heute'
+                      ? tr.commonTodayLower
                       : DateFormat.MEd(appLanguage).format(due),
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: late ? c.danger : c.inkSoft,
@@ -707,14 +710,14 @@ class _PeopleBoard extends StatelessWidget {
             header,
             const SizedBox(height: 8),
             if (events.isEmpty && tasks.isEmpty && extra.isEmpty)
-              const _BigLine('Heute frei 🎈', dim: true),
+              _BigLine(tr.kioskFreeToday, dim: true),
             for (final o in events.take(6)) eventLine(o),
             if (events.isNotEmpty && (tasks.isNotEmpty || extra.isNotEmpty))
               const Divider(height: 16),
             ...extra,
             for (final t in tasks.take(6)) taskLine(t),
             if (tasks.length > 6)
-              _BigLine('… und ${tasks.length - 6} weitere', dim: true),
+              _BigLine(tr.kioskCountMore2(tasks.length - 6), dim: true),
           ],
         ),
       ),
@@ -732,7 +735,7 @@ class _PeopleBoard extends StatelessWidget {
               size: 38,
             ),
             const SizedBox(width: 10),
-            Text('Alle', style: theme.textTheme.titleLarge),
+            Text(tr.commonEveryone, style: theme.textTheme.titleLarge),
           ],
         ),
         events: [
