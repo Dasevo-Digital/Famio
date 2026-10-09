@@ -6,6 +6,7 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/design/palette.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -66,6 +67,7 @@ void main() {
     Brightness brightness = Brightness.light,
     double textScale = 1,
     Size size = const Size(1400, 1000),
+    String language = 'de',
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -73,7 +75,11 @@ void main() {
     tester.platformDispatcher.platformBrightnessTestValue = brightness;
     addTearDown(tester.view.reset);
     addTearDown(tester.platformDispatcher.clearAllTestValues);
-    SharedPreferences.setMockInitialValues({'highContrast': highContrast});
+    SharedPreferences.setMockInitialValues({
+      'highContrast': highContrast,
+      'language': language,
+    });
+    addTearDown(() => useLanguage('de'));
     FlutterSecureStorage.setMockInitialValues({});
     const me = FamilyMember(
       id: 'm1',
@@ -142,20 +148,35 @@ void main() {
     });
   }
 
-  testWidgets('200 % text size fits on a phone', (tester) async {
-    await open(tester, textScale: 2, size: const Size(390, 844));
-    final problems = <String>[];
-    // Phones show the main areas in the bottom bar (icons) and the rest
-    // behind "Mehr"; the start page and the bar are what everyone sees.
-    for (final tooltip in ['Aufgaben', 'Einkauf', 'Kalender', 'Chat']) {
-      final target = find.byTooltip(tooltip);
-      if (target.evaluate().isEmpty) continue;
-      await tester.tap(target.first);
-      await tester.pumpAndSettle();
-      final error = tester.takeException();
-      if (error != null) problems.add('$tooltip: $error');
-    }
-    await tester.pump(const Duration(seconds: 1));
-    expect(problems, isEmpty, reason: problems.join('\n'));
-  });
+  for (final language in appLanguages.keys) {
+    testWidgets('200 % text size fits on a phone ($language)', (tester) async {
+      await open(
+        tester,
+        textScale: 2,
+        size: const Size(390, 844),
+        language: language,
+      );
+      final l = lookupL10n(Locale(language));
+      final problems = <String>[];
+      final start = tester.takeException();
+      if (start != null) problems.add('start: $start');
+      // Phones show the main areas in the bottom bar (icons) and the rest
+      // behind "Mehr"; the start page and the bar are what everyone sees.
+      for (final tooltip in [
+        l.sectionTasks,
+        l.sectionShopping,
+        l.sectionCalendar,
+        l.sectionChat,
+      ]) {
+        final target = find.byTooltip(tooltip);
+        if (target.evaluate().isEmpty) continue;
+        await tester.tap(target.first);
+        await tester.pumpAndSettle();
+        final error = tester.takeException();
+        if (error != null) problems.add('$tooltip: $error');
+      }
+      await tester.pump(const Duration(seconds: 1));
+      expect(problems, isEmpty, reason: problems.join('\n'));
+    });
+  }
 }

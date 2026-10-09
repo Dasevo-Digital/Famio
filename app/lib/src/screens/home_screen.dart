@@ -390,11 +390,19 @@ class _Line extends StatelessWidget {
             ),
           ),
           if (trailing != null)
-            Text(
-              trailing!,
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(color: c.inkSoft),
+            // Longer words (Spanish, large text) must not push the line out.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+              ),
+              child: Text(
+                trailing!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: c.inkSoft),
+              ),
             ),
         ],
       ),
