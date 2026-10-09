@@ -46,20 +46,16 @@ Future<LocationSchedule?> showLocationScheduleDialog(
         final valid = days.isNotEmpty && startMinute != endMinute;
         return AlertDialog(
           scrollable: true,
-          title: const Text('Standort-Zeitplan'),
+          title: Text(tr.locationLocationSchedule),
           content: SizedBox(
             width: 380,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Außerhalb dieses Zeitfensters speichert und zeigt Famio '
-                  'keine Position von diesem Handy. Nach Beginn zeigt die '
-                  'Karte erst wieder einen neu gemeldeten Standort.',
-                ),
+                Text(tr.locationOutsideTimeWindowFamio),
                 const SizedBox(height: 16),
-                const Text('Tage'),
+                Text(tr.locationDays),
                 Wrap(
                   spacing: 6,
                   children: [
@@ -85,7 +81,7 @@ Future<LocationSchedule?> showLocationScheduleDialog(
                   children: [
                     OutlinedButton.icon(
                       icon: const Icon(AppIcons.clock),
-                      label: Text('Von ${start.format(context)}'),
+                      label: Text(tr.locationTime(start.format(context))),
                       onPressed: busy
                           ? null
                           : () async {
@@ -100,7 +96,7 @@ Future<LocationSchedule?> showLocationScheduleDialog(
                     ),
                     OutlinedButton.icon(
                       icon: const Icon(AppIcons.clock),
-                      label: Text('Bis ${end.format(context)}'),
+                      label: Text(tr.locationUntilTime(end.format(context))),
                       onPressed: busy
                           ? null
                           : () async {
@@ -123,18 +119,16 @@ Future<LocationSchedule?> showLocationScheduleDialog(
                     obscureText: obscure,
                     contextMenuBuilder: PasswordReveal.contextMenu,
                     decoration: InputDecoration(
-                      labelText: 'Eltern-Code',
+                      labelText: tr.adminParentsCode,
                       prefixIcon: const Icon(AppIcons.lockKey),
                       suffixIcon: toggle,
                     ),
                   ),
                 ),
                 if (!valid)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 8),
-                    child: Text(
-                      'Mindestens einen Tag und unterschiedliche Zeiten wählen.',
-                    ),
+                    child: Text(tr.locationChooseLeastOneDay),
                   ),
                 if (error != null)
                   Padding(
@@ -153,11 +147,11 @@ Future<LocationSchedule?> showLocationScheduleDialog(
             if (initial != null)
               TextButton(
                 onPressed: busy ? null : () => save(null),
-                child: const Text('Zeitplan entfernen'),
+                child: Text(tr.locationRemoveSchedule),
               ),
             TextButton(
               onPressed: busy ? null : () => Navigator.pop(context),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: busy || !valid
@@ -169,7 +163,7 @@ Future<LocationSchedule?> showLocationScheduleDialog(
                         endMinute: endMinute,
                       ),
                     ),
-              child: const Text('Speichern'),
+              child: Text(tr.commonSave),
             ),
           ],
         );

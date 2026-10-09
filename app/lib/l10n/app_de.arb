@@ -4391,5 +4391,879 @@
         "type": "Object?"
       }
     }
+  },
+  "memberCalendarsNoneMe": "Noch hat niemand einen Kalender mit dir geteilt. Eigene Kalender verbindet jedes Mitglied unter Kalender → Kalender verbinden.",
+  "memberCalendarsNone": "Noch hat niemand einen Kalender mit {name} geteilt. Eigene Kalender verbindet jedes Mitglied unter Kalender → Kalender verbinden.",
+  "@memberCalendarsNone": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "memberCalendarsSharedMe": "Diese Kalender haben andere mit dir geteilt. Was hier aus ist, siehst du in Famio nicht. Eigene Kalender sieht jeder immer.",
+  "memberCalendarsShared": "Diese Kalender haben andere mit {name} geteilt. Was hier aus ist, sieht {name} in Famio nicht. Eigene Kalender sieht jeder immer.",
+  "@memberCalendarsShared": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "routinesNewRoutine": "Neue Routine",
+  "routinesEditRoutine": "Routine bearbeiten",
+  "routinesWhichDays": "An welchen Tagen?",
+  "routinesRemind": "Erinnern um …",
+  "routinesReminderTime": "Erinnerung {time}",
+  "@routinesReminderTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "routinesPointsWhenEverythingDone": "Punkte, wenn alles erledigt ist",
+  "routinesSteps": "Schritte",
+  "routinesStepNumber": "Schritt {number}",
+  "@routinesStepNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object?"
+      }
+    }
+  },
+  "routinesMoveUp": "Nach oben",
+  "routinesAddStep": "Schritt hinzufügen",
+  "memberCalendarsWholeFamily": "für die ganze Familie",
+  "memberCalendarsName": "von {name}",
+  "@memberCalendarsName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "memberCalendarsUnknown": "unbekannt",
+  "templatesCountEntries": "{count} Einträge",
+  "@templatesCountEntries": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "templatesDeleteTemplate": "Vorlage löschen",
+  "templatesYouSaveOwnTemplates": "Eigene Vorlagen speichert ihr in einer Liste über ⋮ → „Als Vorlage speichern“.",
+  "templatesTemplates": "Eure Vorlagen",
+  "templatesSuggestions": "Vorschläge",
+  "templatesNoTemplates": "Keine Vorlagen.",
+  "templatesPackingListTemplate": "Packliste aus Vorlage",
+  "templatesWhoPacking": "Wer packt?",
+  "templatesEachPersonGetsTheir": "Jede Person bekommt ihre eigenen Sachen; Ausweise, Ladegeräte & Co. stehen nur einmal drauf.",
+  "templatesCreate": "Anlegen",
+  "templatesCreatePackingList": "Packliste anlegen",
+  "templatesTemplatePerPersonReminder": "Aus einer Vorlage, je Person – mit Erinnerung am Vorabend",
+  "templatesPackingList": "Packliste",
+  "templatesPackedTotalPacked": "{packed} von {total} eingepackt",
+  "@templatesPackedTotalPacked": {
+    "placeholders": {
+      "packed": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
+  "growthHeadCircumferenceCm": "Kopfumfang (cm)",
+  "growthAddMeasurement": "Messung eintragen",
+  "growthCurveAppearsHereTwo": "Ab zwei Messungen erscheint hier eine Kurve. Die Werte aus dem U-Heft eignen sich gut dafür – sie lassen sich auch direkt bei der Vorsorge eintragen.",
+  "growthGenderProfileFamioShows": "Mit dem Geschlecht im Profil zeigt Famio die WHO-Kurven (0–24 Monate) zum Vergleich.",
+  "growthGrayWhoGrowthStandards": "Grau: WHO-Wachstumsstandards, 3., 50. und 97. Perzentile (0–24 Monate). Wichtig ist der Verlauf, nicht ein einzelner Wert – Fragen gern beim Kinderarzt.",
+  "growthAllMeasurements": "Alle Messungen",
+  "growthAge": "mit {age}",
+  "@growthAge": {
+    "placeholders": {
+      "age": {
+        "type": "Object?"
+      }
+    }
+  },
+  "growthPercentileValue": "Perzentile {value}",
+  "@growthPercentileValue": {
+    "placeholders": {
+      "value": {
+        "type": "Object?"
+      }
+    }
+  },
+  "trustCheckServerSCertificate": "Zertifikat des Servers prüfen",
+  "trustServerEncryptsConnectionIts": "Der Server verschlüsselt die Verbindung mit einem eigenen Zertifikat. Vergleiche den Fingerabdruck einmalig mit dem im Server-Log (z. B. „docker logs famio“) oder unter Einstellungen → Server-Verwaltung → Status auf einem anderen Gerät:",
+  "trustIfDoesNotMatch": "Stimmt er nicht überein, abbrechen – dann könnte jemand die Verbindung abfangen.",
+  "trustMatches": "Stimmt überein",
+  "healthCall112RightAway": "Sofort 112 bei Krampfanfall, Atemnot, starker Teilnahmslosigkeit oder Flecken, die sich nicht wegdrücken lassen.",
+  "healthVeryHighFeverGet": "Sehr hohes Fieber: sofort ärztliche Hilfe holen (116 117, bei Warnzeichen 112). {warnings}",
+  "@healthVeryHighFeverGet": {
+    "placeholders": {
+      "warnings": {
+        "type": "Object?"
+      }
+    }
+  },
+  "healthBabiesUnder3Months": "Säuglinge unter 3 Monaten mit 38 °C oder mehr: umgehend Kinderarzt oder ärztlichen Bereitschaftsdienst (116 117) anrufen. {warnings}",
+  "@healthBabiesUnder3Months": {
+    "placeholders": {
+      "warnings": {
+        "type": "Object?"
+      }
+    }
+  },
+  "healthHighFeverContactPediatrician": "Hohes Fieber: heute noch beim Kinderarzt oder unter 116 117 melden. {warnings}",
+  "@healthHighFeverContactPediatrician": {
+    "placeholders": {
+      "warnings": {
+        "type": "Object?"
+      }
+    }
+  },
+  "healthFeverDaysDaysPlease": "Fieber seit {days} Tagen: bitte beim Kinderarzt abklären lassen. {warnings}",
+  "@healthFeverDaysDaysPlease": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      },
+      "warnings": {
+        "type": "Object?"
+      }
+    }
+  },
+  "healthFeverLetChildDrink": "Fieber. Viel trinken lassen und beobachten. Zum Kinderarzt, wenn es länger als 3 Tage anhält oder das Kind schlecht trinkt. {warnings}",
+  "@healthFeverLetChildDrink": {
+    "placeholders": {
+      "warnings": {
+        "type": "Object?"
+      }
+    }
+  },
+  "healthRaisedTemperatureMeasureAgain": "Erhöhte Temperatur – später noch einmal messen.",
+  "healthNormalTemperature": "Normale Temperatur.",
+  "exportZipFileAllFamily": "Eine ZIP-Datei mit allen Daten der Familie: Bereiche als JSON, hochgeladene Dateien, Mitglieder (ohne Passwörter) und Einstellungen. Standortverläufe sind nicht dabei. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
+  "exportZipFileEverythingYou": "Eine ZIP-Datei mit allem, was du in Famio sehen kannst, deinen Dateien und deinem Standortverlauf. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
+  "exportFamioPassword": "Dein Famio-Passwort",
+  "exportSaveExport": "Export sichern",
+  "exportNotSaved": "Nicht gesichert",
+  "exportExportSaved": "Export gesichert",
+  "kidsGrowingUpStepStep": "Groß werden – Schritt für Schritt",
+  "kidsAddChildPregnancy": "Kind oder Schwangerschaft hinzufügen",
+  "kidsKeepTrackHowKids": "Halte fest, wie eure Kinder wachsen:\nerste Schritte, erste Wörter, U-Untersuchungen –\noder begleitet schon die Schwangerschaft.",
+  "kidsWeekAppointmentsChecklistsContraction": "SSW, Termine, Checklisten, Wehen-Timer",
+  "kidsCountMilestones": "{count} Meilensteine",
+  "@kidsCountMilestones": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "kidsWhatNow": "{what} jetzt",
+  "@kidsWhatNow": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "milestonesGuideValuesMostChildren": "Richtwerte: Die meisten Kinder erreichen diese Schritte im angegebenen Zeitraum – manche früher, manche später. Jedes Kind hat sein eigenes Tempo. Bei Fragen hilft die Kinderärztin oder der Kinderarzt.",
+  "milestonesReachedEarlierAdd": "Früher erreicht? Nachtragen",
+  "milestones1MilestoneWhosePeriod": "1 Meilenstein, dessen Zeitraum vorbei ist",
+  "milestonesCountMilestonesWhosePeriod": "{count} Meilensteine, deren Zeitraum vorbei ist",
+  "@milestonesCountMilestonesWhosePeriod": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "milestonesReachedDateAge": "Geschafft am {date} (mit {age})",
+  "@milestonesReachedDateAge": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      },
+      "age": {
+        "type": "Object?"
+      }
+    }
+  },
+  "milestonesUsuallyBetweenHint": "Meist zwischen {from} und {to}{hint}",
+  "@milestonesUsuallyBetweenHint": {
+    "placeholders": {
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      },
+      "hint": {
+        "type": "Object?"
+      }
+    }
+  },
+  "choresTabRoutines": "Routinen",
+  "choresTabRewards": "Belohnungen",
+  "kidsAtMonths": "Mit {n, plural, =1{1 Monat} other{{n} Monaten}}",
+  "@kidsAtMonths": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "locationLocationSchedule": "Standort-Zeitplan",
+  "locationOutsideTimeWindowFamio": "Außerhalb dieses Zeitfensters speichert und zeigt Famio keine Position von diesem Handy. Nach Beginn zeigt die Karte erst wieder einen neu gemeldeten Standort.",
+  "locationDays": "Tage",
+  "locationTime": "Von {time}",
+  "@locationTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationUntilTime": "Bis {time}",
+  "@locationUntilTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationChooseLeastOneDay": "Mindestens einen Tag und unterschiedliche Zeiten wählen.",
+  "locationRemoveSchedule": "Zeitplan entfernen",
+  "choresChoresPoints": "Ämter & Punkte",
+  "choresHelpingOutPaysOff": "Mithelfen lohnt sich",
+  "choresCreateChore": "Amt anlegen",
+  "choresCreateRoutine": "Routine anlegen",
+  "choresCreateReward": "Belohnung anlegen",
+  "usernamesLeast2Characters": "Mindestens 2 Zeichen",
+  "usernamesMost32Characters": "Höchstens 32 Zeichen",
+  "usernamesOnlyLettersWithoutUmlauts": "Nur Buchstaben ohne Umlaute, Ziffern und . _ -",
+  "locationNotSharingLocation": "Teilt keinen Standort",
+  "locationPaused": "Pausiert",
+  "locationPausedUntil": "Pausiert bis {time} Uhr",
+  "@locationPausedUntil": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationLocationAccessMissingPhone": "Standortzugriff auf dem Handy fehlt",
+  "locationLocationTurnedOffPhone2": "Standort am Handy ausgeschaltet",
+  "locationLocationSharingOffRight": "Standortfreigabe ist nach Zeitplan gerade aus",
+  "locationNoPositionYet": "Noch keine Position",
+  "locationLastLocationPlaceAgo": "Letzter Standort{place} · {ago} · möglicherweise veraltet",
+  "@locationLastLocationPlaceAgo": {
+    "placeholders": {
+      "place": {
+        "type": "Object?"
+      },
+      "ago": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationPlaceSinceLastConfirmed": "Bei „{place}“{since} · zuletzt bestätigt {ago}",
+  "@locationPlaceSinceLastConfirmed": {
+    "placeholders": {
+      "place": {
+        "type": "Object?"
+      },
+      "since": {
+        "type": "Object?"
+      },
+      "ago": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationSinceTime": " seit {time}",
+  "@locationSinceTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationWayLastConfirmedAgo": "Unterwegs · zuletzt bestätigt {ago}",
+  "@locationWayLastConfirmedAgo": {
+    "placeholders": {
+      "ago": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationAlwaysShare": "Immer teilen",
+  "locationDays2": "{days} · {from}–{to} Uhr",
+  "@locationDays2": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      },
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timetableLesson": "{day}, {period}. Stunde",
+  "@timetableLesson": {
+    "placeholders": {
+      "day": {
+        "type": "Object?"
+      },
+      "period": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timetableTapSubjectEnterTap": "Fach antippen zum Eintragen, Stundennummer antippen für die Zeiten.",
+  "timetableSubject": "Fach",
+  "timetableRoomOptional": "Raum (optional)",
+  "timetablePeriodPeriodStarts": "{period}. Stunde beginnt",
+  "@timetablePeriodPeriodStarts": {
+    "placeholders": {
+      "period": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timetablePeriodPeriodEnds": "{period}. Stunde endet",
+  "@timetablePeriodPeriodEnds": {
+    "placeholders": {
+      "period": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timetablePlaceFree": "{place}: frei",
+  "@timetablePlaceFree": {
+    "placeholders": {
+      "place": {
+        "type": "Object?"
+      }
+    }
+  },
+  "searchEverythingDeviceAlsoOffline": "Alles auf diesem Gerät, auch offline",
+  "searchEventTaskRecipeContact": "Termin, Aufgabe, Rezept, Kontakt …",
+  "timelineAppointmentWasDone": "Termin war – erledigt?",
+  "timelineDueNowSubtitle": "Jetzt fällig · {subtitle}",
+  "@timelineDueNowSubtitle": {
+    "placeholders": {
+      "subtitle": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timelineTypicallyBetween": "Typisch zwischen {from} und {to}",
+  "@timelineTypicallyBetween": {
+    "placeholders": {
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timelineTodayAge": "Heute · {age}",
+  "@timelineTodayAge": {
+    "placeholders": {
+      "age": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timelineNoEntriesYetTap": "Noch keine Einträge. Tippe auf ✨, um eine Erinnerung festzuhalten, oder hake unter „Meilensteine“ ab, was schon klappt.",
+  "timelineBirth": "Geburt 🎉",
+  "timelineWelcomeName": "Willkommen, {name}!",
+  "@timelineWelcomeName": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timelineFirstWeeks": "Die ersten Wochen",
+  "timeline2ndYear": "Im 2. Lebensjahr",
+  "timelineYearsYears": "Mit {years} Jahren",
+  "@timelineYearsYears": {
+    "placeholders": {
+      "years": {
+        "type": "Object?"
+      }
+    }
+  },
+  "extrasExchangedPocketMoney": "In Taschengeld getauscht",
+  "extrasPointsPoints": "{points} Punkte",
+  "@extrasPointsPoints": {
+    "placeholders": {
+      "points": {
+        "type": "Object?"
+      }
+    }
+  },
+  "historyNameLast7Days": "{name} · letzte 7 Tage",
+  "@historyNameLast7Days": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "historyHistoryNotAvailableError": "Verlauf nicht verfügbar: {error}",
+  "@historyHistoryNotAvailableError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "historyNoLocationWasShared": "An diesem Tag wurde kein Standort geteilt.",
+  "historyCountPositionsKmKm": "{count} Positionen von {from} bis {to} Uhr · {km} km",
+  "@historyCountPositionsKmKm": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      },
+      "km": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sosSosPositionNotAvailable": "SOS-Position nicht verfügbar: {error}",
+  "@sosSosPositionNotAvailable": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sosSirenNotAvailableError": "Sirene nicht verfügbar: {error}",
+  "@sosSirenNotAvailableError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sosEmergencyLocationServiceNot": "Notruf-Standortdienst nicht möglich: {error}",
+  "@sosEmergencyLocationServiceNot": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sosTextMessageNotPossible": "SMS nicht möglich: {error}",
+  "@sosTextMessageNotPossible": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sharingMeNames": "Ich, {names}",
+  "@sharingMeNames": {
+    "placeholders": {
+      "names": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sharingSelected": "Ausgewählte",
+  "sharingShareTitle": "„{title}“ teilen",
+  "@sharingShareTitle": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sharingWhoSeesEventsCalendar": "Wer sieht die Termine dieses Kalenders in Famio?",
+  "deadlinesOverdueSinceYesterday": "seit gestern überfällig",
+  "deadlinesOverdueDaysDays": "seit {days} Tagen überfällig",
+  "@deadlinesOverdueDaysDays": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "deadlinesDueToday": "heute fällig",
+  "deadlinesDueTomorrow": "morgen fällig",
+  "deadlinesDaysDays": "in {days} Tagen",
+  "@deadlinesDaysDays": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "commentsComments": "Kommentare",
+  "commentsCommentsCount": "Kommentare ({count})",
+  "@commentsCommentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "commentsCommentDeleted": "Kommentar gelöscht",
+  "commentsCommentEGI": "Kommentar, z. B. „Ich bringe Kuchen mit“",
+  "ageNotBornYet": "noch nicht geboren",
+  "ageDays": "{n, plural, =1{1 Tag} other{{n} Tage}}",
+  "@ageDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ageWeeks": "{n, plural, =1{1 Woche} other{{n} Wochen}}",
+  "@ageWeeks": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ageMonths": "{n, plural, =1{1 Monat} other{{n} Monate}}",
+  "@ageMonths": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ageYears": "{n, plural, =1{1 Jahr} other{{n} Jahre}}",
+  "@ageYears": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "ageYearsMonths": "{years, plural, =1{1 Jahr} other{{years} Jahre}} und {months, plural, =1{1 Monat} other{{months} Monate}}",
+  "@ageYearsMonths": {
+    "placeholders": {
+      "years": {
+        "type": "int"
+      },
+      "months": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetTasksToday": "✅ {n, plural, =1{1 Aufgabe} other{{n} Aufgaben}} heute",
+  "@widgetTasksToday": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "widgetThingsToBuy": "🛒 {n, plural, =1{1 Sache} other{{n} Sachen}} einkaufen",
+  "@widgetThingsToBuy": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "weekPreviewTitle": "Deine Woche: {n, plural, =1{1 Termin} other{{n} Termine}}",
+  "@weekPreviewTitle": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "weekPreviewLifts": "{n, plural, =1{1 Fahrt} other{{n} Fahrten}}",
+  "@weekPreviewLifts": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "updateLatest": "Neueste Version: {version}",
+  "@updateLatest": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      }
+    }
+  },
+  "updateLatestFrom": "Neueste Version: {version} (vom {date})",
+  "@updateLatestFrom": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      },
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "syncSyncing": "Synchronisiere …",
+  "syncOfflinePendingChangeS": "Offline – {pending} Änderung(en) warten\n{message}",
+  "@syncOfflinePendingChangeS": {
+    "placeholders": {
+      "pending": {
+        "type": "Object?"
+      },
+      "message": {
+        "type": "Object?"
+      }
+    }
+  },
+  "syncPendingChangeSWaiting": "{pending} Änderung(en) warten",
+  "@syncPendingChangeSWaiting": {
+    "placeholders": {
+      "pending": {
+        "type": "Object?"
+      }
+    }
+  },
+  "syncSynchronized": "Synchronisiert",
+  "syncSynchronizedTime": "Synchronisiert um {time}",
+  "@syncSynchronizedTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "caldavServerAddressHomeNetwork": "Serveradresse (Heimnetz)",
+  "caldavLastTime": "zuletzt {time}",
+  "@caldavLastTime": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "caldavConnectedButError": "Verbunden, aber: {error}",
+  "@caldavConnectedButError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "locationFamilySLocation": "Standort der Familie",
+  "locationSendCheck": "Check-in senden",
+  "kidsNotAllHealthInsurers": " · nicht bei allen Kassen",
+  "passwordPaste": "Einfügen",
+  "passwordSelectAll": "Alles auswählen",
+  "passwordHide": "Verbergen",
+  "passwordShowBriefly": "Kurz anzeigen",
+  "undoDeleted": "Gelöscht",
+  "undoWhatDeleted": "„{what}“ gelöscht",
+  "@undoWhatDeleted": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "updateResponseCode": "Antwort {code}",
+  "@updateResponseCode": {
+    "placeholders": {
+      "code": {
+        "type": "Object?"
+      }
+    }
+  },
+  "updateReleaseListNotReachable": "Die Release-Liste ist gerade nicht erreichbar. Später erneut versuchen.",
+  "updateServerVersionState": "Server: {version}{state}",
+  "@updateServerVersionState": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      },
+      "state": {
+        "type": "Object?"
+      }
+    }
+  },
+  "updateAvailable": " – Update verfügbar",
+  "updateCurrent": " – aktuell",
+  "updateAppVersionState": "Diese App: {version}{state}",
+  "@updateAppVersionState": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      },
+      "state": {
+        "type": "Object?"
+      }
+    }
+  },
+  "updateWhatSNewHow": "Was neu ist und wie man es einspielt, steht im Release-Text.",
+  "updateFamioVersion": "Famio-Version",
+  "updateViewRelease": "Release ansehen",
+  "shellConnectionRestored": "Verbindung wiederhergestellt",
+  "shellServerSCertificateHas": "Das Zertifikat des Servers hat sich geändert. Bis zur Prüfung bleibt Famio offline.",
+  "shellCheck": "Prüfen",
+  "familyNameDropsOffPicks": "🚗 {name} bringt und holt ab",
+  "@familyNameDropsOffPicks": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "familyNamePicksUp": "{name} holt ab",
+  "@familyNamePicksUp": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "widgetNameAsleepSinceTime": "🌙 {name} schläft seit {time}",
+  "@widgetNameAsleepSinceTime": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      },
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "weekPreviewDropOffTitle": "🚗 bringen: {title}",
+  "@weekPreviewDropOffTitle": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "weekPreviewPickUpTitle": "🚗 abholen: {title}",
+  "@weekPreviewPickUpTitle": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wasteDaysDays": "In {days} Tagen",
+  "@wasteDaysDays": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      }
+    }
+  },
+  "ocrPdfNotReadableError": "PDF nicht lesbar: {error}",
+  "@ocrPdfNotReadableError": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "ocrTextRecognitionNotPossible": "Texterkennung nicht möglich: {error}",
+  "@ocrTextRecognitionNotPossible": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "birthdayChooseBirthday": "Geburtstag wählen",
+  "birthdayYearUnknown": "Jahr unbekannt",
+  "filesGallery": "Aus der Galerie",
+  "filesChooseFilePhoto": "Datei oder Foto auswählen",
+  "sosLocationUnknown": "Standort unbekannt.",
+  "sosLocationHttpsWwwOpenstreetmap": "Standort: https://www.openstreetmap.org/?mlat={lat}&mlon={lon}",
+  "@sosLocationHttpsWwwOpenstreetmap": {
+    "placeholders": {
+      "lat": {
+        "type": "Object?"
+      },
+      "lon": {
+        "type": "Object?"
+      }
+    }
+  },
+  "sosSosNameFamioI": "SOS von {name} (Famio): Ich brauche Hilfe! {where}",
+  "@sosSosNameFamioI": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      },
+      "where": {
+        "type": "Object?"
+      }
+    }
+  },
+  "whatsNewNewVersionTitle": "Neu in {version}{title}",
+  "@whatsNewNewVersionTitle": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      },
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "whatsNewOlderVersionsListedReleases": "Ältere Versionen stehen bei den Releases.",
+  "choresNoChoresCreatedYet": "Noch keine Ämter angelegt.",
+  "phoneCallingNotPossibleNumber": "Anrufen nicht möglich – Nummer: {number}",
+  "@phoneCallingNotPossibleNumber": {
+    "placeholders": {
+      "number": {
+        "type": "Object?"
+      }
+    }
+  },
+  "phoneNoEmailAppFound": "Kein Mailprogramm gefunden – {address}",
+  "@phoneNoEmailAppFound": {
+    "placeholders": {
+      "address": {
+        "type": "Object?"
+      }
+    }
+  },
+  "commonDevice": "Gerät",
+  "mapShowEveryoneFollowAgain": "Alle zeigen und wieder mitführen",
+  "mapMapProvider": "Karte: {provider}",
+  "@mapMapProvider": {
+    "placeholders": {
+      "provider": {
+        "type": "Object?"
+      }
+    }
+  },
+  "familyNameDropsOff": "{name} bringt",
+  "@familyNameDropsOff": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
   }
 }

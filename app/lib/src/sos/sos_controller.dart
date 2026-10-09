@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../data/family_extras.dart';
 import 'sos_device.dart';
+import '../l10n.dart';
 
 /// What happened when the button was pressed, for the screen.
 enum SosStep { starting, sent, offline, failed }
@@ -18,12 +19,14 @@ class SosController extends ChangeNotifier {
     this.interval = const Duration(seconds: 20),
     this.serverUrl,
     this.pin,
-    this.device = 'Telefon',
-  });
+    String? device,
+  }) : device = device ?? tr.contactsPhone;
 
   /// For the background service (Android).
   final String? serverUrl;
   final String? pin;
+
+  /// Name of this device for the server (shown to the parents).
   final String device;
 
   /// The press running on this device, so its screen can be reopened.
@@ -84,11 +87,12 @@ class SosController extends ChangeNotifier {
   /// The text sent without internet.
   static String smsText(String name, SosFix? fix) {
     final where = fix == null
-        ? 'Standort unbekannt.'
-        : 'Standort: https://www.openstreetmap.org/?mlat='
-              '${fix.latitude.toStringAsFixed(6)}&mlon='
-              '${fix.longitude.toStringAsFixed(6)}';
-    return 'SOS von $name (Famio): Ich brauche Hilfe! $where';
+        ? tr.sosLocationUnknown
+        : tr.sosLocationHttpsWwwOpenstreetmap(
+            fix.latitude.toStringAsFixed(6),
+            fix.longitude.toStringAsFixed(6),
+          );
+    return tr.sosSosNameFamioI(name, where);
   }
 
   Future<void> siren(bool on) async {

@@ -277,7 +277,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                     address(
                       publicUrl == null
                           ? tr.commonServerAddress
-                          : 'Serveradresse (Heimnetz)',
+                          : tr.caldavServerAddressHomeNetwork,
                       local,
                     ),
                     ListTile(
@@ -309,7 +309,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                   [
                     p.lastUsed == null
                         ? tr.caldavNotUsedYet
-                        : 'zuletzt ${dateFormat.format(p.lastUsed!)}',
+                        : tr.caldavLastTime(dateFormat.format(p.lastUsed!)),
                     if (p.includeConfidential) tr.caldavPrivateEvents,
                   ].join(' · '),
                 ),
@@ -786,7 +786,7 @@ class _ConnectCalDavPageState extends State<_ConnectCalDavPage> {
       if (!mounted) return;
       if (account.error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Verbunden, aber: ${account.error}')),
+          SnackBar(content: Text(tr.caldavConnectedButError(account.error))),
         );
       }
       Navigator.pop(context, true);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../design/app_icons.dart';
 import '../design/palette.dart';
+import '../l10n.dart';
 
 /// Asks whether to trust the server's own certificate, showing its
 /// fingerprint to compare with the server log or Server-Verwaltung.
@@ -22,20 +23,14 @@ Future<bool> confirmCertificate(
       // Fits small phones with the keyboard still open.
       scrollable: true,
       icon: Icon(AppIcons.shield, color: c.strong(FamioSection.settings)),
-      title: const Text('Zertifikat des Servers prüfen'),
+      title: Text(tr.trustCheckServerSCertificate),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Der Server verschlüsselt die Verbindung mit einem eigenen '
-              'Zertifikat. Vergleiche den Fingerabdruck einmalig mit dem '
-              'im Server-Log (z. B. „docker logs famio“) oder unter '
-              'Einstellungen → Server-Verwaltung → Status auf einem '
-              'anderen Gerät:',
-            ),
+            Text(tr.trustServerEncryptsConnectionIts),
             const SizedBox(height: 16),
             Container(
               width: double.infinity,
@@ -54,22 +49,18 @@ Future<bool> confirmCertificate(
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              'Stimmt er nicht überein, abbrechen – dann könnte jemand die '
-              'Verbindung abfangen.',
-              style: TextStyle(color: c.inkSoft),
-            ),
+            Text(tr.trustIfDoesNotMatch, style: TextStyle(color: c.inkSoft)),
           ],
         ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, false),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
         FilledButton(
           onPressed: () => Navigator.pop(context, true),
-          child: const Text('Stimmt überein'),
+          child: Text(tr.trustMatches),
         ),
       ],
     ),

@@ -11,6 +11,7 @@ import '../format.dart';
 import 'data_builder.dart';
 import 'member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import '../l10n.dart';
 
 /// "Wer bringt den Kuchen mit?" – comments under an event.
 class EventComments extends StatefulWidget {
@@ -51,8 +52,8 @@ class _EventCommentsState extends State<EventComments> {
           children: [
             ListHeading(
               comments.isEmpty
-                  ? 'Kommentare'
-                  : 'Kommentare (${comments.length})',
+                  ? tr.commentsComments
+                  : tr.commentsCommentsCount(comments.length),
             ),
             for (final comment in comments)
               Padding(
@@ -61,7 +62,7 @@ class _EventCommentsState extends State<EventComments> {
                   onLongPress: comment.authorId == engine.memberId
                       ? () => deleteWithUndo(
                           context,
-                          message: 'Kommentar gelöscht',
+                          message: tr.commentsCommentDeleted,
                           collections: const {Collections.eventComments},
                           delete: () => engine.deleteEventComment(comment.id),
                         )
@@ -106,8 +107,8 @@ class _EventCommentsState extends State<EventComments> {
                     minLines: 1,
                     maxLines: 4,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(
-                      hintText: 'Kommentar, z. B. „Ich bringe Kuchen mit“',
+                    decoration: InputDecoration(
+                      hintText: tr.commentsCommentEGI,
                       prefixIcon: Icon(AppIcons.comment),
                     ),
                     onSubmitted: (_) => _send(),
@@ -116,7 +117,7 @@ class _EventCommentsState extends State<EventComments> {
                 const SizedBox(width: 8),
                 BubbleButton(
                   icon: AppIcons.paperPlaneRight,
-                  tooltip: 'Senden',
+                  tooltip: tr.commonSend,
                   color: Colors.white,
                   background: c.strong(FamioSection.calendar),
                   onPressed: _send,

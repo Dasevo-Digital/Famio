@@ -1,3 +1,5 @@
+import '../l10n.dart';
+
 /// Login names as the server accepts them: 2–32 characters of
 /// `A–Z a–z 0–9 . _ -` (see `Accounts._checkUsername` on the server).
 final _valid = RegExp(r'^[A-Za-z0-9._-]{2,32}$');
@@ -7,10 +9,10 @@ bool isValidUsername(String username) => _valid.hasMatch(username);
 /// Why [username] would be refused, or null when it is fine.
 String? usernameProblem(String username) {
   if (username.isEmpty) return null;
-  if (username.length < 2) return 'Mindestens 2 Zeichen';
-  if (username.length > 32) return 'Höchstens 32 Zeichen';
+  if (username.length < 2) return tr.usernamesLeast2Characters;
+  if (username.length > 32) return tr.usernamesMost32Characters;
   if (!isValidUsername(username)) {
-    return 'Nur Buchstaben ohne Umlaute, Ziffern und . _ -';
+    return tr.usernamesOnlyLettersWithoutUmlauts;
   }
   return null;
 }

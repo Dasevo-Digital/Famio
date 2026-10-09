@@ -747,7 +747,7 @@ class _CertificateBanner extends StatelessWidget {
     try {
       await state.acceptChangedCertificate();
       messenger.showSnackBar(
-        const SnackBar(content: Text('Verbindung wiederhergestellt')),
+        SnackBar(content: Text(tr.shellConnectionRestored)),
       );
     } on ApiError catch (e) {
       messenger.showSnackBar(SnackBar(content: Text(e.message)));
@@ -767,16 +767,11 @@ class _CertificateBanner extends StatelessWidget {
             children: [
               Icon(AppIcons.shield, color: c.strong(FamioSection.home)),
               const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Das Zertifikat des Servers hat sich geändert. Bis zur '
-                  'Prüfung bleibt Famio offline.',
-                ),
-              ),
+              Expanded(child: Text(tr.shellServerSCertificateHas)),
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: () => _check(context),
-                child: const Text('Prüfen'),
+                child: Text(tr.shellCheck),
               ),
             ],
           ),

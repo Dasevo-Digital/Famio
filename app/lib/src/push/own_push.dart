@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../l10n.dart';
 
 /// What this device does with Famio's own push.
 class OwnPushStatus {
@@ -63,7 +64,7 @@ class OwnPush {
   FamioApiClient? _api;
   String? _serverUrl;
   String? _pin;
-  String _device = 'Gerät';
+  String _device = tr.commonDevice;
   var _generation = 0;
 
   Future<OwnPushStatus> status() async {

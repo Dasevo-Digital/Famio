@@ -36,11 +36,7 @@ class _MilestonesView extends StatelessWidget {
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
       children: [
-        _Disclaimer(
-          'Richtwerte: Die meisten Kinder erreichen diese Schritte im angegebenen '
-          'Zeitraum – manche früher, manche später. Jedes Kind hat sein eigenes '
-          'Tempo. Bei Fragen hilft die Kinderärztin oder der Kinderarzt.',
-        ),
+        _Disclaimer(tr.milestonesGuideValuesMostChildren),
         for (final area in MilestoneArea.values)
           if (visible.any((m) => m.area == area)) ...[
             ListHeading(area.label),
@@ -59,11 +55,11 @@ class _MilestonesView extends StatelessWidget {
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(horizontal: 8),
               childrenPadding: EdgeInsets.zero,
-              title: const Text('Früher erreicht? Nachtragen'),
+              title: Text(tr.milestonesReachedEarlierAdd),
               subtitle: Text(
                 past.length == 1
-                    ? '1 Meilenstein, dessen Zeitraum vorbei ist'
-                    : '${past.length} Meilensteine, deren Zeitraum vorbei ist',
+                    ? tr.milestones1MilestoneWhosePeriod
+                    : tr.milestonesCountMilestonesWhosePeriod(past.length),
               ),
               children: [
                 for (final m in past)
@@ -157,9 +153,17 @@ class _MilestoneRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     done
-                        ? 'Geschafft am ${_date.format(entry!.date)} (mit ${ageLabel(child, entry!.date)})'
-                        : 'Meist zwischen ${_months(milestone.fromMonth)} und ${_months(milestone.toMonth)}'
-                              '${milestone.hint.isEmpty ? '' : ' · ${milestone.hint}'}',
+                        ? tr.milestonesReachedDateAge(
+                            _date.format(entry!.date),
+                            ageLabel(child, entry!.date),
+                          )
+                        : tr.milestonesUsuallyBetweenHint(
+                            _months(milestone.fromMonth),
+                            _months(milestone.toMonth),
+                            milestone.hint.isEmpty
+                                ? ''
+                                : ' · ${milestone.hint}',
+                          ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: done ? c.ink : c.inkSoft,
                     ),

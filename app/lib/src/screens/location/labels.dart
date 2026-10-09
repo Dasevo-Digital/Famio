@@ -3,34 +3,40 @@ part of '../location_screens.dart';
 /// "Bei „Schule“ seit 8:02", "Unterwegs · vor 5 Min." …
 String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
   now ??= DateTime.now();
-  if (l == null) return 'Teilt keinen Standort';
+  if (l == null) return tr.locationNotSharingLocation;
   final time = DateFormat.jm(appLanguage);
   switch (l.state) {
     case SharingState.paused:
       final until = l.pausedUntil;
-      if (until == null) return 'Pausiert';
+      if (until == null) return tr.locationPaused;
       return DateUtils.isSameDay(until, now)
-          ? 'Pausiert bis ${time.format(until)} Uhr'
-          : 'Pausiert bis ${DateFormat.E(appLanguage).add_jm().format(until)} Uhr';
+          ? tr.locationPausedUntil(time.format(until))
+          : tr.locationPausedUntil(
+              DateFormat.E(appLanguage).add_jm().format(until),
+            );
     case SharingState.denied:
-      return 'Standortzugriff auf dem Handy fehlt';
+      return tr.locationLocationAccessMissingPhone;
     case SharingState.off:
-      return 'Standort am Handy ausgeschaltet';
+      return tr.locationLocationTurnedOffPhone2;
     case SharingState.scheduled:
-      return 'Standortfreigabe ist nach Zeitplan gerade aus';
+      return tr.locationLocationSharingOffRight;
     case SharingState.active:
       final at = l.at;
-      if (at == null) return 'Noch keine Position';
+      if (at == null) return tr.locationNoPositionYet;
       if (_positionStale(l, now)) {
         final suffix = place == null ? '' : ': „${place.name}“';
-        return 'Letzter Standort$suffix · ${ago(at, now: now)} · möglicherweise veraltet';
+        return tr.locationLastLocationPlaceAgo(suffix, ago(at, now: now));
       }
       if (place != null) {
-        return 'Bei „${place.name}“'
-            '${l.placeSince == null ? '' : ' seit ${time.format(l.placeSince!)}'}'
-            ' · zuletzt bestätigt ${ago(at, now: now)}';
+        return tr.locationPlaceSinceLastConfirmed(
+          place.name,
+          l.placeSince == null
+              ? ''
+              : tr.locationSinceTime(time.format(l.placeSince!)),
+          ago(at, now: now),
+        );
       }
-      return 'Unterwegs · zuletzt bestätigt ${ago(at, now: now)}';
+      return tr.locationWayLastConfirmedAgo(ago(at, now: now));
   }
 }
 
@@ -41,17 +47,21 @@ bool _positionStale(MemberLocation l, DateTime now) =>
 
 String ago(DateTime t, {DateTime? now}) {
   final d = (now ?? DateTime.now()).difference(t);
-  if (d.inMinutes < 2) return 'gerade eben';
-  if (d.inMinutes < 60) return 'vor ${d.inMinutes} Min.';
-  if (d.inHours < 24) return 'vor ${d.inHours} Std.';
+  if (d.inMinutes < 2) return tr.agoJustNow;
+  if (d.inMinutes < 60) return tr.agoAgo(tr.agoMinutes(d.inMinutes));
+  if (d.inHours < 24) return tr.agoAgo(tr.agoHours(d.inHours));
   return DateFormat.Md(appLanguage).add_jm().format(t);
 }
 
 String scheduleLabel(LocationSchedule? schedule) {
-  if (schedule == null) return 'Immer teilen';
+  if (schedule == null) return tr.locationAlwaysShare;
   final names = weekdaysShort();
   final days = schedule.weekdays.map((day) => names[day - 1]).join(', ');
   String clock(int minute) =>
       '${(minute ~/ 60).toString().padLeft(2, '0')}:${(minute % 60).toString().padLeft(2, '0')}';
-  return '$days · ${clock(schedule.startMinute)}–${clock(schedule.endMinute)} Uhr';
+  return tr.locationDays2(
+    days,
+    clock(schedule.startMinute),
+    clock(schedule.endMinute),
+  );
 }

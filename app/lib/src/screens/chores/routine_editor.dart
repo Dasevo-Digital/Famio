@@ -103,14 +103,16 @@ class _RoutineEditorState extends State<_RoutineEditor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              widget.routine == null ? 'Neue Routine' : 'Routine bearbeiten',
+              widget.routine == null
+                  ? tr.routinesNewRoutine
+                  : tr.routinesEditRoutine,
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _title,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Name'),
+              decoration: InputDecoration(labelText: tr.commonName),
             ),
             const SizedBox(height: 12),
             _EmojiRow(
@@ -118,13 +120,13 @@ class _RoutineEditorState extends State<_RoutineEditor> {
               selected: _emoji,
               onSelected: (e) => setState(() => _emoji = e),
             ),
-            const ListHeading('Für wen?'),
+            ListHeading(tr.medsWhom),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 ChoiceChip(
-                  label: const Text('Alle'),
+                  label: Text(tr.commonEveryone),
                   selected: _memberId == null,
                   selectedColor: tint,
                   onSelected: (_) => setState(() => _memberId = null),
@@ -139,7 +141,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                   ),
               ],
             ),
-            const ListHeading('An welchen Tagen?'),
+            ListHeading(tr.routinesWhichDays),
             _WeekdayPicker(
               selected: _weekdays,
               onChanged: (d) => setState(() => _weekdays = d),
@@ -151,7 +153,9 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                 InputChip(
                   avatar: const Icon(AppIcons.alarm, size: 18),
                   label: Text(
-                    _time == null ? 'Erinnern um …' : 'Erinnerung $_time',
+                    _time == null
+                        ? tr.routinesRemind
+                        : tr.routinesReminderTime(_time),
                   ),
                   onPressed: () async {
                     final parts = (_time ?? '07:00').split(':');
@@ -176,13 +180,13 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                 ),
               ],
             ),
-            const ListHeading('Punkte, wenn alles erledigt ist'),
+            ListHeading(tr.routinesPointsWhenEverythingDone),
             _Stepper(
               value: _points,
               max: 50,
               onChanged: (v) => setState(() => _points = v),
             ),
-            const ListHeading('Schritte'),
+            ListHeading(tr.routinesSteps),
             for (final (i, step) in _steps.indexed)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -206,12 +210,12 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                         controller: step.title,
                         textCapitalization: TextCapitalization.sentences,
                         decoration: InputDecoration(
-                          hintText: 'Schritt ${i + 1}',
+                          hintText: tr.routinesStepNumber(i + 1),
                         ),
                       ),
                     ),
                     IconButton(
-                      tooltip: 'Nach oben',
+                      tooltip: tr.routinesMoveUp,
                       icon: const Icon(AppIcons.arrowUp),
                       onPressed: i == 0
                           ? null
@@ -220,7 +224,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                             }),
                     ),
                     IconButton(
-                      tooltip: 'Entfernen',
+                      tooltip: tr.commonRemove,
                       icon: const Icon(AppIcons.x),
                       onPressed: () => setState(() {
                         _steps.removeAt(i).dispose();
@@ -233,7 +237,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
               alignment: Alignment.centerLeft,
               child: TextButton.icon(
                 icon: const Icon(AppIcons.plus),
-                label: const Text('Schritt hinzufügen'),
+                label: Text(tr.routinesAddStep),
                 onPressed: () =>
                     setState(() => _steps.add(_EditableStep(newId(), '', ''))),
               ),
@@ -244,7 +248,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                 if (widget.routine != null)
                   TextButton.icon(
                     icon: const Icon(AppIcons.trash, size: 18),
-                    label: const Text('Löschen'),
+                    label: Text(tr.commonDelete),
                     style: TextButton.styleFrom(foregroundColor: c.danger),
                     onPressed: () {
                       deleteWithUndo(
@@ -258,7 +262,7 @@ class _RoutineEditorState extends State<_RoutineEditor> {
                   ),
                 const Spacer(),
                 ColorButton(
-                  label: 'Speichern',
+                  label: tr.commonSave,
                   color: c.strong(FamioSection.chores),
                   onPressed: _save,
                 ),

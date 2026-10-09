@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import '../l10n.dart';
 
 /// Text in a photo, recognised on the device (Vision on Apple devices,
 /// ML Kit on Android). Null where unavailable or nothing was found.
@@ -20,7 +21,7 @@ class Ocr {
       });
       return text == null || text.trim().isEmpty ? null : text;
     } catch (e) {
-      debugPrint('PDF nicht lesbar: $e');
+      debugPrint(tr.ocrPdfNotReadableError(e));
       return null;
     }
   }
@@ -33,7 +34,7 @@ class Ocr {
       });
       return text == null || text.trim().isEmpty ? null : text;
     } catch (e) {
-      debugPrint('Texterkennung nicht möglich: $e');
+      debugPrint(tr.ocrTextRecognitionNotPossible(e));
       return null;
     }
   }

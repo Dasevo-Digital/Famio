@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 
 import 'family_data.dart';
+import '../l10n.dart';
 
 /// Typed access to the modules added in 0.13: chores, points and pocket
 /// money, routines, event comments, polls, list templates, the pantry and
@@ -158,7 +159,7 @@ extension FamilyExtras on SyncEngine {
         id: newId(),
         memberId: memberId,
         points: -points,
-        title: 'In Taschengeld getauscht',
+        title: tr.extrasExchangedPocketMoney,
         kind: PointKind.payout,
         at: now,
         decidedBy: this.memberId,
@@ -171,7 +172,7 @@ extension FamilyExtras on SyncEngine {
         cents: points * rate,
         at: now,
         kind: MoneyKind.points,
-        note: '$points Punkte',
+        note: tr.extrasPointsPoints(points),
       ),
     );
   }

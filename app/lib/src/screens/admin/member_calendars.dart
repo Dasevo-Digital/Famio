@@ -55,12 +55,12 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
         if (snapshot.hasError) {
           return ListTile(
             leading: const Icon(AppIcons.cloudSlash),
-            title: const Text('Nur mit Verbindung zum Server verfügbar'),
+            title: Text(tr.commonOnlyWithServer),
             trailing: TextButton(
               onPressed: () => setState(
                 () => _calendars = _api.memberCalendars(widget.member.id),
               ),
-              child: const Text('Erneut'),
+              child: Text(tr.commonAgain),
             ),
           );
         }
@@ -76,18 +76,12 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Text(
-                all.isEmpty
-                    ? 'Noch hat niemand einen Kalender mit '
-                          '${widget.isMe ? 'dir' : name} geteilt. Eigene '
-                          'Kalender verbindet jedes Mitglied unter '
-                          'Kalender → Kalender verbinden.'
-                    : 'Diese Kalender haben andere mit '
-                          '${widget.isMe ? 'dir' : name} geteilt. Was hier '
-                          'aus ist, sieht ${widget.isMe ? 'du' : name} in '
-                          'Famio nicht. Eigene Kalender sieht jeder immer.',
-                style: TextStyle(color: c.inkSoft),
-              ),
+              child: Text(switch ((all.isEmpty, widget.isMe)) {
+                (true, true) => tr.memberCalendarsNoneMe,
+                (true, false) => tr.memberCalendarsNone(name),
+                (false, true) => tr.memberCalendarsSharedMe,
+                (false, false) => tr.memberCalendarsShared(name),
+              }, style: TextStyle(color: c.inkSoft)),
             ),
             for (final cal in all)
               SwitchListTile(
@@ -101,11 +95,14 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
                     switch (cal.kind) {
                       'google' => 'Google',
                       'caldav' => 'CalDAV',
-                      _ => 'Abo',
+                      _ => tr.calendarSubscription,
                     },
                     cal.ownerId == null
-                        ? 'für die ganze Familie'
-                        : 'von ${engine.member(cal.ownerId)?.displayName ?? 'unbekannt'}',
+                        ? tr.memberCalendarsWholeFamily
+                        : tr.memberCalendarsName(
+                            engine.member(cal.ownerId)?.displayName ??
+                                tr.memberCalendarsUnknown,
+                          ),
                   ].join(' · '),
                 ),
                 value: !cal.hidden,

@@ -29,19 +29,19 @@ class _GrowthView extends StatelessWidget {
     ];
     final charts = [
       (
-        'Größe (cm)',
+        tr.kidsHeightCm,
         GrowthMeasure.length,
         series((e) => e.heightCm),
         const Color(0xFF3587D6),
       ),
       (
-        'Gewicht (kg)',
+        tr.kidsWeightKg,
         GrowthMeasure.weight,
         series((e) => e.weightKg),
         const Color(0xFFE8703A),
       ),
       (
-        'Kopfumfang (cm)',
+        tr.growthHeadCircumferenceCm,
         GrowthMeasure.head,
         series((e) => e.headCm),
         const Color(0xFF7B5BE0),
@@ -54,7 +54,7 @@ class _GrowthView extends StatelessWidget {
         Align(
           alignment: Alignment.centerLeft,
           child: ColorButton(
-            label: 'Messung eintragen',
+            label: tr.growthAddMeasurement,
             icon: AppIcons.ruler,
             color: const Color(0xFF2A9D6E),
             onPressed: () => showEntryEditor(
@@ -91,22 +91,17 @@ class _GrowthView extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Text(
-              'Ab zwei Messungen erscheint hier eine Kurve. Die Werte aus dem '
-              'U-Heft eignen sich gut dafür – sie lassen sich auch direkt bei '
-              'der Vorsorge eintragen.',
+              tr.growthCurveAppearsHereTwo,
               style: theme.textTheme.bodySmall,
             ),
           ),
         Text(
           sex == null
-              ? 'Mit dem Geschlecht im Profil zeigt Famio die WHO-Kurven '
-                    '(0–24 Monate) zum Vergleich.'
-              : 'Grau: WHO-Wachstumsstandards, 3., 50. und 97. Perzentile '
-                    '(0–24 Monate). Wichtig ist der Verlauf, nicht ein '
-                    'einzelner Wert – Fragen gern beim Kinderarzt.',
+              ? tr.growthGenderProfileFamioShows
+              : tr.growthGrayWhoGrowthStandards,
           style: theme.textTheme.bodySmall,
         ),
-        const ListHeading('Alle Messungen'),
+        ListHeading(tr.growthAllMeasurements),
         for (final e in measured.reversed)
           ListTile(
             leading: Icon(
@@ -118,15 +113,15 @@ class _GrowthView extends StatelessWidget {
               [
                 if (e.heightCm != null) '${_num(e.heightCm!)} cm',
                 if (e.weightKg != null) '${_num(e.weightKg!)} kg',
-                if (e.headCm != null) 'Kopf ${_num(e.headCm!)} cm',
+                if (e.headCm != null) tr.kidsHeadSizeCm(_num(e.headCm!)),
               ].join(' · '),
             ),
             subtitle: Text(
               [
                 if (e.kind == ChildEntryKind.checkup)
-                  checkupById(e.refId)?.id ?? 'Vorsorge',
-                e.dateUnknown ? 'Datum unbekannt' : _date.format(e.date),
-                if (!e.dateUnknown) 'mit ${ageLabel(child, e.date)}',
+                  checkupById(e.refId)?.id ?? tr.kidsTabCheckups,
+                e.dateUnknown ? tr.kidsDateUnknown : _date.format(e.date),
+                if (!e.dateUnknown) tr.growthAge(ageLabel(child, e.date)),
               ].join(' · '),
             ),
             onTap: () => showEntryEditor(
@@ -194,7 +189,7 @@ class _ChartCard extends StatelessWidget {
               ),
               if (percentile != null)
                 Text(
-                  'Perzentile ${percentile!.round().clamp(1, 99)}',
+                  tr.growthPercentileValue(percentile!.round().clamp(1, 99)),
                   style: Theme.of(
                     context,
                   ).textTheme.labelLarge?.copyWith(color: color),

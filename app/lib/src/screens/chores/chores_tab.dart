@@ -13,7 +13,7 @@ class _ChoresTab extends StatelessWidget {
       return EmptyHint(
         icon: AppIcons.listChecks,
         color: c.strong(FamioSection.chores),
-        text: 'Noch keine Ämter angelegt.',
+        text: tr.choresNoChoresCreatedYet,
       );
     }
     final today = DateTime.now();

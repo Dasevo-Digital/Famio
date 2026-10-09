@@ -41,9 +41,9 @@ WeekPreview? buildWeekPreview(SyncEngine engine, DateTime monday) {
         day.format(o.start).replaceAll('.', ''),
         if (!o.event.allDay) time.format(o.start),
         if (o.event.bringerId == me)
-          '🚗 bringen: ${o.event.title}'
+          tr.weekPreviewDropOffTitle(o.event.title)
         else if (o.event.pickerId == me)
-          '🚗 abholen: ${o.event.title}'
+          tr.weekPreviewPickUpTitle(o.event.title)
         else
           o.event.title,
       ].join(' '),
@@ -54,13 +54,13 @@ WeekPreview? buildWeekPreview(SyncEngine engine, DateTime monday) {
   final shown = lines.length > WeekPreview.maxLines
       ? [
           ...lines.take(WeekPreview.maxLines - 1),
-          '… und ${lines.length - WeekPreview.maxLines + 1} weitere',
+          tr.kioskCountMore2(lines.length - WeekPreview.maxLines + 1),
         ]
       : lines;
   return WeekPreview(
     title: [
-      'Deine Woche: ${items.length == 1 ? '1 Termin' : '${items.length} Termine'}',
-      if (lifts > 0) lifts == 1 ? '1 Fahrt' : '$lifts Fahrten',
+      tr.weekPreviewTitle(items.length),
+      if (lifts > 0) tr.weekPreviewLifts(lifts),
     ].join(' · '),
     lines: shown,
   );

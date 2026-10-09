@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 
 import '../data/family_data.dart';
 import 'member_avatar.dart';
+import '../l10n.dart';
 
 /// "Ganze Familie", "Nur ich" or the names of the chosen members.
 String sharingLabel(SyncEngine engine, CalendarSharing sharing) {
-  if (sharing.family) return 'Ganze Familie';
+  if (sharing.family) return tr.commonWholeFamily;
   final names = [
     for (final id in sharing.members!)
       if (id != engine.memberId) ?engine.member(id)?.displayName,
   ];
-  return names.isEmpty ? 'Nur ich' : 'Ich, ${names.join(', ')}';
+  return names.isEmpty ? tr.docsOnlyMe : tr.sharingMeNames(names.join(', '));
 }
 
 /// Chooses who besides the owner sees a connected calendar.
@@ -43,13 +44,13 @@ class CalendarSharingPicker extends StatelessWidget {
           runSpacing: 8,
           children: [
             ChoiceChip(
-              label: const Text('Ganze Familie'),
+              label: Text(tr.commonWholeFamily),
               selected: value.family,
               onSelected: (_) => onChanged(const CalendarSharing.family()),
             ),
             if (others.isNotEmpty)
               ChoiceChip(
-                label: const Text('Ausgewählte'),
+                label: Text(tr.sharingSelected),
                 selected: selected,
                 onSelected: (_) => onChanged(
                   CalendarSharing.only(
@@ -58,7 +59,7 @@ class CalendarSharingPicker extends StatelessWidget {
                 ),
               ),
             ChoiceChip(
-              label: const Text('Nur ich'),
+              label: Text(tr.docsOnlyMe),
               selected: value.private,
               onSelected: (_) => onChanged(const CalendarSharing.private()),
             ),
@@ -103,14 +104,14 @@ Future<CalendarSharing?> showSharingDialog(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
-        title: Text('„$title“ teilen'),
+        title: Text(tr.sharingShareTitle(title)),
         content: SizedBox(
           width: 420,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('Wer sieht die Termine dieses Kalenders in Famio?'),
+              Text(tr.sharingWhoSeesEventsCalendar),
               const SizedBox(height: 12),
               CalendarSharingPicker(
                 engine: engine,
@@ -123,11 +124,11 @@ Future<CalendarSharing?> showSharingDialog(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+            child: Text(tr.commonCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, value),
-            child: const Text('Speichern'),
+            child: Text(tr.commonSave),
           ),
         ],
       ),

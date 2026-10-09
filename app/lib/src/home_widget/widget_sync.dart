@@ -41,14 +41,14 @@ import '../l10n.dart';
       )
       .length;
   if (tasks > 0) {
-    lines.add('✅ $tasks ${tasks == 1 ? 'Aufgabe' : 'Aufgaben'} heute');
+    lines.add(tr.widgetTasksToday(tasks));
   }
   var open = 0;
   for (final l in engine.shoppingLists) {
     open += engine.shoppingItems(l.id).where((i) => !i.checked).length;
   }
   if (open > 0) {
-    lines.add('🛒 $open ${open == 1 ? 'Sache' : 'Sachen'} einkaufen');
+    lines.add(tr.widgetThingsToBuy(open));
   }
   for (final k in engine.children) {
     final sleeping = engine
@@ -56,7 +56,9 @@ import '../l10n.dart';
         .where((l) => l.kind == LogKind.sleep && l.running)
         .firstOrNull;
     if (sleeping != null) {
-      lines.add('🌙 ${k.name} schläft seit ${time.format(sleeping.start)}');
+      lines.add(
+        tr.widgetNameAsleepSinceTime(k.name, time.format(sleeping.start)),
+      );
     }
   }
   return (

@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 
 import 'birthdays.dart';
 import 'holidays.dart';
+import '../l10n.dart';
 
 /// Typed access to the generic records, one section per module.
 extension FamilyData on SyncEngine {
@@ -179,8 +180,10 @@ extension FamilyData on SyncEngine {
     final bring = member(e.bringerId)?.displayName;
     final pick = member(e.pickerId)?.displayName;
     if (bring == null && pick == null) return null;
-    if (bring != null && bring == pick) return '🚗 $bring bringt und holt ab';
-    return '🚗 ${[if (bring != null) '$bring bringt', if (pick != null) '$pick holt ab'].join(' · ')}';
+    if (bring != null && bring == pick) {
+      return tr.familyNameDropsOffPicks(bring);
+    }
+    return '🚗 ${[if (bring != null) tr.familyNameDropsOff(bring), if (pick != null) tr.familyNamePicksUp(pick)].join(' · ')}';
   }
 
   /// All occurrences (own and imported) overlapping `[from, to)`; all-day
@@ -630,10 +633,12 @@ extension FamilyData on SyncEngine {
 /// "heute", "morgen", "noch 12 Tage"; "läuft" once a several-day event
 /// has begun.
 String countdownLabel(Occurrence o, int days, DateTime now) {
-  if (o.start.isBefore(DateTime(now.year, now.month, now.day))) return 'läuft';
+  if (o.start.isBefore(DateTime(now.year, now.month, now.day))) {
+    return tr.pregnancyRunning;
+  }
   return switch (days) {
-    0 => 'heute',
-    1 => 'morgen',
-    _ => 'noch $days Tage',
+    0 => tr.commonTodayLower,
+    1 => tr.commonTomorrowLower,
+    _ => tr.commonDaysLeft(days),
   };
 }

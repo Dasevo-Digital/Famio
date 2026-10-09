@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import 'form_dialog.dart';
 import 'password_reveal.dart';
+import '../l10n.dart';
 
 /// Asks for the password, fetches the export (own data or, with [family],
 /// the whole family) and lets the member save the ZIP.
@@ -17,19 +18,12 @@ Future<void> exportData(BuildContext context, {bool family = false}) async {
   await showDialog<void>(
     context: context,
     builder: (context) => FormDialog(
-      title: family ? 'Familie exportieren' : 'Meine Daten exportieren',
-      submitLabel: 'Exportieren',
+      title: family ? tr.adminExportFamily : tr.settingsExport,
+      submitLabel: tr.adminExport,
       controllers: [password],
       fields: [
         Text(
-          family
-              ? 'Eine ZIP-Datei mit allen Daten der Familie: Bereiche als '
-                    'JSON, hochgeladene Dateien, Mitglieder (ohne Passwörter) '
-                    'und Einstellungen. Standortverläufe sind nicht dabei. '
-                    'Bewahre sie sicher auf, sie ist nicht verschlüsselt.'
-              : 'Eine ZIP-Datei mit allem, was du in Famio sehen kannst, '
-                    'deinen Dateien und deinem Standortverlauf. Bewahre sie '
-                    'sicher auf, sie ist nicht verschlüsselt.',
+          family ? tr.exportZipFileAllFamily : tr.exportZipFileEverythingYou,
         ),
         const SizedBox(height: 12),
         PasswordReveal(
@@ -39,7 +33,7 @@ Future<void> exportData(BuildContext context, {bool family = false}) async {
             autofocus: true,
             contextMenuBuilder: PasswordReveal.contextMenu,
             decoration: InputDecoration(
-              labelText: 'Dein Famio-Passwort',
+              labelText: tr.exportFamioPassword,
               suffixIcon: toggle,
             ),
           ),
@@ -54,14 +48,14 @@ Future<void> exportData(BuildContext context, {bool family = false}) async {
   if (bytes == null) return;
   final day = DateTime.now().toIso8601String().substring(0, 10);
   final saved = await FilePicker.saveFile(
-    dialogTitle: 'Export sichern',
+    dialogTitle: tr.exportSaveExport,
     fileName: family ? 'famio-familie-$day.zip' : 'famio-meine-daten-$day.zip',
     bytes: Uint8List.fromList(bytes),
     mimeType: 'application/zip',
   );
   messenger.showSnackBar(
     SnackBar(
-      content: Text(saved == null ? 'Nicht gesichert' : 'Export gesichert'),
+      content: Text(saved == null ? tr.exportNotSaved : tr.exportExportSaved),
     ),
   );
 }

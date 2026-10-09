@@ -10,6 +10,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import 'shopping_screens.dart';
+import '../l10n.dart';
 
 /// Picks a saved or built-in template and creates a list from it.
 Future<void> showTemplatePicker(BuildContext context) async {
@@ -24,17 +25,17 @@ Future<void> showTemplatePicker(BuildContext context) async {
 }
 
 /// A saved or built-in template, or null.
-Future<ListTemplate?> pickListTemplate(
-  BuildContext context, {
-  String title = 'Liste aus Vorlage',
-}) => showModalBottomSheet<ListTemplate>(
-  context: context,
-  useRootNavigator: true,
-  isScrollControlled: true,
-  useSafeArea: true,
-  builder: (_) =>
-      _TemplateSheet(engine: AppScope.engineOf(context), title: title),
-);
+Future<ListTemplate?> pickListTemplate(BuildContext context, {String? title}) =>
+    showModalBottomSheet<ListTemplate>(
+      context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => _TemplateSheet(
+        engine: AppScope.engineOf(context),
+        title: title ?? tr.shoppingListTemplate,
+      ),
+    );
 
 class _TemplateSheet extends StatefulWidget {
   const _TemplateSheet({required this.engine, required this.title});
@@ -59,11 +60,11 @@ class _TemplateSheetState extends State<_TemplateSheet> {
     Widget tile(ListTemplate t, {required bool saved}) => ListTile(
       leading: Text(t.emoji, style: const TextStyle(fontSize: 26)),
       title: Text(t.name),
-      subtitle: Text('${t.items.length} Einträge'),
+      subtitle: Text(tr.templatesCountEntries(t.items.length)),
       onTap: () => Navigator.pop(context, t),
       trailing: saved
           ? IconButton(
-              tooltip: 'Vorlage löschen',
+              tooltip: tr.templatesDeleteTemplate,
               icon: Icon(AppIcons.trash, color: c.danger),
               onPressed: () =>
                   setState(() => widget.engine.deleteListTemplate(t.id)),
@@ -85,24 +86,23 @@ class _TemplateSheetState extends State<_TemplateSheet> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-              'Eigene Vorlagen speichert ihr in einer Liste über ⋮ → „Als '
-              'Vorlage speichern“.',
+              tr.templatesYouSaveOwnTemplates,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
           if (own.isNotEmpty) ...[
-            const ListHeading('Eure Vorlagen'),
+            ListHeading(tr.templatesTemplates),
             for (final t in own) tile(t, saved: true),
           ],
           if (builtIn.isNotEmpty) ...[
-            const ListHeading('Vorschläge'),
+            ListHeading(tr.templatesSuggestions),
             for (final t in builtIn) tile(t, saved: false),
           ],
           if (own.isEmpty && builtIn.isEmpty)
             EmptyHint(
               icon: AppIcons.template,
               color: c.strong(FamioSection.shopping),
-              text: 'Keine Vorlagen.',
+              text: tr.templatesNoTemplates,
             ),
         ],
       ),
@@ -121,7 +121,7 @@ class PackingListTile extends StatelessWidget {
     final navigator = Navigator.of(context);
     final template = await pickListTemplate(
       context,
-      title: 'Packliste aus Vorlage',
+      title: tr.templatesPackingListTemplate,
     );
     if (template == null || !context.mounted) return;
     final people = [
@@ -136,15 +136,12 @@ class PackingListTile extends StatelessWidget {
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
-          title: const Text('Wer packt?'),
+          title: Text(tr.templatesWhoPacking),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Jede Person bekommt ihre eigenen Sachen; Ausweise, '
-                'Ladegeräte & Co. stehen nur einmal drauf.',
-              ),
+              Text(tr.templatesEachPersonGetsTheir),
               const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
@@ -166,11 +163,11 @@ class PackingListTile extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Anlegen'),
+              child: Text(tr.templatesCreate),
             ),
           ],
         ),
@@ -200,10 +197,8 @@ class PackingListTile extends StatelessWidget {
           return ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(AppIcons.luggage),
-            title: const Text('Packliste anlegen'),
-            subtitle: const Text(
-              'Aus einer Vorlage, je Person – mit Erinnerung am Vorabend',
-            ),
+            title: Text(tr.templatesCreatePackingList),
+            subtitle: Text(tr.templatesTemplatePerPersonReminder),
             onTap: () => _create(context, engine),
           );
         }
@@ -212,8 +207,8 @@ class PackingListTile extends StatelessWidget {
         return ListTile(
           contentPadding: EdgeInsets.zero,
           leading: const Icon(AppIcons.luggage),
-          title: const Text('Packliste'),
-          subtitle: Text('$packed von ${items.length} eingepackt'),
+          title: Text(tr.templatesPackingList),
+          subtitle: Text(tr.templatesPackedTotalPacked(packed, items.length)),
           trailing: const Icon(AppIcons.caretRight),
           onTap: () => Navigator.of(context).push(
             MaterialPageRoute<void>(

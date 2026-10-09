@@ -1,25 +1,20 @@
 import 'package:famio_client/famio_client.dart';
+import '../l10n.dart';
 
 /// "3 Wochen", "5 Monate", "1 Jahr und 3 Monate", "6 Jahre".
 String ageLabel(Child child, [DateTime? at]) {
   final now = at ?? DateTime.now();
   final days = now.difference(child.birthDate).inDays;
-  if (days < 0) return 'noch nicht geboren';
-  if (days < 14) return days == 1 ? '1 Tag' : '$days Tage';
+  if (days < 0) return tr.ageNotBornYet;
+  if (days < 14) return tr.ageDays(days);
   final months = child.ageInMonths(now);
-  if (months < 2) return '${days ~/ 7} Wochen';
-  if (months < 24) {
-    if (months < 12) return '$months Monate';
-    final rest = months - 12;
-    return rest == 0
-        ? '1 Jahr'
-        : '1 Jahr und $rest ${rest == 1 ? 'Monat' : 'Monate'}';
-  }
+  if (months < 2) return tr.ageWeeks(days ~/ 7);
+  if (months < 12) return tr.ageMonths(months);
   final years = months ~/ 12;
   final rest = months % 12;
-  return years < 6 && rest > 0
-      ? '$years Jahre und $rest ${rest == 1 ? 'Monat' : 'Monate'}'
-      : '$years Jahre';
+  return rest > 0 && years < 6
+      ? tr.ageYearsMonths(years, rest)
+      : tr.ageYears(years);
 }
 
 /// Whether an unfinished milestone is still useful to show for this age.
@@ -135,7 +130,7 @@ List<DueItem> checkupPlan(
           id: c.id,
           title: c.title,
           subtitle:
-              '${c.window}${c.optional ? ' · nicht bei allen Kassen' : ''}',
+              '${c.window}${c.optional ? tr.kidsNotAllHealthInsurers : ''}',
           from: from,
           to: to,
           state: state,

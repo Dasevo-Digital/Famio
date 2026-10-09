@@ -104,13 +104,13 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   static String _chatTitle(SyncEngine engine, String chatId) {
-    if (chatId == ChatIds.family) return 'Familie';
+    if (chatId == ChatIds.family) return tr.settingsFamily;
     for (final m in engine.members) {
       if (ChatIds.direct(engine.memberId, m.id) == chatId) {
         return m.displayName;
       }
     }
-    return 'Chat';
+    return tr.sectionChat;
   }
 
   @override
@@ -127,8 +127,8 @@ class _SearchScreenState extends State<SearchScreen> {
     final day = DateFormat.yMMMd(appLanguage);
     return SectionPage(
       section: FamioSection.home,
-      title: 'Suchen',
-      subtitle: 'Alles auf diesem Gerät, auch offline',
+      title: tr.commonSearch,
+      subtitle: tr.searchEverythingDeviceAlsoOffline,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
@@ -142,12 +142,12 @@ class _SearchScreenState extends State<SearchScreen> {
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(AppIcons.magnifyingGlass),
-                    hintText: 'Termin, Aufgabe, Rezept, Kontakt …',
+                    hintText: tr.searchEventTaskRecipeContact,
                     suffixIcon: _query.text.isEmpty
                         ? null
                         : IconButton(
                             icon: const Icon(AppIcons.x),
-                            tooltip: 'Leeren',
+                            tooltip: tr.settingsStorageClear,
                             onPressed: () => setState(_query.clear),
                           ),
                   ),
@@ -161,7 +161,7 @@ class _SearchScreenState extends State<SearchScreen> {
                     ? Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
-                          'Nichts gefunden.',
+                          tr.commonNothingFound,
                           style: theme.textTheme.bodyMedium,
                         ),
                       )

@@ -261,7 +261,7 @@ class _FamilyMapState extends State<FamilyMap> {
               padding: const EdgeInsets.all(8),
               child: BubbleButton(
                 icon: AppIcons.locate,
-                tooltip: 'Alle zeigen und wieder mitführen',
+                tooltip: tr.mapShowEveryoneFollowAgain,
                 onPressed: _followAgain,
               ),
             ),
@@ -308,7 +308,9 @@ Widget attribution(BuildContext context) {
             child: Text(
               custom == null
                   ? '© OpenStreetMap'
-                  : 'Karte: ${host == null || host.isEmpty ? custom : host}',
+                  : tr.mapMapProvider(
+                      host == null || host.isEmpty ? custom : host,
+                    ),
               style: TextStyle(fontSize: 11, color: c.inkSoft),
             ),
           ),

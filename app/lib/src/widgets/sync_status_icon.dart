@@ -26,24 +26,26 @@ class SyncStatusIcon extends StatelessWidget {
           SyncState.syncing => (
             AppIcons.cloudArrowUp,
             c.inkSoft,
-            'Synchronisiere …',
+            tr.syncSyncing,
           ),
           SyncState.offline => (
             AppIcons.cloudSlash,
             Theme.of(context).colorScheme.error,
-            'Offline – $pending Änderung(en) warten\n${status.message ?? ''}',
+            tr.syncOfflinePendingChangeS(pending, status.message ?? ''),
           ),
           _ when pending > 0 => (
             AppIcons.cloudArrowUp,
             c.inkSoft,
-            '$pending Änderung(en) warten',
+            tr.syncPendingChangeSWaiting(pending),
           ),
           _ => (
             AppIcons.cloudCheck,
             FamioSection.tasks.strong,
             status.lastSync == null
-                ? 'Synchronisiert'
-                : 'Synchronisiert um ${DateFormat.jm(appLanguage).format(status.lastSync!)}',
+                ? tr.syncSynchronized
+                : tr.syncSynchronizedTime(
+                    DateFormat.jm(appLanguage).format(status.lastSync!),
+                  ),
           ),
         };
         return BubbleButton(

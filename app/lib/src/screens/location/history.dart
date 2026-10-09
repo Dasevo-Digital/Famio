@@ -38,8 +38,8 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
     final time = DateFormat.jm(appLanguage);
     return SectionPage(
       section: FamioSection.location,
-      title: 'Verlauf',
-      subtitle: '${widget.member.displayName} · letzte 7 Tage',
+      title: tr.pregnancyHistory,
+      subtitle: tr.historyNameLast7Days(widget.member.displayName),
       bodyPadding: EdgeInsets.zero,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -56,9 +56,9 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                     child: ChoiceChip(
                       label: Text(
                         d == today
-                            ? 'Heute'
+                            ? tr.commonToday
                             : d == today.subtract(const Duration(days: 1))
-                            ? 'Gestern'
+                            ? tr.commonYesterday
                             : DateFormat.MEd(appLanguage).format(d),
                       ),
                       selected: d == _day,
@@ -76,7 +76,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                   return EmptyHint(
                     icon: AppIcons.cloudSlash,
                     color: c.strong(FamioSection.location),
-                    text: 'Verlauf nicht verfügbar: ${snapshot.error}',
+                    text: tr.historyHistoryNotAvailableError(snapshot.error),
                   );
                 }
                 if (!snapshot.hasData) {
@@ -87,7 +87,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                   return EmptyHint(
                     icon: AppIcons.route,
                     color: c.strong(FamioSection.location),
-                    text: 'An diesem Tag wurde kein Standort geteilt.',
+                    text: tr.historyNoLocationWasShared,
                   );
                 }
                 final line = [
@@ -179,10 +179,12 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${points.length} Positionen von '
-                        '${time.format(points.first.at.toLocal())} bis '
-                        '${time.format(points.last.at.toLocal())} Uhr · '
-                        '${(_length(points) / 1000).toStringAsFixed(1)} km',
+                        tr.historyCountPositionsKmKm(
+                          points.length,
+                          time.format(points.first.at.toLocal()),
+                          time.format(points.last.at.toLocal()),
+                          decimal(_length(points) / 1000),
+                        ),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

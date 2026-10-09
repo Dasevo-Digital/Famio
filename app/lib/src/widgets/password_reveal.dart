@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../design/app_icons.dart';
+import '../l10n.dart';
 
 /// Lets a password field show its text for a few seconds, e.g. to check a
 /// typo – then it hides again by itself.
@@ -35,14 +36,14 @@ class PasswordReveal extends StatefulWidget {
       buttonItems: [
         ContextMenuButtonItem(
           type: ContextMenuButtonType.paste,
-          label: 'Einfügen',
+          label: tr.passwordPaste,
           onPressed: () => field.pasteText(SelectionChangedCause.toolbar),
         ),
         if (value.text.isNotEmpty &&
             value.selection.end - value.selection.start < value.text.length)
           ContextMenuButtonItem(
             type: ContextMenuButtonType.selectAll,
-            label: 'Alles auswählen',
+            label: tr.passwordSelectAll,
             onPressed: () => field.selectAll(SelectionChangedCause.toolbar),
           ),
       ],
@@ -77,7 +78,7 @@ class _PasswordRevealState extends State<PasswordReveal> {
   Widget build(BuildContext context) {
     final toggle = IconButton(
       icon: Icon(_visible ? AppIcons.eyeSlash : AppIcons.eye),
-      tooltip: _visible ? 'Verbergen' : 'Kurz anzeigen',
+      tooltip: _visible ? tr.passwordHide : tr.passwordShowBriefly,
       onPressed: _toggle,
     );
     return widget.builder(context, !_visible, toggle);

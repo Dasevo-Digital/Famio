@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n.dart';
 
 /// Opens the phone app with [number] (desktop: FaceTime, Teams & co.).
 Future<void> callNumber(BuildContext context, String number) async {
@@ -9,7 +10,7 @@ Future<void> callNumber(BuildContext context, String number) async {
   final ok = await launchUrl(Uri(scheme: 'tel', path: digits));
   if (!ok) {
     messenger.showSnackBar(
-      SnackBar(content: Text('Anrufen nicht möglich – Nummer: $number')),
+      SnackBar(content: Text(tr.phoneCallingNotPossibleNumber(number))),
     );
   }
 }
@@ -19,7 +20,7 @@ Future<void> writeMail(BuildContext context, String address) async {
   final ok = await launchUrl(Uri(scheme: 'mailto', path: address.trim()));
   if (!ok) {
     messenger.showSnackBar(
-      SnackBar(content: Text('Kein Mailprogramm gefunden – $address')),
+      SnackBar(content: Text(tr.phoneNoEmailAppFound(address))),
     );
   }
 }

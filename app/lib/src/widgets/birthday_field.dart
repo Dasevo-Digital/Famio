@@ -34,7 +34,7 @@ class BirthdayField extends StatelessWidget {
       firstDate: DateTime(1900),
       lastDate: now,
       initialDatePickerMode: DatePickerMode.year,
-      helpText: 'Geburtstag',
+      helpText: tr.commonBirthday,
     );
     if (picked == null) return;
     onChanged(
@@ -54,13 +54,13 @@ class BirthdayField extends StatelessWidget {
       children: [
         InputChip(
           avatar: const Icon(AppIcons.cake, size: 18),
-          label: Text(b == null ? 'Geburtstag wählen' : birthdayLabel(b)),
+          label: Text(b == null ? tr.birthdayChooseBirthday : birthdayLabel(b)),
           onPressed: () => _pick(context),
           onDeleted: b == null ? null : () => onChanged(null),
         ),
         if (b != null)
           FilterChip(
-            label: const Text('Jahr unbekannt'),
+            label: Text(tr.birthdayYearUnknown),
             selected: b.year == null,
             onSelected: (unknown) => onChanged(
               unknown

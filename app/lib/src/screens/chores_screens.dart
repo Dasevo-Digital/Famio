@@ -35,15 +35,19 @@ const _collections = {
 };
 
 enum _Tab {
-  today('Heute'),
-  chores('Ämter'),
-  routines('Routinen'),
-  rewards('Belohnungen'),
-  accounts('Konto');
+  today,
+  chores,
+  routines,
+  rewards,
+  accounts;
 
-  const _Tab(this.label);
-
-  final String label;
+  String get label => switch (this) {
+    today => tr.commonToday,
+    chores => tr.sectionChores,
+    routines => tr.choresTabRoutines,
+    rewards => tr.choresTabRewards,
+    accounts => tr.settingsAccount,
+  };
 }
 
 List<String> get _weekdayShort => weekdaysShort();
@@ -66,8 +70,8 @@ class _ChoresScreenState extends State<ChoresScreen> {
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.chores,
-      title: 'Ämter & Punkte',
-      subtitle: 'Mithelfen lohnt sich',
+      title: tr.choresChoresPoints,
+      subtitle: tr.choresHelpingOutPaysOff,
       actions: const [SyncStatusIcon()],
       floating: DataBuilder(
         collections: const {'members'},
@@ -76,17 +80,17 @@ class _ChoresScreenState extends State<ChoresScreen> {
           return switch (_tab) {
             _Tab.chores || _Tab.today => AddButton(
               color: color,
-              tooltip: 'Amt anlegen',
+              tooltip: tr.choresCreateChore,
               onPressed: () => showChoreEditor(context),
             ),
             _Tab.routines => AddButton(
               color: color,
-              tooltip: 'Routine anlegen',
+              tooltip: tr.choresCreateRoutine,
               onPressed: () => showRoutineEditor(context),
             ),
             _Tab.rewards => AddButton(
               color: color,
-              tooltip: 'Belohnung anlegen',
+              tooltip: tr.choresCreateReward,
               onPressed: () => showRewardEditor(context),
             ),
             _Tab.accounts => const SizedBox.shrink(),

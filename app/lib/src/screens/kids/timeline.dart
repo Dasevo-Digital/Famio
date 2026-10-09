@@ -30,12 +30,12 @@ class _Timeline extends StatelessWidget {
         if (d.appointment case final a?)
           _TimelineItem(
             date: a.appointmentAt,
-            title: d.isCheckup ? d.title : 'Impfung: ${d.title}',
+            title: d.isCheckup ? d.title : tr.dueVaccination(d.title),
             subtitle: a.date.isBefore(today)
-                ? 'Termin war – erledigt?'
+                ? tr.timelineAppointmentWasDone
                 : [
-                    if (a.time != null) 'um ${a.time} Uhr',
-                    'Termin',
+                    if (a.time != null) tr.remindersTime(a.time),
+                    tr.commonEvent,
                   ].join(' · '),
             icon: d.isCheckup ? AppIcons.stethoscope : AppIcons.syringe,
             color: const Color(0xFF3587D6),
@@ -47,8 +47,10 @@ class _Timeline extends StatelessWidget {
                 (d.state == DueState.upcoming && d.from.isBefore(horizon))))
           _TimelineItem(
             date: d.from,
-            title: d.isCheckup ? d.title : 'Impfung: ${d.title}',
-            subtitle: d.open ? 'Jetzt fällig · ${d.subtitle}' : d.subtitle,
+            title: d.isCheckup ? d.title : tr.dueVaccination(d.title),
+            subtitle: d.open
+                ? tr.timelineDueNowSubtitle(d.subtitle)
+                : d.subtitle,
             icon: d.isCheckup ? AppIcons.stethoscope : AppIcons.syringe,
             color: d.open
                 ? Theme.of(context).colorScheme.error
@@ -61,8 +63,10 @@ class _Timeline extends StatelessWidget {
           _TimelineItem(
             date: child.ageDate(m.fromMonth),
             title: m.title,
-            subtitle:
-                'Typisch zwischen ${_months(m.fromMonth)} und ${_months(m.toMonth)}',
+            subtitle: tr.timelineTypicallyBetween(
+              _months(m.fromMonth),
+              _months(m.toMonth),
+            ),
             icon: AppIcons.star,
             color: FamioColors.of(context).inkSoft,
             future: true,
@@ -90,7 +94,7 @@ class _Timeline extends StatelessWidget {
       padding: EdgeInsets.only(top: 8, bottom: listBottomPadding(context)),
       children: [
         if (upcoming.isNotEmpty) ...[
-          const ListHeading('Demnächst'),
+          ListHeading(tr.tasksComingUp),
           // Booked appointments always, other suggestions only the next few.
           for (final item in [
             ...upcoming.where((i) => i.due?.appointment != null),
@@ -98,13 +102,12 @@ class _Timeline extends StatelessWidget {
           ]..sort((a, b) => a.date.compareTo(b.date)))
             _TimelineRow(item: item, child: child),
         ],
-        _TodayMarker(color: color, label: 'Heute · ${ageLabel(child)}'),
+        _TodayMarker(color: color, label: tr.timelineTodayAge(ageLabel(child))),
         if (past.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(44, 8, 16, 8),
             child: Text(
-              'Noch keine Einträge. Tippe auf ✨, um eine Erinnerung festzuhalten, '
-              'oder hake unter „Meilensteine“ ab, was schon klappt.',
+              tr.timelineNoEntriesYetTap,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
@@ -124,8 +127,8 @@ class _Timeline extends StatelessWidget {
         _TimelineRow(
           item: _TimelineItem(
             date: child.birthDate,
-            title: 'Geburt 🎉',
-            subtitle: 'Willkommen, ${child.name}!',
+            title: tr.timelineBirth,
+            subtitle: tr.timelineWelcomeName(child.name),
             icon: AppIcons.babyCarriage,
             color: color,
           ),
@@ -138,10 +141,10 @@ class _Timeline extends StatelessWidget {
 
   String _ageGroup(DateTime date) {
     final months = child.ageInMonths(date);
-    if (months < 1) return 'Die ersten Wochen';
-    if (months < 12) return 'Mit $months ${months == 1 ? 'Monat' : 'Monaten'}';
+    if (months < 1) return tr.timelineFirstWeeks;
+    if (months < 12) return tr.kidsAtMonths(months);
     final years = months ~/ 12;
-    return years == 1 ? 'Im 2. Lebensjahr' : 'Mit $years Jahren';
+    return years == 1 ? tr.timeline2ndYear : tr.timelineYearsYears(years);
   }
 }
 
@@ -249,7 +252,7 @@ class _TimelineRow extends StatelessWidget {
                       Text(
                         [
                           entry?.dateUnknown == true
-                              ? 'Datum unbekannt'
+                              ? tr.kidsDateUnknown
                               : _date.format(item.date),
                           ?item.subtitle,
                         ].join(' · '),

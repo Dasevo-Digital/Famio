@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n.dart';
 
 /// Tag of a notice that lets this phone ring (see the server's
 /// `SosService.ringTag`).
@@ -77,7 +78,7 @@ class SosDevice {
         battery: (map['battery'] as num?)?.toInt(),
       );
     } catch (e) {
-      debugPrint('SOS-Position nicht verfügbar: $e');
+      debugPrint(tr.sosSosPositionNotAvailable(e));
       return null;
     }
   }
@@ -88,7 +89,7 @@ class SosDevice {
     try {
       await _channel.invokeMethod('startSiren', {'wav': sirenWav()});
     } catch (e) {
-      debugPrint('Sirene nicht verfügbar: $e');
+      debugPrint(tr.sosSirenNotAvailableError(e));
     }
   }
 
@@ -120,7 +121,7 @@ class SosDevice {
           }) ??
           false;
     } catch (e) {
-      debugPrint('Notruf-Standortdienst nicht möglich: $e');
+      debugPrint(tr.sosEmergencyLocationServiceNot(e));
       return false;
     }
   }
@@ -158,7 +159,7 @@ class SosDevice {
           }) ??
           false;
     } catch (e) {
-      debugPrint('SMS nicht möglich: $e');
+      debugPrint(tr.sosTextMessageNotPossible(e));
       return false;
     }
   }

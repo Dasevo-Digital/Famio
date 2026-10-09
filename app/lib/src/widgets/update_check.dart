@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../l10n.dart';
 
 /// The public list of Famio releases; asked only when an admin taps
 /// "Nach neuer Version suchen", never in the background.
@@ -47,7 +49,7 @@ Future<LatestRelease> fetchLatestRelease({http.Client? client}) async {
         .get(releasesUrl, headers: {'accept': 'application/vnd.github+json'})
         .timeout(const Duration(seconds: 15));
     if (response.statusCode != 200) {
-      throw Exception('Antwort ${response.statusCode}');
+      throw Exception(tr.updateResponseCode(response.statusCode));
     }
     final json = jsonDecode(utf8.decode(response.bodyBytes)) as Map;
     return LatestRelease(
@@ -79,10 +81,7 @@ Future<void> showUpdateCheck(
         Widget body;
         LatestRelease? latest;
         if (snapshot.hasError) {
-          body = const Text(
-            'Die Release-Liste ist gerade nicht erreichbar. Später erneut '
-            'versuchen.',
-          );
+          body = Text(tr.updateReleaseListNotReachable);
         } else if (!snapshot.hasData) {
           body = const SizedBox(
             height: 48,
@@ -101,31 +100,37 @@ Future<void> showUpdateCheck(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Neueste Version: ${latest.version}'
-                '${date == null ? '' : ' (vom ${date.day}.${date.month}.${date.year})'}',
+                date == null
+                    ? tr.updateLatest(latest.version)
+                    : tr.updateLatestFrom(
+                        latest.version,
+                        DateFormat.yMd(appLanguage).format(date),
+                      ),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Server: $serverVersion${serverOld ? ' – Update verfügbar' : ' – aktuell'}',
+                tr.updateServerVersionState(
+                  serverVersion,
+                  serverOld ? tr.updateAvailable : tr.updateCurrent,
+                ),
               ),
               if (appVersion != null)
                 Text(
-                  'Diese App: $appVersion${appOld ? ' – Update verfügbar' : ' – aktuell'}',
+                  tr.updateAppVersionState(
+                    appVersion,
+                    appOld ? tr.updateAvailable : tr.updateCurrent,
+                  ),
                 ),
               if (serverOld || appOld) ...[
                 const SizedBox(height: 8),
-                Text(
-                  'Was neu ist und wie man es einspielt, steht im Release-'
-                  'Text.',
-                  style: theme.textTheme.bodySmall,
-                ),
+                Text(tr.updateWhatSNewHow, style: theme.textTheme.bodySmall),
               ],
             ],
           );
         }
         return AlertDialog(
-          title: const Text('Famio-Version'),
+          title: Text(tr.updateFamioVersion),
           content: body,
           actions: [
             if (latest != null)
@@ -134,11 +139,11 @@ Future<void> showUpdateCheck(
                   latest!.url,
                   mode: LaunchMode.externalApplication,
                 ),
-                child: const Text('Release ansehen'),
+                child: Text(tr.updateViewRelease),
               ),
             FilledButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Schließen'),
+              child: Text(tr.commonClose),
             ),
           ],
         );

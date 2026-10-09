@@ -1,4 +1,5 @@
 import 'package:famio_client/famio_client.dart';
+import '../l10n.dart';
 
 /// Totals of one day of a child's log.
 class DaySummary {
@@ -139,31 +140,23 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
 }) {
   final now = at ?? DateTime.now();
   final ageDays = now.difference(child.birthDate).inDays;
-  const warnings =
-      'Sofort 112 bei Krampfanfall, Atemnot, starker Teilnahmslosigkeit oder '
-      'Flecken, die sich nicht wegdrücken lassen.';
+  final warnings = tr.healthCall112RightAway;
   if (celsius >= 41) {
     return (
       level: FeverLevel.urgent,
-      text:
-          'Sehr hohes Fieber: sofort ärztliche Hilfe holen (116 117, bei '
-          'Warnzeichen 112). $warnings',
+      text: tr.healthVeryHighFeverGet(warnings),
     );
   }
   if (celsius >= 38 && ageDays < 91) {
     return (
       level: FeverLevel.urgent,
-      text:
-          'Säuglinge unter 3 Monaten mit 38 °C oder mehr: umgehend Kinderarzt '
-          'oder ärztlichen Bereitschaftsdienst (116 117) anrufen. $warnings',
+      text: tr.healthBabiesUnder3Months(warnings),
     );
   }
   if ((celsius >= 39 && ageDays < 183) || celsius >= 40) {
     return (
       level: FeverLevel.doctor,
-      text:
-          'Hohes Fieber: heute noch beim Kinderarzt oder unter 116 117 '
-          'melden. $warnings',
+      text: tr.healthHighFeverContactPediatrician(warnings),
     );
   }
   if (celsius >= 38.5) {
@@ -178,20 +171,17 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
     return (
       level: feverDays.length >= 3 ? FeverLevel.doctor : FeverLevel.fever,
       text: feverDays.length >= 3
-          ? 'Fieber seit ${feverDays.length} Tagen: bitte beim Kinderarzt '
-                'abklären lassen. $warnings'
-          : 'Fieber. Viel trinken lassen und beobachten. Zum Kinderarzt, wenn '
-                'es länger als 3 Tage anhält oder das Kind schlecht trinkt. '
-                '$warnings',
+          ? tr.healthFeverDaysDaysPlease(feverDays.length, warnings)
+          : tr.healthFeverLetChildDrink(warnings),
     );
   }
   if (celsius >= 37.6) {
     return (
       level: FeverLevel.raised,
-      text: 'Erhöhte Temperatur – später noch einmal messen.',
+      text: tr.healthRaisedTemperatureMeasureAgain,
     );
   }
-  return (level: FeverLevel.normal, text: 'Normale Temperatur.');
+  return (level: FeverLevel.normal, text: tr.healthNormalTemperature);
 }
 
 /// "2 h 5 min", "12 min", "40 s".
@@ -205,8 +195,7 @@ String durationLabel(Duration d) {
 /// "gerade eben", "vor 25 min", "vor 2 h 40 min", "vor 3 Tagen".
 String sinceLabel(DateTime t, [DateTime? now]) {
   final d = (now ?? DateTime.now()).difference(t);
-  if (d.inMinutes < 1) return 'gerade eben';
-  if (d.inHours < 24) return 'vor ${durationLabel(d)}';
-  final days = d.inDays;
-  return days == 1 ? 'vor 1 Tag' : 'vor $days Tagen';
+  if (d.inMinutes < 1) return tr.agoJustNow;
+  if (d.inHours < 24) return tr.agoAgo(durationLabel(d));
+  return tr.agoDaysAgo(d.inDays);
 }

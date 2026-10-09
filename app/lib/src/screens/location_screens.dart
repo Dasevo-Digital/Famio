@@ -66,17 +66,17 @@ class _LocationScreenState extends State<LocationScreen> {
   Widget build(BuildContext context) {
     return SectionPage(
       section: FamioSection.location,
-      title: 'Wo ist wer?',
-      subtitle: 'Standort der Familie',
+      title: tr.homeWhoWhere,
+      subtitle: tr.locationFamilySLocation,
       actions: [
         BubbleButton(
           icon: AppIcons.check,
-          tooltip: 'Check-in senden',
+          tooltip: tr.locationSendCheck,
           onPressed: () => showCheckIn(context),
         ),
         BubbleButton(
           icon: AppIcons.mapPin,
-          tooltip: 'Orte',
+          tooltip: tr.remindersPlaces,
           onPressed: () => Navigator.of(
             context,
           ).push(MaterialPageRoute<void>(builder: (_) => const PlacesScreen())),

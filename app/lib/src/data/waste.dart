@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 
 import 'family_data.dart';
 import 'family_extras.dart';
+import '../l10n.dart';
 
 /// The bins: pickup days from the municipality's calendar and whose turn
 /// it is to put them out.
@@ -59,9 +60,9 @@ String wasteHeadline(WastePickup pickup, DateTime now) {
     pickup.day.day,
   ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
   final when = switch (diff) {
-    0 => 'Heute',
-    1 => 'Morgen',
-    _ => 'In $diff Tagen',
+    0 => tr.commonToday,
+    1 => tr.commonTomorrow,
+    _ => tr.wasteDaysDays(diff),
   };
   return '$when: ${pickup.label}';
 }

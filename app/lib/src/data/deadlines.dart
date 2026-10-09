@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 
 import 'family_extras.dart';
+import '../l10n.dart';
 
 /// Recurring deadlines (car, house, pets).
 extension DeadlineData on SyncEngine {
@@ -34,9 +35,11 @@ String deadlineWhen(Deadline d, DateTime now) {
   final days = d.daysLeft(now);
   return switch (days) {
     < 0 =>
-      days == -1 ? 'seit gestern überfällig' : 'seit ${-days} Tagen überfällig',
-    0 => 'heute fällig',
-    1 => 'morgen fällig',
-    _ => 'in $days Tagen',
+      days == -1
+          ? tr.deadlinesOverdueSinceYesterday
+          : tr.deadlinesOverdueDaysDays(-days),
+    0 => tr.deadlinesDueToday,
+    1 => tr.deadlinesDueTomorrow,
+    _ => tr.deadlinesDaysDays(days),
   };
 }

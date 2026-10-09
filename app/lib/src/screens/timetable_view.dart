@@ -7,6 +7,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
+import '../l10n.dart';
 
 List<String> get _days => weekdaysShort(5);
 
@@ -99,7 +100,7 @@ class TimetableView extends StatelessWidget {
                       child: _Cell(
                         timetable: t,
                         lesson: t.lesson(d, p),
-                        place: '${_days[d - 1]}, ${p + 1}. Stunde',
+                        place: tr.timetableLesson(_days[d - 1], p + 1),
                         onTap: () => _editLesson(context, t, d, p),
                       ),
                     ),
@@ -108,10 +109,7 @@ class TimetableView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Text(
-          'Fach antippen zum Eintragen, Stundennummer antippen für die Zeiten.',
-          style: theme.textTheme.bodySmall,
-        ),
+        Text(tr.timetableTapSubjectEnterTap, style: theme.textTheme.bodySmall),
       ],
     );
   }
@@ -132,7 +130,7 @@ class TimetableView extends StatelessWidget {
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           scrollable: true,
-          title: Text('${_days[weekday - 1]}, ${period + 1}. Stunde'),
+          title: Text(tr.timetableLesson(_days[weekday - 1], period + 1)),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -140,7 +138,7 @@ class TimetableView extends StatelessWidget {
                 controller: subject,
                 autofocus: true,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Fach'),
+                decoration: InputDecoration(labelText: tr.timetableSubject),
               ),
               if (subjects.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -159,7 +157,9 @@ class TimetableView extends StatelessWidget {
               const SizedBox(height: 8),
               TextField(
                 controller: room,
-                decoration: const InputDecoration(labelText: 'Raum (optional)'),
+                decoration: InputDecoration(
+                  labelText: tr.timetableRoomOptional,
+                ),
               ),
             ],
           ),
@@ -170,15 +170,15 @@ class TimetableView extends StatelessWidget {
                   subject.clear();
                   Navigator.pop(context, true);
                 },
-                child: const Text('Leeren'),
+                child: Text(tr.settingsStorageClear),
               ),
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Abbrechen'),
+              child: Text(tr.commonCancel),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Speichern'),
+              child: Text(tr.commonSave),
             ),
           ],
         ),
@@ -201,13 +201,13 @@ class TimetableView extends StatelessWidget {
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
     final start = await showTimePicker(
       context: context,
-      helpText: '${p + 1}. Stunde beginnt',
+      helpText: tr.timetablePeriodPeriodStarts(p + 1),
       initialTime: parse(t.periods[p].start),
     );
     if (start == null || !context.mounted) return;
     final end = await showTimePicker(
       context: context,
-      helpText: '${p + 1}. Stunde endet',
+      helpText: tr.timetablePeriodPeriodEnds(p + 1),
       initialTime: parse(t.periods[p].end),
     );
     if (end == null) return;
@@ -246,7 +246,7 @@ class _Cell extends StatelessWidget {
         : subjectColor(timetable, l.subject);
     return Semantics(
       button: true,
-      label: l == null ? '$place: frei' : place,
+      label: l == null ? tr.timetablePlaceFree(place) : place,
       child: Material(
         color: l == null ? c.surfaceSoft : color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(12),

@@ -14,6 +14,7 @@ import '../app_state.dart';
 import '../platform/browser.dart';
 import '../design/palette.dart';
 import '../format.dart';
+import '../l10n.dart';
 
 /// A file picked by the user, ready for upload.
 class PickedFile {
@@ -45,7 +46,7 @@ Future<PickedFile?> pickFile(
             children: [
               ListTile(
                 leading: const Icon(AppIcons.camera),
-                title: const Text('Foto aufnehmen'),
+                title: Text(tr.importTakePhoto),
                 onTap: () => Navigator.pop(context, 'camera'),
               ),
               ListTile(
@@ -53,7 +54,7 @@ Future<PickedFile?> pickFile(
                   imagesOnly ? AppIcons.images : AppIcons.fileArrowUp,
                 ),
                 title: Text(
-                  imagesOnly ? 'Aus der Galerie' : 'Datei oder Foto auswählen',
+                  imagesOnly ? tr.filesGallery : tr.filesChooseFilePhoto,
                 ),
                 onTap: () => Navigator.pop(context, 'file'),
               ),

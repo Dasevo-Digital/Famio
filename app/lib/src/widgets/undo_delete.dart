@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../l10n.dart';
 
 /// Runs [delete] and offers to bring back for a few seconds everything it
 /// removed from [collections] (e.g. a shopping list with its items), as it
@@ -32,10 +33,10 @@ void deleteWithUndo(
         // With an action a snack bar would stay until tapped.
         persist: false,
         content: Text(
-          message ?? (what.isEmpty ? 'Gelöscht' : '„$what“ gelöscht'),
+          message ?? (what.isEmpty ? tr.undoDeleted : tr.undoWhatDeleted(what)),
         ),
         action: SnackBarAction(
-          label: 'Rückgängig',
+          label: tr.commonUndo,
           onPressed: () => restoreRecords(engine, gone),
         ),
       ),

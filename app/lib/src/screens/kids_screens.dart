@@ -69,12 +69,12 @@ class KidsScreen extends StatelessWidget {
     final color = c.strong(FamioSection.kids);
     return SectionPage(
       section: FamioSection.kids,
-      title: 'Kinder',
-      subtitle: 'Groß werden – Schritt für Schritt',
+      title: tr.sectionKids,
+      subtitle: tr.kidsGrowingUpStepStep,
       actions: const [SyncStatusIcon()],
       floating: AddButton(
         color: color,
-        tooltip: 'Kind oder Schwangerschaft hinzufügen',
+        tooltip: tr.kidsAddChildPregnancy,
         onPressed: () => _add(context),
       ),
       body: DataBuilder(
@@ -86,10 +86,9 @@ class KidsScreen extends StatelessWidget {
             return EmptyHint(
               icon: AppIcons.baby,
               color: color,
-              text:
-                  'Halte fest, wie eure Kinder wachsen:\nerste Schritte, erste Wörter, U-Untersuchungen –\noder begleitet schon die Schwangerschaft.',
+              text: tr.kidsKeepTrackHowKids,
               action: ColorButton(
-                label: 'Hinzufügen',
+                label: tr.commonAdd,
                 color: color,
                 onPressed: () => _add(context),
               ),
@@ -126,13 +125,13 @@ Future<void> _add(BuildContext context) async {
           children: [
             ListTile(
               leading: const Icon(AppIcons.baby),
-              title: const Text('Kind hinzufügen'),
+              title: Text(tr.kidsAddChild),
               onTap: () => Navigator.pop(context, 'child'),
             ),
             ListTile(
               leading: const Icon(AppIcons.heart),
-              title: const Text('Schwangerschaft'),
-              subtitle: const Text('SSW, Termine, Checklisten, Wehen-Timer'),
+              title: Text(tr.commonPregnancy),
+              subtitle: Text(tr.kidsWeekAppointmentsChecklistsContraction),
               onTap: () => Navigator.pop(context, 'pregnancy'),
             ),
           ],
@@ -216,7 +215,7 @@ class _ChildCard extends StatelessWidget {
                   children: [
                     _Chip(
                       icon: AppIcons.star,
-                      text: '$reached Meilensteine',
+                      text: tr.kidsCountMilestones(reached),
                       color: _childColor(context, child),
                     ),
                     if (next != null)
@@ -233,7 +232,11 @@ class _ChildCard extends StatelessWidget {
                                   ? AppIcons.stethoscope
                                   : AppIcons.syringe,
                               text: next.open
-                                  ? '${next.isCheckup ? next.id : 'Impfung'} jetzt'
+                                  ? tr.kidsWhatNow(
+                                      next.isCheckup
+                                          ? next.id
+                                          : tr.commonVaccination,
+                                    )
                                   : '${next.id} ab ${DateFormat.Md(appLanguage).format(next.from)}',
                               color: next.open
                                   ? theme.colorScheme.error
