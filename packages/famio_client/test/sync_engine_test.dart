@@ -93,10 +93,7 @@ void main() {
     b.put(Collections.shoppingItems, 'z', {'name': 'Käse'});
     final t0 = DateTime.now();
     expect(app.records.purgeDeleted(now: t0), 0);
-    expect(
-      app.records.purgeDeleted(now: t0.add(const Duration(days: 181))),
-      1,
-    );
+    expect(app.records.purgeDeleted(now: t0.add(const Duration(days: 181))), 1);
     expect(app.records.purgedRev, greaterThan(0));
 
     await b.sync();
@@ -114,6 +111,68 @@ void main() {
     final c = device();
     await c.sync();
     expect(c.records(Collections.shoppingItems).length, 2);
+  });
+
+  test('a change made without seeing another is kept as a conflict', () async {
+    // A second member with their own device.
+    final mama = await FamioApiClient(url, token: token).createMember(
+      username: 'mama',
+      displayName: 'Mama',
+      password: 'geheim123',
+      role: MemberRole.adult,
+    );
+    final mamaToken = (await FamioApiClient(
+      url,
+    ).login(username: 'mama', password: 'geheim123', device: 'test')).token;
+    final papaDevice = device();
+    final mamaDevice = SyncEngine(
+      store: LocalStore.open(':memory:'),
+      api: FamioApiClient(url, token: mamaToken),
+      memberId: mama.id,
+    );
+    engines.add(mamaDevice);
+
+    papaDevice.put(Collections.tasks, 't', {'title': 'Einkaufen'});
+    await papaDevice.sync();
+    await mamaDevice.sync();
+    // Papa changes it; Mama's phone is offline and changes it too.
+    papaDevice.put(Collections.tasks, 't', {'title': 'Einkaufen gehen'});
+    await papaDevice.sync();
+    mamaDevice.put(Collections.tasks, 't', {'title': 'Einkaufen (Aldi)'});
+    await mamaDevice.sync();
+    await papaDevice.sync();
+
+    for (final e in [papaDevice, mamaDevice]) {
+      expect(
+        e.record(Collections.tasks, 't')!.data['title'],
+        'Einkaufen (Aldi)',
+      );
+      final c = SyncConflict.fromRecord(
+        e.records(Collections.conflicts).single,
+      );
+      expect(
+        (c.lost['title'], c.lostBy, c.keptBy),
+        ('Einkaufen gehen', memberId, mama.id),
+      );
+    }
+
+    // Papa brings his version back; the conflict is gone for both, and
+    // that is no new conflict.
+    final c = SyncConflict.fromRecord(
+      papaDevice.records(Collections.conflicts).single,
+    );
+    papaDevice
+      ..put(c.collection, c.recordId, c.lost)
+      ..delete(Collections.conflicts, c.id);
+    await papaDevice.sync();
+    await mamaDevice.sync();
+    for (final e in [papaDevice, mamaDevice]) {
+      expect(
+        e.record(Collections.tasks, 't')!.data['title'],
+        'Einkaufen gehen',
+      );
+      expect(e.records(Collections.conflicts), isEmpty);
+    }
   });
 
   test('fields from reminder apps survive an edit in the app', () async {

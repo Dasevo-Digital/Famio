@@ -20,6 +20,7 @@ export 'src/models/calendar_sync.dart';
 export 'src/models/chat.dart';
 export 'src/models/child_log.dart';
 export 'src/models/chores.dart';
+export 'src/models/conflict.dart';
 export 'src/models/contact.dart';
 export 'src/models/deadline.dart';
 export 'src/models/document.dart';

@@ -50,6 +50,13 @@ class RecordStore {
     ServiceAccess access = ServiceAccess.full,
   }) {
     final collection = incoming.collection;
+    // Conflicts come from the server; the apps only remove decided ones.
+    if (collection == Collections.conflicts) {
+      return incoming.deleted &&
+          existing != null &&
+          role != MemberRole.guest &&
+          access != ServiceAccess.readOnly;
+    }
     switch (role) {
       case MemberRole.adult:
         return true;
@@ -342,6 +349,13 @@ class RecordStore {
           }
         }
         if (existing != null && !incoming.winsOver(existing)) {
+          _keepConflict(
+            lost: incoming,
+            kept: existing,
+            base: change.rev,
+            userId: userId,
+            now: now,
+          );
           rejected.add(existing);
           continue;
         }
@@ -365,6 +379,15 @@ class RecordStore {
         }
         _put(incoming, previous: existing);
         stored.add((incoming, existing));
+        if (existing != null) {
+          _keepConflict(
+            lost: existing,
+            kept: incoming,
+            base: change.rev,
+            userId: userId,
+            now: now,
+          );
+        }
       }
     });
 
@@ -420,6 +443,85 @@ class RecordStore {
       hasMore: hasMore,
       reset: reset,
     );
+  }
+
+  /// Undecided conflicts go away after this long.
+  static const keepConflicts = Duration(days: 60);
+
+  /// Removes conflicts nobody decided about within [keepConflicts].
+  int expireConflicts({DateTime? now}) {
+    final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final old = [
+      for (final r in all(Collections.conflicts))
+        if (r.updatedAt < at - keepConflicts.inMilliseconds) r,
+    ];
+    _transaction(() {
+      for (final r in old) {
+        _put(
+          r.copyWith(
+            // Tombstones keep their audience (see [sync]).
+            data: {SyncRecord.visibilityKey: ?r.visibleTo},
+            deleted: true,
+            updatedAt: at,
+            updatedBy: serverMemberId,
+          ),
+          previous: r,
+        );
+      }
+    });
+    return old.length;
+  }
+
+  /// Keeps the version that lost as a conflict when [userId] changed the
+  /// record without having seen the server's version (their [base]
+  /// revision is older) and that version came from another member. Both
+  /// authors see it (if they may see the record) and decide.
+  void _keepConflict({
+    required SyncRecord lost,
+    required SyncRecord kept,
+    required int base,
+    required String userId,
+    required int now,
+  }) {
+    final server = lost.updatedBy == userId ? kept : lost;
+    final other = server.updatedBy;
+    if (!Collections.conflictTracked.contains(lost.collection) ||
+        base >= server.rev ||
+        other == null ||
+        other == userId ||
+        other == serverMemberId ||
+        (lost.deleted && kept.deleted) ||
+        _sameContent(lost, kept)) {
+      return;
+    }
+    final audience = [
+      for (final id in {lost.updatedBy, kept.updatedBy})
+        if (id != null && _canSee(kept, id) && _canSee(lost, id)) id,
+    ];
+    if (audience.isEmpty) return;
+    final conflict = SyncConflict.between(lost: lost, kept: kept);
+    _put(
+      SyncRecord(
+        collection: Collections.conflicts,
+        id: conflict.id,
+        data: conflict.toData(audience: audience),
+        updatedAt: now,
+        updatedBy: serverMemberId,
+      ),
+      previous: _get(Collections.conflicts, conflict.id),
+    );
+  }
+
+  /// Same data apart from visibility and fields of other apps.
+  static bool _sameContent(SyncRecord a, SyncRecord b) {
+    Map<String, Object?> core(SyncRecord r) => {
+      for (final e in r.data.entries)
+        if (e.key != SyncRecord.visibilityKey &&
+            !e.key.startsWith(SyncRecord.externalPrefix))
+          e.key: e.value,
+    };
+    return a.deleted == b.deleted &&
+        jsonEncode(core(a)) == jsonEncode(core(b));
   }
 
   /// Writes [r] with the next revision and updates revocations: members who

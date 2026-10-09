@@ -115,7 +115,41 @@ abstract final class Collections {
   /// pet's vaccination (set by adults).
   static const deadlines = 'deadlines';
 
+  /// Versions that lost against a change made without seeing them (see
+  /// [conflictTracked]); written by the server, deleted by the apps once
+  /// someone decided.
+  static const conflicts = 'conflicts';
+
+  /// Where a lost version is kept as a conflict: things people write and
+  /// would miss. Not ticks, reads and votes, which change too often.
+  static const conflictTracked = {
+    events,
+    tasks,
+    notes,
+    contacts,
+    recipes,
+    mealPlan,
+    children,
+    childEntries,
+    pregnancies,
+    timetables,
+    budgetEntries,
+    documents,
+    medications,
+    chores,
+    routines,
+    rewards,
+    listTemplates,
+    pantryItems,
+    wishes,
+    deadlines,
+    wasteSettings,
+    sosSettings,
+    shoppingLists,
+  };
+
   static const all = {
+    conflicts,
     deadlines,
     wasteSettings,
     wishes,

@@ -29,6 +29,7 @@ import 'waste_screen.dart';
 import '../data/waste.dart';
 import '../data/deadlines.dart';
 import 'deadlines_screen.dart';
+import 'conflicts_screen.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -110,6 +111,7 @@ class HomeScreen extends StatelessWidget {
           Collections.wishes,
           Collections.wasteSettings,
           Collections.deadlines,
+          Collections.conflicts,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(
@@ -175,6 +177,11 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   if (engine.me?.isChild ?? false) ...[
                     const SosCard(),
+                    const SizedBox(height: gap),
+                  ],
+                  if (engine.conflicts case final open
+                      when open.isNotEmpty) ...[
+                    _ConflictBanner(count: open.length),
                     const SizedBox(height: gap),
                   ],
                   for (var i = 0; i < tiles.length; i += columns) ...[
@@ -545,6 +552,40 @@ class _WasteTile extends StatelessWidget {
               leading: MemberAvatar(who.first, radius: 10),
               dim: true,
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Changes that crossed and wait for a decision.
+class _ConflictBanner extends StatelessWidget {
+  const _ConflictBanner({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return SoftCard(
+      color: c.tint(FamioSection.home),
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const ConflictsScreen())),
+      child: Row(
+        children: [
+          Icon(AppIcons.arrowsLeftRight, color: c.strong(FamioSection.home)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              count == 1
+                  ? 'Eine Änderung hat sich überschnitten – bitte ansehen'
+                  : '$count Änderungen haben sich überschnitten – bitte '
+                        'ansehen',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Icon(AppIcons.caretRight, color: c.inkSoft),
         ],
       ),
     );
