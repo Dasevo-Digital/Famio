@@ -57,6 +57,9 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          # Fewer downloads from Maven Central and the plugin portal, which
+          # now and then fail to deliver an artifact.
+          cache: gradle
       - run: flutter pub get && flutter test
 
       - name: Windows
@@ -84,7 +87,8 @@ jobs:
       - name: Android
         if: matrix.target == 'android'
         run: |
-          flutter build apk --release --flavor prod
+          flutter build apk --release --flavor prod \
+            || { sleep 60; flutter build apk --release --flavor prod; }
           cp build/app/outputs/flutter-apk/app-prod-release.apk "$GITHUB_WORKSPACE/famio-android.apk"
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

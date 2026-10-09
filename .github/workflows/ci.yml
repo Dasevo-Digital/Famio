@@ -83,10 +83,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          # Fewer downloads from Maven Central and the plugin portal, which
+          # now and then fail to deliver an artifact.
+          cache: gradle
       - run: flutter pub get
       - if: matrix.target == 'android'
         run: |
-          flutter build apk --debug --flavor prod
+          # A second try when Gradle could not fetch a dependency (a hiccup
+          # of the repositories, not of the code).
+          flutter build apk --debug --flavor prod \
+            || { sleep 60; flutter build apk --debug --flavor prod; }
           cd android && ./gradlew :app:testDevDebugUnitTest --console=plain
       - if: matrix.target == 'linux'
         run: flutter build linux --debug
