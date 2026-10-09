@@ -11,4 +11,6 @@
         <item name="android:paddingBottom">2dp</item>
     </style>
     <string name="widget_description">Termine, Essen und Einkauf von heute</string>
+    <string name="sos_widget_description">Notfallknopf: Alarm an die Eltern mit Standort</string>
+    <string name="sos_widget_label">Famio Notruf auslösen</string>
 </resources>
