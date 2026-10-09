@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import 'chat.dart';
+import '../texts.dart';
 
 /// One line of a recipe: "200 g Mehl", "2 Eier", "Salz".
 class Ingredient {
@@ -155,9 +156,12 @@ enum MealSlot {
   dinner('Abendessen'),
   snack('Snack');
 
-  const MealSlot(this.label);
+  const MealSlot(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('MealSlot.$name', _label);
 }
 
 /// A planned meal, stored in `Collections.mealPlan`.

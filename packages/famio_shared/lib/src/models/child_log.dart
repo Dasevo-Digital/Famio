@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// What a [ChildLog] records.
 enum LogKind {
@@ -19,9 +20,12 @@ enum LogKind {
   symptom('Symptom'),
   bath('Baden');
 
-  const LogKind(this.label);
+  const LogKind(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('LogKind.$name', _label);
 
   /// Kinds measured as a duration (start/stop).
   bool get timed => this == breast || this == sleep;
@@ -31,9 +35,12 @@ enum BreastSide {
   left('links'),
   right('rechts');
 
-  const BreastSide(this.label);
+  const BreastSide(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('BreastSide.$name', _label);
 }
 
 enum MilkKind {
@@ -41,9 +48,12 @@ enum MilkKind {
   formula('Pre-Milch'),
   other('Andere');
 
-  const MilkKind(this.label);
+  const MilkKind(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('MilkKind.$name', _label);
 }
 
 enum DiaperKind {
@@ -51,9 +61,12 @@ enum DiaperKind {
   dirty('voll'),
   both('nass + voll');
 
-  const DiaperKind(this.label);
+  const DiaperKind(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('DiaperKind.$name', _label);
 }
 
 /// One entry of a child's daily log (feeding, sleep, diaper, fever …),

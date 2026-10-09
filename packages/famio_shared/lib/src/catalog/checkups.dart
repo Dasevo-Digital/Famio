@@ -1,11 +1,13 @@
+import '../texts.dart';
+
 /// Preventive check-ups from the German "gelbes Kinderuntersuchungsheft"
 /// (G-BA Kinder-Richtlinie). Windows are given in days after birth; the
 /// booklet also allows tolerance periods ([toleranceTo]).
 class Checkup {
   const Checkup(
     this.id,
-    this.title,
-    this.window,
+    this._title,
+    this._window,
     this.fromDay,
     this.toDay,
     this.toleranceTo, {
@@ -13,10 +15,12 @@ class Checkup {
   });
 
   final String id;
-  final String title;
+  final String _title;
+  String get title => sharedText('Checkup|$_title', _title);
 
   /// Human-readable window as printed in the booklet.
-  final String window;
+  final String _window;
+  String get window => sharedText('Checkup|$_window', _window);
   final int fromDay;
   final int toDay;
 

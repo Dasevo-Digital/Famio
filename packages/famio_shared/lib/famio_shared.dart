@@ -43,4 +43,5 @@ export 'src/models/wish.dart';
 export 'src/push.dart';
 export 'src/sync_protocol.dart';
 export 'src/sync_record.dart';
+export 'src/texts.dart';
 export 'src/tls_pin.dart';

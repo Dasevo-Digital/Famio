@@ -5,6 +5,8 @@
 /// line, else the line before. Everything stays on the device.
 library;
 
+import '../l10n.dart';
+
 class EventSuggestion {
   const EventSuggestion({
     required this.title,
@@ -268,6 +270,6 @@ String _title(String line, String previous) {
   if (t.length < 3) {
     t = previous.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
-  if (t.isEmpty) t = 'Termin';
+  if (t.isEmpty) t = tr.commonEvent;
   return t.length > 60 ? '${t.substring(0, 57)}…' : t;
 }

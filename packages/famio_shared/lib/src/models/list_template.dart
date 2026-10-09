@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// One entry of a [ListTemplate].
 class TemplateItem {
@@ -54,89 +55,220 @@ class ListTemplate {
 }
 
 /// Ready-made templates offered until the family saves its own.
-const builtInTemplates = [
+List<ListTemplate> get builtInTemplates => [
   ListTemplate(
     id: 'builtin-urlaub',
-    name: 'Urlaub',
+    name: sharedText('ListTemplate|Urlaub', 'Urlaub'),
     emoji: '🏖️',
     items: [
-      TemplateItem('Ausweise & Reisepässe', category: 'Dokumente'),
-      TemplateItem('Krankenversichertenkarten', category: 'Dokumente'),
-      TemplateItem('Buchungsbestätigungen', category: 'Dokumente'),
-      TemplateItem('Unterwäsche & Socken', category: 'Kleidung'),
-      TemplateItem('Schlafanzüge', category: 'Kleidung'),
-      TemplateItem('Regenjacken', category: 'Kleidung'),
-      TemplateItem('Badesachen', category: 'Kleidung'),
-      TemplateItem('Zahnbürsten & Zahnpasta', category: 'Bad'),
-      TemplateItem('Sonnencreme', category: 'Bad'),
-      TemplateItem('Reiseapotheke', category: 'Bad'),
-      TemplateItem('Ladegeräte', category: 'Technik'),
-      TemplateItem('Kuscheltier', category: 'Kinder'),
-      TemplateItem('Spiele & Bücher für die Fahrt', category: 'Kinder'),
-      TemplateItem('Snacks & Getränke', category: 'Unterwegs'),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Ausweise & Reisepässe',
+          'Ausweise & Reisepässe',
+        ),
+        category: 'Dokumente',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Krankenversichertenkarten',
+          'Krankenversichertenkarten',
+        ),
+        category: 'Dokumente',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Buchungsbestätigungen',
+          'Buchungsbestätigungen',
+        ),
+        category: 'Dokumente',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Unterwäsche & Socken', 'Unterwäsche & Socken'),
+        category: 'Kleidung',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Schlafanzüge', 'Schlafanzüge'),
+        category: 'Kleidung',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Regenjacken', 'Regenjacken'),
+        category: 'Kleidung',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Badesachen', 'Badesachen'),
+        category: 'Kleidung',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Zahnbürsten & Zahnpasta',
+          'Zahnbürsten & Zahnpasta',
+        ),
+        category: 'Bad',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Sonnencreme', 'Sonnencreme'),
+        category: 'Bad',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Reiseapotheke', 'Reiseapotheke'),
+        category: 'Bad',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Ladegeräte', 'Ladegeräte'),
+        category: 'Technik',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Kuscheltier', 'Kuscheltier'),
+        category: 'Kinder',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Spiele & Bücher für die Fahrt',
+          'Spiele & Bücher für die Fahrt',
+        ),
+        category: 'Kinder',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Snacks & Getränke', 'Snacks & Getränke'),
+        category: 'Unterwegs',
+      ),
     ],
   ),
   ListTemplate(
     id: 'builtin-kita',
-    name: 'Kita-Tasche',
+    name: sharedText('ListTemplate|Kita-Tasche', 'Kita-Tasche'),
     emoji: '🎒',
     items: [
-      TemplateItem('Wechselkleidung'),
-      TemplateItem('Windeln & Feuchttücher'),
-      TemplateItem('Matschhose & Gummistiefel'),
-      TemplateItem('Hausschuhe'),
-      TemplateItem('Trinkflasche'),
-      TemplateItem('Brotdose'),
-      TemplateItem('Sonnenhut / Mütze'),
+      TemplateItem(
+        sharedText('TemplateItem|Wechselkleidung', 'Wechselkleidung'),
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Windeln & Feuchttücher',
+          'Windeln & Feuchttücher',
+        ),
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Matschhose & Gummistiefel',
+          'Matschhose & Gummistiefel',
+        ),
+      ),
+      TemplateItem(sharedText('TemplateItem|Hausschuhe', 'Hausschuhe')),
+      TemplateItem(sharedText('TemplateItem|Trinkflasche', 'Trinkflasche')),
+      TemplateItem(sharedText('TemplateItem|Brotdose', 'Brotdose')),
+      TemplateItem(
+        sharedText('TemplateItem|Sonnenhut / Mütze', 'Sonnenhut / Mütze'),
+      ),
     ],
   ),
   ListTemplate(
     id: 'builtin-klinik',
-    name: 'Kliniktasche Geburt',
+    name: sharedText('ListTemplate|Kliniktasche Geburt', 'Kliniktasche Geburt'),
     emoji: '👶',
     items: [
-      TemplateItem('Mutterpass', category: 'Dokumente'),
-      TemplateItem('Versichertenkarte & Ausweis', category: 'Dokumente'),
       TemplateItem(
-        'Familienstammbuch / Geburtsurkunden',
+        sharedText('TemplateItem|Mutterpass', 'Mutterpass'),
         category: 'Dokumente',
       ),
-      TemplateItem('Bequeme Kleidung & Bademantel', category: 'Mama'),
-      TemplateItem('Still-BHs & Stilleinlagen', category: 'Mama'),
-      TemplateItem('Hausschuhe & warme Socken', category: 'Mama'),
-      TemplateItem('Kulturbeutel', category: 'Mama'),
-      TemplateItem('Ladekabel', category: 'Mama'),
-      TemplateItem('Erstausstattung Baby', category: 'Baby'),
-      TemplateItem('Mützchen & Söckchen', category: 'Baby'),
-      TemplateItem('Babyschale fürs Auto', category: 'Baby'),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Versichertenkarte & Ausweis',
+          'Versichertenkarte & Ausweis',
+        ),
+        category: 'Dokumente',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Familienstammbuch / Geburtsurkunden',
+          'Familienstammbuch / Geburtsurkunden',
+        ),
+        category: 'Dokumente',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Bequeme Kleidung & Bademantel',
+          'Bequeme Kleidung & Bademantel',
+        ),
+        category: 'Mama',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Still-BHs & Stilleinlagen',
+          'Still-BHs & Stilleinlagen',
+        ),
+        category: 'Mama',
+      ),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Hausschuhe & warme Socken',
+          'Hausschuhe & warme Socken',
+        ),
+        category: 'Mama',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Kulturbeutel', 'Kulturbeutel'),
+        category: 'Mama',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Ladekabel', 'Ladekabel'),
+        category: 'Mama',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Erstausstattung Baby', 'Erstausstattung Baby'),
+        category: 'Baby',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Mützchen & Söckchen', 'Mützchen & Söckchen'),
+        category: 'Baby',
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Babyschale fürs Auto', 'Babyschale fürs Auto'),
+        category: 'Baby',
+      ),
     ],
   ),
   ListTemplate(
     id: 'builtin-schwimmbad',
-    name: 'Schwimmbad',
+    name: sharedText('ListTemplate|Schwimmbad', 'Schwimmbad'),
     emoji: '🏊',
     items: [
-      TemplateItem('Badesachen'),
-      TemplateItem('Handtücher'),
-      TemplateItem('Schwimmflügel'),
-      TemplateItem('Duschgel & Shampoo'),
-      TemplateItem('Haarbürste'),
-      TemplateItem('Münzen für den Spind'),
-      TemplateItem('Snacks'),
+      TemplateItem(sharedText('TemplateItem|Badesachen', 'Badesachen')),
+      TemplateItem(sharedText('TemplateItem|Handtücher', 'Handtücher')),
+      TemplateItem(sharedText('TemplateItem|Schwimmflügel', 'Schwimmflügel')),
+      TemplateItem(
+        sharedText('TemplateItem|Duschgel & Shampoo', 'Duschgel & Shampoo'),
+      ),
+      TemplateItem(sharedText('TemplateItem|Haarbürste', 'Haarbürste')),
+      TemplateItem(
+        sharedText('TemplateItem|Münzen für den Spind', 'Münzen für den Spind'),
+      ),
+      TemplateItem(sharedText('TemplateItem|Snacks', 'Snacks')),
     ],
   ),
   ListTemplate(
     id: 'builtin-camping',
-    name: 'Camping',
+    name: sharedText('ListTemplate|Camping', 'Camping'),
     emoji: '⛺',
     items: [
-      TemplateItem('Zelt & Heringe'),
-      TemplateItem('Schlafsäcke & Isomatten'),
-      TemplateItem('Stirnlampen'),
-      TemplateItem('Campingkocher & Gas'),
-      TemplateItem('Geschirr & Besteck'),
-      TemplateItem('Mückenschutz'),
-      TemplateItem('Erste-Hilfe-Set'),
+      TemplateItem(sharedText('TemplateItem|Zelt & Heringe', 'Zelt & Heringe')),
+      TemplateItem(
+        sharedText(
+          'TemplateItem|Schlafsäcke & Isomatten',
+          'Schlafsäcke & Isomatten',
+        ),
+      ),
+      TemplateItem(sharedText('TemplateItem|Stirnlampen', 'Stirnlampen')),
+      TemplateItem(
+        sharedText('TemplateItem|Campingkocher & Gas', 'Campingkocher & Gas'),
+      ),
+      TemplateItem(
+        sharedText('TemplateItem|Geschirr & Besteck', 'Geschirr & Besteck'),
+      ),
+      TemplateItem(sharedText('TemplateItem|Mückenschutz', 'Mückenschutz')),
+      TemplateItem(
+        sharedText('TemplateItem|Erste-Hilfe-Set', 'Erste-Hilfe-Set'),
+      ),
     ],
   ),
 ];

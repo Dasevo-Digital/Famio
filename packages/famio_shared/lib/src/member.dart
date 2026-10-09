@@ -1,4 +1,5 @@
 import 'models/birthday.dart';
+import 'texts.dart';
 
 /// What a member may do besides the data's own visibility rules.
 enum MemberRole {
@@ -18,9 +19,12 @@ enum MemberRole {
   /// member lists, never an administrator.
   service('Dienstkonto');
 
-  const MemberRole(this.label);
+  const MemberRole(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('MemberRole.$name', _label);
 
   static MemberRole parse(Object? name) =>
       values.where((r) => r.name == name).firstOrNull ?? adult;
@@ -36,9 +40,12 @@ enum ServiceAccess {
 
   readOnly('Nur lesen');
 
-  const ServiceAccess(this.label);
+  const ServiceAccess(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('ServiceAccess.$name', _label);
 
   static ServiceAccess parse(Object? name) =>
       values.where((a) => a.name == name).firstOrNull ?? full;

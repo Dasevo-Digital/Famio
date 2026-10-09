@@ -1,4 +1,5 @@
 import 'member.dart';
+import 'texts.dart';
 
 /// A signed-in device (login session) of a member.
 class DeviceSession {
@@ -216,9 +217,12 @@ enum TwoFactorPolicy {
   admins('Administratoren'),
   all('Alle Mitglieder');
 
-  const TwoFactorPolicy(this.label);
+  const TwoFactorPolicy(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('TwoFactorPolicy.$name', _label);
 
   static TwoFactorPolicy? parse(Object? value) =>
       values.where((p) => p.name == value).firstOrNull;

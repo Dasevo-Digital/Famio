@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
 import 'design/palette.dart';
+import 'shared_texts/shared_texts.dart';
 
 export '../l10n/app_localizations.dart';
 
@@ -41,6 +42,7 @@ void useLanguage(String code) {
   _language = code;
   _texts = lookupL10n(Locale(code));
   Intl.defaultLocale = code;
+  useSharedTexts(code);
 }
 
 /// `context.l10n.settingsAccount`: the texts in the chosen language.

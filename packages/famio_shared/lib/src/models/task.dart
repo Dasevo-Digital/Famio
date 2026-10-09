@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// A family task (Aufgabe), stored in `Collections.tasks`.
 class Task {
@@ -180,12 +181,16 @@ enum TaskRepeat {
   }
 
   /// "täglich", "alle 2 Wochen" …
-  String label(int every) => switch (this) {
-    daily => every == 1 ? 'täglich' : 'alle $every Tage',
-    weekly => every == 1 ? 'wöchentlich' : 'alle $every Wochen',
-    monthly => every == 1 ? 'monatlich' : 'alle $every Monate',
-    yearly => every == 1 ? 'jährlich' : 'alle $every Jahre',
-  };
+  String label(int every) {
+    String t(String german) =>
+        sharedText('Recurrence|$german', german, {'every': every});
+    return switch (this) {
+      daily => every == 1 ? t('täglich') : t('alle {every} Tage'),
+      weekly => every == 1 ? t('wöchentlich') : t('alle {every} Wochen'),
+      monthly => every == 1 ? t('monatlich') : t('alle {every} Monate'),
+      yearly => every == 1 ? t('jährlich') : t('alle {every} Jahre'),
+    };
+  }
 }
 
 const _keep = Object();

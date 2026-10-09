@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 enum PantryPlace {
   fridge('Kühlschrank', '🧊'),
@@ -6,9 +7,12 @@ enum PantryPlace {
   pantry('Vorratsschrank', '🥫'),
   other('Sonstiges', '📦');
 
-  const PantryPlace(this.label, this.emoji);
+  const PantryPlace(this._label, this.emoji);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('PantryPlace.$name', _label);
   final String emoji;
 
   static PantryPlace parse(Object? name) =>

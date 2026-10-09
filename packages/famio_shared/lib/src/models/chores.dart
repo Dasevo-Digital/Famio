@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// `2026-09-28` for the local calendar day of [d].
 String dayKey(DateTime d) =>
@@ -23,9 +24,12 @@ enum ChoreRepeat {
   daily('Täglich'),
   weekly('Einmal pro Woche');
 
-  const ChoreRepeat(this.label);
+  const ChoreRepeat(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('ChoreRepeat.$name', _label);
 
   static ChoreRepeat parse(Object? name) =>
       values.where((r) => r.name == name).firstOrNull ?? daily;
@@ -347,9 +351,12 @@ enum MoneyKind {
   gift('Geschenkt'),
   other('Sonstiges');
 
-  const MoneyKind(this.label);
+  const MoneyKind(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('MoneyKind.$name', _label);
 
   static MoneyKind parse(Object? name) =>
       values.where((k) => k.name == name).firstOrNull ?? other;

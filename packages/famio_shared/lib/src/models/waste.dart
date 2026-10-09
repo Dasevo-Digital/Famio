@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import 'event.dart';
+import '../texts.dart';
 
 /// Kinds of bins, recognised from the titles of the municipality's
 /// calendar ("Gelber Sack", "Altpapier", "Bioabfall" …).
@@ -14,9 +15,12 @@ enum WasteKind {
   hazardous('Schadstoffe', '☣️'),
   other('Abholung', '🗑️');
 
-  const WasteKind(this.label, this.emoji);
+  const WasteKind(this._label, this.emoji);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('WasteKind.$name', _label);
   final String emoji;
 
   /// The kind a calendar title names, or null if it names none.
@@ -39,14 +43,39 @@ enum WasteKind {
   }
 
   // Order matters: "Bioabfall" before "Abfall", "Altpapier" before others.
+  // German words first, then English and Spanish ones.
   static const _words = [
     (
       WasteKind.packaging,
-      ['gelb', 'wertstoff', 'leichtverpack', '^lvp', 'verpackung'],
+      [
+        'gelb',
+        'wertstoff',
+        'leichtverpack',
+        '^lvp',
+        'verpackung',
+        'recycl',
+        'packaging',
+        'envases',
+        'amarillo',
+      ],
     ),
-    (WasteKind.paper, ['papier', '^ppk', 'pappe', 'blaue tonne']),
-    (WasteKind.organic, ['^bio', 'braune tonne', 'kompost']),
-    (WasteKind.glass, ['glas']),
+    (
+      WasteKind.paper,
+      ['papier', '^ppk', 'pappe', 'blaue tonne', 'paper', 'cardboard', 'papel'],
+    ),
+    (
+      WasteKind.organic,
+      [
+        '^bio',
+        'braune tonne',
+        'kompost',
+        'compost',
+        'organic',
+        'food waste',
+        'orgánic',
+      ],
+    ),
+    (WasteKind.glass, ['glas', 'vidrio']),
     (
       WasteKind.garden,
       [
@@ -57,15 +86,46 @@ enum WasteKind {
         'weihnachtsbaum',
         'tannenbaum',
         'baumschnitt',
+        'yard waste',
+        'garden waste',
+        'christmas tree',
+        '^poda',
+        'jardín',
       ],
     ),
-    (WasteKind.bulky, ['sperr']),
-    (WasteKind.hazardous, ['schadstoff', 'problemstoff', 'sondermüll']),
+    (WasteKind.bulky, ['sperr', 'bulky', 'voluminos', 'enseres']),
+    (
+      WasteKind.hazardous,
+      ['schadstoff', 'problemstoff', 'sondermüll', 'hazardous', 'peligros'],
+    ),
     (
       WasteKind.residual,
-      ['^rest', 'hausmüll', 'hausmuell', 'graue tonne', 'schwarze tonne'],
+      [
+        '^rest',
+        'hausmüll',
+        'hausmuell',
+        'graue tonne',
+        'schwarze tonne',
+        'trash',
+        'garbage',
+        'rubbish',
+      ],
     ),
-    (WasteKind.other, ['müll', 'muell', 'abfall', 'tonne', 'abfuhr']),
+    (
+      WasteKind.other,
+      [
+        'müll',
+        'muell',
+        'abfall',
+        'tonne',
+        'abfuhr',
+        'waste',
+        '^bin ',
+        'basura',
+        'residuos',
+        'contenedor',
+      ],
+    ),
   ];
 }
 

@@ -1,21 +1,25 @@
+import '../texts.dart';
+
 /// Pregnancy week by week: typical size of the baby (rounded, from common
 /// tables; crown-rump length until week 19, then head to heel) and a
 /// comparison for the family.
 class PregnancyWeek {
   const PregnancyWeek(
     this.week,
-    this.like,
+    this._like,
     this.lengthCm,
     this.weightG,
-    this.info,
+    this._info,
   );
 
   /// Completed weeks (SSW n+0).
   final int week;
-  final String like;
+  final String _like;
+  String get like => sharedText('PregnancyWeek|$_like', _like);
   final double lengthCm;
   final int weightG;
-  final String info;
+  final String _info;
+  String get info => sharedText('PregnancyWeek|$_info', _info);
 }
 
 const pregnancyWeeks = <PregnancyWeek>[
@@ -192,17 +196,19 @@ PregnancyWeek? pregnancyWeek(int week) =>
 class PregnancyTask {
   const PregnancyTask(
     this.id,
-    this.title,
+    this._title,
     this.fromWeek,
     this.toWeek,
-    this.info,
+    this._info,
   );
 
   final String id;
-  final String title;
+  final String _title;
+  String get title => sharedText('PregnancyTask|$_title', _title);
   final int fromWeek;
   final int toWeek;
-  final String info;
+  final String _info;
+  String get info => sharedText('PregnancyTask|$_info', _info);
 }
 
 const pregnancyTasks = <PregnancyTask>[
@@ -280,17 +286,19 @@ const pregnancyTasks = <PregnancyTask>[
 ];
 
 class ChecklistItem {
-  const ChecklistItem(this.id, this.title);
+  const ChecklistItem(this.id, this._title);
 
   final String id;
-  final String title;
+  final String _title;
+  String get title => sharedText('ChecklistItem|$_title', _title);
 }
 
 class Checklist {
-  const Checklist(this.id, this.title, this.items);
+  const Checklist(this.id, this._title, this.items);
 
   final String id;
-  final String title;
+  final String _title;
+  String get title => sharedText('Checklist|$_title', _title);
   final List<ChecklistItem> items;
 }
 

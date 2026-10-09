@@ -1,24 +1,29 @@
+import '../texts.dart';
+
 /// Standard childhood vaccinations after the STIKO schedule (Germany, as of
 /// 2025), simplified to the recommended age of each dose. Orientation only:
 /// the paediatrician and the vaccination record decide.
 class Vaccination {
   const Vaccination(
     this.id,
-    this.title,
-    this.dose,
+    this._title,
+    this._dose,
     this.ageMonths, [
-    this.note = '',
+    this._note = '',
   ]);
 
   final String id;
 
   /// Disease(s) covered.
-  final String title;
-  final String dose;
+  final String _title;
+  String get title => sharedText('Vaccination|$_title', _title);
+  final String _dose;
+  String get dose => sharedText('Vaccination|$_dose', _dose);
 
   /// Recommended age in months.
   final double ageMonths;
-  final String note;
+  final String _note;
+  String get note => sharedText('Vaccination|$_note', _note);
 }
 
 const vaccinations = <Vaccination>[

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// A place the family cares about (home, school, grandma's …), stored in
 /// `Collections.places`. Members get notified when someone arrives or
@@ -269,11 +270,11 @@ class LocationAlert {
   );
 
   /// Texts a member can check in with.
-  static const checkInTexts = [
-    'Bin angekommen',
-    'Alles ok',
-    'Bin auf dem Heimweg',
-    'Bitte abholen',
+  static List<String> get checkInTexts => [
+    sharedText('CheckIn|Bin angekommen', 'Bin angekommen'),
+    sharedText('CheckIn|Alles ok', 'Alles ok'),
+    sharedText('CheckIn|Bin auf dem Heimweg', 'Bin auf dem Heimweg'),
+    sharedText('CheckIn|Bitte abholen', 'Bitte abholen'),
   ];
 
   final String id;
@@ -293,14 +294,27 @@ class LocationAlert {
   final double? longitude;
 
   String text(String memberName) {
+    final args = {'member': memberName, 'place': placeName};
     if (checkIn case final note?) {
       return placeName.isEmpty
           ? '$memberName: $note'
-          : '$memberName: $note (bei „$placeName“)';
+          : sharedText(
+              'LocationAlert|{member}: {note} (bei „{place}“)',
+              '{member}: {note} (bei „{place}“)',
+              {...args, 'note': note},
+            );
     }
     return arrived
-        ? '$memberName ist bei „$placeName“ angekommen'
-        : '$memberName hat „$placeName“ verlassen';
+        ? sharedText(
+            'LocationAlert|{member} ist bei „{place}“ angekommen',
+            '{member} ist bei „{place}“ angekommen',
+            args,
+          )
+        : sharedText(
+            'LocationAlert|{member} hat „{place}“ verlassen',
+            '{member} hat „{place}“ verlassen',
+            args,
+          );
   }
 
   Map<String, Object?> toData() => {

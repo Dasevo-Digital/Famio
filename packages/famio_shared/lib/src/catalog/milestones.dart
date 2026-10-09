@@ -1,3 +1,5 @@
+import '../texts.dart';
+
 /// Developmental milestones with the age window (in months) in which most
 /// children reach them. Orientation only – children develop at their own pace.
 ///
@@ -12,29 +14,34 @@ enum MilestoneArea {
   selfCare('Selbstständigkeit'),
   body('Körper');
 
-  const MilestoneArea(this.label);
+  const MilestoneArea(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('MilestoneArea.$name', _label);
 }
 
 class Milestone {
   const Milestone(
     this.id,
     this.area,
-    this.title,
+    this._title,
     this.fromMonth,
     this.toMonth, [
-    this.hint = '',
+    this._hint = '',
   ]);
 
   final String id;
   final MilestoneArea area;
-  final String title;
+  final String _title;
+  String get title => sharedText('Milestone|$_title', _title);
 
   /// Window in which most children reach it, in months of age.
   final double fromMonth;
   final double toMonth;
-  final String hint;
+  final String _hint;
+  String get hint => sharedText('Milestone|$_hint', _hint);
 }
 
 const milestones = <Milestone>[

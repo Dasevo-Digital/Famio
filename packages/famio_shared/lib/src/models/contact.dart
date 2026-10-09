@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import 'birthday.dart';
+import '../texts.dart';
 
 enum ContactRole {
   pediatrician('Kinderarzt'),
@@ -14,9 +15,12 @@ enum ContactRole {
   emergency('Notdienst'),
   other('Sonstige');
 
-  const ContactRole(this.label);
+  const ContactRole(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('ContactRole.$name', _label);
 }
 
 /// An important contact of the family (pediatrician, daycare, babysitter

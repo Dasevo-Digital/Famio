@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import 'chat.dart';
+import '../texts.dart';
 
 enum DocumentCategory {
   identity('Ausweise & Pässe'),
@@ -14,9 +15,12 @@ enum DocumentCategory {
   photos('Fotos'),
   other('Sonstiges');
 
-  const DocumentCategory(this.label);
+  const DocumentCategory(this._label);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('DocumentCategory.$name', _label);
 }
 
 /// A family document, stored in `Collections.documents`. Its file is only

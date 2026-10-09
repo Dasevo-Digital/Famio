@@ -3,6 +3,8 @@
 /// can subscribe to.
 library;
 
+import '../texts.dart';
+
 /// A German federal state; [code] is stored in the server settings.
 enum GermanState {
   bw('BW', 'Baden-Württemberg', 'baden-wuerttemberg'),
@@ -22,10 +24,13 @@ enum GermanState {
   sh('SH', 'Schleswig-Holstein', 'schleswig-holstein'),
   th('TH', 'Thüringen', 'thueringen');
 
-  const GermanState(this.code, this.label, this._slug);
+  const GermanState(this.code, this._label, this._slug);
 
   final String code;
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('GermanState.$name', _label);
   final String _slug;
 
   static GermanState? parse(Object? code) {
@@ -43,11 +48,12 @@ enum GermanState {
 }
 
 class Holiday {
-  const Holiday(this.date, this.name);
+  const Holiday(this.date, this._name);
 
   /// Local midnight.
   final DateTime date;
-  final String name;
+  final String _name;
+  String get name => sharedText('Holiday|$_name', _name);
 
   @override
   String toString() => '$name (${date.toIso8601String().substring(0, 10)})';

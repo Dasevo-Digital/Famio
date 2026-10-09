@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import '../l10n.dart';
 
 /// Dialog that runs [onSubmit] and shows server errors inline.
 class FormDialog extends StatefulWidget {
@@ -9,13 +10,13 @@ class FormDialog extends StatefulWidget {
     required this.fields,
     required this.onSubmit,
     this.controllers = const [],
-    this.submitLabel = 'Speichern',
+    this.submitLabel,
   });
 
   final String title;
   final List<Widget> fields;
   final Future<void> Function() onSubmit;
-  final String submitLabel;
+  final String? submitLabel;
 
   /// Disposed with the dialog, after its closing animation.
   final List<TextEditingController> controllers;
@@ -77,11 +78,11 @@ class _FormDialogState extends State<FormDialog> {
       actions: [
         TextButton(
           onPressed: _busy ? null : () => Navigator.pop(context),
-          child: const Text('Abbrechen'),
+          child: Text(tr.commonCancel),
         ),
         FilledButton(
           onPressed: _busy ? null : _submit,
-          child: Text(widget.submitLabel),
+          child: Text(widget.submitLabel ?? tr.commonSave),
         ),
       ],
     );

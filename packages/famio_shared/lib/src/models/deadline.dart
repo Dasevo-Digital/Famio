@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../texts.dart';
 
 /// What a deadline is about.
 enum DeadlineArea {
@@ -7,9 +8,12 @@ enum DeadlineArea {
   pet('Haustiere', '🐾'),
   other('Sonstiges', '📌');
 
-  const DeadlineArea(this.label, this.emoji);
+  const DeadlineArea(this._label, this.emoji);
 
-  final String label;
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('DeadlineArea.$name', _label);
   final String emoji;
 }
 
@@ -125,12 +129,17 @@ class Deadline {
 
 /// A ready-made deadline to pick from.
 class DeadlinePreset {
-  const DeadlinePreset(this.area, this.title, this.repeatMonths, [this.hint]);
+  const DeadlinePreset(this.area, this._title, this.repeatMonths, [this._hint]);
 
   final DeadlineArea area;
-  final String title;
+  final String _title;
+  String get title => sharedText('DeadlinePreset|$_title', _title);
   final int? repeatMonths;
-  final String? hint;
+  final String? _hint;
+  String? get hint => switch (_hint) {
+    final t? => sharedText('DeadlinePreset|$t', t),
+    null => null,
+  };
 }
 
 const deadlinePresets = [
