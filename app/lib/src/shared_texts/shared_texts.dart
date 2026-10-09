@@ -1,17 +1,10 @@
 import 'package:famio_client/famio_client.dart';
 
-import 'en.dart';
-import 'es.dart';
 
 /// Shows the German texts of the shared enums and catalogs (roles,
 /// milestones, vaccinations …) in [language].
 void useSharedTexts(String language) {
-  final texts = switch (language) {
-    'en' => sharedEn,
-    'es' => sharedEs,
-    _ => const <String, String>{},
-  };
-  sharedTexts = (key, german) => texts[key] ?? german;
+  sharedTexts = (key, german) => sharedTranslation(language, key) ?? german;
 }
 
 /// Every key the shared package asks for, with its German text: all enum
@@ -109,6 +102,7 @@ Map<String, String> collectSharedTexts() {
       f.label(1);
       f.label(2);
     }
+    ClientTexts.all();
   } finally {
     sharedTexts = before;
   }

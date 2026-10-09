@@ -13,6 +13,7 @@ import '../record_store.dart';
 import 'bring.dart';
 import 'list_provider.dart';
 import 'ms_todo.dart';
+import '../i18n.dart';
 
 /// Keeps Famio's tasks and shopping lists in sync with lists in other apps
 /// (Bring!, Microsoft To Do), in both directions. Each member connects their
@@ -116,7 +117,7 @@ class ListSync {
       throw ApiException(
         403,
         'lists_disabled',
-        'Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.',
+        t('Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.'),
       );
     }
   }
@@ -156,7 +157,7 @@ class ListSync {
       [id, memberId],
     ).firstOrNull;
     if (row == null) {
-      throw ApiException(404, 'not_found', 'Verbindung nicht gefunden');
+      throw ApiException(404, 'not_found', t('Verbindung nicht gefunden'));
     }
     return row;
   }
@@ -214,8 +215,9 @@ class ListSync {
     if (!RegExp(r'^[0-9a-fA-F-]{36}$').hasMatch(id)) {
       throw ApiException.badRequest(
         'invalid_client_id',
-        'Die Client-ID (Anwendungs-ID) hat die Form '
-            '00000000-0000-0000-0000-000000000000.',
+        t(
+          'Die Client-ID (Anwendungs-ID) hat die Form 00000000-0000-0000-0000-000000000000.',
+        ),
       );
     }
     try {
@@ -253,7 +255,7 @@ class ListSync {
   ) async {
     final login = _deviceLogins[flow];
     if (login == null || login.memberId != memberId) {
-      throw ApiException(404, 'not_found', 'Anmeldung nicht gefunden');
+      throw ApiException(404, 'not_found', t('Anmeldung nicht gefunden'));
     }
     try {
       final credentials = await MsTodoProvider.pollDeviceLogin(
@@ -333,7 +335,7 @@ class ListSync {
         if (bring) {
           throw ApiException.badRequest(
             'invalid_link',
-            'Bring! kennt nur Einkaufslisten.',
+            t('Bring! kennt nur Einkaufslisten.'),
           );
         }
       } else {
@@ -343,7 +345,7 @@ class ListSync {
             !RecordStore.canSee(list, memberId)) {
           throw ApiException.badRequest(
             'invalid_link',
-            'Diese Einkaufsliste gibt es nicht.',
+            t('Diese Einkaufsliste gibt es nicht.'),
           );
         }
       }
@@ -431,7 +433,9 @@ class ListSync {
         log?.call('[listen] $name: $error');
         if (e.signedOut) break;
       } on http.ClientException catch (e) {
-        error = 'Keine Verbindung zu ${_label(provider)}.';
+        error = t('Keine Verbindung zu {provider}.', {
+          'provider': _label(provider),
+        });
         log?.call('[listen] $name: $error (${e.message})');
       }
     }
@@ -688,9 +692,17 @@ class _SyncStats {
 
   @override
   String toString() => missing
-      ? 'die Famio-Liste gibt es nicht mehr'
-      : 'Famio $famio, dort $remote Einträge; $sent gesendet, '
-            '$taken übernommen, $deleted gelöscht';
+      ? t('die Famio-Liste gibt es nicht mehr')
+      : t(
+          'Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht',
+          {
+            'famio': famio,
+            'remote': remote,
+            'sent': sent,
+            'taken': taken,
+            'deleted': deleted,
+          },
+        );
 }
 
 /// What both sides compare: title, note (quantity), done, due day.

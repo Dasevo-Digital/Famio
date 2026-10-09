@@ -14,6 +14,7 @@ import '../calendar/todo_ics.dart';
 import '../family/repeating_tasks.dart';
 import '../record_store.dart';
 import '../security.dart';
+import '../i18n.dart';
 
 const _dav = 'DAV:';
 const _caldav = 'urn:ietf:params:xml:ns:caldav';
@@ -87,7 +88,7 @@ class CalDavServer {
     if (login == null) {
       return Response(
         401,
-        body: 'Anmeldung mit Benutzername und App-Passwort nötig',
+        body: t('Anmeldung mit Benutzername und App-Passwort nötig'),
         headers: {
           'www-authenticate': 'Basic realm="Famio", charset="UTF-8"',
           'content-type': 'text/plain; charset=utf-8',
@@ -121,7 +122,7 @@ class CalDavServer {
         _ => _status(405),
       };
     } on XmlException {
-      return _status(400, 'Ungültiges XML');
+      return _status(400, t('Ungültiges XML'));
     } on _DavError catch (e) {
       return e.response;
     }
@@ -292,17 +293,17 @@ class CalDavServer {
     final (name, description, color) = switch (collection.kind) {
       _Content.events => (
         'Famio',
-        'Termine der Familie aus Famio',
+        t('Termine der Familie aus Famio'),
         '#7B5BE0FF',
       ),
       _Content.tasks => (
         'Famio-Aufgaben',
-        'Aufgaben der Familie aus Famio',
+        t('Aufgaben der Familie aus Famio'),
         '#2A9D6EFF',
       ),
       _Content.shopping => (
-        _shoppingListName(collection.listId!) ?? 'Einkauf',
-        'Einkaufsliste aus Famio',
+        _shoppingListName(collection.listId!) ?? t('Einkauf'),
+        t('Einkaufsliste aus Famio'),
         '#E8703AFF',
       ),
     };
@@ -383,7 +384,7 @@ class CalDavServer {
     final collection = _collection(context, target);
     if (collection == null) return _status(404);
     final body = await _xmlBody(request);
-    if (body == null) return _status(400, 'Leere Anfrage');
+    if (body == null) return _status(400, t('Leere Anfrage'));
     final root = body.rootElement;
     final wanted = _requestedProps(body);
     final user = context.member.username;
@@ -596,9 +597,9 @@ class CalDavServer {
       return _davError(
         403,
         '<c:valid-calendar-object-resource/>',
-        message:
-            '${parsed.unsupported ?? 'Nicht unterstützt'} – bitte den Termin '
-            'in Famio anlegen.',
+        message: t('{reason} – bitte den Termin in Famio anlegen.', {
+          'reason': parsed.unsupported ?? t('Nicht unterstützt'),
+        }),
       );
     }
     final audience = live ? stored.visibleTo : null;
@@ -634,7 +635,7 @@ class CalDavServer {
       return _davError(
         403,
         '<c:valid-calendar-object-resource/>',
-        message: 'Diese Liste nimmt nur Aufgaben (VTODO) an.',
+        message: t('Diese Liste nimmt nur Aufgaben (VTODO) an.'),
       );
     }
     final data = switch (collection.kind) {
@@ -852,13 +853,13 @@ class CalDavServer {
   static Future<String> _text(Request request) async {
     final length = request.contentLength;
     if (length != null && length > _maxBody) {
-      throw _DavError(_status(413, 'Anfrage ist zu groß'));
+      throw _DavError(_status(413, t('Anfrage ist zu groß')));
     }
     final bytes = <int>[];
     await for (final chunk in request.read()) {
       bytes.addAll(chunk);
       if (bytes.length > _maxBody) {
-        throw _DavError(_status(413, 'Anfrage ist zu groß'));
+        throw _DavError(_status(413, t('Anfrage ist zu groß')));
       }
     }
     return utf8.decode(bytes, allowMalformed: true);

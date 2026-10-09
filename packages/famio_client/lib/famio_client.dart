@@ -6,6 +6,7 @@ library;
 export 'package:famio_shared/famio_shared.dart';
 
 export 'src/api_client.dart';
+export 'src/client_texts.dart';
 export 'src/file_cache.dart';
 export 'src/google_login.dart'
     if (dart.library.js_interop) 'src/google_login_web.dart';

@@ -7,6 +7,7 @@ import 'package:crypto/crypto.dart';
 
 import 'api_client.dart';
 import 'google_login_result.dart';
+import 'client_texts.dart';
 
 export 'google_login_result.dart';
 
@@ -64,8 +65,8 @@ class GoogleLogin {
             0,
             'google_denied',
             query['error'] == 'access_denied'
-                ? 'Anmeldung bei Google abgebrochen'
-                : 'Google-Anmeldung fehlgeschlagen (${query['error']})',
+                ? ClientTexts.googleCanceled
+                : ClientTexts.googleFailed(query['error']),
           ),
         );
       } else {
@@ -97,11 +98,7 @@ class GoogleLogin {
       );
       return await result.future.timeout(timeout);
     } on TimeoutException {
-      throw const ApiError(
-        0,
-        'google_timeout',
-        'Die Google-Anmeldung wurde nicht abgeschlossen',
-      );
+      throw ApiError(0, 'google_timeout', ClientTexts.googleNotCompleted);
     } finally {
       await sub.cancel();
       await server.close(force: true);
@@ -112,6 +109,6 @@ class GoogleLogin {
       '<!doctype html><meta charset="utf-8">'
       '<meta name="viewport" content="width=device-width">'
       '<body style="font-family:sans-serif;text-align:center;padding:3em">'
-      '<h2>${ok ? 'Mit Google verbunden' : 'Nicht verbunden'}</h2>'
-      '<p>Du kannst dieses Fenster schließen und zu Famio zurückkehren.</p>';
+      '<h2>${ok ? ClientTexts.googleConnected : ClientTexts.googleNotConnected}</h2>'
+      '<p>${ClientTexts.googleCloseWindow}</p>';
 }

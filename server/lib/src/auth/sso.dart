@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../api_exception.dart';
+import '../i18n.dart';
 
 /// The single sign-on provider, set by an admin.
 class SsoConfig {
@@ -135,17 +136,17 @@ class SsoService {
     if (uri == null || !uri.isScheme('https') || uri.host.isEmpty) {
       throw ApiException.badRequest(
         'invalid_issuer',
-        'Anbieter-Adresse muss mit https:// beginnen',
+        t('Anbieter-Adresse muss mit https:// beginnen'),
       );
     }
     if (next.clientId.trim().isEmpty) {
-      throw ApiException.badRequest('invalid_client', 'Client-ID fehlt');
+      throw ApiException.badRequest('invalid_client', t('Client-ID fehlt'));
     }
     final secret = next.clientSecret.isNotEmpty
         ? next.clientSecret
         : config?.clientSecret ?? '';
     if (secret.isEmpty) {
-      throw ApiException.badRequest('invalid_client', 'Client-Secret fehlt');
+      throw ApiException.badRequest('invalid_client', t('Client-Secret fehlt'));
     }
     await _discover(issuer, force: true);
     final stored = SsoConfig(
@@ -205,12 +206,16 @@ class SsoService {
       throw ApiException(
         404,
         'sso_disabled',
-        'Single Sign-On ist auf diesem Server nicht eingerichtet',
+        t('Single Sign-On ist auf diesem Server nicht eingerichtet'),
       );
     }
     _expire();
     if (_flows.length >= _maxFlows) {
-      throw ApiException(429, 'too_many_attempts', 'Bitte gleich noch einmal');
+      throw ApiException(
+        429,
+        'too_many_attempts',
+        t('Bitte gleich noch einmal'),
+      );
     }
     final discovery = await _discover(cfg.issuer);
     final verifier = _token(48);
@@ -262,20 +267,23 @@ class SsoService {
     if (flow == null || flow.expires.isBefore(DateTime.now())) {
       return (
         ok: false,
-        message:
-            'Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.',
+        message: t(
+          'Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.',
+        ),
       );
     }
     try {
       if (query['error'] case final error?) {
         throw ApiException.badRequest(
           'sso_denied',
-          'Der Anbieter hat die Anmeldung abgelehnt ($error).',
+          t('Der Anbieter hat die Anmeldung abgelehnt ({error}).', {
+            'error': error,
+          }),
         );
       }
       final code = query['code'];
       if (code == null || code.isEmpty) {
-        throw ApiException.badRequest('sso_failed', 'Kein Code erhalten');
+        throw ApiException.badRequest('sso_failed', t('Kein Code erhalten'));
       }
       final claims = await _exchange(code, flow);
       final issuer = claims['iss'] as String;
@@ -295,7 +303,7 @@ class SsoService {
             throw ApiException(
               409,
               'sso_taken',
-              'Dieses Anmeldekonto gehört schon zu einem anderen Mitglied.',
+              t('Dieses Anmeldekonto gehört schon zu einem anderen Mitglied.'),
             );
           }
           _db.execute('DELETE FROM sso_links WHERE user_id = ?', [flow.userId]);
@@ -314,7 +322,7 @@ class SsoService {
           audit(flow.userId!, 'hat Single Sign-On verknüpft ($name)');
           return (
             ok: true,
-            message: 'Verknüpft. Du kannst dieses Fenster schließen.',
+            message: t('Verknüpft. Du kannst dieses Fenster schließen.'),
           );
         case SsoMode.login:
           var userId = linked;
@@ -343,17 +351,17 @@ class SsoService {
             throw ApiException(
               403,
               'sso_unknown',
-              'Zu diesem Anmeldekonto gibt es kein Famio-Konto. Zuerst in der '
-                  'App anmelden und unter Einstellungen → Anmeldung & '
-                  'Sicherheit „Single Sign-On verknüpfen“.',
+              t(
+                'Zu diesem Anmeldekonto gibt es kein Famio-Konto. Zuerst in der App anmelden und unter Einstellungen → Anmeldung & Sicherheit „Single Sign-On verknüpfen“.',
+              ),
             );
           }
           flow.resultUser = userId;
           return (
             ok: true,
-            message:
-                'Angemeldet. Du kannst dieses Fenster schließen und zu '
-                'Famio zurückkehren.',
+            message: t(
+              'Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.',
+            ),
           );
       }
     } on ApiException catch (e) {
@@ -374,7 +382,7 @@ class SsoService {
       throw ApiException(
         404,
         'sso_expired',
-        'Anmeldung abgelaufen. Bitte neu starten.',
+        t('Anmeldung abgelaufen. Bitte neu starten.'),
       );
     }
     if (flow.error case final error?) {
@@ -406,8 +414,10 @@ class SsoService {
       if (response.statusCode != 200) {
         throw ApiException.badRequest(
           'sso_discovery',
-          'Anbieter antwortet nicht wie erwartet (HTTP ${response.statusCode} '
-              'für $url)',
+          t('Anbieter antwortet nicht wie erwartet (HTTP {status} für {url})', {
+            'status': response.statusCode,
+            'url': url,
+          }),
         );
       }
       doc = (jsonDecode(response.body) as Map).cast();
@@ -416,7 +426,10 @@ class SsoService {
     } catch (e) {
       throw ApiException.badRequest(
         'sso_discovery',
-        'Anbieter nicht erreichbar ($url): $e',
+        t('Anbieter nicht erreichbar ({url}): {error}', {
+          'url': url,
+          'error': e,
+        }),
       );
     }
     for (final key in ['issuer', 'authorization_endpoint', 'token_endpoint']) {
@@ -424,7 +437,7 @@ class SsoService {
       if (value is! String || !Uri.parse(value).isScheme('https')) {
         throw ApiException.badRequest(
           'sso_discovery',
-          'Unvollständige OpenID-Konfiguration ($key)',
+          t('Unvollständige OpenID-Konfiguration ({key})', {'key': key}),
         );
       }
     }
@@ -455,24 +468,25 @@ class SsoService {
     } catch (e) {
       throw ApiException.badRequest(
         'sso_failed',
-        'Anbieter nicht erreichbar: $e',
+        t('Anbieter nicht erreichbar: {error}', {'error': e}),
       );
     }
     if (response.statusCode != 200) {
       throw ApiException.badRequest(
         'sso_failed',
-        'Der Anbieter hat den Code nicht angenommen (HTTP '
-            '${response.statusCode}). Client-ID, Secret und Weiterleitungs-'
-            'Adresse prüfen.',
+        t(
+          'Der Anbieter hat den Code nicht angenommen (HTTP {status}). Client-ID, Secret und Weiterleitungs-Adresse prüfen.',
+          {'status': response.statusCode},
+        ),
       );
     }
     final token = (jsonDecode(response.body) as Map)['id_token'];
     if (token is! String) {
-      throw ApiException.badRequest('sso_failed', 'Kein ID-Token erhalten');
+      throw ApiException.badRequest('sso_failed', t('Kein ID-Token erhalten'));
     }
     final parts = token.split('.');
     if (parts.length < 2) {
-      throw ApiException.badRequest('sso_failed', 'Ungültiges ID-Token');
+      throw ApiException.badRequest('sso_failed', t('Ungültiges ID-Token'));
     }
     final claims =
         (jsonDecode(
@@ -491,7 +505,7 @@ class SsoService {
         expires * 1000 < DateTime.now().millisecondsSinceEpoch) {
       throw ApiException.badRequest(
         'sso_failed',
-        'ID-Token ungültig (Aussteller, Empfänger, Ablauf oder nonce)',
+        t('ID-Token ungültig (Aussteller, Empfänger, Ablauf oder nonce)'),
       );
     }
     return claims;

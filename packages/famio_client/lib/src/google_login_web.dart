@@ -1,4 +1,5 @@
 import 'google_login_result.dart';
+import 'client_texts.dart';
 
 export 'google_login_result.dart';
 
@@ -14,7 +15,5 @@ class GoogleLogin {
     required Future<void> Function(Uri url) open,
     Duration timeout = const Duration(minutes: 5),
     Uri? endpoint,
-  }) => throw UnsupportedError(
-    'Google-Kalender bitte in der Famio-App am Computer oder Handy verbinden.',
-  );
+  }) => throw UnsupportedError(ClientTexts.googleInApp);
 }

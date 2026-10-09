@@ -261,7 +261,8 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
                             title: Text(a.name),
                             subtitle: Text(
                               [
-                                if (a.lastError != null) a.lastError!,
+                                if (a.lastError != null)
+                                  localizeServerText(a.lastError!),
                                 if (a.links.isEmpty)
                                   tr.listsNoListAssignedYet
                                 else

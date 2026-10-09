@@ -40,7 +40,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
         content: Text(
           added.lastError == null
               ? tr.pushTestMessageSentDid
-              : tr.pushAddedButError(added.lastError!),
+              : tr.pushAddedButError(localizeServerText(added.lastError!)),
         ),
       ),
     );
@@ -151,7 +151,7 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                     [
                       t.url,
                       t.details ? tr.pushDetails : tr.pushWithoutDetails,
-                      ?t.lastError,
+                      if (t.lastError case final e?) localizeServerText(e),
                     ].join('\n'),
                   ),
                   isThreeLine: true,

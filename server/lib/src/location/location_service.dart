@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../accounts.dart';
 import '../api_exception.dart';
 import '../record_store.dart';
+import '../i18n.dart';
 
 /// Family location sharing: positions from the members' phones, places
 /// with arrival/departure notices, pauses protected by the parents' code
@@ -73,7 +74,7 @@ class LocationService {
     if (!RegExp(r'^\S{4,32}$').hasMatch(code)) {
       throw ApiException.badRequest(
         'invalid_code',
-        'Der Code braucht 4 bis 32 Zeichen ohne Leerzeichen',
+        t('Der Code braucht 4 bis 32 Zeichen ohne Leerzeichen'),
       );
     }
     final hash = await accounts.hashSecret(code);
@@ -90,8 +91,9 @@ class LocationService {
       throw ApiException(
         409,
         'no_code',
-        'Es ist noch kein Eltern-Code festgelegt. Ein Administrator kann ihn '
-            'unter Einstellungen → Server festlegen.',
+        t(
+          'Es ist noch kein Eltern-Code festgelegt. Ein Administrator kann ihn unter Einstellungen → Server festlegen.',
+        ),
       );
     }
     return accounts.matchesSecret(code, stored);

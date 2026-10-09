@@ -5,6 +5,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'google_login_result.dart';
 import 'platform/net.dart';
 import 'package:http/http.dart' as http;
+import 'client_texts.dart';
 
 /// Error returned by the server, or a connection problem ([status] 0).
 class ApiError implements Exception {
@@ -155,10 +156,11 @@ class FamioApiClient {
   static const _timeout = Duration(seconds: 20);
 
   /// The server shows a certificate other than the confirmed one.
-  static const tlsRejected =
-      'Das Zertifikat des Servers passt nicht zum bestätigten. Wurde der '
-      'Server neu eingerichtet? Dann die Adresse neu eingeben und den '
-      'Fingerabdruck mit dem Server-Log vergleichen.';
+  static String get tlsRejected => ClientTexts.tlsRejected;
+
+  /// Language of the server's messages (`accept-language`); the server
+  /// answers in German without it.
+  static String? language;
 
   /// Accepts user input like `homeassistant.local:8765` and returns a URL.
   static const _web = bool.fromEnvironment('dart.library.js_interop');
@@ -179,7 +181,7 @@ class FamioApiClient {
   Future<ServerInfo> health() async {
     final json = await _send('GET', 'api/health');
     if (json['name'] != 'famio') {
-      throw const ApiError(0, 'not_famio', 'Das ist kein Famio-Server');
+      throw ApiError(0, 'not_famio', ClientTexts.notFamio);
     }
     return ServerInfo(
       version: json['version'] as String,
@@ -1091,14 +1093,14 @@ class FamioApiClient {
           )
           ..headers['content-type'] = mime
           ..bodyBytes = bytes;
-    if (token != null) request.headers['authorization'] = 'Bearer $token';
+    request.headers.addAll(authHeaders);
     final http.Response response;
     try {
       response = await http.Response.fromStream(
         await _http.send(request).timeout(const Duration(minutes: 5)),
       );
     } catch (e) {
-      throw ApiError(0, 'network', 'Upload fehlgeschlagen ($e)');
+      throw ApiError(0, 'network', ClientTexts.uploadFailed(e));
     }
     final json = _decode(response);
     return FileRef.fromJson(json)!;
@@ -1133,7 +1135,7 @@ class FamioApiClient {
         await _http.send(request).timeout(const Duration(minutes: 10)),
       );
     } catch (e) {
-      throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
+      throw ApiError(0, 'network', ClientTexts.unreachable(e));
     }
     if (response.statusCode != 200) _decode(response);
     return response.bodyBytes;
@@ -1145,6 +1147,7 @@ class FamioApiClient {
 
   Map<String, String> get authHeaders => {
     if (token != null) 'authorization': 'Bearer $token',
+    'accept-language': ?language,
   };
 
   /// WebSocket URL for change notifications; authenticate with
@@ -1232,8 +1235,8 @@ class FamioApiClient {
     Duration timeout = _timeout,
   ]) async {
     final request = http.Request(method, baseUrl.resolve(path))
-      ..headers['accept'] = 'application/json';
-    if (token != null) request.headers['authorization'] = 'Bearer $token';
+      ..headers['accept'] = 'application/json'
+      ..headers.addAll(authHeaders);
     if (body != null) {
       request.headers['content-type'] = 'application/json';
       request.body = jsonEncode(body);
@@ -1250,11 +1253,11 @@ class FamioApiClient {
         'network',
         e.message.contains('CERTIFICATE_VERIFY_FAILED')
             ? tlsRejected
-            : 'Server nicht erreichbar (${e.message})',
+            : ClientTexts.unreachable(e.message),
       );
     } catch (e) {
-      if (isTlsFailure(e)) throw const ApiError(0, 'network', tlsRejected);
-      throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
+      if (isTlsFailure(e)) throw ApiError(0, 'network', tlsRejected);
+      throw ApiError(0, 'network', ClientTexts.unreachable(e));
     }
 
     return _decode(response);
@@ -1268,14 +1271,14 @@ class FamioApiClient {
       throw ApiError(
         response.statusCode,
         'invalid_response',
-        'Unerwartete Antwort vom Server (HTTP ${response.statusCode})',
+        ClientTexts.unexpectedAnswer(response.statusCode),
       );
     }
     if (response.statusCode >= 400) {
       throw ApiError(
         response.statusCode,
         json['error'] as String? ?? 'error',
-        json['message'] as String? ?? 'Fehler ${response.statusCode}',
+        json['message'] as String? ?? ClientTexts.error(response.statusCode),
       );
     }
     return json;

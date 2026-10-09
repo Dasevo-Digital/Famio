@@ -10,6 +10,7 @@ import '../accounts.dart';
 import '../api_exception.dart';
 import '../record_store.dart';
 import '../remote_url_policy.dart';
+import '../i18n.dart';
 
 /// A notification for some members, with and without details.
 class PushNotice {
@@ -108,8 +109,9 @@ class PushService {
         uri.userInfo.isNotEmpty) {
       throw ApiException.badRequest(
         'invalid_url',
-        'Bitte die HTTPS-Adresse des ntfy-Themas angeben, z. B. '
-            'https://ntfy.sh/famio-geheimer-name',
+        t(
+          'Bitte die HTTPS-Adresse des ntfy-Themas angeben, z. B. https://ntfy.sh/famio-geheimer-name',
+        ),
       );
     }
     await _urlPolicy.check(uri);
@@ -122,7 +124,7 @@ class PushService {
                 .columnAt(0)
             as int >=
         10) {
-      throw ApiException.badRequest('too_many', 'Höchstens 10 Geräte');
+      throw ApiException.badRequest('too_many', t('Höchstens 10 Geräte'));
     }
     final id = newId();
     _db.execute(
@@ -131,7 +133,7 @@ class PushService {
       [
         id,
         memberId,
-        name.trim().isEmpty ? 'Gerät' : name.trim(),
+        name.trim().isEmpty ? t('Gerät') : name.trim(),
         uri.toString(),
         token == null || token.trim().isEmpty ? null : token.trim(),
         details ? 1 : 0,
@@ -219,15 +221,15 @@ class PushService {
       [memberId, id],
     );
     if (row.isEmpty) {
-      throw ApiException(404, 'not_found', 'Gerät nicht gefunden');
+      throw ApiException(404, 'not_found', t('Gerät nicht gefunden'));
     }
     return _send(
       row.first,
-      const PushNotice(
+      PushNotice(
         to: {},
         title: 'Famio',
-        body: 'Push-Benachrichtigungen funktionieren 🎉',
-        brief: 'Push-Benachrichtigungen funktionieren 🎉',
+        body: t('Push-Benachrichtigungen funktionieren 🎉'),
+        brief: t('Push-Benachrichtigungen funktionieren 🎉'),
         tag: 'tada',
       ),
     );
@@ -238,11 +240,11 @@ class PushService {
   /// Changes members synced (see [RecordStore.onStored]).
   void stored(String userId, List<(SyncRecord, SyncRecord?)> changes) {
     final names = {for (final m in accounts.members()) m.id: m.displayName};
-    String name(String? id) => names[id] ?? 'Jemand';
+    String name(String? id) => names[id] ?? t('Jemand');
     for (final (r, before) in changes) {
       if (r.deleted) continue;
       final fresh = before == null || before.deleted;
-      final notice = switch (r.collection) {
+      PushNotice? build() => switch (r.collection) {
         Collections.chatMessages when fresh => _chat(r, userId, name),
         Collections.tasks => _task(r, before, userId),
         Collections.eventComments when fresh => _comment(r, userId, name),
@@ -250,7 +252,7 @@ class PushService {
         Collections.pointEntries => _points(r, before, userId, name),
         _ => null,
       };
-      if (notice != null) deliver(notice, r);
+      if (build() != null) deliver(() => build()!, r);
     }
   }
 
@@ -263,11 +265,13 @@ class PushService {
       final to = r.visibleTo?.toSet() ?? {};
       if (to.isEmpty) continue;
       deliver(
-        PushNotice(
+        () => PushNotice(
           to: to,
           title: 'Famio',
-          body: alert.text(names[alert.memberId] ?? 'Jemand'),
-          brief: alert.checkIn != null ? 'Neuer Check-in' : 'Neue Ortsmeldung',
+          body: alert.text(names[alert.memberId] ?? t('Jemand')),
+          brief: alert.checkIn != null
+              ? t('Neuer Check-in')
+              : t('Neue Ortsmeldung'),
           // Phones that share their location show arrivals themselves,
           // but not check-ins: those get their own tag.
           tag: alert.checkIn != null ? 'wave' : 'round_pushpin',
@@ -288,14 +292,14 @@ class PushService {
         ? '📊 ${m.poll!.question}'
         : m.text.isNotEmpty
         ? m.text
-        : '📎 ${m.attachment?.name ?? 'Anhang'}';
+        : '📎 ${m.attachment?.name ?? t('Anhang')}';
     return PushNotice(
       to: _everyone(r, except: author),
       title: ChatIds.isDirect(m.chatId)
           ? name(author)
-          : '${name(author)} · Familie',
+          : t('{name} · Familie', {'name': name(author)}),
       body: body,
-      brief: 'Neue Nachricht',
+      brief: t('Neue Nachricht'),
       tag: 'speech_balloon',
     );
   }
@@ -311,9 +315,9 @@ class PushService {
     }
     return PushNotice(
       to: {assignee},
-      title: 'Neue Aufgabe für dich',
+      title: t('Neue Aufgabe für dich'),
       body: task.title,
-      brief: 'Neue Aufgabe für dich',
+      brief: t('Neue Aufgabe für dich'),
       tag: 'white_check_mark',
     );
   }
@@ -332,9 +336,9 @@ class PushService {
         : event.memberIds.toSet().difference({author});
     return PushNotice(
       to: to,
-      title: 'Kommentar zu „${event.title}“',
+      title: t('Kommentar zu „{title}“', {'title': event.title}),
       body: '${name(author)}: ${c.text}',
-      brief: 'Neuer Kommentar zu einem Termin',
+      brief: t('Neuer Kommentar zu einem Termin'),
       tag: 'calendar',
     );
   }
@@ -346,9 +350,9 @@ class PushService {
     if (to.isEmpty) return null;
     return PushNotice(
       to: to,
-      title: 'Neuer Termin: ${event.title}',
+      title: t('Neuer Termin: {title}', {'title': event.title}),
       body: _when(event),
-      brief: 'Neuer Termin für dich',
+      brief: t('Neuer Termin für dich'),
       tag: 'calendar',
     );
   }
@@ -365,13 +369,17 @@ class PushService {
         : PointEntry.fromRecord(before).status;
     if (e.status == PointStatus.pending && was != PointStatus.pending) {
       final what = e.kind == PointKind.reward
-          ? '${name(e.memberId)} wünscht sich: ${e.title} (${e.points} Punkte)'
+          ? t('{name} wünscht sich: {title} ({points} Punkte)', {
+              'name': name(e.memberId),
+              'title': e.title,
+              'points': e.points,
+            })
           : '${name(e.memberId)}: ${e.title} erledigt (+${e.points})';
       return PushNotice(
         to: accounts.adultIds().toSet().difference({editor}),
-        title: 'Bitte bestätigen',
+        title: t('Bitte bestätigen'),
         body: what,
-        brief: 'Eine Anfrage bei den Ämtern wartet',
+        brief: t('Eine Anfrage bei den Ämtern wartet'),
         tag: 'star',
       );
     }
@@ -381,13 +389,17 @@ class PushService {
       final ok = e.status == PointStatus.approved;
       return PushNotice(
         to: {e.memberId},
-        title: ok ? 'Bestätigt 👍' : 'Leider abgelehnt',
+        title: ok ? t('Bestätigt 👍') : t('Leider abgelehnt'),
         body: e.kind == PointKind.reward
             ? e.title
-            : '${e.title} (${ok ? '+' : ''}${e.points} Punkte)',
+            : t('{title} ({sign}{points} Punkte)', {
+                'title': e.title,
+                'sign': ok ? '+' : '',
+                'points': e.points,
+              }),
         brief: ok
-            ? 'Deine Anfrage wurde bestätigt'
-            : 'Deine Anfrage wurde abgelehnt',
+            ? t('Deine Anfrage wurde bestätigt')
+            : t('Deine Anfrage wurde abgelehnt'),
         tag: ok ? 'star' : 'no_entry',
       );
     }
@@ -399,29 +411,59 @@ class PushService {
           .toSet()
           .difference({except});
 
-  static const _weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
   String _when(CalendarEvent e) {
     final start = e.allDay ? e.start : tz.TZDateTime.from(e.start, location());
     String two(int n) => n.toString().padLeft(2, '0');
-    final day =
-        '${_weekdays[start.weekday - 1]}, ${two(start.day)}.${two(start.month)}.';
+    final weekday = switch (start.weekday) {
+      1 => t('Mo'),
+      2 => t('Di'),
+      3 => t('Mi'),
+      4 => t('Do'),
+      5 => t('Fr'),
+      6 => t('Sa'),
+      _ => t('So'),
+    };
+    final day = t('{weekday}, {day}.{month}.', {
+      'weekday': weekday,
+      'day': two(start.day),
+      'month': two(start.month),
+    });
     return e.allDay
-        ? '$day ganztägig'
-        : '$day ${two(start.hour)}:${two(start.minute)} Uhr';
+        ? t('{day} ganztägig', {'day': day})
+        : t('{day} {hour}:{minute} Uhr', {
+            'day': day,
+            'hour': two(start.hour),
+            'minute': two(start.minute),
+          });
   }
 
   // --- delivery --------------------------------------------------------------
 
   /// Sends [notice] to the targets of its members who may see [about]
   /// (all of them without [about], e.g. a direct call to one member).
-  void deliver(PushNotice notice, SyncRecord? about) {
-    if (notice.to.isEmpty) return;
+  /// Sends what [build] makes to its recipients, built once per app
+  /// language of the recipients.
+  void deliver(PushNotice Function() build, SyncRecord? about) {
+    final first = build();
+    if (first.to.isEmpty) return;
     final allowed = [
-      for (final id in notice.to)
+      for (final id in first.to)
         if (about == null || records.canAccess(about, id)) id,
     ];
     if (allowed.isEmpty) return;
+    final byLanguage = <String, List<String>>{};
+    for (final id in allowed) {
+      (byLanguage[accounts.languageOf(id)] ??= []).add(id);
+    }
+    for (final MapEntry(key: language, value: ids) in byLanguage.entries) {
+      final notice = language == requestLanguage
+          ? first
+          : inLanguage(language, build);
+      _deliver(notice, ids);
+    }
+  }
+
+  void _deliver(PushNotice notice, List<String> allowed) {
     final quiet = {
       for (final id in allowed)
         if (isQuiet(id, notice)) id,
@@ -489,10 +531,12 @@ class PushService {
           .timeout(const Duration(seconds: 15));
       await response.stream.drain<void>();
       if (response.statusCode >= 300) {
-        error = 'Push-Server antwortet ${response.statusCode}';
+        error = t('Push-Server antwortet {status}', {
+          'status': response.statusCode,
+        });
       }
     } catch (e) {
-      error = 'Push-Server nicht erreichbar';
+      error = t('Push-Server nicht erreichbar');
     }
     _db.execute('UPDATE push_targets SET last_error = ? WHERE id = ?', [
       error,

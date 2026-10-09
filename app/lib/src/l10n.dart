@@ -1,5 +1,6 @@
 import 'dart:ui' show PlatformDispatcher;
 
+import 'package:famio_client/famio_client.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
@@ -43,6 +44,7 @@ void useLanguage(String code) {
   _texts = lookupL10n(Locale(code));
   Intl.defaultLocale = code;
   useSharedTexts(code);
+  FamioApiClient.language = code;
 }
 
 /// `context.l10n.settingsAccount`: the texts in the chosen language.

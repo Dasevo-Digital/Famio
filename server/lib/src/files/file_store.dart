@@ -10,6 +10,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../api_exception.dart';
 import '../record_store.dart';
+import '../i18n.dart';
 
 const _maxThumbPixels = 30 * 1000 * 1000;
 
@@ -149,14 +150,16 @@ class FileStore {
           throw ApiException(
             413,
             'too_large',
-            'Datei ist größer als ${maxBytes ~/ (1024 * 1024)} MB',
+            t('Datei ist größer als {mb} MB', {
+              'mb': maxBytes ~/ (1024 * 1024),
+            }),
           );
         }
         if (existingBytes + size > maxTotalBytes) {
           throw ApiException(
             413,
             'storage_quota_exceeded',
-            'Der Speicherplatz der Familie ist ausgeschöpft.',
+            t('Der Speicherplatz der Familie ist ausgeschöpft.'),
           );
         }
         buffer.add(chunk);
@@ -168,7 +171,7 @@ class FileStore {
       rethrow;
     }
     if (size == 0) {
-      throw ApiException.badRequest('empty', 'Leere Datei');
+      throw ApiException.badRequest('empty', t('Leere Datei'));
     }
     final safeName = _safeName(name);
     _db.execute(

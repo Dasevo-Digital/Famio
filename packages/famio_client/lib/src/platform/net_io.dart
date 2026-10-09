@@ -8,6 +8,7 @@ import 'package:web_socket_channel/io.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../api_client.dart';
+import '../client_texts.dart';
 
 /// A `dart:io` client that trusts [pin] in addition to the system's CAs.
 HttpClient _ioClient(String? pin) => HttpClient()
@@ -58,11 +59,11 @@ Future<String?> platformUntrustedCertificate(Uri url) async {
     return null;
   } on HandshakeException {
     if (seen != null) return seen;
-    throw const ApiError(0, 'tls', 'Verschlüsselte Verbindung fehlgeschlagen');
+    throw ApiError(0, 'tls', ClientTexts.tlsFailed);
   } on SocketException catch (e) {
-    throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
+    throw ApiError(0, 'network', ClientTexts.unreachable(e));
   } on HttpException catch (e) {
-    throw ApiError(0, 'network', 'Server nicht erreichbar ($e)');
+    throw ApiError(0, 'network', ClientTexts.unreachable(e));
   } finally {
     client.close(force: true);
   }

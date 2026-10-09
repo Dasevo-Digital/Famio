@@ -494,8 +494,9 @@ class _SubscriptionsSection extends StatelessWidget {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            status.error ??
-                tr.calendarNameCountEventsLoaded(sub.name, status.eventCount),
+            status.error == null
+                ? tr.calendarNameCountEventsLoaded(sub.name, status.eventCount)
+                : localizeServerText(status.error!),
           ),
         ),
       );
@@ -548,7 +549,10 @@ class _SubscriptionsSection extends StatelessWidget {
             Builder(
               builder: (context) {
                 final status = engine.subscriptionStatus(sub.id);
-                final error = status?.error;
+                final error = switch (status?.error) {
+                  final e? => localizeServerText(e),
+                  null => null,
+                };
                 final subtitle = status == null
                     ? tr.calendarWillLoadedNextSync
                     : error ??

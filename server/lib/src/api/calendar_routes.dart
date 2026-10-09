@@ -17,7 +17,7 @@ extension _CalendarRoutes on FamioApi {
         .where((s) => s.name == body['scope'])
         .firstOrNull;
     if (scope == null) {
-      throw ApiException.badRequest('invalid_scope', 'Unbekannter Umfang');
+      throw ApiException.badRequest('invalid_scope', t('Unbekannter Umfang'));
     }
     final feed = feeds.create(
       member.id,
@@ -38,14 +38,14 @@ extension _CalendarRoutes on FamioApi {
     _member(request);
     final status = await importer?.refresh(id);
     if (status == null) {
-      throw ApiException(404, 'not_found', 'Abo nicht gefunden');
+      throw ApiException(404, 'not_found', t('Abo nicht gefunden'));
     }
     return _json({...status.toData(), 'id': status.id});
   }
 
   CalDavSync get _caldav =>
       caldav ??
-      (throw ApiException(404, 'not_found', 'CalDAV nicht verfügbar'));
+      (throw ApiException(404, 'not_found', t('CalDAV nicht verfügbar')));
 
   Future<Response> _caldavDiscover(Request request) async {
     final member = _member(request);
@@ -98,7 +98,7 @@ extension _CalendarRoutes on FamioApi {
     if (grant == null) {
       throw ApiException.badRequest(
         'google_expired',
-        'Google-Anmeldung abgelaufen – bitte erneut anmelden',
+        t('Google-Anmeldung abgelaufen – bitte erneut anmelden'),
       );
     }
     return grant;
@@ -121,7 +121,7 @@ extension _CalendarRoutes on FamioApi {
       username: body['username'] as String? ?? '',
       password: body['password'] as String? ?? '',
       calendarUrl: body['calendarUrl'] as String? ?? '',
-      calendarName: body['calendarName'] as String? ?? 'Kalender',
+      calendarName: body['calendarName'] as String? ?? t('Kalender'),
       onlyMine: body['onlyMine'] as bool? ?? false,
       sharing: _sharingFrom(body) ?? const CalendarSharing.family(),
       googleGrant: _heldGrant(member, body['googleGrant']),
@@ -184,7 +184,7 @@ extension _CalendarRoutes on FamioApi {
     final target = accounts.byId(id);
     final access = calendarAccess;
     if (target == null || access == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     final body = await _body(request);
     final offered = {for (final c in access.calendarsOf(id)) c.source};
@@ -216,7 +216,7 @@ extension _CalendarRoutes on FamioApi {
         to.difference(from) > const Duration(days: 400)) {
       throw ApiException.badRequest(
         'invalid_range',
-        'Zeitraum angeben (from, to; höchstens 400 Tage)',
+        t('Zeitraum angeben (from, to; höchstens 400 Tage)'),
       );
     }
     String date(DateTime d) =>
@@ -258,7 +258,7 @@ extension _CalendarRoutes on FamioApi {
                 'calendar':
                     calendars[CalendarAccess.sourceOf(source)] ??
                     (source.startsWith('caldav:')
-                        ? 'Verbundener Kalender'
+                        ? t('Verbundener Kalender')
                         : null),
             },
           ));
@@ -288,7 +288,7 @@ extension _CalendarRoutes on FamioApi {
         ? file.substring(0, file.length - 4)
         : file;
     final found = feeds.byToken(token);
-    if (found == null) return Response.notFound('Unbekannter Kalender');
+    if (found == null) return Response.notFound(t('Unbekannter Kalender'));
     final (feed, userId) = found;
     final events = [
       for (final r in records.all(Collections.events, visibleToMember: userId))

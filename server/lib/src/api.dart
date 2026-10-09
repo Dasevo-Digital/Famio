@@ -44,6 +44,7 @@ import 'location/location_service.dart';
 import 'push/notice_box.dart';
 import 'push/push_service.dart';
 import 'record_store.dart';
+import 'i18n.dart';
 
 part 'api/account_routes.dart';
 part 'api/admin_routes.dart';
@@ -342,8 +343,10 @@ class FamioApi {
         lists?.poke();
       },
     );
+    useRequestLanguage();
     return Pipeline()
         .addMiddleware(metrics?.middleware ?? (inner) => inner)
+        .addMiddleware(_language)
         .addMiddleware(_compressJson)
         .addMiddleware(_securityHeaders)
         .addMiddleware(_errors)
@@ -409,8 +412,10 @@ class FamioApi {
       throw ApiException(
         429,
         'too_many_attempts',
-        'Zu viele Fehlversuche. Bitte in '
-            '${(wait.inSeconds / 60).ceil()} Minute(n) erneut versuchen.',
+        t(
+          'Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.',
+          {'minutes': (wait.inSeconds / 60).ceil()},
+        ),
       );
     }
   }
@@ -434,9 +439,13 @@ class FamioApi {
     token ??= _bearer(request);
     final member = token == null ? null : accounts.userForToken(token);
     if (member == null) {
-      throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
     }
     _checkTwoFactorPolicy(request, member, token!);
+    // Push messages go out in the language of the member's app.
+    if (languageFrom(request.headers['accept-language']) case final l?) {
+      accounts.noteLanguage(member.id, l);
+    }
     return member;
   }
 
@@ -458,9 +467,10 @@ class FamioApi {
       403,
       enabled ? 'two_factor_required' : 'two_factor_setup_required',
       enabled
-          ? 'Bitte mit dem Code aus der Authenticator-App bestätigen.'
-          : 'Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht – bitte in '
-                'der App einrichten.',
+          ? t('Bitte mit dem Code aus der Authenticator-App bestätigen.')
+          : t(
+              'Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht – bitte in der App einrichten.',
+            ),
     );
   }
 
@@ -473,7 +483,7 @@ class FamioApi {
   FamilyMember _member(Request request) {
     final member = _auth(request);
     if (member.isGuest) {
-      throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
+      throw ApiException(403, 'forbidden', t('Für Gäste nicht verfügbar'));
     }
     if (request.method != 'GET') _checkWriter(member);
     return member;
@@ -482,7 +492,7 @@ class FamioApi {
   FamilyMember _admin(Request request) {
     final member = _auth(request);
     if (!member.isAdmin) {
-      throw ApiException(403, 'forbidden', 'Nur für Administratoren');
+      throw ApiException(403, 'forbidden', t('Nur für Administratoren'));
     }
     return member;
   }
@@ -531,9 +541,14 @@ class FamioApi {
         throw ApiException(
           403,
           'tls_required',
-          'Dieser Server erlaubt nur verschlüsselte Verbindungen. Bitte die '
-              'https-Adresse verwenden'
-              '${tlsPort == null ? '' : ' (im Heimnetz Port $tlsPort)'}.',
+          t(
+            'Dieser Server erlaubt nur verschlüsselte Verbindungen. Bitte die https-Adresse verwenden{port}.',
+            {
+              'port': tlsPort == null
+                  ? ''
+                  : t(' (im Heimnetz Port {port})', {'port': tlsPort}),
+            },
+          ),
         );
       }
     }
@@ -586,8 +601,9 @@ void _checkWriter(FamilyMember member) {
     throw ApiException(
       403,
       'read_only',
-      'Dieses Dienstkonto darf das nicht ändern '
-          '(${member.serviceAccess.label})',
+      t('Dieses Dienstkonto darf das nicht ändern ({access})', {
+        'access': member.serviceAccess.label,
+      }),
     );
   }
 }
@@ -638,12 +654,12 @@ Future<Map<String, Object?>> _body(Request request) async {
     throw ApiException(
       415,
       'json_required',
-      'Content-Type application/json erwartet',
+      t('Content-Type application/json erwartet'),
     );
   }
   final length = request.contentLength;
   if (length != null && length > FamioApi.maxJsonBytes) {
-    throw ApiException(413, 'too_large', 'Anfrage ist zu groß');
+    throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
   }
   // Bytes, not a List<int> of 8-byte slots: a large sync batch would
   // otherwise take eight times its size in memory.
@@ -651,7 +667,7 @@ Future<Map<String, Object?>> _body(Request request) async {
   await for (final chunk in request.read()) {
     bytes.add(chunk);
     if (bytes.length > FamioApi.maxJsonBytes) {
-      throw ApiException(413, 'too_large', 'Anfrage ist zu groß');
+      throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
     }
   }
   try {
@@ -660,7 +676,7 @@ Future<Map<String, Object?>> _body(Request request) async {
   } on FormatException {
     // Fall through.
   }
-  throw ApiException.badRequest('invalid_json', 'Ungültiger JSON-Body');
+  throw ApiException.badRequest('invalid_json', t('Ungültiger JSON-Body'));
 }
 
 Response _json(Object body, {int status = 200}) => Response(
@@ -698,6 +714,13 @@ Handler _compressJson(Handler inner) => (request) async {
   );
 };
 
+/// Answers in the language the app or browser asks for (Accept-Language).
+Handler _language(Handler inner) =>
+    (request) => inLanguage(
+      languageFrom(request.headers['accept-language']) ?? 'de',
+      () => inner(request),
+    );
+
 Handler _errors(Handler inner) => (request) async {
   try {
     return await inner(request);
@@ -709,7 +732,7 @@ Handler _errors(Handler inner) => (request) async {
     // A field of the wrong type; the details describe server internals.
     return _json({
       'error': 'bad_request',
-      'message': 'Ungültige Anfrage',
+      'message': t('Ungültige Anfrage'),
     }, status: 400);
   }
 };

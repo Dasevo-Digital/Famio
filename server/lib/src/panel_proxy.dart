@@ -9,6 +9,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
 import 'web_app.dart';
+import 'i18n.dart';
 
 /// The Home Assistant add-on in client mode: shows the web app in the
 /// sidebar and forwards it to the family's Famio server elsewhere (e.g. a
@@ -90,7 +91,7 @@ class PanelProxy {
       return _error(
         403,
         'ingress_only',
-        'Nur über die Seitenleiste von Home Assistant.',
+        t('Nur über die Seitenleiste von Home Assistant.'),
       );
     }
     if (path == 'api/panel') return _json({'mode': 'client'});
@@ -212,7 +213,7 @@ class PanelProxy {
   Future<Response> _webSocket(Request request, _User user) async {
     final token = _sessions[user.id];
     if (token == null) {
-      return _error(401, 'unauthorized', 'Nicht angemeldet');
+      return _error(401, 'unauthorized', t('Nicht angemeldet'));
     }
     final url = upstream
         .resolve('api/ws')
@@ -253,7 +254,9 @@ class PanelProxy {
   Response _unreachable(Object error) => _error(
     502,
     'upstream_unreachable',
-    'Der Famio-Server ($upstream) ist nicht erreichbar.',
+    t('Der Famio-Server ({upstream}) ist nicht erreichbar.', {
+      'upstream': upstream,
+    }),
   );
 
   static Response _secured(Response response) => response.change(

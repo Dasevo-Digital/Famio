@@ -5,6 +5,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'api_exception.dart';
+import 'i18n.dart';
 
 /// Settings admins can change at runtime from any connected app.
 ///
@@ -54,7 +55,7 @@ class SettingsStore {
     if (unknown.isNotEmpty) {
       throw ApiException.badRequest(
         'unknown_setting',
-        'Unbekannte Einstellung: ${unknown.join(', ')}',
+        t('Unbekannte Einstellung: {names}', {'names': unknown.join(', ')}),
       );
     }
     final values = <String, Object?>{};
@@ -89,7 +90,9 @@ class SettingsStore {
       if (tileUrl == null) {
         throw ApiException.badRequest(
           'map_url_required',
-          'Für Martin oder eine eigene Karte ist eine HTTPS-Kacheladresse nötig',
+          t(
+            'Für Martin oder eine eigene Karte ist eine HTTPS-Kacheladresse nötig',
+          ),
         );
       }
     }
@@ -146,8 +149,9 @@ class SettingsStore {
     if (uri == null || !uri.isScheme('https') || uri.host.isEmpty) {
       throw ApiException.badRequest(
         'invalid_public_url',
-        'Öffentliche Adresse muss mit https:// beginnen, '
-            'z. B. https://famio.example.org',
+        t(
+          'Öffentliche Adresse muss mit https:// beginnen, z. B. https://famio.example.org',
+        ),
       );
     }
     return text.endsWith('/') ? text : '$text/';
@@ -159,7 +163,9 @@ class SettingsStore {
     if (_zone(text) == null) {
       throw ApiException.badRequest(
         'invalid_time_zone',
-        'Unbekannte Zeitzone „$text“ (Beispiel: Europe/Berlin)',
+        t('Unbekannte Zeitzone „{text}“ (Beispiel: Europe/Berlin)', {
+          'text': text,
+        }),
       );
     }
     return text;
@@ -187,7 +193,7 @@ class SettingsStore {
     if (provider == null) {
       throw ApiException.badRequest(
         'invalid_map_provider',
-        'Kartenanbieter: osm, martin oder custom',
+        t('Kartenanbieter: osm, martin oder custom'),
       );
     }
     return provider;
@@ -200,7 +206,9 @@ class SettingsStore {
         list.any((m) => !ServerSettings.optionalModules.contains(m))) {
       throw ApiException.badRequest(
         'invalid_modules',
-        'Ausblendbar sind: ${ServerSettings.optionalModules.join(', ')}',
+        t('Ausblendbar sind: {names}', {
+          'names': ServerSettings.optionalModules.join(', '),
+        }),
       );
     }
     final modules = {for (final m in list) m as String}.toList();
@@ -212,7 +220,7 @@ class SettingsStore {
     if (GermanState.parse(value) == null) {
       throw ApiException.badRequest(
         'invalid_region',
-        'Bundesland als Kürzel, z. B. NW, BY oder BE',
+        t('Bundesland als Kürzel, z. B. NW, BY oder BE'),
       );
     }
     return value as String;
@@ -224,7 +232,7 @@ class SettingsStore {
     if (policy == null) {
       throw ApiException.badRequest(
         'invalid_policy',
-        'Zwei-Faktor-Pflicht: off, admins oder all',
+        t('Zwei-Faktor-Pflicht: off, admins oder all'),
       );
     }
     return policy.name;
@@ -236,7 +244,7 @@ class SettingsStore {
     if (mb == null || mb < 1 || mb > maxUploadLimitMb) {
       throw ApiException.badRequest(
         'invalid_upload_limit',
-        'Upload-Grenze: 1 bis $maxUploadLimitMb MB',
+        t('Upload-Grenze: 1 bis {max} MB', {'max': maxUploadLimitMb}),
       );
     }
     return mb;

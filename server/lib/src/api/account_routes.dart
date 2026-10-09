@@ -36,7 +36,7 @@ extension _AccountRoutes on FamioApi {
     if (base == null ||
         base.host.isEmpty ||
         !(base.scheme == 'http' || base.scheme == 'https')) {
-      throw ApiException(400, 'invalid_url', 'Ungültige Serveradresse');
+      throw ApiException(400, 'invalid_url', t('Ungültige Serveradresse'));
     }
     final own = base.scheme == 'http' || base.port == tlsPort;
     final tls = this.tls;
@@ -44,9 +44,9 @@ extension _AccountRoutes on FamioApi {
       throw ApiException(
         400,
         'no_tls',
-        'Apple Kalender braucht HTTPS: den HTTPS-Port des Servers '
-            '(FAMIO_TLS_PORT) einschalten oder die Adresse über den '
-            'Reverse-Proxy verwenden.',
+        t(
+          'Apple Kalender braucht HTTPS: den HTTPS-Port des Servers (FAMIO_TLS_PORT) einschalten oder die Adresse über den Reverse-Proxy verwenden.',
+        ),
       );
     }
     if (own && !tls!.covers(base.host)) {
@@ -58,7 +58,7 @@ extension _AccountRoutes on FamioApi {
       member.id,
       name: (body['name'] as String?)?.trim().isNotEmpty == true
           ? (body['name'] as String).trim()
-          : 'Apple Kalender',
+          : t('Apple Kalender'),
     );
     _audit(member, 'hat ein Apple-Profil „${password.name}“ erstellt');
     final port = own ? tlsPort! : base.port;
@@ -115,7 +115,9 @@ extension _AccountRoutes on FamioApi {
     if (member.isAdmin && accounts.adminCount <= 1) {
       throw ApiException.badRequest(
         'last_admin',
-        'Lege zuerst einen weiteren Administrator an oder übergib die Verwaltung.',
+        t(
+          'Lege zuerst einen weiteren Administrator an oder übergib die Verwaltung.',
+        ),
       );
     }
     final body = await _body(request);
@@ -130,13 +132,13 @@ extension _AccountRoutes on FamioApi {
       throw ApiException(
         403,
         'reauth_required',
-        'Passwort zur Bestätigung falsch',
+        t('Passwort zur Bestätigung falsch'),
       );
     }
     if (mfa.hasTotp(member.id) &&
         !mfa.check(member.id, body['code'] as String? ?? '')) {
       throttle.failed(address, '#delete:${member.id}');
-      throw ApiException(403, 'reauth_required', 'Bestätigungscode falsch');
+      throw ApiException(403, 'reauth_required', t('Bestätigungscode falsch'));
     }
     await caldav?.disconnectUser(member.id);
     locations?.memberDeleted(member.id);
@@ -181,7 +183,7 @@ extension _AccountRoutes on FamioApi {
       throw ApiException(
         403,
         'invalid_credentials',
-        'Aktuelles Passwort falsch',
+        t('Aktuelles Passwort falsch'),
       );
     }
     await accounts.setPassword(member.id, body['newPassword'] as String? ?? '');

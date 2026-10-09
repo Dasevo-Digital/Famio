@@ -8,6 +8,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../crypto/encrypted_db.dart';
 import 'backup_check.dart';
+import '../i18n.dart';
 
 /// One stored backup: a folder with `famio.db` and `files.db`.
 class BackupInfo {
@@ -108,7 +109,7 @@ class BackupJob {
 
   /// Writes a backup now and prunes old ones.
   Future<BackupInfo> run() async {
-    if (_running) throw StateError('Sicherung läuft bereits');
+    if (_running) throw StateError(t('Sicherung läuft bereits'));
     _running = true;
     final now = tz.TZDateTime.now(location());
     final name =
@@ -216,9 +217,10 @@ class BackupJob {
     final free = await freeBytes(dir);
     if (free != null && free < needed) {
       throw StateError(
-        'Zu wenig Speicherplatz für die Sicherung: frei '
-        '${free ~/ (1024 * 1024)} MB, nötig etwa '
-        '${needed ~/ (1024 * 1024)} MB',
+        t(
+          'Zu wenig Speicherplatz für die Sicherung: frei {free} MB, nötig etwa {needed} MB',
+          {'free': free ~/ (1024 * 1024), 'needed': needed ~/ (1024 * 1024)},
+        ),
       );
     }
   }

@@ -4,6 +4,7 @@ import '../accounts.dart';
 import '../api_exception.dart';
 import '../push/push_service.dart';
 import '../record_store.dart';
+import '../i18n.dart';
 
 /// The emergency button: a member raises an alert with their position, the
 /// adults get an alarm that breaks through quiet times, one answers "Ich
@@ -62,7 +63,11 @@ class SosService {
     int? battery,
   }) {
     if (member.isGuest || member.isService) {
-      throw ApiException(403, 'forbidden', 'Für dieses Konto nicht verfügbar');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Für dieses Konto nicht verfügbar'),
+      );
     }
     final now = DateTime.now();
     final open =
@@ -95,11 +100,14 @@ class SosService {
     _notify(
       record,
       to: {for (final a in adults) a.id},
-      title: '🚨 SOS von ${member.displayName}',
-      body: position
-          ? '${member.displayName} braucht Hilfe. Standort in Famio ansehen.'
-          : '${member.displayName} braucht Hilfe. Der Standort ist noch '
-                'unbekannt.',
+      title: () => t('🚨 SOS von {name}', {'name': member.displayName}),
+      body: () => position
+          ? t('{name} braucht Hilfe. Standort in Famio ansehen.', {
+              'name': member.displayName,
+            })
+          : t('{name} braucht Hilfe. Der Standort ist noch unbekannt.', {
+              'name': member.displayName,
+            }),
     );
     return alert;
   }
@@ -115,12 +123,12 @@ class SosService {
   }) {
     final alert = _get(id);
     if (alert == null || alert.memberId != member.id) {
-      throw ApiException(404, 'not_found', 'Notfall nicht gefunden');
+      throw ApiException(404, 'not_found', t('Notfall nicht gefunden'));
     }
     final now = DateTime.now();
     if (!alert.open ||
         (alert.liveUntil != null && now.isAfter(alert.liveUntil!))) {
-      throw ApiException(409, 'sos_closed', 'Der Notfall ist beendet');
+      throw ApiException(409, 'sos_closed', t('Der Notfall ist beendet'));
     }
     final updated = SosAlert(
       id: alert.id,
@@ -142,11 +150,11 @@ class SosService {
   /// An adult is on the way.
   SosAlert coming(FamilyMember adult, String id) {
     if (!adult.isAdult) {
-      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+      throw ApiException(403, 'forbidden', t('Nur Erwachsene'));
     }
     final alert = _get(id);
     if (alert == null) {
-      throw ApiException(404, 'not_found', 'Notfall nicht gefunden');
+      throw ApiException(404, 'not_found', t('Notfall nicht gefunden'));
     }
     if (!alert.open) return alert;
     final updated = SosAlert(
@@ -166,8 +174,10 @@ class SosService {
     _notify(
       record,
       to: {alert.memberId, for (final a in _adults(adult.id)) a.id},
-      title: '${adult.displayName} kommt',
-      body: '${adult.displayName} hat den Notfall gesehen und ist unterwegs.',
+      title: () => t('{name} kommt', {'name': adult.displayName}),
+      body: () => t('{name} hat den Notfall gesehen und ist unterwegs.', {
+        'name': adult.displayName,
+      }),
     );
     return updated;
   }
@@ -176,7 +186,7 @@ class SosService {
   SosAlert resolve(FamilyMember member, String id) {
     final alert = _get(id);
     if (alert == null || (!member.isAdult && alert.memberId != member.id)) {
-      throw ApiException(404, 'not_found', 'Notfall nicht gefunden');
+      throw ApiException(404, 'not_found', t('Notfall nicht gefunden'));
     }
     if (!alert.open) return alert;
     final now = DateTime.now();
@@ -197,16 +207,19 @@ class SosService {
     );
     final record = _write(updated, _audience(updated));
     final who = accounts.members().where((m) => m.id == alert.memberId);
-    final name = who.isEmpty ? 'Jemand' : who.first.displayName;
+    final name = who.isEmpty ? t('Jemand') : who.first.displayName;
     push?.deliver(
-      PushNotice(
+      () => PushNotice(
         to: {
           for (final id in _audience(updated))
             if (id != member.id) id,
         },
-        title: 'Notfall beendet',
-        body: 'Der Notfall von $name ist beendet (${member.displayName}).',
-        brief: 'Notfall beendet',
+        title: t('Notfall beendet'),
+        body: t('Der Notfall von {name} ist beendet ({by}).', {
+          'name': name,
+          'by': member.displayName,
+        }),
+        brief: t('Notfall beendet'),
         tag: 'white_check_mark',
       ),
       record,
@@ -220,11 +233,11 @@ class SosService {
   /// allows it), e.g. when they do not answer. At most once a minute.
   void ring(FamilyMember adult, String memberId) {
     if (!adult.isAdult) {
-      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+      throw ApiException(403, 'forbidden', t('Nur Erwachsene'));
     }
     final target = accounts.members().where((m) => m.id == memberId);
     if (target.isEmpty || memberId == adult.id || target.first.isService) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     final last = _rung[memberId];
     final now = DateTime.now();
@@ -232,16 +245,16 @@ class SosService {
       throw ApiException(
         429,
         'too_soon',
-        'Gerade erst geklingelt – bitte eine Minute warten.',
+        t('Gerade erst geklingelt – bitte eine Minute warten.'),
       );
     }
     _rung[memberId] = now;
     push?.deliver(
-      PushNotice(
+      () => PushNotice(
         to: {memberId},
-        title: '🔔 ${adult.displayName} sucht dich',
-        body: 'Bitte melde dich bei ${adult.displayName}.',
-        brief: '🔔 ${adult.displayName} sucht dich',
+        title: t('🔔 {name} sucht dich', {'name': adult.displayName}),
+        body: t('Bitte melde dich bei {name}.', {'name': adult.displayName}),
+        brief: t('🔔 {name} sucht dich', {'name': adult.displayName}),
         tag: ringTag,
         urgent: true,
       ),
@@ -259,11 +272,18 @@ class SosService {
     double? longitude,
   }) {
     if (member.isGuest || member.isService) {
-      throw ApiException(403, 'forbidden', 'Für dieses Konto nicht verfügbar');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Für dieses Konto nicht verfügbar'),
+      );
     }
     final text = note.trim();
     if (text.isEmpty || text.length > 80) {
-      throw ApiException.badRequest('invalid_note', 'Bitte einen kurzen Text');
+      throw ApiException.badRequest(
+        'invalid_note',
+        t('Bitte einen kurzen Text'),
+      );
     }
     var place = (id: '', name: '');
     if (latitude != null && longitude != null) {
@@ -306,19 +326,22 @@ class SosService {
   /// An adult asks [memberId] to check in.
   void requestCheckIn(FamilyMember adult, String memberId) {
     if (!adult.isAdult) {
-      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+      throw ApiException(403, 'forbidden', t('Nur Erwachsene'));
     }
     if (!accounts.members().any((m) => m.id == memberId)) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     push?.deliver(
-      PushNotice(
+      () => PushNotice(
         to: {memberId},
-        title: '${adult.displayName} bittet um einen Check-in',
-        body:
-            'Tippe in Famio auf „Check-in“, damit ${adult.displayName} '
-            'weiß, wo du bist und dass alles ok ist.',
-        brief: 'Bitte um einen Check-in',
+        title: t('{name} bittet um einen Check-in', {
+          'name': adult.displayName,
+        }),
+        body: t(
+          'Tippe in Famio auf „Check-in“, damit {name} weiß, wo du bist und dass alles ok ist.',
+          {'name': adult.displayName},
+        ),
+        brief: t('Bitte um einen Check-in'),
         tag: 'wave',
       ),
       null,
@@ -348,13 +371,16 @@ class SosService {
     final to = {for (final a in _adults(member.id)) a.id};
     final about = records.get(Collections.memberLocations, member.id);
     push?.deliver(
-      PushNotice(
+      () => PushNotice(
         to: to,
-        title: '🔋 ${member.displayName}s Handy hat $now % Akku',
-        body:
-            'Bald kann Famio ${member.displayName}s Standort nicht mehr '
-            'zeigen.',
-        brief: 'Akku fast leer',
+        title: t('🔋 {name}s Handy hat {battery} % Akku', {
+          'name': member.displayName,
+          'battery': now,
+        }),
+        body: t('Bald kann Famio {name}s Standort nicht mehr zeigen.', {
+          'name': member.displayName,
+        }),
+        brief: t('Akku fast leer'),
         tag: 'battery',
       ),
       about,
@@ -367,15 +393,15 @@ class SosService {
   void _notify(
     SyncRecord about, {
     required Set<String> to,
-    required String title,
-    required String body,
+    required String Function() title,
+    required String Function() body,
   }) => push?.deliver(
-    PushNotice(
+    () => PushNotice(
       to: to,
-      title: title,
-      body: body,
+      title: title(),
+      body: body(),
       // Also without details: an emergency must be recognisable.
-      brief: title,
+      brief: title(),
       tag: 'rotating_light',
       urgent: true,
     ),

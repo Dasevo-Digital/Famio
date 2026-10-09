@@ -181,7 +181,10 @@ class _BackupCardState extends State<_BackupCard> {
             c['ok'] == true
                 ? tr.adminBackupCheckedCanRestored
                 : tr.adminBackupFaultyProblems(
-                    (c['problems'] as List? ?? const []).join('; '),
+                    [
+                      for (final p in c['problems'] as List? ?? const [])
+                        localizeServerText('$p'),
+                    ].join('; '),
                   ),
           ),
         ),
@@ -237,7 +240,10 @@ class _BackupCardState extends State<_BackupCard> {
           0,
           (sum, b) => sum + ((b['bytes'] as num?)?.toInt() ?? 0),
         );
-        final error = s['lastError'] as String?;
+        final error = switch (s['lastError']) {
+          final String e => localizeServerText(e),
+          _ => null,
+        };
         final check = (s['lastCheck'] as Map?)?.cast<String, Object?>();
         return SoftCard(
           child: Column(
@@ -308,8 +314,14 @@ class _BackupCheckLine extends StatelessWidget {
     final theme = Theme.of(context);
     final ok = check['ok'] == true;
     final at = DateTime.tryParse(check['at'] as String? ?? '');
-    final problems = (check['problems'] as List? ?? const []).cast<Object>();
-    final notes = (check['notes'] as List? ?? const []).cast<Object>();
+    final problems = [
+      for (final p in check['problems'] as List? ?? const [])
+        localizeServerText('$p'),
+    ];
+    final notes = [
+      for (final n in check['notes'] as List? ?? const [])
+        localizeServerText('$n'),
+    ];
     final color = ok ? FamioColors.of(context).ink : theme.colorScheme.error;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

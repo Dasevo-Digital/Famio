@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'list_provider.dart';
+import '../i18n.dart';
 
 /// Microsoft To Do through Microsoft Graph.
 ///
@@ -60,9 +61,15 @@ class MsTodoProvider implements ListProvider {
     final json = _json(response);
     if (response.statusCode >= 300) {
       throw ListProviderException(
-        'Microsoft lehnt die Anmeldung ab: '
-        '${json['error_description'] ?? json['error'] ?? response.statusCode}. '
-        'Stimmt die Client-ID, und sind öffentliche Clients erlaubt?',
+        t(
+          'Microsoft lehnt die Anmeldung ab: {error}. Stimmt die Client-ID, und sind öffentliche Clients erlaubt?',
+          {
+            'error':
+                json['error_description'] ??
+                json['error'] ??
+                response.statusCode,
+          },
+        ),
       );
     }
     return json;
@@ -90,9 +97,11 @@ class MsTodoProvider implements ListProvider {
     if (error != null || response.statusCode >= 300) {
       throw ListProviderException(
         error == 'expired_token'
-            ? 'Der Code ist abgelaufen. Bitte neu beginnen.'
-            : 'Microsoft hat die Anmeldung nicht bestätigt '
-                  '(${json['error_description'] ?? error ?? response.statusCode}).',
+            ? t('Der Code ist abgelaufen. Bitte neu beginnen.')
+            : t('Microsoft hat die Anmeldung nicht bestätigt ({error}).', {
+                'error':
+                    json['error_description'] ?? error ?? response.statusCode,
+              }),
         signedOut: true,
       );
     }
@@ -137,7 +146,7 @@ class MsTodoProvider implements ListProvider {
       );
       if (response.statusCode >= 400) {
         throw ListProviderException(
-          'Die Anmeldung bei Microsoft ist abgelaufen. Bitte neu verbinden.',
+          t('Die Anmeldung bei Microsoft ist abgelaufen. Bitte neu verbinden.'),
           signedOut: true,
         );
       }
@@ -165,13 +174,15 @@ class MsTodoProvider implements ListProvider {
     );
     if (response.statusCode == 401) {
       throw ListProviderException(
-        'Microsoft hat den Zugriff abgelehnt. Bitte neu verbinden.',
+        t('Microsoft hat den Zugriff abgelehnt. Bitte neu verbinden.'),
         signedOut: true,
       );
     }
     if (response.statusCode >= 300) {
       throw ListProviderException(
-        'Microsoft To Do antwortet mit Fehler ${response.statusCode}.',
+        t('Microsoft To Do antwortet mit Fehler {status}.', {
+          'status': response.statusCode,
+        }),
       );
     }
     return _json(response);

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'list_provider.dart';
+import '../i18n.dart';
 
 /// Bring! shopping lists through the interface of Bring's own apps. Bring!
 /// offers no public interface; this is the one the Home Assistant
@@ -51,7 +52,7 @@ class BringProvider implements ListProvider {
     );
     if (response.statusCode == 401 || response.statusCode == 404) {
       throw ListProviderException(
-        'Bring! hat E-Mail-Adresse oder Passwort nicht angenommen.',
+        t('Bring! hat E-Mail-Adresse oder Passwort nicht angenommen.'),
         signedOut: true,
       );
     }
@@ -81,7 +82,9 @@ class BringProvider implements ListProvider {
   static Map<String, Object?> _decode(http.Response response) {
     if (response.statusCode >= 300) {
       throw ListProviderException(
-        'Bring! antwortet mit Fehler ${response.statusCode}.',
+        t('Bring! antwortet mit Fehler {status}.', {
+          'status': response.statusCode,
+        }),
         signedOut: response.statusCode == 401,
       );
     }
@@ -104,7 +107,7 @@ class BringProvider implements ListProvider {
       );
       if (response.statusCode >= 400 && response.statusCode < 500) {
         throw ListProviderException(
-          'Die Anmeldung bei Bring! ist abgelaufen. Bitte neu verbinden.',
+          t('Die Anmeldung bei Bring! ist abgelaufen. Bitte neu verbinden.'),
           signedOut: true,
         );
       }
@@ -152,8 +155,10 @@ class BringProvider implements ListProvider {
       // Never read an unknown answer as an empty list: the sync would
       // then do nothing without telling anyone.
       throw ListProviderException(
-        'Bring! hat die Liste in einem unbekannten Format geliefert '
-        '(Felder: ${json.keys.join(', ')}).',
+        t(
+          'Bring! hat die Liste in einem unbekannten Format geliefert (Felder: {fields}).',
+          {'fields': json.keys.join(', ')},
+        ),
       );
     }
     RemoteItem? item(Object? e, {required bool done}) {

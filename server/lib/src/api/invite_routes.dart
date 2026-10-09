@@ -3,7 +3,8 @@ part of '../api.dart';
 /// Invitations instead of handed-over passwords (see [Invites]).
 extension _InviteRoutes on FamioApi {
   Invites get _invites =>
-      invites ?? (throw ApiException(404, 'not_found', 'Einladungen fehlen'));
+      invites ??
+      (throw ApiException(404, 'not_found', t('Einladungen fehlen')));
 
   /// Throttled like a login: the code is the only secret.
   static const _throttleKey = '#invite';
@@ -45,7 +46,7 @@ extension _InviteRoutes on FamioApi {
       throw ApiException(
         404,
         'invalid_invite',
-        'Diese Einladung gibt es nicht oder sie ist abgelaufen.',
+        t('Diese Einladung gibt es nicht oder sie ist abgelaufen.'),
       );
     }
     return invite;

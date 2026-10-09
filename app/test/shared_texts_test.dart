@@ -1,5 +1,3 @@
-import 'package:famio/src/shared_texts/en.dart';
-import 'package:famio/src/shared_texts/es.dart';
 import 'package:famio/src/shared_texts/shared_texts.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +22,9 @@ void main() {
           expect(texts[key], contains(p[0]), reason: key);
         }
       }
-      final unused = texts.keys.where((k) => !all.containsKey(k));
+      final unused = texts.keys.where(
+        (k) => !k.startsWith('Server|') && !all.containsKey(k),
+      );
       expect(unused, isEmpty, reason: 'texts nobody asks for');
     });
   }

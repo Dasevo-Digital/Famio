@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../api_exception.dart';
 import 'totp.dart';
+import '../i18n.dart';
 
 /// Two-factor login: an authenticator app (TOTP) plus one-time recovery
 /// codes for a lost phone.
@@ -60,14 +61,14 @@ class Mfa {
     if (pending == null) {
       throw ApiException.badRequest(
         'no_setup',
-        'Bitte die Einrichtung neu beginnen',
+        t('Bitte die Einrichtung neu beginnen'),
       );
     }
     final step = Totp.verify(pending, code);
     if (step == null) {
       throw ApiException.badRequest(
         'invalid_code',
-        'Der Code stimmt nicht. Uhrzeit von Handy und Server prüfen.',
+        t('Der Code stimmt nicht. Uhrzeit von Handy und Server prüfen.'),
       );
     }
     _db.execute(

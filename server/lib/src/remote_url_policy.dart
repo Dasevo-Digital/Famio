@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'api_exception.dart';
 import 'security.dart';
+import 'i18n.dart';
 
 /// Validates destinations fetched by the server on a member's behalf.
 ///
@@ -20,7 +21,9 @@ class RemoteUrlPolicy {
         uri.userInfo.isNotEmpty) {
       throw ApiException.badRequest(
         'unsafe_remote_url',
-        'Externe Ziele brauchen eine HTTPS-Adresse ohne Zugangsdaten in der Adresse.',
+        t(
+          'Externe Ziele brauchen eine HTTPS-Adresse ohne Zugangsdaten in der Adresse.',
+        ),
       );
     }
     if (allowPrivateNetwork) return;
@@ -37,7 +40,9 @@ class RemoteUrlPolicy {
 
   Never _blocked(Uri uri) => throw ApiException.badRequest(
     'unsafe_remote_url',
-    'Die Adresse ${uri.host} zeigt in ein privates Netzwerk. '
-        'Lokale Ziele müssen vom Server ausdrücklich freigegeben werden.',
+    t(
+      'Die Adresse {host} zeigt in ein privates Netzwerk. Lokale Ziele müssen vom Server ausdrücklich freigegeben werden.',
+      {'host': uri.host},
+    ),
   );
 }

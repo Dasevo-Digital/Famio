@@ -17,6 +17,7 @@ import '../remote_url_policy.dart';
 import 'dav_client.dart';
 import 'google_oauth.dart';
 import '../calendar/ics.dart';
+import '../i18n.dart';
 
 /// Keeps Famio events and calendars on other CalDAV servers (iCloud,
 /// Nextcloud, mailbox.org …) in sync, in both directions.
@@ -108,7 +109,7 @@ class CalDavSync {
       if (calendars.isEmpty) {
         throw ApiException.badRequest(
           'no_calendars',
-          'Keine Kalender für Termine gefunden',
+          t('Keine Kalender für Termine gefunden'),
         );
       }
       return calendars;
@@ -147,7 +148,7 @@ class CalDavSync {
     } else if (username.trim().isEmpty || password.isEmpty) {
       throw ApiException.badRequest(
         'invalid_login',
-        'Benutzername und Passwort angeben',
+        t('Benutzername und Passwort angeben'),
       );
     }
     final id = newId();
@@ -211,7 +212,7 @@ class CalDavSync {
     }
     final account = forUser(userId).where((a) => a.id == id).firstOrNull;
     if (account == null) {
-      throw ApiException(404, 'not_found', 'Verbindung nicht gefunden');
+      throw ApiException(404, 'not_found', t('Verbindung nicht gefunden'));
     }
     return account;
   }
@@ -272,7 +273,7 @@ class CalDavSync {
     }));
     final account = forUser(userId).where((a) => a.id == id).firstOrNull;
     if (account == null) {
-      throw ApiException(404, 'not_found', 'Verbindung nicht gefunden');
+      throw ApiException(404, 'not_found', t('Verbindung nicht gefunden'));
     }
     return account;
   }
@@ -292,7 +293,7 @@ class CalDavSync {
     } on DavException catch (e) {
       error = e.message;
     } catch (e) {
-      error = 'Abgleich fehlgeschlagen: $e';
+      error = t('Abgleich fehlgeschlagen: {error}', {'error': e});
     }
     db.execute(
       'UPDATE caldav_accounts SET last_sync = ?, last_error = ? WHERE id = ?',
@@ -458,7 +459,7 @@ class CalDavSync {
     final event = parsed.event;
 
     if (event == null || parsed.hasOverrides) {
-      if (parsed.unsupported == 'Kein Termin (VEVENT) enthalten') {
+      if (parsed.unsupported == t('Kein Termin (VEVENT) enthalten')) {
         _saveLink(
           accountId,
           path,
@@ -731,7 +732,7 @@ class CalDavSync {
         uri.host.isEmpty) {
       throw ApiException.badRequest(
         'invalid_url',
-        'Bitte eine Adresse wie https://caldav.icloud.com angeben',
+        t('Bitte eine Adresse wie https://caldav.icloud.com angeben'),
       );
     }
     return uri;

@@ -42,14 +42,14 @@ extension _AdminRoutes on FamioApi {
     final url = s.publicUrl;
     if (url == null || url.isEmpty) {
       steps.add(
-        const SetupStep(
+        SetupStep(
           id: 'address',
-          title: 'Öffentliche Adresse',
+          title: t('Öffentliche Adresse'),
           done: false,
-          detail:
-              'Nicht eingetragen: Die Apps erreichen Famio nur im Heimnetz, '
-              'und Google oder iCloud können Famio-Kalender nicht abonnieren.',
-          where: 'Server-Verwaltung → Einstellungen → Öffentliche Adresse',
+          detail: t(
+            'Nicht eingetragen: Die Apps erreichen Famio nur im Heimnetz, und Google oder iCloud können Famio-Kalender nicht abonnieren.',
+          ),
+          where: t('Server-Verwaltung → Einstellungen → Öffentliche Adresse'),
         ),
       );
     } else {
@@ -57,14 +57,15 @@ extension _AdminRoutes on FamioApi {
       steps.add(
         SetupStep(
           id: 'address',
-          title: 'Öffentliche Adresse',
+          title: t('Öffentliche Adresse'),
           done: reachable,
           detail: reachable
-              ? '$url ist über HTTPS erreichbar.'
-              : '$url antwortet dem Server nicht. Reverse-Proxy, DNS und '
-                    'Zertifikat prüfen (im Heimnetz kann es auch am Router '
-                    'liegen, der Anfragen an sich selbst nicht zurückleitet).',
-          where: 'Reverse-Proxy (z. B. Nginx Proxy Manager)',
+              ? t('{url} ist über HTTPS erreichbar.', {'url': url})
+              : t(
+                  '{url} antwortet dem Server nicht. Reverse-Proxy, DNS und Zertifikat prüfen (im Heimnetz kann es auch am Router liegen, der Anfragen an sich selbst nicht zurückleitet).',
+                  {'url': url},
+                ),
+          where: t('Reverse-Proxy (z. B. Nginx Proxy Manager)'),
         ),
       );
     }
@@ -73,13 +74,14 @@ extension _AdminRoutes on FamioApi {
     steps.add(
       SetupStep(
         id: 'https',
-        title: 'Nur verschlüsselt',
+        title: t('Nur verschlüsselt'),
         done: https,
         detail: https
-            ? 'Anmeldung und Daten gehen nur über HTTPS.'
-            : 'Klartext aus dem Netz ist erlaubt (FAMIO_REQUIRE_TLS=false). '
-                  'Nur kurz für alte Apps nutzen.',
-        where: 'FAMIO_REQUIRE_TLS in der Server-Konfiguration',
+            ? t('Anmeldung und Daten gehen nur über HTTPS.')
+            : t(
+                'Klartext aus dem Netz ist erlaubt (FAMIO_REQUIRE_TLS=false). Nur kurz für alte Apps nutzen.',
+              ),
+        where: t('FAMIO_REQUIRE_TLS in der Server-Konfiguration'),
       ),
     );
 
@@ -87,17 +89,18 @@ extension _AdminRoutes on FamioApi {
     steps.add(
       SetupStep(
         id: 'key',
-        title: 'Schlüssel getrennt von den Daten',
+        title: t('Schlüssel getrennt von den Daten'),
         done: keyOk,
         detail: keyOk
-            ? 'Datenbank und Dateien sind verschlüsselt, der Schlüssel liegt '
-                  'woanders. Die Schlüsseldatei separat sichern!'
+            ? t(
+                'Datenbank und Dateien sind verschlüsselt, der Schlüssel liegt woanders. Die Schlüsseldatei separat sichern!',
+              )
             : encryptedAtRest
-            ? 'Der Schlüssel liegt im Datenordner: Wer eine Sicherung hat, '
-                  'hat auch den Schlüssel. FAMIO_KEY_FILE auf einen anderen Ort '
-                  'setzen.'
-            : 'Die Daten sind nicht verschlüsselt.',
-        where: 'FAMIO_KEY_FILE in der Server-Konfiguration',
+            ? t(
+                'Der Schlüssel liegt im Datenordner: Wer eine Sicherung hat, hat auch den Schlüssel. FAMIO_KEY_FILE auf einen anderen Ort setzen.',
+              )
+            : t('Die Daten sind nicht verschlüsselt.'),
+        where: t('FAMIO_KEY_FILE in der Server-Konfiguration'),
       ),
     );
 
@@ -108,12 +111,12 @@ extension _AdminRoutes on FamioApi {
     steps.add(
       SetupStep(
         id: 'members',
-        title: 'Familie eingeladen',
+        title: t('Familie eingeladen'),
         done: family.length > 1,
         detail: family.length > 1
-            ? '${family.length} Mitglieder.'
-            : 'Bisher nur du. Lade die Familie per QR-Code oder Link ein.',
-        where: 'Server-Verwaltung → Benutzer → Mitglied hinzufügen',
+            ? t('{count} Mitglieder.', {'count': family.length})
+            : t('Bisher nur du. Lade die Familie per QR-Code oder Link ein.'),
+        where: t('Server-Verwaltung → Benutzer → Mitglied hinzufügen'),
       ),
     );
 
@@ -121,13 +124,14 @@ extension _AdminRoutes on FamioApi {
     steps.add(
       SetupStep(
         id: 'twoFactor',
-        title: 'Zwei-Faktor für dich',
+        title: t('Zwei-Faktor für dich'),
         done: twoFactor,
         detail: twoFactor
-            ? 'Dein Admin-Konto ist mit einem zweiten Faktor geschützt.'
-            : 'Admins sollten einen zweiten Faktor (Authenticator-App) '
-                  'einrichten.',
-        where: 'Einstellungen → Anmeldung & Sicherheit',
+            ? t('Dein Admin-Konto ist mit einem zweiten Faktor geschützt.')
+            : t(
+                'Admins sollten einen zweiten Faktor (Authenticator-App) einrichten.',
+              ),
+        where: t('Einstellungen → Anmeldung & Sicherheit'),
       ),
     );
 
@@ -147,14 +151,17 @@ extension _AdminRoutes on FamioApi {
       steps.add(
         SetupStep(
           id: 'push',
-          title: 'Benachrichtigungen erreichen alle',
+          title: t('Benachrichtigungen erreichen alle'),
           done: missing.isEmpty,
           detail: missing.isEmpty
-              ? 'Jedes Mitglied bekommt Alarme und Erinnerungen aufs Handy.'
-              : 'Noch nicht erreichbar: ${missing.join(', ')}. In deren App '
-                    'die Benachrichtigungen einschalten (Famio-eigene oder '
-                    'ntfy).',
-          where: 'Einstellungen → Benachrichtigungen (in der jeweiligen App)',
+              ? t('Jedes Mitglied bekommt Alarme und Erinnerungen aufs Handy.')
+              : t(
+                  'Noch nicht erreichbar: {names}. In deren App die Benachrichtigungen einschalten (Famio-eigene oder ntfy).',
+                  {'names': missing.join(', ')},
+                ),
+          where: t(
+            'Einstellungen → Benachrichtigungen (in der jeweiligen App)',
+          ),
         ),
       );
     }
@@ -162,15 +169,14 @@ extension _AdminRoutes on FamioApi {
     final job = backups;
     if (job == null) {
       steps.add(
-        const SetupStep(
+        SetupStep(
           id: 'backup',
           title: 'Sicherung',
           done: false,
-          detail:
-              'Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann '
-              'muss Proxmox, Home Assistant oder ein anderes Werkzeug das '
-              'Datenverzeichnis sichern.',
-          where: 'FAMIO_BACKUP_DIR in der Server-Konfiguration',
+          detail: t(
+            'Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann muss Proxmox, Home Assistant oder ein anderes Werkzeug das Datenverzeichnis sichern.',
+          ),
+          where: t('FAMIO_BACKUP_DIR in der Server-Konfiguration'),
         ),
       );
     } else {
@@ -186,18 +192,22 @@ extension _AdminRoutes on FamioApi {
           title: 'Sicherung',
           done: ok,
           detail: ok
-              ? 'Die letzte nächtliche Sicherung ist geprüft und lässt sich '
-                    'wiederherstellen. Für den Ernstfall eine Kopie außer Haus '
-                    'aufbewahren.'
+              ? t(
+                  'Die letzte nächtliche Sicherung ist geprüft und lässt sich wiederherstellen. Für den Ernstfall eine Kopie außer Haus aufbewahren.',
+                )
               : newest == null
-              ? 'Noch keine Sicherung – die erste entsteht heute Nacht um '
-                    '3 Uhr oder mit „Jetzt sichern“.'
+              ? t(
+                  'Noch keine Sicherung – die erste entsteht heute Nacht um 3 Uhr oder mit „Jetzt sichern“.',
+                )
               : !fresh
-              ? 'Die letzte Sicherung ist älter als einen Tag. Fehler: '
-                    '${job.lastError ?? 'keiner gemeldet'}.'
-              : 'Die letzte Sicherung ist noch nicht oder nicht erfolgreich '
-                    'geprüft.',
-          where: 'Server-Verwaltung → Status → Sicherungen',
+              ? t(
+                  'Die letzte Sicherung ist älter als einen Tag. Fehler: {error}.',
+                  {'error': job.lastError ?? t('keiner gemeldet')},
+                )
+              : t(
+                  'Die letzte Sicherung ist noch nicht oder nicht erfolgreich geprüft.',
+                ),
+          where: t('Server-Verwaltung → Status → Sicherungen'),
         ),
       );
     }
@@ -205,16 +215,19 @@ extension _AdminRoutes on FamioApi {
     steps.add(
       SetupStep(
         id: 'region',
-        title: 'Bundesland für Feiertage',
+        title: t('Bundesland für Feiertage'),
         done: s.holidayRegion != null,
         detail: s.holidayRegion != null
-            ? 'Feiertage und Schulferien erscheinen im Kalender.'
-            : 'Ohne Bundesland zeigt der Kalender keine Feiertage und '
-                  'Schulferien.',
-        where: 'Server-Verwaltung → Einstellungen',
+            ? t('Feiertage und Schulferien erscheinen im Kalender.')
+            : t(
+                'Ohne Bundesland zeigt der Kalender keine Feiertage und Schulferien.',
+              ),
+        where: t('Server-Verwaltung → Einstellungen'),
       ),
     );
-    return _json({'steps': [for (final s in steps) s.toJson()]});
+    return _json({
+      'steps': [for (final s in steps) s.toJson()],
+    });
   }
 
   /// Whether `<url>/api/health` answers as Famio within a few seconds.
@@ -283,7 +296,9 @@ extension _AdminRoutes on FamioApi {
     if (body['confirm'] != FamioApi.wipeConfirmation) {
       throw ApiException.badRequest(
         'confirmation_required',
-        'Zur Bestätigung „${FamioApi.wipeConfirmation}“ eingeben',
+        t('Zur Bestätigung „{word}“ eingeben', {
+          'word': FamioApi.wipeConfirmation,
+        }),
       );
     }
     final address = clientAddress.of(request);
@@ -294,7 +309,7 @@ extension _AdminRoutes on FamioApi {
           body['password'] as String? ?? '',
         )) {
       throttle.failed(address, '#pw:${admin.id}');
-      throw ApiException(403, 'invalid_credentials', 'Passwort falsch');
+      throw ApiException(403, 'invalid_credentials', t('Passwort falsch'));
     }
     final removeMembers = body['removeMembers'] as bool? ?? false;
     // First, so nothing of the deletion reaches iCloud, Google & Co.
@@ -389,7 +404,7 @@ extension _AdminRoutes on FamioApi {
     final body = await _body(request);
     final target = accounts.byId(id);
     if (target == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     await accounts.setPassword(id, body['password'] as String? ?? '');
     var signedOut = 0;
@@ -448,7 +463,7 @@ extension _AdminRoutes on FamioApi {
     if (job == null) {
       throw ApiException.badRequest(
         'backups_off',
-        'Sicherungen sind ausgeschaltet (FAMIO_BACKUP_DIR=off)',
+        t('Sicherungen sind ausgeschaltet (FAMIO_BACKUP_DIR=off)'),
       );
     }
     try {
@@ -461,7 +476,9 @@ extension _AdminRoutes on FamioApi {
       throw ApiException(
         500,
         'backup_failed',
-        'Die Sicherung ist fehlgeschlagen: ${job.lastError}',
+        t('Die Sicherung ist fehlgeschlagen: {error}', {
+          'error': job.lastError,
+        }),
       );
     }
   }
@@ -473,13 +490,17 @@ extension _AdminRoutes on FamioApi {
     if (job == null) {
       throw ApiException.badRequest(
         'backups_off',
-        'Sicherungen sind ausgeschaltet (FAMIO_BACKUP_DIR=off)',
+        t('Sicherungen sind ausgeschaltet (FAMIO_BACKUP_DIR=off)'),
       );
     }
     final name =
         request.url.queryParameters['name'] ?? job.list().firstOrNull?.name;
     if (name == null || job.folder(name) == null) {
-      throw ApiException(404, 'backup_not_found', 'Keine Sicherung gefunden');
+      throw ApiException(
+        404,
+        'backup_not_found',
+        t('Keine Sicherung gefunden'),
+      );
     }
     final check = await job.verify(name);
     _audit(admin, 'hat die Sicherung $name geprüft');
@@ -515,7 +536,7 @@ extension _AdminRoutes on FamioApi {
     if (id == admin.id) {
       throw ApiException.badRequest(
         'self_delete',
-        'Du kannst dich nicht selbst löschen',
+        t('Du kannst dich nicht selbst löschen'),
       );
     }
     final target = accounts.byId(id);

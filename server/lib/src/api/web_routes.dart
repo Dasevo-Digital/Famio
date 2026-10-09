@@ -139,7 +139,10 @@ extension _WebRoutes on FamioApi {
     // Home Assistant's sidebar signs the WebSocket in itself.
     final token = _bearer(request);
     if (token == null) {
-      throw ApiException.badRequest('no_token', 'Keine Sitzung zum Anmelden');
+      throw ApiException.badRequest(
+        'no_token',
+        t('Keine Sitzung zum Anmelden'),
+      );
     }
     final now = DateTime.now();
     _wsTickets.removeWhere((_, t) => t.expires.isBefore(now));
@@ -156,7 +159,7 @@ extension _WebRoutes on FamioApi {
     if (ticket != null) {
       final entry = _wsTickets.remove(ticket);
       if (entry == null || entry.expires.isBefore(DateTime.now())) {
-        throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+        throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
       }
       _auth(request, token: entry.token);
     } else {

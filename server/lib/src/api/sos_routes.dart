@@ -7,7 +7,7 @@ const _sosScope = 'sos';
 /// The emergency button (see [SosService]).
 extension _SosRoutes on FamioApi {
   SosService get _sos =>
-      sos ?? (throw ApiException(404, 'not_found', 'Notfallknopf fehlt'));
+      sos ?? (throw ApiException(404, 'not_found', t('Notfallknopf fehlt')));
 
   static double? _number(Object? v) => (v as num?)?.toDouble();
 
@@ -34,7 +34,9 @@ extension _SosRoutes on FamioApi {
     final device = (body['device'] as String? ?? 'Telefon').trim();
     final token = accounts.createSession(
       member.id,
-      device: '${device.isEmpty ? 'Telefon' : device} · Notruf',
+      device: t('{device} · Notruf', {
+        'device': device.isEmpty ? t('Telefon') : device,
+      }),
       scope: _sosScope,
     );
     return _json({'token': token}, status: 201);
@@ -49,7 +51,7 @@ extension _SosRoutes on FamioApi {
     final latitude = _number(body['latitude']);
     final longitude = _number(body['longitude']);
     if (latitude == null || longitude == null) {
-      throw ApiException.badRequest('invalid_position', 'Position fehlt');
+      throw ApiException.badRequest('invalid_position', t('Position fehlt'));
     }
     final alert = _sos.position(
       member,

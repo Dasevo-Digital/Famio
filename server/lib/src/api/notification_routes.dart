@@ -5,7 +5,7 @@ const _noticeScope = 'notify';
 /// Push targets (ntfy) and Famio's own notifications.
 extension _NotificationRoutes on FamioApi {
   PushService get _push =>
-      push ?? (throw ApiException(404, 'not_found', 'Push nicht verfügbar'));
+      push ?? (throw ApiException(404, 'not_found', t('Push nicht verfügbar')));
 
   Response _pushTargets(Request request) {
     final member = _auth(request);
@@ -45,7 +45,7 @@ extension _NotificationRoutes on FamioApi {
   Response _reachability(Request request) {
     final member = _member(request);
     if (!member.isAdult) {
-      throw ApiException(403, 'forbidden', 'Nur Erwachsene');
+      throw ApiException(403, 'forbidden', t('Nur Erwachsene'));
     }
     final members = [
       for (final m in accounts.members())
@@ -72,7 +72,7 @@ extension _NotificationRoutes on FamioApi {
 
   NoticeBox get _box =>
       notices ??
-      (throw ApiException(404, 'not_found', 'Benachrichtigungen fehlen'));
+      (throw ApiException(404, 'not_found', t('Benachrichtigungen fehlen')));
 
   /// Signed in normally or with a phone's notification-only token.
   FamilyMember _noticeMember(Request request) {
@@ -117,7 +117,9 @@ extension _NotificationRoutes on FamioApi {
     final device = (body['device'] as String? ?? 'Telefon').trim();
     final token = accounts.createSession(
       member.id,
-      device: '${device.isEmpty ? 'Telefon' : device} · Benachrichtigungen',
+      device: t('{device} · Benachrichtigungen', {
+        'device': device.isEmpty ? t('Telefon') : device,
+      }),
       scope: _noticeScope,
     );
     return _json({'token': token}, status: 201);
@@ -127,11 +129,11 @@ extension _NotificationRoutes on FamioApi {
     final member = _noticeMember(request);
     _box.add(
       [member.id],
-      const PushNotice(
+      PushNotice(
         to: {},
         title: 'Famio',
-        body: 'Benachrichtigungen funktionieren 🎉',
-        brief: 'Benachrichtigungen funktionieren 🎉',
+        body: t('Benachrichtigungen funktionieren 🎉'),
+        brief: t('Benachrichtigungen funktionieren 🎉'),
         tag: 'tada',
       ),
     );

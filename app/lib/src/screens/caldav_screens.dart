@@ -553,7 +553,7 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
                 ),
                 title: Text(a.name),
                 subtitle: Text(
-                  a.error ??
+                  (a.error == null ? null : localizeServerText(a.error!)) ??
                       [
                         '${a.username} · ${Uri.tryParse(a.serverUrl)?.host ?? a.serverUrl}',
                         a.lastSync == null

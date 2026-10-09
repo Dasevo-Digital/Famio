@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../accounts.dart';
 import '../api_exception.dart';
+import '../i18n.dart';
 
 /// An open invitation: whoever has the code becomes a member with [role]
 /// and chooses their own username and password. Only a hash of the code
@@ -74,7 +75,7 @@ class Invites {
     if (role == MemberRole.service) {
       throw ApiException.badRequest(
         'invalid_role',
-        'Dienstkonten legt ein Admin direkt an',
+        t('Dienstkonten legt ein Admin direkt an'),
       );
     }
     final raw = String.fromCharCodes([
@@ -121,10 +122,9 @@ class Invites {
     final cutoff = DateTime.now()
         .subtract(const Duration(days: 30))
         .millisecondsSinceEpoch;
-    _db.execute(
-      'DELETE FROM invites WHERE expires_at < ?1 OR used_at < ?1',
-      [cutoff],
-    );
+    _db.execute('DELETE FROM invites WHERE expires_at < ?1 OR used_at < ?1', [
+      cutoff,
+    ]);
   }
 
   void revoke(String id) =>
@@ -152,7 +152,7 @@ class Invites {
       throw ApiException(
         404,
         'invalid_invite',
-        'Diese Einladung gibt es nicht oder sie ist abgelaufen.',
+        t('Diese Einladung gibt es nicht oder sie ist abgelaufen.'),
       );
     }
     // Checked before anything is stored: a weak password keeps the code.
@@ -171,7 +171,7 @@ class Invites {
         throw ApiException(
           404,
           'invalid_invite',
-          'Diese Einladung wurde gerade schon benutzt.',
+          t('Diese Einladung wurde gerade schon benutzt.'),
         );
       }
       final member = accounts.create(

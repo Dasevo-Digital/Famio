@@ -10,7 +10,9 @@ extension _FileRoutes on FamioApi {
       throw ApiException(
         413,
         'too_large',
-        'Datei ist größer als ${files.maxBytes ~/ (1024 * 1024)} MB',
+        t('Datei ist größer als {mb} MB', {
+          'mb': files.maxBytes ~/ (1024 * 1024),
+        }),
       );
     }
     final name = request.url.queryParameters['name'] ?? 'datei';
@@ -31,7 +33,7 @@ extension _FileRoutes on FamioApi {
     final file = files.get(id);
     // Same answer for "missing" and "forbidden": ids reveal nothing.
     if (file == null || !files.mayRead(file, member.id)) {
-      throw ApiException(404, 'not_found', 'Datei nicht gefunden');
+      throw ApiException(404, 'not_found', t('Datei nicht gefunden'));
     }
     final thumb = int.tryParse(request.url.queryParameters['thumb'] ?? '');
     final Stream<List<int>> body;
@@ -42,7 +44,7 @@ extension _FileRoutes on FamioApi {
     } else {
       final jpeg = await files.thumbnail(file, thumb);
       if (jpeg == null) {
-        throw ApiException(404, 'not_found', 'Keine Vorschau verfügbar');
+        throw ApiException(404, 'not_found', t('Keine Vorschau verfügbar'));
       }
       body = Stream.value(jpeg);
       length = jpeg.length;

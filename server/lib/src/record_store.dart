@@ -5,16 +5,12 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'api_exception.dart';
+import 'i18n.dart';
 
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
 class RecordStore {
-  RecordStore(
-    this._db, {
-    required this.memberIds,
-    this.roleOf,
-    this.accessOf,
-  });
+  RecordStore(this._db, {required this.memberIds, this.roleOf, this.accessOf});
 
   final Database _db;
 
@@ -111,7 +107,10 @@ class RecordStore {
 
   /// Deletion marks still kept (see [purgeDeleted]).
   int deletedCount() =>
-      _db.select('SELECT count(*) FROM records WHERE deleted = 1').first.columnAt(0)
+      _db
+              .select('SELECT count(*) FROM records WHERE deleted = 1')
+              .first
+              .columnAt(0)
           as int;
 
   /// Never goes back, also when the newest record was a cleaned-up
@@ -148,30 +147,30 @@ class RecordStore {
     final cutoff = at - keepDeleted.inMilliseconds;
     var removed = 0;
     _transaction(() {
-      _db.execute(
-        'INSERT OR REPLACE INTO rev_marks (at, rev) VALUES (?, ?)',
-        [at, currentRev],
-      );
-      final horizon = _db
-          .select(
-            'SELECT at, rev FROM rev_marks WHERE at <= ? ORDER BY at DESC'
-            ' LIMIT 1',
-            [cutoff],
-          )
-          .firstOrNull;
+      _db.execute('INSERT OR REPLACE INTO rev_marks (at, rev) VALUES (?, ?)', [
+        at,
+        currentRev,
+      ]);
+      final horizon = _db.select(
+        'SELECT at, rev FROM rev_marks WHERE at <= ? ORDER BY at DESC'
+        ' LIMIT 1',
+        [cutoff],
+      ).firstOrNull;
       if (horizon == null) return;
       final rev = horizon['rev'] as int;
       // Older marks are no longer needed; the horizon stays as a floor.
       _db.execute('DELETE FROM rev_marks WHERE at < ?', [horizon['at']]);
-      final purged = _db
-          .select(
-            'SELECT MAX(rev) FROM ('
-            ' SELECT rev FROM records WHERE deleted = 1 AND rev <= ?1'
-            ' UNION ALL SELECT rev FROM revocations WHERE rev <= ?1)',
-            [rev],
-          )
-          .first
-          .columnAt(0) as int?;
+      final purged =
+          _db
+                  .select(
+                    'SELECT MAX(rev) FROM ('
+                    ' SELECT rev FROM records WHERE deleted = 1 AND rev <= ?1'
+                    ' UNION ALL SELECT rev FROM revocations WHERE rev <= ?1)',
+                    [rev],
+                  )
+                  .first
+                  .columnAt(0)
+              as int?;
       if (purged == null) return;
       _db.execute('DELETE FROM records WHERE deleted = 1 AND rev <= ?', [rev]);
       removed += _db.updatedRows;
@@ -295,13 +294,7 @@ class RecordStore {
           // access recently, their revocation tombstone removes the copy.
           continue;
         }
-        if (!mayWrite(
-          role,
-          userId,
-          incoming,
-          existing,
-          access: access,
-        )) {
+        if (!mayWrite(role, userId, incoming, existing, access: access)) {
           // Undo the change on the device: the stored version, or a
           // tombstone for something that must not exist.
           rejected.add(
@@ -397,15 +390,7 @@ class RecordStore {
     });
 
     if (stored.isNotEmpty) onStored?.call(userId, stored);
-    return _pull(
-      userId,
-      since,
-      now,
-      rejected,
-      unsupported,
-      role,
-      reset: reset,
-    );
+    return _pull(userId, since, now, rejected, unsupported, role, reset: reset);
   }
 
   SyncResponse _pull(
@@ -525,8 +510,7 @@ class RecordStore {
             !e.key.startsWith(SyncRecord.externalPrefix))
           e.key: e.value,
     };
-    return a.deleted == b.deleted &&
-        jsonEncode(core(a)) == jsonEncode(core(b));
+    return a.deleted == b.deleted && jsonEncode(core(a)) == jsonEncode(core(b));
   }
 
   /// Writes [r] with the next revision and updates revocations: members who
@@ -612,10 +596,13 @@ class RecordStore {
 
   void _validate(SyncRecord r) {
     if (r.id.isEmpty || r.id.length > 64) {
-      throw ApiException.badRequest('invalid_id', 'Ungültige ID: ${r.id}');
+      throw ApiException.badRequest(
+        'invalid_id',
+        t('Ungültige ID: {id}', {'id': r.id}),
+      );
     }
     if (utf8.encode(jsonEncode(r.data)).length > _maxDataBytes) {
-      throw ApiException(413, 'too_large', 'Eintrag ist zu groß');
+      throw ApiException(413, 'too_large', t('Eintrag ist zu groß'));
     }
   }
 

@@ -264,6 +264,10 @@ const _migrations = [
     rev INTEGER NOT NULL
   );
   ''',
+  '''
+  -- The language of a member's app (de, en, es) for push messages.
+  ALTER TABLE users ADD COLUMN language TEXT;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

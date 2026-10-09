@@ -6,6 +6,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 
 import 'dav_client.dart';
+import '../i18n.dart';
 
 /// Access to a Google account, kept by the server: the family's own OAuth
 /// client (created in the Google Cloud Console) and the refresh token.
@@ -100,9 +101,9 @@ class GoogleOAuth {
     final refresh = json['refresh_token'] as String?;
     if (refresh == null) {
       throw DavException(
-        'Google hat keinen dauerhaften Zugang erteilt. Bitte die Verbindung '
-        'unter myaccount.google.com → Sicherheit → Drittanbieter-Apps '
-        'entfernen und erneut anmelden.',
+        t(
+          'Google hat keinen dauerhaften Zugang erteilt. Bitte die Verbindung unter myaccount.google.com → Sicherheit → Drittanbieter-Apps entfernen und erneut anmelden.',
+        ),
       );
     }
     return GoogleGrant(
@@ -143,14 +144,17 @@ class GoogleOAuth {
         .timeout(const Duration(seconds: 30));
     if (response.statusCode == 403) {
       throw DavException(
-        'Google verweigert den Zugriff: Im Cloud-Projekt „Google Calendar '
-        'API“ und „CalDAV API“ aktivieren.',
+        t(
+          'Google verweigert den Zugriff: Im Cloud-Projekt „Google Calendar API“ und „CalDAV API“ aktivieren.',
+        ),
         status: 403,
       );
     }
     if (response.statusCode != 200) {
       throw DavException(
-        'Kalenderliste von Google nicht abrufbar (HTTP ${response.statusCode})',
+        t('Kalenderliste von Google nicht abrufbar (HTTP {status})', {
+          'status': response.statusCode,
+        }),
         status: response.statusCode,
       );
     }
@@ -203,20 +207,21 @@ class GoogleOAuth {
           .post(tokenEndpoint, body: form)
           .timeout(const Duration(seconds: 30));
     } on TimeoutException {
-      throw DavException('Google antwortet nicht');
+      throw DavException(t('Google antwortet nicht'));
     } on http.ClientException catch (e) {
-      throw DavException('Google nicht erreichbar: ${e.message}');
+      throw DavException(
+        t('Google nicht erreichbar: {message}', {'message': e.message}),
+      );
     }
     final json = (jsonDecode(response.body) as Map).cast<String, Object?>();
     if (response.statusCode != 200) {
       final error = json['error'] as String? ?? 'HTTP ${response.statusCode}';
       throw DavException(switch (error) {
-        'invalid_grant' =>
-          'Der Google-Zugang ist abgelaufen oder wurde widerrufen – bitte '
-              'neu anmelden. (Im Cloud-Projekt den Veröffentlichungsstatus '
-              'auf „In Produktion“ stellen, sonst endet er nach 7 Tagen.)',
-        'invalid_client' => 'Client-ID oder Client-Secret stimmt nicht',
-        _ => 'Google-Anmeldung fehlgeschlagen ($error)',
+        'invalid_grant' => t(
+          'Der Google-Zugang ist abgelaufen oder wurde widerrufen – bitte neu anmelden. (Im Cloud-Projekt den Veröffentlichungsstatus auf „In Produktion“ stellen, sonst endet er nach 7 Tagen.)',
+        ),
+        'invalid_client' => t('Client-ID oder Client-Secret stimmt nicht'),
+        _ => t('Google-Anmeldung fehlgeschlagen ({error})', {'error': error}),
       }, status: 401);
     }
     return json;

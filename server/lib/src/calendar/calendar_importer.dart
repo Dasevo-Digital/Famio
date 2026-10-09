@@ -11,6 +11,7 @@ import '../record_store.dart';
 import '../remote_url_policy.dart';
 import 'calendar_access.dart';
 import 'ics_import.dart';
+import '../i18n.dart';
 
 /// Keeps `external_events` in line with the members' calendar subscriptions
 /// by fetching each ICS address periodically and on every change.
@@ -124,17 +125,18 @@ class CalendarImporter {
       } else if (response.statusCode != 200) {
         await response.stream.drain<void>();
         throw _ImportError(switch (response.statusCode) {
-          401 || 403 =>
-            'Zugriff verweigert (HTTP ${response.statusCode}). '
-                'Ist es die geheime/öffentliche ICS-Adresse?',
-          404 => 'Kalender nicht gefunden (HTTP 404)',
-          final code => 'Abruf fehlgeschlagen (HTTP $code)',
+          401 || 403 => t(
+            'Zugriff verweigert (HTTP {status}). Ist es die geheime/öffentliche ICS-Adresse?',
+            {'status': response.statusCode},
+          ),
+          404 => t('Kalender nicht gefunden (HTTP 404)'),
+          final code => t('Abruf fehlgeschlagen (HTTP {code})', {'code': code}),
         });
       } else {
         final text = await _readLimited(response.stream);
         if (!text.contains('BEGIN:VCALENDAR')) {
           throw _ImportError(
-            'Unter dieser Adresse liegt keine Kalenderdatei (ICS)',
+            t('Unter dieser Adresse liegt keine Kalenderdatei (ICS)'),
           );
         }
         final events = importIcs(
@@ -157,13 +159,15 @@ class CalendarImporter {
     } on _ImportError catch (e) {
       error = e.message;
     } on TimeoutException {
-      error = 'Zeitüberschreitung beim Abruf';
+      error = t('Zeitüberschreitung beim Abruf');
     } on SocketException catch (e) {
-      error = 'Server nicht erreichbar (${e.message})';
+      error = t('Server nicht erreichbar ({message})', {'message': e.message});
     } on FormatException catch (e) {
-      error = 'Ungültige Adresse oder Daten: ${e.message}';
+      error = t('Ungültige Adresse oder Daten: {message}', {
+        'message': e.message,
+      });
     } catch (e) {
-      error = 'Import fehlgeschlagen: $e';
+      error = t('Import fehlgeschlagen: {error}', {'error': e});
     }
 
     final status = SubscriptionStatus(
@@ -249,7 +253,9 @@ class CalendarImporter {
     if ((uri.scheme != 'http' && uri.scheme != 'https') ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty) {
-      throw _ImportError('Adresse muss mit https:// oder webcal:// beginnen');
+      throw _ImportError(
+        t('Adresse muss mit https:// oder webcal:// beginnen'),
+      );
     }
     return uri;
   }
@@ -259,7 +265,7 @@ class CalendarImporter {
     await for (final chunk in stream) {
       bytes.add(chunk);
       if (bytes.length > _maxBytes) {
-        throw _ImportError('Kalenderdatei ist größer als 10 MB');
+        throw _ImportError(t('Kalenderdatei ist größer als 10 MB'));
       }
     }
     return utf8.decode(bytes.takeBytes(), allowMalformed: true);
@@ -289,7 +295,7 @@ class CalendarImporter {
       }
       return response;
     }
-    throw _ImportError('Zu viele Weiterleitungen beim Kalenderabruf');
+    throw _ImportError(t('Zu viele Weiterleitungen beim Kalenderabruf'));
   }
 }
 

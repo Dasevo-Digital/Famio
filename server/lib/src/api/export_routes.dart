@@ -4,7 +4,7 @@ part of '../api.dart';
 /// the whole family. Both need the password.
 extension _ExportRoutes on FamioApi {
   DataExport get _exports =>
-      exports ?? (throw ApiException(404, 'not_found', 'Export fehlt'));
+      exports ?? (throw ApiException(404, 'not_found', t('Export fehlt')));
 
   Future<void> _confirmPassword(Request request, FamilyMember member) async {
     final body = await _body(request);
@@ -16,7 +16,7 @@ extension _ExportRoutes on FamioApi {
           body['password'] as String? ?? '',
         )) {
       throttle.failed(address, '#pw:${member.id}');
-      throw ApiException(403, 'invalid_credentials', 'Passwort falsch');
+      throw ApiException(403, 'invalid_credentials', t('Passwort falsch'));
     }
   }
 

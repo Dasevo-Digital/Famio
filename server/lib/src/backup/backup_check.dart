@@ -6,6 +6,7 @@ import 'package:sqlite3/sqlite3.dart';
 
 import '../crypto/encrypted_db.dart';
 import '../files/file_store.dart';
+import '../i18n.dart';
 
 /// The result of trying a backup: can it be opened with the data key, is
 /// it intact, and does it hold what the server holds?
@@ -129,11 +130,13 @@ BackupCheck checkBackup(
   try {
     final main = open(p.join(folder, 'famio.db'));
     if (main == null) {
-      problems.add('famio.db fehlt');
+      problems.add(t('famio.db fehlt'));
     } else {
       try {
         final check = integrity(main);
-        if (check != 'ok') problems.add('famio.db beschädigt: $check');
+        if (check != 'ok') {
+          problems.add(t('famio.db beschädigt: {check}', {'check': check}));
+        }
         int count(String sql) => main.select(sql).first.columnAt(0) as int;
         users = count('SELECT count(*) FROM users');
         records = count('SELECT count(*) FROM records WHERE deleted = 0');
@@ -148,11 +151,13 @@ BackupCheck checkBackup(
     }
   } on SqliteException catch (e) {
     problems.add(
-      'famio.db lässt sich mit dem Datenschlüssel nicht öffnen (${e.message})',
+      t('famio.db lässt sich mit dem Datenschlüssel nicht öffnen ({message})', {
+        'message': e.message,
+      }),
     );
   }
   if (users == 0 && liveUsers > 0 && problems.isEmpty) {
-    problems.add('Keine Mitglieder in der Sicherung');
+    problems.add(t('Keine Mitglieder in der Sicherung'));
   }
 
   try {
@@ -161,7 +166,9 @@ BackupCheck checkBackup(
       filesChecked = true;
       try {
         final check = integrity(blobs);
-        if (check != 'ok') problems.add('files.db beschädigt: $check');
+        if (check != 'ok') {
+          problems.add(t('files.db beschädigt: {check}', {'check': check}));
+        }
         final stored = {
           for (final r in blobs.select(
             "SELECT DISTINCT id FROM blobs WHERE kind = '${FileStore.originalKind}'",
@@ -172,8 +179,10 @@ BackupCheck checkBackup(
         if (missing > 0) {
           problems.add(
             missing == 1
-                ? '1 Datei ohne Inhalt in files.db'
-                : '$missing Dateien ohne Inhalt in files.db',
+                ? t('1 Datei ohne Inhalt in files.db')
+                : t('{missing} Dateien ohne Inhalt in files.db', {
+                    'missing': missing,
+                  }),
           );
         }
       } finally {
@@ -182,14 +191,18 @@ BackupCheck checkBackup(
     }
   } on SqliteException catch (e) {
     problems.add(
-      'files.db lässt sich mit dem Datenschlüssel nicht öffnen (${e.message})',
+      t('files.db lässt sich mit dem Datenschlüssel nicht öffnen ({message})', {
+        'message': e.message,
+      }),
     );
   }
 
   if (problems.isEmpty && liveRecords >= 50 && records < liveRecords ~/ 2) {
     notes.add(
-      'Deutlich weniger Einträge als jetzt ($records statt $liveRecords) – '
-      'seit der Sicherung kam viel dazu, oder es fehlt etwas.',
+      t(
+        'Deutlich weniger Einträge als jetzt ({records} statt {live}) – seit der Sicherung kam viel dazu, oder es fehlt etwas.',
+        {'records': records, 'live': liveRecords},
+      ),
     );
   }
   return BackupCheck(

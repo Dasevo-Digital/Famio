@@ -7,7 +7,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         409,
         'already_set_up',
-        'Server ist bereits eingerichtet',
+        t('Server ist bereits eingerichtet'),
       );
     }
     final body = await _body(request);
@@ -20,8 +20,9 @@ extension _AuthRoutes on FamioApi {
         throw ApiException(
           403,
           'setup_code_required',
-          'Einrichtungscode fehlt oder ist falsch. Er steht im Server-Log '
-              '(z. B. docker logs famio).',
+          t(
+            'Einrichtungscode fehlt oder ist falsch. Er steht im Server-Log (z. B. docker logs famio).',
+          ),
         );
       }
     }
@@ -31,7 +32,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         409,
         'already_set_up',
-        'Server ist bereits eingerichtet',
+        t('Server ist bereits eingerichtet'),
       );
     }
     final member = accounts.create(
@@ -58,7 +59,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         401,
         'invalid_credentials',
-        'Benutzername oder Passwort falsch',
+        t('Benutzername oder Passwort falsch'),
       );
     }
     throttle.succeeded(address, username);
@@ -89,7 +90,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         401,
         'challenge_expired',
-        'Die Anmeldung ist abgelaufen. Bitte noch einmal mit Passwort.',
+        t('Die Anmeldung ist abgelaufen. Bitte noch einmal mit Passwort.'),
       );
     }
     final address = clientAddress.of(request);
@@ -108,13 +109,13 @@ extension _AuthRoutes on FamioApi {
           tries: tries,
         );
       }
-      throw ApiException(401, 'invalid_code', 'Der Code stimmt nicht');
+      throw ApiException(401, 'invalid_code', t('Der Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
     _challenges.remove(id);
     final member = accounts.byId(challenge.userId);
     if (member == null) {
-      throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
     }
     return _session(member, challenge.device, method: 'totp');
   }
@@ -143,8 +144,9 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         409,
         'already_enabled',
-        'Zwei-Faktor ist schon eingerichtet – zum Wechseln des Handys zuerst '
-            'ausschalten.',
+        t(
+          'Zwei-Faktor ist schon eingerichtet – zum Wechseln des Handys zuerst ausschalten.',
+        ),
       );
     }
     final secret = mfa.begin(member.id);
@@ -185,7 +187,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         403,
         'two_factor_mandatory',
-        'Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht.',
+        t('Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht.'),
       );
     }
     await _checkSecondFactor(request, member, body, needPassword: true);
@@ -237,7 +239,7 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(
         403,
         'invalid_code',
-        passwordOk ? 'Der Code stimmt nicht' : 'Passwort falsch',
+        passwordOk ? t('Der Code stimmt nicht') : t('Passwort falsch'),
       );
     }
     throttle.succeeded(address, key);
@@ -248,7 +250,7 @@ extension _AuthRoutes on FamioApi {
       (throw ApiException(
         404,
         'sso_disabled',
-        'Single Sign-On nicht verfügbar',
+        t('Single Sign-On nicht verfügbar'),
       ));
 
   /// Starts a sign-in (or linking the own account) in the browser.
@@ -296,7 +298,7 @@ extension _AuthRoutes on FamioApi {
     if (done == null) return _json({'status': 'pending'});
     final member = accounts.byId(done.userId);
     if (member == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     if (done.mode == SsoMode.link) {
       return _json({'status': 'done', 'member': member.toJson()});
@@ -320,7 +322,7 @@ extension _AuthRoutes on FamioApi {
     final admin = _admin(request);
     final target = accounts.byId(id);
     if (target == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     mfa.disable(id);
     _audit(
@@ -334,7 +336,7 @@ extension _AuthRoutes on FamioApi {
     final admin = _admin(request);
     final target = accounts.byId(id);
     if (target == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     _sso.unlink(id);
     _audit(admin, 'hat Single Sign-On von ${_who(target)} gelöst');
@@ -361,8 +363,9 @@ extension _AuthRoutes on FamioApi {
     if (publicUrl == null) {
       throw ApiException.badRequest(
         'public_url_missing',
-        'Zuerst die öffentliche Adresse eintragen: der Anbieter leitet dorthin '
-            'zurück.',
+        t(
+          'Zuerst die öffentliche Adresse eintragen: der Anbieter leitet dorthin zurück.',
+        ),
       );
     }
     await _sso.save(

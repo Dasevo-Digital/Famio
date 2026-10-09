@@ -4,14 +4,14 @@ part of '../api.dart';
 extension _ListRoutes on FamioApi {
   ListSync get _lists =>
       lists ??
-      (throw ApiException(404, 'not_found', 'Listen-Anbindungen fehlen'));
+      (throw ApiException(404, 'not_found', t('Listen-Anbindungen fehlen')));
 
   /// Adults and children with full access connect their own accounts;
   /// guests and service accounts do not.
   FamilyMember _listMember(Request request) {
     final member = _member(request);
     if (member.isGuest) {
-      throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
+      throw ApiException(403, 'forbidden', t('Für Gäste nicht verfügbar'));
     }
     _checkWriter(member);
     return member;
@@ -76,7 +76,7 @@ extension _ListRoutes on FamioApi {
   Future<Response> _listSync(Request request, String id) async {
     final member = _listMember(request);
     if (!_lists.accounts(member.id).any((a) => a['id'] == id)) {
-      throw ApiException(404, 'not_found', 'Verbindung nicht gefunden');
+      throw ApiException(404, 'not_found', t('Verbindung nicht gefunden'));
     }
     await _lists.syncAccount(id, report: true);
     return _json({

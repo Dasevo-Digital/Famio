@@ -5,6 +5,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../api_exception.dart';
+import '../i18n.dart';
 
 /// Private ICS addresses of members. The random token in the URL is the only
 /// credential (calendar apps cannot log in), so it can be revoked per feed.
@@ -32,7 +33,7 @@ class CalendarFeeds {
     if (name.isEmpty) {
       throw ApiException.badRequest(
         'invalid_name',
-        'Bitte einen Namen angeben',
+        t('Bitte einen Namen angeben'),
       );
     }
     final id = newId();

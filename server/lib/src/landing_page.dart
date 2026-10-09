@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
 
+import 'i18n.dart';
+
 const _escape = HtmlEscape();
 
 /// The page's only script (password form); allowed by its hash, so no
@@ -13,7 +15,7 @@ const _script = """
         const body = Object.fromEntries(new FormData(e.target));
         const res = await fetch('api/me/password', {method: 'PUT', headers: {'content-type': 'application/json'}, body: JSON.stringify(body)});
         const data = await res.json();
-        document.getElementById('msg').textContent = res.ok ? 'Gespeichert.' : data.message;
+        document.getElementById('msg').textContent = res.ok ? e.target.dataset.saved : data.message;
         if (res.ok) e.target.reset();
       });
     """;
@@ -37,26 +39,27 @@ String landingPage({
   bool webApp = false,
 }) {
   final serverUrl = const HtmlEscape(HtmlEscapeMode.element).convert(address);
+  String h(String text) => _escape.convert(text);
   final memberSection = member == null
       ? '''
-    <p>Der Server läuft. Verbinde die Famio-App mit dieser Adresse:</p>
+    <p>${h(t('Der Server läuft. Verbinde die Famio-App mit dieser Adresse:'))}</p>
     <p class="url">$serverUrl</p>'''
       : '''
-    <p>Hallo <b>${_escape.convert(member.displayName)}</b>!</p>
-    <p>Die Famio-App verbindest du mit:</p>
+    <p>${t('Hallo {name}!', {'name': '<b>${h(member.displayName)}</b>'})}</p>
+    <p>${h(t('Die Famio-App verbindest du mit:'))}</p>
     <p class="url">$serverUrl</p>
-    <p>Benutzername: <b>${_escape.convert(member.username)}</b></p>
-    <h2>${hasPassword ? 'Passwort ändern' : 'Passwort für die App festlegen'}</h2>
-    <form id="pw">
-      ${hasPassword ? '<input type="password" name="currentPassword" placeholder="Aktuelles Passwort" required>' : ''}
-      <input type="password" name="newPassword" placeholder="Neues Passwort (min. 8 Zeichen)" minlength="8" required>
-      <button>Speichern</button>
+    <p>${h(t('Benutzername:'))} <b>${h(member.username)}</b></p>
+    <h2>${h(hasPassword ? t('Passwort ändern') : t('Passwort für die App festlegen'))}</h2>
+    <form id="pw" data-saved="${h(t('Gespeichert.'))}">
+      ${hasPassword ? '<input type="password" name="currentPassword" placeholder="${h(t('Aktuelles Passwort'))}" required>' : ''}
+      <input type="password" name="newPassword" placeholder="${h(t('Neues Passwort (min. 8 Zeichen)'))}" minlength="8" required>
+      <button>${h(t('Speichern'))}</button>
       <p id="msg"></p>
     </form>
     <script>$_script</script>''';
 
   return '''<!doctype html>
-<html lang="de">
+<html lang="$requestLanguage">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -74,9 +77,9 @@ String landingPage({
 </head>
 <body>
   <h1>Famio</h1>
-  <small>Server $version${addon ? ' · Port in den Add-on-Einstellungen änderbar' : ''}</small>
+  <small>Server $version${addon ? ' · ${h(t('Port in den Add-on-Einstellungen änderbar'))}' : ''}</small>
   $memberSection${webApp ? '''
-  <p><a href="app/">${addon ? '← Zurück zu Famio' : 'Famio im Browser öffnen'}</a></p>''' : ''}
+  <p><a href="app/">${h(addon ? t('← Zurück zu Famio') : t('Famio im Browser öffnen'))}</a></p>''' : ''}
 </body>
 </html>''';
 }
@@ -84,7 +87,7 @@ String landingPage({
 /// Shown in the browser after signing in with the single sign-on provider.
 String ssoResultPage({required bool ok, required String message}) =>
     '''<!doctype html>
-<html lang="de">
+<html lang="$requestLanguage">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -106,15 +109,17 @@ String ssoResultPage({required bool ok, required String message}) =>
 /// Public Store listing destination for account deletion. It intentionally
 /// carries no account data and sends a member to the signed-in web app, where
 /// the deletion is protected by password and, when enabled, MFA.
-String accountDeletionPage({required bool webApp}) =>
-    '''<!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Famio – Konto löschen</title><style>
+String accountDeletionPage({required bool webApp}) {
+  String h(String text) => _escape.convert(text);
+  return '''<!doctype html>
+<html lang="$requestLanguage"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famio – ${h(t('Konto löschen'))}</title><style>
 :root { color-scheme: light dark; --accent: #3f7d6e; }
 body { font-family: system-ui,sans-serif; max-width:34rem; margin:3rem auto; padding:0 1rem; line-height:1.5; }
 h1,a { color:var(--accent); } a { font-weight:600; }
-</style></head><body><h1>Famio-Konto löschen</h1>
-<p>Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.</p>
-${webApp ? '<p><a href="app/">Bei Famio anmelden und Konto löschen</a></p>' : '<p>Bitte Famio im Browser oder in der App öffnen und unter Einstellungen → Mein Konto löschen fortfahren.</p>'}
-<p>Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.</p>
+</style></head><body><h1>${h(t('Famio-Konto löschen'))}</h1>
+<p>${h(t('Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.'))}</p>
+${webApp ? '<p><a href="app/">${h(t('Bei Famio anmelden und Konto löschen'))}</a></p>' : '<p>${h(t('Bitte Famio im Browser oder in der App öffnen und unter Einstellungen → Mein Konto löschen fortfahren.'))}</p>'}
+<p>${h(t('Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.'))}</p>
 </body></html>''';
+}

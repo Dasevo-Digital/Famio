@@ -6,7 +6,7 @@ const _locationScope = 'location';
 extension _LocationRoutes on FamioApi {
   LocationService get _locations =>
       locations ??
-      (throw ApiException(404, 'not_found', 'Standort nicht verfügbar'));
+      (throw ApiException(404, 'not_found', t('Standort nicht verfügbar')));
 
   /// A phone reports its positions. Works with the app's session and with
   /// the phone's location-only token (see [_locationDeviceToken]).
@@ -19,10 +19,10 @@ extension _LocationRoutes on FamioApi {
             : accounts.userForToken(token) ??
                   accounts.userForToken(token, scope: _locationScope));
     if (member == null) {
-      throw ApiException(401, 'unauthorized', 'Nicht angemeldet');
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
     }
     if (member.isGuest) {
-      throw ApiException(403, 'forbidden', 'Für Gäste nicht verfügbar');
+      throw ApiException(403, 'forbidden', t('Für Gäste nicht verfügbar'));
     }
     _checkWriter(member);
     final body = await _body(request);
@@ -71,7 +71,7 @@ extension _LocationRoutes on FamioApi {
                 when a.at.millisecondsSinceEpoch > since && a.checkIn == null)
               {
                 'id': a.id,
-                'text': a.text(names[a.memberId] ?? 'Jemand'),
+                'text': a.text(names[a.memberId] ?? t('Jemand')),
                 'at': a.at.millisecondsSinceEpoch,
               },
         ],
@@ -86,7 +86,9 @@ extension _LocationRoutes on FamioApi {
     final device = (body['device'] as String? ?? 'Telefon').trim();
     final token = accounts.createSession(
       member.id,
-      device: '${device.isEmpty ? 'Telefon' : device} · Standort',
+      device: t('{device} · Standort', {
+        'device': device.isEmpty ? t('Telefon') : device,
+      }),
       scope: _locationScope,
     );
     return _json({'token': token}, status: 201);
@@ -98,14 +100,14 @@ extension _LocationRoutes on FamioApi {
     final body = await _body(request);
     final target = body['memberId'] as String? ?? member.id;
     if (accounts.byId(target) == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     final address = clientAddress.of(request);
     final key = '#loccode:${member.id}';
     _checkThrottle(address, key);
     if (!await _locations.checkCode(body['code'] as String? ?? '')) {
       throttle.failed(address, key);
-      throw ApiException(403, 'wrong_code', 'Der Eltern-Code stimmt nicht');
+      throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
     final minutes = body['minutes'] as int?;
@@ -127,7 +129,11 @@ extension _LocationRoutes on FamioApi {
     final body = await _body(request);
     final target = body['memberId'] as String? ?? member.id;
     if (target != member.id && !member.isAdmin) {
-      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Nur für Eltern (Administratoren)'),
+      );
     }
     _locations.resume(target);
     return _json({'ok': true});
@@ -139,7 +145,11 @@ extension _LocationRoutes on FamioApi {
     final query = request.url.queryParameters;
     final target = query['member'] ?? member.id;
     if (target != member.id && !member.isAdmin) {
-      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Nur für Eltern (Administratoren)'),
+      );
     }
     final now = DateTime.now();
     final oldest = now.subtract(_locations.retention);
@@ -165,10 +175,14 @@ extension _LocationRoutes on FamioApi {
     final member = _member(request);
     final target = request.url.queryParameters['member'] ?? member.id;
     if (target != member.id && !member.isAdmin) {
-      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Nur für Eltern (Administratoren)'),
+      );
     }
     if (accounts.byId(target) == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     return _json({'schedule': _locations.scheduleFor(target)?.toJson()});
   }
@@ -180,17 +194,21 @@ extension _LocationRoutes on FamioApi {
     final body = await _body(request);
     final target = body['memberId'] as String? ?? member.id;
     if (target != member.id && !member.isAdmin) {
-      throw ApiException(403, 'forbidden', 'Nur für Eltern (Administratoren)');
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Nur für Eltern (Administratoren)'),
+      );
     }
     if (accounts.byId(target) == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     final address = clientAddress.of(request);
     final key = '#loccode:${member.id}';
     _checkThrottle(address, key);
     if (!await _locations.checkCode(body['code'] as String? ?? '')) {
       throttle.failed(address, key);
-      throw ApiException(403, 'wrong_code', 'Der Eltern-Code stimmt nicht');
+      throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
     final raw = body['schedule'];
@@ -199,7 +217,7 @@ extension _LocationRoutes on FamioApi {
       if (raw is! Map) {
         throw ApiException.badRequest(
           'invalid_schedule',
-          'Ungültiger Zeitplan',
+          t('Ungültiger Zeitplan'),
         );
       }
       try {
@@ -207,7 +225,7 @@ extension _LocationRoutes on FamioApi {
       } on FormatException {
         throw ApiException.badRequest(
           'invalid_schedule',
-          'Ungültiger Zeitplan',
+          t('Ungültiger Zeitplan'),
         );
       }
     }

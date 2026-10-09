@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
+import '../i18n.dart';
 
 const _dav = 'DAV:';
 const _caldav = 'urn:ietf:params:xml:ns:caldav';
@@ -121,15 +122,29 @@ class DavClient {
       try {
         response = await _http.send(request).timeout(timeout);
       } on TimeoutException {
-        throw DavException('Zeitüberschreitung bei ${target.host}');
+        throw DavException(
+          t('Zeitüberschreitung bei {host}', {'host': target.host}),
+        );
       } on SocketException catch (e) {
-        throw DavException('${target.host} nicht erreichbar (${e.message})');
+        throw DavException(
+          t('{host} nicht erreichbar ({message})', {
+            'host': target.host,
+            'message': e.message,
+          }),
+        );
       } on HandshakeException {
         throw DavException(
-          'Verschlüsselung zu ${target.host} fehlgeschlagen (Zertifikat?)',
+          t('Verschlüsselung zu {host} fehlgeschlagen (Zertifikat?)', {
+            'host': target.host,
+          }),
         );
       } on http.ClientException catch (e) {
-        throw DavException('Verbindung zu ${target.host}: ${e.message}');
+        throw DavException(
+          t('Verbindung zu {host}: {message}', {
+            'host': target.host,
+            'message': e.message,
+          }),
+        );
       }
       final location = response.headers['location'];
       if (response.statusCode >= 300 &&
@@ -143,7 +158,9 @@ class DavClient {
       await for (final chunk in response.stream) {
         bytes.addAll(chunk);
         if (bytes.length > _maxBytes) {
-          throw DavException('Antwort von ${target.host} ist zu groß');
+          throw DavException(
+            t('Antwort von {host} ist zu groß', {'host': target.host}),
+          );
         }
       }
       if (response.statusCode == 401 && bearer != null && !renewed) {
@@ -153,8 +170,10 @@ class DavClient {
       }
       if (response.statusCode == 401) {
         throw DavException(
-          'Anmeldung bei ${target.host} fehlgeschlagen – Benutzername oder '
-          '(App-)Passwort prüfen',
+          t(
+            'Anmeldung bei {host} fehlgeschlagen – Benutzername oder (App-)Passwort prüfen',
+            {'host': target.host},
+          ),
           status: 401,
         );
       }
@@ -165,7 +184,7 @@ class DavClient {
         target,
       );
     }
-    throw DavException('Zu viele Weiterleitungen');
+    throw DavException(t('Zu viele Weiterleitungen'));
   }
 
   Future<(List<DavEntry>, Uri)> propfind(
@@ -184,7 +203,10 @@ class DavClient {
     );
     if (response.status != 207) {
       throw DavException(
-        'Unerwartete Antwort von ${url.host} (HTTP ${response.status})',
+        t('Unerwartete Antwort von {host} (HTTP {status})', {
+          'host': url.host,
+          'status': response.status,
+        }),
         status: response.status,
       );
     }
@@ -210,7 +232,7 @@ class DavClient {
       );
     }
     final self = entries.firstOrNull;
-    if (self == null) throw DavException('Keine Kalender gefunden');
+    if (self == null) throw DavException(t('Keine Kalender gefunden'));
     if (self.isA(_caldav, 'calendar')) {
       return [?_calendar(self, base)];
     }
@@ -229,14 +251,14 @@ class DavClient {
       }
       if (principal == null) {
         throw DavException(
-          'Unter dieser Adresse wurde kein CalDAV-Konto gefunden',
+          t('Unter dieser Adresse wurde kein CalDAV-Konto gefunden'),
         );
       }
       final principalUrl = base.resolve(principal);
       final (p, pBase) = await propfind(principalUrl, props);
       base = pBase;
       home = p.firstOrNull?.href_(_caldav, 'calendar-home-set');
-      if (home == null) throw DavException('Keine Kalender gefunden');
+      if (home == null) throw DavException(t('Keine Kalender gefunden'));
     }
     final homeUrl = base.resolve(home);
     final (list, listBase) = await propfind(homeUrl, props, depth: '1');
@@ -272,7 +294,7 @@ class DavClient {
     final name = e.text(_dav, 'displayname');
     return CalDavCalendarInfo(
       url: base.resolve(e.href).toString(),
-      name: name == null || name.isEmpty ? 'Kalender' : name,
+      name: name == null || name.isEmpty ? t('Kalender') : name,
       color: _color(e.text(_ical, 'calendar-color')),
       readOnly: readOnly,
     );
@@ -375,7 +397,9 @@ class DavClient {
     if (response.status == 412) throw DavConflict();
     if (response.status < 200 || response.status >= 300) {
       throw DavException(
-        'Termin konnte nicht gespeichert werden (HTTP ${response.status})',
+        t('Termin konnte nicht gespeichert werden (HTTP {status})', {
+          'status': response.status,
+        }),
         status: response.status,
       );
     }
@@ -392,7 +416,9 @@ class DavClient {
     if (response.status == 404 || response.status == 410) return;
     if (response.status < 200 || response.status >= 300) {
       throw DavException(
-        'Termin konnte nicht gelöscht werden (HTTP ${response.status})',
+        t('Termin konnte nicht gelöscht werden (HTTP {status})', {
+          'status': response.status,
+        }),
         status: response.status,
       );
     }
@@ -421,7 +447,7 @@ List<DavEntry> parseMultistatus(String body) {
   try {
     doc = XmlDocument.parse(body);
   } on XmlException {
-    throw DavException('Ungültige Antwort des Kalenderservers');
+    throw DavException(t('Ungültige Antwort des Kalenderservers'));
   }
   int statusOf(XmlElement? e) {
     final text = e?.innerText.trim() ?? '';

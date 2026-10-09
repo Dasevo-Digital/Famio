@@ -8,6 +8,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'api_exception.dart';
+import 'i18n.dart';
 
 /// User accounts and login sessions.
 class Accounts {
@@ -30,6 +31,23 @@ class Accounts {
     ))
       _member(row),
   ];
+
+  /// The app language of [id] for push messages (German if unknown).
+  String languageOf(String id) => _languages[id] ??=
+      _db.select('SELECT language FROM users WHERE id = ?', [
+            id,
+          ]).firstOrNull?['language']
+          as String? ??
+      'de';
+
+  final _languages = <String, String>{};
+
+  /// Remembers the language [id]'s app asked in.
+  void noteLanguage(String id, String language) {
+    if (languageOf(id) == language) return;
+    _db.execute('UPDATE users SET language = ? WHERE id = ?', [language, id]);
+    _languages[id] = language;
+  }
 
   FamilyMember? byId(String id) {
     final rows = _db.select('SELECT * FROM users WHERE id = ?', [id]);
@@ -57,7 +75,7 @@ class Accounts {
     if (_db.select('SELECT 1 FROM users WHERE username = ?', [
       username,
     ]).isNotEmpty) {
-      throw ApiException(409, 'username_taken', 'Benutzername ist vergeben');
+      throw ApiException(409, 'username_taken', t('Benutzername ist vergeben'));
     }
     final id = newId();
     _db.execute(
@@ -117,7 +135,7 @@ class Accounts {
   }) {
     final current = byId(userId);
     if (current == null) {
-      throw ApiException(404, 'not_found', 'Mitglied nicht gefunden');
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
     if (username != null) {
       username = username.trim();
@@ -126,17 +144,21 @@ class Accounts {
         username,
         userId,
       ]).isNotEmpty) {
-        throw ApiException(409, 'username_taken', 'Benutzername ist vergeben');
+        throw ApiException(
+          409,
+          'username_taken',
+          t('Benutzername ist vergeben'),
+        );
       }
     }
     if (displayName != null && displayName.trim().isEmpty) {
-      throw ApiException.badRequest('invalid_name', 'Der Name fehlt');
+      throw ApiException.badRequest('invalid_name', t('Der Name fehlt'));
     }
     _checkAdminRole(role ?? current.role, isAdmin ?? current.isAdmin);
     if (isAdmin == false && current.isAdmin && adminCount <= 1) {
       throw ApiException.badRequest(
         'last_admin',
-        'Es muss mindestens einen Administrator geben',
+        t('Es muss mindestens einen Administrator geben'),
       );
     }
     if (birthday != _keep) {
@@ -146,7 +168,7 @@ class Accounts {
       if (birthday != null && birthday != '' && parsed == null) {
         throw ApiException.badRequest(
           'invalid_birthday',
-          'Geburtstag als JJJJ-MM-TT oder --MM-TT angeben',
+          t('Geburtstag als JJJJ-MM-TT oder --MM-TT angeben'),
         );
       }
       _db.execute('UPDATE users SET birthday = ? WHERE id = ?', [
@@ -179,13 +201,13 @@ class Accounts {
     if (role == MemberRole.guest) {
       throw ApiException.badRequest(
         'guest_admin',
-        'Gäste können keine Administratoren sein',
+        t('Gäste können keine Administratoren sein'),
       );
     }
     if (role == MemberRole.service) {
       throw ApiException.badRequest(
         'service_admin',
-        'Dienstkonten können keine Administratoren sein',
+        t('Dienstkonten können keine Administratoren sein'),
       );
     }
   }
@@ -429,7 +451,7 @@ class Accounts {
     if (name.isEmpty || name.length > 60) {
       throw ApiException.badRequest(
         'invalid_name',
-        'Bitte einen Namen angeben (höchstens 60 Zeichen)',
+        t('Bitte einen Namen angeben (höchstens 60 Zeichen)'),
       );
     }
     const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789';
@@ -515,7 +537,7 @@ class Accounts {
     if (!RegExp(r'^[A-Za-z0-9._-]{2,32}$').hasMatch(username)) {
       throw ApiException.badRequest(
         'invalid_username',
-        'Benutzername: 2–32 Zeichen, nur Buchstaben, Ziffern, . _ -',
+        t('Benutzername: 2–32 Zeichen, nur Buchstaben, Ziffern, . _ -'),
       );
     }
   }
@@ -524,13 +546,13 @@ class Accounts {
     if (password.length < 8) {
       throw ApiException.badRequest(
         'weak_password',
-        'Das Passwort muss mindestens 8 Zeichen haben',
+        t('Das Passwort muss mindestens 8 Zeichen haben'),
       );
     }
     if (password.length > 256) {
       throw ApiException.badRequest(
         'weak_password',
-        'Das Passwort darf höchstens 256 Zeichen haben',
+        t('Das Passwort darf höchstens 256 Zeichen haben'),
       );
     }
   }
