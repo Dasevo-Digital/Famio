@@ -1,0 +1,61 @@
+# Was ist neu in Famio?
+
+Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
+ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
+stehen bei den Releases.
+
+## 1.0.11 – Sicherer abgleichen
+
+- Ändern zwei von euch dasselbe, ohne die Änderung des anderen zu sehen,
+  geht nichts mehr still verloren: Die Startseite zeigt „Eine Änderung hat
+  sich überschnitten“, ihr vergleicht und entscheidet.
+- Der Server prüft jede nächtliche Sicherung, ob sie sich wiederherstellen
+  lässt (Server-Verwaltung → Status → „Sicherung prüfen“).
+- Der Docker-Server läuft ohne root-Rechte.
+
+## 1.0.10 – Vorfreude und Ordnung
+
+- Countdown: Termine markieren, die Startseite zählt die Tage („12 Tage bis
+  Ostsee“).
+- Wochenvorschau sonntags um 18 Uhr mit Terminen, Fahrten und Geburtstagen.
+- Abfallkalender: wer wann welche Tonne rausstellt, mit Erinnerung am
+  Vorabend.
+- Packlisten an Reisen, je Person, mit Erinnerung vor der Abreise.
+- Fristen und Wartung: TÜV, Heizung, Tierarzt – rechtzeitig erinnert.
+- Meilensteine passend zum Alter; Fotos und Dokumente belegen höchstens
+  500 MB auf dem Gerät.
+
+## 1.0.9 – Wünsche und Fahrten
+
+- Wunschzettel für Geburtstag und Weihnachten; wer was besorgt, sieht der
+  Beschenkte nicht.
+- Im Termin festlegen, wer bringt und wer abholt – mit eigener Erinnerung.
+- Termine aus PDFs erkennen, etwa aus einem Elternbrief.
+- Notruf und Check-in auch in Home Assistant.
+
+## 1.0.8 – Notfallknopf
+
+- Notfallknopf für Kinder: lauter Alarm bei den Eltern mit Standort, Anruf,
+  Sirene und SMS ohne Internet.
+- Handy eines Kindes klingeln lassen, Check-in „Bin angekommen“, Warnung
+  bei schwachem Akku.
+- Ruhezeiten für Benachrichtigungen, Einladungen per QR-Code.
+- Einkauf nach Gängen sortiert, Feiertage und Schulferien im Kalender,
+  Pinnwand, Checklisten in Aufgaben und Termine aus Fotos.
+
+## 1.0.7
+
+- Beim Abgleich mit Bring! und anderen Listen-Apps tauchen erledigte
+  Einträge nicht mehr wieder auf.
+
+## 1.0.6
+
+- Die Leiste „Rückgängig“ verschwindet wieder von selbst.
+- Der Bring!-Abgleich versteht mehr Antworten der Bring!-Schnittstelle.
+
+## 1.0.5 – Andere Apps
+
+- Aufgaben und Einkaufslisten in Apple Erinnerungen, Bring! und Microsoft
+  To Do.
+- Wiederkehrende Aufgaben, Suche über alles, „Rückgängig“ beim Löschen und
+  „Meine Daten exportieren“.

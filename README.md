@@ -620,3 +620,10 @@ Gitea-Veröffentlichung liegen die Artefakte einschließlich `SHA256SUMS.txt` im
 Release-Ordner; `tool/publish_gitea_release.sh` prüft sie vor dem Upload und
 legt sie am Tag `v*` ab. Das Token bleibt ausschließlich in
 `GITEA_TOKEN` außerhalb des Repositories.
+
+**Was ist neu:** Je Version stehen ein bis acht Punkte in Nutzersprache in
+[`app/CHANGELOG.md`](app/CHANGELOG.md). `dart run tool/check_versions.dart`
+(auch vor jedem Push und in der CI) verlangt den Abschnitt zur Version in
+`VERSION`; `--notes` gibt ihn für den Anfang des Release-Textes aus. Die App
+zeigt den Abschnitt nach einem Update einmal an, unter Einstellungen → „Was
+ist neu?“ jederzeit.

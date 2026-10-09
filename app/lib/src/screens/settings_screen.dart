@@ -32,6 +32,7 @@ import 'security_screens.dart';
 import '../widgets/data_export.dart';
 import 'deadlines_screen.dart';
 import 'waste_screen.dart';
+import '../widgets/whats_new.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -353,6 +354,17 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListHeading('Über Famio', color: accent),
           VersionTile(api: engine.api),
+          ListTile(
+            leading: const Icon(AppIcons.sparkle),
+            title: const Text('Was ist neu?'),
+            subtitle: const Text('Die letzten Versionen in Kürze'),
+            onTap: () async {
+              final entries = await loadChangelog();
+              if (context.mounted) {
+                await showWhatsNew(context, entries.take(5).toList());
+              }
+            },
+          ),
         ],
       ),
     );

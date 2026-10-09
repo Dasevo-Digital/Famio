@@ -29,6 +29,7 @@ import '../sos/sos_device.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 import '../environment.dart';
+import '../widgets/whats_new.dart';
 
 Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.home => const HomeScreen(),
@@ -132,7 +133,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     SosDevice.onLaunch = _sosLaunch;
     // Kitchen tablet: straight to the wall display.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && AppScope.read(context).kioskAutostart) openKiosk(context);
+      if (!mounted) return;
+      if (AppScope.read(context).kioskAutostart) {
+        openKiosk(context);
+      } else {
+        // After an update, once: what is new.
+        maybeShowWhatsNew(context);
+      }
       _checkSosLaunch();
     });
   }
