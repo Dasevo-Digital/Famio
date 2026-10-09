@@ -254,6 +254,7 @@ class FamioApi {
       ..post('/api/admin/users', _createMember)
       ..get('/api/admin/backups', _backupStatus)
       ..post('/api/admin/backups', _backupNow)
+      ..post('/api/admin/backups/check', _backupCheck)
       ..get('/api/admin/invites', _openInvites)
       ..post('/api/admin/invites', _createInvite)
       ..delete('/api/admin/invites/<id>', _revokeInvite)

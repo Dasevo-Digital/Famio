@@ -94,7 +94,7 @@ class FileStore {
   int get maxTotalBytes => _maxTotalBytes();
 
   static const _chunk = 1024 * 1024;
-  static const _original = 'f';
+  static const originalKind = 'f';
 
   /// Number and total size of stored uploads.
   (int count, int bytes) usage() {
@@ -139,7 +139,7 @@ class FileStore {
     final buffer = BytesBuilder(copy: false);
     void flush() {
       if (buffer.isEmpty) return;
-      _putBlock(id, _original, seq++, buffer.takeBytes());
+      _putBlock(id, originalKind, seq++, buffer.takeBytes());
     }
 
     try {
@@ -214,7 +214,7 @@ class FileStore {
       file.owner == memberId || records.referencedFor(file.id, memberId);
 
   /// The file's contents, block by block.
-  Stream<List<int>> read(StoredFile file) => _readBlocks(file.id, _original);
+  Stream<List<int>> read(StoredFile file) => _readBlocks(file.id, originalKind);
 
   Stream<List<int>> _readBlocks(String id, String kind) async* {
     for (var seq = 0; ; seq++) {
@@ -251,7 +251,7 @@ class FileStore {
       // produced the same preview while this one was waiting.
       final cached = _readAll(file.id, kind);
       if (cached != null) return cached;
-      final bytes = _readAll(file.id, _original);
+      final bytes = _readAll(file.id, originalKind);
       if (bytes == null) return null;
       Uint8List? jpeg;
       try {
@@ -318,7 +318,12 @@ class FileStore {
           _deleteBlocks(id);
           for (var o = 0, seq = 0; o < bytes.length; o += _chunk, seq++) {
             final end = o + _chunk < bytes.length ? o + _chunk : bytes.length;
-            _putBlock(id, _original, seq, Uint8List.sublistView(bytes, o, end));
+            _putBlock(
+              id,
+              originalKind,
+              seq,
+              Uint8List.sublistView(bytes, o, end),
+            );
           }
           blobs.execute('COMMIT');
         } catch (_) {

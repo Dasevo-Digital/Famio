@@ -285,6 +285,11 @@ class FamioApiClient {
   /// Admins: a backup now.
   Future<void> backupNow() => _send('POST', 'api/admin/backups');
 
+  /// Admins: tries the newest backup (opens it with the data key, checks
+  /// it is intact and complete); `ok`, `problems`, `notes`, counts.
+  Future<Map<String, Object?>> checkBackup() =>
+      _send('POST', 'api/admin/backups/check');
+
   Future<void> revokeInvite(String id) =>
       _send('DELETE', 'api/admin/invites/${Uri.encodeComponent(id)}');
 

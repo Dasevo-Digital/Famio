@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/backup/backup_check.dart';
 import 'package:famio_server/src/backup/backup_job.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:path/path.dart' as p;
@@ -77,6 +78,133 @@ void main() {
     final (_, after) = await call('GET', 'api/admin/backups', token: admin);
     expect((after['backups'] as List).single['name'], backup['name']);
     expect(after['lastAt'], isNotNull);
+    // Tried right after it was made.
+    final check = after['lastCheck'] as Map;
+    expect((check['ok'], check['users'], check['records']), (true, 1, 1));
+    expect((after['backups'] as List).single['check']['ok'], isTrue);
+
+    // And again on request, without changing the backup.
+    final (checked, again) = await call(
+      'POST',
+      'api/admin/backups/check',
+      token: admin,
+    );
+    expect((checked, again['ok']), (200, true));
+    expect(again['problems'], isEmpty);
+    expect([for (final f in folder.listSync()) p.basename(f.path)]..sort(), [
+      'check.json',
+      'famio.db',
+      'files.db',
+    ]);
+  });
+
+  group('a backup check', () {
+    late Directory dir;
+    setUp(() => dir = Directory.systemTemp.createTempSync('famio_check_'));
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    /// A backup folder like the real ones, encrypted with [key].
+    var made = 0;
+    String backup({String? key, bool withBlob = true, int users = 1}) {
+      final folder = Directory(
+        p.join(dir.path, 'famio-20261009-03000${made++}'),
+      )..createSync();
+      final main = openEncrypted(p.join(folder.path, 'famio.db'), hexKey: key)
+        ..execute('CREATE TABLE users (id TEXT)')
+        ..execute('CREATE TABLE records (deleted INTEGER)')
+        ..execute('CREATE TABLE files (id TEXT)')
+        ..execute("INSERT INTO files VALUES ('f1')")
+        ..execute('INSERT INTO records VALUES (0), (0), (1)');
+      for (var i = 0; i < users; i++) {
+        main.execute("INSERT INTO users VALUES ('u$i')");
+      }
+      main.close();
+      final blobs = openEncrypted(p.join(folder.path, 'files.db'), hexKey: key)
+        ..execute(
+          'CREATE TABLE blobs (id TEXT, kind TEXT, seq INTEGER, data BLOB)',
+        );
+      if (withBlob) {
+        blobs.execute("INSERT INTO blobs VALUES ('f1', 'f', 0, x'00')");
+      }
+      blobs.close();
+      return folder.path;
+    }
+
+    final key = 'ab' * 32;
+
+    test('passes an intact encrypted backup', () {
+      final folder = backup(key: key);
+      final c = checkBackup(folder, hexKey: key, liveUsers: 1, liveRecords: 2);
+      expect(
+        (c.ok, c.users, c.records, c.files, c.filesChecked),
+        (true, 1, 2, 1, true),
+      );
+      expect(Directory(folder).listSync(), hasLength(2));
+    });
+
+    test('reads a copy of a WAL database without leaving files', () {
+      final source = openEncrypted(p.join(dir.path, 'live.db'), hexKey: key)
+        ..execute('PRAGMA journal_mode = WAL')
+        ..execute('CREATE TABLE users (id TEXT)')
+        ..execute('CREATE TABLE records (deleted INTEGER)')
+        ..execute('CREATE TABLE files (id TEXT)')
+        ..execute("INSERT INTO users VALUES ('u')");
+      final folder = Directory(p.join(dir.path, 'famio-20261009-040000'))
+        ..createSync();
+      source.execute("VACUUM INTO '${p.join(folder.path, 'famio.db')}'");
+      source.close();
+      final c = checkBackup(
+        folder.path,
+        hexKey: key,
+        liveUsers: 1,
+        liveRecords: 0,
+      );
+      expect((c.ok, c.users, c.filesChecked), (true, 1, false));
+      expect(
+        [for (final f in folder.listSync()) p.basename(f.path)],
+        ['famio.db'],
+      );
+    });
+
+    test('names what is wrong', () {
+      final folder = backup(key: key, withBlob: false);
+      expect(
+        checkBackup(folder, hexKey: key, liveUsers: 1, liveRecords: 2).problems,
+        ['1 Datei ohne Inhalt in files.db'],
+      );
+      final wrongKey = checkBackup(
+        folder,
+        hexKey: 'cd' * 32,
+        liveUsers: 1,
+        liveRecords: 2,
+      );
+      expect(wrongKey.ok, isFalse);
+      expect(wrongKey.problems.first, contains('Datenschlüssel'));
+      File(p.join(folder, 'famio.db')).writeAsStringSync('kaputt');
+      expect(
+        checkBackup(folder, hexKey: key, liveUsers: 1, liveRecords: 2).ok,
+        isFalse,
+      );
+    });
+
+    test('notes a backup with far fewer entries, wants members', () {
+      final folder = backup(users: 0);
+      final c = checkBackup(
+        folder,
+        hexKey: null,
+        liveUsers: 2,
+        liveRecords: 500,
+      );
+      expect(c.problems, ['Keine Mitglieder in der Sicherung']);
+      final fine = checkBackup(
+        backup(),
+        hexKey: null,
+        liveUsers: 1,
+        liveRecords: 500,
+      );
+      expect(fine.ok, isTrue);
+      expect(fine.notes.single, contains('2 statt 500'));
+    });
   });
 
   test('keeps a week of days and a month of weeks', () {
@@ -136,5 +264,6 @@ void main() {
     );
     expect(copy.select('SELECT name FROM sqlite_master'), isNotEmpty);
     copy.close();
+    expect(backup.check?.ok, isTrue);
   });
 }

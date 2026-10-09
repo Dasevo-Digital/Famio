@@ -167,6 +167,33 @@ class _BackupCardState extends State<_BackupCard> {
   Future<Map<String, Object?>> _load() =>
       AppScope.read(context).engine!.api.backupStatus();
 
+  Future<void> _check() async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final c = await AppScope.read(context).engine!.api.checkBackup();
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            c['ok'] == true
+                ? 'Sicherung geprüft: lässt sich wiederherstellen'
+                : 'Sicherung fehlerhaft: '
+                      '${(c['problems'] as List? ?? const []).join('; ')}',
+          ),
+        ),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _status = _load();
+        });
+      }
+    }
+  }
+
   Future<void> _now() async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
@@ -212,6 +239,7 @@ class _BackupCardState extends State<_BackupCard> {
           (sum, b) => sum + ((b['bytes'] as num?)?.toInt() ?? 0),
         );
         final error = s['lastError'] as String?;
+        final check = (s['lastCheck'] as Map?)?.cast<String, Object?>();
         return SoftCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,16 +269,70 @@ class _BackupCardState extends State<_BackupCard> {
                   style: TextStyle(color: theme.colorScheme.error),
                 ),
               ],
+              if (check != null) ...[
+                const SizedBox(height: 8),
+                _BackupCheckLine(check),
+              ],
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                icon: const Icon(AppIcons.hardDrives, size: 18),
-                label: const Text('Jetzt sichern'),
-                onPressed: _busy ? null : _now,
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(AppIcons.hardDrives, size: 18),
+                    label: const Text('Jetzt sichern'),
+                    onPressed: _busy ? null : _now,
+                  ),
+                  if (backups.isNotEmpty)
+                    OutlinedButton.icon(
+                      icon: const Icon(AppIcons.check, size: 18),
+                      label: const Text('Sicherung prüfen'),
+                      onPressed: _busy ? null : _check,
+                    ),
+                ],
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// The last test of a backup: restorable or what is wrong.
+class _BackupCheckLine extends StatelessWidget {
+  const _BackupCheckLine(this.check);
+
+  final Map<String, Object?> check;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ok = check['ok'] == true;
+    final at = DateTime.tryParse(check['at'] as String? ?? '');
+    final problems = (check['problems'] as List? ?? const []).cast<Object>();
+    final notes = (check['notes'] as List? ?? const []).cast<Object>();
+    final color = ok ? FamioColors.of(context).ink : theme.colorScheme.error;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(ok ? AppIcons.check : AppIcons.warningCircle, size: 18, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            [
+              ok
+                  ? 'Geprüft${at == null ? '' : ' ${_ago(at)}'}: lässt sich '
+                        'wiederherstellen (${check['records']} Einträge, '
+                        '${check['users']} Mitglieder, ${check['files']} '
+                        'Dateien${check['filesChecked'] == true ? '' : ', ohne Dateiinhalte'})'
+                  : 'Letzte Prüfung fehlgeschlagen: ${problems.join('; ')}',
+              ...notes,
+            ].join('\n'),
+            style: theme.textTheme.bodySmall?.copyWith(color: color),
+          ),
+        ),
+      ],
     );
   }
 }

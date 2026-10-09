@@ -203,6 +203,25 @@ void main() {
     await tap(tester, find.text('Status'));
     await waitFor(tester, find.textContaining(RegExp(r'^\d+\.\d+\.\d+$')));
 
+    // Back up, the backup is tried right away, and again on request.
+    await tester.dragUntilVisible(
+      find.text('Jetzt sichern'),
+      find.byType(ListView).last,
+      const Offset(0, -300),
+    );
+    await tap(tester, find.text('Jetzt sichern'));
+    await waitFor(
+      tester,
+      find.textContaining('lässt sich wiederherstellen'),
+      timeout: const Duration(seconds: 60),
+    );
+    await tap(tester, find.text('Sicherung prüfen'));
+    await waitFor(
+      tester,
+      find.text('Sicherung geprüft: lässt sich wiederherstellen'),
+      timeout: const Duration(seconds: 60),
+    );
+
     // Sign out so the installed app starts clean.
     await tap(tester, find.byTooltip('Zurück'));
     await waitFor(tester, find.text('Passwort ändern'));

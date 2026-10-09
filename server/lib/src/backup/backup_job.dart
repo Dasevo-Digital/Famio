@@ -7,19 +7,29 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../crypto/encrypted_db.dart';
+import 'backup_check.dart';
 
 /// One stored backup: a folder with `famio.db` and `files.db`.
 class BackupInfo {
-  const BackupInfo({required this.name, required this.at, required this.bytes});
+  const BackupInfo({
+    required this.name,
+    required this.at,
+    required this.bytes,
+    this.check,
+  });
 
   final String name;
   final DateTime at;
   final int bytes;
 
+  /// The last test of this backup, if any.
+  final BackupCheck? check;
+
   Map<String, Object?> toJson() => {
     'name': name,
     'at': at.toUtc().toIso8601String(),
     'bytes': bytes,
+    'check': ?check?.toJson(),
   };
 }
 
@@ -69,6 +79,9 @@ class BackupJob {
   String? lastError;
   var _running = false;
 
+  /// The latest test of a backup (see [verify]).
+  BackupCheck? lastCheck;
+
   static final _name = RegExp(r'^famio-(\d{8})-(\d{6})$');
 
   void start() {
@@ -114,6 +127,8 @@ class BackupJob {
       lastAt = DateTime.now();
       lastError = null;
       prune();
+      // A backup is only worth something if it can be restored.
+      await verify(name);
       return list().firstWhere((b) => b.name == name);
     } catch (e) {
       lastError = '$e';
@@ -124,6 +139,48 @@ class BackupJob {
       _running = false;
     }
   }
+
+  /// Tries backup [name] without changing it (read-only, in an isolate):
+  /// opens both databases with the data key, checks their integrity, that
+  /// there are members and every file has its contents, and compares with
+  /// the server now. The result is kept in the backup's folder.
+  Future<BackupCheck> verify(String name) async {
+    final d = folder(name);
+    if (d == null) throw ArgumentError.value(name, 'name', 'unbekannt');
+    int count(String sql) => db.select(sql).first.columnAt(0) as int;
+    final check = await _checkIn(
+      d.path,
+      hexKey,
+      count('SELECT count(*) FROM users'),
+      count('SELECT count(*) FROM records WHERE deleted = 0'),
+    );
+    final path = d.path;
+    check.save(path);
+    lastCheck = check;
+    if (!check.ok) {
+      onError?.call(
+        '[backup] Prüfung von $name fehlgeschlagen: '
+        '${check.problems.join('; ')}',
+      );
+    }
+    return check;
+  }
+
+  /// [checkBackup] in an isolate; static so the closure carries nothing
+  /// but these values (a database connection cannot be sent).
+  static Future<BackupCheck> _checkIn(
+    String path,
+    String? key,
+    int liveUsers,
+    int liveRecords,
+  ) => Isolate.run(
+    () => checkBackup(
+      path,
+      hexKey: key,
+      liveUsers: liveUsers,
+      liveRecords: liveRecords,
+    ),
+  );
 
   static String _quoted(String path) => "'${path.replaceAll("'", "''")}'";
 
@@ -203,7 +260,14 @@ class BackupJob {
         0,
         (sum, f) => sum + f.lengthSync(),
       );
-      found.add(BackupInfo(name: name, at: at, bytes: bytes));
+      found.add(
+        BackupInfo(
+          name: name,
+          at: at,
+          bytes: bytes,
+          check: BackupCheck.load(entry.path),
+        ),
+      );
     }
     return found..sort((a, b) => b.at.compareTo(a.at));
   }
@@ -254,10 +318,23 @@ class BackupJob {
     return d.existsSync() ? d : null;
   }
 
-  Map<String, Object?> status() => {
-    'dir': dir,
-    'lastAt': (lastAt ?? list().firstOrNull?.at)?.toUtc().toIso8601String(),
-    'lastError': lastError,
-    'backups': [for (final b in list()) b.toJson()],
-  };
+  Map<String, Object?> status() {
+    final backups = list();
+    final check =
+        lastCheck ??
+        [
+          for (final b in backups)
+            if (b.check != null) b.check!,
+        ].fold<BackupCheck?>(
+          null,
+          (a, c) => a == null || c.at.isAfter(a.at) ? c : a,
+        );
+    return {
+      'dir': dir,
+      'lastAt': (lastAt ?? backups.firstOrNull?.at)?.toUtc().toIso8601String(),
+      'lastError': lastError,
+      'lastCheck': check?.toJson(),
+      'backups': [for (final b in backups) b.toJson()],
+    };
+  }
 }
