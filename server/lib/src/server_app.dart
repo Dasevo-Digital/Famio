@@ -216,6 +216,7 @@ class FamioServerApp {
       dbSize: _dbSize,
       metrics: metrics,
       metricsToken: metricsToken,
+      selfCheckClient: httpClient ?? http.Client(),
       compactDatabase: _compact,
       auditLog: auditLog,
       requireTls: requireTls,

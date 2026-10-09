@@ -399,6 +399,14 @@ Bewusst offen bzw. Aufgabe des Betriebs:
 Administratoren verwalten den Server aus jeder angemeldeten App heraus
 (Einstellungen → Server-Verwaltung, API unter `/api/admin/…`):
 
+- **Einrichtung:** eine Checkliste (Status, und auf der Startseite
+  „Einrichtung abschließen“, bis alles erledigt oder ausgeblendet ist):
+  öffentliche Adresse – der Server ruft sich darüber selbst auf –, nur
+  HTTPS, Schlüssel getrennt von den Daten, Familie eingeladen, Zwei-Faktor
+  für den Admin, Benachrichtigungen erreichen alle, Sicherung aktuell und
+  geprüft, Bundesland für Feiertage; jeweils mit dem Ort, an dem es sich
+  ändern lässt (`GET /api/admin/setup`).
+
 - **Benutzer:** anlegen, Name/Benutzername/Farbe ändern, Admin-Rolle vergeben
   (mindestens ein Admin bleibt immer), Passwort zurücksetzen (meldet die
   Geräte des Mitglieds ab), einzelne Geräte oder alle abmelden, entfernen.

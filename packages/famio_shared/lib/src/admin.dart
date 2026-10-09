@@ -342,3 +342,41 @@ class ServerOverview {
     'locationCodeSet': locationCodeSet,
   };
 }
+
+/// One point of the setup checklist admins see after the first start
+/// (`GET /api/admin/setup`).
+class SetupStep {
+  const SetupStep({
+    required this.id,
+    required this.title,
+    required this.done,
+    required this.detail,
+    this.where = '',
+  });
+
+  factory SetupStep.fromJson(Map<String, Object?> json) => SetupStep(
+    id: json['id'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    done: json['done'] as bool? ?? false,
+    detail: json['detail'] as String? ?? '',
+    where: json['where'] as String? ?? '',
+  );
+
+  final String id;
+  final String title;
+  final bool done;
+
+  /// What is the matter, or what was found.
+  final String detail;
+
+  /// Where to change it ("Server-Verwaltung → Einstellungen").
+  final String where;
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'title': title,
+    'done': done,
+    'detail': detail,
+    if (where.isNotEmpty) 'where': where,
+  };
+}

@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:famio_shared/famio_shared.dart';
+import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -101,6 +102,7 @@ class FamioApi {
     this.backups,
     this.metrics,
     this.metricsToken,
+    this.selfCheckClient,
     required this.mfa,
     this.sso,
     this.webApp,
@@ -170,6 +172,10 @@ class FamioApi {
   /// Counters for `/metrics`; the endpoint exists only with [metricsToken].
   final ServerMetrics? metrics;
   final String? metricsToken;
+
+  /// For the setup checklist: can the server reach itself under its
+  /// public address?
+  final http.Client? selfCheckClient;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -263,6 +269,7 @@ class FamioApi {
       ..get('/api/admin/backups', _backupStatus)
       ..post('/api/admin/backups', _backupNow)
       ..post('/api/admin/backups/check', _backupCheck)
+      ..get('/api/admin/setup', _setupChecklist)
       ..get('/api/admin/invites', _openInvites)
       ..post('/api/admin/invites', _createInvite)
       ..delete('/api/admin/invites/<id>', _revokeInvite)

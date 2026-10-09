@@ -67,6 +67,8 @@ class _StatusView extends StatelessWidget {
             ),
           ),
         ),
+        ListHeading('Einrichtung', color: accent),
+        const SetupChecklist(),
         ListHeading('Sicherungen', color: accent),
         const _BackupCard(),
         ListHeading('Einträge', color: accent),
@@ -316,7 +318,11 @@ class _BackupCheckLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(ok ? AppIcons.check : AppIcons.warningCircle, size: 18, color: color),
+        Icon(
+          ok ? AppIcons.check : AppIcons.warningCircle,
+          size: 18,
+          color: color,
+        ),
         const SizedBox(width: 6),
         Expanded(
           child: Text(

@@ -21,6 +21,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
 import '../widgets/data_export.dart';
 import '../widgets/update_check.dart';
+import '../widgets/setup_checklist.dart';
 import 'invite_screens.dart' show InviteScreen;
 
 part 'admin/member_calendars.dart';

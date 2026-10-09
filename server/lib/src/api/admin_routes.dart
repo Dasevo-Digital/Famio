@@ -33,6 +33,206 @@ extension _AdminRoutes on FamioApi {
     );
   }
 
+  /// What an admin should still set up, with where to do it.
+  Future<Response> _setupChecklist(Request request) async {
+    final admin = _admin(request);
+    final s = settings.effective;
+    final steps = <SetupStep>[];
+
+    final url = s.publicUrl;
+    if (url == null || url.isEmpty) {
+      steps.add(
+        const SetupStep(
+          id: 'address',
+          title: 'Öffentliche Adresse',
+          done: false,
+          detail:
+              'Nicht eingetragen: Die Apps erreichen Famio nur im Heimnetz, '
+              'und Google oder iCloud können Famio-Kalender nicht abonnieren.',
+          where: 'Server-Verwaltung → Einstellungen → Öffentliche Adresse',
+        ),
+      );
+    } else {
+      final reachable = await _reachesItself(url);
+      steps.add(
+        SetupStep(
+          id: 'address',
+          title: 'Öffentliche Adresse',
+          done: reachable,
+          detail: reachable
+              ? '$url ist über HTTPS erreichbar.'
+              : '$url antwortet dem Server nicht. Reverse-Proxy, DNS und '
+                    'Zertifikat prüfen (im Heimnetz kann es auch am Router '
+                    'liegen, der Anfragen an sich selbst nicht zurückleitet).',
+          where: 'Reverse-Proxy (z. B. Nginx Proxy Manager)',
+        ),
+      );
+    }
+
+    final https = requireTls && (trustProxy || ingressAuth || tlsPort != null);
+    steps.add(
+      SetupStep(
+        id: 'https',
+        title: 'Nur verschlüsselt',
+        done: https,
+        detail: https
+            ? 'Anmeldung und Daten gehen nur über HTTPS.'
+            : 'Klartext aus dem Netz ist erlaubt (FAMIO_REQUIRE_TLS=false). '
+                  'Nur kurz für alte Apps nutzen.',
+        where: 'FAMIO_REQUIRE_TLS in der Server-Konfiguration',
+      ),
+    );
+
+    final keyOk = encryptedAtRest && keySeparate;
+    steps.add(
+      SetupStep(
+        id: 'key',
+        title: 'Schlüssel getrennt von den Daten',
+        done: keyOk,
+        detail: keyOk
+            ? 'Datenbank und Dateien sind verschlüsselt, der Schlüssel liegt '
+                  'woanders. Die Schlüsseldatei separat sichern!'
+            : encryptedAtRest
+            ? 'Der Schlüssel liegt im Datenordner: Wer eine Sicherung hat, '
+                  'hat auch den Schlüssel. FAMIO_KEY_FILE auf einen anderen Ort '
+                  'setzen.'
+            : 'Die Daten sind nicht verschlüsselt.',
+        where: 'FAMIO_KEY_FILE in der Server-Konfiguration',
+      ),
+    );
+
+    final family = [
+      for (final m in accounts.members())
+        if (!m.isService) m,
+    ];
+    steps.add(
+      SetupStep(
+        id: 'members',
+        title: 'Familie eingeladen',
+        done: family.length > 1,
+        detail: family.length > 1
+            ? '${family.length} Mitglieder.'
+            : 'Bisher nur du. Lade die Familie per QR-Code oder Link ein.',
+        where: 'Server-Verwaltung → Benutzer → Mitglied hinzufügen',
+      ),
+    );
+
+    final twoFactor = mfa.hasTotp(admin.id);
+    steps.add(
+      SetupStep(
+        id: 'twoFactor',
+        title: 'Zwei-Faktor für dich',
+        done: twoFactor,
+        detail: twoFactor
+            ? 'Dein Admin-Konto ist mit einem zweiten Faktor geschützt.'
+            : 'Admins sollten einen zweiten Faktor (Authenticator-App) '
+                  'einrichten.',
+        where: 'Einstellungen → Anmeldung & Sicherheit',
+      ),
+    );
+
+    if (push case final p?) {
+      final now = DateTime.now();
+      final reach = p.reachability([
+        for (final m in family) m.id,
+      ], noticeScope: _noticeScope);
+      final missing = [
+        for (final m in family)
+          if (reach[m.id] case final r?
+              when r.ntfy == 0 &&
+                  (r.ownPush == null ||
+                      now.difference(r.ownPush!) > const Duration(days: 2)))
+            m.displayName,
+      ];
+      steps.add(
+        SetupStep(
+          id: 'push',
+          title: 'Benachrichtigungen erreichen alle',
+          done: missing.isEmpty,
+          detail: missing.isEmpty
+              ? 'Jedes Mitglied bekommt Alarme und Erinnerungen aufs Handy.'
+              : 'Noch nicht erreichbar: ${missing.join(', ')}. In deren App '
+                    'die Benachrichtigungen einschalten (Famio-eigene oder '
+                    'ntfy).',
+          where: 'Einstellungen → Benachrichtigungen (in der jeweiligen App)',
+        ),
+      );
+    }
+
+    final job = backups;
+    if (job == null) {
+      steps.add(
+        const SetupStep(
+          id: 'backup',
+          title: 'Sicherung',
+          done: false,
+          detail:
+              'Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann '
+              'muss Proxmox, Home Assistant oder ein anderes Werkzeug das '
+              'Datenverzeichnis sichern.',
+          where: 'FAMIO_BACKUP_DIR in der Server-Konfiguration',
+        ),
+      );
+    } else {
+      final newest = job.list().firstOrNull;
+      final check = newest?.check;
+      final fresh =
+          newest != null &&
+          DateTime.now().difference(newest.at) < const Duration(hours: 36);
+      final ok = fresh && (check?.ok ?? false);
+      steps.add(
+        SetupStep(
+          id: 'backup',
+          title: 'Sicherung',
+          done: ok,
+          detail: ok
+              ? 'Die letzte nächtliche Sicherung ist geprüft und lässt sich '
+                    'wiederherstellen. Für den Ernstfall eine Kopie außer Haus '
+                    'aufbewahren.'
+              : newest == null
+              ? 'Noch keine Sicherung – die erste entsteht heute Nacht um '
+                    '3 Uhr oder mit „Jetzt sichern“.'
+              : !fresh
+              ? 'Die letzte Sicherung ist älter als einen Tag. Fehler: '
+                    '${job.lastError ?? 'keiner gemeldet'}.'
+              : 'Die letzte Sicherung ist noch nicht oder nicht erfolgreich '
+                    'geprüft.',
+          where: 'Server-Verwaltung → Status → Sicherungen',
+        ),
+      );
+    }
+
+    steps.add(
+      SetupStep(
+        id: 'region',
+        title: 'Bundesland für Feiertage',
+        done: s.holidayRegion != null,
+        detail: s.holidayRegion != null
+            ? 'Feiertage und Schulferien erscheinen im Kalender.'
+            : 'Ohne Bundesland zeigt der Kalender keine Feiertage und '
+                  'Schulferien.',
+        where: 'Server-Verwaltung → Einstellungen',
+      ),
+    );
+    return _json({'steps': [for (final s in steps) s.toJson()]});
+  }
+
+  /// Whether `<url>/api/health` answers as Famio within a few seconds.
+  Future<bool> _reachesItself(String url) async {
+    final client = selfCheckClient;
+    if (client == null) return false;
+    try {
+      final base = Uri.parse(url.endsWith('/') ? url : '$url/');
+      final response = await client
+          .get(base.resolve('api/health'))
+          .timeout(const Duration(seconds: 6));
+      return response.statusCode == 200 &&
+          response.body.contains('"name":"famio"');
+    } catch (_) {
+      return false;
+    }
+  }
+
   Future<Response> _adminSettings(Request request) async {
     final admin = _admin(request);
     final zone = location.name;

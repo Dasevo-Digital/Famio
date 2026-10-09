@@ -285,6 +285,16 @@ class FamioApiClient {
   /// Admins: a backup now.
   Future<void> backupNow() => _send('POST', 'api/admin/backups');
 
+  /// Admins: what is still to set up (address, HTTPS, key, family, two
+  /// factors, notifications, backups, holidays).
+  Future<List<SetupStep>> setupChecklist() async {
+    final json = await _send('GET', 'api/admin/setup');
+    return [
+      for (final s in json['steps'] as List? ?? const [])
+        SetupStep.fromJson((s as Map).cast()),
+    ];
+  }
+
   /// Admins: tries the newest backup (opens it with the data key, checks
   /// it is intact and complete); `ok`, `problems`, `notes`, counts.
   Future<Map<String, Object?>> checkBackup() =>

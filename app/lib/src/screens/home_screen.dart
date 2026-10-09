@@ -30,6 +30,7 @@ import '../data/waste.dart';
 import '../data/deadlines.dart';
 import 'deadlines_screen.dart';
 import 'conflicts_screen.dart';
+import '../widgets/setup_checklist.dart';
 import 'sos_screens.dart';
 
 /// Family dashboard: what matters today, one colorful tile per area.
@@ -179,6 +180,7 @@ class HomeScreen extends StatelessWidget {
                     const SosCard(),
                     const SizedBox(height: gap),
                   ],
+                  if (me.isAdmin) const SetupBanner(),
                   if (engine.conflicts case final open
                       when open.isNotEmpty) ...[
                     _ConflictBanner(count: open.length),
