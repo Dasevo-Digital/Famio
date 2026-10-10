@@ -60,6 +60,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Essen: Rezepte (Import von Webseiten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
+| Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |

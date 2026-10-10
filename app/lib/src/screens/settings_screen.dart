@@ -34,6 +34,7 @@ import 'deadlines_screen.dart';
 import 'waste_screen.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
+import 'year_review_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -364,6 +365,14 @@ class SettingsScreen extends StatelessWidget {
           ),
           ListHeading(context.l10n.settingsAbout, color: accent),
           VersionTile(api: engine.api),
+          ListTile(
+            leading: const Icon(AppIcons.calendarHeart),
+            title: Text(tr.yearReviewMenu),
+            subtitle: Text(tr.yearReviewMenuSubtitle),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const YearReviewScreen()),
+            ),
+          ),
           ListTile(
             leading: const Icon(AppIcons.sparkle),
             title: Text(context.l10n.settingsWhatsNew),

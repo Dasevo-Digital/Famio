@@ -5422,5 +5422,55 @@
     }
   },
   "adminPaperBuddySubtitle": "Familiendokumente mit Fristen aus PaperBuddy anzeigen",
-  "adminPaperBuddySaved": "PaperBuddy verbunden"
+  "adminPaperBuddySaved": "PaperBuddy verbunden",
+  "yearReviewMenu": "Jahresrückblick",
+  "yearReviewMenuSubtitle": "Meilensteine, Reisen, Fotos und Zahlen eines Jahres",
+  "yearReviewTitle": "Unser Jahr {year}",
+  "@yearReviewTitle": {
+    "placeholders": {
+      "year": {
+        "type": "Object?"
+      }
+    }
+  },
+  "yearReviewNumbers": "Das Jahr in Zahlen",
+  "yearReviewEvents": "Termine",
+  "yearReviewTasks": "Aufgaben erledigt",
+  "yearReviewChores": "Ämter erledigt",
+  "yearReviewMessages": "Nachrichten",
+  "yearReviewPhotos": "Fotos",
+  "yearReviewMeals": "Geplante Essen",
+  "yearReviewKids": "Die Kinder",
+  "yearReviewGrown": "{cm} cm gewachsen",
+  "@yearReviewGrown": {
+    "placeholders": {
+      "cm": {
+        "type": "Object?"
+      }
+    }
+  },
+  "yearReviewTrips": "Unterwegs",
+  "yearReviewChoreChampions": "Am fleißigsten bei den Ämtern",
+  "yearReviewEmpty": "Für {year} gibt es in Famio noch nichts zurückzublicken.",
+  "@yearReviewEmpty": {
+    "placeholders": {
+      "year": {
+        "type": "Object?"
+      }
+    }
+  },
+  "yearReviewPdf": "Als PDF speichern",
+  "yearReviewSaved": "Jahresrückblick gespeichert",
+  "yearReviewNotSaved": "Nicht gespeichert",
+  "yearReviewPrevious": "Jahr davor",
+  "yearReviewNext": "Jahr danach",
+  "yearReviewMadeWith": "Erstellt mit Famio",
+  "yearReviewHomeHint": "{year} im Rückblick ansehen",
+  "@yearReviewHomeHint": {
+    "placeholders": {
+      "year": {
+        "type": "Object?"
+      }
+    }
+  }
 }

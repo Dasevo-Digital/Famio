@@ -31,6 +31,8 @@ import '../data/deadlines.dart';
 import 'deadlines_screen.dart';
 import 'conflicts_screen.dart';
 import '../widgets/setup_checklist.dart';
+import '../data/year_review.dart';
+import 'year_review_screen.dart';
 import 'sos_screens.dart';
 import '../l10n.dart';
 
@@ -186,6 +188,10 @@ class HomeScreen extends StatelessWidget {
                   if (engine.conflicts case final open
                       when open.isNotEmpty) ...[
                     _ConflictBanner(count: open.length),
+                    const SizedBox(height: gap),
+                  ],
+                  if (_yearEnd(DateTime.now()) && !guest) ...[
+                    const _YearReviewBanner(),
                     const SizedBox(height: gap),
                   ],
                   for (var i = 0; i < tiles.length; i += columns) ...[
@@ -594,6 +600,40 @@ class _ConflictBanner extends StatelessWidget {
               count == 1
                   ? tr.homeChangeOverlappedPleaseTake
                   : tr.homeCountChangesOverlappedPlease(count),
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Icon(AppIcons.caretRight, color: c.inkSoft),
+        ],
+      ),
+    );
+  }
+}
+
+/// From mid-December to the end of January the start page points to the
+/// year in review.
+bool _yearEnd(DateTime now) =>
+    (now.month == 12 && now.day >= 15) || now.month == 1;
+
+class _YearReviewBanner extends StatelessWidget {
+  const _YearReviewBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final year = reviewYear(DateTime.now());
+    return SoftCard(
+      color: c.tint(FamioSection.home),
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => YearReviewScreen(year: year)),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.sparkle, color: c.strong(FamioSection.home)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              tr.yearReviewHomeHint(year),
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
