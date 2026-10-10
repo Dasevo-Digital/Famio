@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 1.0.14 – Eventos reconocidos en tres idiomas
+
+- «Reconocer eventos» lee ahora también fechas y horas en inglés y
+  español, como «October 16 at 7 pm» o «16 de octubre a las 19:00».
+- Los títulos sugeridos llegan sin días de la semana ni palabras de
+  relleno.
+
 ## 1.0.13 – Más conexiones
 
 - Los pasos de las tareas aparecen en Recordatorios de Apple como

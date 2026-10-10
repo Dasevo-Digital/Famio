@@ -4,6 +4,12 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 1.0.14 – Events recognised in three languages
+
+- “Recognise events” now also reads English and Spanish dates and times,
+  such as “October 16 at 7 pm” or “16 de octubre a las 19:00”.
+- Suggested titles come without weekdays and filler words.
+
 ## 1.0.13 – More connections
 
 - Steps of tasks appear in Apple Reminders as subtasks and in Microsoft

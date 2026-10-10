@@ -4,6 +4,12 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 1.0.14 – Termine in drei Sprachen erkennen
+
+- „Termine erkennen“ liest jetzt auch englische und spanische Datums- und
+  Zeitangaben, etwa „October 16 at 7 pm“ oder „16 de octubre a las 19:00“.
+- Vorgeschlagene Titel kommen ohne Wochentage und Füllwörter.
+
 ## 1.0.13 – Mehr Verbindungen
 
 - Unterpunkte von Aufgaben erscheinen in Apple Erinnerungen als
