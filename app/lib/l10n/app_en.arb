@@ -2071,5 +2071,15 @@
   "commonDevice": "Device",
   "mapShowEveryoneFollowAgain": "Show everyone and follow again",
   "mapMapProvider": "Map: {provider}",
-  "familyNameDropsOff": "{name} drops off"
+  "familyNameDropsOff": "{name} drops off",
+  "shoppingPreppSuiteMenu": "Shortages from PreppSuite …",
+  "shoppingPreppSuiteTitle": "Add from PreppSuite",
+  "shoppingPreppSuiteAsOf": "As of {date}",
+  "shoppingPreppSuiteGoal": "Supplies for {days} days: {water} l of water and {kcal} kcal are still missing.",
+  "shoppingPreppSuiteAlready": "already on the list",
+  "shoppingPreppSuiteAddCount": "Add ({count})",
+  "shoppingPreppSuiteAdded": "{n, plural, =1{1 item added} other{{n} items added}}",
+  "shoppingPreppSuiteNotAList": "This is not a shopping list from PreppSuite.",
+  "shoppingPreppSuiteNewer": "The file comes from a newer PreppSuite. Please update Famio.",
+  "shoppingPreppSuiteNothing": "Nothing is missing in PreppSuite right now."
 }

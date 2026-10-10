@@ -5265,5 +5265,49 @@
         "type": "Object?"
       }
     }
-  }
+  },
+  "shoppingPreppSuiteMenu": "Fehlbestände aus PreppSuite …",
+  "shoppingPreppSuiteTitle": "Aus PreppSuite übernehmen",
+  "shoppingPreppSuiteAsOf": "Stand: {date}",
+  "@shoppingPreppSuiteAsOf": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingPreppSuiteGoal": "Vorrat für {days} Tage: Es fehlen noch {water} l Wasser und {kcal} kcal.",
+  "@shoppingPreppSuiteGoal": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      },
+      "water": {
+        "type": "Object?"
+      },
+      "kcal": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingPreppSuiteAlready": "steht schon auf der Liste",
+  "shoppingPreppSuiteAddCount": "Übernehmen ({count})",
+  "@shoppingPreppSuiteAddCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "shoppingPreppSuiteAdded": "{n, plural, =1{1 Artikel übernommen} other{{n} Artikel übernommen}}",
+  "@shoppingPreppSuiteAdded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingPreppSuiteNotAList": "Das ist keine Einkaufsliste aus PreppSuite.",
+  "shoppingPreppSuiteNewer": "Die Datei stammt aus einer neueren PreppSuite. Bitte Famio aktualisieren.",
+  "shoppingPreppSuiteNothing": "In PreppSuite fehlt gerade nichts."
 }

@@ -44,7 +44,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
 | Aufgaben (fällig, zuständig, Erinnerung, Wiederholung) | ✅ |
-| Einkaufslisten | ✅ |
+| Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
@@ -206,6 +206,17 @@ neuere Änderung, Löschungen gehen in beide Richtungen.
   ihre „Schritte“, in beide Richtungen.
 - Eine Familie kann die Anbindungen in der Server-Verwaltung → Bereiche
   ganz abschalten.
+
+### PreppSuite
+
+Was im Vorrat von PreppSuite unter der Mindestmenge liegt, exportiert
+PreppSuite als Datei (Vorräte → Einkaufsliste → als Datei; auf dem Handy
+über „Teilen“ → „In Dateien sichern“). In Famio öffnet eine Einkaufsliste
+über ⋮ → „Fehlbestände aus PreppSuite …“ die Datei: Die Artikel stehen mit
+der fehlenden Menge zur Auswahl, was schon offen auf der Liste steht, ist
+nicht angehakt, und jeder Artikel bekommt einen Gang. Das Haushaltsziel
+(Wasser und Kalorien für die eingestellten Tage) steht als Hinweis dabei,
+nicht als eigene Zeile, damit dasselbe Wasser nicht doppelt gekauft wird.
   Für Mac, iPhone und iPad erstellt die App ein **Profil**
   („Apple-Gerät einrichten“) mit eigenem App-Passwort und der
   Zertifizierungsstelle des Servers: Apple Kalender sendet Passwörter nur

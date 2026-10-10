@@ -14,6 +14,7 @@ import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
+import '../widgets/preppsuite_import.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 
@@ -333,6 +334,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     engine.saveShoppingItem(i.copyWith(checked: false)),
                 ],
                 'template' => _saveTemplate(engine, list),
+                'preppsuite' => importFromPreppSuite(context, engine, list),
                 'rename' => _rename(engine, list),
                 'delete' => _deleteList(engine, list),
                 _ => null,
@@ -352,6 +354,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   value: 'template',
                   enabled: items.isNotEmpty,
                   child: Text(tr.shoppingSaveTemplate),
+                ),
+                PopupMenuItem(
+                  value: 'preppsuite',
+                  child: Text(tr.shoppingPreppSuiteMenu),
                 ),
                 PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
                 PopupMenuItem(

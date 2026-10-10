@@ -2071,5 +2071,15 @@
   "commonDevice": "Dispositivo",
   "mapShowEveryoneFollowAgain": "Mostrar a todos y volver a seguir",
   "mapMapProvider": "Mapa: {provider}",
-  "familyNameDropsOff": "{name} lleva"
+  "familyNameDropsOff": "{name} lleva",
+  "shoppingPreppSuiteMenu": "Faltas de PreppSuite …",
+  "shoppingPreppSuiteTitle": "Añadir desde PreppSuite",
+  "shoppingPreppSuiteAsOf": "Estado: {date}",
+  "shoppingPreppSuiteGoal": "Reservas para {days} días: aún faltan {water} l de agua y {kcal} kcal.",
+  "shoppingPreppSuiteAlready": "ya está en la lista",
+  "shoppingPreppSuiteAddCount": "Añadir ({count})",
+  "shoppingPreppSuiteAdded": "{n, plural, =1{1 artículo añadido} other{{n} artículos añadidos}}",
+  "shoppingPreppSuiteNotAList": "Esto no es una lista de la compra de PreppSuite.",
+  "shoppingPreppSuiteNewer": "El archivo procede de una versión más reciente de PreppSuite. Actualiza Famio.",
+  "shoppingPreppSuiteNothing": "Ahora mismo no falta nada en PreppSuite."
 }
