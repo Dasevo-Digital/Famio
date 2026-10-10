@@ -693,6 +693,11 @@ Einstellungen → Sprache lässt sie sich festlegen.
 - Android-, iOS- und macOS-eigene Texte (Benachrichtigungskanäle, Widgets,
   Berechtigungen) liegen in `res/values*/strings.xml` und
   `*.lproj/InfoPlist.strings`.
+- „Termine erkennen“ (aus Text, Foto oder PDF) liest deutsche, englische und
+  spanische Datums- und Zeitangaben („16.10. um 19 Uhr“, „October 16 at
+  7 pm“, „16 de octubre a las 19:00“). Mehrdeutiges wie „10/12/2026“ oder
+  ein „am“ hinter einer Zahl entscheidet die Sprache des Textes, sonst die
+  der App (`app/lib/src/data/event_extract.dart`).
 - Tests prüfen, dass alle drei Sprachen vollständig sind
   (`app/test/l10n_test.dart`, `shared_texts_test.dart`,
   `untranslated_test.dart`, `server/test/i18n_test.dart`);
