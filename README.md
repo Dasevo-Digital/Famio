@@ -50,7 +50,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
-| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung | ✅ |
+| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy | ✅ |
 | Kinder: Meilensteine, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
 | Baby-Protokoll: Stillen, Fläschchen, Schlaf, Windeln, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |
@@ -221,6 +221,21 @@ nach Stichworten (REWE → Lebensmittel, Stadtwerke → Wohnen …). Was schon
 importiert wurde (überlappende Auszüge) oder wohl schon von Hand
 eingetragen ist (gleicher Betrag binnen drei Tagen, oder eine monatliche
 Buchung in diesem Monat), ist nicht angehakt.
+
+### PaperBuddy
+
+Ein Admin verbindet unter Server-Verwaltung → Einstellungen → PaperBuddy
+das Dokumentenarchiv der Familie (PaperBuddy oder Paperless-ngx): Adresse,
+das Token eines PaperBuddy-Benutzers (am besten eines eigenen, der nur
+lesen darf) und ein Tag (Standard „Familie“). Der Server holt alle
+30 Minuten die Dokumente mit diesem Tag ab; sie erscheinen unter
+Dokumente schreibgeschützt mit dem Hinweis „PaperBuddy“, die Kategorie
+folgt dem Dokumenttyp, die nächste offene Frist aus PaperBuddy wird zur
+Ablauf-Erinnerung. Ablage, Volltext und Änderungen bleiben in PaperBuddy;
+die Datei holt der Famio-Server erst, wenn ein Mitglied sie öffnet, und nur
+für Mitglieder, die das Dokument sehen (Auswahl in der Einstellung, sonst
+alle Erwachsenen). Das Token bleibt auf dem Famio-Server. Wird ein Tag in
+PaperBuddy entfernt, verschwindet das Dokument beim nächsten Abgleich.
 
 ### PreppSuite
 

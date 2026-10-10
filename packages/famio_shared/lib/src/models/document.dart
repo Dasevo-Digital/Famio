@@ -36,6 +36,7 @@ class FamilyDocument {
     this.expiresAt,
     this.visibleTo,
     this.createdAt,
+    this.source,
   });
 
   factory FamilyDocument.fromRecord(SyncRecord r) => FamilyDocument(
@@ -54,6 +55,7 @@ class FamilyDocument {
     expiresAt: _date(r.data['expiresAt']),
     visibleTo: r.visibleTo,
     createdAt: _date(r.data['createdAt']),
+    source: r.data['source'] as String?,
   );
 
   final String id;
@@ -72,6 +74,12 @@ class FamilyDocument {
   final List<String>? visibleTo;
   final DateTime? createdAt;
 
+  /// Where it comes from if not from Famio (`paperbuddy`): filed and
+  /// edited there, read-only here.
+  final String? source;
+
+  bool get fromArchive => source != null;
+
   Map<String, Object?> toData() => {
     'title': title,
     'category': category.name,
@@ -80,6 +88,7 @@ class FamilyDocument {
     'memberIds': memberIds,
     'expiresAt': expiresAt == null ? null : _day(expiresAt!),
     'createdAt': createdAt?.toUtc().toIso8601String(),
+    'source': ?source,
     SyncRecord.visibilityKey: visibleTo,
   };
 }

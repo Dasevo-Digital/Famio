@@ -5396,5 +5396,31 @@
       }
     }
   },
-  "nutritionStop": "Open Food Facts nicht mehr fragen"
+  "nutritionStop": "Open Food Facts nicht mehr fragen",
+  "docsFromPaperBuddy": "Aus PaperBuddy: Ablage und Änderungen dort.",
+  "adminPaperBuddy": "PaperBuddy",
+  "adminPaperBuddyIntro": "Dokumente aus PaperBuddy mit einem bestimmten Tag erscheinen in Famio unter Dokumente, mit Ablauf-Erinnerung aus den Fristen. Ablage und Volltext bleiben in PaperBuddy; die Datei holt der Famio-Server erst beim Öffnen.",
+  "adminPaperBuddyUrl": "Adresse (z. B. http://192.168.1.20:8000)",
+  "adminPaperBuddyToken": "Token eines PaperBuddy-Benutzers",
+  "adminPaperBuddyTokenKept": "Token gespeichert – leer lassen, um es zu behalten",
+  "adminPaperBuddyTokenHint": "In PaperBuddy unter Profil → Token erzeugen; am besten ein eigener Benutzer, der nur lesen darf.",
+  "adminPaperBuddyTag": "Tag",
+  "adminPaperBuddyWho": "Wer sieht die Dokumente? (keine Auswahl: alle Erwachsenen)",
+  "adminPaperBuddyConnect": "Verbinden",
+  "adminPaperBuddySyncNow": "Jetzt abgleichen",
+  "adminPaperBuddyRemove": "Verbindung entfernen",
+  "adminPaperBuddyRemoveText": "Die PaperBuddy-Dokumente verschwinden aus Famio. In PaperBuddy bleibt alles erhalten.",
+  "adminPaperBuddyStatus": "{count} Dokumente, abgeglichen {when}",
+  "@adminPaperBuddyStatus": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      },
+      "when": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminPaperBuddySubtitle": "Familiendokumente mit Fristen aus PaperBuddy anzeigen",
+  "adminPaperBuddySaved": "PaperBuddy verbunden"
 }

@@ -303,11 +303,12 @@ extension FamilyData on SyncEngine {
 
   // --- documents ------------------------------------------------------------
 
-  List<FamilyDocument> get documents =>
-      records(Collections.documents).map(FamilyDocument.fromRecord).toList()
-        ..sort(
-          (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-        );
+  /// The family's documents, with those of a connected PaperBuddy archive
+  /// (read-only, see [FamilyDocument.fromArchive]).
+  List<FamilyDocument> get documents => [
+    for (final c in [Collections.documents, Collections.externalDocuments])
+      ...records(c).map(FamilyDocument.fromRecord),
+  ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
   void saveDocument(FamilyDocument d) =>
       put(Collections.documents, d.id, d.toData());

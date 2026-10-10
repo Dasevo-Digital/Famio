@@ -2116,5 +2116,21 @@
   "nutritionOffline": "Open Food Facts no está disponible ahora mismo.",
   "nutritionWeightTitle": "Peso",
   "nutritionWeightOf": "1 × {what} en g",
-  "nutritionStop": "Dejar de consultar Open Food Facts"
+  "nutritionStop": "Dejar de consultar Open Food Facts",
+  "docsFromPaperBuddy": "De PaperBuddy: se archiva y se edita allí.",
+  "adminPaperBuddy": "PaperBuddy",
+  "adminPaperBuddyIntro": "Los documentos de PaperBuddy con una etiqueta determinada aparecen en Famio en Documentos, con avisos de vencimiento según sus plazos. El archivo y el texto completo se quedan en PaperBuddy; el servidor de Famio descarga un archivo solo al abrirlo.",
+  "adminPaperBuddyUrl": "Dirección (p. ej. http://192.168.1.20:8000)",
+  "adminPaperBuddyToken": "Token de un usuario de PaperBuddy",
+  "adminPaperBuddyTokenKept": "Token guardado: déjalo vacío para conservarlo",
+  "adminPaperBuddyTokenHint": "Créalo en PaperBuddy en Perfil → token; mejor un usuario aparte que solo pueda leer.",
+  "adminPaperBuddyTag": "Etiqueta",
+  "adminPaperBuddyWho": "¿Quién ve los documentos? (sin selección: todos los adultos)",
+  "adminPaperBuddyConnect": "Conectar",
+  "adminPaperBuddySyncNow": "Sincronizar ahora",
+  "adminPaperBuddyRemove": "Quitar conexión",
+  "adminPaperBuddyRemoveText": "Los documentos de PaperBuddy desaparecen de Famio. En PaperBuddy no se borra nada.",
+  "adminPaperBuddyStatus": "{count} documentos, sincronizado {when}",
+  "adminPaperBuddySubtitle": "Mostrar documentos familiares con plazos de PaperBuddy",
+  "adminPaperBuddySaved": "PaperBuddy conectado"
 }

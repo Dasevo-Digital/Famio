@@ -30,6 +30,9 @@ extension _FileRoutes on FamioApi {
 
   Future<Response> _download(Request request, String id) async {
     final member = _auth(request);
+    if (id.startsWith(PaperBuddyLink.idPrefix)) {
+      return _paperBuddyFile(request, id, member);
+    }
     final file = files.get(id);
     // Same answer for "missing" and "forbidden": ids reveal nothing.
     if (file == null || !files.mayRead(file, member.id)) {

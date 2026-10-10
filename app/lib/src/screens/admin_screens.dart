@@ -26,6 +26,7 @@ import 'invite_screens.dart' show InviteScreen;
 import '../l10n.dart';
 
 part 'admin/member_calendars.dart';
+part 'admin/paperbuddy_dialog.dart';
 part 'admin/settings_form.dart';
 part 'admin/shared_widgets.dart';
 part 'admin/sso_dialog.dart';

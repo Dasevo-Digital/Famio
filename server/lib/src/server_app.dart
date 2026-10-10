@@ -39,6 +39,7 @@ import 'settings.dart';
 import 'crypto/encrypted_db.dart';
 import 'remote_url_policy.dart';
 import 'dav/step_marks.dart';
+import 'documents/paperbuddy.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
 class FamioServerApp {
@@ -202,6 +203,13 @@ class FamioServerApp {
     );
     // A fresh server over the internet may only be claimed with this code.
     setupCode = accounts.hasUsers ? null : newSetupCode();
+    paperBuddy = PaperBuddyLink(
+      db: db,
+      records: records,
+      accounts: accounts,
+      onChanged: () => hub.notifyRev(records.currentRev),
+      client: httpClient,
+    );
     api = FamioApi(
       accounts: accounts,
       records: records,
@@ -220,6 +228,7 @@ class FamioServerApp {
       selfCheckClient: httpClient ?? http.Client(),
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
+      paperBuddy: paperBuddy,
       auditLog: auditLog,
       requireTls: requireTls,
       tlsPort: tlsPort,
@@ -281,6 +290,7 @@ class FamioServerApp {
   late final RecordStore records;
   late final CalendarAccess calendarAccess;
   late final CalendarImporter importer;
+  late final PaperBuddyLink paperBuddy;
   late final CalDavSync caldav;
 
   /// Bring! and Microsoft To Do connections.
@@ -327,6 +337,7 @@ class FamioServerApp {
   /// Periodic jobs (calendar import); not started in tests.
   void startBackgroundJobs() {
     importer.start();
+    paperBuddy.start();
     caldav.start();
     lists.start();
     exports.cleanUp();
@@ -353,6 +364,7 @@ class FamioServerApp {
     _gc?.cancel();
     backups?.stop();
     importer.stop();
+    paperBuddy.stop();
     caldav.stop();
     lists.stop();
     allowances.stop();

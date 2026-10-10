@@ -589,6 +589,16 @@ class _SettingsFormState extends State<_SettingsForm> {
                 child: Text(tr.commonSetUp),
               ),
             ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.folderSimpleStar),
+              title: Text(tr.adminPaperBuddy),
+              subtitle: Text(tr.adminPaperBuddySubtitle),
+              trailing: TextButton(
+                onPressed: _busy ? null : () => showPaperBuddyDialog(context),
+                child: Text(tr.commonSetUp),
+              ),
+            ),
             ListHeading(tr.adminAreas, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,

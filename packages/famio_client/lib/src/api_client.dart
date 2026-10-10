@@ -574,6 +574,29 @@ class FamioApiClient {
 
   Future<void> deleteSsoConfig() => _send('DELETE', 'api/admin/sso');
 
+  /// The PaperBuddy connection (without its token) and the last sync.
+  Future<Map<String, Object?>> paperBuddy() =>
+      _send('GET', 'api/admin/paperbuddy');
+
+  /// Connects and syncs; an empty [token] keeps the stored one.
+  Future<Map<String, Object?>> savePaperBuddy({
+    required String url,
+    required String token,
+    required String tag,
+    required List<String> memberIds,
+  }) => _send('PUT', 'api/admin/paperbuddy', {
+    'url': url,
+    'token': token,
+    'tag': tag,
+    'memberIds': memberIds,
+  });
+
+  Future<Map<String, Object?>> deletePaperBuddy() =>
+      _send('DELETE', 'api/admin/paperbuddy');
+
+  Future<Map<String, Object?>> syncPaperBuddy() =>
+      _send('POST', 'api/admin/paperbuddy/sync');
+
   Future<void> signOutUser(String id, {String? sessionId}) => _send(
     'DELETE',
     sessionId == null

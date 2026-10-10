@@ -67,7 +67,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       actions: const [SyncStatusIcon()],
       floating: AddButton(color: color, tooltip: tr.docsAdd, onPressed: _add),
       body: DataBuilder(
-        collections: const {Collections.documents, 'members'},
+        collections: const {
+          Collections.documents,
+          Collections.externalDocuments,
+          'members',
+        },
         builder: (context, engine) {
           final all = engine.documents;
           final query = _search.text.trim().toLowerCase();
@@ -197,7 +201,8 @@ class _DocumentCard extends StatelessWidget {
                 Text(
                   [
                     document.category.label,
-                    if (document.file != null)
+                    if (document.fromArchive) 'PaperBuddy',
+                    if (document.file != null && document.file!.size > 0)
                       fileSizeLabel(document.file!.size),
                   ].join(' · '),
                   style: theme.textTheme.bodySmall,
@@ -289,6 +294,11 @@ class _DocumentCard extends StatelessWidget {
                     : tr.commonVisibleTo(_names(engine, document.visibleTo!)),
                 style: Theme.of(sheet).textTheme.bodySmall,
               ),
+              if (document.fromArchive)
+                Text(
+                  tr.docsFromPaperBuddy,
+                  style: Theme.of(sheet).textTheme.bodySmall,
+                ),
               const SizedBox(height: 20),
               Wrap(
                 spacing: 10,
@@ -301,53 +311,55 @@ class _DocumentCard extends StatelessWidget {
                       color: color,
                       onPressed: () => openFileRef(context, file),
                     ),
-                  OutlinedButton.icon(
-                    icon: const Icon(AppIcons.pencilSimple, size: 18),
-                    label: Text(tr.commonEdit),
-                    onPressed: () {
-                      Navigator.pop(sheet);
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => DocumentEditor(existing: document),
-                        ),
-                      );
-                    },
-                  ),
-                  TextButton.icon(
-                    icon: const Icon(AppIcons.trash, size: 18),
-                    label: Text(tr.commonDelete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: Theme.of(sheet).colorScheme.error,
-                    ),
-                    onPressed: () async {
-                      final ok = await showDialog<bool>(
-                        context: sheet,
-                        builder: (d) => AlertDialog(
-                          title: Text(tr.commonDeleteName(document.title)),
-                          content: Text(tr.docsDocumentRemovedEveryone),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(d, false),
-                              child: Text(tr.commonCancel),
-                            ),
-                            FilledButton(
-                              onPressed: () => Navigator.pop(d, true),
-                              child: Text(tr.commonDelete),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (ok == true && sheet.mounted) {
-                        deleteWithUndo(
-                          sheet,
-                          what: document.title,
-                          collections: const {Collections.documents},
-                          delete: () => engine.deleteDocument(document.id),
-                        );
+                  if (!document.fromArchive) ...[
+                    OutlinedButton.icon(
+                      icon: const Icon(AppIcons.pencilSimple, size: 18),
+                      label: Text(tr.commonEdit),
+                      onPressed: () {
                         Navigator.pop(sheet);
-                      }
-                    },
-                  ),
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => DocumentEditor(existing: document),
+                          ),
+                        );
+                      },
+                    ),
+                    TextButton.icon(
+                      icon: const Icon(AppIcons.trash, size: 18),
+                      label: Text(tr.commonDelete),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Theme.of(sheet).colorScheme.error,
+                      ),
+                      onPressed: () async {
+                        final ok = await showDialog<bool>(
+                          context: sheet,
+                          builder: (d) => AlertDialog(
+                            title: Text(tr.commonDeleteName(document.title)),
+                            content: Text(tr.docsDocumentRemovedEveryone),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(d, false),
+                                child: Text(tr.commonCancel),
+                              ),
+                              FilledButton(
+                                onPressed: () => Navigator.pop(d, true),
+                                child: Text(tr.commonDelete),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (ok == true && sheet.mounted) {
+                          deleteWithUndo(
+                            sheet,
+                            what: document.title,
+                            collections: const {Collections.documents},
+                            delete: () => engine.deleteDocument(document.id),
+                          );
+                          Navigator.pop(sheet);
+                        }
+                      },
+                    ),
+                  ],
                 ],
               ),
             ],

@@ -558,6 +558,14 @@ const sharedEs = <String, String>{
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Demasiados intentos fallidos. Inténtalo de nuevo dentro de {minutes} minuto(s).",
   "Server|Nicht angemeldet": "Sesión no iniciada",
+  "Server|Nicht verfügbar": "No disponible",
+  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.": "Introduce el token de un usuario de PaperBuddy.",
+  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.": "La dirección de PaperBuddy empieza por http:// o https://.",
+  "Server|Keine Verbindung zu PaperBuddy ({error}).": "No hay conexión con PaperBuddy ({error}).",
+  "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rechaza el token.",
+  "Server|PaperBuddy antwortet mit Fehler {status}.": "PaperBuddy responde con el error {status}.",
+  "Server|Unter dieser Adresse antwortet kein PaperBuddy.": "En esta dirección no responde ningún PaperBuddy.",
+  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.": "En PaperBuddy no existe la etiqueta «{tag}».",
   "Server|Belegt": "Ocupado",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Confírmalo con el código de la app de autenticación.",

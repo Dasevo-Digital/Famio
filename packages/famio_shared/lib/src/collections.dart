@@ -26,6 +26,10 @@ abstract final class Collections {
   static const chatMessages = 'chat_messages';
   static const chatReads = 'chat_reads';
   static const documents = 'documents';
+
+  /// Documents of a connected PaperBuddy archive; written by the server
+  /// only (see the PaperBuddy connection in the server administration).
+  static const externalDocuments = 'external_documents';
   static const children = 'children';
   static const childEntries = 'child_entries';
 
@@ -191,6 +195,7 @@ abstract final class Collections {
     calendarSubscriptions,
     externalEvents,
     calendarSyncStatus,
+    externalDocuments,
     places,
     memberLocations,
     locationAlerts,
@@ -251,6 +256,7 @@ abstract final class Collections {
   /// Collections clients may read but never write.
   static const serverOwned = {
     externalEvents,
+    externalDocuments,
     calendarSyncStatus,
     memberLocations,
     locationAlerts,

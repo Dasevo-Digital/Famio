@@ -25,6 +25,7 @@ import 'dav/apple_profile.dart';
 import 'calendar/calendar_access.dart';
 import 'dav/caldav_server.dart';
 import 'dav/step_marks.dart';
+import 'documents/paperbuddy.dart';
 import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
 import 'dav/google_oauth.dart';
@@ -57,6 +58,7 @@ part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
 part 'api/overview_routes.dart';
+part 'api/paperbuddy_routes.dart';
 part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
@@ -87,6 +89,7 @@ class FamioApi {
     this.dbSize,
     this.compactDatabase,
     this.davSteps,
+    this.paperBuddy,
     this.auditLog,
     this.requireTls = false,
     this.tlsPort,
@@ -211,6 +214,9 @@ class FamioApi {
 
   /// Remembers checklist steps calendar apps saw (see [CalDavServer]).
   final DavStepMarks? davSteps;
+
+  /// The family's PaperBuddy documents, if an admin connected it.
+  final PaperBuddyLink? paperBuddy;
   final _startedAt = DateTime.now();
 
   /// The family's time zone (calendar feeds, floating imported times).
@@ -293,6 +299,10 @@ class FamioApi {
       ..delete('/api/admin/users/<id>/two-factor', _adminResetTwoFactor)
       ..delete('/api/admin/users/<id>/sso', _adminUnlinkSso)
       ..get('/api/admin/sso', _adminSso)
+      ..get('/api/admin/paperbuddy', _adminPaperBuddy)
+      ..put('/api/admin/paperbuddy', _adminSavePaperBuddy)
+      ..delete('/api/admin/paperbuddy', _adminDeletePaperBuddy)
+      ..post('/api/admin/paperbuddy/sync', _adminSyncPaperBuddy)
       ..put('/api/admin/sso', _adminSaveSso)
       ..delete('/api/admin/sso', _adminDeleteSso)
       ..post('/api/sync', _sync)

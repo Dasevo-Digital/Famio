@@ -281,6 +281,7 @@ class ReminderService {
     Collections.contacts,
     Collections.pregnancies,
     Collections.documents,
+    Collections.externalDocuments,
     Collections.routines,
     Collections.routineRuns,
     Collections.medications,

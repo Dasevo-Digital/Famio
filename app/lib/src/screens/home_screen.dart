@@ -101,6 +101,7 @@ class HomeScreen extends StatelessWidget {
           Collections.mealPlan,
           Collections.budgetEntries,
           Collections.documents,
+          Collections.externalDocuments,
           Collections.places,
           Collections.memberLocations,
           Collections.chores,

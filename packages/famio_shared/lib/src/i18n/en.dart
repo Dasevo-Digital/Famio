@@ -537,6 +537,14 @@ const sharedEn = <String, String>{
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Too many failed attempts. Please try again in {minutes} minute(s).",
   "Server|Nicht angemeldet": "Not signed in",
+  "Server|Nicht verfügbar": "Not available",
+  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.": "Please enter the token of a PaperBuddy user.",
+  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.": "The PaperBuddy address starts with http:// or https://.",
+  "Server|Keine Verbindung zu PaperBuddy ({error}).": "No connection to PaperBuddy ({error}).",
+  "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rejects the token.",
+  "Server|PaperBuddy antwortet mit Fehler {status}.": "PaperBuddy answers with error {status}.",
+  "Server|Unter dieser Adresse antwortet kein PaperBuddy.": "No PaperBuddy answers at this address.",
+  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.": "PaperBuddy has no tag “{tag}”.",
   "Server|Belegt": "Busy",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Please confirm with the code from the authenticator app.",
