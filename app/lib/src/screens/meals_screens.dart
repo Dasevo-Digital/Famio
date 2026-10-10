@@ -620,7 +620,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                           child: Text(
                             '${n + 1}',
                             style: theme.textTheme.labelMedium?.copyWith(
-                              color: color,
+                              color: FamioColors.of(context).text(color),
                             ),
                           ),
                         ),

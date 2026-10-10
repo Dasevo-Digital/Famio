@@ -54,4 +54,57 @@ void main() {
       );
     }
   });
+
+  for (final base in [FamioColors.light, FamioColors.darkColors]) {
+    final mode = base.dark ? 'dark' : 'light';
+
+    test('$mode: text and fill tones of every section reach AA', () {
+      for (final s in FamioSection.values) {
+        final text = base.sectionText(s);
+        for (final ground in [
+          base.background,
+          base.surface,
+          base.surfaceSoft,
+        ]) {
+          expect(
+            FamioColors.contrast(text, ground),
+            greaterThanOrEqualTo(FamioColors.textTarget),
+            reason: '${s.name} text',
+          );
+        }
+        final fill = base.fill(base.strong(s));
+        expect(
+          FamioColors.contrast(base.onStrong, fill),
+          greaterThanOrEqualTo(FamioColors.textTarget),
+          reason: '${s.name} fill',
+        );
+        expect(
+          FamioColors.contrast(
+            base.onStrong,
+            base.fill(base.strong(s), target: 3),
+          ),
+          greaterThanOrEqualTo(3),
+        );
+      }
+    });
+
+    test('$mode: tones darken only as far as needed', () {
+      // Already readable: unchanged.
+      expect(base.text(base.ink), base.ink);
+      expect(
+        base.sectionText(FamioSection.contacts),
+        base.dark
+            ? isNot(base.strong(FamioSection.contacts))
+            : base.strong(FamioSection.contacts),
+      );
+      // Start (orange) needs it most, but stays orange-ish, not black.
+      final start = base.sectionText(FamioSection.home);
+      expect(start, isNot(base.dark ? Colors.white : Colors.black));
+      final hsl = HSLColor.fromColor(start);
+      expect(
+        hsl.hue,
+        closeTo(HSLColor.fromColor(FamioSection.home.strong).hue, 4),
+      );
+    });
+  }
 }

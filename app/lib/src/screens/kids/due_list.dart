@@ -131,7 +131,7 @@ class _DueList extends StatelessWidget {
                     child: Text(
                       look(d.state).$1,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: look(d.state).$2,
+                        color: FamioColors.of(context).text(look(d.state).$2),
                       ),
                     ),
                   ),

@@ -1,6 +1,6 @@
 // Every area of the app against Flutter's accessibility guidelines: tap
 // targets of at least 48 dp with a label everywhere, WCAG AA text contrast
-// in the "Hoher Kontrast" mode (light and dark), and no overflow at 200 %
+// (normal and "Hoher Kontrast", light and dark), and no overflow at 200 %
 // text size.
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
@@ -132,12 +132,14 @@ void main() {
     expect(problems, isEmpty, reason: problems.join('\n'));
   });
 
-  for (final brightness in Brightness.values) {
-    testWidgets('high contrast reaches WCAG AA (${brightness.name})', (
-      tester,
-    ) async {
+  for (final (brightness, highContrast) in [
+    for (final b in Brightness.values) ...[(b, true), (b, false)],
+  ]) {
+    final mode =
+        '${highContrast ? 'high contrast' : 'normal'}, ${brightness.name}';
+    testWidgets('text reaches WCAG AA ($mode)', (tester) async {
       final semantics = tester.ensureSemantics();
-      await open(tester, highContrast: true, brightness: brightness);
+      await open(tester, highContrast: highContrast, brightness: brightness);
       final problems = <String>[];
       await visit(tester, (area) async {
         final r = await textContrastGuideline.evaluate(tester);

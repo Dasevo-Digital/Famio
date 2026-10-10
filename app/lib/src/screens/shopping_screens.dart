@@ -153,9 +153,10 @@ class ShoppingListsScreen extends StatelessWidget {
                         ),
                         child: Text(
                           '$open',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelLarge?.copyWith(color: color),
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: FamioColors.of(context).text(color),
+                              ),
                         ),
                       ),
                   ],

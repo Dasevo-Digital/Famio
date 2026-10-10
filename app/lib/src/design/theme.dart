@@ -15,18 +15,28 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
       : FamioColors.light;
   final c = highContrast ? base.withHighContrast() : base;
   final accent = c.strong(FamioSection.calendar);
+  // Material uses primary for text (text buttons, labels) and as a fill
+  // behind onPrimary: the text tone, with dark text on it where white
+  // would not be readable (dark mode).
+  Color on(Color fill) =>
+      FamioColors.contrast(Colors.white, fill) >= FamioColors.textTarget
+      ? Colors.white
+      : const Color(0xFF12131C);
+  final primary = c.text(accent);
+  final secondary = c.sectionText(FamioSection.tasks);
+  final tertiary = c.sectionText(FamioSection.kids);
   final scheme = ColorScheme(
     brightness: brightness,
-    primary: accent,
-    onPrimary: c.onStrong,
+    primary: primary,
+    onPrimary: highContrast ? c.onStrong : on(primary),
     primaryContainer: c.tint(FamioSection.calendar),
     onPrimaryContainer: c.ink,
-    secondary: c.strong(FamioSection.tasks),
-    onSecondary: c.onStrong,
+    secondary: secondary,
+    onSecondary: highContrast ? c.onStrong : on(secondary),
     secondaryContainer: c.tint(FamioSection.tasks),
     onSecondaryContainer: c.ink,
-    tertiary: c.strong(FamioSection.kids),
-    onTertiary: c.onStrong,
+    tertiary: tertiary,
+    onTertiary: highContrast ? c.onStrong : on(tertiary),
     error: c.readable(const Color(0xFFE0485B), on: const Color(0xFFFBE7EA)),
     onError: Colors.white,
     errorContainer: const Color(0xFFFFDDE1),
@@ -145,7 +155,7 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
         borderSide: BorderSide(color: scheme.error, width: 1.5),
       ),
       labelStyle: body(15).copyWith(color: c.inkSoft),
-      floatingLabelStyle: body(14, FontWeight.w800).copyWith(color: accent),
+      floatingLabelStyle: body(14, FontWeight.w800).copyWith(color: primary),
       hintStyle: body(15).copyWith(color: c.inkSoft.withValues(alpha: 0.8)),
       prefixIconColor: c.inkSoft,
       suffixIconColor: c.inkSoft,

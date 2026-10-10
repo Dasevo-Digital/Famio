@@ -710,7 +710,9 @@ class _Badge extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
             constraints: const BoxConstraints(minWidth: 18),
             decoration: BoxDecoration(
-              color: FamioColors.of(context).strong(FamioSection.kids),
+              color: FamioColors.of(
+                context,
+              ).fill(FamioColors.of(context).strong(FamioSection.kids)),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: FamioColors.of(context).surface,

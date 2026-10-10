@@ -1,6 +1,8 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 
+import '../design/palette.dart';
+
 class MemberAvatar extends StatelessWidget {
   const MemberAvatar(
     this.member, {
@@ -18,6 +20,14 @@ class MemberAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Color(member.color ?? 0xFF607D8B);
+    // The person's color stays; the letter is white or dark, whichever
+    // reads better on it (white on the orange is hard to read).
+    const dark = Color(0xFF2D3150);
+    final letter =
+        FamioColors.contrast(Colors.white, color) >=
+            FamioColors.contrast(dark, color)
+        ? Colors.white
+        : dark;
     final initial = member.displayName.isEmpty
         ? '?'
         : member.displayName.characters.first.toUpperCase();
@@ -27,7 +37,7 @@ class MemberAvatar extends StatelessWidget {
       child: Text(
         initial,
         style: TextStyle(
-          color: Colors.white,
+          color: letter,
           fontSize: radius * 0.9,
           fontFamily: 'Fredoka',
           fontWeight: FontWeight.w600,

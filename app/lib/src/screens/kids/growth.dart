@@ -190,9 +190,9 @@ class _ChartCard extends StatelessWidget {
               if (percentile != null)
                 Text(
                   tr.growthPercentileValue(percentile!.round().clamp(1, 99)),
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(color: color),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: FamioColors.of(context).text(color),
+                  ),
                 ),
             ],
           ),

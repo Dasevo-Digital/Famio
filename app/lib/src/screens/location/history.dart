@@ -152,7 +152,9 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                                       child: Container(
                                         alignment: Alignment.center,
                                         decoration: BoxDecoration(
-                                          color: i == 0 ? c.surface : accent,
+                                          color: i == 0
+                                              ? c.surface
+                                              : c.fill(accent),
                                           borderRadius: BorderRadius.circular(
                                             14,
                                           ),
@@ -164,7 +166,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
                                             color: i == 0
-                                                ? accent
+                                                ? c.text(accent)
                                                 : Colors.white,
                                           ),
                                         ),

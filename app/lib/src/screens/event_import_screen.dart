@@ -279,7 +279,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
                             Text(
                               _when(e),
                               style: theme.textTheme.titleSmall?.copyWith(
-                                color: accent,
+                                color: FamioColors.of(context).text(accent),
                               ),
                             ),
                             Text(

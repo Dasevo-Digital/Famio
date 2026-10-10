@@ -126,7 +126,11 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
                                       appLanguage,
                                     ).format(value),
                                     style: theme.textTheme.headlineSmall
-                                        ?.copyWith(color: color),
+                                        ?.copyWith(
+                                          color: FamioColors.of(
+                                            context,
+                                          ).text(color),
+                                        ),
                                   ),
                                   Text(label),
                                 ],
@@ -232,7 +236,9 @@ Future<Uint8List> yearReviewPdf(YearReview review, {FileCache? files}) async {
   final regular = await font('Nunito-400');
   final bold = await font('Nunito-800');
   final title = await font('Fredoka-600');
-  final accent = PdfColor.fromInt(FamioSection.home.strong.toARGB32());
+  final accent = PdfColor.fromInt(
+    FamioColors.light.sectionText(FamioSection.home).toARGB32(),
+  );
   final images = <pw.MemoryImage>[];
   for (final p in review.photos) {
     try {

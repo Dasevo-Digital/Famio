@@ -202,7 +202,7 @@ class _ChatTile extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: c.strong(FamioSection.chat),
+                    color: c.fill(c.strong(FamioSection.chat)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -481,7 +481,7 @@ class _Bubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
-    final background = mine ? c.strong(FamioSection.chat) : c.surface;
+    final background = mine ? c.fill(c.strong(FamioSection.chat)) : c.surface;
     final foreground = mine ? c.onStrong : c.ink;
     final attachment = message.attachment;
     final maxWidth =

@@ -117,9 +117,9 @@ class _Timeline extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(44, 14, 0, 4),
               child: Text(
                 _ageGroup(item.date),
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(color: color),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: FamioColors.of(context).text(color),
+                ),
               ),
             ),
           _TimelineRow(item: item, child: child),
@@ -175,9 +175,9 @@ class _TodayMarker extends StatelessWidget {
           ),
           child: Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelLarge?.copyWith(color: color),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: FamioColors.of(context).text(color),
+            ),
           ),
         ),
       ],

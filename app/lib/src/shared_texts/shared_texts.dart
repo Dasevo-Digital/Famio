@@ -1,6 +1,5 @@
 import 'package:famio_client/famio_client.dart';
 
-
 /// Shows the German texts of the shared enums and catalogs (roles,
 /// milestones, vaccinations …) in [language].
 void useSharedTexts(String language) {

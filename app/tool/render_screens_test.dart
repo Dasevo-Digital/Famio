@@ -14,6 +14,7 @@ import 'package:famio/src/push/own_push.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -1063,6 +1064,9 @@ http.Client _adminApi() {
 }
 
 void main() {
+  // German screenshots, like test/flutter_test_config.dart (not used for
+  // tool/).
+  deviceLanguage = () => 'de';
   setUpAll(() async {
     await initializeDateFormatting('de');
     await _loadFonts();
@@ -1487,7 +1491,8 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -500));
     await tester.pumpAndSettle();
     await _shot(tester, key, 'desktop_32_anmeldung');
-    await tester.tap(find.widgetWithText(TextButton, 'Einrichten'));
+    // The first "Einrichten" is single sign-on (PaperBuddy follows).
+    await tester.tap(find.widgetWithText(TextButton, 'Einrichten').first);
     await tester.pumpAndSettle();
     await _shot(tester, key, 'desktop_33_sso');
     await tester.pump(const Duration(seconds: 1));

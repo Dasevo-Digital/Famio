@@ -69,7 +69,9 @@ class TimetableView extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: i + 1 == today
-                            ? FamioColors.of(context).strong(FamioSection.kids)
+                            ? FamioColors.of(
+                                context,
+                              ).sectionText(FamioSection.kids)
                             : null,
                       ),
                     ),

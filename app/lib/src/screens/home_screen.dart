@@ -349,7 +349,7 @@ class _Tile extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: c.strong(section),
+                    color: c.fill(c.strong(section)),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -505,7 +505,7 @@ class _CountdownTile extends StatelessWidget {
                   style: theme.textTheme.displaySmall?.copyWith(
                     fontFamily: 'Fredoka',
                     fontWeight: FontWeight.w600,
-                    color: accent,
+                    color: FamioColors.of(context).text(accent),
                   ),
                 ),
               if (first.days > 1) const SizedBox(width: 10),

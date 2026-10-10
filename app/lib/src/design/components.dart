@@ -90,8 +90,21 @@ class SectionPage extends StatelessWidget {
                             if (subtitle != null)
                               Text(
                                 subtitle!,
+                                // Partly on the pastel circle behind it.
                                 style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: c.inkSoft),
+                                    ?.copyWith(
+                                      color: c.text(
+                                        c.inkSoft,
+                                        on: Color.alphaBlend(
+                                          c
+                                              .tint(section)
+                                              .withValues(
+                                                alpha: c.dark ? 0.6 : 0.9,
+                                              ),
+                                          c.background,
+                                        ),
+                                      ),
+                                    ),
                                 // Two lines on narrow phones, e.g. a
                                 // child's age and birthday.
                                 maxLines: 2,
@@ -160,6 +173,10 @@ class BubbleButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final small = size < minTarget;
+    // A white icon on a colored bubble: the bubble dark enough for 3:1.
+    final background = this.background != null && color == Colors.white
+        ? c.fill(this.background!, target: 3)
+        : this.background;
     final icon = SizedBox.square(
       dimension: size,
       child: Icon(
@@ -411,7 +428,7 @@ class PillTabs<T> extends StatelessWidget {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: v == selected ? c.readable(color) : c.surface,
+                      color: v == selected ? c.fill(color) : c.surface,
                       borderRadius: BorderRadius.circular(40),
                       border: v == selected || c.outline == null
                           ? null
@@ -453,7 +470,7 @@ class ListHeading extends StatelessWidget {
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
               color: FamioColors.of(
                 context,
-              ).readable(color ?? FamioColors.of(context).inkSoft),
+              ).text(color ?? FamioColors.of(context).inkSoft),
               letterSpacing: 0.3,
             ),
           ),
@@ -482,7 +499,7 @@ class ColorButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final style = FilledButton.styleFrom(
-      backgroundColor: FamioColors.of(context).readable(color),
+      backgroundColor: FamioColors.of(context).fill(color),
       foregroundColor: FamioColors.of(context).onStrong,
     );
     return icon == null
@@ -520,7 +537,8 @@ class AddButton extends StatelessWidget {
     child: FloatingActionButton(
       heroTag: null,
       tooltip: tooltip,
-      backgroundColor: FamioColors.of(context).readable(color),
+      // White icon alone: 3:1 suffices (WCAG 1.4.11).
+      backgroundColor: FamioColors.of(context).fill(color, target: 3),
       foregroundColor: FamioColors.of(context).onStrong,
       onPressed: onPressed,
       child: Icon(icon, size: 28),

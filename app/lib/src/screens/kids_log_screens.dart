@@ -222,7 +222,7 @@ class _RunningCard extends StatelessWidget {
                       '${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(
-                            color: color,
+                            color: FamioColors.of(context).text(color),
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                     );

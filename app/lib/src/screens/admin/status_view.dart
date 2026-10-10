@@ -348,7 +348,9 @@ class _BackupCheckLine extends StatelessWidget {
                   : tr.adminLastCheckFailedProblems(problems.join('; ')),
               ...notes,
             ].join('\n'),
-            style: theme.textTheme.bodySmall?.copyWith(color: color),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: FamioColors.of(context).text(color),
+            ),
           ),
         ),
       ],

@@ -176,7 +176,7 @@ class _BankImportScreenState extends State<BankImportScreen> {
                             BankDuplicate.likely => tr.budgetImportMaybe,
                           },
                           style: TextStyle(
-                            color: c.strong(FamioSection.budget),
+                            color: c.sectionText(FamioSection.budget),
                           ),
                         ),
                       Padding(

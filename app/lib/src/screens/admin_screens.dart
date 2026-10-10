@@ -445,9 +445,9 @@ class _Badge extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: accent),
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: FamioColors.of(context).text(accent),
+            ),
           ),
         ],
       ),

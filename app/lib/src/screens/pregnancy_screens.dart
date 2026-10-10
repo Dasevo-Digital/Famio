@@ -332,7 +332,9 @@ class _TaskCard extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(color: color),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: FamioColors.of(context).text(color),
+            ),
           ),
         ],
       ),

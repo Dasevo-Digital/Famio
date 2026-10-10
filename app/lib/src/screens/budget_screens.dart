@@ -160,7 +160,7 @@ class _BudgetScreenState extends State<BudgetScreen> {
                           Text(
                             formatEuro(cents),
                             style: theme.textTheme.headlineSmall?.copyWith(
-                              color: col,
+                              color: FamioColors.of(context).text(col),
                             ),
                           ),
                           Text(label, style: theme.textTheme.bodySmall),
@@ -222,7 +222,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   trailing: Text(
                     '${e.income ? '+' : '−'}${formatEuro(e.cents)}',
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: e.income ? color : null,
+                      color: e.income
+                          ? FamioColors.of(context).text(color)
+                          : null,
                     ),
                   ),
                   onTap: () => showBudgetEntryEditor(context, existing: e),
@@ -329,7 +331,7 @@ class _CategoryBar extends StatelessWidget {
                     ? tr.budgetSpentLimit(formatEuro(spent), formatEuro(limit!))
                     : '${formatEuro(spent)} · ${(value * 100).round()} %',
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: over ? color : null,
+                  color: over ? FamioColors.of(context).text(color) : null,
                 ),
               ),
             ],

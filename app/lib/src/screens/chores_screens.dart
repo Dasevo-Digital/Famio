@@ -157,7 +157,7 @@ class _PointsChip extends StatelessWidget {
             (big
                     ? Theme.of(context).textTheme.titleMedium
                     : Theme.of(context).textTheme.labelLarge)
-                ?.copyWith(color: c.strong(FamioSection.chores)),
+                ?.copyWith(color: c.sectionText(FamioSection.chores)),
       ),
     );
   }

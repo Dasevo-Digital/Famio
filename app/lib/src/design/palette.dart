@@ -54,7 +54,9 @@ enum FamioSection {
   /// Soft background color (light mode).
   final Color tint;
 
-  /// Saturated accent for icons, buttons and selection.
+  /// Saturated accent for icons, color dots and selection. As text or as a
+  /// button behind white text it is darkened as far as needed, see
+  /// [FamioColors.text] and [FamioColors.fill].
   final Color strong;
 }
 
@@ -144,6 +146,62 @@ class FamioColors extends ThemeExtension<FamioColors> {
 
   /// Contrast of text in [highContrast] mode (WCAG AAA; AA would be 4.5).
   static const contrastTarget = 7.0;
+
+  /// Contrast of text otherwise (WCAG AA).
+  static const textTarget = 4.5;
+
+  /// Head room above a target: rendering (anti-aliasing, blending) shifts
+  /// measured contrast by a few hundredths.
+  static const _margin = 0.15;
+
+  /// [color] as text, or as an icon or line read on its own: darkened
+  /// (brightened in dark mode) just until it reaches [textTarget] on the
+  /// page, on cards and on [on]. Icons and fills keep the brighter accent,
+  /// so sections stay colorful; with [highContrast] as [readable].
+  Color text(Color color, {Color? on}) {
+    if (highContrast) return readable(color, on: on);
+    final grounds = [background, surface, surfaceSoft, ?on];
+    return _toward(
+      color,
+      dark ? Colors.white : Colors.black,
+      (c) => grounds.every((g) => contrast(c, g) >= textTarget + _margin),
+      'text${on?.toARGB32()}',
+    );
+  }
+
+  /// [color] as the fill behind [onStrong] text (buttons, chosen chips):
+  /// darkened until the text on it reaches [target], 4.5:1 for text or 3:1
+  /// for an icon alone; with [highContrast] as [readable].
+  Color fill(Color color, {double target = textTarget}) {
+    if (highContrast) return readable(color);
+    return _toward(
+      color,
+      Colors.black,
+      (c) => contrast(onStrong, c) >= target + _margin,
+      'fill$target',
+    );
+  }
+
+  /// The text tone of [section] (see [text]).
+  Color sectionText(FamioSection section, {Color? on}) =>
+      text(strong(section), on: on);
+
+  static final _tones = <String, Color>{};
+
+  /// The first step from [color] towards [target] that is [ok]; cached,
+  /// since every text in a list asks.
+  Color _toward(
+    Color color,
+    Color target,
+    bool Function(Color) ok,
+    String kind,
+  ) => _tones.putIfAbsent('$dark|$kind|${color.toARGB32()}', () {
+    for (var t = 0.0; t <= 1; t += 0.02) {
+      final c = Color.lerp(color, target, t)!;
+      if (ok(c)) return c;
+    }
+    return target;
+  });
 
   /// Outline for cards, chips and round buttons in [highContrast] mode.
   BorderSide? get outline =>
