@@ -36,6 +36,9 @@ class BringProvider implements ListProvider {
   bool get hasDueDates => false;
 
   @override
+  bool get hasSteps => false;
+
+  @override
   Map<String, Object?> get credentials => _credentials;
 
   /// Signs in and returns the credentials to keep (no password).

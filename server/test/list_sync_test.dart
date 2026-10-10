@@ -21,13 +21,20 @@ class FakeProvider implements ListProvider {
   @override
   bool get hasDueDates => !oneEntryPerTitle;
   @override
+  bool get hasSteps => !oneEntryPerTitle;
+  @override
   Map<String, Object?> get credentials => const {'token': 'x'};
 
   final entries = <String, RemoteItem>{};
   var writes = 0;
   var _next = 0;
 
-  RemoteItem add(String title, {String note = '', bool done = false}) {
+  RemoteItem add(
+    String title, {
+    String note = '',
+    bool done = false,
+    List<StepDraft> steps = const [],
+  }) {
     final id = oneEntryPerTitle ? title : 'r${_next++}';
     return entries[id] = RemoteItem(
       id: id,
@@ -35,8 +42,14 @@ class FakeProvider implements ListProvider {
       note: note,
       done: done,
       modified: oneEntryPerTitle ? null : DateTime.now(),
+      steps: _steps(steps),
     );
   }
+
+  List<RemoteStep> _steps(List<StepDraft> steps) => [
+    for (final s in steps)
+      RemoteStep(id: 's${_next++}', text: s.text, done: s.done),
+  ];
 
   @override
   Future<List<RemoteList>> lists() async => const [
@@ -57,6 +70,7 @@ class FakeProvider implements ListProvider {
       done: item.done,
       due: item.due,
       modified: oneEntryPerTitle ? null : DateTime.now(),
+      steps: _steps(item.steps),
     );
   }
 
@@ -76,6 +90,7 @@ class FakeProvider implements ListProvider {
       done: item.done,
       due: item.due,
       modified: oneEntryPerTitle ? null : DateTime.now(),
+      steps: _steps(item.steps),
     );
   }
 
@@ -252,6 +267,80 @@ void main() {
     fake.entries.clear();
     await lists.syncAccount(id);
     expect(app.records.get(Collections.tasks, 't2')!.deleted, isTrue);
+  });
+
+  test('the steps of a task travel in both directions', () async {
+    final id = account();
+    write(
+      Collections.tasks,
+      'koffer',
+      const Task(
+        id: 'koffer',
+        title: 'Koffer packen',
+        checklist: [
+          TaskStep(id: 'a', text: 'Pässe'),
+          TaskStep(id: 'b', text: 'Ladekabel', done: true),
+        ],
+      ).toData(),
+    );
+    fake.add(
+      'Garten',
+      steps: [(text: 'Rasen mähen', done: false), (text: 'Hecke', done: true)],
+    );
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L'},
+    ]);
+    await lists.syncAccount(id);
+
+    final there = fake.entries.values.firstWhere(
+      (e) => e.title == 'Koffer packen',
+    );
+    expect(
+      [for (final s in there.steps) (s.text, s.done)],
+      [('Pässe', false), ('Ladekabel', true)],
+    );
+    final garden = tasks().firstWhere((t) => t.title == 'Garten');
+    expect(
+      [for (final s in garden.checklist) (s.text, s.done)],
+      [('Rasen mähen', false), ('Hecke', true)],
+    );
+
+    // Ticked off there: Famio keeps the step's id.
+    fake.entries[there.id] = RemoteItem(
+      id: there.id,
+      title: there.title,
+      modified: DateTime.now().add(const Duration(seconds: 1)),
+      steps: [
+        RemoteStep(id: 'x', text: 'Pässe', done: true),
+        ...there.steps.skip(1),
+        const RemoteStep(id: 'y', text: 'Sonnencreme'),
+      ],
+    );
+    await lists.syncAccount(id);
+    final suitcase = tasks().firstWhere((t) => t.id == 'koffer');
+    expect(
+      [for (final s in suitcase.checklist) (s.text, s.done)],
+      [('Pässe', true), ('Ladekabel', true), ('Sonnencreme', false)],
+    );
+    expect(suitcase.checklist.map((s) => s.id).take(2), ['a', 'b']);
+
+    // A step removed in Famio goes there too; nothing else is sent again.
+    write(
+      Collections.tasks,
+      'koffer',
+      Task.fromRecord(
+        app.records.get(Collections.tasks, 'koffer')!,
+      ).copyWith(checklist: suitcase.checklist.take(2).toList()).toData(),
+    );
+    final writes = fake.writes;
+    await lists.syncAccount(id);
+    expect(fake.writes, writes + 1);
+    expect(fake.entries[there.id]!.steps.map((s) => s.text), [
+      'Pässe',
+      'Ladekabel',
+    ]);
+    await lists.syncAccount(id);
+    expect(fake.writes, writes + 1);
   });
 
   test('when both sides changed, the newer change wins', () async {
@@ -538,7 +627,35 @@ void main() {
               ],
             });
           }
+          final steps = RegExp(
+            r'^me/todo/lists/M1/tasks/([^/]+)/checklistItems(?:/([^/]+))?$',
+          ).firstMatch(path);
+          if (steps != null) {
+            final items = ((graph[steps[1]]!['checklistItems'] as List?) ?? [])
+                .cast<Map<String, Object?>>()
+                .toList();
+            graph[steps[1]]!['checklistItems'] = items;
+            switch (request.method) {
+              case 'POST':
+                final body = (jsonDecode(request.body) as Map)
+                    .cast<String, Object?>();
+                items.add({'id': 'c${items.length}', ...body});
+                return json(items.last, 201);
+              case 'PATCH':
+                items
+                    .firstWhere((i) => i['id'] == steps[2])
+                    .addAll((jsonDecode(request.body) as Map).cast());
+                return json({});
+              case 'DELETE':
+                items.removeWhere((i) => i['id'] == steps[2]);
+                return http.Response('', 204);
+            }
+          }
           if (path == 'me/todo/lists/M1/tasks' && request.method == 'GET') {
+            expect(
+              url.queryParameters[r'$expand'] ?? 'checklistItems',
+              'checklistItems',
+            );
             // Two pages, as Graph sends long lists.
             final all = graph.entries.toList();
             final page = url.queryParameters[r'$skip'] == '1' ? 1 : 0;
@@ -679,7 +796,14 @@ void main() {
       expect(done['status'], 'done');
       final id = (done['account'] as Map)['id'] as String;
 
-      graph['a'] = {'title': 'Steuer', 'status': 'notStarted'};
+      graph['a'] = {
+        'title': 'Steuer',
+        'status': 'notStarted',
+        'checklistItems': [
+          {'id': 'x1', 'displayName': 'Belege sammeln', 'isChecked': true},
+          {'id': 'x2', 'displayName': 'Elster', 'isChecked': false},
+        ],
+      };
       graph['b'] = {
         'title': 'Reifen wechseln',
         'status': 'notStarted',
@@ -698,6 +822,10 @@ void main() {
             id: 't1',
             title: 'Kita-Anmeldung',
             due: DateTime(2026, 11, 2),
+            checklist: const [
+              TaskStep(id: 's1', text: 'Formular'),
+              TaskStep(id: 's2', text: 'Impfpass kopieren', done: true),
+            ],
           ).toData(),
           updatedAt: DateTime.now().millisecondsSinceEpoch,
         ),
@@ -730,6 +858,18 @@ void main() {
       );
       expect((sent['dueDateTime'] as Map)['dateTime'], '2026-11-02T00:00:00');
       expect((sent['dueDateTime'] as Map)['timeZone'], 'Europe/Berlin');
+      expect(
+        [
+          for (final c in sent['checklistItems'] as List)
+            ((c as Map)['displayName'], c['isChecked']),
+        ],
+        [('Formular', false), ('Impfpass kopieren', true)],
+      );
+      final tax = tasks.firstWhere((t) => t.title == 'Steuer');
+      expect(
+        [for (final s in tax.checklist) (s.text, s.done)],
+        [('Belege sammeln', true), ('Elster', false)],
+      );
     });
   });
 }

@@ -176,8 +176,10 @@ Der Abgleich läuft über ICS-Abo-Links, ohne Passwörter oder Google-Cloud-Proj
   Einkaufsartikels steht in der Notiz. Einfache Wiederholungen (täglich,
   wöchentlich, monatlich, jährlich, auch „alle 2 Wochen“) übernimmt Famio;
   was es nicht kennt (Priorität, Wiederholung an bestimmten Wochentagen,
-  Unteraufgaben, Uhrzeit der Fälligkeit), bleibt erhalten und geht zurück
-  an die App. Neue Listen werden in Famio angelegt. Mit
+  Uhrzeit der Fälligkeit), bleibt erhalten und geht zurück an die App. Die
+  Unterpunkte einer Aufgabe erscheinen dort als Unteraufgaben; neue
+  Unteraufgaben, Abhaken, Einrücken und Ausrücken übernimmt Famio
+  (Unteraufgaben haben in Famio nur Text und Haken). Neue Listen werden in Famio angelegt. Mit
   iCloud-Erinnerungen gleicht Famio nicht ab: Sie sind seit iOS 13 nicht
   mehr über CalDAV erreichbar.
 
@@ -200,7 +202,8 @@ neuere Änderung, Löschungen gehen in beide Richtungen.
   Organisationsverzeichnis und persönliche Microsoft-Konten“,
   „Öffentliche Clientflows zulassen“), ihre Anwendungs-ID in Famio
   eintragen und sich mit dem angezeigten Code anmelden. Der Server braucht
-  dafür keine öffentliche Adresse.
+  dafür keine öffentliche Adresse. Die Unterpunkte einer Aufgabe sind dort
+  ihre „Schritte“, in beide Richtungen.
 - Eine Familie kann die Anbindungen in der Server-Verwaltung → Bereiche
   ganz abschalten.
   Für Mac, iPhone und iPad erstellt die App ein **Profil**

@@ -24,6 +24,7 @@ import 'crypto/tls.dart';
 import 'dav/apple_profile.dart';
 import 'calendar/calendar_access.dart';
 import 'dav/caldav_server.dart';
+import 'dav/step_marks.dart';
 import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
 import 'dav/google_oauth.dart';
@@ -84,6 +85,7 @@ class FamioApi {
     this.trustProxy = false,
     this.dbSize,
     this.compactDatabase,
+    this.davSteps,
     this.auditLog,
     this.requireTls = false,
     this.tlsPort,
@@ -205,6 +207,9 @@ class FamioApi {
 
   /// Rewrites the database file without deleted content.
   final void Function()? compactDatabase;
+
+  /// Remembers checklist steps calendar apps saw (see [CalDavServer]).
+  final DavStepMarks? davSteps;
   final _startedAt = DateTime.now();
 
   /// The family's time zone (calendar feeds, floating imported times).
@@ -342,6 +347,7 @@ class FamioApi {
         hub.notifyRev(records.currentRev);
         lists?.poke();
       },
+      stepMarks: davSteps,
     );
     useRequestLanguage();
     return Pipeline()

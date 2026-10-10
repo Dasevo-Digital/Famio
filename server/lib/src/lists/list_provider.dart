@@ -13,8 +13,8 @@ class RemoteList {
 }
 
 /// An entry there, reduced to what Famio maps: for tasks the title, note,
-/// due day and whether it is done; for shopping the name, the quantity (as
-/// [note]) and whether it is ticked off.
+/// due day, whether it is done and its steps; for shopping the name, the
+/// quantity (as [note]) and whether it is ticked off.
 class RemoteItem {
   const RemoteItem({
     required this.id,
@@ -23,6 +23,7 @@ class RemoteItem {
     this.done = false,
     this.due,
     this.modified,
+    this.steps = const [],
   });
 
   final String id;
@@ -35,7 +36,22 @@ class RemoteItem {
 
   /// When it last changed there, if the app tells; decides conflicts.
   final DateTime? modified;
+
+  /// The checklist of a task (Microsoft To Do: "steps"), in order.
+  final List<RemoteStep> steps;
 }
+
+/// One step of a task's checklist there.
+class RemoteStep {
+  const RemoteStep({required this.id, required this.text, this.done = false});
+
+  final String id;
+  final String text;
+  final bool done;
+}
+
+/// What Famio wants a step to be.
+typedef StepDraft = ({String text, bool done});
 
 /// What Famio wants an entry to be.
 class ItemDraft {
@@ -44,12 +60,14 @@ class ItemDraft {
     this.note = '',
     this.done = false,
     this.due,
+    this.steps = const [],
   });
 
   final String title;
   final String note;
   final bool done;
   final DateTime? due;
+  final List<StepDraft> steps;
 }
 
 /// The other app's interface.
@@ -65,12 +83,17 @@ abstract class ListProvider {
   /// Whether the app has due dates (Bring! does not).
   bool get hasDueDates;
 
+  /// Whether tasks there have a checklist ([RemoteItem.steps]).
+  bool get hasSteps;
+
   Future<List<RemoteList>> lists();
 
   Future<List<RemoteItem>> items(String listId);
 
   Future<RemoteItem> create(String listId, ItemDraft item);
 
+  /// [previous] as last read, steps included: the app changes only what
+  /// differs.
   Future<void> update(String listId, RemoteItem previous, ItemDraft item);
 
   Future<void> delete(String listId, RemoteItem item);

@@ -45,6 +45,9 @@ class MsTodoProvider implements ListProvider {
   bool get hasDueDates => true;
 
   @override
+  bool get hasSteps => true;
+
+  @override
   Map<String, Object?> get credentials => _credentials;
 
   /// Starts the device code flow: the member enters `user_code` at
@@ -204,7 +207,9 @@ class MsTodoProvider implements ListProvider {
   @override
   Future<List<RemoteItem>> items(String listId) async {
     final items = <RemoteItem>[];
-    Uri? next = _tasks(listId).replace(queryParameters: {r'$top': '100'});
+    Uri? next = _tasks(
+      listId,
+    ).replace(queryParameters: {r'$top': '100', r'$expand': 'checklistItems'});
     while (next != null) {
       final json = await _call('GET', next);
       for (final t in (json['value'] as List?) ?? const []) {
@@ -237,8 +242,18 @@ class MsTodoProvider implements ListProvider {
           ? null
           : DateTime(dueDay.year, dueDay.month, dueDay.day),
       modified: DateTime.tryParse('${t['lastModifiedDateTime']}'),
+      steps: [
+        for (final c in (t['checklistItems'] as List?) ?? const [])
+          if (c is Map) _step(c.cast<String, Object?>()),
+      ],
     );
   }
+
+  static RemoteStep _step(Map<String, Object?> c) => RemoteStep(
+    id: '${c['id']}',
+    text: '${c['displayName'] ?? ''}',
+    done: c['isChecked'] == true,
+  );
 
   Map<String, Object?> _body(ItemDraft item) => {
     'title': item.title,
@@ -253,21 +268,64 @@ class MsTodoProvider implements ListProvider {
           },
   };
 
-  @override
-  Future<RemoteItem> create(String listId, ItemDraft item) async =>
-      _item(await _call('POST', _tasks(listId), _body(item)));
+  Uri _task(String listId, String id) =>
+      _tasks(listId).resolve('tasks/${Uri.encodeComponent(id)}');
 
   @override
-  Future<void> update(String listId, RemoteItem previous, ItemDraft item) =>
-      _call(
-        'PATCH',
-        _tasks(listId).resolve('tasks/${Uri.encodeComponent(previous.id)}'),
-        _body(item),
+  Future<RemoteItem> create(String listId, ItemDraft item) async {
+    final created = _item(await _call('POST', _tasks(listId), _body(item)));
+    if (item.steps.isEmpty) return created;
+    await _writeSteps(listId, created.id, const [], item.steps);
+    return created;
+  }
+
+  @override
+  Future<void> update(
+    String listId,
+    RemoteItem previous,
+    ItemDraft item,
+  ) async {
+    await _call('PATCH', _task(listId, previous.id), _body(item));
+    await _writeSteps(listId, previous.id, previous.steps, item.steps);
+  }
+
+  /// Turns the steps [there] into [wanted]: steps of the same text are kept
+  /// (ticked or unticked as needed), missing ones added, the rest removed.
+  Future<void> _writeSteps(
+    String listId,
+    String taskId,
+    List<RemoteStep> there,
+    List<StepDraft> wanted,
+  ) async {
+    final items = Uri.parse('${_task(listId, taskId)}/checklistItems');
+    final left = [...there];
+    for (final step in wanted) {
+      final i = left.indexWhere((s) => s.text.trim() == step.text.trim());
+      if (i < 0) {
+        await _call('POST', items, {
+          'displayName': step.text,
+          'isChecked': step.done,
+        });
+        continue;
+      }
+      final same = left.removeAt(i);
+      if (same.done != step.done) {
+        await _call(
+          'PATCH',
+          Uri.parse('$items/${Uri.encodeComponent(same.id)}'),
+          {'isChecked': step.done},
+        );
+      }
+    }
+    for (final gone in left) {
+      await _call(
+        'DELETE',
+        Uri.parse('$items/${Uri.encodeComponent(gone.id)}'),
       );
+    }
+  }
 
   @override
-  Future<void> delete(String listId, RemoteItem item) => _call(
-    'DELETE',
-    _tasks(listId).resolve('tasks/${Uri.encodeComponent(item.id)}'),
-  );
+  Future<void> delete(String listId, RemoteItem item) =>
+      _call('DELETE', _task(listId, item.id));
 }

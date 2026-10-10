@@ -48,6 +48,7 @@ class ParsedTodo {
     this.extra = const [],
     this.repeat,
     this.repeatEvery = 1,
+    this.parent,
   });
 
   final String title;
@@ -65,6 +66,10 @@ class ParsedTodo {
   /// A simple repetition Famio can represent (others stay in [extra]).
   final TaskRepeat? repeat;
   final int repeatEvery;
+
+  /// The UID of the to-do this one is a subtask of (`RELATED-TO`, by
+  /// default of type PARENT), as Apple Reminders writes subtasks.
+  final String? parent;
 }
 
 /// FREQ and INTERVAL only, e.g. `FREQ=WEEKLY;INTERVAL=2`; anything else
@@ -139,6 +144,12 @@ ParsedTodo? parseTodoIcs(String text, {required tz.Location location}) {
     ],
     repeat: rule?.$1,
     repeatEvery: rule?.$2 ?? 1,
+    parent: [
+      for (final p in todo.all('RELATED-TO'))
+        if ((p.params['RELTYPE'] ?? 'PARENT').toUpperCase() == 'PARENT' &&
+            p.value.trim().isNotEmpty)
+          p.value.trim(),
+    ].firstOrNull,
   );
 }
 
@@ -282,6 +293,37 @@ String _todo(
         'VALUE': 'DATE-TIME',
       })
       ..end('VALARM');
+  }
+  w
+    ..end('VTODO')
+    ..end('VCALENDAR');
+  return w.toString();
+}
+
+/// A step of [task]'s checklist as a to-do of its own whose parent is the
+/// task: reminder apps show it as a subtask.
+String stepToIcs(SyncRecord task, TaskStep step) {
+  final modified = DateTime.fromMillisecondsSinceEpoch(
+    task.updatedAt,
+    isUtc: true,
+  );
+  final w = IcsWriter()
+    ..begin('VCALENDAR')
+    ..line('VERSION', '2.0')
+    ..line('PRODID', '-//Famio//Famio Server//DE')
+    ..begin('VTODO')
+    ..line('UID', step.id)
+    ..line('DTSTAMP', formatIcsTime(modified, utc: true))
+    ..line('LAST-MODIFIED', formatIcsTime(modified, utc: true))
+    ..text('SUMMARY', step.text)
+    ..line('RELATED-TO', task.id, {'RELTYPE': 'PARENT'});
+  if (step.done) {
+    w
+      ..line('STATUS', 'COMPLETED')
+      ..line('PERCENT-COMPLETE', '100')
+      ..line('COMPLETED', formatIcsTime(modified, utc: true));
+  } else {
+    w.line('STATUS', 'NEEDS-ACTION');
   }
   w
     ..end('VTODO')

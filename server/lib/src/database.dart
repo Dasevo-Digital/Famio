@@ -268,6 +268,17 @@ const _migrations = [
   -- The language of a member's app (de, en, es) for push messages.
   ALTER TABLE users ADD COLUMN language TEXT;
   ''',
+  '''
+  -- Steps of task checklists calendar apps saw as subtasks, and when they
+  -- disappeared (see DavStepMarks).
+  CREATE TABLE dav_steps (
+    task_id TEXT NOT NULL,
+    step_id TEXT NOT NULL,
+    removed_rev INTEGER,
+    PRIMARY KEY (task_id, step_id)
+  );
+  CREATE INDEX dav_steps_removed ON dav_steps (removed_rev);
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

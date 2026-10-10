@@ -38,6 +38,7 @@ import 'security.dart';
 import 'settings.dart';
 import 'crypto/encrypted_db.dart';
 import 'remote_url_policy.dart';
+import 'dav/step_marks.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
 class FamioServerApp {
@@ -218,6 +219,7 @@ class FamioServerApp {
       metricsToken: metricsToken,
       selfCheckClient: httpClient ?? http.Client(),
       compactDatabase: _compact,
+      davSteps: DavStepMarks(db),
       auditLog: auditLog,
       requireTls: requireTls,
       tlsPort: tlsPort,

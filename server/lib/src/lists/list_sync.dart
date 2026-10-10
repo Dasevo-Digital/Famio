@@ -488,11 +488,14 @@ class ListSync {
     };
     stats.famio = famio.length;
     final dueDates = isTasks && provider.hasDueDates;
+    final steps = isTasks && provider.hasSteps;
 
     String hashOf(_State? s) => s == null ? '' : s.hash;
-    _State? famioState(SyncRecord? r) =>
-        r == null || r.deleted ? null : _State.ofRecord(r, isTasks, dueDates);
-    _State remoteState(RemoteItem r) => _State.ofRemote(r, dueDates);
+    _State? famioState(SyncRecord? r) => r == null || r.deleted
+        ? null
+        : _State.ofRecord(r, isTasks, dueDates: dueDates, steps: steps);
+    _State remoteState(RemoteItem r) =>
+        _State.ofRemote(r, dueDates: dueDates, steps: steps);
 
     final famioWrites = <SyncRecord>[];
     void link(String itemId, String remoteId, _State state) => db.execute(
@@ -521,7 +524,15 @@ class ListSync {
       stats.taken++;
       final previous = records.get(collection, itemId);
       famioWrites.add(
-        _record(collection, itemId, there, previous, famioList, isTasks),
+        _record(
+          collection,
+          itemId,
+          there,
+          previous,
+          famioList,
+          isTasks,
+          steps: steps,
+        ),
       );
       link(itemId, there.id, remoteState(there));
     }
@@ -619,6 +630,29 @@ class ListSync {
     return true;
   }
 
+  /// The steps there as Famio's checklist; steps of the same text keep
+  /// their id (and so their place in open screens).
+  static List<TaskStep> _checklist(
+    List<RemoteStep> there,
+    List<TaskStep> before,
+  ) {
+    final left = [...before];
+    return [
+      for (final step in there)
+        if (step.text.trim().isNotEmpty)
+          TaskStep(
+            id: switch (left.indexWhere(
+              (s) => s.text.trim() == step.text.trim(),
+            )) {
+              -1 => newId(),
+              final i => left.removeAt(i).id,
+            },
+            text: step.text.trim(),
+            done: step.done,
+          ),
+    ];
+  }
+
   static SyncRecord _tombstone(SyncRecord r) => SyncRecord(
     collection: r.collection,
     id: r.id,
@@ -638,8 +672,9 @@ class ListSync {
     RemoteItem there,
     SyncRecord? previous,
     String famioList,
-    bool isTasks,
-  ) {
+    bool isTasks, {
+    required bool steps,
+  }) {
     final live = previous != null && !previous.deleted ? previous : null;
     final Map<String, Object?> data;
     if (isTasks) {
@@ -652,6 +687,9 @@ class ListSync {
             due: there.due ?? (live == null ? null : task!.due),
             completedAt: there.done
                 ? (task?.completedAt ?? DateTime.now())
+                : null,
+            checklist: steps
+                ? _checklist(there.steps, task?.checklist ?? const [])
                 : null,
           )
           .toData();
@@ -705,27 +743,47 @@ class _SyncStats {
         );
 }
 
-/// What both sides compare: title, note (quantity), done, due day.
+/// What both sides compare: title, note (quantity), done, due day and the
+/// steps of a task.
 class _State {
-  _State(this.title, this.note, this.done, this.due);
+  _State(this.title, this.note, this.done, this.due, [this.steps = const []]);
 
-  factory _State.ofRecord(SyncRecord r, bool isTasks, bool dueDates) {
+  factory _State.ofRecord(
+    SyncRecord r,
+    bool isTasks, {
+    required bool dueDates,
+    required bool steps,
+  }) {
     if (isTasks) {
       final t = Task.fromRecord(r);
-      return _State(t.title, t.notes, t.done, dueDates ? t.due : null);
+      return _State(t.title, t.notes, t.done, dueDates ? t.due : null, [
+        if (steps)
+          for (final s in t.checklist)
+            if (s.text.trim().isNotEmpty) (text: s.text.trim(), done: s.done),
+      ]);
     }
     final i = ShoppingItem.fromRecord(r);
     return _State(i.name, i.quantity, i.checked, null);
   }
 
-  factory _State.ofRemote(RemoteItem r, bool dueDates) =>
-      _State(r.title, r.note, r.done, dueDates ? r.due : null);
+  factory _State.ofRemote(
+    RemoteItem r, {
+    required bool dueDates,
+    required bool steps,
+  }) => _State(r.title, r.note, r.done, dueDates ? r.due : null, [
+    if (steps)
+      for (final s in r.steps)
+        if (s.text.trim().isNotEmpty) (text: s.text.trim(), done: s.done),
+  ]);
 
   final String title;
   final String note;
   final bool done;
   final DateTime? due;
+  final List<StepDraft> steps;
 
+  /// Without steps the same as before steps were compared, so links made
+  /// earlier stay quiet.
   String get hash => sha1
       .convert(
         utf8.encode(
@@ -734,11 +792,15 @@ class _State {
             note.trim(),
             done,
             due?.toIso8601String().substring(0, 10),
+            if (steps.isNotEmpty)
+              [
+                for (final s in steps) [s.text, s.done],
+              ],
           ]),
         ),
       )
       .toString();
 
   ItemDraft get draft =>
-      ItemDraft(title: title, note: note, done: done, due: due);
+      ItemDraft(title: title, note: note, done: done, due: due, steps: steps);
 }

@@ -15,6 +15,7 @@ import '../family/repeating_tasks.dart';
 import '../record_store.dart';
 import '../security.dart';
 import '../i18n.dart';
+import 'step_marks.dart';
 
 const _dav = 'DAV:';
 const _caldav = 'urn:ietf:params:xml:ns:caldav';
@@ -33,6 +34,8 @@ const _prefixes = {_dav: 'd', _caldav: 'c', _cs: 'cs', _ical: 'ical'};
 ///     /dav/principals/<username>/
 ///     /dav/calendars/<username>/famio/<event id>.ics        events (VEVENT)
 ///     /dav/calendars/<username>/aufgaben/<task id>.ics      tasks (VTODO)
+///     /dav/calendars/<username>/aufgaben/<step id>.ics      checklist steps
+///                                                           as subtasks
 ///     /dav/calendars/<username>/einkauf-<list id>/<item id>.ics
 ///                                                           shopping (VTODO)
 ///
@@ -47,7 +50,8 @@ class CalDavServer {
     required this.clientAddress,
     required this.onChanged,
     this.onRecordsChanged,
-  });
+    DavStepMarks? stepMarks,
+  }) : stepMarks = stepMarks ?? DavStepMarks.none;
 
   final Accounts accounts;
   final RecordStore records;
@@ -60,6 +64,9 @@ class CalDavServer {
 
   /// Called after tasks or shopping items were written.
   final void Function()? onRecordsChanged;
+
+  /// Steps apps saw, to report removed ones in a sync-collection.
+  final DavStepMarks stepMarks;
 
   static const calendarSlug = 'famio';
   static const tasksSlug = 'aufgaben';
@@ -226,7 +233,7 @@ class CalDavServer {
         final c = _collection(context, target);
         final r = c == null
             ? null
-            : _exposedRecord(context, c, target.eventId!);
+            : _exposedResource(context, c, target.eventId!);
         if (c == null || r == null) return _status(404);
         responses.write(
           _response(
@@ -344,7 +351,7 @@ class CalDavServer {
   }
 
   Map<(String, String), String> _resourceProps(
-    SyncRecord r,
+    _Resource r,
     _Collection collection, {
     required bool withData,
   }) => {
@@ -354,7 +361,7 @@ class CalDavServer {
         'text/calendar; charset=utf-8; '
         'component=${collection.todos ? 'vtodo' : 'vevent'}',
     (_dav, 'getlastmodified'): _httpDate(
-      DateTime.fromMillisecondsSinceEpoch(r.updatedAt, isUtc: true),
+      DateTime.fromMillisecondsSinceEpoch(r.record.updatedAt, isUtc: true),
     ),
     if (withData) (_caldav, 'calendar-data'): _esc(_ics(r, collection)),
   };
@@ -390,7 +397,7 @@ class CalDavServer {
     final user = context.member.username;
     final responses = StringBuffer();
 
-    Map<(String, String), String> props(SyncRecord r) => _resourceProps(
+    Map<(String, String), String> props(_Resource r) => _resourceProps(
       r,
       collection,
       withData: wanted == null || wanted.contains((_caldav, 'calendar-data')),
@@ -398,13 +405,21 @@ class CalDavServer {
 
     switch ((root.name.namespaceUri, root.name.local)) {
       case (_caldav, 'calendar-multiget'):
+        // Steps are found by id only through their tasks: look them all up
+        // once.
+        Map<String, _Resource>? all;
+        _Resource? find(String id) => collection.kind == _Content.tasks
+            ? (all ??= {
+                for (final r in _exposed(context, collection)) r.id: r,
+              })[id]
+            : _exposedResource(context, collection, id);
         for (final href in root.findAllElements('href', namespaceUri: _dav)) {
           final id = _resourceIdFromHref(
             href.innerText.trim(),
             user,
             collection,
           );
-          final r = id == null ? null : _exposedRecord(context, collection, id);
+          final r = id == null ? null : find(id);
           if (r == null) {
             responses.write(_statusResponse(href.innerText.trim(), 404));
           } else {
@@ -421,7 +436,7 @@ class CalDavServer {
         final filter = _QueryFilter.parse(root);
         if (filter.component == 'VEVENT' && !collection.todos) {
           for (final r in _exposed(context, collection)) {
-            if (!filter.matches(CalendarEvent.fromRecord(r))) continue;
+            if (!filter.matches(CalendarEvent.fromRecord(r.record))) continue;
             responses.write(
               _response(
                 _resourceHref(user, collection, r.id),
@@ -480,46 +495,68 @@ class CalDavServer {
     }
     String href(String id) => _resourceHref(user, collection, id);
     final responses = StringBuffer();
+    final reported = <String>{};
+    void report(_Resource r) {
+      if (!reported.add(r.id)) return;
+      responses.write(
+        _response(
+          href(r.id),
+          _resourceProps(r, collection, withData: false),
+          wanted,
+        ),
+      );
+    }
+
+    void gone(String id) {
+      if (reported.add(id)) responses.write(_statusResponse(href(id), 404));
+    }
+
     if (since == 0) {
-      for (final r in _exposed(context, collection)) {
-        responses.write(
-          _response(
-            href(r.id),
-            _resourceProps(r, collection, withData: false),
-            wanted,
-          ),
-        );
-      }
+      _exposed(context, collection).forEach(report);
     } else {
+      final tasks = collection.kind == _Content.tasks;
+      // For the task list: what is there now, steps included (a task may
+      // have become a step of another, or the other way round).
+      final now = tasks
+          ? {for (final r in _exposed(context, collection)) r.id: r}
+          : const <String, _Resource>{};
       final (changed, revoked) = records.changesSince(
         collection.records,
         since,
         context.member.id,
       );
-      final reported = <String>{};
       for (final r in changed) {
-        if (!reported.add(r.id)) continue;
+        if (reported.contains(r.id)) continue;
         if (_isExposed(context, collection, r)) {
-          responses.write(
-            _response(
-              href(r.id),
-              _resourceProps(r, collection, withData: false),
-              wanted,
-            ),
-          );
+          report(_Resource(r));
+          for (final step in tasks ? _steps(r) : const <TaskStep>[]) {
+            report(_Resource(r, step));
+          }
+        } else if (now[r.id] case final step?) {
+          report(step);
         } else if (r.deleted || RecordStore.canSee(r, context.member.id)) {
+          if (tasks && r.deleted) {
+            stepMarks.note({r.id: (r.rev, const [])});
+          }
           // Deleted, or (shopping) on another list: gone from here. Items of
           // other lists the app never had are simply ignored by it.
           if (!collection.todos ||
               r.deleted ||
               collection.kind != _Content.shopping ||
               _onList(r, collection)) {
-            responses.write(_statusResponse(href(r.id), 404));
+            gone(r.id);
           }
         }
       }
-      for (final id in revoked.where(reported.add)) {
-        responses.write(_statusResponse(href(id), 404));
+      for (final id in revoked) {
+        now[id] == null ? gone(id) : report(now[id]!);
+        if (tasks) stepMarks.of(id).where((s) => now[s] == null).forEach(gone);
+      }
+      if (tasks) {
+        for (final id in stepMarks.removedSince(since)) {
+          now[id] == null ? gone(id) : report(now[id]!);
+        }
+        stepMarks.purge(records.purgedRev);
       }
     }
     responses.write('<d:sync-token>$_syncTokenPrefix$current</d:sync-token>');
@@ -535,7 +572,7 @@ class CalDavServer {
     final collection = _collection(context, target);
     final r = collection == null
         ? null
-        : _exposedRecord(context, collection, target.eventId!);
+        : _exposedResource(context, collection, target.eventId!);
     if (collection == null || r == null) return _status(404);
     final text = _ics(r, collection);
     return Response.ok(
@@ -558,6 +595,9 @@ class CalDavServer {
     final collection = _collection(context, target);
     if (collection == null) return _status(404);
     final id = target.eventId!;
+    if (collection.kind == _Content.tasks) {
+      return _putTask(request, context, collection, id);
+    }
     final memberId = context.member.id;
     final stored = records.get(collection.records, id);
     final live = stored != null && !stored.deleted;
@@ -569,19 +609,21 @@ class CalDavServer {
     if (ifNoneMatch == '*' && live) return _status(412);
     if (ifMatch != null &&
         ifMatch != '*' &&
-        (!live || ifMatch != _etag(stored))) {
+        (!live || ifMatch != _etag(_Resource(stored)))) {
       return _status(412);
     }
     if (ifMatch == '*' && !live) return _status(412);
 
     final text = await _text(request);
     if (collection.todos) {
+      final todo = parseTodoIcs(text, location: location());
+      if (todo == null) return _onlyTodos();
       return _putTodo(
         context,
         collection,
         id,
         stored: live ? stored : null,
-        text: text,
+        todo: todo,
       );
     }
     final existing = live ? CalendarEvent.fromRecord(stored) : null;
@@ -622,22 +664,116 @@ class CalDavServer {
     return Response(live ? 204 : 201);
   }
 
+  static Response _onlyTodos() => _davError(
+    403,
+    '<c:valid-calendar-object-resource/>',
+    message: t('Diese Liste nimmt nur Aufgaben (VTODO) an.'),
+  );
+
+  /// A to-do in the task list: a task, or a subtask that becomes a step of
+  /// its task's checklist. Indenting or outdenting in the app turns one
+  /// into the other.
+  Future<Response> _putTask(
+    Request request,
+    _Context context,
+    _Collection collection,
+    String id,
+  ) async {
+    final memberId = context.member.id;
+    final stored = records.get(collection.records, id);
+    final task = stored != null && !stored.deleted ? stored : null;
+    if (task != null && !RecordStore.canSee(task, memberId)) {
+      return _status(403);
+    }
+    final current = task != null
+        ? _Resource(task)
+        : _exposedResource(context, collection, id);
+    final ifNoneMatch = request.headers['if-none-match'];
+    final ifMatch = request.headers['if-match'];
+    if (ifNoneMatch == '*' && current != null) return _status(412);
+    if (ifMatch != null &&
+        ifMatch != '*' &&
+        (current == null || ifMatch != _etag(current))) {
+      return _status(412);
+    }
+    if (ifMatch == '*' && current == null) return _status(412);
+
+    final todo = parseTodoIcs(await _text(request), location: location());
+    if (todo == null) return _onlyTodos();
+    final parent = todo.parent == null || todo.parent == id
+        ? null
+        : _exposedRecord(context, collection, todo.parent!);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final writes = <SyncRecord>[];
+    // A step until now: out of its task (into another, or on its own).
+    final from = current?.step == null ? null : current!.record;
+    if (from != null && from.id != parent?.id) {
+      writes.add(
+        _withSteps(from, [
+          for (final s in _steps(from))
+            if (s.id != id) s,
+        ], now),
+      );
+    }
+    if (parent == null) {
+      if (writes.isNotEmpty && records.writeAs(memberId, writes).isNotEmpty) {
+        return _status(409);
+      }
+      return _putTodo(
+        context,
+        collection,
+        id,
+        stored: task,
+        todo: todo,
+        existed: current != null,
+      );
+    }
+    final step = TaskStep(id: id, text: todo.title, done: todo.done);
+    final steps = [..._steps(parent)];
+    final at = steps.indexWhere((s) => s.id == id);
+    at < 0 ? steps.add(step) : steps[at] = step;
+    writes.add(_withSteps(parent, steps, now));
+    if (task != null) {
+      // A task of its own until now, indented under another.
+      writes.add(
+        SyncRecord(
+          collection: Collections.tasks,
+          id: id,
+          data: const {},
+          deleted: true,
+          updatedAt: max(now, task.updatedAt + 1),
+        ),
+      );
+    }
+    if (records.writeAs(memberId, writes).isNotEmpty) return _status(409);
+    onRecordsChanged?.call();
+    return Response(current != null ? 204 : 201);
+  }
+
+  /// [task] with [steps] as its checklist; everything else stays.
+  static SyncRecord _withSteps(
+    SyncRecord task,
+    List<TaskStep> steps,
+    int now,
+  ) => SyncRecord(
+    collection: Collections.tasks,
+    id: task.id,
+    data: {
+      ...task.data,
+      'checklist': steps.isEmpty ? null : [for (final s in steps) s.toJson()],
+    },
+    updatedAt: max(now, task.updatedAt + 1),
+  );
+
   /// A task or shopping item from a reminder app.
   Response _putTodo(
     _Context context,
     _Collection collection,
     String id, {
     required SyncRecord? stored,
-    required String text,
+    required ParsedTodo todo,
+    bool? existed,
   }) {
-    final todo = parseTodoIcs(text, location: location());
-    if (todo == null) {
-      return _davError(
-        403,
-        '<c:valid-calendar-object-resource/>',
-        message: t('Diese Liste nimmt nur Aufgaben (VTODO) an.'),
-      );
-    }
     final data = switch (collection.kind) {
       _Content.tasks => taskDataFrom(
         todo,
@@ -666,28 +802,36 @@ class CalDavServer {
       advanceRepeatingTasks(records, [id], location: location());
     }
     onRecordsChanged?.call();
-    return Response(stored != null ? 204 : 201);
+    return Response((existed ?? stored != null) ? 204 : 201);
   }
 
   Response _delete(Request request, _Context context, _Target target) {
     if (target.kind != _Kind.event) return _status(403);
     final collection = _collection(context, target);
-    final r = collection == null
+    final resource = collection == null
         ? null
-        : _exposedRecord(context, collection, target.eventId!);
-    if (collection == null || r == null) return _status(404);
+        : _exposedResource(context, collection, target.eventId!);
+    if (collection == null || resource == null) return _status(404);
     final ifMatch = request.headers['if-match'];
-    if (ifMatch != null && ifMatch != '*' && ifMatch != _etag(r)) {
+    if (ifMatch != null && ifMatch != '*' && ifMatch != _etag(resource)) {
       return _status(412);
     }
+    final r = resource.record;
+    final now = DateTime.now().millisecondsSinceEpoch;
     final rejected = records.writeAs(context.member.id, [
-      SyncRecord(
-        collection: collection.records,
-        id: r.id,
-        data: const {},
-        deleted: true,
-        updatedAt: max(DateTime.now().millisecondsSinceEpoch, r.updatedAt + 1),
-      ),
+      if (resource.step case final step?)
+        _withSteps(r, [
+          for (final s in _steps(r))
+            if (s.id != step.id) s,
+        ], now)
+      else
+        SyncRecord(
+          collection: collection.records,
+          id: r.id,
+          data: const {},
+          deleted: true,
+          updatedAt: max(now, r.updatedAt + 1),
+        ),
     ]);
     if (rejected.isNotEmpty) return _status(403);
     collection.todos ? onRecordsChanged?.call() : onChanged();
@@ -784,31 +928,72 @@ class CalDavServer {
         _Content.shopping => _onList(r, collection),
       };
 
-  List<SyncRecord> _exposed(_Context c, _Collection collection) => [
+  /// Everything [collection] serves to [c]; in the task list also the
+  /// steps of each task (noted for later sync-collections).
+  List<_Resource> _exposed(_Context c, _Collection collection) {
+    final out = <_Resource>[];
+    final seen = <String, (int, Iterable<String>)>{};
     for (final r in records.all(
       collection.records,
       visibleToMember: c.member.id,
-    ))
-      if (_isExposed(c, collection, r)) r,
-  ];
+    )) {
+      if (!_isExposed(c, collection, r)) continue;
+      out.add(_Resource(r));
+      if (collection.kind != _Content.tasks) continue;
+      final steps = _steps(r);
+      out.addAll([for (final s in steps) _Resource(r, s)]);
+      seen[r.id] = (r.rev, [for (final s in steps) s.id]);
+    }
+    stepMarks.note(seen);
+    return out;
+  }
 
   SyncRecord? _exposedRecord(_Context c, _Collection collection, String id) {
     final r = records.get(collection.records, id);
     return r != null && _isExposed(c, collection, r) ? r : null;
   }
 
-  String _ics(SyncRecord r, _Collection collection) =>
-      switch (collection.kind) {
-        _Content.events => eventToIcs(
-          CalendarEvent.fromRecord(r),
-          location: location(),
-          updatedAt: r.updatedAt,
-        ),
-        _Content.tasks => taskToIcs(r, location: location()),
-        _Content.shopping => shoppingItemToIcs(r, location: location()),
-      };
+  /// The record, or in the task list a step, at [id].
+  _Resource? _exposedResource(_Context c, _Collection collection, String id) {
+    final r = _exposedRecord(c, collection, id);
+    if (r != null) return _Resource(r);
+    if (collection.kind != _Content.tasks) return null;
+    for (final task in records.all(
+      Collections.tasks,
+      visibleToMember: c.member.id,
+    )) {
+      if (!_isExposed(c, collection, task)) continue;
+      for (final s in _steps(task)) {
+        if (s.id == id) return _Resource(task, s);
+      }
+    }
+    return null;
+  }
 
-  static String _etag(SyncRecord r) => '"${r.rev}"';
+  /// The steps of [task] that can be served on their own.
+  static List<TaskStep> _steps(SyncRecord task) => [
+    for (final s in Task.fromRecord(task).checklist)
+      if (s.text.trim().isNotEmpty && _Target._validId.hasMatch(s.id)) s,
+  ];
+
+  String _ics(_Resource res, _Collection collection) {
+    final r = res.record;
+    if (res.step case final step?) return stepToIcs(r, step);
+    return switch (collection.kind) {
+      _Content.events => eventToIcs(
+        CalendarEvent.fromRecord(r),
+        location: location(),
+        updatedAt: r.updatedAt,
+      ),
+      _Content.tasks => taskToIcs(r, location: location()),
+      _Content.shopping => shoppingItemToIcs(r, location: location()),
+    };
+  }
+
+  /// A step changes with its task (each change of the task gives it a new
+  /// revision).
+  static String _etag(_Resource r) =>
+      r.step == null ? '"${r.record.rev}"' : '"${r.record.rev}-s"';
 
   // --- hrefs ----------------------------------------------------------------
 
@@ -988,6 +1173,18 @@ class CalDavServer {
     return '${days[t.weekday - 1]}, ${two(t.day)} ${months[t.month - 1]} '
         '${t.year} ${two(t.hour)}:${two(t.minute)}:${two(t.second)} GMT';
   }
+}
+
+/// What a collection serves at one href: an event, task or shopping item,
+/// or (in the task list) a step of a task's checklist, served as a to-do of
+/// its own whose parent is the task, as reminder apps show subtasks.
+class _Resource {
+  const _Resource(this.record, [this.step]);
+
+  final SyncRecord record;
+  final TaskStep? step;
+
+  String get id => step?.id ?? record.id;
 }
 
 class _Context {

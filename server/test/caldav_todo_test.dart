@@ -497,4 +497,192 @@ void main() {
       ),
     );
   });
+
+  group('checklist steps as subtasks', () {
+    Future<Task> task(String id) async =>
+        Task.fromRecord(app.records.get(Collections.tasks, id)!);
+
+    Future<void> packing() => sync([
+      record(
+        Collections.tasks,
+        't1',
+        const Task(
+          id: 't1',
+          title: 'Koffer packen',
+          checklist: [
+            TaskStep(id: 's1', text: 'Pässe'),
+            TaskStep(id: 's2', text: 'Ladekabel', done: true),
+          ],
+        ).toData(),
+      ),
+    ]);
+
+    test('steps are served as to-dos related to their task', () async {
+      await packing();
+      final list = await dav(
+        'PROPFIND',
+        'dav/calendars/mama/aufgaben/',
+        headers: {'depth': '1'},
+      );
+      for (final id in ['t1', 's1', 's2']) {
+        expect(list.body, contains('aufgaben/$id.ics'));
+      }
+      final step = await dav('GET', 'dav/calendars/mama/aufgaben/s2.ics');
+      expect(step.statusCode, 200);
+      expect(step.body, contains('SUMMARY:Ladekabel'));
+      expect(step.body, contains('RELATED-TO;RELTYPE=PARENT:t1'));
+      expect(step.body, contains('STATUS:COMPLETED'));
+      final multi = await dav(
+        'REPORT',
+        'dav/calendars/mama/aufgaben/',
+        body:
+            '<c:calendar-multiget xmlns:d="DAV:" '
+            'xmlns:c="urn:ietf:params:xml:ns:caldav"><d:prop><d:getetag/>'
+            '<c:calendar-data/></d:prop>'
+            '<d:href>/dav/calendars/mama/aufgaben/s1.ics</d:href>'
+            '</c:calendar-multiget>',
+      );
+      expect(multi.body, contains('SUMMARY:Pässe'));
+    });
+
+    test('subtasks from the app become steps, and back', () async {
+      await packing();
+      final created = await dav(
+        'PUT',
+        'dav/calendars/mama/aufgaben/NEU-1.ics',
+        body: reminder(
+          'NEU-1',
+          'Sonnencreme',
+          extra: 'RELATED-TO;RELTYPE=PARENT:t1\r\n',
+        ),
+        headers: {'if-none-match': '*'},
+      );
+      expect(created.statusCode, 201);
+      expect(app.records.get(Collections.tasks, 'NEU-1'), isNull);
+      expect(
+        [for (final s in (await task('t1')).checklist) s.text],
+        ['Pässe', 'Ladekabel', 'Sonnencreme'],
+      );
+
+      final ticked = await dav(
+        'PUT',
+        'dav/calendars/mama/aufgaben/s1.ics',
+        body: reminder(
+          's1',
+          'Reisepässe',
+          extra: 'RELATED-TO:t1\r\nSTATUS:COMPLETED\r\n',
+        ),
+      );
+      expect(ticked.statusCode, 204);
+      final first = (await task('t1')).checklist.first;
+      expect((first.id, first.text, first.done), ('s1', 'Reisepässe', true));
+
+      // Indented under the suitcase: the task becomes a step.
+      await sync([
+        record(
+          Collections.tasks,
+          't2',
+          const Task(id: 't2', title: 'Adapter').toData(),
+        ),
+      ]);
+      final indented = await dav(
+        'PUT',
+        'dav/calendars/mama/aufgaben/t2.ics',
+        body: reminder('t2', 'Adapter', extra: 'RELATED-TO:t1\r\n'),
+      );
+      expect(indented.statusCode, 204);
+      expect(app.records.get(Collections.tasks, 't2')!.deleted, isTrue);
+      expect((await task('t1')).checklist.map((s) => s.id), contains('t2'));
+
+      // Outdented again: a task of its own.
+      final outdented = await dav(
+        'PUT',
+        'dav/calendars/mama/aufgaben/t2.ics',
+        body: reminder('t2', 'Reiseadapter'),
+      );
+      expect(outdented.statusCode, 204);
+      expect((await task('t2')).title, 'Reiseadapter');
+      expect(
+        (await task('t1')).checklist.map((s) => s.id),
+        isNot(contains('t2')),
+      );
+
+      final deleted = await dav(
+        'DELETE',
+        'dav/calendars/mama/aufgaben/NEU-1.ics',
+      );
+      expect(deleted.statusCode, 204);
+      expect(
+        [for (final s in (await task('t1')).checklist) s.text],
+        ['Reisepässe', 'Ladekabel'],
+      );
+      expect(
+        (await dav('GET', 'dav/calendars/mama/aufgaben/NEU-1.ics')).statusCode,
+        404,
+      );
+    });
+
+    test('sync-collection reports added and removed steps', () async {
+      await packing();
+      const query =
+          '<d:sync-collection xmlns:d="DAV:"><d:sync-token>%s</d:sync-token>'
+          '<d:prop><d:getetag/></d:prop></d:sync-collection>';
+      final first = await dav(
+        'REPORT',
+        'dav/calendars/mama/aufgaben/',
+        body: query.replaceFirst('%s', ''),
+      );
+      expect(first.body, contains('aufgaben/s1.ics'));
+      String tokenOf(http.Response r) => RegExp(
+        '<d:sync-token>([^<]+)</d:sync-token>',
+      ).firstMatch(r.body)![1]!;
+      final syncToken = tokenOf(first);
+
+      // In Famio: one step removed, one added.
+      await sync([
+        record(
+          Collections.tasks,
+          't1',
+          const Task(
+            id: 't1',
+            title: 'Koffer packen',
+            checklist: [
+              TaskStep(id: 's2', text: 'Ladekabel', done: true),
+              TaskStep(id: 's3', text: 'Bücher'),
+            ],
+          ).toData(),
+        ),
+      ]);
+      final next = await dav(
+        'REPORT',
+        'dav/calendars/mama/aufgaben/',
+        body: query.replaceFirst('%s', syncToken),
+      );
+      expect(next.body, contains('aufgaben/s3.ics'));
+      expect(
+        next.body,
+        contains(
+          '<d:href>/dav/calendars/mama/aufgaben/s1.ics</d:href>'
+          '<d:status>HTTP/1.1 404 Not Found</d:status>',
+        ),
+      );
+
+      // The whole task deleted: its steps are gone too.
+      await dav('DELETE', 'dav/calendars/mama/aufgaben/t1.ics');
+      final last = await dav(
+        'REPORT',
+        'dav/calendars/mama/aufgaben/',
+        body: query.replaceFirst('%s', tokenOf(next)),
+      );
+      for (final id in ['t1', 's2', 's3']) {
+        expect(
+          last.body,
+          contains(
+            '<d:href>/dav/calendars/mama/aufgaben/$id.ics</d:href>'
+            '<d:status>HTTP/1.1 404 Not Found</d:status>',
+          ),
+        );
+      }
+    });
+  });
 }
