@@ -537,6 +537,7 @@ const sharedEn = <String, String>{
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Too many failed attempts. Please try again in {minutes} minute(s).",
   "Server|Nicht angemeldet": "Not signed in",
+  "Server|Belegt": "Busy",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Please confirm with the code from the authenticator app.",
   "Server|Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht – bitte in der App einrichten.":

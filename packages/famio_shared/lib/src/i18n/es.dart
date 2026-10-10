@@ -558,6 +558,7 @@ const sharedEs = <String, String>{
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Demasiados intentos fallidos. Inténtalo de nuevo dentro de {minutes} minuto(s).",
   "Server|Nicht angemeldet": "Sesión no iniciada",
+  "Server|Belegt": "Ocupado",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Confírmalo con el código de la app de autenticación.",
   "Server|Für dein Konto ist die Zwei-Faktor-Anmeldung Pflicht – bitte in der App einrichten.":

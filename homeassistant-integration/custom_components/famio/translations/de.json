@@ -75,6 +75,18 @@
       },
       "points": {
         "name": "Punkte"
+      },
+      "chores_today": {
+        "name": "Ämter heute"
+      },
+      "chores": {
+        "name": "Ämter"
+      },
+      "next_pickup": {
+        "name": "Nächste Abfuhr"
+      },
+      "countdown": {
+        "name": "Countdown"
       }
     }
   },

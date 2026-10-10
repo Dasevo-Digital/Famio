@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from homeassistant.const import CONF_TOKEN, CONF_URL, Platform
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -57,6 +57,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: FamioConfigEntry) -> boo
     coordinator = FamioCoordinator(hass, entry, client_for(hass, entry))
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator
+    # The connection's own device first: the members' devices hang below it.
+    hub = dr.async_get(hass).async_get_or_create(
+        config_entry_id=entry.entry_id,
+        identifiers={(DOMAIN, entry.unique_id or entry.entry_id)},
+        name=entry.title,
+        manufacturer="Famio",
+        model="Familien-Organizer",
+        entry_type=dr.DeviceEntryType.SERVICE,
+        configuration_url=coordinator.client.url,
+    )
+    coordinator.hub_device_id = hub.id
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     coordinator.start_listening()
     return True

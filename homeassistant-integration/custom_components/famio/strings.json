@@ -75,6 +75,18 @@
       },
       "points": {
         "name": "Points"
+      },
+      "chores_today": {
+        "name": "Chores today"
+      },
+      "chores": {
+        "name": "Chores"
+      },
+      "next_pickup": {
+        "name": "Next waste collection"
+      },
+      "countdown": {
+        "name": "Countdown"
       }
     }
   },

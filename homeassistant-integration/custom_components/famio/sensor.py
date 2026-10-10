@@ -1,4 +1,5 @@
-"""Famio sensors: open tasks, shopping, the next event and chore points."""
+"""Famio sensors: open tasks, shopping, the next event, chore points, today's
+chores, the next bin pickup and countdowns."""
 
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
@@ -61,6 +63,81 @@ def _theirs(c: FamioCoordinator, member_id: str) -> list[dict[str, Any]]:
     )
 
 
+def _overview(c: FamioCoordinator, key: str) -> list[dict[str, Any]]:
+    """Part of what the server worked out for today (chores, waste,
+    countdowns)."""
+    return c.data.overview.get(key) or []
+
+
+def _chore(c: FamioCoordinator, chore: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "titel": chore.get("title"),
+        "emoji": chore.get("emoji"),
+        # Nobody named: anyone of them may do it.
+        "dran": c.data.member_name(chore.get("assigneeId")),
+        "erledigt": chore.get("done", False),
+        "erledigt_von": c.data.member_name(chore.get("doneBy")),
+    }
+
+
+def _open_chores(c: FamioCoordinator) -> list[dict[str, Any]]:
+    return [ch for ch in _overview(c, "chores") if not ch.get("done")]
+
+
+def _chores_of(c: FamioCoordinator, member_id: str) -> list[dict[str, Any]]:
+    """Open chores [member_id] is to do today: their turn, or one anyone
+    of a group (or everyone) may do."""
+    return [
+        ch
+        for ch in _open_chores(c)
+        if ch.get("assigneeId") == member_id
+        or (
+            not ch.get("assigneeId")
+            and (not ch.get("memberIds") or member_id in ch["memberIds"])
+        )
+    ]
+
+
+def _pickup(c: FamioCoordinator) -> dict[str, Any] | None:
+    return next(iter(_overview(c, "waste")), None)
+
+
+def _pickup_attributes(c: FamioCoordinator) -> dict[str, Any]:
+    waste = _overview(c, "waste")
+    if not waste:
+        return {}
+    first = waste[0]
+    return {
+        "tonnen": first.get("labels"),
+        "in_tagen": first.get("days"),
+        "zustaendig": [
+            c.data.member_name(m) or m for m in first.get("memberIds") or []
+        ],
+        "weitere": [
+            {"datum": w.get("day"), "tonnen": w.get("labels")} for w in waste[1:]
+        ],
+    }
+
+
+def _countdown(c: FamioCoordinator) -> dict[str, Any] | None:
+    return next(iter(_overview(c, "countdowns")), None)
+
+
+def _countdown_attributes(c: FamioCoordinator) -> dict[str, Any]:
+    first = _countdown(c)
+    if first is None:
+        return {}
+    return {
+        "titel": first.get("title"),
+        "datum": first.get("start"),
+        "laeuft": first.get("running", False),
+        "alle": [
+            {"titel": e.get("title"), "tage": e.get("days")}
+            for e in _overview(c, "countdowns")
+        ],
+    }
+
+
 def _overdue(tasks: list[dict[str, Any]]) -> int:
     today = dt_util.now().date().isoformat()
     return sum(1 for t in tasks if (t.get("due") or "9999")[:10] < today)
@@ -107,6 +184,16 @@ MEMBER_SENSORS = (
         translation_key="points",
         state_class="measurement",
         value=lambda c, m: _points(c).get(m, 0),
+    ),
+    FamioMemberSensorDescription(
+        key="chores",
+        translation_key="chores",
+        icon="mdi:broom",
+        state_class="measurement",
+        value=lambda c, m: len(_chores_of(c, m)),
+        attributes=lambda c, m: {
+            "aemter": [ch.get("title") for ch in _chores_of(c, m)],
+        },
     ),
 )
 
@@ -177,6 +264,32 @@ SENSORS = (
             if (e := c.next_event())
             else {}
         ),
+    ),
+    FamioSensorDescription(
+        key="chores_today",
+        translation_key="chores_today",
+        icon="mdi:broom",
+        state_class="measurement",
+        value=lambda c: len(_open_chores(c)),
+        attributes=lambda c: {
+            "aemter": [_chore(c, ch) for ch in _overview(c, "chores")],
+        },
+    ),
+    FamioSensorDescription(
+        key="next_pickup",
+        translation_key="next_pickup",
+        icon="mdi:trash-can-outline",
+        device_class=SensorDeviceClass.DATE,
+        value=lambda c: dt_util.parse_date(p["day"]) if (p := _pickup(c)) else None,
+        attributes=_pickup_attributes,
+    ),
+    FamioSensorDescription(
+        key="countdown",
+        translation_key="countdown",
+        icon="mdi:timer-sand",
+        native_unit_of_measurement=UnitOfTime.DAYS,
+        value=lambda c: e.get("days") if (e := _countdown(c)) else None,
+        attributes=_countdown_attributes,
     ),
 )
 

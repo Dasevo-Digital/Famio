@@ -11,8 +11,11 @@ Famio-Mitglied sieht:
 | To-do „Einkauf <Liste>“ | Jede Einkaufsliste: Artikel hinzufügen, abhaken (Menge als Beschreibung) |
 | Sensoren „Offene Aufgaben“, „Meine Aufgaben“, „Einkauf offen“ | Anzahl, Titel als Attribute |
 | Sensor „Nächster Termin“ | Beginn des nächsten Termins, Titel/Ort als Attribute |
+| Sensor „Ämter heute“ (ab 1.0.13) | Anzahl der offenen Ämter von heute; Attribut `aemter` mit Titel, Emoji, wer dran ist (`dran`) und ob erledigt |
+| Sensor „Nächste Abfuhr“ (ab 1.0.13) | Datum der nächsten Abholung aus dem Abfallkalender; Attribute `tonnen`, `in_tagen`, `zustaendig`, `weitere` |
+| Sensor „Countdown“ (ab 1.0.13) | Tage bis zum nächsten Countdown-Termin; Attribute `titel`, `datum`, `laeuft`, `alle` |
 | Tracker je Mitglied | Standort der Mitglieder, die ihn in Famio teilen (Akku, Famio-Ort, Pause) |
-| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“ |
+| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“, „Ämter“ (heute für diese Person offen) |
 
 Änderungen kommen live über die WebSocket-Verbindung des Servers an (ohne
 Verbindung alle 5 Minuten).
@@ -48,8 +51,9 @@ Famio-App mit diesem Mitglied anmelden und ihn dort einrichten.
 ## Familien-Dashboard
 
 Die Aktion **Famio: Dashboard erstellen** (`famio.dashboard`) baut aus den
-Entitäten ein fertiges Dashboard: Familienkalender, je Person nächster
-Termin, offene Aufgaben (bei Kindern Punkte) und Aufgabenliste, die
+Entitäten ein fertiges Dashboard: Familienkalender, Ämter, nächste Abfuhr
+und Countdown (sobald die Familie sie nutzt), je Person nächster Termin,
+offene Aufgaben, Ämter (bei Kindern Punkte) und Aufgabenliste, die
 Einkaufslisten und eine Karte der geteilten Standorte.
 
 1. Entwicklerwerkzeuge → Aktionen → „Famio: Dashboard erstellen“ →

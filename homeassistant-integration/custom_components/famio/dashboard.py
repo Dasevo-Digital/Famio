@@ -57,6 +57,19 @@ def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, A
         cards.append(
             {"type": "calendar", "initial_view": "listWeek", "entities": calendars}
         )
+    # Today: chores, bins, countdown (each only once the family uses it).
+    overview = data.overview
+    today = [
+        e
+        for key, used in (
+            ("chores_today", overview.get("chores")),
+            ("next_pickup", overview.get("waste")),
+            ("countdown", overview.get("countdowns")),
+        )
+        if used and (e := entity("sensor", key))
+    ]
+    if today:
+        cards.append({"type": "entities", "entities": today})
 
     for member in data.family:
         mid = member["id"]
@@ -65,6 +78,9 @@ def build_dashboard(hass: HomeAssistant, entry: FamioConfigEntry) -> dict[str, A
             for e in (
                 entity("sensor", f"member_{mid}_next_event"),
                 entity("sensor", f"member_{mid}_open_tasks"),
+                entity("sensor", f"member_{mid}_chores")
+                if data.overview.get("chores")
+                else None,
                 # Points are the children's thing.
                 entity("sensor", f"member_{mid}_points")
                 if member.get("role") == "child"

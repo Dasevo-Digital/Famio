@@ -56,6 +56,7 @@ part 'api/file_routes.dart';
 part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
+part 'api/overview_routes.dart';
 part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
@@ -263,6 +264,7 @@ class FamioApi {
       ..post('/api/notifications/device-token', _noticeDeviceToken)
       ..post('/api/notifications/test', _testNotice)
       ..get('/api/config', _config)
+      ..get('/api/overview', _familyOverview)
       ..get('/api/members', _members)
       ..post('/api/members', _createMember)
       ..delete('/api/members/<id>', _deleteMember)

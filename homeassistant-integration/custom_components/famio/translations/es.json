@@ -75,6 +75,18 @@
       },
       "points": {
         "name": "Puntos"
+      },
+      "chores_today": {
+        "name": "Encargos de hoy"
+      },
+      "chores": {
+        "name": "Encargos"
+      },
+      "next_pickup": {
+        "name": "Próxima recogida de basura"
+      },
+      "countdown": {
+        "name": "Cuenta atrás"
       }
     }
   },

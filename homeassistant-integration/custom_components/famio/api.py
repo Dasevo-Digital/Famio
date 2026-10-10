@@ -314,6 +314,17 @@ class FamioClient:
             json={"since": since, "changes": changes or []},
         )
 
+    async def overview(self) -> dict[str, Any]:
+        """Today's chores and whose turn they are, the next bin pickups and
+        the countdowns, worked out by the server. Empty for servers before
+        Famio 1.0.13, which do not know it."""
+        try:
+            return await self.request("GET", "api/overview")
+        except (FamioAuthError, FamioConnectionError):
+            raise
+        except (FamioError, ValueError):
+            return {}
+
     async def occurrences(
         self, start: datetime, end: datetime
     ) -> list[dict[str, Any]]:

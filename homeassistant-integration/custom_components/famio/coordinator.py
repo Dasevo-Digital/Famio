@@ -45,6 +45,8 @@ class FamioData:
     records: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
     members: dict[str, dict[str, Any]] = field(default_factory=dict)
     upcoming: list[dict[str, Any]] = field(default_factory=list)
+    # Chores of today, next bin pickups, countdowns (GET /api/overview).
+    overview: dict[str, Any] = field(default_factory=dict)
     # The connected account itself (role, what a service account may change).
     me: dict[str, Any] = field(default_factory=dict)
 
@@ -100,6 +102,8 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
         self._lock = asyncio.Lock()
         # What was already announced as an event: alert id → state.
         self._announced: dict[str, str] = {}
+        # Device of the connection itself (set up in async_setup_entry).
+        self.hub_device_id: str | None = None
 
     # --- pull -----------------------------------------------------------------
 
@@ -111,6 +115,7 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
             me = await self.client.me()
             now = dt_util.now()
             upcoming = await self.client.occurrences(now, now + UPCOMING_WINDOW)
+            overview = await self.client.overview()
         except FamioAuthError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except FamioError as err:
@@ -118,6 +123,7 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
         self._state.members = {m["id"]: m for m in members}
         self._state.me = me
         self._state.upcoming = upcoming
+        self._state.overview = overview
         return self._state
 
     async def _pull(self, changes: list[dict[str, Any]] | None = None) -> dict:

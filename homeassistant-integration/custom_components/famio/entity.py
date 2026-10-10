@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from homeassistant.const import MAJOR_VERSION, MINOR_VERSION
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
 from .coordinator import FamioCoordinator
+
+# Since Home Assistant 2026.8 a device names its parent by the parent's
+# device id; the old (domain, identifier) form ends with 2027.8.
+_VIA_DEVICE_ID = (MAJOR_VERSION, MINOR_VERSION) >= (2026, 8)
 
 
 class FamioEntity(CoordinatorEntity[FamioCoordinator]):
@@ -42,8 +47,11 @@ class FamioMemberEntity(FamioEntity):
             manufacturer="Famio",
             model="Familienmitglied",
             entry_type=DeviceEntryType.SERVICE,
-            via_device=(DOMAIN, parent),
         )
+        if not _VIA_DEVICE_ID:
+            self._attr_device_info["via_device"] = (DOMAIN, parent)
+        elif coordinator.hub_device_id:
+            self._attr_device_info["via_device_id"] = coordinator.hub_device_id
 
     @property
     def member_name(self) -> str:
