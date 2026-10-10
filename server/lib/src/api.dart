@@ -63,7 +63,7 @@ part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
 
-const serverVersion = '1.0.14';
+const serverVersion = '1.0.15';
 
 /// Marks a field that the request leaves as it is.
 const Object _unchanged = Accounts.keep;

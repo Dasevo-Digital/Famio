@@ -4,6 +4,13 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 1.0.15 – Besser lesbare Farben
+
+- Schrift, Knöpfe und Abzeichen in den Farben der Bereiche sind jetzt auch
+  ohne „Hoher Kontrast“ gut lesbar. Symbole und Kacheln bleiben bunt.
+- Die Initialen auf farbigen Personenkreisen sind weiß oder dunkel, je
+  nachdem, was besser zu lesen ist.
+
 ## 1.0.14 – Termine in drei Sprachen erkennen
 
 - „Termine erkennen“ liest jetzt auch englische und spanische Datums- und

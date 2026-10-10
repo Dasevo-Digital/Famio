@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 1.0.15 – Easier-to-read colours
+
+- Text, buttons and badges in the colours of each area are now easy to read
+  even without “High contrast”. Icons and tiles stay colourful.
+- Initials on coloured member circles are white or dark, whichever is
+  easier to read.
+
 ## 1.0.14 – Events recognised in three languages
 
 - “Recognise events” now also reads English and Spanish dates and times,

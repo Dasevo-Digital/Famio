@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 1.0.15 – Colores más legibles
+
+- Los textos, botones e insignias en los colores de cada sección se leen
+  ahora bien también sin «Alto contraste». Los iconos y mosaicos siguen
+  siendo de colores.
+- Las iniciales en los círculos de color de cada miembro son blancas u
+  oscuras, según cuál se lea mejor.
+
 ## 1.0.14 – Eventos reconocidos en tres idiomas
 
 - «Reconocer eventos» lee ahora también fechas y horas en inglés y
