@@ -57,7 +57,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
-| Essen: Rezepte (Import von Webseiten), Wochenplan, Zutaten auf die Einkaufsliste | ✅ |
+| Essen: Rezepte (Import von Webseiten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |

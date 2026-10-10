@@ -15,6 +15,7 @@ import '../widgets/files.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import 'nutrition_screens.dart';
 
 const _collections = {
   Collections.recipes,
@@ -604,6 +605,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
                   ),
                 ],
               ),
+              RecipeNutrition(recipe: r),
               if (steps.isNotEmpty) ...[
                 ListHeading(tr.mealsPreparation),
                 for (final (n, step) in steps.indexed)
@@ -953,6 +955,17 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     }
   }
 
+  /// An ingredient keeps its product (nutrients) while its name stays.
+  Ingredient _keepLink(Ingredient i) {
+    final name = i.name.trim().toLowerCase();
+    final before = widget.existing?.ingredients
+        .where(
+          (o) => o.nutrition != null && o.name.trim().toLowerCase() == name,
+        )
+        .firstOrNull;
+    return before == null ? i : i.withNutrition(before.nutrition);
+  }
+
   void _save() {
     if (_title.text.trim().isEmpty) return;
     AppScope.engineOf(context).saveRecipe(
@@ -963,7 +976,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         minutes: int.tryParse(_minutes.text.trim()),
         ingredients: [
           for (final line in _ingredients.text.split('\n'))
-            if (line.trim().isNotEmpty) Ingredient.parse(line),
+            if (line.trim().isNotEmpty) _keepLink(Ingredient.parse(line)),
         ],
         steps: _steps.text.trim(),
         source: _source.text.trim(),

@@ -5348,5 +5348,53 @@
   },
   "budgetImportUnknown": "Diese Datei kann Famio nicht lesen. Bitte den Kontoauszug als CSV oder CAMT (XML) aus dem Online-Banking exportieren.",
   "budgetImportEmpty": "In der Datei stehen keine gebuchten Umsätze.",
-  "budgetImportHint": "Die Datei wird nur auf diesem Gerät gelesen. Famio verbindet sich nicht mit der Bank."
+  "budgetImportHint": "Die Datei wird nur auf diesem Gerät gelesen. Famio verbindet sich nicht mit der Bank.",
+  "mealsNutrition": "Nährwerte",
+  "mealsNutritionPerServing": "pro Portion, ungefähr",
+  "mealsNutritionFromCount": "aus {counted} von {total} Zutaten",
+  "@mealsNutritionFromCount": {
+    "placeholders": {
+      "counted": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
+  "mealsNutritionSource": "Daten: Open Food Facts (ODbL)",
+  "mealsNutritionLink": "Zutaten verknüpfen",
+  "mealsNutritionStart": "Nährwerte aus Open Food Facts",
+  "mealsProtein": "Eiweiß",
+  "mealsFat": "Fett",
+  "mealsCarbs": "Kohlenhydrate",
+  "nutritionConsentTitle": "Open Food Facts fragen?",
+  "nutritionConsentText": "Famio sucht die Zutaten in der freien Datenbank Open Food Facts. Dabei verlässt nur der Suchbegriff oder der Barcode dieses Gerät. Die Nährwerte der gewählten Produkte werden im Rezept gespeichert und sind ungefähre Angaben.",
+  "nutritionConsentAllow": "Erlauben",
+  "nutritionLinkTitle": "Nährwerte verknüpfen",
+  "nutritionNotLinked": "nicht verknüpft",
+  "nutritionPer100": "{kcal} kcal je 100 g",
+  "@nutritionPer100": {
+    "placeholders": {
+      "kcal": {
+        "type": "Object?"
+      }
+    }
+  },
+  "nutritionNoGrams": "Gewicht unbekannt",
+  "nutritionScan": "Barcode scannen",
+  "nutritionUnlink": "Verknüpfung lösen",
+  "nutritionNoResults": "Nichts gefunden.",
+  "nutritionUnknownProduct": "Dieses Produkt kennt Open Food Facts nicht oder es hat keine Nährwerte.",
+  "nutritionOffline": "Open Food Facts ist gerade nicht erreichbar.",
+  "nutritionWeightTitle": "Gewicht",
+  "nutritionWeightOf": "1 × {what} in g",
+  "@nutritionWeightOf": {
+    "placeholders": {
+      "what": {
+        "type": "Object?"
+      }
+    }
+  },
+  "nutritionStop": "Open Food Facts nicht mehr fragen"
 }
