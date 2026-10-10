@@ -4,6 +4,20 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 1.0.12 – Englisch und Spanisch
+
+- Famio gibt es jetzt auch auf Englisch und Spanisch. Die App folgt der
+  Sprache des Geräts; unter Einstellungen → Sprache lässt sie sich
+  festlegen.
+- Benachrichtigungen kommen in der Sprache des jeweiligen Handys.
+- Nach einem Update zeigt die App einmal, was neu ist; unter Einstellungen
+  → „Was ist neu?“ jederzeit.
+- Android: Widget „Famio Notruf“ für den Startbildschirm.
+- Für Admins zeigt die Startseite eine Checkliste, bis die Einrichtung
+  abgeschlossen ist.
+- Größere Tippflächen, bessere Bedienung mit großer Schrift und mit dem
+  Bildschirmleser.
+
 ## 1.0.11 – Sicherer abgleichen
 
 - Ändern zwei von euch dasselbe, ohne die Änderung des anderen zu sehen,

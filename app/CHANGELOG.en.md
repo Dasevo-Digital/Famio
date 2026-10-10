@@ -4,6 +4,19 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 1.0.12 – English and Spanish
+
+- Famio now speaks English and Spanish too. The app follows the device
+  language; you can choose one under Settings → Language.
+- Notifications arrive in the language of each phone.
+- After an update the app shows once what's new; any time under
+  Settings → “What's new?”.
+- Android: “Famio emergency” widget for the home screen.
+- For admins, the start page shows a checklist until the setup is
+  finished.
+- Larger tap targets, better use with large text and with the screen
+  reader.
+
 ## 1.0.11 – Safer syncing
 
 - If two of you change the same thing without seeing the other's change,

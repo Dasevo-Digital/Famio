@@ -4,6 +4,19 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 1.0.12 – Inglés y español
+
+- Famio ya está disponible también en inglés y español. La app sigue el
+  idioma del dispositivo; se puede elegir en Ajustes → Idioma.
+- Las notificaciones llegan en el idioma de cada móvil.
+- Tras una actualización, la app muestra una vez las novedades; en
+  cualquier momento en Ajustes → «¿Qué hay de nuevo?».
+- Android: widget «Emergencia de Famio» para la pantalla de inicio.
+- Para los administradores, la página de inicio muestra una lista hasta
+  terminar la configuración.
+- Zonas táctiles más grandes, mejor uso con letra grande y con el lector
+  de pantalla.
+
 ## 1.0.11 – Sincronizar con más seguridad
 
 - Si dos de vosotros cambiáis lo mismo sin ver el cambio del otro, ya no
