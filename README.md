@@ -577,7 +577,9 @@ nicht.
 
 **Web-App:** Jeder Server liefert die App unter `/app/` aus (gebaut mit
 `app/tool/build_web.sh`, landet in `server/web` und damit in allen
-Server-Paketen). Im Browser gilt die normale Anmeldung inkl. Zwei-Faktor; die
+Server-Paketen). `server/web` liegt nicht im Repo; stammt es aus einer
+anderen Version als der Server, bricht der Docker-Build ab, damit kein
+Paket eine veraltete Web-App mitbringt. Im Browser gilt die normale Anmeldung inkl. Zwei-Faktor; die
 Sitzung bleibt nur im geöffneten Tab (nichts im Browser gespeichert). In der
 Home-Assistant-Seitenleiste meldet das Add-on an: als Server über den
 Home-Assistant-Benutzer, als Client (`mode: client`) mit dem Famio-Konto,

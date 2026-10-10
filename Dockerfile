@@ -9,9 +9,16 @@ COPY server/pubspec.* server/
 WORKDIR /src/server
 RUN dart pub get
 COPY server .
+# server/web is not in the repository: a web app left over from an older
+# build must not end up in the package (1.0.6 to 1.0.14 shipped 1.0.5).
 RUN dart build cli -t bin/server.dart -o /out \
     && mkdir -p /out/data \
-    && if [ -f web/index.html ]; then cp -R web /out/bundle/web; fi
+    && if [ -f web/index.html ]; then \
+         v=$(sed -n 's/^version: *//p' pubspec.yaml); \
+         grep -q "\"version\":\"$v\"" web/version.json \
+           || { echo "server/web ist nicht Version $v: app/tool/build_web.sh ausführen" >&2; exit 1; }; \
+         cp -R web /out/bundle/web; \
+       fi
 
 # Distroless: glibc and CA certificates only (needed for fetching https
 # calendar subscriptions), no shell or package manager.
