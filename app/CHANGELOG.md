@@ -4,6 +4,20 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 1.0.13 – Mehr Verbindungen
+
+- Unterpunkte von Aufgaben erscheinen in Apple Erinnerungen als
+  Unteraufgaben und in Microsoft To Do als Schritte.
+- Fehlbestände aus PreppSuite auf die Einkaufsliste übernehmen
+  (Einkaufsliste → ⋮).
+- Kontoauszug ins Haushaltsbuch importieren (CSV oder CAMT, nur auf dem
+  Gerät gelesen).
+- Nährwerte pro Portion für Rezepte über Open Food Facts.
+- Dokumente aus PaperBuddy mit ihren Fristen bei den Dokumenten.
+- Jahresrückblick mit Zahlen, Meilensteinen, Reisen und Fotos, auch als
+  PDF.
+- Home Assistant: Sensoren für Ämter, nächste Abfuhr und Countdown.
+
 ## 1.0.12 – Englisch und Spanisch
 
 - Famio gibt es jetzt auch auf Englisch und Spanisch. Die App folgt der

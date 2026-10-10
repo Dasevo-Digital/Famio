@@ -4,6 +4,20 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 1.0.13 – Más conexiones
+
+- Los pasos de las tareas aparecen en Recordatorios de Apple como
+  subtareas y en Microsoft To Do como pasos.
+- Añadir las faltas de PreppSuite a la lista de la compra (lista de la
+  compra → ⋮).
+- Importar un extracto bancario al presupuesto (CSV o CAMT, solo se lee en
+  el dispositivo).
+- Valores nutricionales por ración en las recetas con Open Food Facts.
+- Documentos de PaperBuddy con sus plazos en Documentos.
+- Resumen del año con cifras, hitos, viajes y fotos, también en PDF.
+- Home Assistant: sensores de encargos, próxima recogida de basura y
+  cuenta atrás.
+
 ## 1.0.12 – Inglés y español
 
 - Famio ya está disponible también en inglés y español. La app sigue el

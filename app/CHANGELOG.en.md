@@ -4,6 +4,20 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 1.0.13 – More connections
+
+- Steps of tasks appear in Apple Reminders as subtasks and in Microsoft
+  To Do as steps.
+- Add shortages from PreppSuite to the shopping list (shopping list → ⋮).
+- Import a bank statement into the budget (CSV or CAMT, read on the device
+  only).
+- Nutrition per serving for recipes from Open Food Facts.
+- Documents from PaperBuddy with their deadlines under Documents.
+- Year in review with numbers, milestones, trips and photos, also as a
+  PDF.
+- Home Assistant: sensors for chores, the next waste collection and the
+  countdown.
+
 ## 1.0.12 – English and Spanish
 
 - Famio now speaks English and Spanish too. The app follows the device
