@@ -11,6 +11,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
+import 'bank_import_screen.dart';
 import '../l10n.dart';
 
 const _collections = {
@@ -63,6 +64,12 @@ class _BudgetScreenState extends State<BudgetScreen> {
       title: tr.sectionBudget,
       subtitle: tr.budgetFamilySHouseholdBook,
       actions: [
+        BubbleButton(
+          icon: AppIcons.fileArrowUp,
+          tooltip: tr.budgetImportMenu,
+          onPressed: () => importBankStatement(context),
+        ),
+        const SizedBox(width: 8),
         BubbleButton(
           icon: AppIcons.gearSix,
           tooltip: tr.budgetWhoSeesLimits,
@@ -407,6 +414,7 @@ class _EntryEditorState extends State<_EntryEditor> {
         memberId: _member,
         monthly: _monthly,
         until: until ?? widget.existing?.until,
+        importId: widget.existing?.importId,
       ),
     );
     Navigator.pop(context);

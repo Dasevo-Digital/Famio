@@ -58,7 +58,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
 | Essen: Rezepte (Import von Webseiten), Wochenplan, Zutaten auf die Einkaufsliste | ✅ |
-| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder | ✅ |
+| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
@@ -206,6 +206,21 @@ neuere Änderung, Löschungen gehen in beide Richtungen.
   ihre „Schritte“, in beide Richtungen.
 - Eine Familie kann die Anbindungen in der Server-Verwaltung → Bereiche
   ganz abschalten.
+
+### Kontoauszug ins Haushaltsbuch
+
+Finanzen → Symbol „Kontoauszug importieren“ liest einen Kontoauszug, den
+das Online-Banking als Datei exportiert: **CAMT.052/.053/.054** (XML, bei
+den meisten Banken unter „Umsätze exportieren“) oder **CSV** deutscher
+Banken (Sparkasse, Volksbank, DKB, ING, comdirect, Postbank, N26 …; die
+Spalten erkennt Famio an ihren Namen, auch in Windows-1252). Die Datei wird
+nur auf dem Gerät gelesen, Famio verbindet sich nicht mit der Bank.
+Vorgemerkte Umsätze bleiben draußen. Jede Buchung bekommt eine Kategorie:
+die, die die Familie für denselben Empfänger zuletzt gewählt hat, sonst
+nach Stichworten (REWE → Lebensmittel, Stadtwerke → Wohnen …). Was schon
+importiert wurde (überlappende Auszüge) oder wohl schon von Hand
+eingetragen ist (gleicher Betrag binnen drei Tagen, oder eine monatliche
+Buchung in diesem Monat), ist nicht angehakt.
 
 ### PreppSuite
 

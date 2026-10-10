@@ -2081,5 +2081,16 @@
   "shoppingPreppSuiteAdded": "{n, plural, =1{1 item added} other{{n} items added}}",
   "shoppingPreppSuiteNotAList": "This is not a shopping list from PreppSuite.",
   "shoppingPreppSuiteNewer": "The file comes from a newer PreppSuite. Please update Famio.",
-  "shoppingPreppSuiteNothing": "Nothing is missing in PreppSuite right now."
+  "shoppingPreppSuiteNothing": "Nothing is missing in PreppSuite right now.",
+  "budgetImportMenu": "Import bank statement",
+  "budgetImportTitle": "Bank statement",
+  "budgetImportCount": "{n, plural, =1{1 booking} other{{n} bookings}}",
+  "budgetImportKnown": "{count} already in the budget",
+  "budgetImportAlready": "Already in the budget",
+  "budgetImportMaybe": "Maybe entered already",
+  "budgetImportAdd": "{n, plural, =1{Add 1 booking} other{Add {n} bookings}}",
+  "budgetImportAdded": "{n, plural, =1{1 booking added} other{{n} bookings added}}",
+  "budgetImportUnknown": "Famio cannot read this file. Please export the statement from online banking as CSV or CAMT (XML).",
+  "budgetImportEmpty": "The file contains no booked transactions.",
+  "budgetImportHint": "The file is only read on this device. Famio does not connect to the bank."
 }

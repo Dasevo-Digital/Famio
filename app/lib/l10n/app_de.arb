@@ -5309,5 +5309,44 @@
   },
   "shoppingPreppSuiteNotAList": "Das ist keine Einkaufsliste aus PreppSuite.",
   "shoppingPreppSuiteNewer": "Die Datei stammt aus einer neueren PreppSuite. Bitte Famio aktualisieren.",
-  "shoppingPreppSuiteNothing": "In PreppSuite fehlt gerade nichts."
+  "shoppingPreppSuiteNothing": "In PreppSuite fehlt gerade nichts.",
+  "budgetImportMenu": "Kontoauszug importieren",
+  "budgetImportTitle": "Kontoauszug",
+  "budgetImportCount": "{n, plural, =1{1 Buchung} other{{n} Buchungen}}",
+  "@budgetImportCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetImportKnown": "{count} schon im Haushaltsbuch",
+  "@budgetImportKnown": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "budgetImportAlready": "Schon im Haushaltsbuch",
+  "budgetImportMaybe": "Vielleicht schon eingetragen",
+  "budgetImportAdd": "{n, plural, =1{1 Buchung übernehmen} other{{n} Buchungen übernehmen}}",
+  "@budgetImportAdd": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetImportAdded": "{n, plural, =1{1 Buchung übernommen} other{{n} Buchungen übernommen}}",
+  "@budgetImportAdded": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "budgetImportUnknown": "Diese Datei kann Famio nicht lesen. Bitte den Kontoauszug als CSV oder CAMT (XML) aus dem Online-Banking exportieren.",
+  "budgetImportEmpty": "In der Datei stehen keine gebuchten Umsätze.",
+  "budgetImportHint": "Die Datei wird nur auf diesem Gerät gelesen. Famio verbindet sich nicht mit der Bank."
 }

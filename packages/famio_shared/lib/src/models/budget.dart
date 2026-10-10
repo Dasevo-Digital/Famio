@@ -33,6 +33,7 @@ class BudgetEntry {
     this.memberId,
     this.monthly = false,
     this.until,
+    this.importId,
   });
 
   factory BudgetEntry.fromRecord(SyncRecord r) => BudgetEntry(
@@ -45,6 +46,7 @@ class BudgetEntry {
     memberId: r.data['memberId'] as String?,
     monthly: r.data['monthly'] as bool? ?? false,
     until: _date(r.data['until']),
+    importId: r.data['importId'] as String?,
   );
 
   final String id;
@@ -65,6 +67,10 @@ class BudgetEntry {
   /// Last month of a [monthly] entry (e.g. a cancelled contract).
   final DateTime? until;
 
+  /// The booking of a bank statement it came from, so importing an
+  /// overlapping statement does not add it twice.
+  final String? importId;
+
   /// Whether the entry counts in [month] (any day of it).
   bool inMonth(DateTime month) {
     final m = month.year * 12 + month.month;
@@ -83,6 +89,7 @@ class BudgetEntry {
     'memberId': memberId,
     'monthly': monthly,
     'until': until == null ? null : _day(until!),
+    if (importId != null) 'importId': importId,
   };
 }
 

@@ -2081,5 +2081,16 @@
   "shoppingPreppSuiteAdded": "{n, plural, =1{1 artículo añadido} other{{n} artículos añadidos}}",
   "shoppingPreppSuiteNotAList": "Esto no es una lista de la compra de PreppSuite.",
   "shoppingPreppSuiteNewer": "El archivo procede de una versión más reciente de PreppSuite. Actualiza Famio.",
-  "shoppingPreppSuiteNothing": "Ahora mismo no falta nada en PreppSuite."
+  "shoppingPreppSuiteNothing": "Ahora mismo no falta nada en PreppSuite.",
+  "budgetImportMenu": "Importar extracto bancario",
+  "budgetImportTitle": "Extracto bancario",
+  "budgetImportCount": "{n, plural, =1{1 movimiento} other{{n} movimientos}}",
+  "budgetImportKnown": "{count} ya en el presupuesto",
+  "budgetImportAlready": "Ya está en el presupuesto",
+  "budgetImportMaybe": "Quizá ya anotado",
+  "budgetImportAdd": "{n, plural, =1{Añadir 1 movimiento} other{Añadir {n} movimientos}}",
+  "budgetImportAdded": "{n, plural, =1{1 movimiento añadido} other{{n} movimientos añadidos}}",
+  "budgetImportUnknown": "Famio no puede leer este archivo. Exporta el extracto desde la banca en línea como CSV o CAMT (XML).",
+  "budgetImportEmpty": "El archivo no contiene movimientos contabilizados.",
+  "budgetImportHint": "El archivo solo se lee en este dispositivo. Famio no se conecta con el banco."
 }
