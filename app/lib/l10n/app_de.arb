@@ -4609,6 +4609,31 @@
       }
     }
   },
+  "milestonesSexHint": "Trag im Profil des Kindes das Geschlecht ein, dann passen die Angaben zur Pubertät genauer.",
+  "milestonesPhases": "Entwicklungsphasen",
+  "milestonesPhaseNow": "Gerade dran · {from} bis {to}",
+  "@milestonesPhaseNow": {
+    "placeholders": {
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "milestonesPhaseNext": "Als Nächstes · {from} bis {to}",
+  "@milestonesPhaseNext": {
+    "placeholders": {
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "milestonesBirth": "Geburt",
   "choresTabRoutines": "Routinen",
   "choresTabRewards": "Belohnungen",
   "kidsAtMonths": "Mit {n, plural, =1{1 Monat} other{{n} Monaten}}",
@@ -4769,6 +4794,17 @@
   },
   "timelineTypicallyBetween": "Typisch zwischen {from} und {to}",
   "@timelineTypicallyBetween": {
+    "placeholders": {
+      "from": {
+        "type": "Object?"
+      },
+      "to": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timelinePhase": "Entwicklungsphase · {from} bis {to}",
+  "@timelinePhase": {
     "placeholders": {
       "from": {
         "type": "Object?"

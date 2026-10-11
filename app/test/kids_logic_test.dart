@@ -154,6 +154,17 @@ void main() {
     );
   });
 
+  test('development phases: going on now or coming soon', () {
+    final autonomy = developmentPhases.firstWhere((p) => p.id == 'autonomy');
+    expect(phaseIsUpcoming(autonomy, 15), isTrue);
+    expect(phaseIsUpcoming(autonomy, 10), isFalse);
+    expect(phaseIsUpcoming(autonomy, 10, 12), isTrue);
+    expect(phaseIsCurrent(autonomy, 15), isFalse);
+    expect(phaseIsCurrent(autonomy, 24), isTrue);
+    expect(phaseIsUpcoming(autonomy, 24), isFalse);
+    expect(phaseIsCurrent(autonomy, 48), isFalse);
+  });
+
   test('a two-year-old is not asked about baby milestones', () {
     final son = Child(id: 's', name: 'Ben', birthDate: DateTime(2024, 9, 20));
     final at = DateTime(2026, 10, 1);

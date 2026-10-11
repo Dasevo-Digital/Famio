@@ -12,8 +12,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUpAll(() => initializeDateFormatting('de'));
 
-  /// The milestones tab of a child born [months] months ago today.
-  Future<SyncEngine> openMilestones(WidgetTester tester, int months) async {
+  /// The milestones tab (or another [tab], null: the one it opens with) of a
+  /// child born [months] months ago today.
+  Future<SyncEngine> openMilestones(
+    WidgetTester tester,
+    int months, {
+    ChildSex? sex,
+    String? tab = 'Meilensteine',
+  }) async {
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -33,6 +39,7 @@ void main() {
         id: 'c1',
         name: 'Ben',
         birthDate: DateTime(now.year, now.month - months, now.day),
+        sex: sex,
       ),
     );
     state
@@ -48,8 +55,10 @@ void main() {
           ),
         );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Meilensteine').first);
-    await tester.pumpAndSettle();
+    if (tab != null) {
+      await tester.tap(find.text(tab).first);
+      await tester.pumpAndSettle();
+    }
     return engine;
   }
 
@@ -97,6 +106,59 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Erste freie Schritte'), findsWidgets);
     expect(find.textContaining('Geschafft am'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  Future<void> scrollTo(WidgetTester tester, String text) =>
+      tester.scrollUntilVisible(
+        find.text(text),
+        300,
+        scrollable: find.byType(Scrollable).last,
+      );
+
+  testWidgets('a newborn: what it sees and hears', (tester) async {
+    await openMilestones(tester, 0);
+    expect(find.text('Entwicklungsphasen'), findsOneWidget);
+    expect(find.text('Sehen: Gesichter auf Armlänge'), findsOneWidget);
+    expect(find.text('Hören: von Anfang an'), findsOneWidget);
+    expect(find.textContaining('Gerade dran · Geburt bis'), findsWidgets);
+    expect(find.textContaining('20 bis 30 Zentimetern'), findsOneWidget);
+    await scrollTo(tester, 'Schaut Gesichter aufmerksam an');
+    expect(find.text('Schaut Gesichter aufmerksam an'), findsWidgets);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('puberty follows the sex in the profile', (tester) async {
+    await openMilestones(tester, 150, sex: ChildSex.female);
+    expect(find.text('Pubertät: Beginn'), findsOneWidget);
+    expect(find.text('Pubertät: Mitte'), findsOneWidget);
+    expect(find.textContaining('Trag im Profil'), findsNothing);
+    await scrollTo(tester, 'Erste Periode');
+    expect(find.text('Erste Periode'), findsWidgets);
+    expect(find.text('Stimmbruch'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('without the sex both are shown and the app asks for it', (
+    tester,
+  ) async {
+    await openMilestones(tester, 150);
+    expect(find.textContaining('Trag im Profil'), findsOneWidget);
+    await scrollTo(tester, 'Stimmbruch');
+    expect(find.text('Stimmbruch'), findsWidgets);
+    expect(find.text('Erste Periode'), findsWidgets);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('the timeline announces a coming phase and explains it', (
+    tester,
+  ) async {
+    await openMilestones(tester, 17, tab: 'Zeitstrahl');
+    final phase = find.text('Autonomiephase („Trotzphase“)');
+    expect(phase, findsOneWidget);
+    await tester.tap(phase);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Wutanfälle gehören dazu'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 }

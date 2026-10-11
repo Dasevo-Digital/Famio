@@ -132,4 +132,61 @@ void main() {
     expect(back.contractions.first.length, const Duration(minutes: 1));
     expect(back.contractions.last.end, isNull);
   });
+
+  test('puberty milestones follow the sex of the child', () {
+    List<String> ids(ChildSex? sex) => [
+      for (final m in milestonesFor(sex)) m.id,
+    ];
+    expect(ids(ChildSex.female), containsAll(['breasts', 'first_period']));
+    expect(ids(ChildSex.female), isNot(contains('voice_break')));
+    expect(ids(ChildSex.male), containsAll(['voice_break', 'first_beard']));
+    expect(ids(ChildSex.male), isNot(contains('first_period')));
+    // Without a recorded sex: all of them, with windows spanning both.
+    expect(ids(null), containsAll(['first_period', 'voice_break']));
+    (double, double) spurt(ChildSex? sex) {
+      final m = milestonesFor(sex).firstWhere((m) => m.id == 'growth_spurt');
+      return (m.fromMonth, m.toMonth);
+    }
+
+    expect(spurt(ChildSex.female), (120, 168));
+    expect(spurt(ChildSex.male), (144, 192));
+    expect(spurt(null), (120, 192));
+    final early = developmentPhasesFor(
+      ChildSex.male,
+    ).firstWhere((p) => p.id == 'puberty_early');
+    expect((early.fromMonth, early.toMonth), (132, 168));
+  });
+
+  test('milestones and phases have sound windows', () {
+    void check(
+      String id,
+      double from,
+      double to,
+      List<(double, double)> bySex,
+    ) {
+      expect(from, lessThan(to), reason: id);
+      for (final (f, t) in bySex) {
+        // The general window spans the ones of girls and boys.
+        expect(f, greaterThanOrEqualTo(from), reason: id);
+        expect(t, lessThanOrEqualTo(to), reason: id);
+        expect(f, lessThan(t), reason: id);
+      }
+    }
+
+    expect({for (final m in milestones) m.id}, hasLength(milestones.length));
+    for (final m in milestones) {
+      check(m.id, m.fromMonth, m.toMonth, [?m.female, ?m.male]);
+    }
+    expect({
+      for (final p in developmentPhases) p.id,
+    }, hasLength(developmentPhases.length));
+    for (final p in developmentPhases) {
+      check(p.id, p.fromMonth, p.toMonth, [?p.female, ?p.male]);
+    }
+    // Listed in the order they begin, for girls and boys alike.
+    for (final sex in [null, ...ChildSex.values]) {
+      final starts = [for (final p in developmentPhasesFor(sex)) p.fromMonth];
+      expect(starts, [...starts]..sort(), reason: '$sex');
+    }
+  });
 }

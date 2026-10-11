@@ -40,6 +40,10 @@ Map<String, String> collectSharedTexts() {
       m.title;
       m.hint;
     }
+    for (final p in developmentPhases) {
+      p.title;
+      p.info;
+    }
     for (final c in checkups) {
       c.title;
       c.window;

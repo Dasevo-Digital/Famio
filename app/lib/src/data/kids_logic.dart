@@ -37,6 +37,17 @@ bool milestoneIsUpcoming(Milestone milestone, int ageInMonths) =>
     milestone.fromMonth > ageInMonths - 1 &&
     milestone.fromMonth <= ageInMonths + 6;
 
+/// Whether a development phase is going on at this age.
+bool phaseIsCurrent(DevelopmentPhase phase, double ageInMonths) =>
+    phase.fromMonth <= ageInMonths && ageInMonths < phase.toMonth;
+
+/// Whether a development phase begins within the next [months].
+bool phaseIsUpcoming(
+  DevelopmentPhase phase,
+  double ageInMonths, [
+  double months = 6,
+]) => phase.fromMonth > ageInMonths && phase.fromMonth <= ageInMonths + months;
+
 enum DueState {
   /// Recorded as done.
   done,

@@ -165,6 +165,7 @@ class _TimelineItem {
     this.photos = const [],
     this.entry,
     this.due,
+    this.info,
     this.future = false,
   });
 
@@ -178,6 +179,9 @@ class _TimelineItem {
 
   /// An open or upcoming check-up/vaccination, tappable to mark as done.
   final DueItem? due;
+
+  /// What a coming development phase is about, shown on tap.
+  final String? info;
   final bool future;
 }
 

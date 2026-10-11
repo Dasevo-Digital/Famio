@@ -33,7 +33,7 @@ void main() {
     addTearDown(() => useSharedTexts('de'));
     useSharedTexts('en');
     expect(MemberRole.guest.label, 'Guest');
-    expect(milestones.first.title, startsWith('Briefly lifts'));
+    expect(milestoneById('head_lift')!.title, startsWith('Briefly lifts'));
     useSharedTexts('es');
     expect(MemberRole.guest.label, 'Invitado');
     useSharedTexts('de');

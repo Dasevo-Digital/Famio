@@ -58,7 +58,7 @@ class _Timeline extends StatelessWidget {
             due: d,
             future: true,
           ),
-      for (final m in milestones)
+      for (final m in milestonesFor(child.sex))
         if (!reached.contains(m.id) && milestoneIsUpcoming(m, ageMonths))
           _TimelineItem(
             date: child.ageDate(m.fromMonth),
@@ -69,6 +69,20 @@ class _Timeline extends StatelessWidget {
             ),
             icon: AppIcons.star,
             color: FamioColors.of(context).inkSoft,
+            future: true,
+          ),
+      for (final p in developmentPhasesFor(child.sex))
+        if (phaseIsUpcoming(p, ageMonths.toDouble()))
+          _TimelineItem(
+            date: child.ageDate(p.fromMonth),
+            title: p.title,
+            subtitle: tr.timelinePhase(
+              _phaseAge(p.fromMonth),
+              _months(p.toMonth),
+            ),
+            icon: AppIcons.sparkle,
+            color: FamioColors.of(context).inkSoft,
+            info: p.info,
             future: true,
           ),
     ]..sort((a, b) => a.date.compareTo(b.date));
@@ -242,6 +256,8 @@ class _TimelineRow extends StatelessWidget {
                       )
                     : due != null
                     ? () => showDueActions(context, child, due)
+                    : item.info != null
+                    ? () => _showPhaseInfo(context, item.title, item.info!)
                     : null,
                 child: Opacity(
                   opacity: item.future ? 0.75 : 1,

@@ -1,18 +1,23 @@
 import '../texts.dart';
+import 'growth_reference.dart';
 
 /// Developmental milestones with the age window (in months) in which most
 /// children reach them. Orientation only – children develop at their own pace.
 ///
 /// Gross motor windows follow the WHO Motor Development Study (2006); the
 /// others are typical ranges from paediatric guidance (e.g. "Grenzsteine der
-/// Entwicklung"). Never use them to diagnose anything.
+/// Entwicklung", the CDC milestone checklists of 2022). Puberty follows the
+/// usual reference ranges (AWMF guidelines on early and late puberty,
+/// KiGGS for the first period). Never use them to diagnose anything.
 enum MilestoneArea {
+  senses('Sehen & Hören'),
   motor('Bewegung'),
   fineMotor('Hände & Geschick'),
   language('Sprache'),
   social('Gefühle & Miteinander'),
   selfCare('Selbstständigkeit'),
-  body('Körper');
+  body('Körper'),
+  puberty('Pubertät');
 
   const MilestoneArea(this._label);
 
@@ -28,9 +33,12 @@ class Milestone {
     this.area,
     this._title,
     this.fromMonth,
-    this.toMonth, [
+    this.toMonth, {
     this._hint = '',
-  ]);
+    this.only,
+    this.female,
+    this.male,
+  });
 
   final String id;
   final MilestoneArea area;
@@ -42,9 +50,73 @@ class Milestone {
   final double toMonth;
   final String _hint;
   String get hint => sharedText('Milestone|$_hint', _hint);
+
+  /// Only for children of this sex (some signs of puberty); null: for all.
+  final ChildSex? only;
+
+  /// Windows (from, to) of girls and boys where they differ; a child without
+  /// a recorded sex gets [fromMonth]–[toMonth], which spans both.
+  final (double, double)? female;
+  final (double, double)? male;
+
+  /// This milestone with the window for a child of [sex].
+  Milestone forSex(ChildSex? sex) {
+    final window = switch (sex) {
+      ChildSex.female => female,
+      ChildSex.male => male,
+      null => null,
+    };
+    if (window == null) return this;
+    return Milestone(
+      id,
+      area,
+      _title,
+      window.$1,
+      window.$2,
+      hint: _hint,
+      only: only,
+    );
+  }
 }
 
+/// The milestones of a child of [sex] (null: not recorded), with the
+/// windows for that sex.
+List<Milestone> milestonesFor(ChildSex? sex) => [
+  for (final m in milestones)
+    if (m.only == null || sex == null || m.only == sex) m.forSex(sex),
+];
+
 const milestones = <Milestone>[
+  // Sehen & Hören
+  Milestone(
+    'faces',
+    MilestoneArea.senses,
+    'Schaut Gesichter aufmerksam an',
+    0,
+    1,
+    hint: 'Neugeborene sehen in 20–30 cm Abstand am schärfsten.',
+  ),
+  Milestone(
+    'follow_eyes',
+    MilestoneArea.senses,
+    'Folgt einem Gesicht mit den Augen',
+    1,
+    3,
+  ),
+  Milestone(
+    'turn_to_sound',
+    MilestoneArea.senses,
+    'Dreht den Kopf zu Geräuschen',
+    3,
+    6,
+  ),
+  Milestone(
+    'own_name',
+    MilestoneArea.senses,
+    'Reagiert auf den eigenen Namen',
+    5,
+    10,
+  ),
   // Bewegung (WHO-Zeitfenster für die sechs großen motorischen Meilensteine)
   Milestone(
     'head_lift',
@@ -68,7 +140,7 @@ const milestones = <Milestone>[
     'Krabbelt auf Händen und Knien',
     5,
     13.5,
-    'Manche Kinder lassen das Krabbeln ganz aus – das ist normal.',
+    hint: 'Manche Kinder lassen das Krabbeln ganz aus – das ist normal.',
   ),
   Milestone(
     'stand_support',
@@ -237,7 +309,7 @@ const milestones = <Milestone>[
     'Nachts trocken',
     30,
     72,
-    'Nachts trocken zu werden dauert oft deutlich länger als tagsüber.',
+    hint: 'Nachts trocken zu werden dauert oft deutlich länger als tagsüber.',
   ),
   Milestone('dress', MilestoneArea.selfCare, 'Zieht sich allein an', 42, 60),
   Milestone('shoes', MilestoneArea.selfCare, 'Bindet Schuhe selbst', 60, 84),
@@ -251,6 +323,65 @@ const milestones = <Milestone>[
     24,
   ),
   Milestone('loose_tooth', MilestoneArea.body, 'Erster Wackelzahn', 60, 84),
+  // Pubertät
+  Milestone(
+    'deodorant',
+    MilestoneArea.puberty,
+    'Braucht das erste Deo',
+    96,
+    144,
+    hint:
+        'Stärkerer Schweißgeruch kommt oft schon vor den sichtbaren Zeichen '
+        'der Pubertät.',
+  ),
+  Milestone(
+    'breasts',
+    MilestoneArea.puberty,
+    'Die Brust beginnt zu wachsen',
+    96,
+    156,
+    only: ChildSex.female,
+    hint:
+        'Meist das erste sichtbare Zeichen der Pubertät. Beginnt sie vor dem '
+        '8. Geburtstag oder bis zum 13. noch nicht, in der Kinderarztpraxis '
+        'ansprechen.',
+  ),
+  Milestone(
+    'growth_spurt',
+    MilestoneArea.puberty,
+    'Wachstumsschub der Pubertät',
+    120,
+    192,
+    female: (120, 168),
+    male: (144, 192),
+    hint: 'Im stärksten Jahr wachsen viele 8 bis 10 cm.',
+  ),
+  Milestone(
+    'first_period',
+    MilestoneArea.puberty,
+    'Erste Periode',
+    120,
+    180,
+    only: ChildSex.female,
+    hint: 'Meist etwa zwei Jahre nach Beginn der Brustentwicklung.',
+  ),
+  Milestone(
+    'voice_break',
+    MilestoneArea.puberty,
+    'Stimmbruch',
+    132,
+    180,
+    only: ChildSex.male,
+    hint: 'Die Stimme kippt oft monatelang, bevor sie tiefer bleibt.',
+  ),
+  Milestone(
+    'first_beard',
+    MilestoneArea.puberty,
+    'Erster Bartflaum',
+    156,
+    216,
+    only: ChildSex.male,
+  ),
 ];
 
 Milestone? milestoneById(String? id) =>

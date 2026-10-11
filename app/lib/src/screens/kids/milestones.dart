@@ -17,6 +17,7 @@ class _MilestonesView extends StatelessWidget {
       for (final e in entries)
         if (e.kind == ChildEntryKind.milestone) e.refId: e,
     };
+    final all = milestonesFor(child.sex);
     final age =
         child.ageInMonths(DateTime.now()) +
         DateTime.now()
@@ -26,17 +27,43 @@ class _MilestonesView extends StatelessWidget {
     // Keep reached memories, current steps and the near future. Unfinished
     // steps whose time has passed are folded away instead of making a
     // toddler's family confirm baby skills again.
-    final visible = milestones.where(
+    final visible = all.where(
       (m) => byMilestone.containsKey(m.id) || milestoneIsRelevant(m, age),
     );
     final past = [
-      for (final m in milestones)
+      for (final m in all)
         if (!byMilestone.containsKey(m.id) && milestoneIsPast(m, age)) m,
     ];
+    final phases = developmentPhasesFor(child.sex);
+    final current = [
+      for (final p in phases)
+        if (phaseIsCurrent(p, age)) p,
+    ];
+    final next = [
+      for (final p in phases)
+        if (phaseIsUpcoming(p, age, 12)) p,
+    ].take(2);
+    // Puberty differs between girls and boys: without the sex in the
+    // child's profile both windows are shown together.
+    final askSex =
+        child.sex == null &&
+        ([...current, ...next].any((p) => p.bySex) ||
+            visible.any(
+              (m) => m.only != null || m.female != null || m.male != null,
+            ));
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
       children: [
         _Disclaimer(tr.milestonesGuideValuesMostChildren),
+        if (askSex) ...[
+          const SizedBox(height: 8),
+          _Disclaimer(tr.milestonesSexHint),
+        ],
+        if (current.isNotEmpty || next.isNotEmpty) ...[
+          ListHeading(tr.milestonesPhases),
+          for (final p in [...current, ...next])
+            _PhaseCard(phase: p, age: age, color: color),
+        ],
         for (final area in MilestoneArea.values)
           if (visible.any((m) => m.area == area)) ...[
             ListHeading(area.label),
@@ -143,7 +170,8 @@ class _MilestoneRow extends StatelessWidget {
                   Text(milestone.title, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 6),
                   _WindowBar(
-                    milestone: milestone,
+                    from: milestone.fromMonth,
+                    to: milestone.toMonth,
                     age: age,
                     color: color,
                     reachedAt: done
@@ -181,13 +209,16 @@ class _MilestoneRow extends StatelessWidget {
 /// Shows the typical window on an age axis and where the child is now.
 class _WindowBar extends StatelessWidget {
   const _WindowBar({
-    required this.milestone,
+    required this.from,
+    required this.to,
     required this.age,
     required this.color,
     this.reachedAt,
   });
 
-  final Milestone milestone;
+  /// The typical window in months of age.
+  final double from;
+  final double to;
   final double age;
   final Color color;
   final double? reachedAt;
@@ -195,12 +226,8 @@ class _WindowBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    final start = math.max(
-      0.0,
-      milestone.fromMonth - (milestone.toMonth - milestone.fromMonth) * 0.5,
-    );
-    final end =
-        milestone.toMonth + (milestone.toMonth - milestone.fromMonth) * 0.5;
+    final start = math.max(0.0, from - (to - from) * 0.5);
+    final end = to + (to - from) * 0.5;
     double pos(double m) => ((m - start) / (end - start)).clamp(0.0, 1.0);
     final marker = reachedAt ?? age;
     return LayoutBuilder(
@@ -223,8 +250,8 @@ class _WindowBar extends StatelessWidget {
                 ),
               ),
               Positioned(
-                left: pos(milestone.fromMonth) * w,
-                width: (pos(milestone.toMonth) - pos(milestone.fromMonth)) * w,
+                left: pos(from) * w,
+                width: (pos(to) - pos(from)) * w,
                 top: 4,
                 child: Container(
                   height: 8,
@@ -254,6 +281,83 @@ class _WindowBar extends StatelessWidget {
     );
   }
 }
+
+/// A development phase going on now or coming soon: what it is about, not
+/// something to tick off.
+class _PhaseCard extends StatelessWidget {
+  const _PhaseCard({
+    required this.phase,
+    required this.age,
+    required this.color,
+  });
+
+  final DevelopmentPhase phase;
+  final double age;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final from = _phaseAge(phase.fromMonth);
+    final to = _months(phase.toMonth);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SoftCard(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(phase.title, style: theme.textTheme.titleMedium),
+            const SizedBox(height: 6),
+            _WindowBar(
+              from: phase.fromMonth,
+              to: phase.toMonth,
+              age: age,
+              color: color,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              phaseIsCurrent(phase, age)
+                  ? tr.milestonesPhaseNow(from, to)
+                  : tr.milestonesPhaseNext(from, to),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: FamioColors.of(context).inkSoft,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(phase.info, style: theme.textTheme.bodyMedium),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The start of a phase: "Geburt" instead of "0 Mon.".
+String _phaseAge(double months) =>
+    months == 0 ? tr.milestonesBirth : _months(months);
+
+/// A coming phase from the timeline, explained.
+Future<void> _showPhaseInfo(BuildContext context, String title, String info) =>
+    showModalBottomSheet<void>(
+      context: context,
+      // Above the floating navigation bar.
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Text(info, style: Theme.of(context).textTheme.bodyMedium),
+            ],
+          ),
+        ),
+      ),
+    );
 
 class _Disclaimer extends StatelessWidget {
   const _Disclaimer(this.text);

@@ -32,6 +32,8 @@ const sharedEn = <String, String>{
   "MilestoneArea.social": "Feelings & social",
   "MilestoneArea.selfCare": "Independence",
   "MilestoneArea.body": "Body",
+  "MilestoneArea.senses": "Seeing & hearing",
+  "MilestoneArea.puberty": "Puberty",
   "ChoreRepeat.once": "Once",
   "ChoreRepeat.daily": "Daily",
   "ChoreRepeat.weekly": "Once a week",
@@ -237,6 +239,61 @@ const sharedEn = <String, String>{
   "Milestone|Erster Zahn": "First tooth",
   "Milestone|Schläft (meist) durch": "Sleeps through the night (mostly)",
   "Milestone|Erster Wackelzahn": "First loose tooth",
+  "Milestone|Schaut Gesichter aufmerksam an": "Looks closely at faces",
+  "Milestone|Neugeborene sehen in 20–30 cm Abstand am schärfsten.":
+      "Newborns see most sharply at 20–30 cm.",
+  "Milestone|Folgt einem Gesicht mit den Augen": "Follows a face with the eyes",
+  "Milestone|Dreht den Kopf zu Geräuschen": "Turns the head towards sounds",
+  "Milestone|Reagiert auf den eigenen Namen": "Responds to their own name",
+  "Milestone|Braucht das erste Deo": "Needs a first deodorant",
+  "Milestone|Stärkerer Schweißgeruch kommt oft schon vor den sichtbaren Zeichen der Pubertät.":
+      "Stronger body odour often comes before the visible signs of puberty.",
+  "Milestone|Die Brust beginnt zu wachsen": "Breasts begin to develop",
+  "Milestone|Meist das erste sichtbare Zeichen der Pubertät. Beginnt sie vor dem 8. Geburtstag oder bis zum 13. noch nicht, in der Kinderarztpraxis ansprechen.":
+      "Usually the first visible sign of puberty. If it starts before the 8th birthday or has not started by the 13th, mention it to the paediatrician.",
+  "Milestone|Wachstumsschub der Pubertät": "Pubertal growth spurt",
+  "Milestone|Im stärksten Jahr wachsen viele 8 bis 10 cm.":
+      "In the fastest year many grow 8 to 10 cm.",
+  "Milestone|Erste Periode": "First period",
+  "Milestone|Meist etwa zwei Jahre nach Beginn der Brustentwicklung.":
+      "Usually about two years after the breasts begin to develop.",
+  "Milestone|Stimmbruch": "Voice breaks",
+  "Milestone|Die Stimme kippt oft monatelang, bevor sie tiefer bleibt.":
+      "The voice often cracks for months before it settles lower.",
+  "Milestone|Erster Bartflaum": "First facial fuzz",
+  "Phase|Sehen: Gesichter auf Armlänge": "Seeing: faces at arm's length",
+  "Phase|Neugeborene sehen in etwa 20 bis 30 Zentimetern Abstand am schärfsten – so weit wie bis zum Gesicht, wenn man sie im Arm hält. Alles weiter Entfernte bleibt verschwommen. Am liebsten schauen sie in Gesichter und auf starke Hell-Dunkel-Kontraste.":
+      "Newborns see most sharply at about 20 to 30 centimetres – as far as the face of whoever holds them in their arms. Anything further away stays blurred. They love looking at faces and at strong light–dark contrasts.",
+  "Phase|Hören: von Anfang an": "Hearing: from the very start",
+  "Phase|Hören kann das Baby schon im Bauch, die Stimme der Mutter erkennt es gleich nach der Geburt wieder. Laute Geräusche erschrecken es, ruhige Stimmen beruhigen. Ab etwa drei bis vier Monaten dreht es den Kopf zu Geräuschen. Ob das Gehör gesund ist, prüft das Hörscreening in den ersten Lebenstagen.":
+      "Babies can already hear in the womb and recognise their mother's voice right after birth. Loud noises startle them, calm voices soothe them. From about three to four months they turn their head towards sounds. The hearing screening in the first days of life checks that their hearing is healthy.",
+  "Phase|Sehen: Farben, Bewegung, Tiefe": "Seeing: colours, movement, depth",
+  "Phase|Das Baby folgt Gesichtern und Spielzeug mit den Augen, beide Augen arbeiten immer besser zusammen. Farben unterscheidet es nach und nach, kräftige wie Rot zuerst. Mit etwa drei bis fünf Monaten beginnt das räumliche Sehen: Jetzt greift es gezielt nach Dingen.":
+      "The baby follows faces and toys with the eyes, and both eyes work together better and better. Colours come gradually, strong ones like red first. At around three to five months depth vision begins: now the baby reaches for things on purpose.",
+  "Phase|Sehen: auch in die Ferne": "Seeing: into the distance too",
+  "Phase|Vertraute Menschen erkennt das Baby jetzt auch quer durch den Raum, und es verfolgt schnelle Bewegungen. So scharf wie Erwachsene sieht ein Kind aber erst im Vorschulalter; ob beide Augen gut sehen, wird bei den U-Untersuchungen geprüft.":
+      "The baby now recognises familiar people across the room and follows fast movements. Children only see as sharply as adults by preschool age; the regular check-ups test whether both eyes see well.",
+  "Phase|Autonomiephase („Trotzphase“)": "Autonomy phase (“terrible twos”)",
+  "Phase|Das Kind entdeckt seinen eigenen Willen, kann starke Gefühle aber noch kaum steuern – Wutanfälle gehören dazu und sind kein Erziehungsfehler. Ruhe, klare und liebevolle Grenzen und kleine Wahlmöglichkeiten („die rote oder die blaue Jacke?“) helfen. Meist klingt die Phase bis etwa vier Jahre ab.":
+      "The child discovers their own will but can hardly control strong feelings yet – tantrums are part of it and not a parenting failure. Calm, clear and loving limits and small choices (“the red or the blue jacket?”) help. The phase usually fades by about four.",
+  "Phase|Magisches Denken": "Magical thinking",
+  "Phase|Fantasie und Wirklichkeit verschwimmen: Kuscheltiere haben Gefühle, unter dem Bett kann ein Monster wohnen, und vielleicht hat der eigene Wunsch den Regen gemacht. Ängste aus dieser Welt sind echt; sie brauchen Trost, nicht den Satz „Das gibt es doch gar nicht“. Mitspielen ist erlaubt.":
+      "Fantasy and reality blur: cuddly toys have feelings, a monster might live under the bed, and perhaps their own wish made it rain. Fears from this world are real; they need comfort, not “that doesn't exist”. Playing along is allowed.",
+  "Phase|„Wackelzahnpubertät“": "“Loose-tooth puberty”",
+  "Phase|Zwischen fünf und sieben Jahren werden viele Kinder wieder launischer, widersprechen mehr und sind schnell gekränkt. Sie wollen groß sein und brauchen doch viel Nähe; der Wechsel in die Schule kostet zusätzlich Kraft. Mit der echten Pubertät hat das nichts zu tun – die Phase geht vorbei.":
+      "Between five and seven many children become moodier again, argue more and are quickly hurt. They want to be big and still need a lot of closeness; starting school takes extra energy. It has nothing to do with real puberty – the phase passes.",
+  "Phase|Vorpubertät": "Pre-puberty",
+  "Phase|Der Körper stellt sich hormonell um, bevor man viel davon sieht: stärkerer Schweißgeruch, fettigere Haut und Haare, Stimmungsschwankungen. Freundinnen und Freunde werden wichtiger, Eltern manchmal peinlich. Ein guter Zeitpunkt, offen über die kommenden Veränderungen zu sprechen.":
+      "Hormones start changing before much is visible: stronger body odour, oilier skin and hair, mood swings. Friends become more important, parents sometimes embarrassing. A good time to talk openly about the changes ahead.",
+  "Phase|Pubertät: Beginn": "Puberty: the start",
+  "Phase|Der Körper verändert sich sichtbar, und das Kind wächst schnell. Bei Mädchen beginnt die Pubertät meist zwischen 8 und 13, bei Jungen zwischen 9 und 14 Jahren. Viele fühlen sich jetzt unsicher im eigenen Körper und vergleichen sich ständig. Es hilft, über Periode, Stimmbruch und Gefühle zu sprechen, bevor sie da sind.":
+      "The body changes visibly and the child grows fast. In girls puberty usually starts between 8 and 13, in boys between 9 and 14. Many now feel unsure about their body and compare themselves all the time. It helps to talk about periods, the voice breaking and feelings before they arrive.",
+  "Phase|Pubertät: Mitte": "Puberty: the middle",
+  "Phase|Die Suche nach dem eigenen Ich steht im Vordergrund: Abgrenzung von den Eltern, Streit um Regeln, erste Liebe, Ausprobieren. Das Gehirn baut um; Gefühle sind stark, die Selbstkontrolle reift erst später. Verlässlichkeit, Interesse und Vertrauen helfen mehr als Kontrolle.":
+      "Finding their own self comes first: pulling away from parents, arguments about rules, first love, trying things out. The brain is rebuilding; feelings are strong, self-control matures only later. Reliability, interest and trust help more than control.",
+  "Phase|Spätpubertät": "Late adolescence",
+  "Phase|Der Körper ist weitgehend erwachsen, das Denken planvoller, und das Verhältnis zu den Eltern wird ebenbürtiger. Ganz fertig ist das Gehirn noch nicht: Vor allem Planung und Selbststeuerung reifen bis Mitte zwanzig.":
+      "The body is largely grown up, thinking becomes more deliberate, and the relationship with parents more equal. The brain isn't quite finished: planning and self-control in particular keep maturing into the mid-twenties.",
   "Checkup|U1 – Neugeborenen-Erstuntersuchung":
       "U1 – first newborn examination",
   "Checkup|direkt nach der Geburt": "right after the birth",
@@ -538,13 +595,19 @@ const sharedEn = <String, String>{
       "Too many failed attempts. Please try again in {minutes} minute(s).",
   "Server|Nicht angemeldet": "Not signed in",
   "Server|Nicht verfügbar": "Not available",
-  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.": "Please enter the token of a PaperBuddy user.",
-  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.": "The PaperBuddy address starts with http:// or https://.",
-  "Server|Keine Verbindung zu PaperBuddy ({error}).": "No connection to PaperBuddy ({error}).",
+  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
+      "Please enter the token of a PaperBuddy user.",
+  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":
+      "The PaperBuddy address starts with http:// or https://.",
+  "Server|Keine Verbindung zu PaperBuddy ({error}).":
+      "No connection to PaperBuddy ({error}).",
   "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rejects the token.",
-  "Server|PaperBuddy antwortet mit Fehler {status}.": "PaperBuddy answers with error {status}.",
-  "Server|Unter dieser Adresse antwortet kein PaperBuddy.": "No PaperBuddy answers at this address.",
-  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.": "PaperBuddy has no tag “{tag}”.",
+  "Server|PaperBuddy antwortet mit Fehler {status}.":
+      "PaperBuddy answers with error {status}.",
+  "Server|Unter dieser Adresse antwortet kein PaperBuddy.":
+      "No PaperBuddy answers at this address.",
+  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.":
+      "PaperBuddy has no tag “{tag}”.",
   "Server|Belegt": "Busy",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Please confirm with the code from the authenticator app.",

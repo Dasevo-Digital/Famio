@@ -32,6 +32,8 @@ const sharedEs = <String, String>{
   "MilestoneArea.social": "Emociones y relaciones",
   "MilestoneArea.selfCare": "Autonomía",
   "MilestoneArea.body": "Cuerpo",
+  "MilestoneArea.senses": "Vista y oído",
+  "MilestoneArea.puberty": "Pubertad",
   "ChoreRepeat.once": "Una vez",
   "ChoreRepeat.daily": "Cada día",
   "ChoreRepeat.weekly": "Una vez por semana",
@@ -242,6 +244,62 @@ const sharedEs = <String, String>{
   "Milestone|Erster Zahn": "Primer diente",
   "Milestone|Schläft (meist) durch": "Duerme toda la noche (casi siempre)",
   "Milestone|Erster Wackelzahn": "Primer diente que se mueve",
+  "Milestone|Schaut Gesichter aufmerksam an": "Mira las caras con atención",
+  "Milestone|Neugeborene sehen in 20–30 cm Abstand am schärfsten.":
+      "Los recién nacidos ven con más nitidez a 20–30 cm.",
+  "Milestone|Folgt einem Gesicht mit den Augen": "Sigue una cara con la mirada",
+  "Milestone|Dreht den Kopf zu Geräuschen": "Gira la cabeza hacia los sonidos",
+  "Milestone|Reagiert auf den eigenen Namen": "Reacciona a su nombre",
+  "Milestone|Braucht das erste Deo": "Necesita su primer desodorante",
+  "Milestone|Stärkerer Schweißgeruch kommt oft schon vor den sichtbaren Zeichen der Pubertät.":
+      "El olor a sudor más fuerte suele llegar antes que los signos visibles de la pubertad.",
+  "Milestone|Die Brust beginnt zu wachsen": "Empieza a desarrollarse el pecho",
+  "Milestone|Meist das erste sichtbare Zeichen der Pubertät. Beginnt sie vor dem 8. Geburtstag oder bis zum 13. noch nicht, in der Kinderarztpraxis ansprechen.":
+      "Suele ser el primer signo visible de la pubertad. Si empieza antes de los 8 años o aún no ha empezado a los 13, coméntalo con el pediatra.",
+  "Milestone|Wachstumsschub der Pubertät": "Estirón de la pubertad",
+  "Milestone|Im stärksten Jahr wachsen viele 8 bis 10 cm.":
+      "En el año de mayor crecimiento, muchos crecen de 8 a 10 cm.",
+  "Milestone|Erste Periode": "Primera regla",
+  "Milestone|Meist etwa zwei Jahre nach Beginn der Brustentwicklung.":
+      "Suele llegar unos dos años después de que empiece a desarrollarse el pecho.",
+  "Milestone|Stimmbruch": "Cambio de voz",
+  "Milestone|Die Stimme kippt oft monatelang, bevor sie tiefer bleibt.":
+      "La voz suele quebrarse durante meses antes de quedarse más grave.",
+  "Milestone|Erster Bartflaum": "Primera pelusa de barba",
+  "Phase|Sehen: Gesichter auf Armlänge": "Vista: caras a un brazo de distancia",
+  "Phase|Neugeborene sehen in etwa 20 bis 30 Zentimetern Abstand am schärfsten – so weit wie bis zum Gesicht, wenn man sie im Arm hält. Alles weiter Entfernte bleibt verschwommen. Am liebsten schauen sie in Gesichter und auf starke Hell-Dunkel-Kontraste.":
+      "Los recién nacidos ven con más nitidez a unos 20 o 30 centímetros, justo la distancia hasta la cara de quien los tiene en brazos. Lo que está más lejos se ve borroso. Lo que más les gusta mirar son caras y contrastes fuertes entre claro y oscuro.",
+  "Phase|Hören: von Anfang an": "Oído: desde el principio",
+  "Phase|Hören kann das Baby schon im Bauch, die Stimme der Mutter erkennt es gleich nach der Geburt wieder. Laute Geräusche erschrecken es, ruhige Stimmen beruhigen. Ab etwa drei bis vier Monaten dreht es den Kopf zu Geräuschen. Ob das Gehör gesund ist, prüft das Hörscreening in den ersten Lebenstagen.":
+      "El bebé ya oye en el vientre y reconoce la voz de su madre nada más nacer. Los ruidos fuertes lo asustan y las voces tranquilas lo calman. Hacia los tres o cuatro meses gira la cabeza hacia los sonidos. El cribado auditivo de los primeros días comprueba que oye bien.",
+  "Phase|Sehen: Farben, Bewegung, Tiefe":
+      "Vista: colores, movimiento y profundidad",
+  "Phase|Das Baby folgt Gesichtern und Spielzeug mit den Augen, beide Augen arbeiten immer besser zusammen. Farben unterscheidet es nach und nach, kräftige wie Rot zuerst. Mit etwa drei bis fünf Monaten beginnt das räumliche Sehen: Jetzt greift es gezielt nach Dingen.":
+      "El bebé sigue caras y juguetes con la mirada, y los dos ojos trabajan juntos cada vez mejor. Distingue los colores poco a poco, primero los intensos como el rojo. Hacia los tres a cinco meses empieza a ver en profundidad: ahora agarra las cosas a propósito.",
+  "Phase|Sehen: auch in die Ferne": "Vista: también de lejos",
+  "Phase|Vertraute Menschen erkennt das Baby jetzt auch quer durch den Raum, und es verfolgt schnelle Bewegungen. So scharf wie Erwachsene sieht ein Kind aber erst im Vorschulalter; ob beide Augen gut sehen, wird bei den U-Untersuchungen geprüft.":
+      "Ahora el bebé reconoce a las personas conocidas también desde el otro lado de la habitación y sigue movimientos rápidos. Tan nítido como un adulto no ve hasta la edad preescolar; en las revisiones se comprueba que ambos ojos ven bien.",
+  "Phase|Autonomiephase („Trotzphase“)": "Fase de autonomía («rabietas»)",
+  "Phase|Das Kind entdeckt seinen eigenen Willen, kann starke Gefühle aber noch kaum steuern – Wutanfälle gehören dazu und sind kein Erziehungsfehler. Ruhe, klare und liebevolle Grenzen und kleine Wahlmöglichkeiten („die rote oder die blaue Jacke?“) helfen. Meist klingt die Phase bis etwa vier Jahre ab.":
+      "El niño descubre su propia voluntad, pero aún apenas puede controlar las emociones fuertes: las rabietas forman parte de ello y no son un fallo de la educación. Ayudan la calma, unos límites claros y cariñosos y pequeñas elecciones («¿la chaqueta roja o la azul?»). Suele remitir hacia los cuatro años.",
+  "Phase|Magisches Denken": "Pensamiento mágico",
+  "Phase|Fantasie und Wirklichkeit verschwimmen: Kuscheltiere haben Gefühle, unter dem Bett kann ein Monster wohnen, und vielleicht hat der eigene Wunsch den Regen gemacht. Ängste aus dieser Welt sind echt; sie brauchen Trost, nicht den Satz „Das gibt es doch gar nicht“. Mitspielen ist erlaubt.":
+      "Fantasía y realidad se mezclan: los peluches tienen sentimientos, bajo la cama puede vivir un monstruo y quizá su propio deseo hizo que lloviera. Los miedos de este mundo son reales; necesitan consuelo, no un «eso no existe». Seguirles el juego está permitido.",
+  "Phase|„Wackelzahnpubertät“": "«Pubertad del diente flojo»",
+  "Phase|Zwischen fünf und sieben Jahren werden viele Kinder wieder launischer, widersprechen mehr und sind schnell gekränkt. Sie wollen groß sein und brauchen doch viel Nähe; der Wechsel in die Schule kostet zusätzlich Kraft. Mit der echten Pubertät hat das nichts zu tun – die Phase geht vorbei.":
+      "Entre los cinco y los siete años muchos niños vuelven a estar más irritables, llevan más la contraria y se ofenden enseguida. Quieren ser mayores y aun así necesitan mucha cercanía; empezar el colegio les cuesta energía extra. No tiene nada que ver con la pubertad de verdad: la fase pasa.",
+  "Phase|Vorpubertät": "Prepubertad",
+  "Phase|Der Körper stellt sich hormonell um, bevor man viel davon sieht: stärkerer Schweißgeruch, fettigere Haut und Haare, Stimmungsschwankungen. Freundinnen und Freunde werden wichtiger, Eltern manchmal peinlich. Ein guter Zeitpunkt, offen über die kommenden Veränderungen zu sprechen.":
+      "Las hormonas empiezan a cambiar antes de que se note mucho: olor a sudor más fuerte, piel y pelo más grasos, cambios de humor. Los amigos ganan importancia y los padres a veces dan vergüenza. Buen momento para hablar abiertamente de los cambios que vienen.",
+  "Phase|Pubertät: Beginn": "Pubertad: el comienzo",
+  "Phase|Der Körper verändert sich sichtbar, und das Kind wächst schnell. Bei Mädchen beginnt die Pubertät meist zwischen 8 und 13, bei Jungen zwischen 9 und 14 Jahren. Viele fühlen sich jetzt unsicher im eigenen Körper und vergleichen sich ständig. Es hilft, über Periode, Stimmbruch und Gefühle zu sprechen, bevor sie da sind.":
+      "El cuerpo cambia a la vista y el niño crece deprisa. En las chicas la pubertad suele empezar entre los 8 y los 13 años; en los chicos, entre los 9 y los 14. Muchos se sienten inseguros con su cuerpo y se comparan constantemente. Ayuda hablar de la regla, el cambio de voz y los sentimientos antes de que lleguen.",
+  "Phase|Pubertät: Mitte": "Pubertad: la etapa media",
+  "Phase|Die Suche nach dem eigenen Ich steht im Vordergrund: Abgrenzung von den Eltern, Streit um Regeln, erste Liebe, Ausprobieren. Das Gehirn baut um; Gefühle sind stark, die Selbstkontrolle reift erst später. Verlässlichkeit, Interesse und Vertrauen helfen mehr als Kontrolle.":
+      "Lo primero es encontrarse a sí mismo: distanciarse de los padres, discutir las normas, el primer amor, probar cosas. El cerebro se reorganiza; las emociones son intensas y el autocontrol madura más tarde. La fiabilidad, el interés y la confianza ayudan más que el control.",
+  "Phase|Spätpubertät": "Adolescencia tardía",
+  "Phase|Der Körper ist weitgehend erwachsen, das Denken planvoller, und das Verhältnis zu den Eltern wird ebenbürtiger. Ganz fertig ist das Gehirn noch nicht: Vor allem Planung und Selbststeuerung reifen bis Mitte zwanzig.":
+      "El cuerpo es ya casi adulto, el pensamiento más planificado y la relación con los padres más de igual a igual. El cerebro aún no ha terminado: sobre todo la planificación y el autocontrol siguen madurando hasta mediados de los veinte.",
   "Checkup|U1 – Neugeborenen-Erstuntersuchung":
       "U1: primera exploración del recién nacido",
   "Checkup|direkt nach der Geburt": "justo después del parto",
@@ -559,13 +617,19 @@ const sharedEs = <String, String>{
       "Demasiados intentos fallidos. Inténtalo de nuevo dentro de {minutes} minuto(s).",
   "Server|Nicht angemeldet": "Sesión no iniciada",
   "Server|Nicht verfügbar": "No disponible",
-  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.": "Introduce el token de un usuario de PaperBuddy.",
-  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.": "La dirección de PaperBuddy empieza por http:// o https://.",
-  "Server|Keine Verbindung zu PaperBuddy ({error}).": "No hay conexión con PaperBuddy ({error}).",
+  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
+      "Introduce el token de un usuario de PaperBuddy.",
+  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":
+      "La dirección de PaperBuddy empieza por http:// o https://.",
+  "Server|Keine Verbindung zu PaperBuddy ({error}).":
+      "No hay conexión con PaperBuddy ({error}).",
   "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rechaza el token.",
-  "Server|PaperBuddy antwortet mit Fehler {status}.": "PaperBuddy responde con el error {status}.",
-  "Server|Unter dieser Adresse antwortet kein PaperBuddy.": "En esta dirección no responde ningún PaperBuddy.",
-  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.": "En PaperBuddy no existe la etiqueta «{tag}».",
+  "Server|PaperBuddy antwortet mit Fehler {status}.":
+      "PaperBuddy responde con el error {status}.",
+  "Server|Unter dieser Adresse antwortet kein PaperBuddy.":
+      "En esta dirección no responde ningún PaperBuddy.",
+  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.":
+      "En PaperBuddy no existe la etiqueta «{tag}».",
   "Server|Belegt": "Ocupado",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Confírmalo con el código de la app de autenticación.",

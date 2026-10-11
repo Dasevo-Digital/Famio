@@ -51,7 +51,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
 | Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy | ✅ |
-| Kinder: Meilensteine, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
+| Kinder: Meilensteine (auch Sehen und Hören, Pubertät nach Geschlecht), Entwicklungsphasen vom Neugeborenen bis zur Spätpubertät, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
 | Baby-Protokoll: Stillen, Fläschchen, Schlaf, Windeln, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
