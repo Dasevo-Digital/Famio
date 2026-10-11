@@ -29,6 +29,7 @@ const sharedEs = <String, String>{
   "MilestoneArea.motor": "Movimiento",
   "MilestoneArea.fineMotor": "Manos y habilidad",
   "MilestoneArea.language": "Lenguaje",
+  "MilestoneArea.thinking": "Pensar y entender",
   "MilestoneArea.social": "Emociones y relaciones",
   "MilestoneArea.selfCare": "Autonomía",
   "MilestoneArea.body": "Cuerpo",
@@ -244,6 +245,97 @@ const sharedEs = <String, String>{
   "Milestone|Erster Zahn": "Primer diente",
   "Milestone|Schläft (meist) durch": "Duerme toda la noche (casi siempre)",
   "Milestone|Erster Wackelzahn": "Primer diente que se mueve",
+  "Milestone|Stützt sich in Bauchlage auf die Unterarme":
+      "Boca abajo, se apoya en los antebrazos",
+  "Milestone|Geht Treppen im Wechselschritt":
+      "Sube escaleras alternando los pies",
+  "Milestone|Fängt einen großen Ball": "Atrapa una pelota grande",
+  "Milestone|Hüpft auf einem Bein": "Salta a la pata coja",
+  "Milestone|Springt Seil": "Salta a la comba",
+  "Milestone|Öffnet die Fäustchen und betrachtet die Hände":
+      "Abre los puños y se mira las manos",
+  "Milestone|Bevorzugt eine Hand": "Prefiere una mano",
+  "Milestone|Ob rechts oder links, zeigt sich oft erst mit vier bis sechs Jahren sicher.":
+      "Si es diestro o zurdo a menudo no se ve con claridad hasta los cuatro a seis años.",
+  "Milestone|Schreibt den eigenen Namen": "Escribe su nombre",
+  "Milestone|Schreibt Wörter und kurze Sätze":
+      "Escribe palabras y frases cortas",
+  "Milestone|Versteht „Nein“": "Entiende el «no»",
+  "Milestone|Zeigt mit dem Finger auf Dinge": "Señala cosas con el dedo",
+  "Milestone|Zeigt auf Körperteile, wenn man fragt":
+      "Señala partes del cuerpo cuando se le pregunta",
+  "Milestone|Spricht etwa 50 Wörter": "Dice unas 50 palabras",
+  "Milestone|Spricht ein Kind mit zwei Jahren deutlich weniger, bei der U7 ansprechen.":
+      "Si a los dos años dice bastantes menos, coméntalo en la revisión U7.",
+  "Milestone|Ist auch für Fremde meist gut zu verstehen":
+      "También los desconocidos le entienden casi siempre",
+  "Milestone|Spricht alle Laute richtig": "Pronuncia bien todos los sonidos",
+  "Milestone|Lispeln ist bis etwa fünf Jahre oft noch normal.":
+      "Pronunciar mal la «s» suele ser normal hasta los cinco años.",
+  "Milestone|Liest flüssig und versteht das Gelesene":
+      "Lee con fluidez y entiende lo que lee",
+  "Milestone|Sucht Dinge, die vor seinen Augen versteckt wurden":
+      "Busca cosas que se esconden delante de él",
+  "Milestone|Erkennt sich im Spiegel": "Se reconoce en el espejo",
+  "Milestone|Benennt Farben": "Nombra colores",
+  "Milestone|Versteht, dass andere etwas anderes denken und wissen":
+      "Entiende que los demás piensan y saben otras cosas",
+  "Milestone|Zählt bis zehn": "Cuenta hasta diez",
+  "Milestone|Versteht gestern, heute und morgen": "Entiende ayer, hoy y mañana",
+  "Milestone|Unterscheidet rechts und links": "Distingue derecha e izquierda",
+  "Milestone|Liest die Uhrzeit auf einer Zeigeruhr":
+      "Lee la hora en un reloj de agujas",
+  "Milestone|Denkt abstrakt und in Möglichkeiten („Was wäre, wenn …“)":
+      "Piensa en abstracto y en posibilidades («¿y si…?»)",
+  "Milestone|Spielt „Kuckuck“": "Juega al «cucú-tras»",
+  "Milestone|Bemerkt, wenn andere traurig sind, und tröstet":
+      "Nota cuando otros están tristes y los consuela",
+  "Milestone|Hält sich an Spielregeln und wartet, bis es dran ist":
+      "Respeta las reglas del juego y espera su turno",
+  "Milestone|Wäscht und trocknet die Hände allein":
+      "Se lava y se seca las manos solo",
+  "Milestone|Putzt sich selbst die Zähne": "Se cepilla los dientes solo",
+  "Milestone|Nachputzen, bis das Kind flüssig schreiben kann – etwa bis acht Jahre.":
+      "Repásalos hasta que sepa escribir con soltura, más o menos hasta los ocho años.",
+  "Milestone|Geht allein zur Schule": "Va solo al colegio",
+  "Milestone|Tempo und Entfernung von Autos schätzen Kinder erst mit etwa acht bis zehn Jahren sicher ein.":
+      "Los niños no calculan con seguridad la velocidad y la distancia de los coches hasta los ocho o diez años.",
+  "Milestone|Fährt allein mit dem Rad im Straßenverkehr":
+      "Va solo en bicicleta por la calle",
+  "Milestone|In Deutschland fahren Kinder bis acht Jahre auf dem Gehweg; die Radfahrprüfung gibt es meist in der 4. Klasse.":
+      "En Alemania los niños van por la acera hasta los ocho años; el examen de bicicleta suele ser en cuarto de primaria.",
+  "Milestone|Nabelschnurrest fällt ab": "Se cae el resto del cordón umbilical",
+  "Milestone|Hat das Geburtsgewicht wieder erreicht":
+      "Recupera el peso de nacimiento",
+  "Milestone|In den ersten Tagen nehmen Neugeborene etwas ab – das ist normal.":
+      "En los primeros días los recién nacidos pierden algo de peso; es normal.",
+  "Milestone|Kleine Fontanelle am Hinterkopf geschlossen":
+      "Fontanela posterior cerrada",
+  "Milestone|Oft ist sie schon bei der Geburt fast zu.":
+      "A menudo ya está casi cerrada al nacer.",
+  "Milestone|Geburtsgewicht verdoppelt": "Peso de nacimiento duplicado",
+  "Milestone|Augenfarbe steht fest": "El color de ojos se ha fijado",
+  "Milestone|Bei manchen ändert sie sich bis ins dritte Lebensjahr.":
+      "En algunos niños sigue cambiando hasta el tercer año.",
+  "Milestone|Große Fontanelle geschlossen": "Fontanela grande cerrada",
+  "Milestone|Die weiche Stelle oben am Kopf; die Kinderarztpraxis tastet sie bei den U-Untersuchungen ab.":
+      "El punto blando de la parte superior de la cabeza; el pediatra lo palpa en las revisiones.",
+  "Milestone|Geburtsgewicht verdreifacht": "Peso de nacimiento triplicado",
+  "Milestone|Alle 20 Milchzähne sind da": "Ya tiene los 20 dientes de leche",
+  "Milestone|Braucht keinen Mittagsschlaf mehr": "Ya no necesita siesta",
+  "Milestone|Erster bleibender Backenzahn (Sechsjahrmolar)":
+      "Primera muela definitiva (molar de los seis años)",
+  "Milestone|Er wächst hinter den Milchzähnen, ohne dass einer ausfällt – und wird leicht übersehen.":
+      "Sale detrás de los dientes de leche sin que se caiga ninguno, y es fácil que pase desapercibida.",
+  "Milestone|Letzter Milchzahn fällt aus": "Se cae el último diente de leche",
+  "Milestone|Zweite bleibende Backenzähne (Zwölfjahrmolaren)":
+      "Segundas muelas definitivas (molares de los doce años)",
+  "Milestone|Endgröße erreicht": "Alcanza su estatura final",
+  "Milestone|Die Wachstumsfugen schließen sich; danach wächst man kaum noch.":
+      "Los cartílagos de crecimiento se cierran; después apenas se crece.",
+  "Milestone|Weisheitszähne": "Muelas del juicio",
+  "Milestone|Bei manchen kommen sie nie oder bleiben im Kiefer.":
+      "Algunas personas nunca las tienen o se quedan dentro del hueso.",
   "Milestone|Schaut Gesichter aufmerksam an": "Mira las caras con atención",
   "Milestone|Neugeborene sehen in 20–30 cm Abstand am schärfsten.":
       "Los recién nacidos ven con más nitidez a 20–30 cm.",
@@ -266,6 +358,22 @@ const sharedEs = <String, String>{
   "Milestone|Die Stimme kippt oft monatelang, bevor sie tiefer bleibt.":
       "La voz suele quebrarse durante meses antes de quedarse más grave.",
   "Milestone|Erster Bartflaum": "Primera pelusa de barba",
+  "Phase|Reflexe des Neugeborenen": "Reflejos del recién nacido",
+  "Phase|Neugeborene greifen fest zu, wenn man ihre Handfläche berührt, suchen mit dem Mund nach der Brust und reißen bei Schreck die Arme auseinander (Moro-Reflex). Diese angeborenen Reflexe verschwinden in den ersten Monaten und machen bewussten Bewegungen Platz; die Kinderarztpraxis prüft sie bei den U-Untersuchungen.":
+      "Los recién nacidos agarran con fuerza si se les toca la palma, buscan el pecho con la boca y abren los brazos de golpe al asustarse (reflejo de Moro). Estos reflejos innatos desaparecen en los primeros meses y dejan paso a movimientos voluntarios; el pediatra los comprueba en las revisiones.",
+  "Phase|Viel Weinen in den ersten Wochen":
+      "Mucho llanto en las primeras semanas",
+  "Phase|Viele Babys weinen in den ersten Wochen viel, oft am Abend. Am meisten meist um die sechste Woche, danach wird es weniger, bei den meisten bis zum dritten oder vierten Monat. Ein Baby niemals schütteln: Wenn die Nerven blank liegen, das Baby sicher ins Bettchen legen und kurz durchatmen. Hilfe gibt es in der Kinderarztpraxis und in Schreiambulanzen.":
+      "Muchos bebés lloran mucho en las primeras semanas, a menudo por la tarde. El pico suele llegar hacia la sexta semana y luego disminuye; en la mayoría, hacia el tercer o cuarto mes. Nunca sacudas a un bebé: si estás al límite, déjalo en la cuna de forma segura y respira un momento. El pediatra y las consultas especializadas en llanto pueden ayudar.",
+  "Phase|Zahnen": "Dentición",
+  "Phase|Bis zum dritten Geburtstag kommen 20 Milchzähne, meist zuerst die unteren Schneidezähne. Sabbern, Kauen und unruhige Nächte sind häufig. Hohes Fieber oder Durchfall kommen nicht vom Zahnen und gehören ärztlich angeschaut.":
+      "Hasta el tercer cumpleaños salen 20 dientes de leche, normalmente primero los incisivos inferiores. Babear, morder y las noches inquietas son habituales. La fiebre alta o la diarrea no se deben a los dientes y conviene que las vea un médico.",
+  "Phase|Wortschatzspurt": "Explosión del vocabulario",
+  "Phase|Zwischen anderthalb und zweieinhalb Jahren lernen viele Kinder plötzlich jeden Tag neue Wörter und fangen an, sie zu kombinieren. Vorlesen, Bilderbücher anschauen und viel miteinander reden geben jetzt besonders viel Futter.":
+      "Entre el año y medio y los dos años y medio muchos niños aprenden de repente palabras nuevas cada día y empiezan a combinarlas. Leerles en voz alta, mirar libros ilustrados y hablar mucho con ellos les da ahora mucho material.",
+  "Phase|Junge Erwachsene": "Jóvenes adultos",
+  "Phase|Mit 18 ist das Kind volljährig, die Entwicklung geht aber weiter: Ausbildung oder Studium, vielleicht der Auszug, eigene Beziehungen. Eltern werden vom Bestimmer zum Ratgeber – wenn sie gefragt werden.":
+      "A los 18 años es mayor de edad, pero el desarrollo continúa: formación o universidad, quizá independizarse, sus propias relaciones. Los padres pasan de decidir a aconsejar, cuando se les pide.",
   "Phase|Sehen: Gesichter auf Armlänge": "Vista: caras a un brazo de distancia",
   "Phase|Neugeborene sehen in etwa 20 bis 30 Zentimetern Abstand am schärfsten – so weit wie bis zum Gesicht, wenn man sie im Arm hält. Alles weiter Entfernte bleibt verschwommen. Am liebsten schauen sie in Gesichter und auf starke Hell-Dunkel-Kontraste.":
       "Los recién nacidos ven con más nitidez a unos 20 o 30 centímetros, justo la distancia hasta la cara de quien los tiene en brazos. Lo que está más lejos se ve borroso. Lo que más les gusta mirar son caras y contrastes fuertes entre claro y oscuro.",

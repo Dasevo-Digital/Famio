@@ -222,7 +222,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Hält den Kopf sicher'), findsNothing);
+    // Below the development phases of this age.
+    await tester.scrollUntilVisible(
+      find.text('Rennt'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Rennt'), findsOneWidget);
+    expect(find.text('Hält den Kopf sicher'), findsNothing);
   });
 
   testWidgets('pregnancy: weeks, contractions and the baby arrives', (

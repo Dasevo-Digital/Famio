@@ -161,4 +161,37 @@ void main() {
     expect(find.textContaining('Wutanfälle gehören dazu'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgets('a newborn: body steps in weeks, coming phases folded', (
+    tester,
+  ) async {
+    await openMilestones(tester, 0);
+    // Going on now: open; coming next: only the title until tapped.
+    final crying = find.text('Viel Weinen in den ersten Wochen');
+    expect(crying, findsOneWidget);
+    expect(find.textContaining('niemals schütteln'), findsNothing);
+    await tester.tap(crying);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('niemals schütteln'), findsOneWidget);
+    await scrollTo(tester, 'Nabelschnurrest fällt ab');
+    expect(
+      find.textContaining('Meist zwischen 1 Woche und 3 Wochen'),
+      findsWidgets,
+    );
+    await scrollTo(tester, 'Kleine Fontanelle am Hinterkopf geschlossen');
+    expect(
+      find.text('Kleine Fontanelle am Hinterkopf geschlossen'),
+      findsWidgets,
+    );
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('up to adulthood', (tester) async {
+    await openMilestones(tester, 216, sex: ChildSex.male);
+    expect(find.text('Junge Erwachsene'), findsOneWidget);
+    await scrollTo(tester, 'Weisheitszähne');
+    expect(find.text('Weisheitszähne'), findsWidgets);
+    expect(find.text('Endgröße erreicht'), findsWidgets);
+    await tester.pump(const Duration(seconds: 1));
+  });
 }

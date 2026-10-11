@@ -29,6 +29,7 @@ const sharedEn = <String, String>{
   "MilestoneArea.motor": "Movement",
   "MilestoneArea.fineMotor": "Hands & dexterity",
   "MilestoneArea.language": "Language",
+  "MilestoneArea.thinking": "Thinking & understanding",
   "MilestoneArea.social": "Feelings & social",
   "MilestoneArea.selfCare": "Independence",
   "MilestoneArea.body": "Body",
@@ -239,6 +240,97 @@ const sharedEn = <String, String>{
   "Milestone|Erster Zahn": "First tooth",
   "Milestone|Schläft (meist) durch": "Sleeps through the night (mostly)",
   "Milestone|Erster Wackelzahn": "First loose tooth",
+  "Milestone|Stützt sich in Bauchlage auf die Unterarme":
+      "Props up on the forearms on the tummy",
+  "Milestone|Geht Treppen im Wechselschritt":
+      "Climbs stairs with alternating feet",
+  "Milestone|Fängt einen großen Ball": "Catches a large ball",
+  "Milestone|Hüpft auf einem Bein": "Hops on one foot",
+  "Milestone|Springt Seil": "Jumps rope",
+  "Milestone|Öffnet die Fäustchen und betrachtet die Hände":
+      "Opens the fists and looks at the hands",
+  "Milestone|Bevorzugt eine Hand": "Prefers one hand",
+  "Milestone|Ob rechts oder links, zeigt sich oft erst mit vier bis sechs Jahren sicher.":
+      "Whether right or left often only becomes clear at four to six.",
+  "Milestone|Schreibt den eigenen Namen": "Writes their own name",
+  "Milestone|Schreibt Wörter und kurze Sätze":
+      "Writes words and short sentences",
+  "Milestone|Versteht „Nein“": "Understands “no”",
+  "Milestone|Zeigt mit dem Finger auf Dinge": "Points at things with a finger",
+  "Milestone|Zeigt auf Körperteile, wenn man fragt":
+      "Points to body parts when asked",
+  "Milestone|Spricht etwa 50 Wörter": "Says about 50 words",
+  "Milestone|Spricht ein Kind mit zwei Jahren deutlich weniger, bei der U7 ansprechen.":
+      "If a child says clearly fewer at two, mention it at the U7 check-up.",
+  "Milestone|Ist auch für Fremde meist gut zu verstehen":
+      "Is mostly understood by strangers too",
+  "Milestone|Spricht alle Laute richtig": "Pronounces all sounds correctly",
+  "Milestone|Lispeln ist bis etwa fünf Jahre oft noch normal.":
+      "A lisp is often still normal until about five.",
+  "Milestone|Liest flüssig und versteht das Gelesene":
+      "Reads fluently and understands the text",
+  "Milestone|Sucht Dinge, die vor seinen Augen versteckt wurden":
+      "Looks for things hidden in front of them",
+  "Milestone|Erkennt sich im Spiegel": "Recognises themselves in the mirror",
+  "Milestone|Benennt Farben": "Names colours",
+  "Milestone|Versteht, dass andere etwas anderes denken und wissen":
+      "Understands that others think and know different things",
+  "Milestone|Zählt bis zehn": "Counts to ten",
+  "Milestone|Versteht gestern, heute und morgen":
+      "Understands yesterday, today and tomorrow",
+  "Milestone|Unterscheidet rechts und links": "Tells right from left",
+  "Milestone|Liest die Uhrzeit auf einer Zeigeruhr":
+      "Reads the time on an analogue clock",
+  "Milestone|Denkt abstrakt und in Möglichkeiten („Was wäre, wenn …“)":
+      "Thinks abstractly and in possibilities (“what if …”)",
+  "Milestone|Spielt „Kuckuck“": "Plays peekaboo",
+  "Milestone|Bemerkt, wenn andere traurig sind, und tröstet":
+      "Notices when others are sad and comforts them",
+  "Milestone|Hält sich an Spielregeln und wartet, bis es dran ist":
+      "Follows game rules and waits for their turn",
+  "Milestone|Wäscht und trocknet die Hände allein":
+      "Washes and dries their hands alone",
+  "Milestone|Putzt sich selbst die Zähne": "Brushes their own teeth",
+  "Milestone|Nachputzen, bis das Kind flüssig schreiben kann – etwa bis acht Jahre.":
+      "Brush again after them until they can write fluently – until about eight.",
+  "Milestone|Geht allein zur Schule": "Walks to school alone",
+  "Milestone|Tempo und Entfernung von Autos schätzen Kinder erst mit etwa acht bis zehn Jahren sicher ein.":
+      "Children only judge the speed and distance of cars reliably at about eight to ten.",
+  "Milestone|Fährt allein mit dem Rad im Straßenverkehr":
+      "Cycles alone in traffic",
+  "Milestone|In Deutschland fahren Kinder bis acht Jahre auf dem Gehweg; die Radfahrprüfung gibt es meist in der 4. Klasse.":
+      "In Germany children ride on the pavement until eight; the cycling test usually comes in the fourth year of school.",
+  "Milestone|Nabelschnurrest fällt ab": "Umbilical stump falls off",
+  "Milestone|Hat das Geburtsgewicht wieder erreicht": "Back to birth weight",
+  "Milestone|In den ersten Tagen nehmen Neugeborene etwas ab – das ist normal.":
+      "Newborns lose a little weight in the first days – that is normal.",
+  "Milestone|Kleine Fontanelle am Hinterkopf geschlossen":
+      "Small fontanelle at the back of the head closed",
+  "Milestone|Oft ist sie schon bei der Geburt fast zu.":
+      "It is often almost closed at birth.",
+  "Milestone|Geburtsgewicht verdoppelt": "Birth weight doubled",
+  "Milestone|Augenfarbe steht fest": "Eye colour is settled",
+  "Milestone|Bei manchen ändert sie sich bis ins dritte Lebensjahr.":
+      "In some children it keeps changing into the third year.",
+  "Milestone|Große Fontanelle geschlossen": "Large fontanelle closed",
+  "Milestone|Die weiche Stelle oben am Kopf; die Kinderarztpraxis tastet sie bei den U-Untersuchungen ab.":
+      "The soft spot on top of the head; the paediatrician feels it at the check-ups.",
+  "Milestone|Geburtsgewicht verdreifacht": "Birth weight tripled",
+  "Milestone|Alle 20 Milchzähne sind da": "All 20 baby teeth are through",
+  "Milestone|Braucht keinen Mittagsschlaf mehr": "No longer needs a nap",
+  "Milestone|Erster bleibender Backenzahn (Sechsjahrmolar)":
+      "First permanent molar (six-year molar)",
+  "Milestone|Er wächst hinter den Milchzähnen, ohne dass einer ausfällt – und wird leicht übersehen.":
+      "It comes in behind the baby teeth without one falling out – and is easily missed.",
+  "Milestone|Letzter Milchzahn fällt aus": "Last baby tooth falls out",
+  "Milestone|Zweite bleibende Backenzähne (Zwölfjahrmolaren)":
+      "Second permanent molars (twelve-year molars)",
+  "Milestone|Endgröße erreicht": "Final height reached",
+  "Milestone|Die Wachstumsfugen schließen sich; danach wächst man kaum noch.":
+      "The growth plates close; after that there is hardly any growth.",
+  "Milestone|Weisheitszähne": "Wisdom teeth",
+  "Milestone|Bei manchen kommen sie nie oder bleiben im Kiefer.":
+      "Some people never get them, or they stay in the jaw.",
   "Milestone|Schaut Gesichter aufmerksam an": "Looks closely at faces",
   "Milestone|Neugeborene sehen in 20–30 cm Abstand am schärfsten.":
       "Newborns see most sharply at 20–30 cm.",
@@ -261,6 +353,21 @@ const sharedEn = <String, String>{
   "Milestone|Die Stimme kippt oft monatelang, bevor sie tiefer bleibt.":
       "The voice often cracks for months before it settles lower.",
   "Milestone|Erster Bartflaum": "First facial fuzz",
+  "Phase|Reflexe des Neugeborenen": "Newborn reflexes",
+  "Phase|Neugeborene greifen fest zu, wenn man ihre Handfläche berührt, suchen mit dem Mund nach der Brust und reißen bei Schreck die Arme auseinander (Moro-Reflex). Diese angeborenen Reflexe verschwinden in den ersten Monaten und machen bewussten Bewegungen Platz; die Kinderarztpraxis prüft sie bei den U-Untersuchungen.":
+      "Newborns grip tightly when you touch their palm, root for the breast with their mouth and fling their arms out when startled (Moro reflex). These inborn reflexes fade over the first months and make way for deliberate movements; the paediatrician checks them at the check-ups.",
+  "Phase|Viel Weinen in den ersten Wochen": "Lots of crying in the first weeks",
+  "Phase|Viele Babys weinen in den ersten Wochen viel, oft am Abend. Am meisten meist um die sechste Woche, danach wird es weniger, bei den meisten bis zum dritten oder vierten Monat. Ein Baby niemals schütteln: Wenn die Nerven blank liegen, das Baby sicher ins Bettchen legen und kurz durchatmen. Hilfe gibt es in der Kinderarztpraxis und in Schreiambulanzen.":
+      "Many babies cry a lot in the first weeks, often in the evening. It usually peaks around the sixth week and then eases off, for most by the third or fourth month. Never shake a baby: if your nerves are frayed, put the baby down safely in the cot and take a breather. The paediatrician and crying clinics can help.",
+  "Phase|Zahnen": "Teething",
+  "Phase|Bis zum dritten Geburtstag kommen 20 Milchzähne, meist zuerst die unteren Schneidezähne. Sabbern, Kauen und unruhige Nächte sind häufig. Hohes Fieber oder Durchfall kommen nicht vom Zahnen und gehören ärztlich angeschaut.":
+      "By the third birthday 20 baby teeth come through, usually the lower front teeth first. Drooling, chewing and restless nights are common. High fever or diarrhoea are not caused by teething and should be seen by a doctor.",
+  "Phase|Wortschatzspurt": "Vocabulary spurt",
+  "Phase|Zwischen anderthalb und zweieinhalb Jahren lernen viele Kinder plötzlich jeden Tag neue Wörter und fangen an, sie zu kombinieren. Vorlesen, Bilderbücher anschauen und viel miteinander reden geben jetzt besonders viel Futter.":
+      "Between one and a half and two and a half many children suddenly learn new words every day and start combining them. Reading aloud, looking at picture books and lots of talking give them plenty to work with now.",
+  "Phase|Junge Erwachsene": "Young adults",
+  "Phase|Mit 18 ist das Kind volljährig, die Entwicklung geht aber weiter: Ausbildung oder Studium, vielleicht der Auszug, eigene Beziehungen. Eltern werden vom Bestimmer zum Ratgeber – wenn sie gefragt werden.":
+      "At 18 the child is legally an adult, but development goes on: training or university, perhaps moving out, their own relationships. Parents go from deciding to advising – when asked.",
   "Phase|Sehen: Gesichter auf Armlänge": "Seeing: faces at arm's length",
   "Phase|Neugeborene sehen in etwa 20 bis 30 Zentimetern Abstand am schärfsten – so weit wie bis zum Gesicht, wenn man sie im Arm hält. Alles weiter Entfernte bleibt verschwommen. Am liebsten schauen sie in Gesichter und auf starke Hell-Dunkel-Kontraste.":
       "Newborns see most sharply at about 20 to 30 centimetres – as far as the face of whoever holds them in their arms. Anything further away stays blurred. They love looking at faces and at strong light–dark contrasts.",

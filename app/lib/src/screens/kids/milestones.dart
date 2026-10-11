@@ -27,13 +27,14 @@ class _MilestonesView extends StatelessWidget {
     // Keep reached memories, current steps and the near future. Unfinished
     // steps whose time has passed are folded away instead of making a
     // toddler's family confirm baby skills again.
-    final visible = all.where(
-      (m) => byMilestone.containsKey(m.id) || milestoneIsRelevant(m, age),
-    );
+    final visible = [
+      for (final m in all)
+        if (byMilestone.containsKey(m.id) || milestoneIsRelevant(m, age)) m,
+    ]..sort(_byWindow);
     final past = [
       for (final m in all)
         if (!byMilestone.containsKey(m.id) && milestoneIsPast(m, age)) m,
-    ];
+    ]..sort(_byWindow);
     final phases = developmentPhasesFor(child.sex);
     final current = [
       for (final p in phases)
@@ -186,8 +187,8 @@ class _MilestoneRow extends StatelessWidget {
                             ageLabel(child, entry!.date),
                           )
                         : tr.milestonesUsuallyBetweenHint(
-                            _months(milestone.fromMonth),
-                            _months(milestone.toMonth),
+                            _windowAge(milestone.fromMonth),
+                            _windowAge(milestone.toMonth),
                             milestone.hint.isEmpty
                                 ? ''
                                 : ' · ${milestone.hint}',
@@ -282,9 +283,14 @@ class _WindowBar extends StatelessWidget {
   }
 }
 
-/// A development phase going on now or coming soon: what it is about, not
-/// something to tick off.
-class _PhaseCard extends StatelessWidget {
+/// Milestones of an area in the order children reach them.
+int _byWindow(Milestone a, Milestone b) => a.fromMonth != b.fromMonth
+    ? a.fromMonth.compareTo(b.fromMonth)
+    : a.toMonth.compareTo(b.toMonth);
+
+/// A development phase going on now (open) or coming soon (folded, tap to
+/// read): what it is about, not something to tick off.
+class _PhaseCard extends StatefulWidget {
   const _PhaseCard({
     required this.phase,
     required this.age,
@@ -296,18 +302,44 @@ class _PhaseCard extends StatelessWidget {
   final Color color;
 
   @override
+  State<_PhaseCard> createState() => _PhaseCardState();
+}
+
+class _PhaseCardState extends State<_PhaseCard> {
+  late bool _open = phaseIsCurrent(widget.phase, widget.age);
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final from = _phaseAge(phase.fromMonth);
-    final to = _months(phase.toMonth);
+    final phase = widget.phase;
+    final age = widget.age;
+    final color = widget.color;
+    final from = _windowAge(phase.fromMonth);
+    final to = _windowAge(phase.toMonth);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: SoftCard(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        onTap: () => setState(() => _open = !_open),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(phase.title, style: theme.textTheme.titleMedium),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(phase.title, style: theme.textTheme.titleMedium),
+                ),
+                AnimatedRotation(
+                  turns: _open ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 150),
+                  child: Icon(
+                    AppIcons.caretRight,
+                    size: 18,
+                    color: FamioColors.of(context).inkSoft,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 6),
             _WindowBar(
               from: phase.fromMonth,
@@ -324,8 +356,10 @@ class _PhaseCard extends StatelessWidget {
                 color: FamioColors.of(context).inkSoft,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(phase.info, style: theme.textTheme.bodyMedium),
+            if (_open) ...[
+              const SizedBox(height: 8),
+              Text(phase.info, style: theme.textTheme.bodyMedium),
+            ],
           ],
         ),
       ),
@@ -333,9 +367,13 @@ class _PhaseCard extends StatelessWidget {
   }
 }
 
-/// The start of a phase: "Geburt" instead of "0 Mon.".
-String _phaseAge(double months) =>
-    months == 0 ? tr.milestonesBirth : _months(months);
+/// An age at the edge of a window: "Geburt", weeks in the first month,
+/// then months and years.
+String _windowAge(double months) {
+  if (months <= 0) return tr.milestonesBirth;
+  if (months < 1) return tr.ageWeeks(math.max(1, (months * 30.4 / 7).round()));
+  return _months(months);
+}
 
 /// A coming phase from the timeline, explained.
 Future<void> _showPhaseInfo(BuildContext context, String title, String info) =>

@@ -80,6 +80,20 @@ const developmentPhases = <DevelopmentPhase>[
         'ersten Lebenstagen.',
   ),
   DevelopmentPhase(
+    'reflexes',
+    'Reflexe des Neugeborenen',
+    0,
+    6,
+    'Neugeborene greifen fest zu, wenn man ihre Handfläche berührt, suchen mit dem Mund nach der Brust und reißen bei Schreck die Arme auseinander (Moro-Reflex). Diese angeborenen Reflexe verschwinden in den ersten Monaten und machen bewussten Bewegungen Platz; die Kinderarztpraxis prüft sie bei den U-Untersuchungen.',
+  ),
+  DevelopmentPhase(
+    'crying',
+    'Viel Weinen in den ersten Wochen',
+    0.5,
+    4,
+    'Viele Babys weinen in den ersten Wochen viel, oft am Abend. Am meisten meist um die sechste Woche, danach wird es weniger, bei den meisten bis zum dritten oder vierten Monat. Ein Baby niemals schütteln: Wenn die Nerven blank liegen, das Baby sicher ins Bettchen legen und kurz durchatmen. Hilfe gibt es in der Kinderarztpraxis und in Schreiambulanzen.',
+  ),
+  DevelopmentPhase(
     'see_colours',
     'Sehen: Farben, Bewegung, Tiefe',
     2,
@@ -90,6 +104,13 @@ const developmentPhases = <DevelopmentPhase>[
         'das räumliche Sehen: Jetzt greift es gezielt nach Dingen.',
   ),
   DevelopmentPhase(
+    'teething',
+    'Zahnen',
+    4,
+    30,
+    'Bis zum dritten Geburtstag kommen 20 Milchzähne, meist zuerst die unteren Schneidezähne. Sabbern, Kauen und unruhige Nächte sind häufig. Hohes Fieber oder Durchfall kommen nicht vom Zahnen und gehören ärztlich angeschaut.',
+  ),
+  DevelopmentPhase(
     'see_far',
     'Sehen: auch in die Ferne',
     6,
@@ -98,6 +119,13 @@ const developmentPhases = <DevelopmentPhase>[
         'es verfolgt schnelle Bewegungen. So scharf wie Erwachsene sieht ein '
         'Kind aber erst im Vorschulalter; ob beide Augen gut sehen, wird bei '
         'den U-Untersuchungen geprüft.',
+  ),
+  DevelopmentPhase(
+    'vocabulary',
+    'Wortschatzspurt',
+    18,
+    30,
+    'Zwischen anderthalb und zweieinhalb Jahren lernen viele Kinder plötzlich jeden Tag neue Wörter und fangen an, sie zu kombinieren. Vorlesen, Bilderbücher anschauen und viel miteinander reden geben jetzt besonders viel Futter.',
   ),
   DevelopmentPhase(
     'autonomy',
@@ -181,5 +209,12 @@ const developmentPhases = <DevelopmentPhase>[
         'Mitte zwanzig.',
     female: (192, 228),
     male: (204, 240),
+  ),
+  DevelopmentPhase(
+    'young_adult',
+    'Junge Erwachsene',
+    216,
+    300,
+    'Mit 18 ist das Kind volljährig, die Entwicklung geht aber weiter: Ausbildung oder Studium, vielleicht der Auszug, eigene Beziehungen. Eltern werden vom Bestimmer zum Ratgeber – wenn sie gefragt werden.',
   ),
 ];

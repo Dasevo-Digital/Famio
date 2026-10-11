@@ -64,8 +64,8 @@ class _Timeline extends StatelessWidget {
             date: child.ageDate(m.fromMonth),
             title: m.title,
             subtitle: tr.timelineTypicallyBetween(
-              _months(m.fromMonth),
-              _months(m.toMonth),
+              _windowAge(m.fromMonth),
+              _windowAge(m.toMonth),
             ),
             icon: AppIcons.star,
             color: FamioColors.of(context).inkSoft,
@@ -77,8 +77,8 @@ class _Timeline extends StatelessWidget {
             date: child.ageDate(p.fromMonth),
             title: p.title,
             subtitle: tr.timelinePhase(
-              _phaseAge(p.fromMonth),
-              _months(p.toMonth),
+              _windowAge(p.fromMonth),
+              _windowAge(p.toMonth),
             ),
             icon: AppIcons.sparkle,
             color: FamioColors.of(context).inkSoft,
@@ -109,10 +109,17 @@ class _Timeline extends StatelessWidget {
       children: [
         if (upcoming.isNotEmpty) ...[
           ListHeading(tr.tasksComingUp),
-          // Booked appointments always, other suggestions only the next few.
+          // Booked appointments always, other suggestions only the next
+          // few: check-ups and vaccinations, milestones and phases each get
+          // their own share so that many milestones never push out a
+          // check-up.
           for (final item in [
             ...upcoming.where((i) => i.due?.appointment != null),
-            ...upcoming.where((i) => i.due?.appointment == null).take(8),
+            ...upcoming
+                .where((i) => i.due != null && i.due!.appointment == null)
+                .take(6),
+            ...upcoming.where((i) => i.due == null && i.info == null).take(4),
+            ...upcoming.where((i) => i.info != null).take(2),
           ]..sort((a, b) => a.date.compareTo(b.date)))
             _TimelineRow(item: item, child: child),
         ],
