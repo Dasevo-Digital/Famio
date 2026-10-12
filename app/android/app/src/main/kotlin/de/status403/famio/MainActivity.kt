@@ -61,6 +61,7 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         sos = SosChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         OcrChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
+        AppUpdateChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/location")
             .setMethodCallHandler { call, result ->
                 when (call.method) {

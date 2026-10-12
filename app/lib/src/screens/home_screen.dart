@@ -30,6 +30,7 @@ import '../data/waste.dart';
 import '../data/deadlines.dart';
 import 'deadlines_screen.dart';
 import 'conflicts_screen.dart';
+import '../widgets/app_update_banner.dart';
 import '../widgets/setup_checklist.dart';
 import '../data/year_review.dart';
 import 'year_review_screen.dart';
@@ -184,6 +185,7 @@ class HomeScreen extends StatelessWidget {
                     const SosCard(),
                     const SizedBox(height: gap),
                   ],
+                  const AppUpdateBanner(),
                   if (me.isAdmin) const SetupBanner(),
                   if (engine.conflicts case final open
                       when open.isNotEmpty) ...[

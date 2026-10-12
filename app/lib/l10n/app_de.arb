@@ -5508,5 +5508,57 @@
         "type": "Object?"
       }
     }
-  }
+  },
+  "appUpdateAvailable": "Famio {version} ist da",
+  "@appUpdateAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      }
+    }
+  },
+  "appUpdateFromServer": "Vom Famio-Server, mit Signatur geprüft",
+  "appUpdateRestartHint": "Famio lädt die neue Version vom Server, prüft sie, schließt sich und startet mit ihr neu.",
+  "appUpdateAndroidHint": "Famio lädt die neue Version vom Server und prüft sie. Danach fragt Android, ob sie installiert werden soll; deine Daten bleiben erhalten.",
+  "appUpdateAllowInstall": "Damit Famio sich selbst aktualisieren kann, einmal „Apps aus dieser Quelle zulassen“ einschalten und dann zurückkehren.",
+  "appUpdateAllow": "Erlauben",
+  "appUpdateDownloading": "Wird heruntergeladen …",
+  "appUpdateInstalling": "Wird installiert …",
+  "appUpdateSize": "{mb} MB",
+  "@appUpdateSize": {
+    "placeholders": {
+      "mb": {
+        "type": "Object?"
+      }
+    }
+  },
+  "appUpdateNow": "Aktualisieren",
+  "appUpdateNotSigned": "Das Update trägt keine gültige Famio-Signatur und wird nicht installiert.",
+  "appUpdateDamaged": "Das Update kam unvollständig oder verändert an. Bitte später noch einmal versuchen.",
+  "appUpdateNoWriteAccess": "Famio liegt in einem Ordner ohne Schreibrecht und kann sich dort nicht selbst aktualisieren.",
+  "appUpdateFailed": "Update fehlgeschlagen: {error}",
+  "@appUpdateFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminAppUpdates": "App-Updates über den Server",
+  "adminAppUpdatesSubtitle": "Android, Windows und Linux holen neue Versionen vom Famio-Server",
+  "adminAppUpdatesIntro": "Der Server lädt die App-Pakete seiner eigenen Version aus dem öffentlichen Famio-Release, prüft deren Signatur und bietet sie den Apps der Familie an. Dafür fragt er bei GitHub nach. iPhone und Mac folgen mit dem Apple-Entwicklerkonto.",
+  "adminAppUpdatesOn": "App-Pakete verteilen",
+  "adminAppUpdatesReady": "Bereit für Version {version}: {platforms}",
+  "@adminAppUpdatesReady": {
+    "placeholders": {
+      "version": {
+        "type": "Object?"
+      },
+      "platforms": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminAppUpdatesNone": "Noch keine Pakete geladen.",
+  "adminAppUpdatesRefresh": "Erneut laden"
 }

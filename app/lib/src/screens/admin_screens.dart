@@ -25,6 +25,7 @@ import '../widgets/setup_checklist.dart';
 import 'invite_screens.dart' show InviteScreen;
 import '../l10n.dart';
 
+part 'admin/app_updates_dialog.dart';
 part 'admin/member_calendars.dart';
 part 'admin/paperbuddy_dialog.dart';
 part 'admin/settings_form.dart';

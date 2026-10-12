@@ -60,6 +60,7 @@ dependencies:
   web: ^1.1.1
   pdf: ^3.13.1
 dev_dependencies:
+  cryptography: ^2.9.0
   flutter_test:
     sdk: flutter
   integration_test:

@@ -597,6 +597,60 @@ class FamioApiClient {
   Future<Map<String, Object?>> syncPaperBuddy() =>
       _send('POST', 'api/admin/paperbuddy/sync');
 
+  // --- app updates through the server --------------------------------------
+
+  /// Whether the server hands out app packages, and which (admins).
+  Future<Map<String, Object?>> appUpdates() =>
+      _send('GET', 'api/admin/app-updates');
+
+  /// Switches the distribution on (fetching the packages, which takes a
+  /// while) or off.
+  Future<Map<String, Object?>> saveAppUpdates({required bool enabled}) => _send(
+    'PUT',
+    'api/admin/app-updates',
+    {'enabled': enabled},
+    const Duration(minutes: 10),
+  );
+
+  Future<Map<String, Object?>> refreshAppUpdates() => _send(
+    'POST',
+    'api/admin/app-updates/refresh',
+    null,
+    const Duration(minutes: 10),
+  );
+
+  /// The package the server offers for [platform], or null.
+  Future<AppUpdateOffer?> appUpdate(AppPlatform platform) async {
+    try {
+      return AppUpdateOffer.fromJson(
+        await _send('GET', 'api/app-update?platform=${platform.name}'),
+      );
+    } on ApiError catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// The package's bytes as they arrive, with the total size if known.
+  Future<(int?, Stream<List<int>>)> downloadAppUpdate(
+    AppPlatform platform,
+  ) async {
+    final request = http.Request(
+      'GET',
+      baseUrl.resolve('api/app-update/download?platform=${platform.name}'),
+    )..headers.addAll(authHeaders);
+    final http.StreamedResponse response;
+    try {
+      response = await _http.send(request).timeout(_timeout);
+    } catch (e) {
+      throw ApiError(0, 'network', ClientTexts.unreachable(e));
+    }
+    if (response.statusCode != 200) {
+      _decode(await http.Response.fromStream(response));
+    }
+    return (response.contentLength, response.stream);
+  }
+
   Future<void> signOutUser(String id, {String? sessionId}) => _send(
     'DELETE',
     sessionId == null
@@ -1306,6 +1360,35 @@ class FamioApiClient {
     }
     return json;
   }
+}
+
+/// An app package the server offers (see [FamioApiClient.appUpdate]). The
+/// signed list [sums] lets the app check the package itself.
+class AppUpdateOffer {
+  const AppUpdateOffer({
+    required this.version,
+    required this.file,
+    required this.size,
+    required this.sha256,
+    required this.sums,
+    required this.signature,
+  });
+
+  factory AppUpdateOffer.fromJson(Map<String, Object?> json) => AppUpdateOffer(
+    version: json['version'] as String,
+    file: json['file'] as String,
+    size: (json['size'] as num).toInt(),
+    sha256: json['sha256'] as String,
+    sums: json['sums'] as String,
+    signature: json['signature'] as String,
+  );
+
+  final String version;
+  final String file;
+  final int size;
+  final String sha256;
+  final String sums;
+  final String signature;
 }
 
 /// One notification of Famio's own push.

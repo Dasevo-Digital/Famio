@@ -599,6 +599,16 @@ class _SettingsFormState extends State<_SettingsForm> {
                 child: Text(tr.commonSetUp),
               ),
             ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(AppIcons.cloudArrowDown),
+              title: Text(tr.adminAppUpdates),
+              subtitle: Text(tr.adminAppUpdatesSubtitle),
+              trailing: TextButton(
+                onPressed: _busy ? null : () => showAppUpdatesDialog(context),
+                child: Text(tr.commonSetUp),
+              ),
+            ),
             ListHeading(tr.adminAreas, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,

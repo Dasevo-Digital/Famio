@@ -39,4 +39,5 @@
     <string name="location_permission_missing">Location access missing – allow it in Famio</string>
     <string name="location_visible">Your family sees where you are</string>
     <string name="location_sharing_title">Famio shares your location</string>
+    <string name="app_update_failed">Update failed: %1$s</string>
 </resources>
