@@ -47,6 +47,36 @@ extension _CalendarRoutes on FamioApi {
       caldav ??
       (throw ApiException(404, 'not_found', t('CalDAV nicht verfügbar')));
 
+  /// Reads a calendar file (`.ics`) the app sends, without saving: the app
+  /// shows the events and saves those the member picks.
+  Future<Response> _icsFile(Request request) async {
+    _member(request);
+    final text = (await _body(request))['ics'];
+    if (text is! String || text.trim().isEmpty) {
+      throw ApiException.badRequest(
+        'ics_missing',
+        t('Keine Kalenderdatei übergeben.'),
+      );
+    }
+    final content = readIcsFile(text, location: location);
+    if (content.events.isEmpty && content.skipped.isEmpty) {
+      throw ApiException.badRequest(
+        'ics_empty',
+        t('Die Datei enthält keine Termine.'),
+      );
+    }
+    return _json({
+      'events': [
+        for (final e in content.events) {'id': e.id, 'data': e.toData()},
+      ],
+      'skipped': [
+        for (final s in content.skipped)
+          {'title': s.title, 'reason': t(s.reason)},
+      ],
+      'expanded': content.expanded,
+    });
+  }
+
   Future<Response> _caldavDiscover(Request request) async {
     final member = _member(request);
     final body = await _body(request);

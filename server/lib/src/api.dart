@@ -20,6 +20,7 @@ import 'auth/totp.dart';
 import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
 import 'calendar/ics_export.dart';
+import 'calendar/ics_file_import.dart';
 import 'crypto/tls.dart';
 import 'dav/apple_profile.dart';
 import 'calendar/calendar_access.dart';
@@ -329,6 +330,7 @@ class FamioApi {
       ..post('/api/calendar/feeds', _createFeed)
       ..delete('/api/calendar/feeds/<id>', _deleteFeed)
       ..post('/api/calendar/subscriptions/<id>/refresh', _refreshSubscription)
+      ..post('/api/calendar/ics-file', _icsFile)
       ..post('/api/calendar/caldav/discover', _caldavDiscover)
       ..post('/api/calendar/google/connect', _googleConnect)
       ..get('/api/calendar/caldav', _caldavAccounts)

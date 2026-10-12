@@ -48,7 +48,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Aufgaben (fällig, zuständig, Erinnerung, Wiederholung) | ✅ |
 | Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
-| Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos | ✅ |
+| Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien) | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |

@@ -597,6 +597,15 @@ class FamioApiClient {
   Future<Map<String, Object?>> syncPaperBuddy() =>
       _send('POST', 'api/admin/paperbuddy/sync');
 
+  /// Reads a calendar file (`.ics`) on the server without saving anything:
+  /// the events to show, and what cannot be taken over.
+  Future<IcsFilePreview> readIcsFile(String ics) async =>
+      IcsFilePreview.fromJson(
+        await _send('POST', 'api/calendar/ics-file', {
+          'ics': ics,
+        }, const Duration(minutes: 2)),
+      );
+
   // --- app updates through the server --------------------------------------
 
   /// Whether the server hands out app packages, and which (admins).
@@ -1360,6 +1369,44 @@ class FamioApiClient {
     }
     return json;
   }
+}
+
+/// The events of a calendar file (see [FamioApiClient.readIcsFile]).
+class IcsFilePreview {
+  const IcsFilePreview({
+    required this.events,
+    this.skipped = const [],
+    this.expanded = 0,
+  });
+
+  factory IcsFilePreview.fromJson(Map<String, Object?> json) => IcsFilePreview(
+    events: [
+      for (final e in json['events'] as List? ?? const [])
+        CalendarEvent.fromRecord(
+          SyncRecord(
+            collection: Collections.events,
+            id: (e as Map)['id'] as String,
+            data: (e['data'] as Map).cast(),
+            updatedAt: 0,
+          ),
+        ),
+    ],
+    skipped: [
+      for (final s in json['skipped'] as List? ?? const [])
+        (
+          title: (s as Map)['title'] as String? ?? '',
+          reason: s['reason'] as String? ?? '',
+        ),
+    ],
+    expanded: (json['expanded'] as num?)?.toInt() ?? 0,
+  );
+
+  /// Ready to save; ids from the file's UIDs (a re-import updates them).
+  final List<CalendarEvent> events;
+  final List<({String title, String reason})> skipped;
+
+  /// Series with a rule Famio cannot repeat, taken as single events.
+  final int expanded;
 }
 
 /// An app package the server offers (see [FamioApiClient.appUpdate]). The

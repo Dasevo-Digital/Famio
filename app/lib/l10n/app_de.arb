@@ -4008,7 +4008,7 @@
   "placesNotifyMe": "Mich benachrichtigen",
   "placesWhenSomeoneArrivesLeaves": "Wenn jemand ankommt oder losgeht",
   "placesDeletePlace": "Ort löschen",
-  "calendarRecognizeEventsPhotoText": "Termine aus Foto oder Text erkennen",
+  "calendarRecognizeEventsPhotoText": "Termine aus Foto, Text oder Kalenderdatei",
   "calendarConnectGoogleAppleCalendar": "Mit Google/Apple Kalender verbinden",
   "calendarNoEvents": "Keine Termine",
   "calendarAdminsSetFederalState": "Das Bundesland stellen Admins in der Server-Verwaltung ein.",
@@ -5604,5 +5604,37 @@
   "tourBannerTitle": "Neu bei Famio? Eine Minute Rundgang",
   "tourBannerText": "Zeigt dir die wichtigsten Bereiche, jederzeit überspringbar.",
   "tourMenu": "Kurze Tour durch Famio",
-  "tourMenuSubtitle": "Die wichtigsten Bereiche in einer Minute"
+  "tourMenuSubtitle": "Die wichtigsten Bereiche in einer Minute",
+  "importIcsFile": "Kalenderdatei (.ics)",
+  "importIcsCount": "{count, plural, =1{1 Termin in der Datei} other{{count} Termine in der Datei}}",
+  "@importIcsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importIcsHint": "Dein Famio-Server hat die Datei gelesen. Gespeichert wird nur, was du übernimmst; Serien bleiben Serien.",
+  "importIcsExpanded": "{count, plural, =1{Eine Serie mit einer besonderen Regel wird als einzelne Termine übernommen (letztes Jahr bis in zwei Jahren).} other{{count} Serien mit besonderen Regeln werden als einzelne Termine übernommen (letztes Jahr bis in zwei Jahren).}}",
+  "@importIcsExpanded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importIcsRepeats": "wiederholt sich",
+  "importIcsExisting": "Schon in Famio – wird aktualisiert",
+  "importIcsSkipped": "Nicht übernommen:",
+  "importIcsAll": "Alle auswählen",
+  "importIcsNone": "Keine auswählen",
+  "importIcsTooLarge": "Die Datei ist größer als 10 MB.",
+  "importIcsFailed": "Die Datei ließ sich nicht lesen: {error}",
+  "@importIcsFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object?"
+      }
+    }
+  }
 }

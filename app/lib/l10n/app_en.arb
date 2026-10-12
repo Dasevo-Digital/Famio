@@ -1736,7 +1736,7 @@
   "placesNotifyMe": "Notify me",
   "placesWhenSomeoneArrivesLeaves": "When someone arrives or leaves",
   "placesDeletePlace": "Delete place",
-  "calendarRecognizeEventsPhotoText": "Recognize events from a photo or text",
+  "calendarRecognizeEventsPhotoText": "Events from a photo, text or calendar file",
   "calendarConnectGoogleAppleCalendar": "Connect with Google/Apple Calendar",
   "calendarNoEvents": "No events",
   "calendarAdminsSetFederalState": "Admins set the federal state in the server administration.",
@@ -2208,5 +2208,16 @@
   "tourBannerTitle": "New to Famio? A one-minute tour",
   "tourBannerText": "Shows you the main areas; skip it any time.",
   "tourMenu": "Short tour of Famio",
-  "tourMenuSubtitle": "The main areas in one minute"
+  "tourMenuSubtitle": "The main areas in one minute",
+  "importIcsFile": "Calendar file (.ics)",
+  "importIcsCount": "{count, plural, =1{1 event in the file} other{{count} events in the file}}",
+  "importIcsHint": "Your Famio server read the file. Only what you take over is saved; series stay series.",
+  "importIcsExpanded": "{count, plural, =1{One series with a special rule is taken over as single events (last year to two years ahead).} other{{count} series with special rules are taken over as single events (last year to two years ahead).}}",
+  "importIcsRepeats": "repeats",
+  "importIcsExisting": "Already in Famio – will be updated",
+  "importIcsSkipped": "Not taken over:",
+  "importIcsAll": "Select all",
+  "importIcsNone": "Select none",
+  "importIcsTooLarge": "The file is larger than 10 MB.",
+  "importIcsFailed": "The file could not be read: {error}"
 }

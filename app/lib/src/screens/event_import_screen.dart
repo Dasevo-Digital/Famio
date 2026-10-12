@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
@@ -16,9 +17,12 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
+import 'ics_import_screen.dart';
 
 /// Appointments from a photo of a letter, an invitation or pasted text:
-/// recognised on the device, checked by hand, then added.
+/// recognised on the device, checked by hand, then added. Calendar files
+/// (`.ics`) are read by the family's server and taken over completely,
+/// series included.
 class EventImportScreen extends StatefulWidget {
   const EventImportScreen({super.key});
 
@@ -133,6 +137,48 @@ class _EventImportScreenState extends State<EventImportScreen> {
     });
   }
 
+  Future<void> _icsFile() async {
+    List<PlatformFile> picked;
+    try {
+      picked = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['ics', 'ical', 'icalendar', 'ifb'],
+      );
+    } on Exception {
+      // Some systems know no calendar file type: any file then.
+      picked = await FilePicker.pickFiles();
+    }
+    if (picked.isEmpty || !mounted) return;
+    final file = picked.first;
+    final api = AppScope.engineOf(context).api;
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    try {
+      final bytes = await file.readAsBytes();
+      if (bytes.length > 10 * 1024 * 1024) {
+        setState(() => _message = tr.importIcsTooLarge);
+        return;
+      }
+      final preview = await api.readIcsFile(
+        utf8.decode(bytes, allowMalformed: true),
+      );
+      if (!mounted) return;
+      setState(() => _busy = false);
+      final added = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => IcsImportScreen(preview: preview)),
+      );
+      if (added == true && mounted) Navigator.pop(context);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _message = e.message);
+    } catch (e) {
+      if (mounted) setState(() => _message = tr.importIcsFailed('$e'));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   void _add() {
     final engine = AppScope.engineOf(context);
     final found = _found!;
@@ -216,6 +262,11 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     label: Text(tr.importChoosePdf),
                     onPressed: _busy ? null : _pdf,
                   ),
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.calendarBlank),
+                  label: Text(tr.importIcsFile),
+                  onPressed: _busy ? null : _icsFile,
+                ),
                 OutlinedButton.icon(
                   icon: const Icon(AppIcons.clipboardList),
                   label: Text(tr.importClipboard),

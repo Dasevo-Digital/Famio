@@ -1171,6 +1171,8 @@ const sharedEs = <String, String>{
       "Indica el nombre de usuario y la contraseña",
   "Server|Abgleich fehlgeschlagen: {error}": "Error de sincronización: {error}",
   "Server|Kein Termin (VEVENT) enthalten": "No contiene ningún evento (VEVENT)",
+  "Server|Keine Kalenderdatei übergeben.": "No se ha enviado ningún archivo de calendario.",
+  "Server|Die Datei enthält keine Termine.": "El archivo no contiene eventos.",
   "Server|Bitte eine Adresse wie https://caldav.icloud.com angeben":
       "Indica una dirección como https://caldav.icloud.com",
   "Server|Anmeldung mit Benutzername und App-Passwort nötig":

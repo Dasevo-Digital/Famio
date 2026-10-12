@@ -170,7 +170,24 @@ ParsedEvent parseEventIcs(
 }) {
   final root = parseIcs(text);
   final calendar = root.components('VCALENDAR').firstOrNull ?? root;
-  final vevents = calendar.components('VEVENT').toList();
+  return parseEventComponents(
+    calendar.components('VEVENT').toList(),
+    id: id,
+    location: location,
+    existing: existing,
+    allowConfidential: allowConfidential,
+  );
+}
+
+/// [parseEventIcs] for the VEVENTs of one UID, e.g. one entry of a whole
+/// calendar file.
+ParsedEvent parseEventComponents(
+  List<IcsComponent> vevents, {
+  required String id,
+  required tz.Location location,
+  CalendarEvent? existing,
+  bool allowConfidential = true,
+}) {
   final masters = [
     for (final v in vevents)
       if (v.property('RECURRENCE-ID') == null) v,

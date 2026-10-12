@@ -1736,7 +1736,7 @@
   "placesNotifyMe": "Avisarme",
   "placesWhenSomeoneArrivesLeaves": "Cuando alguien llega o se va",
   "placesDeletePlace": "Borrar lugar",
-  "calendarRecognizeEventsPhotoText": "Reconocer eventos en una foto o un texto",
+  "calendarRecognizeEventsPhotoText": "Eventos desde una foto, un texto o un archivo de calendario",
   "calendarConnectGoogleAppleCalendar": "Conectar con Google/Calendario de Apple",
   "calendarNoEvents": "No hay eventos",
   "calendarAdminsSetFederalState": "Los administradores configuran el estado federado en la administración del servidor.",
@@ -2208,5 +2208,16 @@
   "tourBannerTitle": "¿Nuevo en Famio? Un recorrido de un minuto",
   "tourBannerText": "Te muestra las secciones principales; puedes saltarlo cuando quieras.",
   "tourMenu": "Recorrido breve por Famio",
-  "tourMenuSubtitle": "Las secciones principales en un minuto"
+  "tourMenuSubtitle": "Las secciones principales en un minuto",
+  "importIcsFile": "Archivo de calendario (.ics)",
+  "importIcsCount": "{count, plural, =1{1 evento en el archivo} other{{count} eventos en el archivo}}",
+  "importIcsHint": "Tu servidor de Famio ha leído el archivo. Solo se guarda lo que añadas; las series siguen siendo series.",
+  "importIcsExpanded": "{count, plural, =1{Una serie con una regla especial se añade como eventos sueltos (del año pasado a dentro de dos años).} other{{count} series con reglas especiales se añaden como eventos sueltos (del año pasado a dentro de dos años).}}",
+  "importIcsRepeats": "se repite",
+  "importIcsExisting": "Ya está en Famio: se actualizará",
+  "importIcsSkipped": "No se añade:",
+  "importIcsAll": "Seleccionar todo",
+  "importIcsNone": "No seleccionar ninguno",
+  "importIcsTooLarge": "El archivo ocupa más de 10 MB.",
+  "importIcsFailed": "No se ha podido leer el archivo: {error}"
 }
