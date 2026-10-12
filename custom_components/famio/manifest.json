@@ -4,7 +4,7 @@
   "codeowners": [],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://gitea.status403.de/dasevo-digital/Famio/src/branch/main/homeassistant-integration",
+  "documentation": "https://github.com/Dasevo-Digital/Famio/blob/main/homeassistant-integration/README.md",
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://gitea.status403.de/dasevo-digital/Famio/issues",

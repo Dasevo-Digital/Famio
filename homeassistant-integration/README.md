@@ -22,13 +22,26 @@ Verbindung alle 5 Minuten).
 
 ## Installation
 
-1. Den Ordner `custom_components/famio` nach `/config/custom_components/famio`
-   kopieren (z. B. mit dem Samba- oder „Studio Code Server“-Add-on).
-2. Home Assistant neu starten.
+Ab Home Assistant 2025.3. Am einfachsten über [HACS](https://hacs.xyz): dann
+meldet Home Assistant neue Famio-Versionen selbst.
+
+1. HACS → ⋮ (oben rechts) → **Benutzerdefinierte Repositories** →
+   Repository `https://github.com/Dasevo-Digital/Famio`, Typ **Integration**
+   → Hinzufügen.
+2. In HACS nach **Famio** suchen → Herunterladen → Home Assistant neu
+   starten.
 3. Einstellungen → Geräte & Dienste → Integration hinzufügen → **Famio**.
-4. Server-Adresse (z. B. `192.168.1.50` – dann HTTPS auf Port 8766 – oder
+
+Ohne HACS: den Ordner [`custom_components/famio`](../custom_components/famio)
+aus dem Repository nach `/config/custom_components/famio` kopieren (z. B.
+mit dem Samba- oder „Studio Code Server“-Add-on) und Home Assistant neu
+starten; Updates dann ebenso von Hand.
+
+Danach:
+
+1. Server-Adresse (z. B. `192.168.1.50` – dann HTTPS auf Port 8766 – oder
    `https://famio.example.de`), Benutzername und Passwort eingeben.
-5. Beim eigenen Zertifikat des Servers den angezeigten Fingerabdruck mit dem
+2. Beim eigenen Zertifikat des Servers den angezeigten Fingerabdruck mit dem
    Server-Log vergleichen (`journalctl -u famio` im Container bzw.
    `docker logs famio`) und bestätigen.
 

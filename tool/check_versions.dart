@@ -26,7 +26,7 @@ void main(List<String> args) {
       r'^version:\s*"([^"]+)"',
       multiLine: true,
     ),
-    'homeassistant-integration/custom_components/famio/manifest.json': RegExp(
+    'custom_components/famio/manifest.json': RegExp(
       r'"version":\s*"([^"]+)"',
     ),
     'server/lib/src/api.dart': RegExp(r"const serverVersion = '([^']+)'"),
