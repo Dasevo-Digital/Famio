@@ -11,6 +11,7 @@ import '../widgets/famio_glyph.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/famio_tour.dart';
 import '../data/family_extras.dart';
 import 'calendar_screen.dart';
 import 'chores_screens.dart';
@@ -266,35 +267,35 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               (_) => mounted ? _go(FamioSection.home) : null,
             );
           }
-          if (wide) {
-            return Scaffold(
-              backgroundColor: c.background,
-              body: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _SideRail(
-                    sections: _sections,
+          final shell = wide
+              ? Scaffold(
+                  backgroundColor: c.background,
+                  body: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SideRail(
+                        sections: _sections,
+                        current: _section,
+                        onSelect: _go,
+                        unread: unread,
+                      ),
+                      Expanded(child: body),
+                    ],
+                  ),
+                )
+              : Scaffold(
+                  backgroundColor: c.background,
+                  extendBody: true,
+                  body: body,
+                  bottomNavigationBar: _FloatingBar(
+                    bar: _bar,
                     current: _section,
                     onSelect: _go,
+                    onMore: _showMore,
                     unread: unread,
                   ),
-                  Expanded(child: body),
-                ],
-              ),
-            );
-          }
-          return Scaffold(
-            backgroundColor: c.background,
-            extendBody: true,
-            body: body,
-            bottomNavigationBar: _FloatingBar(
-              bar: _bar,
-              current: _section,
-              onSelect: _go,
-              onMore: _showMore,
-              unread: unread,
-            ),
-          );
+                );
+          return FamioTourScope(sections: _sections, go: _go, child: shell);
         },
       ),
     );
@@ -362,14 +363,17 @@ class _SideRail extends StatelessWidget {
                   ),
                   for (final s in sections)
                     Expanded(
-                      child: _RailItem(
-                        section: s,
-                        selected: s == current,
-                        showLabel: showLabel,
-                        iconSize: iconSize,
-                        labelSize: labelSize,
-                        badge: s == FamioSection.chat ? unread : 0,
-                        onTap: () => onSelect(s),
+                      child: KeyedSubtree(
+                        key: TourTargets.sections[s],
+                        child: _RailItem(
+                          section: s,
+                          selected: s == current,
+                          showLabel: showLabel,
+                          iconSize: iconSize,
+                          labelSize: labelSize,
+                          badge: s == FamioSection.chat ? unread : 0,
+                          onTap: () => onSelect(s),
+                        ),
                       ),
                     ),
                 ],
@@ -558,17 +562,21 @@ class _FloatingBar extends StatelessWidget {
           children: [
             for (final s in bar)
               Expanded(
-                child: _BarItem(
-                  icon: s.icon,
-                  label: s.title(context),
-                  color: c.strong(s),
-                  tint: c.tint(s),
-                  selected: s == current,
-                  badge: s == FamioSection.chat ? unread : 0,
-                  onTap: () => onSelect(s),
+                child: KeyedSubtree(
+                  key: TourTargets.sections[s],
+                  child: _BarItem(
+                    icon: s.icon,
+                    label: s.title(context),
+                    color: c.strong(s),
+                    tint: c.tint(s),
+                    selected: s == current,
+                    badge: s == FamioSection.chat ? unread : 0,
+                    onTap: () => onSelect(s),
+                  ),
                 ),
               ),
             Expanded(
+              key: TourTargets.more,
               child: _BarItem(
                 icon: AppIcons.dotsThreeCircle,
                 label: inMore ? current.title(context) : context.l10n.navMore,

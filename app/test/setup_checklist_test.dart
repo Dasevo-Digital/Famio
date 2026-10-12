@@ -21,7 +21,8 @@ void main() {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({});
+    // The tour's card would add a second "Ausblenden".
+    SharedPreferences.setMockInitialValues({'tour.offered': true});
     FlutterSecureStorage.setMockInitialValues({});
     const me = FamilyMember(
       id: 'm1',

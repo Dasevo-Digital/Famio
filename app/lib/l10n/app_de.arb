@@ -5568,5 +5568,41 @@
         "type": "Object?"
       }
     }
-  }
+  },
+  "tourStep": "Schritt {n} von {total}",
+  "@tourStep": {
+    "placeholders": {
+      "n": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
+  "tourSkip": "Überspringen",
+  "tourUnderMore": "Auf dem Handy findest du das unter „Mehr“.",
+  "tourHomeTitle": "Start",
+  "tourHomeText": "Hier siehst du auf einen Blick, was heute ansteht: Termine, Aufgaben, Ämter, Essen und Einkauf.",
+  "tourCalendarTitle": "Kalender",
+  "tourCalendarText": "Alle Termine der Familie an einem Ort, auch abonnierte Kalender, Geburtstage und Schulferien. Neue Termine legst du mit dem Plus an.",
+  "tourTasksTitle": "Aufgaben",
+  "tourTasksText": "To-dos für alle oder für eine Person, mit Fälligkeit, Erinnerung und Wiederholung.",
+  "tourChoresTitle": "Ämter",
+  "tourChoresText": "Hier steht, welche Ämter du heute hast. Für erledigte Ämter gibt es Punkte.",
+  "tourShoppingTitle": "Einkauf",
+  "tourShoppingText": "Gemeinsame Einkaufslisten: Was jemand einträgt, sehen alle sofort, auch unterwegs im Laden.",
+  "tourKidsTitle": "Kinder",
+  "tourKidsText": "Für jedes Kind: Meilensteine, Entwicklungsphasen, Vorsorge, Impfungen und Wachstum.",
+  "tourSosTitle": "Notfallknopf",
+  "tourSosText": "Im Notfall drei Sekunden gedrückt halten: Famio alarmiert die Familie mit deinem Standort. Kurzes Antippen löst nichts aus.",
+  "tourMoreTitle": "Mehr",
+  "tourMoreText": "Hier findest du alle weiteren Bereiche wie Dokumente, Essen und Kontakte sowie die Einstellungen. Dort kannst du diese Tour jederzeit wieder starten.",
+  "tourSettingsTitle": "Einstellungen",
+  "tourSettingsText": "Profil, Benachrichtigungen, Sprache und mehr. Hier kannst du diese Tour jederzeit wieder starten.",
+  "tourAdminText": "Als Admin findest du dort auch die Server-Verwaltung.",
+  "tourBannerTitle": "Neu bei Famio? Eine Minute Rundgang",
+  "tourBannerText": "Zeigt dir die wichtigsten Bereiche, jederzeit überspringbar.",
+  "tourMenu": "Kurze Tour durch Famio",
+  "tourMenuSubtitle": "Die wichtigsten Bereiche in einer Minute"
 }

@@ -35,6 +35,7 @@ import 'waste_screen.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import 'year_review_screen.dart';
+import '../widgets/famio_tour.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -372,6 +373,12 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => Navigator.of(context).push(
               MaterialPageRoute<void>(builder: (_) => const YearReviewScreen()),
             ),
+          ),
+          ListTile(
+            leading: const Icon(AppIcons.question),
+            title: Text(tr.tourMenu),
+            subtitle: Text(tr.tourMenuSubtitle),
+            onTap: () => startTourFromShell(context),
           ),
           ListTile(
             leading: const Icon(AppIcons.sparkle),

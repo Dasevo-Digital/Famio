@@ -12,6 +12,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/push/own_push.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
+import 'package:famio/src/widgets/famio_tour.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/l10n.dart';
@@ -1092,6 +1093,8 @@ void main() {
       'weather.enabled': true,
       'weather.cache': _weatherCache(),
       'hiddenModules': hiddenModules,
+      // Store screenshots without the tour's card; the tour has its own.
+      'tour.offered': true,
     });
     // ignore: invalid_use_of_visible_for_testing_member
     FlutterSecureStorage.setMockInitialValues({});
@@ -1150,6 +1153,7 @@ void main() {
   testWidgets('desktop', (tester) async {
     final key = await start(tester, desktop);
     await _shot(tester, key, 'desktop_1_start');
+    await _tour(tester, key, 'desktop');
     await go(tester, 'Kalender');
     await _shot(tester, key, 'desktop_2_kalender');
     await go(tester, 'Kinder');
@@ -1165,6 +1169,7 @@ void main() {
   testWidgets('phone', (tester) async {
     final key = await start(tester, phone);
     await _shot(tester, key, 'phone_1_start');
+    await _tour(tester, key, 'phone');
     await go(tester, 'Aufgaben');
     await _shot(tester, key, 'phone_2_aufgaben');
     await tester.tap(find.byTooltip('Chat').first);
@@ -1502,4 +1507,19 @@ void main() {
     final key = await start(tester, phone, signedIn: false);
     await _shot(tester, key, 'phone_0_login');
   });
+}
+
+/// The tour: its first step and the emergency button, then closed.
+Future<void> _tour(WidgetTester tester, GlobalKey key, String device) async {
+  startTourFromShell(tester.element(find.byType(Scaffold).first));
+  await tester.pumpAndSettle();
+  await _shot(tester, key, '${device}_1a_tour');
+  while (find.text('Notfallknopf').evaluate().isEmpty &&
+      find.text('Weiter').evaluate().isNotEmpty) {
+    await tester.tap(find.text('Weiter'));
+    await tester.pumpAndSettle();
+  }
+  await _shot(tester, key, '${device}_1b_tour_notruf');
+  await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+  await tester.pumpAndSettle();
 }
