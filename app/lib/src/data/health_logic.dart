@@ -76,6 +76,88 @@ DaySummary summarize(List<ChildLog> logs, DateTime day, [DateTime? now]) {
   return s;
 }
 
+/// How much of a child's log the summary covers.
+enum LogPeriod { day, week, month }
+
+/// The days of the [period] around [anchor]: the day itself, Monday to
+/// Sunday, or the calendar month.
+List<DateTime> periodDays(LogPeriod period, DateTime anchor) {
+  final day = _dayOf(anchor);
+  final (first, count) = switch (period) {
+    LogPeriod.day => (day, 1),
+    LogPeriod.week => (
+      DateTime(day.year, day.month, day.day - (day.weekday - 1)),
+      7,
+    ),
+    LogPeriod.month => (
+      DateTime(day.year, day.month),
+      DateTime(day.year, day.month + 1, 0).day,
+    ),
+  };
+  return [
+    for (var i = 0; i < count; i++)
+      DateTime(first.year, first.month, first.day + i),
+  ];
+}
+
+/// [anchor] moved by [steps] periods (negative: back in time).
+DateTime shiftPeriod(LogPeriod period, DateTime anchor, int steps) =>
+    switch (period) {
+      LogPeriod.day => DateTime(anchor.year, anchor.month, anchor.day + steps),
+      LogPeriod.week => DateTime(
+        anchor.year,
+        anchor.month,
+        anchor.day + 7 * steps,
+      ),
+      // The 1st, so that 31 January does not jump over February.
+      LogPeriod.month => DateTime(anchor.year, anchor.month + steps),
+    };
+
+/// Averages per day over [days], counting only days from the first entry
+/// up to [now]: a week that has just begun, or a month in which the log
+/// was started, is not diluted by days nobody wrote anything down.
+class PeriodSummary {
+  PeriodSummary(List<ChildLog> logs, List<DateTime> days, DateTime now) {
+    final today = _dayOf(now);
+    final first = logs.isEmpty
+        ? today
+        : _dayOf(
+            logs.map((l) => l.start).reduce((a, b) => a.isBefore(b) ? a : b),
+          );
+    final counted = [
+      for (final d in days)
+        if (!d.isAfter(today) && !d.isBefore(first)) d,
+    ];
+    this.days = counted.length;
+    for (final d in counted) {
+      final s = summarize(logs, d, now);
+      feedings += s.feedings;
+      milkMl += s.milkMl;
+      breast += s.breast;
+      sleep += s.sleep;
+      wet += s.wet;
+      dirty += s.dirty;
+      if (s.maxTemperature case final t?
+          when maxTemperature == null || t > maxTemperature!) {
+        maxTemperature = t;
+      }
+    }
+  }
+
+  late final int days;
+  var feedings = 0;
+  var milkMl = 0;
+  var breast = Duration.zero;
+  var sleep = Duration.zero;
+  var wet = 0;
+  var dirty = 0;
+  double? maxTemperature;
+
+  double perDay(num total) => days == 0 ? 0 : total / days;
+  Duration durationPerDay(Duration total) =>
+      days == 0 ? Duration.zero : total ~/ days;
+}
+
 /// The latest entry of [kind] (logs are newest first).
 ChildLog? lastOf(List<ChildLog> logs, LogKind kind) =>
     logs.where((l) => l.kind == kind).firstOrNull;

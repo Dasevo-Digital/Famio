@@ -2225,5 +2225,15 @@
   "tasksPhotos": "Photos",
   "tasksAddPhoto": "Attach photo",
   "tasksRemovePhoto": "Remove photo",
-  "tasksOpenPhoto": "Open photo"
+  "tasksOpenPhoto": "Open photo",
+  "kidsLogDay": "Day",
+  "kidsLogWeek": "Week",
+  "kidsLogMonth": "Month",
+  "kidsLogEarlier": "Earlier",
+  "kidsLogLater": "Later",
+  "kidsLogThisWeek": "This week",
+  "kidsLogLastWeek": "Last week",
+  "kidsLogHistory": "History",
+  "kidsLogNoEntriesInPeriod": "No entries in this period.",
+  "kidsLogAveragePerDay": "{count, plural, =1{Average per day (1 day)} other{Average per day ({count} days)}}"
 }

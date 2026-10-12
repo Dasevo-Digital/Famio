@@ -109,16 +109,28 @@ class _TickerState extends State<_Ticker> {
   Widget build(BuildContext context) => widget.builder(context);
 }
 
-/// The child's daily log: quick buttons, running timers, today's totals, a
-/// week chart and all entries by day.
-class ChildLogView extends StatelessWidget {
+/// The child's daily log: quick buttons, running timers, the totals of a
+/// day, week or month with their course, and the entries of that time.
+class ChildLogView extends StatefulWidget {
   const ChildLogView({super.key, required this.child, required this.logs});
 
   final Child child;
   final List<ChildLog> logs;
 
   @override
+  State<ChildLogView> createState() => _ChildLogViewState();
+}
+
+class _ChildLogViewState extends State<ChildLogView> {
+  var _period = LogPeriod.day;
+
+  /// A day inside the period shown; today at first.
+  DateTime _anchor = DateTime.now();
+
+  @override
   Widget build(BuildContext context) {
+    final logs = widget.logs;
+    final child = widget.child;
     final running = logs.where((l) => l.running).toList();
     // Only the stopwatch of a running timer ticks each second (see
     // _RunningCard); the rest of the log is refreshed once a minute.
@@ -126,8 +138,16 @@ class ChildLogView extends StatelessWidget {
       interval: const Duration(minutes: 1),
       builder: (context) {
         final now = DateTime.now();
+        final days = periodDays(_period, _anchor);
+        final from = days.first;
+        final until = DateTime(
+          days.last.year,
+          days.last.month,
+          days.last.day + 1,
+        );
         final byDay = <DateTime, List<ChildLog>>{};
-        for (final l in logs.take(400)) {
+        for (final l in logs) {
+          if (l.start.isBefore(from) || !l.start.isBefore(until)) continue;
           byDay
               .putIfAbsent(
                 DateTime(l.start.year, l.start.month, l.start.day),
@@ -135,6 +155,10 @@ class ChildLogView extends StatelessWidget {
               )
               .add(l);
         }
+        final earliest = [
+          child.birthDate,
+          if (logs.isNotEmpty) logs.last.start,
+        ].reduce((a, b) => a.isBefore(b) ? a : b);
         return ListView(
           padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
           children: [
@@ -146,14 +170,36 @@ class ChildLogView extends StatelessWidget {
             const SizedBox(height: 12),
             _StatusCard(child: child, logs: logs, now: now),
             const SizedBox(height: 12),
-            _TodayCard(summary: summarize(logs, now, now)),
+            _PeriodBar(
+              period: _period,
+              days: days,
+              now: now,
+              canGoBack: from.isAfter(earliest),
+              onPeriod: (p) => setState(() => _period = p),
+              onShift: (steps) => setState(
+                () => _anchor = shiftPeriod(_period, _anchor, steps),
+              ),
+              onToday: () => setState(() => _anchor = now),
+            ),
+            const SizedBox(height: 8),
+            _period == LogPeriod.day
+                ? _DayCard(summary: summarize(logs, days.first, now))
+                : _AverageCard(summary: PeriodSummary(logs, days, now)),
             const SizedBox(height: 12),
-            _WeekChart(logs: logs, now: now),
+            _HistoryChart(logs: logs, period: _period, days: days, now: now),
             if (logs.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
                   tr.kidsLogNoEntriesYetTap,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              )
+            else if (byDay.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  tr.kidsLogNoEntriesInPeriod,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
@@ -171,6 +217,90 @@ class ChildLogView extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Day, week or month, and back and forth in time.
+class _PeriodBar extends StatelessWidget {
+  const _PeriodBar({
+    required this.period,
+    required this.days,
+    required this.now,
+    required this.canGoBack,
+    required this.onPeriod,
+    required this.onShift,
+    required this.onToday,
+  });
+
+  final LogPeriod period;
+  final List<DateTime> days;
+  final DateTime now;
+  final bool canGoBack;
+  final ValueChanged<LogPeriod> onPeriod;
+  final ValueChanged<int> onShift;
+  final VoidCallback onToday;
+
+  @override
+  Widget build(BuildContext context) {
+    final today = DateTime(now.year, now.month, now.day);
+    final current = days.contains(today);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SegmentedButton<LogPeriod>(
+          showSelectedIcon: false,
+          segments: [
+            ButtonSegment(value: LogPeriod.day, label: Text(tr.kidsLogDay)),
+            ButtonSegment(value: LogPeriod.week, label: Text(tr.kidsLogWeek)),
+            ButtonSegment(value: LogPeriod.month, label: Text(tr.kidsLogMonth)),
+          ],
+          selected: {period},
+          onSelectionChanged: (s) => onPeriod(s.first),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            IconButton(
+              tooltip: tr.kidsLogEarlier,
+              icon: const Icon(AppIcons.caretLeft),
+              onPressed: canGoBack ? () => onShift(-1) : null,
+            ),
+            Expanded(
+              child: Text(
+                _periodLabel(period, days, now),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            if (!current)
+              TextButton(onPressed: onToday, child: Text(tr.commonToday)),
+            IconButton(
+              tooltip: tr.kidsLogLater,
+              icon: const Icon(AppIcons.caretRight),
+              onPressed: current ? null : () => onShift(1),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// "Heute", "Letzte Woche", "5. Okt. – 11. Okt.", "Oktober 2026" …
+String _periodLabel(LogPeriod period, List<DateTime> days, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  switch (period) {
+    case LogPeriod.day:
+      return _dayLabel(days.first, now);
+    case LogPeriod.week:
+      if (days.contains(today)) return tr.kidsLogThisWeek;
+      if (days.contains(DateTime(today.year, today.month, today.day - 7))) {
+        return tr.kidsLogLastWeek;
+      }
+      final f = DateFormat.MMMd(appLanguage);
+      return '${f.format(days.first)} – ${f.format(days.last)}';
+    case LogPeriod.month:
+      return DateFormat.yMMMM(appLanguage).format(days.first);
   }
 }
 
@@ -673,31 +803,77 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-class _TodayCard extends StatelessWidget {
-  const _TodayCard({required this.summary});
+/// "2 nass · 1 voll" in the app's language.
+String _diapers(Object wet, Object dirty) =>
+    '$wet ${DiaperKind.wet.label} · $dirty ${DiaperKind.dirty.label}';
+
+/// The totals of one day.
+class _DayCard extends StatelessWidget {
+  const _DayCard({required this.summary});
 
   final DaySummary summary;
 
   @override
   Widget build(BuildContext context) {
     final s = summary;
+    return _SummaryCard(
+      items: [
+        (tr.kidsLogMeals, '${s.feedings}'),
+        if (s.milkMl > 0) (tr.kidsLogMilk, '${s.milkMl} ml'),
+        if (s.breast > Duration.zero)
+          (tr.kidsLogBreastfeeding, durationLabel(s.breast)),
+        (tr.kidsLogSleepNoun, durationLabel(s.sleep)),
+        (tr.kidsLogDiapers, _diapers(s.wet, s.dirty)),
+        if (s.maxTemperature != null)
+          (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
+      ],
+    );
+  }
+}
+
+/// A week or month: what a day brought on average.
+class _AverageCard extends StatelessWidget {
+  const _AverageCard({required this.summary});
+
+  final PeriodSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = summary;
+    String avg(num total) => decimal(s.perDay(total));
+    return _SummaryCard(
+      title: tr.kidsLogAveragePerDay(s.days),
+      items: [
+        (tr.kidsLogMeals, avg(s.feedings)),
+        if (s.milkMl > 0) (tr.kidsLogMilk, '${s.perDay(s.milkMl).round()} ml'),
+        if (s.breast > Duration.zero)
+          (tr.kidsLogBreastfeeding, durationLabel(s.durationPerDay(s.breast))),
+        (tr.kidsLogSleepNoun, durationLabel(s.durationPerDay(s.sleep))),
+        (tr.kidsLogDiapers, _diapers(avg(s.wet), avg(s.dirty))),
+        if (s.maxTemperature != null)
+          (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
+      ],
+    );
+  }
+}
+
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({required this.items, this.title});
+
+  final List<(String, String)> items;
+  final String? title;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final items = <(String, String)>[
-      (tr.kidsLogMeals, '${s.feedings}'),
-      if (s.milkMl > 0) (tr.kidsLogMilk, '${s.milkMl} ml'),
-      if (s.breast > Duration.zero)
-        (tr.kidsLogBreastfeeding, durationLabel(s.breast)),
-      (tr.kidsLogSleepNoun, durationLabel(s.sleep)),
-      (tr.kidsLogDiapers, '${s.wet} nass · ${s.dirty} voll'),
-      if (s.maxTemperature != null)
-        (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
-    ];
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(tr.commonToday, style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          if (title case final title?) ...[
+            Text(title, style: theme.textTheme.bodySmall),
+            const SizedBox(height: 8),
+          ],
           Wrap(
             spacing: 18,
             runSpacing: 10,
@@ -738,26 +914,47 @@ enum _Series {
   };
 }
 
-class _WeekChart extends StatefulWidget {
-  const _WeekChart({required this.logs, required this.now});
+/// The course of one value: the week up to the day shown, the days of the
+/// week, or of the month.
+class _HistoryChart extends StatefulWidget {
+  const _HistoryChart({
+    required this.logs,
+    required this.period,
+    required this.days,
+    required this.now,
+  });
 
   final List<ChildLog> logs;
+  final LogPeriod period;
+  final List<DateTime> days;
   final DateTime now;
 
   @override
-  State<_WeekChart> createState() => _WeekChartState();
+  State<_HistoryChart> createState() => _HistoryChartState();
 }
 
-class _WeekChartState extends State<_WeekChart> {
+class _HistoryChartState extends State<_HistoryChart> {
   var _series = _Series.feedings;
 
   @override
   Widget build(BuildContext context) {
     final now = widget.now;
-    final days = [
-      for (var i = 6; i >= 0; i--) DateTime(now.year, now.month, now.day - i),
+    final today = DateTime(now.year, now.month, now.day);
+    final shown = widget.days.first;
+    final days = widget.period == LogPeriod.day
+        ? [
+            for (var i = 6; i >= 0; i--)
+              DateTime(shown.year, shown.month, shown.day - i),
+          ]
+        : widget.days;
+    final highlight = widget.period == LogPeriod.day
+        ? days.length - 1
+        : days.indexOf(today);
+    final dense = days.length > 10;
+    final sums = [
+      for (final d in days)
+        d.isAfter(today) ? DaySummary(d) : summarize(widget.logs, d, now),
     ];
-    final sums = [for (final d in days) summarize(widget.logs, d, now)];
     final values = [
       for (final s in sums)
         switch (_series) {
@@ -783,7 +980,7 @@ class _WeekChartState extends State<_WeekChart> {
           Row(
             children: [
               Text(
-                'Letzte 7 Tage',
+                tr.kidsLogHistory,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const Spacer(),
@@ -806,8 +1003,15 @@ class _WeekChartState extends State<_WeekChart> {
               painter: _BarPainter(
                 values: values,
                 labels: [
-                  for (final d in days) DateFormat.E(appLanguage).format(d),
+                  for (final d in days)
+                    !dense
+                        ? DateFormat.E(appLanguage).format(d)
+                        : d.day == 1 || d.day % 5 == 0
+                        ? '${d.day}'
+                        : '',
                 ],
+                highlight: highlight,
+                showValues: !dense,
                 color: color,
                 grid: c.line,
                 label: c.inkSoft,
@@ -843,7 +1047,15 @@ class _BarPainter extends CustomPainter {
     required this.label,
     required this.format,
     this.baseline = 0,
+    this.highlight = -1,
+    this.showValues = true,
   });
+
+  /// The bar drawn in full color (the day shown, or today); -1: none.
+  final int highlight;
+
+  /// Numbers above the bars; too crowded for a month.
+  final bool showValues;
 
   final List<double> values;
   final List<String> labels;
@@ -884,8 +1096,14 @@ class _BarPainter extends CustomPainter {
       canvas.drawRRect(
         rect,
         Paint()
-          ..color = color.withValues(alpha: i == values.length - 1 ? 1 : 0.55),
+          ..color = color.withValues(
+            alpha: highlight < 0 ? 0.8 : (i == highlight ? 1 : 0.55),
+          ),
       );
+      if (!showValues) {
+        _paintLabel(canvas, size, slot, i, text);
+        continue;
+      }
       final valuePainter = TextPainter(
         text: TextSpan(
           text: v <= baseline && baseline > 0 ? '–' : format(v),
@@ -900,20 +1118,27 @@ class _BarPainter extends CustomPainter {
           size.height - bottom - h - 14,
         ),
       );
-      final dayPainter = TextPainter(
-        text: TextSpan(text: labels[i], style: text),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      dayPainter.paint(
-        canvas,
-        Offset(slot * i + (slot - dayPainter.width) / 2, size.height - 14),
-      );
+      _paintLabel(canvas, size, slot, i, text);
     }
+  }
+
+  void _paintLabel(Canvas canvas, Size size, double slot, int i, TextStyle s) {
+    final dayPainter = TextPainter(
+      text: TextSpan(text: labels[i], style: s),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    dayPainter.paint(
+      canvas,
+      Offset(slot * i + (slot - dayPainter.width) / 2, size.height - 14),
+    );
   }
 
   @override
   bool shouldRepaint(_BarPainter old) =>
-      old.values != values || old.color != color;
+      old.values != values ||
+      old.color != color ||
+      old.highlight != highlight ||
+      old.showValues != showValues;
 }
 
 class _LogRow extends StatelessWidget {

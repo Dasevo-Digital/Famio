@@ -7,6 +7,7 @@ import 'package:famio/src/reminders/reminder_service.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -149,6 +150,63 @@ void main() {
     expect(find.text('Reisepass Mama'), findsNothing);
     expect(find.text('Hausratversicherung'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('kids: the log goes back by day, week and month', (tester) async {
+    await open(tester, 'Kinder');
+    final now = DateTime.now();
+    final birth = DateUtils.dateOnly(now.subtract(const Duration(days: 120)));
+    ChildLog diaper(String id, DateTime at, DiaperKind kind) => ChildLog(
+      id: id,
+      childId: 'k1',
+      kind: LogKind.diaper,
+      start: at,
+      diaper: kind,
+    );
+    engine
+      ..saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth))
+      ..saveChildLog(
+        diaper('a', now.subtract(const Duration(minutes: 5)), DiaperKind.wet),
+      )
+      // The same weekday a week ago: always "last week".
+      ..saveChildLog(
+        diaper(
+          'b',
+          DateTime(now.year, now.month, now.day - 7, 9),
+          DiaperKind.dirty,
+        ),
+      );
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    expect(find.text('Windel nass'), findsOneWidget);
+    expect(find.text('Windel voll'), findsNothing);
+
+    await tester.tap(find.text('Woche'));
+    await tester.pumpAndSettle();
+    expect(find.text('Diese Woche'), findsOneWidget);
+    expect(find.textContaining('Durchschnitt pro Tag'), findsOneWidget);
+    await tester.tap(find.byTooltip('Früher'));
+    await tester.pumpAndSettle();
+    expect(find.text('Letzte Woche'), findsOneWidget);
+    expect(find.text('Windel voll'), findsOneWidget);
+    expect(find.text('Windel nass'), findsNothing);
+
+    await tester.tap(find.text('Heute'));
+    await tester.pumpAndSettle();
+    expect(find.text('Diese Woche'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, AppIcons.caretRight),
+          )
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.text('Monat'));
+    await tester.pumpAndSettle();
+    expect(find.text(DateFormat.yMMMM('de').format(now)), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
   });
 
   testWidgets('kids: milestones appear in the timeline', (tester) async {

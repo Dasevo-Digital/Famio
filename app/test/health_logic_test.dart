@@ -153,6 +153,49 @@ void main() {
     expect(engine.childLogs('c1'), isEmpty);
   });
 
+  test('periods: Monday to Sunday, whole months, averages up to now', () {
+    final week = periodDays(LogPeriod.week, DateTime(2026, 10, 14));
+    expect(week.first, DateTime(2026, 10, 12));
+    expect(week.last, DateTime(2026, 10, 18));
+    expect(periodDays(LogPeriod.month, DateTime(2026, 2, 10)), hasLength(28));
+    expect(periodDays(LogPeriod.day, DateTime(2026, 10, 14, 9)), [
+      DateTime(2026, 10, 14),
+    ]);
+    expect(
+      shiftPeriod(LogPeriod.month, DateTime(2026, 1, 31), 1),
+      DateTime(2026, 2),
+    );
+    expect(
+      shiftPeriod(LogPeriod.week, DateTime(2026, 10, 14), -1),
+      DateTime(2026, 10, 7),
+    );
+    // Across the change to winter time (25 October).
+    expect(
+      periodDays(LogPeriod.week, DateTime(2026, 10, 25)).map((d) => d.day),
+      [19, 20, 21, 22, 23, 24, 25],
+    );
+
+    final logs = [
+      log(LogKind.diaper, DateTime(2026, 10, 12, 8), diaper: DiaperKind.wet),
+      log(LogKind.diaper, DateTime(2026, 10, 13, 8), diaper: DiaperKind.both),
+      log(LogKind.bottle, DateTime(2026, 10, 13, 9), ml: 120),
+      log(LogKind.temperature, DateTime(2026, 10, 13, 20), temp: 38.4),
+    ];
+    // Wednesday noon: three days count, the rest of the week not yet.
+    final s = PeriodSummary(logs, week, DateTime(2026, 10, 14, 12));
+    expect(s.days, 3);
+    expect(s.perDay(s.wet), 2 / 3);
+    expect(s.perDay(s.milkMl).round(), 40);
+    expect(s.maxTemperature, 38.4);
+    // The log began on the 12th: earlier days of the month do not count.
+    final month = PeriodSummary(
+      logs,
+      periodDays(LogPeriod.month, DateTime(2026, 10, 14)),
+      DateTime(2026, 10, 14, 12),
+    );
+    expect(month.days, 3);
+  });
+
   test('labels', () {
     expect(durationLabel(const Duration(minutes: 125)), '2 h 5 min');
     expect(durationLabel(const Duration(minutes: 12)), '12 min');
