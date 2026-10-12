@@ -725,6 +725,21 @@ const sharedEs = <String, String>{
       "Demasiados intentos fallidos. Inténtalo de nuevo dentro de {minutes} minuto(s).",
   "Server|Nicht angemeldet": "Sesión no iniciada",
   "Server|Nicht verfügbar": "No disponible",
+  "Server|Im Release fehlt SHA256SUMS.txt.":
+      "Falta SHA256SUMS.txt en la versión publicada.",
+  "Server|Das Release ist nicht signiert.":
+      "La versión publicada no está firmada.",
+  "Server|Die Signatur des Releases passt nicht.":
+      "La firma de la versión publicada no coincide.",
+  "Server|Für Version {version} gibt es kein Release.":
+      "No hay ninguna versión publicada para la {version}.",
+  "Server|Release-Liste antwortet mit {code}.":
+      "La lista de versiones responde con {code}.",
+  "Server|Download antwortet mit {code}.": "La descarga responde con {code}.",
+  "Server|Das Paket ist zu groß.": "El paquete es demasiado grande.",
+  "Server|Die Prüfsumme von {file} passt nicht.":
+      "La suma de comprobación de {file} no coincide.",
+  "Server|Kein App-Update verfügbar": "No hay ninguna actualización de la app",
   "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
       "Introduce el token de un usuario de PaperBuddy.",
   "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":

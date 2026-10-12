@@ -40,6 +40,7 @@ import 'crypto/encrypted_db.dart';
 import 'remote_url_policy.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
+import 'updates/app_updates.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
 class FamioServerApp {
@@ -67,6 +68,7 @@ class FamioServerApp {
     WebApp? webApp,
     String? backupDir,
     String? metricsToken,
+    String releaseKey = famioReleaseKey,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -210,6 +212,13 @@ class FamioServerApp {
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
     );
+    appUpdates = AppUpdates(
+      db: db,
+      dir: p.join(dataDir, 'app-updates'),
+      version: serverVersion,
+      client: httpClient,
+      publicKey: releaseKey,
+    );
     api = FamioApi(
       accounts: accounts,
       records: records,
@@ -229,6 +238,7 @@ class FamioServerApp {
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
       paperBuddy: paperBuddy,
+      appUpdates: appUpdates,
       auditLog: auditLog,
       requireTls: requireTls,
       tlsPort: tlsPort,
@@ -258,9 +268,11 @@ class FamioServerApp {
     Uri? googleBase,
     WebApp? webApp,
     String? metricsToken,
+    String releaseKey = famioReleaseKey,
   }) {
     initTimeZones();
     return FamioServerApp(
+      releaseKey: releaseKey,
       db: openFamioDatabase(':memory:'),
       metricsToken: metricsToken,
       location: tz.getLocation('Europe/Berlin'),
@@ -291,6 +303,7 @@ class FamioServerApp {
   late final CalendarAccess calendarAccess;
   late final CalendarImporter importer;
   late final PaperBuddyLink paperBuddy;
+  late final AppUpdates appUpdates;
   late final CalDavSync caldav;
 
   /// Bring! and Microsoft To Do connections.
@@ -338,6 +351,7 @@ class FamioServerApp {
   void startBackgroundJobs() {
     importer.start();
     paperBuddy.start();
+    appUpdates.start();
     caldav.start();
     lists.start();
     exports.cleanUp();
@@ -365,6 +379,7 @@ class FamioServerApp {
     backups?.stop();
     importer.stop();
     paperBuddy.stop();
+    appUpdates.stop();
     caldav.stop();
     lists.stop();
     allowances.stop();

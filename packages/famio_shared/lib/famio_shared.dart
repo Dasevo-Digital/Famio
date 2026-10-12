@@ -42,6 +42,7 @@ export 'src/models/timetable.dart';
 export 'src/models/waste.dart';
 export 'src/models/wish.dart';
 export 'src/push.dart';
+export 'src/release_signature.dart';
 export 'src/sync_protocol.dart';
 export 'src/sync_record.dart';
 export 'src/i18n/en.dart';

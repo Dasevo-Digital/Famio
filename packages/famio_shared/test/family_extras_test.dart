@@ -90,8 +90,14 @@ void main() {
       payday: DateTime.saturday,
       since: DateTime(2026, 9, 1), // Tuesday
     );
-    final days = a.paydays(DateTime(2026, 8, 1), DateTime(2026, 9, 20)).toList();
-    expect(days, [DateTime(2026, 9, 5), DateTime(2026, 9, 12), DateTime(2026, 9, 19)]);
+    final days = a
+        .paydays(DateTime(2026, 8, 1), DateTime(2026, 9, 20))
+        .toList();
+    expect(days, [
+      DateTime(2026, 9, 5),
+      DateTime(2026, 9, 12),
+      DateTime(2026, 9, 19),
+    ]);
     expect(a.bookingId(days.first), 'allow-k-2026-09-05');
   });
 

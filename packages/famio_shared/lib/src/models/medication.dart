@@ -91,9 +91,7 @@ class Medication {
   /// Scheduled intakes on [day], in time order.
   List<DateTime> dosesOn(DateTime day) {
     if (asNeeded || !activeOn(day)) return const [];
-    return [
-      for (final t in times) ?_time(day, t),
-    ]..sort();
+    return [for (final t in times) ?_time(day, t)]..sort();
   }
 
   /// Units left after [taken] intakes since [stockAt]; null if untracked.

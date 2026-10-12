@@ -26,6 +26,7 @@ import 'calendar/calendar_access.dart';
 import 'dav/caldav_server.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
+import 'updates/app_updates.dart';
 import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
 import 'dav/google_oauth.dart';
@@ -49,6 +50,7 @@ import 'record_store.dart';
 import 'i18n.dart';
 
 part 'api/account_routes.dart';
+part 'api/app_update_routes.dart';
 part 'api/admin_routes.dart';
 part 'api/auth_routes.dart';
 part 'api/calendar_routes.dart';
@@ -90,6 +92,7 @@ class FamioApi {
     this.compactDatabase,
     this.davSteps,
     this.paperBuddy,
+    this.appUpdates,
     this.auditLog,
     this.requireTls = false,
     this.tlsPort,
@@ -217,6 +220,9 @@ class FamioApi {
 
   /// The family's PaperBuddy documents, if an admin connected it.
   final PaperBuddyLink? paperBuddy;
+
+  /// App packages for the family's apps, if an admin switched it on.
+  final AppUpdates? appUpdates;
   final _startedAt = DateTime.now();
 
   /// The family's time zone (calendar feeds, floating imported times).
@@ -303,6 +309,11 @@ class FamioApi {
       ..put('/api/admin/paperbuddy', _adminSavePaperBuddy)
       ..delete('/api/admin/paperbuddy', _adminDeletePaperBuddy)
       ..post('/api/admin/paperbuddy/sync', _adminSyncPaperBuddy)
+      ..get('/api/admin/app-updates', _adminAppUpdates)
+      ..put('/api/admin/app-updates', _adminSaveAppUpdates)
+      ..post('/api/admin/app-updates/refresh', _adminRefreshAppUpdates)
+      ..get('/api/app-update', _appUpdate)
+      ..get('/api/app-update/download', _appUpdateDownload)
       ..put('/api/admin/sso', _adminSaveSso)
       ..delete('/api/admin/sso', _adminDeleteSso)
       ..post('/api/sync', _sync)

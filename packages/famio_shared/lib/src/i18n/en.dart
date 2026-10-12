@@ -702,6 +702,20 @@ const sharedEn = <String, String>{
       "Too many failed attempts. Please try again in {minutes} minute(s).",
   "Server|Nicht angemeldet": "Not signed in",
   "Server|Nicht verfügbar": "Not available",
+  "Server|Im Release fehlt SHA256SUMS.txt.":
+      "The release has no SHA256SUMS.txt.",
+  "Server|Das Release ist nicht signiert.": "The release is not signed.",
+  "Server|Die Signatur des Releases passt nicht.":
+      "The release's signature does not match.",
+  "Server|Für Version {version} gibt es kein Release.":
+      "There is no release for version {version}.",
+  "Server|Release-Liste antwortet mit {code}.":
+      "The release list answers with {code}.",
+  "Server|Download antwortet mit {code}.": "The download answers with {code}.",
+  "Server|Das Paket ist zu groß.": "The package is too large.",
+  "Server|Die Prüfsumme von {file} passt nicht.":
+      "The checksum of {file} does not match.",
+  "Server|Kein App-Update verfügbar": "No app update available",
   "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
       "Please enter the token of a PaperBuddy user.",
   "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":
