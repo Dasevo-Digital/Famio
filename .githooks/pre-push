@@ -18,22 +18,34 @@ done
 [ -z "$commit" ] && exit 0
 
 root=$(git rev-parse --show-toplevel)
+# Each run logs to a file of its own: hooks of other repositories may run at
+# the same time and would otherwise write into the same log.
+log=$(mktemp "${TMPDIR:-/tmp}/famio-pre-push.XXXXXX")
+worktree=""
+cleanup() {
+  rm -f "$log"
+  if [ -n "$worktree" ]; then
+    git -C "$root" worktree remove --force "$worktree" >/dev/null 2>&1 ||
+      rm -rf "$worktree"
+  fi
+}
+trap cleanup EXIT
 # Test exactly what is pushed: the checkout itself when it matches, otherwise
 # a throwaway worktree of the pushed commit.
 if [ "$(git rev-parse HEAD)" = "$commit" ] &&
   [ -z "$(git status --porcelain --untracked-files=no)" ]; then
   dir=$root
 else
-  dir=$(mktemp -d)
-  trap 'git -C "$root" worktree remove --force "$dir" >/dev/null 2>&1 || rm -rf "$dir"' EXIT
+  worktree=$(mktemp -d)
+  dir=$worktree
   git worktree add --detach --quiet "$dir" "$commit"
 fi
 cd "$dir"
 
 step() {
   echo "pre-push: $*" >&2
-  if ! "$@" >"${TMPDIR:-/tmp}/pre-push.log" 2>&1; then
-    tail -n 60 "${TMPDIR:-/tmp}/pre-push.log" >&2
+  if ! "$@" >"$log" 2>&1; then
+    tail -n 60 "$log" >&2
     echo "pre-push: failed: $* (push cancelled; skip with --no-verify)" >&2
     exit 1
   fi

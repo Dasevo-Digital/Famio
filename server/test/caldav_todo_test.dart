@@ -317,12 +317,16 @@ void main() {
     expect(task.done, isFalse);
     expect(task.due, DateTime(2099, 10, 20));
 
-    // Ticked off through the app interface (e.g. Home Assistant).
+    // Ticked off through the app interface (e.g. Home Assistant). Later
+    // than the reminder app's change even within the same millisecond:
+    // otherwise the older-looking change rightly loses.
+    final stored = app.records.get(Collections.tasks, 'tonne')!;
     await sync([
-      record(
-        Collections.tasks,
-        'tonne',
-        task.copyWith(done: true, completedAt: DateTime.now()).toData(),
+      SyncRecord(
+        collection: Collections.tasks,
+        id: 'tonne',
+        data: task.copyWith(done: true, completedAt: DateTime.now()).toData(),
+        updatedAt: stored.updatedAt + 1,
       ),
     ]);
     task = Task.fromRecord(app.records.get(Collections.tasks, 'tonne')!);
