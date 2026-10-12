@@ -20,11 +20,17 @@ class _ChildEditorState extends State<_ChildEditor> {
   late int _color = widget.existing?.color ?? 0xFFDB4A7E;
   late FileRef? _photo = widget.existing?.photo;
   late ChildSex? _sex = widget.existing?.sex;
-  // New children start private to their creator; other parents are added
-  // right below.
-  late final _guardians = {
+  // New children start with the family's adults (both parents): someone
+  // left out does not see the child at all and would add it a second time.
+  // Older children, guests and grandparents are added by hand.
+  late final _guardians = <String>{
     ...?widget.existing?.guardianIds,
-    if (widget.existing == null) ?AppScope.read(context).me?.id,
+    if (widget.existing == null) ...[
+      ?AppScope.read(context).me?.id,
+      for (final m
+          in AppScope.read(context).engine?.members ?? const <FamilyMember>[])
+        if (m.role == MemberRole.adult) m.id,
+    ],
   };
   var _busy = false;
 

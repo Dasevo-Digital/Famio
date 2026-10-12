@@ -1530,7 +1530,7 @@
   "kidsOnlyWhoGrowthCharts": "Solo para las curvas de crecimiento de la OMS.",
   "kidsColor": "Color",
   "kidsGuardians": "Tutores",
-  "kidsOnlyTheySeeDevelopment": "Solo ellos ven el desarrollo, las revisiones, las vacunas y las fotos y reciben recordatorios. Nadie seleccionado: toda la familia.",
+  "kidsOnlyTheySeeDevelopment": "Solo ellos ven al niño con el desarrollo, las revisiones, las vacunas, el registro y las fotos, y reciben recordatorios. Los demás no lo ven en absoluto. Nadie seleccionado: toda la familia.",
   "kidsRemoveChild": "Quitar niño",
   "deadlinesCarHousePets": "Coche, casa y mascotas",
   "deadlinesAddDeadline": "Añadir plazo",
@@ -2219,5 +2219,7 @@
   "importIcsAll": "Seleccionar todo",
   "importIcsNone": "No seleccionar ninguno",
   "importIcsTooLarge": "El archivo ocupa más de 10 MB.",
-  "importIcsFailed": "No se ha podido leer el archivo: {error}"
+  "importIcsFailed": "No se ha podido leer el archivo: {error}",
+  "kidsMissingChildHint": "¿Falta un niño? Solo lo ven sus tutores. Quien lo añadió puede añadirte en su perfil; por favor, no lo añadas dos veces.",
+  "kidsOnlyVisibleTo": "Solo {names}"
 }

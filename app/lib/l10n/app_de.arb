@@ -3594,7 +3594,7 @@
   "kidsOnlyWhoGrowthCharts": "Nur für die WHO-Wachstumskurven.",
   "kidsColor": "Farbe",
   "kidsGuardians": "Sorgeberechtigte",
-  "kidsOnlyTheySeeDevelopment": "Nur sie sehen Entwicklung, Vorsorge, Impfungen und Fotos und werden erinnert. Niemand ausgewählt: die ganze Familie.",
+  "kidsOnlyTheySeeDevelopment": "Nur sie sehen das Kind mit Entwicklung, Vorsorge, Impfungen, Protokoll und Fotos und werden erinnert. Alle anderen sehen es gar nicht. Niemand ausgewählt: die ganze Familie.",
   "kidsRemoveChild": "Kind entfernen",
   "deadlinesCarHousePets": "Auto, Haus und Haustiere",
   "deadlinesAddDeadline": "Frist hinzufügen",
@@ -5634,6 +5634,15 @@
     "placeholders": {
       "error": {
         "type": "Object?"
+      }
+    }
+  },
+  "kidsMissingChildHint": "Fehlt ein Kind? Ein Kind sehen nur seine Sorgeberechtigten. Wer es angelegt hat, kann dich in seinem Profil hinzufügen; bitte nicht doppelt anlegen.",
+  "kidsOnlyVisibleTo": "Nur {names}",
+  "@kidsOnlyVisibleTo": {
+    "placeholders": {
+      "names": {
+        "type": "String"
       }
     }
   }

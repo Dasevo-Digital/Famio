@@ -1530,7 +1530,7 @@
   "kidsOnlyWhoGrowthCharts": "Only for the WHO growth charts.",
   "kidsColor": "Color",
   "kidsGuardians": "Guardians",
-  "kidsOnlyTheySeeDevelopment": "Only they see development, checkups, vaccinations and photos and get reminders. Nobody selected: the whole family.",
+  "kidsOnlyTheySeeDevelopment": "Only they see the child with development, checkups, vaccinations, log and photos and get reminders. Everyone else does not see it at all. Nobody selected: the whole family.",
   "kidsRemoveChild": "Remove child",
   "deadlinesCarHousePets": "Car, house and pets",
   "deadlinesAddDeadline": "Add deadline",
@@ -2219,5 +2219,7 @@
   "importIcsAll": "Select all",
   "importIcsNone": "Select none",
   "importIcsTooLarge": "The file is larger than 10 MB.",
-  "importIcsFailed": "The file could not be read: {error}"
+  "importIcsFailed": "The file could not be read: {error}",
+  "kidsMissingChildHint": "Is a child missing? Only a child's guardians see it. Whoever added it can add you in its profile; please don't add it twice.",
+  "kidsOnlyVisibleTo": "Only {names}"
 }

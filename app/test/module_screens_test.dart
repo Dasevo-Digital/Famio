@@ -778,4 +778,52 @@ void main() {
       expect(find.text('Mathe'), findsNothing);
     });
   });
+
+  group('kids', () {
+    testWidgets('a new child is for both parents; a private one says so', (
+      tester,
+    ) async {
+      await open(tester, section: 'Kinder');
+      // Nothing to see yet: the other parent may have added a child already.
+      expect(find.textContaining('Fehlt ein Kind?'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Kind oder Schwangerschaft hinzufügen'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kind hinzufügen'));
+      await tester.pumpAndSettle();
+      final mia = find.widgetWithText(FilterChip, 'Mia');
+      await tester.scrollUntilVisible(
+        mia,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      bool selected(String name) => tester
+          .widget<FilterChip>(find.widgetWithText(FilterChip, name))
+          .selected;
+      expect(selected('Mama'), isTrue);
+      expect(selected('Papa'), isTrue);
+      expect(selected('Mia'), isFalse);
+      Navigator.of(tester.element(mia)).pop();
+      await tester.pumpAndSettle();
+
+      // Only Mama sees Emil: the card tells her Papa does not.
+      Child emil(List<String> guardians) => Child(
+        id: 'c1',
+        name: 'Emil',
+        birthDate: DateTime(2024, 3, 1),
+        guardianIds: guardians,
+      );
+      engine.saveChild(emil(['m1']));
+      await _pumpData(tester);
+      expect(find.text('Nur Mama'), findsOneWidget);
+      expect(find.textContaining('Fehlt ein Kind?'), findsOneWidget);
+
+      engine.saveChild(emil(['m1', 'm2']));
+      await _pumpData(tester);
+      expect(find.text('Emil'), findsOneWidget);
+      expect(find.text('Nur Mama'), findsNothing);
+      // Let the sync engine's retry timer run out.
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
 }

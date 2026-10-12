@@ -86,7 +86,9 @@ class KidsScreen extends StatelessWidget {
             return EmptyHint(
               icon: AppIcons.baby,
               color: color,
-              text: tr.kidsKeepTrackHowKids,
+              text: _otherAdults(engine)
+                  ? '${tr.kidsKeepTrackHowKids}\n\n${tr.kidsMissingChildHint}'
+                  : tr.kidsKeepTrackHowKids,
               action: ColorButton(
                 label: tr.commonAdd,
                 color: color,
@@ -97,6 +99,14 @@ class KidsScreen extends StatelessWidget {
           final cards = [
             for (final p in expecting) PregnancyCard(pregnancy: p),
             for (final k in kids) _ChildCard(child: k, engine: engine),
+            if (_otherAdults(engine))
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  tr.kidsMissingChildHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
           ];
           return ListView.separated(
             padding: EdgeInsets.only(
@@ -112,6 +122,18 @@ class KidsScreen extends StatelessWidget {
     );
   }
 }
+
+/// Whether another adult could have added a child this member cannot see.
+bool _otherAdults(SyncEngine engine) => engine.members.any(
+  (m) => m.role == MemberRole.adult && m.id != engine.memberId,
+);
+
+/// The adults who do not see [child]: they need the hint who does.
+bool _hiddenFromAdults(Child child, SyncEngine engine) =>
+    child.guardianIds.isNotEmpty &&
+    engine.members.any(
+      (m) => m.role == MemberRole.adult && !child.guardianIds.contains(m.id),
+    );
 
 Future<void> _add(BuildContext context) async {
   final choice = await showModalBottomSheet<String>(
@@ -218,6 +240,17 @@ class _ChildCard extends StatelessWidget {
                       text: tr.kidsCountMilestones(reached),
                       color: _childColor(context, child),
                     ),
+                    if (_hiddenFromAdults(child, engine))
+                      _Chip(
+                        icon: AppIcons.lock,
+                        text: tr.kidsOnlyVisibleTo(
+                          [
+                            for (final id in child.guardianIds)
+                              ?engine.member(id)?.displayName,
+                          ].join(', '),
+                        ),
+                        color: c.inkSoft,
+                      ),
                     if (next != null)
                       GestureDetector(
                         onTap: () => showDueActions(context, child, next),
