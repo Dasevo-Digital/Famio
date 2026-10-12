@@ -7,6 +7,7 @@ import '../design/app_icons.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../design/components.dart';
+import '../widgets/famio_glyph.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
@@ -405,11 +406,7 @@ class _Logo extends StatelessWidget {
             ),
             borderRadius: BorderRadius.circular(size * 0.34),
           ),
-          child: Image.asset(
-            'assets/icon/logo_glyph.png',
-            width: size * 0.72,
-            height: size * 0.72,
-          ),
+          child: FamioGlyph(size: size),
         ),
         if (showName) ...[
           const SizedBox(height: 4),

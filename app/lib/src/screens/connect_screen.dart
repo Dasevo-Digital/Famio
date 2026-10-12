@@ -7,6 +7,7 @@ import '../design/app_icons.dart';
 import '../app_state.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../widgets/famio_glyph.dart';
 import '../widgets/trust_certificate.dart';
 import '../environment.dart';
 import '../widgets/password_reveal.dart';
@@ -192,11 +193,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                               ),
                               borderRadius: BorderRadius.circular(26),
                             ),
-                            child: Image.asset(
-                              'assets/icon/logo_glyph.png',
-                              width: 56,
-                              height: 56,
-                            ),
+                            child: const FamioGlyph(size: 76),
                           ),
                         ),
                         const SizedBox(height: 14),

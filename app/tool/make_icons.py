@@ -164,8 +164,6 @@ def main():
     master = tile(1024, 0.0)
     master.save(path("assets/icon/app_icon.png"))
     android_foreground(1024).save(path("assets/icon/app_icon_foreground.png"))
-    # House and heart without background, for the logo inside the app.
-    render(256, lambda s: glyph(s, 0.8)).save(path("assets/icon/logo_glyph.png"))
 
     # macOS
     for s in (16, 32, 64, 128, 256, 512, 1024):
