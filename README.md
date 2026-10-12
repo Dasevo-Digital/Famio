@@ -575,6 +575,19 @@ Statusklasse, Sync-Anfragen und Push-Zustellungen. Aus dem Netz nur über HTTPS
 Prometheus (`authorization: credentials: …`). Ohne Token gibt es den Endpunkt
 nicht.
 
+**App-Updates über den Server:** Schaltet ein Admin in der Server-Verwaltung
+„App-Updates über den Server“ ein, holt der Server die Android-, Windows- und
+Linux-Pakete seiner eigenen Version aus dem öffentlichen GitHub-Release und
+bietet sie den Apps an (`/api/app-update`). Vorher fragt der Server nirgends
+nach. Die Apps zeigen dann auf der Startseite „Famio X ist da“, laden das Paket
+vom eigenen Server und installieren es: Android nach einer Bestätigung (beim
+ersten Mal „Apps aus dieser Quelle zulassen“), Windows und Linux tauschen die
+Dateien und starten neu. Server und App nehmen ein Paket nur an, wenn die Liste
+der Prüfsummen die Signatur des Famio-Release-Schlüssels trägt
+(`packages/famio_shared/lib/src/release_signature.dart`) und die Prüfsumme
+passt – auch ein übernommener Server kann so keinen anderen Code verteilen.
+iPhone und Mac folgen mit dem Apple-Entwicklerkonto.
+
 **Web-App:** Jeder Server liefert die App unter `/app/` aus (gebaut mit
 `app/tool/build_web.sh`, landet in `server/web` und damit in allen
 Server-Paketen). `server/web` liegt nicht im Repo; stammt es aus einer
@@ -672,8 +685,10 @@ dart run tool/smoke_test.dart <server-url> <benutzer> <passwort> [ics-url]
 
 Die CI baut Server-Binaries für LXC und Docker-Images. Für die produktive
 Gitea-Veröffentlichung liegen die Artefakte einschließlich `SHA256SUMS.txt` im
-Release-Ordner; `tool/publish_gitea_release.sh` prüft sie vor dem Upload und
-legt sie am Tag `v*` ab. Das Token bleibt ausschließlich in
+Release-Ordner; `tool/sign_release.sh` signiert diese Liste mit dem
+Release-Schlüssel (`SHA256SUMS.txt.sig`, Ed25519, privater Teil nur im
+Schlüsselbund des Maintainers), `tool/publish_gitea_release.sh` prüft beides
+vor dem Upload und legt es am Tag `v*` ab. Das Token bleibt ausschließlich in
 `GITEA_TOKEN` außerhalb des Repositories.
 
 **Sprachen:** Famio spricht Deutsch, Englisch und Spanisch. Ohne Auswahl

@@ -10,6 +10,11 @@ RELEASE_DIR=${2:?Usage: GITEA_TOKEN=... $0 VERSION RELEASE_DIR}
   echo "Missing $RELEASE_DIR/SHA256SUMS.txt" >&2
   exit 64
 }
+# Servers hand out app updates only from signed releases.
+[ -f "$RELEASE_DIR/SHA256SUMS.txt.sig" ] || {
+  echo "Missing $RELEASE_DIR/SHA256SUMS.txt.sig (sh tool/sign_release.sh $RELEASE_DIR)" >&2
+  exit 64
+}
 
 ORIGIN=$(git remote get-url origin)
 case "$ORIGIN" in

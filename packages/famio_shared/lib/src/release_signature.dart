@@ -7,7 +7,14 @@ import 'package:cryptography/cryptography.dart';
 /// private half, which only exists in the maintainer's keychain. A Famio
 /// server offers an app package, and an app installs it, only if the
 /// signature fits, so not even a taken-over server can push other code.
-const famioReleaseKey = 'CZPDczidQHLcY2jI4wTDi46p3tjelZzIISk/R1UYjcs=';
+///
+/// Only an end-to-end test build passes another key
+/// (`--dart-define=FAMIO_RELEASE_KEY=…`); it is fixed at build time, a
+/// running app or server cannot change it.
+const famioReleaseKey = String.fromEnvironment(
+  'FAMIO_RELEASE_KEY',
+  defaultValue: 'CZPDczidQHLcY2jI4wTDi46p3tjelZzIISk/R1UYjcs=',
+);
 
 /// The app packages a Famio server hands out to its apps.
 enum AppPlatform {
