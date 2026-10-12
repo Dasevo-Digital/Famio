@@ -2235,5 +2235,12 @@
   "kidsLogLastWeek": "La semana pasada",
   "kidsLogHistory": "Evolución",
   "kidsLogNoEntriesInPeriod": "No hay entradas en este período.",
-  "kidsLogAveragePerDay": "{count, plural, =1{Media por día (1 día)} other{Media por día ({count} días)}}"
+  "kidsLogAveragePerDay": "{count, plural, =1{Media por día (1 día)} other{Media por día ({count} días)}}",
+  "adminAppVersion": "Famio {version}",
+  "adminAppOutdated": "más antigua que el servidor",
+  "adminOutdatedApps": "Apps más antiguas que el servidor",
+  "adminOutdatedAppsHint": "Estos dispositivos no muestran todo lo que introducen los demás y pueden perder datos al guardar. Instala allí la versión nueva.",
+  "adminOutdatedAppRow": "{member} · {device}",
+  "appOutdatedTitle": "Famio en este dispositivo está desactualizado",
+  "appOutdatedText": "Versión {app}, el servidor usa la {server}. Las versiones antiguas no muestran todo lo que introducen los demás. Instala la versión nueva."
 }

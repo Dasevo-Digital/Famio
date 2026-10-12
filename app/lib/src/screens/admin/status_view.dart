@@ -67,6 +67,31 @@ class _StatusView extends StatelessWidget {
             ),
           ),
         ),
+        if (o.outdatedApps.isNotEmpty) ...[
+          ListHeading(tr.adminOutdatedApps, color: c.danger),
+          SoftCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  tr.adminOutdatedAppsHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
+                for (final a in o.outdatedApps)
+                  _InfoRow(
+                    label: tr.adminOutdatedAppRow(
+                      a.member,
+                      DeviceTile._deviceLabel(
+                        a.device.isEmpty ? tr.adminUnknownDevice : a.device,
+                      ),
+                    ),
+                    value: a.version,
+                  ),
+              ],
+            ),
+          ),
+        ],
         ListHeading(tr.adminSetup, color: accent),
         const SetupChecklist(),
         ListHeading(tr.adminBackups, color: accent),

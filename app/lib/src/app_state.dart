@@ -6,6 +6,7 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -194,6 +195,7 @@ class AppState extends ChangeNotifier {
     language.value = appLanguages.containsKey(choice) ? choice! : 'system';
     useLanguage(resolveLanguage(language.value));
     if (kIsWeb) return _initWeb();
+    unawaited(_noteAppVersion());
     try {
       vault = await SecureVault.open(_prefs);
     } on InsecureVaultConsentRequired {
@@ -201,6 +203,17 @@ class AppState extends ChangeNotifier {
       return;
     }
     await _restoreSession();
+  }
+
+  /// Sent with every request: the administration shows which devices
+  /// still run an older app.
+  static Future<void> _noteAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      FamioApiClient.appVersion = '${info.version} ${Platform.operatingSystem}';
+    } catch (_) {
+      // Tests and unusual platforms: the server just does not know.
+    }
   }
 
   Future<void> _restoreSession() async {

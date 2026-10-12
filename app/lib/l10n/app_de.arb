@@ -5666,5 +5666,39 @@
         "type": "int"
       }
     }
+  },
+  "adminAppVersion": "Famio {version}",
+  "@adminAppVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "adminAppOutdated": "älter als der Server",
+  "adminOutdatedApps": "Apps älter als der Server",
+  "adminOutdatedAppsHint": "Diese Geräte zeigen manches nicht an, was andere eintragen, und können beim Speichern Angaben verlieren. Bitte dort die neue Version installieren.",
+  "adminOutdatedAppRow": "{member} · {device}",
+  "@adminOutdatedAppRow": {
+    "placeholders": {
+      "member": {
+        "type": "String"
+      },
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "appOutdatedTitle": "Famio auf diesem Gerät ist veraltet",
+  "appOutdatedText": "Version {app}, der Server läuft mit {server}. Ältere Versionen zeigen nicht alles an, was andere eintragen. Bitte die neue Version installieren.",
+  "@appOutdatedText": {
+    "placeholders": {
+      "app": {
+        "type": "String"
+      },
+      "server": {
+        "type": "String"
+      }
+    }
   }
 }

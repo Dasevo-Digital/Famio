@@ -97,6 +97,53 @@ void main() {
     expect((await call('GET', '/api/admin/overview', token: admin)).$1, 200);
   });
 
+  test('apps send their version; older ones are marked for admins', () async {
+    final (admin, kind, _) = await family();
+    Future<void> use(String token, String version) async {
+      final request = http.Request('GET', base.resolve('/api/me/sessions'))
+        ..headers['authorization'] = 'Bearer $token'
+        ..headers[appVersionHeader] = version;
+      expect((await request.send()).statusCode, 200);
+    }
+
+    await use(admin, '$serverVersion macos');
+    await use(kind, '1.0.16 ios');
+    final (_, overview) = await call(
+      'GET',
+      '/api/admin/overview',
+      token: admin,
+    );
+    expect(ServerOverview.fromJson(overview).outdatedApps, [
+      (member: 'Kind', device: 'Tablet', version: '1.0.16'),
+    ]);
+    DeviceSession mine(Map<String, Object?> body) => DeviceSession.fromJson(
+      ((body['sessions'] as List).single as Map).cast(),
+    );
+    final kindSession = mine(
+      (await call('GET', '/api/me/sessions', token: kind)).$2,
+    );
+    expect(kindSession.appVersion, '1.0.16 ios');
+    expect(kindSession.outdated, isTrue);
+
+    // Anything but a version is not stored; an update clears the mark.
+    await use(admin, '<script>');
+    await use(kind, '$serverVersion ios');
+    final adminSession = mine(
+      (await call('GET', '/api/me/sessions', token: admin)).$2,
+    );
+    expect(adminSession.appVersion, '$serverVersion macos');
+    expect(adminSession.outdated, isFalse);
+    expect(
+      ServerOverview.fromJson(
+        (await call('GET', '/api/admin/overview', token: admin)).$2,
+      ).outdatedApps,
+      isEmpty,
+    );
+    expect(DeviceSession.parseAppHeader('2.0.1 android'), '2.0.1 android');
+    expect(DeviceSession.parseAppHeader('2.0.1'), '2.0.1');
+    expect(DeviceSession.parseAppHeader('2.0.1 Android; DROP'), isNull);
+  });
+
   test('admins control bounded location-history retention', () async {
     final (admin, kind, _) = await family();
     var (status, body) = await call(

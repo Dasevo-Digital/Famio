@@ -30,7 +30,24 @@ extension _AdminRoutes on FamioApi {
       encryptedAtRest: encryptedAtRest,
       keySeparate: keySeparate,
       locationCodeSet: locations?.codeSet ?? false,
+      outdatedApps: _outdatedApps(),
     );
+  }
+
+  /// Devices used in the last three months whose app is older than this
+  /// server, for "Apps älter als der Server" in the status.
+  List<({String member, String device, String version})> _outdatedApps() {
+    final since = DateTime.now().subtract(const Duration(days: 90));
+    return [
+      for (final u in accounts.adminUsers(serverVersion: serverVersion))
+        for (final s in u.sessions)
+          if (s.outdated && s.lastSeen.isAfter(since))
+            (
+              member: u.member.displayName,
+              device: s.device ?? '',
+              version: s.appVersionNumber ?? '',
+            ),
+    ];
   }
 
   /// What an admin should still set up, with where to do it.
@@ -402,7 +419,10 @@ extension _AdminRoutes on FamioApi {
     _admin(request);
     return _json({
       'users': [
-        for (final u in accounts.adminUsers(currentToken: _bearer(request)))
+        for (final u in accounts.adminUsers(
+          currentToken: _bearer(request),
+          serverVersion: serverVersion,
+        ))
           u.toJson(),
       ],
     });

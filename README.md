@@ -598,6 +598,13 @@ der Prüfsummen die Signatur des Famio-Release-Schlüssels trägt
 passt – auch ein übernommener Server kann so keinen anderen Code verteilen.
 iPhone und Mac folgen mit dem Apple-Entwicklerkonto.
 
+**Veraltete Apps:** Die Apps schicken ihre Version mit (`x-famio-app`, etwa
+`2.0.1 ios`). Die Server-Verwaltung zeigt sie je Gerät und listet unter
+„Status“ alle Geräte der letzten drei Monate, deren App älter als der Server
+ist. Ältere Apps zeigen nicht alles an, was neuere schreiben, und können beim
+Speichern Angaben verlieren (zum Beispiel Fotos an Aufgaben). Die App selbst
+meldet sich auf der Startseite als veraltet, wo der Server kein Paket anbietet.
+
 **Web-App:** Jeder Server liefert die App unter `/app/` aus (gebaut mit
 `app/tool/build_web.sh`, landet in `server/web` und damit in allen
 Server-Paketen). `server/web` liegt nicht im Repo; stammt es aus einer

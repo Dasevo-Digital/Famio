@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:famio/src/widgets/update_check.dart';
+import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';

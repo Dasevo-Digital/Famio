@@ -1,5 +1,7 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../app_state.dart';
 import '../data/app_update.dart';
@@ -8,14 +10,20 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
 
+/// What the start page says about this app's version: a package the
+/// family's server offers (Android, Windows, Linux), or that the app is
+/// older than the server and should be updated by hand.
+typedef _VersionNotice = ({AppUpdateOffer? offer, String app, String server});
+
 /// Start page: "Famio 2.1 ist da" when the family's server offers a newer
-/// package for this app (Android, Windows, Linux). Asked once per app
-/// start; "Später" hides it until the next.
+/// package for this app, otherwise "veraltet" when the app is older than
+/// the server (older apps do not show everything others write). Asked once
+/// per app start; "Später" hides it until the next.
 class AppUpdateBanner extends StatefulWidget {
   const AppUpdateBanner({super.key});
 
   /// One request per app start (the start page rebuilds often).
-  static Future<AppUpdateOffer?>? _cached;
+  static Future<_VersionNotice?>? _cached;
   static var _later = false;
 
   @override
@@ -23,11 +31,21 @@ class AppUpdateBanner extends StatefulWidget {
 }
 
 class _AppUpdateBannerState extends State<AppUpdateBanner> {
-  Future<AppUpdateOffer?> _load() async {
+  Future<_VersionNotice?> _load() async {
     final api = AppScope.read(context).engine?.api;
-    if (api == null) return null;
+    // The web app comes with the server and is never older.
+    if (api == null || kIsWeb) return null;
     try {
-      return await availableUpdate(api);
+      if (selfUpdatePlatform != null) {
+        if (await availableUpdate(api) case final offer?) {
+          return (offer: offer, app: '', server: offer.version);
+        }
+      }
+      final app = (await PackageInfo.fromPlatform()).version;
+      final server = (await api.health()).version;
+      return compareVersions(app, server) < 0
+          ? (offer: null, app: app, server: server)
+          : null;
     } catch (_) {
       return null; // Offline or an older server: no banner.
     }
@@ -35,25 +53,28 @@ class _AppUpdateBannerState extends State<AppUpdateBanner> {
 
   @override
   Widget build(BuildContext context) {
-    final platform = selfUpdatePlatform;
-    if (platform == null || AppUpdateBanner._later) {
-      return const SizedBox.shrink();
-    }
+    if (AppUpdateBanner._later) return const SizedBox.shrink();
     final c = FamioColors.of(context);
-    return FutureBuilder<AppUpdateOffer?>(
+    return FutureBuilder<_VersionNotice?>(
       future: AppUpdateBanner._cached ??= _load(),
       builder: (context, snapshot) {
-        final offer = snapshot.data;
-        if (offer == null) return const SizedBox.shrink();
+        final notice = snapshot.data;
+        if (notice == null) return const SizedBox.shrink();
+        final offer = notice.offer;
+        final platform = selfUpdatePlatform;
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: SoftCard(
             color: c.tint(FamioSection.settings),
-            onTap: () => showAppUpdateDialog(context, offer, platform),
+            onTap: offer == null || platform == null
+                ? null
+                : () => showAppUpdateDialog(context, offer, platform),
             child: Row(
               children: [
                 Icon(
-                  AppIcons.cloudArrowDown,
+                  offer == null
+                      ? AppIcons.warningCircle
+                      : AppIcons.cloudArrowDown,
                   color: c.strong(FamioSection.settings),
                 ),
                 const SizedBox(width: 12),
@@ -62,11 +83,15 @@ class _AppUpdateBannerState extends State<AppUpdateBanner> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        tr.appUpdateAvailable(offer.version),
+                        offer == null
+                            ? tr.appOutdatedTitle
+                            : tr.appUpdateAvailable(offer.version),
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Text(
-                        tr.appUpdateFromServer,
+                        offer == null
+                            ? tr.appOutdatedText(notice.app, notice.server)
+                            : tr.appUpdateFromServer,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

@@ -15,13 +15,30 @@ class DeviceTile extends StatelessWidget {
     return ListTile(
       leading: Icon(mobile ? AppIcons.smartphone : AppIcons.laptop),
       title: Text(_deviceLabel(device)),
-      subtitle: Text(
-        session.current
-            ? tr.settingsThisDevice
-            : tr.adminLastActiveSeenSigned(
-                _ago(session.lastSeen),
-                DateFormat.yMd(appLanguage).format(session.createdAt),
-              ),
+      subtitle: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: session.current
+                  ? tr.settingsThisDevice
+                  : tr.adminLastActiveSeenSigned(
+                      _ago(session.lastSeen),
+                      DateFormat.yMd(appLanguage).format(session.createdAt),
+                    ),
+            ),
+            if (session.appVersionNumber case final version?) ...[
+              TextSpan(text: '\n${tr.adminAppVersion(version)}'),
+              if (session.outdated)
+                TextSpan(
+                  text: ' · ${tr.adminAppOutdated}',
+                  style: TextStyle(
+                    color: c.danger,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ],
+        ),
       ),
       trailing: onSignOut == null
           ? null

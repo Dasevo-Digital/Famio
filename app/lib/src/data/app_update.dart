@@ -9,7 +9,6 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../l10n.dart';
-import '../widgets/update_check.dart' show compareVersions;
 
 /// Why an update was not installed; [message] is for the family.
 class AppUpdateError implements Exception {

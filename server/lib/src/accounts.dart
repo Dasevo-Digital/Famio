@@ -49,6 +49,21 @@ class Accounts {
     _languages[id] = language;
   }
 
+  /// App versions of the sessions as stored, so that only a change writes.
+  final _appVersions = <String, String>{};
+
+  /// Remembers the Famio version and platform the app of [token] runs,
+  /// e.g. "2.0.1 android".
+  void noteAppVersion(String token, String version) {
+    final hash = _tokenHash(token);
+    if (_appVersions[hash] == version) return;
+    _db.execute('UPDATE sessions SET app_version = ? WHERE token_hash = ?', [
+      version,
+      hash,
+    ]);
+    _appVersions[hash] = version;
+  }
+
   FamilyMember? byId(String id) {
     final rows = _db.select('SELECT * FROM users WHERE id = ?', [id]);
     return rows.isEmpty ? null : _member(rows.first);
@@ -265,7 +280,9 @@ class Accounts {
 
   /// All members with account details and devices, for user management.
   /// [currentToken] marks the caller's own session.
-  List<AdminUser> adminUsers({String? currentToken}) {
+  /// Members with their devices; with [serverVersion] older apps are
+  /// marked.
+  List<AdminUser> adminUsers({String? currentToken, String? serverVersion}) {
     final current = currentToken == null ? null : _tokenHash(currentToken);
     final sessions = <String, List<DeviceSession>>{};
     for (final row in _db.select(
@@ -283,6 +300,12 @@ class Accounts {
             row['last_seen'] as int,
           ),
           current: hash == current,
+          appVersion: row['app_version'] as String?,
+          outdated: switch ((row['app_version'] as String?, serverVersion)) {
+            (final String app, final String server) =>
+              compareVersions(app.split(' ').first, server) < 0,
+            _ => false,
+          },
         ),
       );
     }

@@ -154,7 +154,10 @@ extension _AccountRoutes on FamioApi {
   Response _mySessions(Request request) {
     final member = _auth(request);
     final user = accounts
-        .adminUsers(currentToken: _bearer(request))
+        .adminUsers(
+          currentToken: _bearer(request),
+          serverVersion: serverVersion,
+        )
         .firstWhere((u) => u.member.id == member.id);
     return _json({
       'sessions': [for (final s in user.sessions) s.toJson()],

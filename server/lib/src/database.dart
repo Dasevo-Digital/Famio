@@ -279,6 +279,11 @@ const _migrations = [
   );
   CREATE INDEX dav_steps_removed ON dav_steps (removed_rev);
   ''',
+  '''
+  -- Version and platform of the app a session uses (x-famio-app): the
+  -- administration shows which devices still need an update.
+  ALTER TABLE sessions ADD COLUMN app_version TEXT;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

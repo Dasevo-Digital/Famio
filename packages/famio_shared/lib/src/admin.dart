@@ -2,6 +2,10 @@ import 'member.dart';
 import 'texts.dart';
 
 /// A signed-in device (login session) of a member.
+/// Header in which the apps send their version and platform
+/// ("2.0.1 android").
+const appVersionHeader = 'x-famio-app';
+
 class DeviceSession {
   const DeviceSession({
     required this.id,
@@ -9,6 +13,8 @@ class DeviceSession {
     required this.lastSeen,
     this.device,
     this.current = false,
+    this.appVersion,
+    this.outdated = false,
   });
 
   factory DeviceSession.fromJson(Map<String, Object?> json) => DeviceSession(
@@ -17,7 +23,17 @@ class DeviceSession {
     createdAt: DateTime.fromMillisecondsSinceEpoch(json['createdAt'] as int),
     lastSeen: DateTime.fromMillisecondsSinceEpoch(json['lastSeen'] as int),
     current: json['current'] as bool? ?? false,
+    appVersion: json['appVersion'] as String?,
+    outdated: json['outdated'] as bool? ?? false,
   );
+
+  /// [header] if it is a version with an optional platform; anything else
+  /// is not stored.
+  static String? parseAppHeader(String? header) {
+    final v = header?.trim();
+    if (v == null || v.length > 40) return null;
+    return RegExp(r'^\d+\.\d+\.\d+( [a-z]+)?$').hasMatch(v) ? v : null;
+  }
 
   /// Short public handle; the token itself is only stored hashed.
   final String id;
@@ -28,12 +44,25 @@ class DeviceSession {
   /// The session the request was made with.
   final bool current;
 
+  /// Version and platform of the app ("2.0.1 android"); null for the
+  /// browser, Home Assistant and apps before 2.0.1.
+  final String? appVersion;
+
+  /// "2.0.1" of [appVersion].
+  String? get appVersionNumber => appVersion?.split(' ').first;
+
+  /// The app is older than the server: it may not show everything others
+  /// write, or drop it when saving.
+  final bool outdated;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'device': device,
     'createdAt': createdAt.millisecondsSinceEpoch,
     'lastSeen': lastSeen.millisecondsSinceEpoch,
     'current': current,
+    'appVersion': ?appVersion,
+    if (outdated) 'outdated': true,
   };
 }
 
@@ -254,6 +283,7 @@ class ServerOverview {
     this.encryptedAtRest = false,
     this.keySeparate = false,
     this.locationCodeSet = false,
+    this.outdatedApps = const [],
   });
 
   factory ServerOverview.fromJson(Map<String, Object?> json) => ServerOverview(
@@ -277,7 +307,19 @@ class ServerOverview {
     encryptedAtRest: json['encryptedAtRest'] as bool? ?? false,
     keySeparate: json['keySeparate'] as bool? ?? false,
     locationCodeSet: json['locationCodeSet'] as bool? ?? false,
+    outdatedApps: [
+      for (final a in json['outdatedApps'] as List? ?? const [])
+        if (a is Map)
+          (
+            member: '${a['member']}',
+            device: '${a['device']}',
+            version: '${a['version']}',
+          ),
+    ],
   );
+
+  /// Devices used in the last months whose app is older than the server.
+  final List<({String member, String device, String version})> outdatedApps;
 
   final String version;
   final DateTime startedAt;
@@ -344,6 +386,10 @@ class ServerOverview {
     'encryptedAtRest': encryptedAtRest,
     'keySeparate': keySeparate,
     'locationCodeSet': locationCodeSet,
+    'outdatedApps': [
+      for (final a in outdatedApps)
+        {'member': a.member, 'device': a.device, 'version': a.version},
+    ],
   };
 }
 

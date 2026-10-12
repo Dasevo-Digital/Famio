@@ -162,6 +162,11 @@ class FamioApiClient {
   /// answers in German without it.
   static String? language;
 
+  /// Version and platform of this app ("2.0.1 android", see
+  /// [appVersionHeader]): the server administration shows which devices
+  /// still need an update. Not sent by the web app, which the server serves.
+  static String? appVersion;
+
   /// Accepts user input like `homeassistant.local:8765` and returns a URL.
   static const _web = bool.fromEnvironment('dart.library.js_interop');
 
@@ -1234,6 +1239,7 @@ class FamioApiClient {
   Map<String, String> get authHeaders => {
     if (token != null) 'authorization': 'Bearer $token',
     'accept-language': ?language,
+    appVersionHeader: ?appVersion,
   };
 
   /// WebSocket URL for change notifications; authenticate with

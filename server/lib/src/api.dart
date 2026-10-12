@@ -477,6 +477,11 @@ class FamioApi {
     if (languageFrom(request.headers['accept-language']) case final l?) {
       accounts.noteLanguage(member.id, l);
     }
+    // For the administration: which devices still run an older app.
+    if (DeviceSession.parseAppHeader(request.headers[appVersionHeader])
+        case final v?) {
+      accounts.noteAppVersion(token, v);
+    }
     return member;
   }
 
