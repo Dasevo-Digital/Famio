@@ -4,6 +4,16 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.1 – Photos on tasks
+
+- All adults now see a newly added child. Anyone who does not see a child
+  gets a hint instead of adding it a second time.
+- Tasks can have photos, from the camera or the gallery.
+- A child's log shows a day, a week or a month and goes back in time, with
+  the average per day.
+- An app older than the server says so on the start page. Administrators
+  see the version on every device.
+
 ## 2.0.0 – Updates from your own server
 
 - New versions for Android, Windows and Linux now come through the Famio

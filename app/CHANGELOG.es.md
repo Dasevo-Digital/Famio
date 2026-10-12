@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.1 – Fotos en las tareas
+
+- Ahora todos los adultos ven a un niño recién añadido. Quien no ve a un
+  niño recibe un aviso en lugar de añadirlo por segunda vez.
+- Las tareas pueden llevar fotos, de la cámara o de la galería.
+- El registro de un niño muestra un día, una semana o un mes y permite ir
+  hacia atrás, con la media por día.
+- Si la app es más antigua que el servidor, lo indica en la página de
+  inicio. La administración ve la versión de cada dispositivo.
+
 ## 2.0.0 – Actualizaciones desde tu propio servidor
 
 - Las nuevas versiones para Android, Windows y Linux llegan ahora a través

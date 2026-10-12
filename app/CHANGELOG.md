@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.1 – Fotos an Aufgaben
+
+- Ein neues Kind sehen jetzt alle Erwachsenen. Wer ein Kind nicht sieht,
+  bekommt einen Hinweis, statt es ein zweites Mal anzulegen.
+- An Aufgaben lassen sich Fotos anhängen, aus der Kamera oder der Galerie.
+- Im Protokoll eines Kindes lassen sich Tag, Woche oder Monat ansehen und
+  zurückblättern, mit Durchschnitt pro Tag.
+- Ist die App älter als der Server, sagt sie es auf der Startseite. Die
+  Verwaltung sieht die Version jedes Geräts.
+
 ## 2.0.0 – Updates vom eigenen Server
 
 - Neue Versionen für Android, Windows und Linux kommen jetzt über den
