@@ -48,7 +48,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Aufgaben (fällig, zuständig, Erinnerung, Wiederholung) | ✅ |
 | Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
-| Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien; „Öffnen mit Famio“ aus Mail und Dateien auf Android, iPhone und Mac) | ✅ |
+| Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien; „Öffnen mit Famio“ aus Mail und Dateien auf allen Geräten) | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
@@ -499,6 +499,14 @@ cd app && flutter run -d macos     # oder windows, linux, <android-gerät>
 
 In der App als Server-Adresse z. B. `localhost` eintragen (Port 8765 wird
 ergänzt). Vom Android-Emulator aus ist der Rechner unter `10.0.2.2` erreichbar.
+
+Unter Windows und Linux läuft Famio je Installation nur einmal (Release- und
+Profil-Builds; `flutter run` im Debug-Modus nicht). Ein zweiter Start, auch
+über „Öffnen mit“ für eine `.ics`, gibt seine Datei an das laufende Famio und
+endet. Windows meldet Famio dafür beim Start unter „Öffnen mit“ an (nur für
+den Benutzer, ohne die Standard-App zu ändern), Linux über `MimeType` in der
+`.desktop`-Datei von `install.sh`. Geprüft wird das mit
+`integration_test/open_file_test.dart`; der Aufruf steht im Kopf der Datei.
 
 ### Produktiv- und Entwicklungsumgebung auf einem Mac
 

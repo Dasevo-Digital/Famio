@@ -177,13 +177,21 @@ Remove-Item $Archive -Force
 Start-Process -FilePath $Exe
 ''';
 
-/// The same for Linux: the release's `bundle` folder over Famio's folder.
+/// The same for Linux: the release's `bundle` folder over Famio's folder,
+/// and its menu entry over the one from `install.sh`.
 const _linuxScript = r'''
 pid=$1; archive=$2; target=$3; exe=$4
 while kill -0 "$pid" 2>/dev/null; do sleep 0.3; done
 tmp=$(mktemp -d)
 tar xzf "$archive" -C "$tmp"
 cp -r "$tmp"/Famio-*-linux/bundle/. "$target/"
+apps="$HOME/.local/share/applications"
+for d in "$tmp"/Famio-*-linux/de.status403.famio.desktop; do
+  if [ -f "$d" ] && [ -f "$apps/de.status403.famio.desktop" ]; then
+    sed "s|^Exec=famio|Exec=$exe|" "$d" > "$apps/de.status403.famio.desktop"
+    update-desktop-database "$apps" 2>/dev/null || true
+  fi
+done
 rm -rf "$tmp" "$archive"
 nohup "$exe" >/dev/null 2>&1 &
 ''';

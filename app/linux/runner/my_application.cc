@@ -10,20 +10,61 @@
 struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
+  // The only window: a second start brings it up instead of a new one.
+  GtkWindow* window;
+  // Calendar files opened with Famio (`famio/open_file`), kept until Dart
+  // takes them.
+  FlMethodChannel* open_file;
+  gchar* pending_name;
+  GBytes* pending_bytes;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
+
+// A calendar file, not a film.
+static const gsize kMaxFileBytes = 10 * 1024 * 1024;
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
 }
 
+// `famio/open_file`: Dart takes the waiting file.
+static void open_file_cb(FlMethodChannel* channel, FlMethodCall* call,
+                         gpointer user_data) {
+  MyApplication* self = MY_APPLICATION(user_data);
+  g_autoptr(FlValue) file = nullptr;
+  if (g_strcmp0(fl_method_call_get_name(call), "take") != 0) {
+    fl_method_call_respond_not_implemented(call, nullptr);
+    return;
+  }
+  if (self->pending_bytes != nullptr) {
+    file = fl_value_new_map();
+    fl_value_set_string_take(file, "name",
+                             fl_value_new_string(self->pending_name));
+    gsize length = 0;
+    const uint8_t* bytes = static_cast<const uint8_t*>(
+        g_bytes_get_data(self->pending_bytes, &length));
+    fl_value_set_string_take(file, "bytes",
+                             fl_value_new_uint8_list(bytes, length));
+    g_clear_pointer(&self->pending_name, g_free);
+    g_clear_pointer(&self->pending_bytes, g_bytes_unref);
+  }
+  fl_method_call_respond_success(call, file, nullptr);
+}
+
 // Implements GApplication::activate.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+  if (self->window != nullptr) {
+    gtk_window_present(self->window);
+    return;
+  }
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  self->window = window;
+  g_object_add_weak_pointer(G_OBJECT(window),
+                            reinterpret_cast<gpointer*>(&self->window));
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -84,7 +125,49 @@ static void my_application_activate(GApplication* application) {
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
+  g_autoptr(FlPluginRegistrar) registrar =
+      fl_plugin_registry_get_registrar_for_plugin(FL_PLUGIN_REGISTRY(view),
+                                                  "FamioOpenedFiles");
+  g_autoptr(FlStandardMethodCodec) codec = fl_standard_method_codec_new();
+  g_clear_object(&self->open_file);
+  self->open_file =
+      fl_method_channel_new(fl_plugin_registrar_get_messenger(registrar),
+                            "famio/open_file", FL_METHOD_CODEC(codec));
+  fl_method_channel_set_method_call_handler(self->open_file, open_file_cb,
+                                            self, nullptr);
+
   gtk_widget_grab_focus(GTK_WIDGET(view));
+}
+
+// Implements GApplication::open: "Öffnen mit" in the file manager, also when
+// a second start handed its file to this Famio.
+static void my_application_open(GApplication* application, GFile** files,
+                                gint n_files, const gchar* hint) {
+  MyApplication* self = MY_APPLICATION(application);
+  const gboolean running = self->window != nullptr;
+  for (gint i = 0; i < n_files; i++) {
+    gchar* contents = nullptr;
+    gsize length = 0;
+    if (!g_file_load_contents(files[i], nullptr, &contents, &length, nullptr,
+                              nullptr)) {
+      continue;
+    }
+    if (length > kMaxFileBytes) {
+      g_free(contents);
+      continue;
+    }
+    g_free(self->pending_name);
+    self->pending_name = g_file_get_basename(files[i]);
+    g_clear_pointer(&self->pending_bytes, g_bytes_unref);
+    self->pending_bytes = g_bytes_new_take(contents, length);
+    break;
+  }
+  my_application_activate(application);
+  // On a fresh start Dart asks by itself.
+  if (running && self->pending_bytes != nullptr && self->open_file != nullptr) {
+    fl_method_channel_invoke_method(self->open_file, "opened", nullptr,
+                                    nullptr, nullptr, nullptr);
+  }
 }
 
 // Implements GApplication::local_command_line.
@@ -102,7 +185,20 @@ static gboolean my_application_local_command_line(GApplication* application,
     return TRUE;
   }
 
-  g_application_activate(application);
+  // Files go to the Famio that already runs, when there is one.
+  g_autoptr(GPtrArray) files = g_ptr_array_new_with_free_func(g_object_unref);
+  for (gchar** arg = *arguments + 1; *arg != nullptr; arg++) {
+    if (**arg != '-') {
+      g_ptr_array_add(files, g_file_new_for_commandline_arg(*arg));
+    }
+  }
+  if (files->len > 0) {
+    g_application_open(application,
+                       reinterpret_cast<GFile**>(files->pdata),
+                       static_cast<gint>(files->len), "");
+  } else {
+    g_application_activate(application);
+  }
   *exit_status = 0;
 
   return TRUE;
@@ -130,11 +226,20 @@ static void my_application_shutdown(GApplication* application) {
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+  if (self->window != nullptr) {
+    g_object_remove_weak_pointer(G_OBJECT(self->window),
+                                 reinterpret_cast<gpointer*>(&self->window));
+    self->window = nullptr;
+  }
+  g_clear_object(&self->open_file);
+  g_clear_pointer(&self->pending_name, g_free);
+  g_clear_pointer(&self->pending_bytes, g_bytes_unref);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 
 static void my_application_class_init(MyApplicationClass* klass) {
   G_APPLICATION_CLASS(klass)->activate = my_application_activate;
+  G_APPLICATION_CLASS(klass)->open = my_application_open;
   G_APPLICATION_CLASS(klass)->local_command_line =
       my_application_local_command_line;
   G_APPLICATION_CLASS(klass)->startup = my_application_startup;
@@ -151,7 +256,16 @@ MyApplication* my_application_new() {
   // the application to be recognized beyond its binary name.
   g_set_prgname(APPLICATION_ID);
 
+  // One Famio per session (over D-Bus): a second start, also from "Öffnen
+  // mit", goes to the first. Release builds only, so `flutter run` does not
+  // hand over to an installed Famio.
+#ifdef NDEBUG
+  const GApplicationFlags flags = G_APPLICATION_HANDLES_OPEN;
+#else
+  const GApplicationFlags flags = static_cast<GApplicationFlags>(
+      G_APPLICATION_NON_UNIQUE | G_APPLICATION_HANDLES_OPEN);
+#endif
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_NON_UNIQUE, nullptr));
+                                     flags, nullptr));
 }

@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Calendar files opened with Famio from another app ("Öffnen mit" in Mail,
-/// Files or the Finder; "Teilen" on Android). The platform keeps the file
-/// until [take] fetches it and calls [onOpened] when one arrives while Famio
-/// runs.
+/// Files, the Finder, the Explorer or the file manager; "Teilen" on
+/// Android). The platform keeps the file until [take] fetches it and calls
+/// [onOpened] when one arrives while Famio runs.
 abstract final class OpenedFiles {
   static const _channel = MethodChannel('famio/open_file');
 
@@ -14,8 +12,7 @@ abstract final class OpenedFiles {
   static VoidCallback? onOpened;
   static var _listening = false;
 
-  static bool get _supported =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+  static bool get _supported => !kIsWeb;
 
   static void listen() {
     if (_listening || !_supported) return;
