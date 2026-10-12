@@ -4,6 +4,24 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.0 – Updates from your own server
+
+- New versions for Android, Windows and Linux now come through the Famio
+  server: a notice on the start page downloads, checks and installs them.
+  Administrators turn this on under "App updates through the server".
+- Take over calendar files (.ics): under "Recognize events" or straight
+  from mail and files with "Open with Famio", on every device. Series stay
+  series, a second import updates instead of duplicating.
+- A short tour shows the most important areas. It is offered once on the
+  start page and is always available in the settings.
+- On Windows and Linux Famio now runs only once; starting it again brings
+  the open window to the front.
+- The Home Assistant integration can be installed through HACS.
+- The setup checklist recognizes the public address also behind routers
+  without hairpin NAT and only counts members with the app for
+  notifications.
+- The logo at the top left stays sharp in large windows.
+
 ## 1.0.16 – Development up to adulthood
 
 - For children, stages of development explain what is going on: from what

@@ -4,6 +4,27 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.0 – Actualizaciones desde tu propio servidor
+
+- Las nuevas versiones para Android, Windows y Linux llegan ahora a través
+  del servidor de Famio: un aviso en la página de inicio las descarga,
+  comprueba e instala. La administración lo activa en «Actualizaciones de
+  la app por el servidor».
+- Importar archivos de calendario (.ics): en «Reconocer eventos» o
+  directamente desde el correo y los archivos con «Abrir con Famio», en
+  todos los dispositivos. Las series siguen siendo series y una segunda
+  importación actualiza en lugar de duplicar.
+- Un breve recorrido muestra las áreas más importantes. Se ofrece una vez
+  en la página de inicio y está siempre disponible en los ajustes.
+- En Windows y Linux, Famio solo se ejecuta una vez; al abrirlo de nuevo,
+  la ventana abierta pasa al frente.
+- La integración con Home Assistant se puede instalar a través de HACS.
+- La lista de configuración reconoce la dirección pública también detrás de
+  routers sin hairpin NAT y, para las notificaciones, solo cuenta a los
+  miembros con la app.
+- El logotipo de arriba a la izquierda se ve nítido también en ventanas
+  grandes.
+
 ## 1.0.16 – Desarrollo hasta la edad adulta
 
 - En los niños, las etapas del desarrollo explican lo que está pasando:
