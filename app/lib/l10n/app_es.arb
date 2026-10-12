@@ -2221,5 +2221,9 @@
   "importIcsTooLarge": "El archivo ocupa más de 10 MB.",
   "importIcsFailed": "No se ha podido leer el archivo: {error}",
   "kidsMissingChildHint": "¿Falta un niño? Solo lo ven sus tutores. Quien lo añadió puede añadirte en su perfil; por favor, no lo añadas dos veces.",
-  "kidsOnlyVisibleTo": "Solo {names}"
+  "kidsOnlyVisibleTo": "Solo {names}",
+  "tasksPhotos": "Fotos",
+  "tasksAddPhoto": "Adjuntar foto",
+  "tasksRemovePhoto": "Quitar foto",
+  "tasksOpenPhoto": "Abrir foto"
 }

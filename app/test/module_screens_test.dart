@@ -14,6 +14,7 @@ import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/screens/wishes_screen.dart';
 import 'package:famio/src/widgets/data_builder.dart';
+import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -262,6 +263,36 @@ void main() {
         [for (final s in task.checklist) (s.text, s.done)],
         [('Badesachen', true), ('Sonnencreme', true), ('Handtuch', false)],
       );
+    });
+  });
+
+  group('task photos', () {
+    testWidgets('a photo shows in the list and can be taken off', (
+      tester,
+    ) async {
+      await open(tester, section: 'Aufgaben');
+      engine.saveTask(
+        const Task(
+          id: 't1',
+          title: 'Regal aufbauen',
+          photos: [
+            FileRef(id: 'f1', name: 'regal.jpg', mime: 'image/jpeg', size: 9),
+          ],
+        ),
+      );
+      await _pumpData(tester);
+      expect(find.byType(CachedImage), findsOneWidget);
+      await tester.tap(find.text('Regal aufbauen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Fotos'), findsOneWidget);
+      expect(find.byTooltip('Foto anhängen'), findsOneWidget);
+      await tester.tap(find.byTooltip('Foto entfernen'));
+      await tester.pump();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.tasks.single.photos, isEmpty);
+      expect(find.byType(CachedImage), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 

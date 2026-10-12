@@ -141,6 +141,35 @@ void main() {
     expect(missing.statusCode, 404);
   });
 
+  test('a reminder app ticking a task off keeps its photos', () async {
+    const photo = FileRef(
+      id: 'f1',
+      name: 'regal.jpg',
+      mime: 'image/jpeg',
+      size: 1200,
+    );
+    await sync([
+      record(
+        Collections.tasks,
+        'regal',
+        const Task(
+          id: 'regal',
+          title: 'Regal aufbauen',
+          photos: [photo],
+        ).toData(),
+      ),
+    ]);
+    final put = await dav(
+      'PUT',
+      'dav/calendars/mama/aufgaben/regal.ics',
+      body: reminder('regal', 'Regal aufbauen', extra: 'STATUS:COMPLETED\r\n'),
+    );
+    expect(put.statusCode, anyOf(201, 204));
+    final task = Task.fromRecord(app.records.get(Collections.tasks, 'regal')!);
+    expect(task.done, isTrue);
+    expect(task.photos.single.id, 'f1');
+  });
+
   test('a famio task is served as VTODO', () async {
     await sync([
       record(

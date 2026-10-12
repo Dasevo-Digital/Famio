@@ -119,4 +119,30 @@ void main() {
       isFalse,
     );
   });
+
+  test('photos survive the round trip and edits', () {
+    const photo = FileRef(
+      id: 'f1',
+      name: 'regal.jpg',
+      mime: 'image/jpeg',
+      size: 1200,
+    );
+    const task = Task(id: 't', title: 'Regal aufbauen', photos: [photo]);
+    final back = Task.fromRecord(
+      SyncRecord(
+        collection: 'tasks',
+        id: 't',
+        data: task.toData(),
+        updatedAt: 1,
+      ),
+    );
+    expect(back.photos.single.id, 'f1');
+    expect(back.photos.single.isImage, isTrue);
+    expect(back.copyWith(title: 'Regal').photos, hasLength(1));
+    expect(back.completed().photos, hasLength(1));
+    expect(
+      back.copyWith(photos: const []).toData().containsKey('photos'),
+      isFalse,
+    );
+  });
 }

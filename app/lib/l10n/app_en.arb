@@ -2221,5 +2221,9 @@
   "importIcsTooLarge": "The file is larger than 10 MB.",
   "importIcsFailed": "The file could not be read: {error}",
   "kidsMissingChildHint": "Is a child missing? Only a child's guardians see it. Whoever added it can add you in its profile; please don't add it twice.",
-  "kidsOnlyVisibleTo": "Only {names}"
+  "kidsOnlyVisibleTo": "Only {names}",
+  "tasksPhotos": "Photos",
+  "tasksAddPhoto": "Attach photo",
+  "tasksRemovePhoto": "Remove photo",
+  "tasksOpenPhoto": "Open photo"
 }

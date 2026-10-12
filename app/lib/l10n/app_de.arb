@@ -5645,5 +5645,9 @@
         "type": "String"
       }
     }
-  }
+  },
+  "tasksPhotos": "Fotos",
+  "tasksAddPhoto": "Foto anhängen",
+  "tasksRemovePhoto": "Foto entfernen",
+  "tasksOpenPhoto": "Foto öffnen"
 }

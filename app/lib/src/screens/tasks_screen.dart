@@ -9,6 +9,7 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
@@ -329,6 +330,16 @@ class _TaskTile extends StatelessWidget {
                 ),
               ),
             ),
+            if (task.photos.firstOrNull case final photo?) ...[
+              Semantics(
+                label: tr.commonPhoto,
+                child: SizedBox.square(
+                  dimension: 40,
+                  child: CachedImage(photo, thumb: 160, radius: 10),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
             if (assignee != null) MemberAvatar(assignee),
           ],
         ),
@@ -379,6 +390,8 @@ class _TaskEditorState extends State<_TaskEditor> {
   late int _repeatEvery = widget.task?.repeatEvery ?? 1;
   late final _steps = [...?widget.task?.checklist];
   final _newStep = TextEditingController();
+  late final _photos = [...?widget.task?.photos];
+  var _uploading = false;
 
   @override
   void dispose() {
@@ -397,9 +410,28 @@ class _TaskEditorState extends State<_TaskEditor> {
     });
   }
 
+  /// Camera or gallery; uploaded right away, so the task stays small.
+  Future<void> _addPhoto() async {
+    final picked = await pickFile(context, imagesOnly: true);
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final ref = await uploadPicked(context, picked);
+      if (mounted) setState(() => _photos.add(ref));
+    } on ApiError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
   void _save() {
     final title = _title.text.trim();
-    if (title.isEmpty) return;
+    if (title.isEmpty || _uploading) return;
     final engine = AppScope.engineOf(context);
     final base =
         widget.task ??
@@ -422,6 +454,7 @@ class _TaskEditorState extends State<_TaskEditor> {
           if (_newStep.text.trim().isNotEmpty)
             TaskStep(id: newId(), text: _newStep.text.trim()),
         ],
+        photos: _photos,
       ),
     );
     Navigator.pop(context);
@@ -608,6 +641,39 @@ class _TaskEditorState extends State<_TaskEditor> {
               ),
               onSubmitted: (_) => _addStep(),
             ),
+            ListHeading(tr.tasksPhotos),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (i, photo) in _photos.indexed)
+                  _PhotoThumb(
+                    photo: photo,
+                    onRemove: () => setState(() => _photos.removeAt(i)),
+                  ),
+                SizedBox.square(
+                  dimension: 72,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: _uploading ? null : _addPhoto,
+                    child: _uploading
+                        ? const SizedBox.square(
+                            dimension: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Tooltip(
+                            message: tr.tasksAddPhoto,
+                            child: Icon(AppIcons.camera, color: color),
+                          ),
+                  ),
+                ),
+              ],
+            ),
             ListHeading(tr.tasksWhoTakesCare),
             Wrap(
               spacing: 8,
@@ -654,12 +720,61 @@ class _TaskEditorState extends State<_TaskEditor> {
                 ColorButton(
                   label: tr.commonSave,
                   color: color,
-                  onPressed: _save,
+                  onPressed: _uploading ? null : _save,
                 ),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A task's photo in the editor: tap opens it, the cross takes it off.
+class _PhotoThumb extends StatelessWidget {
+  const _PhotoThumb({required this.photo, required this.onRemove});
+
+  final FileRef photo;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    return SizedBox.square(
+      dimension: 72,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Semantics(
+            button: true,
+            label: tr.tasksOpenPhoto,
+            child: GestureDetector(
+              onTap: () => openFileRef(context, photo),
+              child: CachedImage(photo, thumb: 160, radius: 14),
+            ),
+          ),
+          Positioned(
+            top: 2,
+            right: 2,
+            child: Material(
+              color: c.surface.withValues(alpha: 0.9),
+              shape: const CircleBorder(),
+              child: IconButton(
+                tooltip: tr.tasksRemovePhoto,
+                visualDensity: VisualDensity.compact,
+                iconSize: 16,
+                constraints: const BoxConstraints.tightFor(
+                  width: 28,
+                  height: 28,
+                ),
+                padding: EdgeInsets.zero,
+                icon: const Icon(AppIcons.x),
+                onPressed: onRemove,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

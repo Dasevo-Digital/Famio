@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import '../texts.dart';
+import 'chat.dart' show FileRef;
 
 /// A family task (Aufgabe), stored in `Collections.tasks`.
 class Task {
@@ -16,6 +17,7 @@ class Task {
     this.repeat,
     this.repeatEvery = 1,
     this.checklist = const [],
+    this.photos = const [],
   });
 
   factory Task.fromRecord(SyncRecord r) => Task(
@@ -33,6 +35,10 @@ class Task {
     checklist: [
       for (final i in r.data['checklist'] as List? ?? const [])
         if (i is Map) TaskStep.fromJson(i.cast()),
+    ],
+    photos: [
+      for (final p in r.data['photos'] as List? ?? const [])
+        ?FileRef.fromJson(p),
     ],
   );
 
@@ -58,6 +64,9 @@ class Task {
   /// separately.
   final List<TaskStep> checklist;
 
+  /// Photos for the task (what to buy, where it is, how it should look).
+  final List<FileRef> photos;
+
   /// "2/5" for the list.
   String? get checklistProgress => checklist.isEmpty
       ? null
@@ -75,6 +84,7 @@ class Task {
     Object? repeat = _keep,
     int? repeatEvery,
     List<TaskStep>? checklist,
+    List<FileRef>? photos,
   }) => Task(
     id: id,
     title: title ?? this.title,
@@ -90,6 +100,7 @@ class Task {
     repeat: repeat == _keep ? this.repeat : repeat as TaskRepeat?,
     repeatEvery: repeatEvery ?? this.repeatEvery,
     checklist: checklist ?? this.checklist,
+    photos: photos ?? this.photos,
   );
 
   /// Ticked off: a repeating task comes back open with its next due date
@@ -132,6 +143,7 @@ class Task {
     'repeatEvery': repeat == null ? null : repeatEvery,
     if (checklist.isNotEmpty)
       'checklist': [for (final i in checklist) i.toJson()],
+    if (photos.isNotEmpty) 'photos': [for (final p in photos) p.toJson()],
   };
 }
 
