@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 1.0.16 – Desarrollo hasta la edad adulta
+
+- En los niños, las etapas del desarrollo explican lo que está pasando:
+  desde lo que ve y oye el recién nacido hasta las rabietas y la pubertad.
+- Muchos hitos nuevos hasta la edad adulta, como las fontanelas, los
+  dientes, el pensamiento y la pubertad, según el sexo indicado en el
+  perfil del niño.
+
 ## 1.0.15 – Colores más legibles
 
 - Los textos, botones e insignias en los colores de cada sección se leen

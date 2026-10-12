@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 1.0.16 – Development up to adulthood
+
+- For children, stages of development explain what is going on: from what
+  a newborn sees and hears through the terrible twos to puberty.
+- Many new milestones up to adulthood, such as fontanelles, teeth,
+  thinking and puberty – matching the sex in the child's profile.
+
 ## 1.0.15 – Easier-to-read colours
 
 - Text, buttons and badges in the colours of each area are now easy to read

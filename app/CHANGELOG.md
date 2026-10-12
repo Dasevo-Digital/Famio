@@ -4,6 +4,13 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 1.0.16 – Entwicklung bis ins Erwachsenenalter
+
+- Bei den Kindern erklären Entwicklungsphasen, was gerade passiert: vom
+  Sehen und Hören des Neugeborenen über die Trotzphase bis zur Pubertät.
+- Viele neue Meilensteine bis ins Erwachsenenalter, etwa Fontanellen,
+  Zähne, Denken und Pubertät – passend zum Geschlecht im Profil des Kindes.
+
 ## 1.0.15 – Besser lesbare Farben
 
 - Schrift, Knöpfe und Abzeichen in den Farben der Bereiche sind jetzt auch
