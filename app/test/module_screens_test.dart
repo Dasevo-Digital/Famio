@@ -691,7 +691,8 @@ void main() {
       await tester.pumpAndSettle();
       final next = engine.tasks.single;
       expect(next.done, isFalse);
-      expect(next.due, today.add(const Duration(days: 14)));
+      // Calendar days: 14 × 24 h miss a day across a DST change.
+      expect(next.due, DateTime(today.year, today.month, today.day + 14));
       expect(find.textContaining('wieder fällig'), findsOneWidget);
 
       await tester.tap(find.text('Rückgängig'));
