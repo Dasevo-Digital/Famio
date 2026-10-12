@@ -11,6 +11,7 @@ class MainFlutterWindow: NSWindow {
     self.setFrame(windowFrame, display: true)
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    OpenedFiles.shared.register(with: flutterViewController.engine.binaryMessenger)
 
     // Text in photos (appointments from a letter), on the device.
     let ocr = FlutterMethodChannel(

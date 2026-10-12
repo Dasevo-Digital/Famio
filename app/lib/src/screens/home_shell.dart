@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:famio_client/famio_client.dart';
@@ -12,6 +13,8 @@ import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/famio_tour.dart';
+import '../platform/opened_files.dart';
+import 'ics_import_screen.dart';
 import '../data/family_extras.dart';
 import 'calendar_screen.dart';
 import 'chores_screens.dart';
@@ -134,6 +137,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     SosDevice.onLaunch = _sosLaunch;
+    OpenedFiles.listen();
+    OpenedFiles.onOpened = _openedFile;
     // Kitchen tablet: straight to the wall display.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -144,6 +149,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         maybeShowWhatsNew(context);
       }
       _checkSosLaunch();
+      _openedFile();
     });
   }
 
@@ -151,6 +157,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     if (SosDevice.onLaunch == _sosLaunch) SosDevice.onLaunch = null;
+    if (OpenedFiles.onOpened == _openedFile) OpenedFiles.onOpened = null;
     super.dispose();
   }
 
@@ -162,6 +169,38 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   /// Opened from the "Famio Notruf" tile or the app shortcut (Android).
   Future<void> _checkSosLaunch() async {
     if (await SosDevice.takeLaunch()) _sosLaunch();
+  }
+
+  /// A calendar file opened with Famio from another app: read it and show
+  /// in the calendar what can be taken over.
+  Future<void> _openedFile() async {
+    final file = await OpenedFiles.take();
+    if (file == null || !mounted) return;
+    final api = AppScope.read(context).engine?.api;
+    if (api == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    if (file.bytes.length > 10 * 1024 * 1024) {
+      messenger.showSnackBar(SnackBar(content: Text(tr.importIcsTooLarge)));
+      return;
+    }
+    try {
+      final preview = await api.readIcsFile(
+        utf8.decode(file.bytes, allowMalformed: true),
+      );
+      if (!mounted) return;
+      _go(FamioSection.calendar);
+      // The calendar's page stack exists from the next frame on.
+      await WidgetsBinding.instance.endOfFrame;
+      await _navigators[FamioSection.calendar]!.currentState?.push(
+        MaterialPageRoute<bool>(
+          builder: (_) => IcsImportScreen(preview: preview),
+        ),
+      );
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(tr.importIcsFailed('$e'))));
+    }
   }
 
   void _sosLaunch() {

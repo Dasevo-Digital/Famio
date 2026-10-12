@@ -15,7 +15,8 @@ import io.flutter.plugin.common.MethodChannel
 
 /**
  * Hosts Flutter and the channels `famio/location` (location sharing),
- * `famio/notify` (Famio's own push) and `famio/sos` (emergency button).
+ * `famio/notify` (Famio's own push), `famio/sos` (emergency button) and
+ * `famio/open_file` (calendar files opened with Famio from other apps).
  */
 class MainActivity : FlutterActivity() {
     companion object {
@@ -27,10 +28,15 @@ class MainActivity : FlutterActivity() {
 
     private var permissionResult: MethodChannel.Result? = null
     private var sos: SosChannel? = null
+    private var openFile: MethodChannel? = null
+
+    /** A calendar file opened with Famio, until Dart takes it. */
+    private var pendingFile: Pair<String, ByteArray>? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         if (intent?.action == ACTION_SOS) SosChannel.launchPending = true
+        receiveFile(intent)
         addSosShortcut()
     }
 
@@ -40,6 +46,38 @@ class MainActivity : FlutterActivity() {
             SosChannel.launchPending = true
             sos?.announceLaunch()
         }
+        if (receiveFile(intent)) openFile?.invokeMethod("opened", null)
+    }
+
+    /** Reads a calendar file from "Öffnen mit" (VIEW) or "Teilen" (SEND). */
+    private fun receiveFile(intent: Intent?): Boolean {
+        val uri = when (intent?.action) {
+            Intent.ACTION_VIEW -> intent.data
+            Intent.ACTION_SEND -> if (Build.VERSION.SDK_INT >= 33) {
+                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(Intent.EXTRA_STREAM)
+            }
+            else -> null
+        } ?: return false
+        val bytes = runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                // A calendar file, not a film: at most 10 MB.
+                val limit = 10 * 1024 * 1024
+                val out = java.io.ByteArrayOutputStream()
+                val buffer = ByteArray(64 * 1024)
+                while (true) {
+                    val n = input.read(buffer)
+                    if (n < 0) break
+                    out.write(buffer, 0, n)
+                    if (out.size() > limit) return@use null
+                }
+                out.toByteArray()
+            }
+        }.getOrNull() ?: return false
+        pendingFile = (uri.lastPathSegment ?: "kalender.ics") to bytes
+        return true
     }
 
     /** "Notruf" when long-pressing the app icon (any build flavour). */
@@ -60,6 +98,18 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         sos = SosChannel(this, flutterEngine.dartExecutor.binaryMessenger)
+        openFile = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/open_file")
+            .apply {
+                setMethodCallHandler { call, result ->
+                    if (call.method != "take") {
+                        result.notImplemented()
+                        return@setMethodCallHandler
+                    }
+                    val file = pendingFile
+                    pendingFile = null
+                    result.success(file?.let { mapOf("name" to it.first, "bytes" to it.second) })
+                }
+            }
         OcrChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
         AppUpdateChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/location")

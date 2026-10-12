@@ -38,6 +38,9 @@ import UserNotifications
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioSos") {
       SosBridge.shared.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOpenedFiles") {
+      OpenedFiles.shared.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOcr") {
       // Text in photos (appointments from a letter), on the device.
       let ocr = FlutterMethodChannel(
@@ -89,6 +92,59 @@ import UserNotifications
         }
       }
     }
+  }
+}
+
+/// Calendar files opened with Famio from another app ("Öffnen mit" in Mail
+/// or Files, `famio/open_file`): kept until Dart takes them.
+final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
+  static let shared = OpenedFiles()
+
+  private var channel: FlutterMethodChannel?
+  private var pending: (name: String, data: Data)?
+
+  func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(
+      name: "famio/open_file", binaryMessenger: registrar.messenger())
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "take" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      let file = self?.pending
+      self?.pending = nil
+      result(
+        file.map { ["name": $0.name, "bytes": FlutterStandardTypedData(bytes: $0.data)] })
+    }
+    self.channel = channel
+    registrar.addSceneDelegate(self)
+  }
+
+  // The app was started with a file.
+  func scene(
+    _ scene: UIScene, willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions?
+  ) -> Bool {
+    _ = receive(connectionOptions?.urlContexts.map(\.url) ?? [])
+    return false
+  }
+
+  // A file while the app is running.
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) -> Bool {
+    receive(URLContexts.map(\.url))
+  }
+
+  private func receive(_ urls: [URL]) -> Bool {
+    guard let url = urls.first(where: \.isFileURL) else { return false }
+    let access = url.startAccessingSecurityScopedResource()
+    defer { if access { url.stopAccessingSecurityScopedResource() } }
+    // A calendar file, not a film: at most 10 MB.
+    guard let data = try? Data(contentsOf: url), data.count <= 10 * 1024 * 1024 else {
+      return false
+    }
+    pending = (url.lastPathComponent, data)
+    channel?.invokeMethod("opened", arguments: nil)
+    return true
   }
 }
 
