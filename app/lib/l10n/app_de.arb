@@ -5560,5 +5560,13 @@
     }
   },
   "adminAppUpdatesNone": "Noch keine Pakete geladen.",
-  "adminAppUpdatesRefresh": "Erneut laden"
+  "adminAppUpdatesRefresh": "Erneut laden",
+  "setupAddressFromDevice": "Von diesem Gerät aus ist {url} über HTTPS erreichbar.",
+  "@setupAddressFromDevice": {
+    "placeholders": {
+      "url": {
+        "type": "Object?"
+      }
+    }
+  }
 }

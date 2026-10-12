@@ -2181,5 +2181,6 @@
   "adminAppUpdatesOn": "Hand out app packages",
   "adminAppUpdatesReady": "Ready for version {version}: {platforms}",
   "adminAppUpdatesNone": "No packages loaded yet.",
-  "adminAppUpdatesRefresh": "Load again"
+  "adminAppUpdatesRefresh": "Load again",
+  "setupAddressFromDevice": "{url} is reachable over HTTPS from this device."
 }

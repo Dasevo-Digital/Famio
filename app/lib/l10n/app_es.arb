@@ -2181,5 +2181,6 @@
   "adminAppUpdatesOn": "Repartir los paquetes de la app",
   "adminAppUpdatesReady": "Listo para la versión {version}: {platforms}",
   "adminAppUpdatesNone": "Aún no se ha cargado ningún paquete.",
-  "adminAppUpdatesRefresh": "Volver a cargar"
+  "adminAppUpdatesRefresh": "Volver a cargar",
+  "setupAddressFromDevice": "{url} es accesible por HTTPS desde este dispositivo."
 }

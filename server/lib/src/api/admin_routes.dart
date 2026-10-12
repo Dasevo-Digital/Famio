@@ -59,8 +59,16 @@ extension _AdminRoutes on FamioApi {
           id: 'address',
           title: t('Öffentliche Adresse'),
           done: reachable,
+          url: url,
           detail: reachable
               ? t('{url} ist über HTTPS erreichbar.', {'url': url})
+              : await _pointsToItself(url)
+              // E.g. a Proxmox container named like the address: its
+              // /etc/hosts sends the request to itself, not to the proxy.
+              ? t(
+                  '{url} führt auf diesem Rechner zu ihm selbst statt zum Reverse-Proxy (meist, weil Container oder Rechner so heißen, siehe /etc/hosts). Von außen kann die Adresse trotzdem funktionieren – die App prüft sie dann von deinem Gerät aus.',
+                  {'url': url},
+                )
               : t(
                   '{url} antwortet dem Server nicht. Reverse-Proxy, DNS und Zertifikat prüfen (im Heimnetz kann es auch am Router liegen, der Anfragen an sich selbst nicht zurückleitet).',
                   {'url': url},
@@ -137,8 +145,17 @@ extension _AdminRoutes on FamioApi {
 
     if (push case final p?) {
       final now = DateTime.now();
+      // Only who uses a Famio app can be reached; a child without a phone
+      // is no gap to close.
+      final devices = accounts.appDevices();
+      bool usesApp(FamilyMember m) => devices[m.id]?.isNotEmpty ?? false;
+      final noApp = [
+        for (final m in family)
+          if (!usesApp(m)) m.displayName,
+      ];
       final reach = p.reachability([
-        for (final m in family) m.id,
+        for (final m in family)
+          if (usesApp(m)) m.id,
       ], noticeScope: _noticeScope);
       final missing = [
         for (final m in family)
@@ -146,19 +163,38 @@ extension _AdminRoutes on FamioApi {
               when r.ntfy == 0 &&
                   (r.ownPush == null ||
                       now.difference(r.ownPush!) > const Duration(days: 2)))
-            m.displayName,
+            m,
+      ];
+      // Famio's own notifications reach an iPhone in the background only
+      // through Apple's push service (paid developer account); until then
+      // ntfy does.
+      final iPhones = [
+        for (final m in missing)
+          if (devices[m.id]!.every((d) => d.startsWith('ios'))) m.displayName,
       ];
       steps.add(
         SetupStep(
           id: 'push',
           title: t('Benachrichtigungen erreichen alle'),
           done: missing.isEmpty,
-          detail: missing.isEmpty
-              ? t('Jedes Mitglied bekommt Alarme und Erinnerungen aufs Handy.')
-              : t(
-                  'Noch nicht erreichbar: {names}. In deren App die Benachrichtigungen einschalten (Famio-eigene oder ntfy).',
-                  {'names': missing.join(', ')},
-                ),
+          detail: [
+            if (missing.isEmpty)
+              t(
+                'Jedes Mitglied mit Famio-App bekommt Alarme und Erinnerungen aufs Handy.',
+              )
+            else
+              t(
+                'Noch nicht erreichbar: {names}. In deren App die Benachrichtigungen einschalten (Famio-eigene oder ntfy).',
+                {'names': missing.map((m) => m.displayName).join(', ')},
+              ),
+            if (iPhones.isNotEmpty)
+              t(
+                'Auf dem iPhone ({names}) geht das vorerst nur mit der ntfy-App.',
+                {'names': iPhones.join(', ')},
+              ),
+            if (noApp.isNotEmpty)
+              t('Ohne Famio-App: {names}.', {'names': noApp.join(', ')}),
+          ].join(' '),
           where: t(
             'Einstellungen → Benachrichtigungen (in der jeweiligen App)',
           ),
@@ -228,6 +264,23 @@ extension _AdminRoutes on FamioApi {
     return _json({
       'steps': [for (final s in steps) s.toJson()],
     });
+  }
+
+  /// Whether [url]'s host resolves to this machine itself.
+  Future<bool> _pointsToItself(String url) async {
+    try {
+      final host = Uri.parse(url).host;
+      final addresses = await InternetAddress.lookup(
+        host,
+      ).timeout(const Duration(seconds: 3));
+      final own = {
+        for (final i in await NetworkInterface.list(includeLoopback: true))
+          for (final a in i.addresses) a.address,
+      };
+      return addresses.any((a) => a.isLoopback || own.contains(a.address));
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Whether `<url>/api/health` answers as Famio within a few seconds.

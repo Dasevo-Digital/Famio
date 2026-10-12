@@ -356,6 +356,7 @@ class SetupStep {
     required this.done,
     required this.detail,
     this.where = '',
+    this.url = '',
   });
 
   factory SetupStep.fromJson(Map<String, Object?> json) => SetupStep(
@@ -364,6 +365,7 @@ class SetupStep {
     done: json['done'] as bool? ?? false,
     detail: json['detail'] as String? ?? '',
     where: json['where'] as String? ?? '',
+    url: json['url'] as String? ?? '',
   );
 
   final String id;
@@ -376,11 +378,25 @@ class SetupStep {
   /// Where to change it ("Server-Verwaltung → Einstellungen").
   final String where;
 
+  /// The address a step is about (the public address), so the app can
+  /// check it from the device as well.
+  final String url;
+
+  SetupStep copyWith({bool? done, String? detail}) => SetupStep(
+    id: id,
+    title: title,
+    done: done ?? this.done,
+    detail: detail ?? this.detail,
+    where: where,
+    url: url,
+  );
+
   Map<String, Object?> toJson() => {
     'id': id,
     'title': title,
     'done': done,
     'detail': detail,
     if (where.isNotEmpty) 'where': where,
+    if (url.isNotEmpty) 'url': url,
   };
 }

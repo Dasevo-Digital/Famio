@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/widgets/setup_checklist.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -82,4 +83,54 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getBool('setup.hidden'), isTrue);
   });
+
+  test(
+    'the public address counts when this app is connected through it',
+    () async {
+      FamioApiClient api(String base, SetupStep step) => FamioApiClient(
+        base,
+        httpClient: MockClient(
+          (request) async => http.Response(
+            jsonEncode({
+              'steps': [step.toJson()],
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          ),
+        ),
+      );
+      const address = SetupStep(
+        id: 'address',
+        title: 'Öffentliche Adresse',
+        done: false,
+        detail: 'antwortet dem Server nicht',
+        url: 'https://famio.example.org',
+      );
+      final viaPublic = await loadSetupSteps(
+        api('https://famio.example.org/', address),
+      );
+      expect(viaPublic.single.done, isTrue);
+      expect(viaPublic.single.detail, contains('Von diesem Gerät'));
+      // Only an HTTPS address can count.
+      final plain = await loadSetupSteps(
+        api(
+          'http://famio.example.org/',
+          address
+              .copyWith(detail: 'x')
+              .toJson()
+              .let(
+                (j) => SetupStep.fromJson({
+                  ...j,
+                  'url': 'http://famio.example.org',
+                }),
+              ),
+        ),
+      );
+      expect(plain.single.done, isFalse);
+    },
+  );
+}
+
+extension<T> on T {
+  R let<R>(R Function(T) f) => f(this);
 }

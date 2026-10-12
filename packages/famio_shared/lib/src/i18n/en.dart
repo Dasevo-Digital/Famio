@@ -814,10 +814,15 @@ const sharedEn = <String, String>{
   "Server|Einstellungen → Anmeldung & Sicherheit":
       "Settings → Sign-in & security",
   "Server|Benachrichtigungen erreichen alle": "Notifications reach everyone",
-  "Server|Jedes Mitglied bekommt Alarme und Erinnerungen aufs Handy.":
-      "Every member gets alarms and reminders on their phone.",
   "Server|Noch nicht erreichbar: {names}. In deren App die Benachrichtigungen einschalten (Famio-eigene oder ntfy).":
       "Not reachable yet: {names}. Turn on notifications in their app (Famio's own or ntfy).",
+  "Server|{url} führt auf diesem Rechner zu ihm selbst statt zum Reverse-Proxy (meist, weil Container oder Rechner so heißen, siehe /etc/hosts). Von außen kann die Adresse trotzdem funktionieren – die App prüft sie dann von deinem Gerät aus.":
+      "On this machine {url} leads to the machine itself instead of the reverse proxy (usually because the container or computer has that name, see /etc/hosts). From outside the address may still work – the app then checks it from your device.",
+  "Server|Jedes Mitglied mit Famio-App bekommt Alarme und Erinnerungen aufs Handy.":
+      "Every member with the Famio app gets alarms and reminders on their phone.",
+  "Server|Auf dem iPhone ({names}) geht das vorerst nur mit der ntfy-App.":
+      "On the iPhone ({names}) this works only with the ntfy app for now.",
+  "Server|Ohne Famio-App: {names}.": "Without the Famio app: {names}.",
   "Server|Einstellungen → Benachrichtigungen (in der jeweiligen App)":
       "Settings → Notifications (in each app)",
   "Server|Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann muss Proxmox, Home Assistant oder ein anderes Werkzeug das Datenverzeichnis sichern.":

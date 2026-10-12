@@ -240,6 +240,22 @@ class Accounts {
       row.columnAt(0) as String,
   ];
 
+  /// Device names of each member's signed-in apps ("ios (Lenas-iPhone)"),
+  /// without the narrow sessions for notifications or locations.
+  Map<String, List<String>> appDevices() {
+    final devices = <String, List<String>>{};
+    for (final row in _db.select(
+      'SELECT user_id, device FROM sessions'
+      ' WHERE scope IS NULL AND last_seen > ?',
+      [_idleCutoff],
+    )) {
+      (devices[row['user_id'] as String] ??= []).add(
+        row['device'] as String? ?? '',
+      );
+    }
+    return devices;
+  }
+
   int get adminCount =>
       _db
               .select('SELECT COUNT(*) FROM users WHERE is_admin = 1')

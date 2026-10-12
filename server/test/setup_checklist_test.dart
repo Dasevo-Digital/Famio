@@ -55,7 +55,7 @@ void main() {
       'publicUrl': 'https://famio.example.org',
       'holidayRegion': 'HE',
     });
-    app.accounts.create(
+    final papa = app.accounts.create(
       username: 'papa',
       displayName: 'Papa',
       passwordHash: 'x',
@@ -65,12 +65,29 @@ void main() {
     for (final id in ['address', 'members', 'backup', 'region']) {
       expect(after[id]!.done, isTrue, reason: '$id: ${after[id]!.detail}');
     }
-    // Papa has no phone with notifications yet.
+    // Mama's app has no notifications yet; Papa has no app at all.
     expect(after['push']!.done, isFalse);
-    expect(after['push']!.detail, contains('Papa'));
+    expect(after['push']!.detail, contains('Noch nicht erreichbar: Mama.'));
+    expect(after['push']!.detail, contains('Ohne Famio-App: Papa.'));
+    // Papa on an iPhone: only ntfy reaches it until Apple's push service.
+    app.accounts.createSession(papa.id, device: 'ios (Papas-iPhone)');
+    final push = (await steps())['push']!;
+    expect(push.detail, contains('Mama, Papa'));
+    expect(push.detail, contains('Auf dem iPhone (Papa)'));
+    expect(push.detail, isNot(contains('Ohne Famio-App')));
+    // A child without any app is no gap to close.
+    app.accounts.create(
+      username: 'lena',
+      displayName: 'Lena',
+      passwordHash: 'x',
+    );
+    expect((await steps())['push']!.detail, contains('Ohne Famio-App: Lena.'));
 
-    // A public address the server cannot reach is named.
+    // A public address the server cannot reach is named, with the address
+    // for the app to check it from the device.
     app.settings.update({'publicUrl': 'https://kaputt.example.org/'});
-    expect((await steps())['address']!.done, isFalse);
+    final broken = (await steps())['address']!;
+    expect(broken.done, isFalse);
+    expect(broken.url, 'https://kaputt.example.org/');
   });
 }

@@ -8,6 +8,47 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
 
+/// The server's setup checklist, with the public address also checked from
+/// this device: the server cannot always reach it itself (a router without
+/// hairpin NAT, a container named like the address), while this app may be
+/// connected through it right now.
+Future<List<SetupStep>> loadSetupSteps(FamioApiClient api) async {
+  final steps = await api.setupChecklist();
+  return [
+    for (final step in steps)
+      if (step.id == 'address' && !step.done && step.url.isNotEmpty)
+        await _reachedFromHere(api, step.url)
+            ? step.copyWith(
+                done: true,
+                detail: tr.setupAddressFromDevice(step.url),
+              )
+            : step
+      else
+        step,
+  ];
+}
+
+Future<bool> _reachedFromHere(FamioApiClient api, String url) async {
+  final public = Uri.tryParse(url);
+  if (public == null || public.scheme != 'https') return false;
+  final current = api.baseUrl;
+  // Signed in through the public address: it works.
+  if (current.scheme == public.scheme &&
+      current.host.toLowerCase() == public.host.toLowerCase() &&
+      current.port == public.port) {
+    return true;
+  }
+  final probe = FamioApiClient(url);
+  try {
+    final info = await probe.health().timeout(const Duration(seconds: 6));
+    return info.version.isNotEmpty;
+  } catch (_) {
+    return false;
+  } finally {
+    probe.close();
+  }
+}
+
 /// The setup checklist for admins: what is done, what is missing and where
 /// to change it. Loaded from the server each time it is shown.
 class SetupChecklist extends StatefulWidget {
@@ -21,7 +62,7 @@ class _SetupChecklistState extends State<SetupChecklist> {
   late Future<List<SetupStep>> _steps = _load();
 
   Future<List<SetupStep>> _load() =>
-      AppScope.read(context).engine!.api.setupChecklist();
+      loadSetupSteps(AppScope.read(context).engine!.api);
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +167,7 @@ class _SetupBannerState extends State<SetupBanner> {
     if (prefs.getBool(SetupBanner._hiddenKey) ?? false) return null;
     if (!mounted) return null;
     try {
-      return await AppScope.read(context).engine!.api.setupChecklist();
+      return await loadSetupSteps(AppScope.read(context).engine!.api);
     } catch (_) {
       return null; // Offline or an older server: no banner.
     }
