@@ -49,7 +49,9 @@ kann technisch Verbindungsdaten verarbeiten.
 **OpenStreetMap oder eigener Kartenserver.** Beim Öffnen der Karte werden
 Kacheln für den betrachteten Ausschnitt geladen. Der Kartenanbieter erhält die
 IP-Adresse und Kachelkoordinaten; daraus lässt sich der betrachtete Bereich
-ableiten. Ein eigener Kartenserver hält diesen Abruf im eigenen Betrieb.
+ableiten. Die Web-App schickt dabei zusätzlich die Adresse des Famio-Servers
+(ohne Pfad) als Referer mit, weil OpenStreetMap Browser-Anfragen ohne Referer
+ablehnt. Ein eigener Kartenserver hält diesen Abruf im eigenen Betrieb.
 
 **Open-Meteo.** Wetter ist pro Gerät opt-in. Übertragen werden auf 0,01 Grad
 gerundete Koordinaten des gewählten Orts sowie die technisch notwendige
