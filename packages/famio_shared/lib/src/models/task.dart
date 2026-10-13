@@ -73,7 +73,10 @@ class Task {
   /// separately.
   final List<TaskStep> checklist;
 
-  /// Photos for the task (what to buy, where it is, how it should look).
+  /// Photos and other files for the task (what to buy, how it should look,
+  /// the form to fill in). Stored as `photos`, the name from 2.0.1, when
+  /// only images were possible: apps before 2.0.4 keep the other files when
+  /// they save the task.
   final List<FileRef> photos;
 
   /// The first of [assigneeIds], all that apps before 2.0.3 know.

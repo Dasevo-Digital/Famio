@@ -5646,10 +5646,10 @@
       }
     }
   },
-  "tasksPhotos": "Fotos",
-  "tasksAddPhoto": "Foto anhängen",
-  "tasksRemovePhoto": "Foto entfernen",
-  "tasksOpenPhoto": "Foto öffnen",
+  "tasksPhotos": "Fotos und Dateien",
+  "tasksAddPhoto": "Foto oder Datei anhängen",
+  "tasksRemovePhoto": "Anhang entfernen",
+  "tasksOpenPhoto": "Anhang öffnen",
   "kidsLogDay": "Tag",
   "kidsLogWeek": "Woche",
   "kidsLogMonth": "Monat",
@@ -5734,7 +5734,7 @@
   "tipSettings": "Tipps zu den Bereichen",
   "tipSettingsSubtitle": "Beim ersten Besuch eines Bereichs ein kurzer Hinweis",
   "tipCalendar": "Termine musst du nicht abtippen: „Termine erkennen“ liest sie aus Text, Foto, PDF oder einer Kalenderdatei.",
-  "tipTasks": "Aufgaben können Checklisten und Fotos haben. Nach links wischen löscht, „Rückgängig“ holt sie zurück.",
+  "tipTasks": "Aufgaben können Checklisten, Fotos und Dateien haben. Nach links wischen löscht, „Rückgängig“ holt sie zurück.",
   "tipShopping": "Neue Artikel sortiert Famio in die Gänge eures Ladens und merkt sich Korrekturen. Für Ausflüge gibt es Packlisten aus Vorlagen.",
   "tipKids": "Ein Kind und alles dazu sehen nur seine Sorgeberechtigten. Im Protokoll siehst du Tag, Woche oder Monat auf einen Blick.",
   "tipDocuments": "Bei jedem Dokument legst du fest, wer es sieht, etwa Arztbriefe nur für die Eltern.",

@@ -48,7 +48,9 @@ void main() {
       );
       final today = DateUtils.dateOnly(DateTime.now());
       engine
-        ..saveTask(Task(id: 't1', title: 'Trash', due: today, assigneeIds: ['k1']))
+        ..saveTask(
+          Task(id: 't1', title: 'Trash', due: today, assigneeIds: ['k1']),
+        )
         ..saveEvent(
           CalendarEvent(
             id: 'e1',

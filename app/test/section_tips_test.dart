@@ -39,7 +39,10 @@ void main() {
     // No tip on the start page.
     expect(find.byType(SectionTipCard), findsNothing);
     await open('Aufgaben');
-    expect(find.textContaining('Checklisten und Fotos'), findsOneWidget);
+    expect(
+      find.textContaining('Checklisten, Fotos und Dateien'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Verstanden'));
     await tester.pumpAndSettle();
     expect(find.byType(SectionTipCard), findsNothing);
@@ -65,7 +68,10 @@ void main() {
     await SectionTips.setEnabled(true);
     await open('Start');
     await open('Aufgaben');
-    expect(find.textContaining('Checklisten und Fotos'), findsOneWidget);
+    expect(
+      find.textContaining('Checklisten, Fotos und Dateien'),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(seconds: 5));
   });
 }

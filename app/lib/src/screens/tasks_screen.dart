@@ -239,6 +239,8 @@ class _TaskTile extends StatelessWidget {
       if (task.due != null) DateFormat.MMMEd(appLanguage).format(task.due!),
       if (task.repeat case final r?) '↻ ${r.label(task.repeatEvery)}',
       if (task.checklistProgress case final p?) '☑ $p',
+      if (task.photos.where((f) => !f.isImage).length case final n when n > 0)
+        '📎 $n',
       if (!task.done && remind != null && remind.isAfter(DateTime.now()))
         '⏰ ${dateTimeLabel(remind)}',
       if (task.notes.isNotEmpty) task.notes.split('\n').first,
@@ -352,7 +354,8 @@ class _TaskTile extends StatelessWidget {
                 ),
               ),
             ),
-            if (task.photos.firstOrNull case final photo?) ...[
+            if (task.photos.where((f) => f.isImage).firstOrNull
+                case final photo?) ...[
               Semantics(
                 label: tr.commonPhoto,
                 child: SizedBox.square(
@@ -478,9 +481,10 @@ class _TaskEditorState extends State<_TaskEditor> {
     });
   }
 
-  /// Camera or gallery; uploaded right away, so the task stays small.
+  /// Camera, gallery or any file (PDF …); uploaded right away, so the task
+  /// stays small.
   Future<void> _addPhoto() async {
-    final picked = await pickFile(context, imagesOnly: true);
+    final picked = await pickFile(context);
     if (picked == null || !mounted) return;
     setState(() => _uploading = true);
     try {
@@ -746,7 +750,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                           )
                         : Tooltip(
                             message: tr.tasksAddPhoto,
-                            child: Icon(AppIcons.camera, color: color),
+                            child: Icon(AppIcons.paperclip, color: color),
                           ),
                   ),
                 ),
@@ -879,41 +883,66 @@ class _PhotoThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    return SizedBox.square(
-      dimension: 72,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Semantics(
-            button: true,
-            label: tr.tasksOpenPhoto,
-            child: GestureDetector(
-              onTap: () => openFileRef(context, photo),
-              child: CachedImage(photo, thumb: 160, radius: 14),
-            ),
-          ),
-          Positioned(
-            top: 2,
-            right: 2,
-            child: Material(
-              color: c.surface.withValues(alpha: 0.9),
-              shape: const CircleBorder(),
-              child: IconButton(
-                tooltip: tr.tasksRemovePhoto,
-                visualDensity: VisualDensity.compact,
-                iconSize: 16,
-                constraints: const BoxConstraints.tightFor(
-                  width: 28,
-                  height: 28,
+    final theme = Theme.of(context);
+    final open = Semantics(
+      button: true,
+      label: '${tr.tasksOpenPhoto}: ${photo.name}',
+      child: GestureDetector(
+        onTap: () => openFileRef(context, photo),
+        child: photo.isImage
+            ? CachedImage(photo, thumb: 160, radius: 14)
+            // Other files (PDF …) as their icon and name.
+            : Container(
+                height: 72,
+                constraints: const BoxConstraints(maxWidth: 200),
+                padding: const EdgeInsets.fromLTRB(10, 8, 32, 8),
+                decoration: BoxDecoration(
+                  color: c.tint(FamioSection.tasks),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                padding: EdgeInsets.zero,
-                icon: const Icon(AppIcons.x),
-                onPressed: onRemove,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      fileIcon(photo.mime),
+                      color: c.strong(FamioSection.tasks),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        photo.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ),
-        ],
       ),
     );
+    final remove = Positioned(
+      top: 2,
+      right: 2,
+      child: Material(
+        color: c.surface.withValues(alpha: 0.9),
+        shape: const CircleBorder(),
+        child: IconButton(
+          tooltip: tr.tasksRemovePhoto,
+          visualDensity: VisualDensity.compact,
+          iconSize: 16,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          icon: const Icon(AppIcons.x),
+          onPressed: onRemove,
+        ),
+      ),
+    );
+    return photo.isImage
+        ? SizedBox.square(
+            dimension: 72,
+            child: Stack(fit: StackFit.expand, children: [open, remove]),
+          )
+        : Stack(children: [open, remove]);
   }
 }

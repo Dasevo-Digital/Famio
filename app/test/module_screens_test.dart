@@ -321,7 +321,7 @@ void main() {
   });
 
   group('task photos', () {
-    testWidgets('a photo shows in the list and can be taken off', (
+    testWidgets('photos and files show in the list and can be taken off', (
       tester,
     ) async {
       await open(tester, section: 'Aufgaben');
@@ -331,23 +331,35 @@ void main() {
           title: 'Regal aufbauen',
           photos: [
             FileRef(id: 'f1', name: 'regal.jpg', mime: 'image/jpeg', size: 9),
+            FileRef(
+              id: 'f2',
+              name: 'Anleitung.pdf',
+              mime: 'application/pdf',
+              size: 9,
+            ),
           ],
         ),
       );
       await _pumpData(tester);
+      // The photo as thumbnail, the PDF counted.
       expect(find.byType(CachedImage), findsOneWidget);
+      expect(find.textContaining('📎 1'), findsOneWidget);
       await tester.tap(find.text('Regal aufbauen'));
       await tester.pumpAndSettle();
-      expect(find.text('Fotos'), findsOneWidget);
-      expect(find.byTooltip('Foto anhängen'), findsOneWidget);
-      await tester.tap(find.byTooltip('Foto entfernen'));
+      expect(find.text('Fotos und Dateien'), findsOneWidget);
+      expect(find.text('Anleitung.pdf'), findsOneWidget);
+      expect(find.byTooltip('Foto oder Datei anhängen'), findsOneWidget);
+      await tester.tap(find.byTooltip('Anhang entfernen').first);
       await tester.pump();
       // The editor is longer than the screen.
       await tester.ensureVisible(find.text('Speichern'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Speichern'));
       await tester.pumpAndSettle();
-      expect(engine.tasks.single.photos, isEmpty);
+      expect(
+        [for (final f in engine.tasks.single.photos) f.name],
+        ['Anleitung.pdf'],
+      );
       expect(find.byType(CachedImage), findsNothing);
       await tester.pump(const Duration(seconds: 5));
     });

@@ -45,7 +45,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
 | Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
 | App-Updates über den eigenen Server (Android, Windows, Linux; signiert) | ✅ |
-| Aufgaben (fällig, eine oder mehrere zuständige Personen, wer sie sieht, Erinnerung, Wiederholung, Checkliste, Fotos) | ✅ |
+| Aufgaben (fällig, eine oder mehrere zuständige Personen, wer sie sieht, Erinnerung, Wiederholung, Checkliste, Fotos und Dateien wie PDFs) | ✅ |
 | Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien; „Öffnen mit Famio“ aus Mail und Dateien auf allen Geräten) | ✅ |

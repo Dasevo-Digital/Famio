@@ -13,15 +13,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Map<String, String> _texts(String file) => {
   for (final e
-      in (jsonDecode(File('lib/l10n/$file').readAsStringSync()) as Map)
-          .entries)
+      in (jsonDecode(File('lib/l10n/$file').readAsStringSync()) as Map).entries)
     if (!(e.key as String).startsWith('@')) e.key as String: e.value as String,
 };
 
 /// `{name}` placeholders, also the variable of a plural.
-Set<String> _placeholders(String text) => {
-  for (final m in RegExp(r'\{(\w+)(?=[},])').allMatches(text)) m[1]!,
-}..remove('other');
+Set<String> _placeholders(String text) =>
+    {for (final m in RegExp(r'\{(\w+)(?=[},])').allMatches(text)) m[1]!}
+      ..remove('other');
 
 void main() {
   setUpAll(initializeDateFormatting);
