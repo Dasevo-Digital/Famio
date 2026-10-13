@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
+import 'package:http/http.dart' as http;
+import 'package:http/retry.dart';
 import 'package:web/web.dart' as web;
 
 /// Hands a file to the browser as a download.
@@ -42,5 +45,52 @@ void setTabValue(String key, String? value) {
         : web.window.sessionStorage.setItem(key, value);
   } catch (_) {
     // Storage blocked: sign in again after a reload.
+  }
+}
+
+/// For map tiles: OpenStreetMap refuses browser requests without a
+/// Referer (its tile usage policy) and answers with an "Access blocked"
+/// image, but the web app sends none ("no-referrer"). Tile requests send
+/// only the origin of the Famio server, never a path.
+http.Client? get mapTileClient => _mapTileClient;
+final _mapTileClient = RetryClient(_OriginReferrerClient());
+
+class _OriginReferrerClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final abort = web.AbortController();
+    if (request case http.Abortable(:final abortTrigger?)) {
+      unawaited(abortTrigger.whenComplete(() => abort.abort()));
+    }
+    final headers = web.Headers();
+    request.headers.forEach((name, value) => headers.append(name, value));
+    final body = await request.finalize().toBytes();
+    try {
+      final response = await web.window
+          .fetch(
+            request.url.toString().toJS,
+            web.RequestInit(
+              method: request.method,
+              headers: headers,
+              body: body.isEmpty ? null : body.toJS,
+              referrerPolicy: 'strict-origin',
+              credentials: 'omit',
+              signal: abort.signal,
+            ),
+          )
+          .toDart;
+      final bytes = (await response.arrayBuffer().toDart).toDart.asUint8List();
+      return http.StreamedResponse(
+        Stream.value(bytes),
+        response.status,
+        contentLength: bytes.length,
+        request: request,
+        reasonPhrase: response.statusText,
+        headers: {'content-type': ?response.headers.get('content-type')},
+      );
+    } catch (e) {
+      if (abort.signal.aborted) throw http.RequestAbortedException(request.url);
+      throw http.ClientException('$e', request.url);
+    }
   }
 }

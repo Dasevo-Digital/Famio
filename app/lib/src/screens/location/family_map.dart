@@ -277,6 +277,11 @@ const _osmTiles = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 Widget tileLayer(BuildContext context) => TileLayer(
   urlTemplate: AppScope.of(context).mapTileUrl ?? _osmTiles,
   userAgentPackageName: 'de.status403.famio',
+  // In the browser with the server's origin as Referer (see mapTileClient).
+  tileProvider: switch (mapTileClient) {
+    final client? => NetworkTileProvider(httpClient: client),
+    null => null,
+  },
   maxZoom: 19,
 );
 

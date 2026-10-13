@@ -1,3 +1,5 @@
+import 'package:http/http.dart' as http;
+
 /// Browser-only helpers; the installed apps never call them.
 void downloadBytes(List<int> bytes, String name, String mime) =>
     throw UnsupportedError('Only in the web app');
@@ -9,3 +11,6 @@ Uri? get pageUrl => null;
 String? tabValue(String key) => null;
 
 void setTabValue(String key, String? value) {}
+
+/// The installed apps load map tiles with flutter_map's own client.
+http.Client? get mapTileClient => null;
