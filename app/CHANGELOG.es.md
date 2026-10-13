@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.4 – Archivos en las tareas
+
+- Además de fotos, las tareas pueden llevar PDF y otros archivos, como un
+  formulario o unas instrucciones.
+- En «¿Quién está dónde?» los adultos pueden ocultar a los miembros sin
+  móvil, para toda la familia. «Ocultos» los vuelve a mostrar.
+- Tras una actualización, la app web carga enseguida la nueva versión.
+
 ## 2.0.3 – Tareas para varias personas
 
 - Una tarea puede ser de varias personas. Cada una recibe el recordatorio

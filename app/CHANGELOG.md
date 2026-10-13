@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.4 – Dateien an Aufgaben
+
+- An Aufgaben lassen sich neben Fotos auch PDFs und andere Dateien
+  hängen, etwa ein Formular oder eine Anleitung.
+- In „Wo ist wer?“ können Erwachsene Mitglieder ohne Handy ausblenden,
+  für die ganze Familie. Unter „Ausgeblendet“ kommen sie zurück.
+- Nach einem Update lädt die Web-App sofort die neue Version.
+
 ## 2.0.3 – Aufgaben für mehrere
 
 - Eine Aufgabe kann mehreren Personen gehören. Jede bekommt die

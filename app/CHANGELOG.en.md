@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.4 – Files on tasks
+
+- Besides photos, tasks can now have PDFs and other files, such as a form
+  or instructions.
+- In "Who is where?" adults can hide members without a phone, for the
+  whole family. "Hidden" brings them back.
+- After an update the web app loads the new version right away.
+
 ## 2.0.3 – Tasks for several people
 
 - A task can belong to several people. Each gets the reminder and finds
