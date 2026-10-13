@@ -9,6 +9,7 @@ import '../app_state.dart';
 import '../data/family_data.dart';
 import '../design/components.dart';
 import '../widgets/famio_glyph.dart';
+import '../widgets/pixel_snap.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
@@ -433,31 +434,37 @@ class _Logo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final showName = size >= 42;
+    // Its place comes from the window height and often lands between two
+    // pixels: on whole pixels the edges stay sharp.
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        AnimatedContainer(
-          duration: _railAnimationDuration(context),
-          curve: Curves.easeOutCubic,
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFFFFB38A), Color(0xFFF26B8F)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        PixelSnap(
+          child: AnimatedContainer(
+            duration: _railAnimationDuration(context),
+            curve: Curves.easeOutCubic,
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFFFFB38A), Color(0xFFF26B8F)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(size * 0.34),
             ),
-            borderRadius: BorderRadius.circular(size * 0.34),
+            child: FamioGlyph(size: size),
           ),
-          child: FamioGlyph(size: size),
         ),
         if (showName) ...[
           const SizedBox(height: 4),
-          Text(
-            AppEnv.appName,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontSize: (size * 0.36).clamp(14.0, 18.0).toDouble(),
+          PixelSnap(
+            child: Text(
+              AppEnv.appName,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: (size * 0.36).clamp(14.0, 18.0).toDouble(),
+              ),
             ),
           ),
         ],
@@ -508,16 +515,18 @@ class _RailItem extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Badge(
-                    count: badge,
-                    child: AnimatedScale(
-                      duration: _railAnimationDuration(context),
-                      curve: Curves.easeOutCubic,
-                      scale: selected ? 1.07 : 1,
-                      child: Icon(
-                        section.icon,
-                        color: selected ? color : c.inkSoft,
-                        size: iconSize,
+                  PixelSnap(
+                    child: _Badge(
+                      count: badge,
+                      child: AnimatedScale(
+                        duration: _railAnimationDuration(context),
+                        curve: Curves.easeOutCubic,
+                        scale: selected ? 1.07 : 1,
+                        child: Icon(
+                          section.icon,
+                          color: selected ? color : c.inkSoft,
+                          size: iconSize,
+                        ),
                       ),
                     ),
                   ),
@@ -525,20 +534,22 @@ class _RailItem extends StatelessWidget {
                     SizedBox(
                       height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
                     ),
-                    AnimatedDefaultTextStyle(
-                      duration: _railAnimationDuration(context),
-                      curve: Curves.easeOutCubic,
-                      maxLines: 1,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                      style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                        color: selected ? c.ink : c.inkSoft,
-                        fontSize: labelSize,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w700,
+                    PixelSnap(
+                      child: AnimatedDefaultTextStyle(
+                        duration: _railAnimationDuration(context),
+                        curve: Curves.easeOutCubic,
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                        style: Theme.of(context).textTheme.labelSmall!.copyWith(
+                          color: selected ? c.ink : c.inkSoft,
+                          fontSize: labelSize,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w700,
+                        ),
+                        child: Text(section.title(context)),
                       ),
-                      child: Text(section.title(context)),
                     ),
                   ],
                 ],
