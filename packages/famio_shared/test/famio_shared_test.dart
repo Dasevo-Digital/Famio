@@ -53,7 +53,7 @@ void main() {
       id: 'x',
       title: 'a',
       due: DateTime(2026),
-      assigneeId: 'm',
+      assigneeIds: ['m'],
     );
     expect(task.copyWith(title: 'b').due, DateTime(2026));
     expect(task.copyWith(due: null).due, isNull);

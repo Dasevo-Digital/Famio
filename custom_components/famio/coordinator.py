@@ -274,6 +274,16 @@ def _recent(value: str | None) -> bool:
     return when is not None and dt_util.utcnow() - when < EVENT_MAX_AGE
 
 
+def assignees(task: dict[str, Any]) -> list[str]:
+    """Who takes care of a task: "assigneeIds" (since 2.0.3) or the single
+    "assigneeId" of older apps, which wins when it no longer leads the list."""
+    first = task.get("assigneeId")
+    ids = [i for i in task.get("assigneeIds") or [] if isinstance(i, str)]
+    if ids and ids[0] == first:
+        return ids
+    return [first] if isinstance(first, str) else []
+
+
 def parse_start(occurrence: dict[str, Any]) -> datetime:
     return _parse(occurrence["start"], occurrence.get("allDay", False))
 

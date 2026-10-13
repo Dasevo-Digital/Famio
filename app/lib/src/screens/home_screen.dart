@@ -700,8 +700,8 @@ class _TasksTile extends StatelessWidget {
       ..sort((a, b) {
         // Mine first, then by due date.
         final mine =
-            (b.assigneeId == engine.memberId ? 1 : 0) -
-            (a.assigneeId == engine.memberId ? 1 : 0);
+            (b.isAssignedTo(engine.memberId) ? 1 : 0) -
+            (a.isAssignedTo(engine.memberId) ? 1 : 0);
         if (mine != 0) return mine;
         return (a.due ?? DateTime(9999)).compareTo(b.due ?? DateTime(9999));
       });

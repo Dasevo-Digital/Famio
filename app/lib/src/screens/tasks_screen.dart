@@ -55,7 +55,7 @@ class _TasksScreenState extends State<TasksScreen> {
         id: newId(),
         title: title,
         createdAt: DateTime.now(),
-        assigneeId: _filter == _Filter.mine ? engine.memberId : null,
+        assigneeIds: [if (_filter == _Filter.mine) engine.memberId],
       ),
     );
     _quickAdd.clear();
@@ -182,7 +182,7 @@ class _TasksScreenState extends State<TasksScreen> {
     final open = all.where(
       (t) =>
           !t.done &&
-          (_filter != _Filter.mine || t.assigneeId == engine.memberId),
+          (_filter != _Filter.mine || t.isAssignedTo(engine.memberId)),
     );
     final today = DateUtils.dateOnly(DateTime.now());
     final overdue = <Task>[],
@@ -227,7 +227,7 @@ class _TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = FamioColors.of(context);
-    final assignee = engine.member(task.assigneeId);
+    final assignees = [for (final id in task.assigneeIds) ?engine.member(id)];
     final overdue =
         !task.done &&
         task.due != null &&
@@ -308,14 +308,36 @@ class _TaskTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      task.title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        decoration: task.done
-                            ? TextDecoration.lineThrough
-                            : null,
-                        color: task.done ? c.inkSoft : null,
-                      ),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            task.title,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              decoration: task.done
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              color: task.done ? c.inkSoft : null,
+                            ),
+                          ),
+                        ),
+                        if (task.visibleTo case final ids?) ...[
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: tr.caldavVisibleWho(
+                              [
+                                for (final id in ids)
+                                  ?engine.member(id)?.displayName,
+                              ].join(', '),
+                            ),
+                            child: Icon(
+                              AppIcons.lockKey,
+                              size: 16,
+                              color: c.inkSoft,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     if (subtitle.isNotEmpty)
                       Text(
@@ -340,7 +362,7 @@ class _TaskTile extends StatelessWidget {
               ),
               const SizedBox(width: 8),
             ],
-            if (assignee != null) MemberAvatar(assignee),
+            if (assignees.isNotEmpty) _Assignees(assignees),
           ],
         ),
       ),
@@ -349,6 +371,43 @@ class _TaskTile extends StatelessWidget {
 }
 
 /// Bottom sheet to create or edit a task.
+/// Up to three people taking care of a task, overlapping.
+class _Assignees extends StatelessWidget {
+  const _Assignees(this.members);
+
+  final List<FamilyMember> members;
+
+  @override
+  Widget build(BuildContext context) {
+    final shown = members.take(3).toList();
+    return Semantics(
+      label: members.map((m) => m.displayName).join(', '),
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (i, m) in shown.indexed)
+              Align(
+                widthFactor: i == shown.length - 1 ? 1 : 0.7,
+                child: MemberAvatar(m),
+              ),
+            if (members.length > shown.length)
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  '+${members.length - shown.length}',
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _Audience { family, me, selected }
+
 Future<void> showTaskEditor(BuildContext context, {Task? task}) =>
     showModalBottomSheet<void>(
       context: context,
@@ -384,7 +443,16 @@ class _TaskEditorState extends State<_TaskEditor> {
   late final _title = TextEditingController(text: widget.task?.title);
   late final _notes = TextEditingController(text: widget.task?.notes);
   late DateTime? _due = widget.task?.due;
-  late String? _assigneeId = widget.task?.assigneeId;
+  late final _assignees = [...?widget.task?.assigneeIds];
+
+  /// Who else may see it, apart from me and whoever takes care of it.
+  late final _seers = {...?widget.task?.visibleTo}
+    ..removeAll([..._assignees, AppScope.engineOf(context).memberId]);
+  late var _audience = widget.task?.visibleTo == null
+      ? _Audience.family
+      : _seers.isEmpty
+      ? _Audience.me
+      : _Audience.selected;
   late DateTime? _remindAt = widget.task?.remindAt;
   late TaskRepeat? _repeat = widget.task?.repeat;
   late int _repeatEvery = widget.task?.repeatEvery ?? 1;
@@ -444,7 +512,17 @@ class _TaskEditorState extends State<_TaskEditor> {
         due: _repeat != null && _due == null
             ? DateUtils.dateOnly(DateTime.now())
             : _due,
-        assigneeId: _assigneeId,
+        assigneeIds: [..._assignees],
+        // Whoever takes care of it always sees it (the server adds them too).
+        visibleTo: switch (_audience) {
+          _Audience.family => null,
+          _Audience.me => {engine.memberId, ..._assignees}.toList(),
+          _Audience.selected => {
+            engine.memberId,
+            ..._seers,
+            ..._assignees,
+          }.toList(),
+        },
         remindAt: _remindAt,
         repeat: _repeat,
         repeatEvery: _repeatEvery,
@@ -682,19 +760,79 @@ class _TaskEditorState extends State<_TaskEditor> {
                 ChoiceChip(
                   avatar: const Icon(AppIcons.usersThree, size: 18),
                   label: Text(tr.commonEveryone),
-                  selected: _assigneeId == null,
+                  selected: _assignees.isEmpty,
                   selectedColor: c.tint(FamioSection.tasks),
-                  onSelected: (_) => setState(() => _assigneeId = null),
+                  onSelected: (_) => setState(_assignees.clear),
                 ),
+                // Several people can share a task.
                 for (final m in engine.members)
-                  ChoiceChip(
+                  FilterChip(
                     avatar: MemberAvatar(m, radius: 10),
                     label: Text(m.displayName),
-                    selected: _assigneeId == m.id,
+                    selected: _assignees.contains(m.id),
                     selectedColor: c.tint(FamioSection.tasks),
-                    onSelected: (_) => setState(() => _assigneeId = m.id),
+                    onSelected: (on) => setState(
+                      () => on ? _assignees.add(m.id) : _assignees.remove(m.id),
+                    ),
                   ),
               ],
+            ),
+            ListHeading(tr.commonWhoMaySee),
+            RadioGroup<_Audience>(
+              groupValue: _audience,
+              onChanged: (v) => setState(() => _audience = v!),
+              child: Column(
+                children: [
+                  RadioListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _Audience.family,
+                    title: Text(tr.tasksWholeFamily),
+                  ),
+                  RadioListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _Audience.me,
+                    title: Text(tr.docsOnlyMe),
+                  ),
+                  if (engine.members.length > 1)
+                    RadioListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _Audience.selected,
+                      title: Text(tr.docsMe),
+                    ),
+                ],
+              ),
+            ),
+            if (_audience == _Audience.selected)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in engine.members)
+                    if (m.id != engine.memberId)
+                      FilterChip(
+                        avatar: MemberAvatar(m, radius: 10),
+                        label: Text(m.displayName),
+                        selected:
+                            _seers.contains(m.id) || _assignees.contains(m.id),
+                        selectedColor: c.tint(FamioSection.tasks),
+                        // Whoever takes care of it sees it anyway.
+                        onSelected: _assignees.contains(m.id)
+                            ? null
+                            : (on) => setState(
+                                () =>
+                                    on ? _seers.add(m.id) : _seers.remove(m.id),
+                              ),
+                      ),
+                ],
+              ),
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                tr.tasksAudienceHint,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+              ),
             ),
             const SizedBox(height: 24),
             Row(

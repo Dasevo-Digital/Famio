@@ -2264,5 +2264,7 @@
   "tipMeals": "One tap puts the week's ingredients from the meal plan on the shopping list. Recipes show what is already in the pantry.",
   "tipBudget": "Bank statements from online banking (CSV or CAMT) can be imported and are sorted into categories.",
   "tipHealth": "For each medication you decide who sees it and gets reminded to take it.",
-  "tipChat": "In the chat you can also start polls, for example for the next outing."
+  "tipChat": "In the chat you can also start polls, for example for the next outing.",
+  "tasksWholeFamily": "Whole family (not guests)",
+  "tasksAudienceHint": "Whoever takes care of a task always sees it. Guests only see tasks assigned or shown to them."
 }

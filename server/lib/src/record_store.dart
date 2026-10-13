@@ -35,7 +35,37 @@ class RecordStore {
   bool canAccess(SyncRecord r, String userId) =>
       _canSee(r, userId) &&
       (_role(userId) != MemberRole.guest ||
-          Collections.guestReadable.contains(r.collection));
+          (Collections.guestReadable.contains(r.collection) &&
+              _guestMaySee(r, userId)));
+
+  /// Guests see a task of the whole family only if it is assigned to them;
+  /// others they see when its audience names them.
+  static bool _guestMaySee(SyncRecord r, String guestId) =>
+      r.collection != Collections.tasks ||
+      r.visibleTo != null ||
+      Task.assigneesIn(r.data).contains(guestId);
+
+  /// [_guestMaySee] in SQL, for a guest's id as `?2`.
+  static const _guestTasksSql =
+      " AND (collection != '${Collections.tasks}' OR visible_to IS NOT NULL"
+      " OR json_extract(data, '\$.assigneeId') = ?2"
+      " OR EXISTS (SELECT 1 FROM json_each(data, '\$.assigneeIds')"
+      ' WHERE value = ?2))';
+
+  /// Who receives [r]: its audience; for a task of the whole family while
+  /// there are guests, everyone but the guests it is not assigned to; else
+  /// null for everyone.
+  List<String>? _audience(SyncRecord r) {
+    if (r.visibleTo case final ids?) return ids;
+    if (r.collection != Collections.tasks) return null;
+    final members = memberIds();
+    if (!members.any((m) => _role(m) == MemberRole.guest)) return null;
+    final assigned = Task.assigneesIn(r.data);
+    return [
+      for (final m in members)
+        if (_role(m) != MemberRole.guest || assigned.contains(m)) m,
+    ];
+  }
 
   /// Whether [role] may store [incoming] (over [existing]).
   static bool mayWrite(
@@ -357,6 +387,21 @@ class RecordStore {
           rejected.add(existing);
           continue;
         }
+        if (change.collection == Collections.tasks && !incoming.deleted) {
+          incoming = _taskAudience(incoming, existing);
+          if (role == MemberRole.guest &&
+              incoming.visibleTo == null &&
+              !Task.assigneesIn(incoming.data).contains(userId)) {
+            // Guests see family tasks only when assigned; one they write
+            // for the family stays visible to them.
+            incoming = incoming.copyWith(
+              data: {
+                ...incoming.data,
+                SyncRecord.visibilityKey: [...?_audience(incoming), userId],
+              },
+            );
+          }
+        }
         if (incoming.deleted) {
           // Tombstones keep the old audience: only they need to know.
           incoming = incoming.copyWith(
@@ -406,11 +451,12 @@ class RecordStore {
     final only = role == MemberRole.guest
         ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
         : '';
+    final tasks = role == MemberRole.guest ? _guestTasksSql : '';
     final rows = _db.select(
       '''
       SELECT collection, id, data, deleted, updated_at, updated_by, rev
         FROM records
-       WHERE rev > ?1 $only
+       WHERE rev > ?1 $only $tasks
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
       UNION ALL
@@ -433,6 +479,27 @@ class RecordStore {
       hasMore: hasMore,
       reset: reset,
     );
+  }
+
+  static const _guestTasksKey = 'guestTasksRestricted';
+
+  /// Until 2.0.3 guests saw every task. Once, takes the tasks of the whole
+  /// family that are not assigned to them off their devices.
+  void restrictGuestTasks() {
+    if (_setting(_guestTasksKey) != null) return;
+    final members = memberIds();
+    _transaction(() {
+      if (members.any((m) => _role(m) == MemberRole.guest)) {
+        for (final r in all(Collections.tasks)) {
+          if (r.visibleTo == null) _put(r, previous: r, before: members);
+        }
+      }
+      _db.execute(
+        'INSERT INTO settings (key, value) VALUES (?, ?)'
+        ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        [_guestTasksKey, '1'],
+      );
+    });
   }
 
   /// Undecided conflicts go away after this long.
@@ -516,9 +583,13 @@ class RecordStore {
   /// Writes [r] with the next revision and updates revocations: members who
   /// could see [previous] but not [r] get a tombstone, members who regain
   /// access lose their revocation.
-  void _put(SyncRecord r, {required SyncRecord? previous}) {
+  void _put(
+    SyncRecord r, {
+    required SyncRecord? previous,
+    List<String>? before,
+  }) {
     final rev = currentRev + 1;
-    final audience = r.visibleTo;
+    final stored = r.visibleTo;
     _db.execute(
       'INSERT OR REPLACE INTO records'
       ' (collection, id, data, deleted, updated_at, updated_by, rev, visible_to)'
@@ -531,10 +602,11 @@ class RecordStore {
         r.updatedAt,
         r.updatedBy,
         rev,
-        audience == null ? null : jsonEncode(audience),
+        stored == null ? null : jsonEncode(stored),
       ],
     );
 
+    final audience = _audience(r);
     if (audience == null) {
       _db.execute('DELETE FROM revocations WHERE collection = ? AND id = ?', [
         r.collection,
@@ -549,14 +621,34 @@ class RecordStore {
       );
     }
     if (previous == null || previous.deleted) return;
-    final before = previous.visibleTo ?? memberIds();
-    for (final member in before.where((m) => !audience.contains(m))) {
+    final had = before ?? _audience(previous) ?? memberIds();
+    for (final member in had.where((m) => !audience.contains(m))) {
       _db.execute(
         'INSERT OR REPLACE INTO revocations (member_id, collection, id, rev)'
         ' VALUES (?, ?, ?, ?)',
         [member, r.collection, r.id, rev],
       );
     }
+  }
+
+  /// Apps before 2.0.3 know nothing of who sees a task and leave the key
+  /// out; their changes keep the stored audience. Whoever takes care of a
+  /// task always sees it.
+  static SyncRecord _taskAudience(SyncRecord incoming, SyncRecord? existing) {
+    final data = {...incoming.data};
+    if (!data.containsKey(SyncRecord.visibilityKey) &&
+        existing != null &&
+        !existing.deleted &&
+        existing.visibleTo != null) {
+      data[SyncRecord.visibilityKey] = existing.visibleTo;
+    }
+    if (data[SyncRecord.visibilityKey] case final List<Object?> ids) {
+      data[SyncRecord.visibilityKey] = {
+        ...ids.whereType<String>(),
+        ...Task.assigneesIn(data),
+      }.toList();
+    }
+    return incoming.copyWith(data: data);
   }
 
   /// [ServiceAccess.everyday]: shopping lists' items, ticking off existing
@@ -619,7 +711,7 @@ class RecordStore {
         'SELECT * FROM records WHERE collection = ? AND deleted = 0',
         [collection],
       ))
-        if (visibleToMember == null || _canSee(_record(row), visibleToMember))
+        if (visibleToMember == null || canAccess(_record(row), visibleToMember))
           _record(row),
     ];
   }
@@ -627,8 +719,10 @@ class RecordStore {
   /// Whether a live record visible to [memberId] mentions [text] (e.g. a
   /// file id) in its data. Used to authorise file downloads.
   bool referencedFor(String text, String memberId) {
-    final only = _role(memberId) == MemberRole.guest
+    final guest = _role(memberId) == MemberRole.guest;
+    final only = guest
         ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
+              '$_guestTasksSql'
         : '';
     final rows = _db.select(
       '''

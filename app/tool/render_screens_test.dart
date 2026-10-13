@@ -387,7 +387,7 @@ void _seed(SyncEngine e) {
       Task(
         id: 't$i',
         title: t.$1,
-        assigneeId: t.$2,
+        assigneeIds: [?t.$2],
         due: t.$3 == null ? null : today.add(Duration(days: t.$3!)),
         createdAt: now,
       ),

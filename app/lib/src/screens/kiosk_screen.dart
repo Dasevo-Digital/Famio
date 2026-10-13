@@ -744,7 +744,7 @@ class _PeopleBoard extends StatelessWidget {
         ],
         tasks: [
           for (final t in openTasks)
-            if (t.assigneeId == null || !ids.contains(t.assigneeId)) t,
+            if (!t.assigneeIds.any(ids.contains)) t,
         ],
       ),
       for (final m in members)
@@ -779,7 +779,7 @@ class _PeopleBoard extends StatelessWidget {
           ],
           tasks: [
             for (final t in openTasks)
-              if (t.assigneeId == m.id) t,
+              if (t.isAssignedTo(m.id)) t,
           ],
           extra: [
             if (on(FamioSection.chores)) ...[

@@ -306,15 +306,18 @@ class PushService {
 
   PushNotice? _task(SyncRecord r, SyncRecord? before, String editor) {
     final task = Task.fromRecord(r);
-    final assignee = task.assigneeId;
-    if (assignee == null || assignee == editor || task.done) return null;
-    if (before != null &&
-        !before.deleted &&
-        before.data['assigneeId'] == assignee) {
-      return null;
-    }
+    if (task.done) return null;
+    // Only whoever was just given the task.
+    final to = task.assigneeIds.toSet()
+      ..remove(editor)
+      ..removeAll(
+        before == null || before.deleted
+            ? const <String>[]
+            : Task.assigneesIn(before.data),
+      );
+    if (to.isEmpty) return null;
     return PushNotice(
-      to: {assignee},
+      to: to,
       title: t('Neue Aufgabe für dich'),
       body: task.title,
       brief: t('Neue Aufgabe für dich'),

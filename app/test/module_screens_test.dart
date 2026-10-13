@@ -256,6 +256,9 @@ void main() {
         find.widgetWithText(TextField, 'Punkt hinzufügen, z. B. Sonnencreme'),
         'Handtuch',
       );
+      // The editor is longer than the screen.
+      await tester.ensureVisible(find.text('Speichern'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Speichern'));
       await tester.pumpAndSettle();
       final task = engine.tasks.single;
@@ -263,6 +266,57 @@ void main() {
         [for (final s in task.checklist) (s.text, s.done)],
         [('Badesachen', true), ('Sonnencreme', true), ('Handtuch', false)],
       );
+    });
+  });
+
+  group('task people', () {
+    testWidgets('several take care of a task, only they and I see it', (
+      tester,
+    ) async {
+      await open(tester, section: 'Aufgaben');
+      engine.saveTask(const Task(id: 't1', title: 'Garage aufräumen'));
+      await _pumpData(tester);
+      await tester.tap(find.text('Garage aufräumen'));
+      await tester.pumpAndSettle();
+      Finder chip(String name) => find.widgetWithText(FilterChip, name).first;
+      for (final name in ['Papa', 'Mia']) {
+        await tester.ensureVisible(chip(name));
+        await tester.tap(chip(name));
+        await tester.pump();
+      }
+      await tester.ensureVisible(find.text('Nur ich'));
+      await tester.tap(find.text('Nur ich'));
+      await tester.pump();
+      expect(find.textContaining('sieht die Aufgabe immer'), findsOneWidget);
+      await tester.ensureVisible(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final task = engine.tasks.single;
+      expect(task.assigneeIds, ['m2', 'k1']);
+      expect(task.visibleTo, unorderedEquals(['m1', 'm2', 'k1']));
+      // Both on the card, with the lock.
+      expect(find.byTooltip('Papa'), findsOneWidget);
+      expect(find.byTooltip('Mia'), findsOneWidget);
+      expect(find.byTooltip('Sichtbar für: Mama, Papa, Mia'), findsOneWidget);
+
+      // Opened again: "Only me" is still chosen; back to the family.
+      await tester.tap(find.text('Garage aufräumen'));
+      await tester.pumpAndSettle();
+      final onlyMe = tester.widget<RadioGroup<Object?>>(
+        find.byWidgetPredicate((w) => w is RadioGroup),
+      );
+      expect('${onlyMe.groupValue}', endsWith('.me'));
+      await tester.ensureVisible(find.text('Ganze Familie (ohne Gäste)'));
+      await tester.tap(find.text('Ganze Familie (ohne Gäste)'));
+      await tester.pump();
+      await tester.ensureVisible(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.tasks.single.visibleTo, isNull);
+      expect(engine.tasks.single.assigneeIds, ['m2', 'k1']);
+      await tester.pump(const Duration(seconds: 5));
     });
   });
 
@@ -288,6 +342,9 @@ void main() {
       expect(find.byTooltip('Foto anhängen'), findsOneWidget);
       await tester.tap(find.byTooltip('Foto entfernen'));
       await tester.pump();
+      // The editor is longer than the screen.
+      await tester.ensureVisible(find.text('Speichern'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Speichern'));
       await tester.pumpAndSettle();
       expect(engine.tasks.single.photos, isEmpty);

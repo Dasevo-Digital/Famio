@@ -74,6 +74,7 @@ Map<String, String> get _fieldLabels => {
   'amount': tr.commonAmount,
   'memberIds': tr.commonWho,
   'assigneeId': tr.commonResponsible,
+  'assigneeIds': tr.commonResponsible,
   'recurrence': tr.commonRepeat,
   'reminderMinutes': tr.commonReminder,
 };

@@ -10,7 +10,8 @@ class Task {
     this.notes = '',
     this.done = false,
     this.due,
-    this.assigneeId,
+    this.assigneeIds = const [],
+    this.visibleTo,
     this.completedAt,
     this.createdAt,
     this.remindAt,
@@ -26,7 +27,8 @@ class Task {
     notes: r.data['notes'] as String? ?? '',
     done: r.data['done'] as bool? ?? false,
     due: _date(r.data['due']),
-    assigneeId: r.data['assigneeId'] as String?,
+    assigneeIds: assigneesIn(r.data),
+    visibleTo: r.visibleTo,
     completedAt: _date(r.data['completedAt']),
     createdAt: _date(r.data['createdAt']),
     remindAt: _date(r.data['remindAt'])?.toLocal(),
@@ -47,7 +49,14 @@ class Task {
   final String notes;
   final bool done;
   final DateTime? due;
-  final String? assigneeId;
+
+  /// Who takes care of it; empty: everyone.
+  final List<String> assigneeIds;
+
+  /// Who may see it (see [SyncRecord.visibleTo]); null: the whole family
+  /// apart from guests, who only see tasks assigned or shown to them.
+  final List<String>? visibleTo;
+
   final DateTime? completedAt;
   final DateTime? createdAt;
 
@@ -67,6 +76,24 @@ class Task {
   /// Photos for the task (what to buy, where it is, how it should look).
   final List<FileRef> photos;
 
+  /// The first of [assigneeIds], all that apps before 2.0.3 know.
+  String? get assigneeId => assigneeIds.firstOrNull;
+
+  bool isAssignedTo(String memberId) => assigneeIds.contains(memberId);
+
+  /// Who takes care of the task stored as [data]: `assigneeIds`, or the
+  /// single `assigneeId` of apps before 2.0.3. When such an app changed
+  /// the person, its `assigneeId` no longer leads the list and wins.
+  static List<String> assigneesIn(Map<String, Object?> data) {
+    final first = data['assigneeId'];
+    final ids = [
+      for (final id in data['assigneeIds'] as List? ?? const [])
+        if (id is String) id,
+    ];
+    if (ids.isNotEmpty && ids.first == first) return ids;
+    return [if (first is String) first];
+  }
+
   /// "2/5" for the list.
   String? get checklistProgress => checklist.isEmpty
       ? null
@@ -78,7 +105,8 @@ class Task {
     String? notes,
     bool? done,
     Object? due = _keep,
-    Object? assigneeId = _keep,
+    List<String>? assigneeIds,
+    Object? visibleTo = _keep,
     Object? completedAt = _keep,
     Object? remindAt = _keep,
     Object? repeat = _keep,
@@ -91,7 +119,8 @@ class Task {
     notes: notes ?? this.notes,
     done: done ?? this.done,
     due: due == _keep ? this.due : due as DateTime?,
-    assigneeId: assigneeId == _keep ? this.assigneeId : assigneeId as String?,
+    assigneeIds: assigneeIds ?? this.assigneeIds,
+    visibleTo: visibleTo == _keep ? this.visibleTo : visibleTo as List<String>?,
     completedAt: completedAt == _keep
         ? this.completedAt
         : completedAt as DateTime?,
@@ -136,6 +165,10 @@ class Task {
     'done': done,
     'due': due?.toIso8601String(),
     'assigneeId': assigneeId,
+    if (assigneeIds.length > 1) 'assigneeIds': assigneeIds,
+    // Always written, also as null: the server keeps the audience only
+    // when older apps, which do not know it, leave it out.
+    SyncRecord.visibilityKey: visibleTo,
     'completedAt': completedAt?.toIso8601String(),
     'createdAt': createdAt?.toIso8601String(),
     'remindAt': remindAt?.toUtc().toIso8601String(),

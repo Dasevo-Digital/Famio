@@ -19,7 +19,7 @@ from homeassistant.util import dt as dt_util
 
 from .api import FamioError
 from .const import SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
-from .coordinator import FamioConfigEntry, FamioCoordinator
+from .coordinator import FamioConfigEntry, FamioCoordinator, assignees
 from .entity import FamioEntity, FamioMemberEntity
 
 _ALL = (
@@ -128,7 +128,7 @@ class FamioTasks(FamioEntity, TodoListEntity):
         tasks = {
             task_id: task
             for task_id, task in self.coordinator.data.collection(TASKS).items()
-            if self._assignee is None or task.get("assigneeId") == self._assignee
+            if self._assignee is None or self._assignee in assignees(task)
         }
         items = [
             TodoItem(

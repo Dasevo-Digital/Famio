@@ -18,7 +18,7 @@ from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .const import POINT_ENTRIES, SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
-from .coordinator import FamioConfigEntry, FamioCoordinator, parse_start
+from .coordinator import FamioConfigEntry, FamioCoordinator, assignees, parse_start
 from .entity import FamioEntity, FamioMemberEntity
 
 
@@ -33,7 +33,7 @@ def _open_items(c: FamioCoordinator) -> list[dict[str, Any]]:
 
 
 def _mine(c: FamioCoordinator) -> list[dict[str, Any]]:
-    return [t for t in _open_tasks(c) if t.get("assigneeId") == c.member_id]
+    return [t for t in _open_tasks(c) if c.member_id in assignees(t)]
 
 
 def _points(c: FamioCoordinator) -> dict[str, int]:
@@ -58,7 +58,7 @@ def _pending(c: FamioCoordinator) -> int:
 def _theirs(c: FamioCoordinator, member_id: str) -> list[dict[str, Any]]:
     """Open tasks of [member_id], by due date."""
     return sorted(
-        (t for t in _open_tasks(c) if t.get("assigneeId") == member_id),
+        (t for t in _open_tasks(c) if member_id in assignees(t)),
         key=lambda t: t.get("due") or "9999",
     )
 

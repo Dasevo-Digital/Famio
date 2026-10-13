@@ -2264,5 +2264,7 @@
   "tipMeals": "Con un toque, los ingredientes de la semana del plan de comidas pasan a la lista de la compra. Las recetas muestran lo que ya hay en la despensa.",
   "tipBudget": "Los extractos de la banca en línea (CSV o CAMT) se pueden importar y se asignan a las categorías.",
   "tipHealth": "En cada medicamento decides quién lo ve y recibe recordatorios para tomarlo.",
-  "tipChat": "En el chat también puedes iniciar encuestas, por ejemplo para la próxima excursión."
+  "tipChat": "En el chat también puedes iniciar encuestas, por ejemplo para la próxima excursión.",
+  "tasksWholeFamily": "Toda la familia (sin invitados)",
+  "tasksAudienceHint": "Quien se encarga siempre ve la tarea. Los invitados solo ven las tareas que se les asignan o muestran."
 }

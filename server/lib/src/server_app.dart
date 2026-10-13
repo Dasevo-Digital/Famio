@@ -88,6 +88,7 @@ class FamioServerApp {
       roleOf: accounts.roleOf,
       accessOf: accounts.accessOf,
     );
+    records.restrictGuestTasks();
     calendarAccess = CalendarAccess(
       db,
       records: records,

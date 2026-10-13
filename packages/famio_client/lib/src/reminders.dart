@@ -98,7 +98,7 @@ List<DueReminder> upcomingReminders({
   for (final task in tasks) {
     final at = task.remindAt;
     if (at == null || task.done) continue;
-    if (task.assigneeId != null && task.assigneeId != memberId) continue;
+    if (task.assigneeIds.isNotEmpty && !task.isAssignedTo(memberId)) continue;
     if (at.isBefore(from) || !at.isBefore(to)) continue;
     result.add(
       DueReminder(

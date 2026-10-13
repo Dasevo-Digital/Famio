@@ -5743,5 +5743,7 @@
   "tipMeals": "Aus dem Wochenplan kommen die Zutaten der Woche mit einem Fingertipp auf die Einkaufsliste. Rezepte zeigen, was davon schon im Vorrat ist.",
   "tipBudget": "Kontoauszüge aus dem Online-Banking (CSV oder CAMT) lassen sich importieren und werden den Kategorien zugeordnet.",
   "tipHealth": "Bei jedem Medikament legst du fest, wer es sieht und an die Einnahme erinnert wird.",
-  "tipChat": "Im Chat kannst du auch Umfragen starten, etwa für den nächsten Ausflug."
+  "tipChat": "Im Chat kannst du auch Umfragen starten, etwa für den nächsten Ausflug.",
+  "tasksWholeFamily": "Ganze Familie (ohne Gäste)",
+  "tasksAudienceHint": "Wer sich kümmert, sieht die Aufgabe immer. Gäste sehen nur Aufgaben, die ihnen zugewiesen oder gezeigt werden."
 }

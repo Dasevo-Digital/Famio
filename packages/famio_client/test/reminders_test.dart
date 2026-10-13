@@ -80,7 +80,7 @@ void main() {
   test('task reminders go to the assignee and skip done tasks', () {
     final at = DateTime(2026, 10, 2, 18);
     final tasks = [
-      Task(id: '1', title: 'Müll', remindAt: at, assigneeId: 'kid'),
+      Task(id: '1', title: 'Müll', remindAt: at, assigneeIds: ['kid']),
       Task(id: '2', title: 'Alle', remindAt: at),
       Task(id: '3', title: 'Erledigt', remindAt: at, done: true),
       Task(id: '4', title: 'Vergangen', remindAt: DateTime(2026, 9, 1)),

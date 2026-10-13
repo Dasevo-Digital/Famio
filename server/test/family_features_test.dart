@@ -191,6 +191,180 @@ void main() {
     });
   });
 
+  group('tasks', () {
+    var clock = DateTime.now().millisecondsSinceEpoch;
+    SyncRecord task(Task t, {bool knowsAudience = true}) => SyncRecord(
+      collection: Collections.tasks,
+      id: t.id,
+      data: {
+        ...t.toData(),
+      }..removeWhere((k, _) => !knowsAudience && k == SyncRecord.visibilityKey),
+      updatedAt: ++clock,
+    );
+    bool has(_Member m, String id) =>
+        m.seen.containsKey('${Collections.tasks}/$id');
+    List<String>? audience(String id) =>
+        app.records.get(Collections.tasks, id)!.visibleTo;
+
+    test('whoever takes care of a task always sees it', () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      await mama.sync([
+        task(
+          Task(
+            id: 'geschenk',
+            title: 'Geschenk besorgen',
+            assigneeIds: [kind.id, papa.id],
+            visibleTo: [mama.id],
+          ),
+        ),
+      ]);
+      expect(
+        audience('geschenk'),
+        unorderedEquals([mama.id, kind.id, papa.id]),
+      );
+      await kind.sync();
+      await papa.sync();
+      final t = Task.fromRecord(kind.seen['${Collections.tasks}/geschenk']!);
+      expect(t.assigneeIds, [kind.id, papa.id]);
+      expect(t.assigneeId, kind.id);
+      expect(has(papa, 'geschenk'), isTrue);
+    });
+
+    test('apps before 2.0.3 keep who sees a task', () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      await mama.sync([
+        task(
+          Task(
+            id: 'feier',
+            title: 'Feier planen',
+            visibleTo: [mama.id, kind.id],
+          ),
+        ),
+      ]);
+      await kind.sync([
+        task(
+          Task(id: 'feier', title: 'Feier planen', done: true),
+          knowsAudience: false,
+        ),
+      ]);
+      expect(audience('feier'), unorderedEquals([mama.id, kind.id]));
+      await papa.sync();
+      expect(has(papa, 'feier'), isFalse);
+      // A current app makes it a family task again.
+      await mama.sync([task(Task(id: 'feier', title: 'Feier planen'))]);
+      expect(audience('feier'), isNull);
+      await papa.sync();
+      expect(has(papa, 'feier'), isTrue);
+    });
+
+    test('guests only see tasks assigned or shown to them', () async {
+      await mama.sync([
+        task(Task(id: 'muell', title: 'Müll')),
+        task(Task(id: 'kuchen', title: 'Kuchen', assigneeIds: [oma.id])),
+        task(
+          Task(id: 'abholen', title: 'Abholen', visibleTo: [mama.id, oma.id]),
+        ),
+        task(
+          Task(
+            id: 'foto',
+            title: 'Rahmen',
+            photos: const [
+              FileRef(
+                id: 'rahmen.jpg',
+                name: 'r.jpg',
+                mime: 'image/jpeg',
+                size: 1,
+              ),
+            ],
+          ),
+        ),
+      ]);
+      await oma.sync();
+      expect(
+        [
+          for (final k in oma.seen.keys)
+            if (k.startsWith('${Collections.tasks}/')) k,
+        ],
+        unorderedEquals([
+          '${Collections.tasks}/kuchen',
+          '${Collections.tasks}/abholen',
+        ]),
+      );
+      expect(app.records.referencedFor('rahmen.jpg', oma.id), isFalse);
+      expect(app.records.referencedFor('rahmen.jpg', kind.id), isTrue);
+
+      // No longer hers: the task leaves her device, the family keeps it.
+      await mama.sync([task(Task(id: 'kuchen', title: 'Kuchen'))]);
+      await oma.sync();
+      expect(has(oma, 'kuchen'), isFalse);
+      await kind.sync();
+      expect(has(kind, 'kuchen'), isTrue);
+
+      // What she writes for the family she keeps seeing.
+      await oma.sync([task(Task(id: 'blumen', title: 'Blumen gießen'))]);
+      await oma.sync();
+      expect(has(oma, 'blumen'), isTrue);
+      await kind.sync();
+      expect(has(kind, 'blumen'), isTrue);
+    });
+
+    test('guests lose the family tasks they saw before 2.0.3', () async {
+      await mama.sync([
+        task(Task(id: 'muell', title: 'Müll')),
+        task(Task(id: 'kuchen', title: 'Kuchen', assigneeIds: [oma.id])),
+      ]);
+      await oma.sync();
+      final before = oma.rev;
+      app.db.execute("DELETE FROM settings WHERE key = 'guestTasksRestricted'");
+      app.records.restrictGuestTasks();
+      final response = SyncResponse.fromJson(
+        await oma.call(
+          'POST',
+          'api/sync',
+          SyncRequest(since: before, changes: const []).toJson(),
+        ),
+      );
+      final gone = [
+        for (final r in response.changes)
+          if (r.deleted) r.id,
+      ];
+      expect(gone, ['muell']);
+      // Once only.
+      final rev = app.records.currentRev;
+      app.records.restrictGuestTasks();
+      expect(app.records.currentRev, rev);
+    });
+
+    test('push reaches everyone newly given a task', () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      for (final (m, topic) in [(kind, 'kind'), (papa, 'papa')]) {
+        await m.call('POST', 'api/me/push', {
+          'url': 'https://push.example/$topic',
+          'details': true,
+        });
+      }
+      pushed.clear();
+      await mama.sync([
+        task(Task(id: 'rasen', title: 'Rasen mähen', assigneeIds: [kind.id])),
+      ]);
+      await app.push.idle;
+      expect([for (final p in pushed) p['topic']], ['kind']);
+      pushed.clear();
+      await mama.sync([
+        task(
+          Task(
+            id: 'rasen',
+            title: 'Rasen mähen',
+            assigneeIds: [kind.id, papa.id],
+          ),
+        ),
+      ]);
+      await app.push.idle;
+      expect([for (final p in pushed) p['topic']], ['papa']);
+      expect(pushed.single['message'], 'Rasen mähen');
+    });
+  });
+
   group('service accounts', () {
     test('read and write like adults, but never become admin', () async {
       final ha = await addMember('homeassistant', MemberRole.service);

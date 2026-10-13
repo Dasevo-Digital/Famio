@@ -35,7 +35,7 @@ import '../l10n.dart';
       .where(
         (t) =>
             !t.done &&
-            (t.assigneeId == null || t.assigneeId == engine.memberId) &&
+            (t.assigneeIds.isEmpty || t.isAssignedTo(engine.memberId)) &&
             t.due != null &&
             t.due!.isBefore(tomorrow),
       )

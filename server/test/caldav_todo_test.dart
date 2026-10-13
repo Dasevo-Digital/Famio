@@ -358,7 +358,7 @@ void main() {
           ...Task(
             id: 'schuhe',
             title: 'Schuhe kaufen',
-            assigneeId: 'papa-id',
+            assigneeIds: ['papa-id', 'oma-id'],
           ).toData(),
           SyncRecord.visibilityKey: null,
         }),
@@ -373,7 +373,7 @@ void main() {
         app.records.get(Collections.tasks, 'schuhe')!,
       );
       expect(task.title, 'Winterschuhe kaufen');
-      expect(task.assigneeId, 'papa-id');
+      expect(task.assigneeIds, ['papa-id', 'oma-id']);
     },
   );
 

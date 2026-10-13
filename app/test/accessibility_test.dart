@@ -24,7 +24,7 @@ void _demo(SyncEngine e) {
   final today = DateUtils.dateOnly(DateTime.now());
   e
     ..saveTask(
-      Task(id: 't1', title: 'Müll rausbringen', due: today, assigneeId: 'k1'),
+      Task(id: 't1', title: 'Müll rausbringen', due: today, assigneeIds: ['k1']),
     )
     ..saveEvent(
       CalendarEvent(
