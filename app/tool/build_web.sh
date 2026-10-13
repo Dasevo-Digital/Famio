@@ -41,6 +41,21 @@ for family in fonts:
     else:
         keep.append(family)
 json.dump(keep, open(manifest, 'w'))
+# The scripts carry the version in their address: reverse proxies that cache
+# .js files regardless of the server's no-cache (Nginx Proxy Manager's
+# "Cache Assets") and browsers would otherwise run the old app after an
+# update until the cache expires.
+info = json.load(open(os.path.join(web, 'version.json')))
+tag = f"{info['version']}+{info.get('build_number', '')}"
+for name, old, new in [
+    ('index.html', 'src="flutter_bootstrap.js"', f'src="flutter_bootstrap.js?v={tag}"'),
+    ('flutter_bootstrap.js', '"mainJsPath":"main.dart.js"', f'"mainJsPath":"main.dart.js?v={tag}"'),
+]:
+    path = os.path.join(web, name)
+    text = open(path).read()
+    if old not in text:
+        sys.exit(f'{name}: {old} not found')
+    open(path, 'w').write(text.replace(old, new))
 # Compressed copies: the server sends them to browsers that accept gzip.
 for root, _, files in os.walk(web):
     for name in files:
