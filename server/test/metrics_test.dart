@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:famio_server/famio_server.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:shelf/shelf.dart';
@@ -62,11 +64,33 @@ void main() {
     expect(text, contains('famio_records 1'));
     expect(text, contains('famio_backups 1'));
     expect(text, contains('famio_backup_check_ok 1'));
+    expect(text, contains('famio_backup_overdue 0'));
     expect(text, contains('famio_http_responses_total{class="4xx"} 2'));
     expect(text, contains('# TYPE famio_push_total counter'));
     // Nothing the family stores.
     for (final secret in ['Mama Geheim', 'mama', 'Arzttermin', 't1']) {
       expect(text, isNot(contains(secret)), reason: secret);
     }
+  });
+
+  test('reports a backup that is overdue', () async {
+    final app = FamioServerApp.inMemory(metricsToken: token);
+    Future<String> text() async =>
+        (await get(app, token: token)).readAsString();
+    // A new server without a backup yet is not overdue.
+    expect(await text(), contains('famio_backup_overdue 0'));
+
+    // The nightly run stopped two days ago, without an error.
+    final old = DateTime.now().subtract(const Duration(days: 2));
+    String two(int n) => n.toString().padLeft(2, '0');
+    Directory(
+      '${app.backups!.dir}/famio-${old.year}${two(old.month)}${two(old.day)}-030000',
+    ).createSync(recursive: true);
+    final stale = await text();
+    expect(stale, contains('famio_backup_overdue 1'));
+    expect(stale, contains('famio_backup_failed 0'));
+
+    await app.backups!.run();
+    expect(await text(), contains('famio_backup_overdue 0'));
   });
 }

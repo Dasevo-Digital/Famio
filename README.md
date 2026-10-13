@@ -578,12 +578,13 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 Kennzahlen im Prometheus-Format – ohne Namen oder Inhalte: Version, Laufzeit,
 Speicher, Mitglieder je Rolle, Zahl der Einträge und Löschmarken, offene
 Konflikte, verbundene Geräte, Dateien, Datenbankgröße, fehlerhafte
-Kalender-Abos, Sicherungen (Alter, Fehler, Prüfergebnis), Antworten je
-Statusklasse, Sync-Anfragen und Push-Zustellungen. Aus dem Netz nur über HTTPS
-(Port 8766 oder Reverse-Proxy), z. B. für Uptime Kuma („HTTP(s) – Keyword“ auf
-`famio_backup_check_ok 1` mit Header `Authorization: Bearer …`) oder
-Prometheus (`authorization: credentials: …`). Ohne Token gibt es den Endpunkt
-nicht.
+Kalender-Abos, Sicherungen (Alter, überfällig, Fehler, Prüfergebnis),
+Antworten je Statusklasse, Sync-Anfragen und Push-Zustellungen. Aus dem Netz
+nur über HTTPS (Port 8766 oder Reverse-Proxy), z. B. für Uptime Kuma („HTTP(s)
+– Keyword“ mit Header `{"Authorization": "Bearer …"}`, je ein Monitor auf
+`famio_backup_failed 0` und `famio_backup_overdue 0`; Letzteres springt auf 1,
+wenn die neueste Sicherung älter als 36 Stunden ist) oder Prometheus
+(`authorization: credentials: …`). Ohne Token gibt es den Endpunkt nicht.
 
 **App-Updates über den Server:** Schaltet ein Admin in der Server-Verwaltung
 „App-Updates über den Server“ ein, holt der Server die Android-, Windows- und

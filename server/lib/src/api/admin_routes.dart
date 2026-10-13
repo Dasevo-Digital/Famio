@@ -237,7 +237,7 @@ extension _AdminRoutes on FamioApi {
       final check = newest?.check;
       final fresh =
           newest != null &&
-          DateTime.now().difference(newest.at) < const Duration(hours: 36);
+          DateTime.now().difference(newest.at) < BackupJob.freshFor;
       final ok = fresh && (check?.ok ?? false);
       steps.add(
         SetupStep(

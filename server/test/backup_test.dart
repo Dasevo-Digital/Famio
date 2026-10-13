@@ -256,6 +256,21 @@ void main() {
     expect(await BackupJob.freeBytes(dir.path), greaterThan(0));
   });
 
+  test('backup times are read in family time, not server time', () {
+    final dir = Directory.systemTemp.createTempSync('famio_backup_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    Directory(p.join(dir.path, 'famio-20261006-030000')).createSync();
+    final db = sqlite3.openInMemory();
+    // UTC+14 all year, far from any server's own zone.
+    final job = BackupJob(
+      db: db,
+      blobs: db,
+      dir: dir.path,
+      location: () => tz.getLocation('Pacific/Kiritimati'),
+    );
+    expect(job.list().single.at.toUtc(), DateTime.utc(2026, 10, 5, 13));
+  });
+
   test('the copy runs beside the server (file databases)', () async {
     // files.db of the test app is a real file: copied in an isolate.
     final backup = await app.backups!.run();

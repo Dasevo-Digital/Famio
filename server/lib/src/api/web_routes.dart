@@ -88,6 +88,9 @@ extension _WebRoutes on FamioApi {
       final list = job.list();
       final status = job.status();
       final check = status['lastCheck'] as Map?;
+      // Before the first backup the time counts from the start: a new
+      // server is not overdue, one whose nightly run never starts is.
+      final newest = list.firstOrNull?.at ?? m.startedAt;
       w
         ..gauge('famio_backups', 'Stored backups', list.length)
         ..gauge(
@@ -99,6 +102,11 @@ extension _WebRoutes on FamioApi {
           'famio_backup_failed',
           '1 if the last backup attempt failed',
           status['lastError'] == null ? 0 : 1,
+        )
+        ..gauge(
+          'famio_backup_overdue',
+          '1 if the newest backup is older than 36 hours',
+          now.difference(newest) > BackupJob.freshFor ? 1 : 0,
         )
         ..gauge(
           'famio_backup_check_ok',

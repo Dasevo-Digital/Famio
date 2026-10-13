@@ -85,6 +85,10 @@ class BackupJob {
 
   static final _name = RegExp(r'^famio-(\d{8})-(\d{6})$');
 
+  /// A nightly backup is missing when the newest is older than this: one
+  /// night plus the retries of the following day.
+  static const freshFor = Duration(hours: 36);
+
   void start() {
     _timer ??= Timer.periodic(const Duration(minutes: 30), (_) => _maybe());
     _maybe();
@@ -250,7 +254,9 @@ class BackupJob {
       if (m == null) continue;
       final d = m[1]!;
       final t = m[2]!;
-      final at = DateTime(
+      // The name is in family time ([run]), not the server's time zone.
+      final at = tz.TZDateTime(
+        location(),
         int.parse(d.substring(0, 4)),
         int.parse(d.substring(4, 6)),
         int.parse(d.substring(6, 8)),
