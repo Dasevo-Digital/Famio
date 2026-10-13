@@ -274,11 +274,13 @@ void main() {
           isFalse,
         );
 
-        // Visible to everyone again: the child receives the record.
+        // Visible to everyone again: the child receives the record. (For
+        // tasks only an explicit null does that; a missing key comes from
+        // an app before 2.0.3 and keeps the audience.)
         await sync(
           mama,
           changes: [
-            doc('d', {'title': 'Zeugnis (alle)'}),
+            doc('d', {'title': 'Zeugnis (alle)', 'visibleTo': null}),
           ],
         );
         final back = await sync(kind, since: revoked.rev);
