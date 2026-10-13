@@ -64,6 +64,24 @@ class _SetupChecklistState extends State<SetupChecklist> {
   Future<List<SetupStep>> _load() =>
       loadSetupSteps(AppScope.read(context).engine!.api);
 
+  /// Leaves [step] as it is (or shows it again) for all admins.
+  Future<void> _ignore(SetupStep step, bool ignored) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await AppScope.read(
+        context,
+      ).engine!.api.ignoreSetupStep(step.id, ignored: ignored);
+      SetupBanner._cached = null;
+      if (mounted) {
+        setState(() {
+          _steps = _load();
+        });
+      }
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -77,7 +95,10 @@ class _SetupChecklistState extends State<SetupChecklist> {
               ? Text(tr.setupSetupStatusNotAvailable)
               : const LinearProgressIndicator();
         }
-        final done = steps.where((s) => s.done).length;
+        // Ignored steps count neither as done nor as open.
+        final counted = steps.where((s) => !s.ignored).toList();
+        final done = counted.where((s) => s.done).length;
+        final small = theme.textTheme.bodySmall;
         return SoftCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,21 +107,23 @@ class _SetupChecklistState extends State<SetupChecklist> {
                 children: [
                   Expanded(
                     child: Text(
-                      done == steps.length
+                      done == counted.length
                           ? tr.setupEverythingSetUp
-                          : tr.setupDoneTotalDone(done, steps.length),
+                          : tr.setupDoneTotalDone(done, counted.length),
                       style: theme.textTheme.titleMedium,
                     ),
                   ),
                   IconButton(
                     tooltip: tr.commonCheckAgain,
                     icon: const Icon(AppIcons.arrowsClockwise),
-                    onPressed: () => setState(() => _steps = _load()),
+                    onPressed: () => setState(() {
+                      _steps = _load();
+                    }),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
-              for (final s in steps)
+              for (final s in counted)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
@@ -133,6 +156,36 @@ class _SetupChecklistState extends State<SetupChecklist> {
                               ),
                           ],
                         ),
+                      ),
+                      if (!s.done)
+                        TextButton(
+                          onPressed: () => _ignore(s, true),
+                          child: Text(tr.setupIgnore),
+                        ),
+                    ],
+                  ),
+                ),
+              for (final s in steps.where((s) => s.ignored))
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Icon(
+                        AppIcons.eyeSlash,
+                        size: 20,
+                        color: c.inkSoft,
+                        semanticLabel: tr.setupIgnored,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${s.title} · ${tr.setupIgnored}',
+                          style: small?.copyWith(color: c.inkSoft),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => _ignore(s, false),
+                        child: Text(tr.setupShowAgain),
                       ),
                     ],
                   ),
@@ -181,25 +234,31 @@ class _SetupBannerState extends State<SetupBanner> {
       future: SetupBanner._cached ??= _load(),
       builder: (context, snapshot) {
         final steps = snapshot.data;
-        if (steps == null || steps.every((s) => s.done)) {
+        if (steps == null || !steps.any((s) => s.open)) {
           return const SizedBox.shrink();
         }
-        final done = steps.where((s) => s.done).length;
+        final counted = steps.where((s) => !s.ignored);
+        final done = counted.where((s) => s.done).length;
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: SoftCard(
             color: c.tint(FamioSection.settings),
-            onTap: () => showModalBottomSheet<void>(
-              context: context,
-              useRootNavigator: true,
-              isScrollControlled: true,
-              showDragHandle: true,
-              useSafeArea: true,
-              builder: (_) => const SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child: SetupChecklist(),
-              ),
-            ).then((_) => SetupBanner._cached = null),
+            onTap: () =>
+                showModalBottomSheet<void>(
+                  context: context,
+                  useRootNavigator: true,
+                  isScrollControlled: true,
+                  showDragHandle: true,
+                  useSafeArea: true,
+                  builder: (_) => const SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: SetupChecklist(),
+                  ),
+                ).then((_) {
+                  // Steps done or left as they are meanwhile: ask again.
+                  SetupBanner._cached = null;
+                  if (mounted) setState(() {});
+                }),
             child: Row(
               children: [
                 Icon(
@@ -209,7 +268,7 @@ class _SetupBannerState extends State<SetupBanner> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    tr.setupFinishSetupDoneTotal(done, steps.length),
+                    tr.setupFinishSetupDoneTotal(done, counted.length),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),

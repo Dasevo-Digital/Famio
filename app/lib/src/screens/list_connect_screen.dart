@@ -43,7 +43,9 @@ class _ListConnectScreenState extends State<ListConnectScreen> {
   Future<List<ListAccount>> _load() =>
       AppScope.read(context).engine!.api.listAccounts();
 
-  void _reload() => setState(() => _accounts = _load());
+  void _reload() => setState(() {
+    _accounts = _load();
+  });
 
   void _say(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));

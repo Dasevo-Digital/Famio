@@ -2245,5 +2245,8 @@
   "appOutdatedText": "Versión {app}, el servidor usa la {server}. Las versiones antiguas no muestran todo lo que introducen los demás. Instala la versión nueva.",
   "adminIntegrationOn": "Activado · {state}",
   "adminSsoActive": "Configurado con {provider}",
-  "adminPaperBuddyActive": "Conectado a {address}"
+  "adminPaperBuddyActive": "Conectado a {address}",
+  "setupIgnore": "Ignorar",
+  "setupIgnored": "Ignorado",
+  "setupShowAgain": "Mostrar de nuevo"
 }

@@ -291,6 +291,7 @@ class FamioApi {
       ..post('/api/admin/backups', _backupNow)
       ..post('/api/admin/backups/check', _backupCheck)
       ..get('/api/admin/setup', _setupChecklist)
+      ..put('/api/admin/setup/ignored', _ignoreSetupStep)
       ..get('/api/admin/invites', _openInvites)
       ..post('/api/admin/invites', _createInvite)
       ..delete('/api/admin/invites/<id>', _revokeInvite)

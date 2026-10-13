@@ -294,6 +294,10 @@ class FamioApiClient {
 
   /// Admins: what is still to set up (address, HTTPS, key, family, two
   /// factors, notifications, backups, holidays).
+  /// Admins: leaves a setup step as it is, or shows it again.
+  Future<void> ignoreSetupStep(String id, {required bool ignored}) =>
+      _send('PUT', 'api/admin/setup/ignored', {'id': id, 'ignored': ignored});
+
   Future<List<SetupStep>> setupChecklist() async {
     final json = await _send('GET', 'api/admin/setup');
     return [

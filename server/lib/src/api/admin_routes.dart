@@ -278,9 +278,32 @@ extension _AdminRoutes on FamioApi {
         where: t('Server-Verwaltung → Einstellungen'),
       ),
     );
+    final ignored = settings.ignoredSetupSteps;
     return _json({
-      'steps': [for (final s in steps) s.toJson()],
+      'steps': [
+        for (final s in steps)
+          (ignored.contains(s.id) ? s.copyWith(ignored: true) : s).toJson(),
+      ],
     });
+  }
+
+  /// Leaves a setup step as it is, or shows it again.
+  Future<Response> _ignoreSetupStep(Request request) async {
+    final admin = _admin(request);
+    final body = await _body(request);
+    final id = body['id'];
+    if (id is! String || !RegExp(r'^[A-Za-z][A-Za-z_-]{0,39}$').hasMatch(id)) {
+      throw ApiException.badRequest('invalid_step', t('Unbekannter Punkt'));
+    }
+    final ignored = body['ignored'] == true;
+    settings.ignoreSetupStep(id, ignored: ignored);
+    _audit(
+      admin,
+      ignored
+          ? 'hat den Einrichtungspunkt „$id“ ignoriert'
+          : 'zeigt den Einrichtungspunkt „$id“ wieder an',
+    );
+    return _json({'ok': true});
   }
 
   /// Whether [url]'s host resolves to this machine itself.

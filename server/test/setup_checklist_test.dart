@@ -90,4 +90,82 @@ void main() {
     expect(broken.done, isFalse);
     expect(broken.url, 'https://kaputt.example.org/');
   });
+
+  test('admins leave single steps as they are, for every device', () async {
+    final app = FamioServerApp.inMemory();
+    final admin = app.accounts.create(
+      username: 'mama',
+      displayName: 'Mama',
+      passwordHash: 'x',
+      isAdmin: true,
+    );
+    final member = app.accounts.create(
+      username: 'kind',
+      displayName: 'Kind',
+      passwordHash: 'x',
+    );
+    final adminToken = app.accounts.createSession(admin.id, method: 'password');
+    final memberToken = app.accounts.createSession(
+      member.id,
+      method: 'password',
+    );
+    Future<Response> call(
+      String method,
+      String path,
+      String token, [
+      Object? body,
+    ]) async => app.handler(
+      Request(
+        method,
+        Uri.parse('http://famio.test$path'),
+        headers: {
+          'authorization': 'Bearer $token',
+          'content-type': 'application/json',
+        },
+        body: body == null ? null : jsonEncode(body),
+      ),
+    );
+    Future<Map<String, SetupStep>> steps() async {
+      final r = await call('GET', '/api/admin/setup', adminToken);
+      final json = jsonDecode(await r.readAsString()) as Map;
+      return {
+        for (final s in json['steps'] as List)
+          (s as Map)['id'] as String: SetupStep.fromJson(s.cast()),
+      };
+    }
+
+    expect((await steps())['twoFactor']!.open, isTrue);
+    final r = await call('PUT', '/api/admin/setup/ignored', adminToken, {
+      'id': 'twoFactor',
+      'ignored': true,
+    });
+    expect(r.statusCode, 200);
+    final ignored = (await steps())['twoFactor']!;
+    expect(ignored.ignored, isTrue);
+    expect(ignored.open, isFalse);
+    expect((await steps())['region']!.ignored, isFalse);
+
+    // Only admins, and only names of steps.
+    expect(
+      (await call('PUT', '/api/admin/setup/ignored', memberToken, {
+        'id': 'region',
+        'ignored': true,
+      })).statusCode,
+      403,
+    );
+    expect(
+      (await call('PUT', '/api/admin/setup/ignored', adminToken, {
+        'id': '../x',
+        'ignored': true,
+      })).statusCode,
+      400,
+    );
+
+    await call('PUT', '/api/admin/setup/ignored', adminToken, {
+      'id': 'twoFactor',
+      'ignored': false,
+    });
+    expect((await steps())['twoFactor']!.ignored, isFalse);
+    await app.close();
+  });
 }

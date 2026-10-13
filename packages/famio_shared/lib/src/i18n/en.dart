@@ -1136,6 +1136,7 @@ const sharedEn = <String, String>{
   "Server|Abgleich fehlgeschlagen: {error}": "Sync failed: {error}",
   "Server|Kein Termin (VEVENT) enthalten": "Contains no event (VEVENT)",
   "Server|Keine Kalenderdatei übergeben.": "No calendar file was sent.",
+  "Server|Unbekannter Punkt": "Unknown step",
   "Server|Die Datei enthält keine Termine.": "The file contains no events.",
   "Server|Bitte eine Adresse wie https://caldav.icloud.com angeben":
       "Please enter an address like https://caldav.icloud.com",

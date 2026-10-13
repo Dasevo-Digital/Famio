@@ -118,6 +118,32 @@ class SettingsStore {
     _load();
   }
 
+  static const _ignoredStepsKey = 'setup.ignored';
+
+  /// Setup steps admins chose to leave as they are (ids of SetupStep).
+  Set<String> get ignoredSetupSteps {
+    final row = _db.select('SELECT value FROM settings WHERE key = ?', [
+      _ignoredStepsKey,
+    ]).firstOrNull;
+    return {
+      for (final id
+          in row == null
+              ? const []
+              : jsonDecode(row['value'] as String) as List)
+        '$id',
+    };
+  }
+
+  void ignoreSetupStep(String id, {required bool ignored}) {
+    final ids = ignoredSetupSteps;
+    ignored ? ids.add(id) : ids.remove(id);
+    _db.execute(
+      'INSERT INTO settings (key, value) VALUES (?, ?)'
+      ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      [_ignoredStepsKey, jsonEncode(ids.toList()..sort())],
+    );
+  }
+
   /// Removes every value set in the app, so the defaults apply again.
   void reset() => update({for (final key in ServerSettings.keys) key: null});
 

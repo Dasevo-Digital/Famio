@@ -403,6 +403,7 @@ class SetupStep {
     required this.detail,
     this.where = '',
     this.url = '',
+    this.ignored = false,
   });
 
   factory SetupStep.fromJson(Map<String, Object?> json) => SetupStep(
@@ -412,11 +413,19 @@ class SetupStep {
     detail: json['detail'] as String? ?? '',
     where: json['where'] as String? ?? '',
     url: json['url'] as String? ?? '',
+    ignored: json['ignored'] as bool? ?? false,
   );
 
   final String id;
   final String title;
   final bool done;
+
+  /// An admin chose to leave it as it is (no PaperBuddy, no public
+  /// address …): it no longer counts as open.
+  final bool ignored;
+
+  /// Still to do: neither done nor ignored.
+  bool get open => !done && !ignored;
 
   /// What is the matter, or what was found.
   final String detail;
@@ -428,13 +437,14 @@ class SetupStep {
   /// check it from the device as well.
   final String url;
 
-  SetupStep copyWith({bool? done, String? detail}) => SetupStep(
+  SetupStep copyWith({bool? done, String? detail, bool? ignored}) => SetupStep(
     id: id,
     title: title,
     done: done ?? this.done,
     detail: detail ?? this.detail,
     where: where,
     url: url,
+    ignored: ignored ?? this.ignored,
   );
 
   Map<String, Object?> toJson() => {
@@ -444,5 +454,6 @@ class SetupStep {
     'detail': detail,
     if (where.isNotEmpty) 'where': where,
     if (url.isNotEmpty) 'url': url,
+    if (ignored) 'ignored': true,
   };
 }

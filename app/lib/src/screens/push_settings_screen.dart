@@ -27,7 +27,9 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
   Future<List<PushTarget>> _load() =>
       AppScope.read(context).engine!.api.pushTargets();
 
-  void _reload() => setState(() => _targets = _load());
+  void _reload() => setState(() {
+    _targets = _load();
+  });
 
   Future<void> _add() async {
     final added = await showDialog<PushTarget>(

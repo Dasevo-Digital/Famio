@@ -1173,6 +1173,7 @@ const sharedEs = <String, String>{
   "Server|Kein Termin (VEVENT) enthalten": "No contiene ningún evento (VEVENT)",
   "Server|Keine Kalenderdatei übergeben.":
       "No se ha enviado ningún archivo de calendario.",
+  "Server|Unbekannter Punkt": "Paso desconocido",
   "Server|Die Datei enthält keine Termine.": "El archivo no contiene eventos.",
   "Server|Bitte eine Adresse wie https://caldav.icloud.com angeben":
       "Indica una dirección como https://caldav.icloud.com",

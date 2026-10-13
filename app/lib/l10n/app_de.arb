@@ -5724,5 +5724,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "setupIgnore": "Ignorieren",
+  "setupIgnored": "Ignoriert",
+  "setupShowAgain": "Wieder anzeigen"
 }
