@@ -5700,5 +5700,29 @@
         "type": "String"
       }
     }
+  },
+  "adminIntegrationOn": "Eingeschaltet · {state}",
+  "@adminIntegrationOn": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "adminSsoActive": "Eingerichtet mit {provider}",
+  "@adminSsoActive": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPaperBuddyActive": "Verbunden mit {address}",
+  "@adminPaperBuddyActive": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
   }
 }

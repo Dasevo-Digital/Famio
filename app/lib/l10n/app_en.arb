@@ -2242,5 +2242,8 @@
   "adminOutdatedAppsHint": "These devices do not show everything others enter and may lose details when saving. Please install the new version there.",
   "adminOutdatedAppRow": "{member} · {device}",
   "appOutdatedTitle": "Famio on this device is out of date",
-  "appOutdatedText": "Version {app}, the server runs {server}. Older versions do not show everything others enter. Please install the new version."
+  "appOutdatedText": "Version {app}, the server runs {server}. Older versions do not show everything others enter. Please install the new version.",
+  "adminIntegrationOn": "On · {state}",
+  "adminSsoActive": "Set up with {provider}",
+  "adminPaperBuddyActive": "Connected to {address}"
 }

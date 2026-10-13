@@ -579,35 +579,43 @@ class _SettingsFormState extends State<_SettingsForm> {
               ),
             ),
             ListHeading(tr.adminSign, color: accent),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIcons.logIn),
-              title: const Text('Single Sign-On (OpenID Connect)'),
-              subtitle: Text(tr.adminSignAuthentikKeycloakAuthelia),
-              trailing: TextButton(
-                onPressed: _busy ? null : () => showSsoDialog(context),
-                child: Text(tr.commonSetUp),
-              ),
+            _IntegrationTile(
+              icon: AppIcons.logIn,
+              title: 'Single Sign-On (OpenID Connect)',
+              subtitle: tr.adminSignAuthentikKeycloakAuthelia,
+              enabled: !_busy,
+              load: (api) => api.ssoConfig(),
+              state: (info) {
+                if (info['configured'] != true) return null;
+                final label = '${info['label'] ?? ''}'.trim();
+                final issuer = '${info['issuer'] ?? ''}';
+                return tr.adminSsoActive(
+                  label.isNotEmpty ? label : _host(issuer),
+                );
+              },
+              open: showSsoDialog,
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIcons.folderSimpleStar),
-              title: Text(tr.adminPaperBuddy),
-              subtitle: Text(tr.adminPaperBuddySubtitle),
-              trailing: TextButton(
-                onPressed: _busy ? null : () => showPaperBuddyDialog(context),
-                child: Text(tr.commonSetUp),
-              ),
+            _IntegrationTile(
+              icon: AppIcons.folderSimpleStar,
+              title: tr.adminPaperBuddy,
+              subtitle: tr.adminPaperBuddySubtitle,
+              enabled: !_busy,
+              load: (api) => api.paperBuddy(),
+              state: (info) => info['connected'] == true
+                  ? tr.adminPaperBuddyActive(_host('${info['url'] ?? ''}'))
+                  : null,
+              open: showPaperBuddyDialog,
             ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIcons.cloudArrowDown),
-              title: Text(tr.adminAppUpdates),
-              subtitle: Text(tr.adminAppUpdatesSubtitle),
-              trailing: TextButton(
-                onPressed: _busy ? null : () => showAppUpdatesDialog(context),
-                child: Text(tr.commonSetUp),
-              ),
+            _IntegrationTile(
+              icon: AppIcons.cloudArrowDown,
+              title: tr.adminAppUpdates,
+              subtitle: tr.adminAppUpdatesSubtitle,
+              enabled: !_busy,
+              load: (api) => api.appUpdates(),
+              state: (info) => info['enabled'] == true
+                  ? tr.adminIntegrationOn(_appUpdatesReady(info))
+                  : null,
+              open: showAppUpdatesDialog,
             ),
             ListHeading(tr.adminAreas, color: accent),
             ListTile(
@@ -708,3 +716,102 @@ class _SettingsFormState extends State<_SettingsForm> {
 }
 
 // --- status -----------------------------------------------------------------
+
+/// "paperbuddy.example" of an address.
+String _host(String url) {
+  final host = Uri.tryParse(url)?.host ?? '';
+  return host.isNotEmpty ? host : url;
+}
+
+/// A connection to something outside (sign-in, documents, app packages):
+/// what is set up, with "Ändern", or what it does, with "Einrichten".
+class _IntegrationTile extends StatefulWidget {
+  const _IntegrationTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.load,
+    required this.state,
+    required this.open,
+    this.enabled = true,
+  });
+
+  final IconData icon;
+  final String title;
+
+  /// What it does, shown while nothing is set up.
+  final String subtitle;
+  final Future<Map<String, Object?>> Function(FamioApiClient api) load;
+
+  /// What is set up, from the server's answer; null for nothing.
+  final String? Function(Map<String, Object?> info) state;
+  final Future<void> Function(BuildContext context) open;
+  final bool enabled;
+
+  @override
+  State<_IntegrationTile> createState() => _IntegrationTileState();
+}
+
+class _IntegrationTileState extends State<_IntegrationTile> {
+  String? _state;
+  var _loaded = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_loaded) return;
+    _loaded = true;
+    _load();
+  }
+
+  Future<void> _load() async {
+    final api = AppScope.read(context).engine?.api;
+    if (api == null) return;
+    try {
+      final info = await widget.load(api);
+      if (mounted) setState(() => _state = widget.state(info));
+    } catch (_) {
+      // Offline or an older server: the tile offers to set it up.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final state = _state;
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(widget.icon),
+      title: Text(widget.title),
+      subtitle: state == null
+          ? Text(widget.subtitle)
+          : Text.rich(
+              TextSpan(
+                children: [
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Icon(
+                        AppIcons.check,
+                        size: 16,
+                        color: c.strong(FamioSection.settings),
+                      ),
+                    ),
+                  ),
+                  TextSpan(text: state),
+                ],
+              ),
+            ),
+      trailing: TextButton(
+        onPressed: widget.enabled
+            ? () async {
+                await widget.open(context);
+                if (mounted) await _load();
+              }
+            : null,
+        child: Text(state == null ? tr.commonSetUp : tr.commonChange),
+      ),
+    );
+  }
+}

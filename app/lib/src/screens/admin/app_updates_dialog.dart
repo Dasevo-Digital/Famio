@@ -55,7 +55,6 @@ class _AppUpdatesDialogState extends State<_AppUpdatesDialog> {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final enabled = _info['enabled'] == true;
-    final packages = (_info['packages'] as Map?)?.keys.toList() ?? const [];
     final lastError = _info['error'] as String?;
     return AlertDialog(
       title: Text(tr.adminAppUpdates),
@@ -86,20 +85,7 @@ class _AppUpdatesDialogState extends State<_AppUpdatesDialog> {
                   if (_busy) const LinearProgressIndicator(),
                   if (enabled && !_busy) ...[
                     Text(
-                      packages.isEmpty
-                          ? tr.adminAppUpdatesNone
-                          : tr.adminAppUpdatesReady(
-                              '${_info['version']}',
-                              [
-                                for (final p in packages)
-                                  switch (p) {
-                                    'android' => 'Android',
-                                    'windows' => 'Windows',
-                                    'linux' => 'Linux',
-                                    _ => '$p',
-                                  },
-                              ].join(', '),
-                            ),
+                      _appUpdatesReady(_info),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     if (lastError != null && lastError.isNotEmpty) ...[
@@ -130,4 +116,23 @@ class _AppUpdatesDialogState extends State<_AppUpdatesDialog> {
       ],
     );
   }
+}
+
+/// "Bereit für Version 2.0.1: Android, Windows, Linux" from the server's
+/// state of the app updates.
+String _appUpdatesReady(Map<String, Object?> info) {
+  final packages = (info['packages'] as Map?)?.keys.toList() ?? const [];
+  if (packages.isEmpty) return tr.adminAppUpdatesNone;
+  return tr.adminAppUpdatesReady(
+    '${info['version']}',
+    [
+      for (final p in packages)
+        switch (p) {
+          'android' => 'Android',
+          'windows' => 'Windows',
+          'linux' => 'Linux',
+          _ => '$p',
+        },
+    ].join(', '),
+  );
 }
