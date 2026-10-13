@@ -72,8 +72,9 @@ systemctl status martin --no-pager
 curl -fsS http://192.168.1.60:3000/catalog
 ```
 
-Die Standard-Binary erzeugt keine serverseitig gerenderten Kartenbilder; für
-Famios XYZ-/PMTiles-/MBTiles-Betrieb ist das nicht nötig. Martin erkennt neu
+Die Standard-Binary erzeugt keine serverseitig gerenderten Kartenbilder. Famio
+braucht deshalb ein Archiv mit Rasterkacheln (siehe [README.md](README.md));
+ein reines Vektor-Archiv zeigt Famio nicht an. Martin erkennt neu
 abgelegte oder ersetzte Archive im Verzeichnis selbst.
 
 ## 4. LXC-Firewall auf NPM beschränken

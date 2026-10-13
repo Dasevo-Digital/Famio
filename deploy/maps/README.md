@@ -1,7 +1,10 @@
 # Eigene Karten mit Martin und PMTiles/MBTiles
 
-Famio kann den öffentlichen OSM-Kachelserver durch eine eigene HTTPS-XYZ-URL
-ersetzen. Martin ist dafür als **optionaler Compose-Profile-Service** direkt
+**Optional.** Ohne eigenen Kartenserver lädt Famio die Karte von
+OpenStreetMap; für die meisten Familien reicht das. Famio kann den
+öffentlichen OSM-Kachelserver durch eine eigene HTTPS-XYZ-URL
+ersetzen, etwa damit Kartenabrufe (IP-Adresse und sichtbarer Ausschnitt)
+im eigenen Netz bleiben. Martin ist dafür als **optionaler Compose-Profile-Service** direkt
 in die Docker-Installation integriert. Er startet weder beim normalen
 `docker compose up -d` noch durch die Famio-App. Die Kartenarchive bleiben auf
 dem eigenen Rechner; Martin erkennt neue oder ersetzte Dateien automatisch.
@@ -27,11 +30,15 @@ Für die Vorlage unter `deploy/npm/` ist der gleiche Service verfügbar:
 NPM-Netz und wird im Proxy als `martin:3000` eingetragen. Nicht beide Compose-
 Vorlagen gleichzeitig verwenden, weil sie denselben Container-Namen nutzen.
 
-Martin liefert Vektor-, Raster- und TileJSON-Quellen. Famio nutzt heute die
-kompatible XYZ-Ausgabe von `flutter_map`; die PMTiles/MBTiles- und
-Reverse-Proxy-Grenze ist damit bereits produktiv. Die spätere UI-Umstellung
-auf MapLibre-Vector-Styles kann ohne erneuten Wechsel des Kartenbetriebs
-erfolgen, weil Martin dieselben Archive und Style-Endpunkte weiterliefert.
+Martin liefert Vektor-, Raster- und TileJSON-Quellen, zeichnet aber selbst
+keine Kartenbilder. Famio zeigt **Rasterkacheln** (PNG, JPEG oder WebP) über
+`flutter_map` an. Das Archiv muss deshalb Rasterkacheln enthalten; ein
+Vektor-Archiv (MVT, etwa ein Protomaps-Auszug) ergibt in Famio eine leere
+Karte. Rasterarchive sind groß: für ein ganzes Land bis zur Straßenebene
+Hunderte GB, für die eigene Region deutlich weniger. Eine spätere Umstellung
+der App auf Vektor-Darstellung (MapLibre-Styles) käme ohne Wechsel des
+Kartenbetriebs aus, weil Martin dieselben Archive und Style-Endpunkte
+weiterliefert.
 
 ## Betrieb und Datenschutz
 
