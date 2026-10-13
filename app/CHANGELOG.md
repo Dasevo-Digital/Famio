@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.2 – Tipps und Einrichtung
+
+- Beim ersten Besuch eines Bereichs erklärt ein kurzer Tipp, was dort
+  leicht übersehen wird. „Keine Tipps mehr“ schaltet sie ab, die
+  Einstellungen wieder ein.
+- In der Einrichtungsliste lassen sich einzelne Punkte ignorieren und
+  wieder anzeigen.
+- Die Server-Verwaltung zeigt bei Single Sign-On, PaperBuddy und
+  App-Updates, was eingerichtet ist, und bietet dann „Ändern“ an.
+- Logo und Seitenleiste sind bei großem Fenster auch auf Bildschirmen ohne
+  Retina-Auflösung scharf, etwa über Remote-Desktop.
+- Die Server-Überwachung meldet jetzt auch, wenn eine Sicherung ausbleibt.
+
 ## 2.0.1 – Fotos an Aufgaben
 
 - Ein neues Kind sehen jetzt alle Erwachsenen. Wer ein Kind nicht sieht,

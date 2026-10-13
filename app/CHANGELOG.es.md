@@ -4,6 +4,22 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.2 – Consejos y configuración
+
+- La primera vez que se abre un área, un consejo breve explica lo que se
+  pasa por alto con facilidad. «No más consejos» los desactiva y los
+  ajustes los vuelven a activar.
+- Los puntos de la lista de configuración se pueden ignorar y volver a
+  mostrar.
+- La administración del servidor muestra lo que está configurado para el
+  inicio de sesión único, PaperBuddy y las actualizaciones de la app, y
+  ofrece entonces «Cambiar».
+- El logotipo y la barra lateral se ven nítidos en una ventana grande
+  también en pantallas sin resolución Retina, por ejemplo por escritorio
+  remoto.
+- La supervisión del servidor ahora también avisa cuando falta una copia
+  de seguridad.
+
 ## 2.0.1 – Fotos en las tareas
 
 - Ahora todos los adultos ven a un niño recién añadido. Quien no ve a un

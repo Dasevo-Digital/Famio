@@ -4,6 +4,18 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.2 – Tips and setup
+
+- On the first visit to an area, a short tip explains what is easy to
+  miss there. "No more tips" turns them off, the settings turn them back
+  on.
+- Single points of the setup checklist can be ignored and shown again.
+- Server administration shows what is set up for single sign-on,
+  PaperBuddy and app updates, and then offers "Change".
+- Logo and side bar stay sharp in a large window on screens without Retina
+  resolution, for example over remote desktop.
+- Server monitoring now also reports when a backup is missing.
+
 ## 2.0.1 – Photos on tasks
 
 - All adults now see a newly added child. Anyone who does not see a child
