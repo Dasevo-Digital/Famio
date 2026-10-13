@@ -14,12 +14,19 @@ class FamioGlyph extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox.square(
     dimension: size,
-    child: const CustomPaint(painter: _GlyphPainter()),
+    child: CustomPaint(
+      painter: _GlyphPainter(MediaQuery.devicePixelRatioOf(context)),
+    ),
   );
 }
 
 class _GlyphPainter extends CustomPainter {
-  const _GlyphPainter();
+  const _GlyphPainter(this.ratio);
+
+  /// Device pixels per point: the straight edges of the house lie on whole
+  /// pixels (with the glyph itself on whole pixels, see PixelSnap), so they
+  /// stay crisp on a display with a ratio of 1.
+  final double ratio;
 
   static const _heart = Color(0xFFEC5A86);
 
@@ -30,6 +37,9 @@ class _GlyphPainter extends CustomPainter {
     final cx = size.width / 2;
     final top = size.height / 2 - 48 * u;
     final white = Paint()..color = Colors.white;
+    double snap(double v) => (v * ratio).roundToDouble() / ratio;
+    final left = snap(cx - 32 * u), right = snap(cx + 32 * u);
+    final eaves = snap(top + 30 * u), floor = snap(top + 92 * u);
     final apex = Offset(cx, top + 4 * u);
     // Roof: a thick line with round caps and joint.
     canvas.drawPath(
@@ -45,21 +55,24 @@ class _GlyphPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
     // Body below the roof.
+    // Square on top, where the roof covers it: rounded corners there left
+    // a pixel of the background showing under the eaves.
     canvas.drawRRect(
-      RRect.fromLTRBR(
-        cx - 32 * u,
-        top + 30 * u,
-        cx + 32 * u,
-        top + 92 * u,
-        Radius.circular(9 * u),
+      RRect.fromLTRBAndCorners(
+        left,
+        eaves,
+        right,
+        floor,
+        bottomLeft: Radius.circular(9 * u),
+        bottomRight: Radius.circular(9 * u),
       ),
       white,
     );
     canvas.drawPath(
       Path()
-        ..moveTo(cx - 32 * u, top + 30 * u)
+        ..moveTo(left, eaves)
         ..lineTo(apex.dx, apex.dy)
-        ..lineTo(cx + 32 * u, top + 30 * u)
+        ..lineTo(right, eaves)
         ..close(),
       white,
     );
@@ -83,5 +96,5 @@ class _GlyphPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_GlyphPainter oldDelegate) => false;
+  bool shouldRepaint(_GlyphPainter oldDelegate) => oldDelegate.ratio != ratio;
 }
