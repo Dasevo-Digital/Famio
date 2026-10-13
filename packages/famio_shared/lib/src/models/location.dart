@@ -242,6 +242,37 @@ class MemberLocation {
   };
 }
 
+/// The family's choices for "Wo ist wer?"; one record
+/// ([LocationSettings.recordId]) in `location_settings`, changed by adults
+/// only.
+class LocationSettings {
+  const LocationSettings({this.hiddenMemberIds = const []});
+
+  factory LocationSettings.fromRecord(SyncRecord? r) => LocationSettings(
+    hiddenMemberIds: [
+      for (final id in r?.data['hiddenMemberIds'] as List? ?? const [])
+        if (id is String) id,
+    ],
+  );
+
+  static const recordId = 'family';
+
+  /// Left out of the list and the map, e.g. children without a phone.
+  final List<String> hiddenMemberIds;
+
+  bool hides(String memberId) => hiddenMemberIds.contains(memberId);
+
+  LocationSettings withHidden(String memberId, bool hidden) => LocationSettings(
+    hiddenMemberIds: [
+      for (final id in hiddenMemberIds)
+        if (id != memberId) id,
+      if (hidden) memberId,
+    ],
+  );
+
+  Map<String, Object?> toData() => {'hiddenMemberIds': hiddenMemberIds};
+}
+
 /// "Someone arrived at / left a place", written by the server into
 /// `Collections.locationAlerts` for each member who asked to be notified.
 class LocationAlert {

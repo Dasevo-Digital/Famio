@@ -2266,5 +2266,9 @@
   "tipHealth": "En cada medicamento decides quién lo ve y recibe recordatorios para tomarlo.",
   "tipChat": "En el chat también puedes iniciar encuestas, por ejemplo para la próxima excursión.",
   "tasksWholeFamily": "Toda la familia (sin invitados)",
-  "tasksAudienceHint": "Quien se encarga siempre ve la tarea. Los invitados solo ven las tareas que se les asignan o muestran."
+  "tasksAudienceHint": "Quien se encarga siempre ve la tarea. Los invitados solo ven las tareas que se les asignan o muestran.",
+  "locationHideHere": "Ocultar aquí",
+  "locationHidden": "Ocultos:",
+  "locationShowMember": "Mostrar de nuevo a {name}",
+  "locationNameHidden": "{name} queda oculto aquí para todos. Se puede mostrar de nuevo en «Ocultos», al final de la lista."
 }

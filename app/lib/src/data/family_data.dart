@@ -626,6 +626,17 @@ extension FamilyData on SyncEngine {
       r.id: MemberLocation.fromRecord(r),
   };
 
+  LocationSettings get locationSettings => LocationSettings.fromRecord(
+    record(Collections.locationSettings, LocationSettings.recordId),
+  );
+
+  /// Shows or hides [memberId] in "Wo ist wer?" for the whole family.
+  void setHiddenInLocation(String memberId, bool hidden) => put(
+    Collections.locationSettings,
+    LocationSettings.recordId,
+    locationSettings.withHidden(memberId, hidden).toData(),
+  );
+
   List<LocationAlert> get locationAlerts =>
       records(Collections.locationAlerts).map(LocationAlert.fromRecord).toList()
         ..sort((a, b) => b.at.compareTo(a.at));

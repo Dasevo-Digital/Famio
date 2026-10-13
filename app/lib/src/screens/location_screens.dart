@@ -37,6 +37,7 @@ const _collections = {
   Collections.places,
   Collections.memberLocations,
   Collections.locationAlerts,
+  Collections.locationSettings,
   'members',
 };
 
@@ -87,7 +88,13 @@ class _LocationScreenState extends State<LocationScreen> {
       body: DataBuilder(
         collections: _collections,
         builder: (context, engine) {
-          final locations = engine.memberLocations;
+          // Members the adults hid (children without a phone …) are on
+          // neither the list nor the map.
+          final hidden = engine.locationSettings;
+          final locations = {
+            for (final e in engine.memberLocations.entries)
+              if (!hidden.hides(e.key)) e.key: e.value,
+          };
           final map = MinuteTicker(
             builder: (_) => ClipRRect(
               borderRadius: BorderRadius.circular(28),

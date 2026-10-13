@@ -63,6 +63,9 @@ abstract final class Collections {
   /// Arrival/departure notices per recipient; written by the server.
   static const locationAlerts = 'location_alerts';
 
+  /// Who "Wo ist wer?" leaves out (one record, adults only).
+  static const locationSettings = 'location_settings';
+
   /// Chores (Ämter) with rotation and points.
   static const chores = 'chores';
 
@@ -154,6 +157,7 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    locationSettings,
     deadlines,
     wasteSettings,
     wishes,
@@ -243,6 +247,7 @@ abstract final class Collections {
   /// Managed by adults only; children earn points through [pointEntries]
   /// (as requests an adult confirms).
   static const adultOnly = {
+    locationSettings,
     chores,
     rewards,
     allowances,

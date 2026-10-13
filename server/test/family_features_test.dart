@@ -482,6 +482,31 @@ void main() {
       expect(kind.seen['point_entries/p1']!.data['status'], 'approved');
     });
 
+    test('cannot hide members in "Wo ist wer?", adults can', () async {
+      final hide = SyncRecord(
+        collection: Collections.locationSettings,
+        id: LocationSettings.recordId,
+        data: const LocationSettings(hiddenMemberIds: ['x']).toData(),
+        updatedAt: DateTime.now().millisecondsSinceEpoch,
+      );
+      await kind.sync([hide]);
+      expect(
+        app.records.get(
+          Collections.locationSettings,
+          LocationSettings.recordId,
+        ),
+        isNull,
+      );
+      await mama.sync([hide]);
+      await kind.sync();
+      expect(
+        LocationSettings.fromRecord(
+          kind.seen['${Collections.locationSettings}/${LocationSettings.recordId}'],
+        ).hiddenMemberIds,
+        ['x'],
+      );
+    });
+
     test('cannot manage chores, rewards or pocket money', () async {
       final response = await kind.sync([
         _record(Collections.chores, 'c1', {'title': 'Nichts tun'}),

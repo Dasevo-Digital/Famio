@@ -5745,5 +5745,23 @@
   "tipHealth": "Bei jedem Medikament legst du fest, wer es sieht und an die Einnahme erinnert wird.",
   "tipChat": "Im Chat kannst du auch Umfragen starten, etwa für den nächsten Ausflug.",
   "tasksWholeFamily": "Ganze Familie (ohne Gäste)",
-  "tasksAudienceHint": "Wer sich kümmert, sieht die Aufgabe immer. Gäste sehen nur Aufgaben, die ihnen zugewiesen oder gezeigt werden."
+  "tasksAudienceHint": "Wer sich kümmert, sieht die Aufgabe immer. Gäste sehen nur Aufgaben, die ihnen zugewiesen oder gezeigt werden.",
+  "locationHideHere": "Hier ausblenden",
+  "locationHidden": "Ausgeblendet:",
+  "locationShowMember": "{name} wieder anzeigen",
+  "@locationShowMember": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "locationNameHidden": "{name} ist hier jetzt für alle ausgeblendet. Unter „Ausgeblendet“ am Ende der Liste wieder anzeigen.",
+  "@locationNameHidden": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

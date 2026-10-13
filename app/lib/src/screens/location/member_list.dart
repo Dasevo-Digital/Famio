@@ -18,16 +18,24 @@ class _MemberList extends StatelessWidget {
     final state = AppScope.of(context);
     final me = state.me!;
     final theme = Theme.of(context);
-    final members = [...engine.members]
-      ..sort((a, b) {
-        // Me first, then who shares, then by name.
-        if (a.id == me.id) return -1;
-        if (b.id == me.id) return 1;
-        final shares =
-            (locations.containsKey(b.id) ? 1 : 0) -
-            (locations.containsKey(a.id) ? 1 : 0);
-        return shares != 0 ? shares : a.displayName.compareTo(b.displayName);
-      });
+    final settings = engine.locationSettings;
+    final hidden = [
+      for (final m in engine.members)
+        if (settings.hides(m.id)) m,
+    ];
+    final members =
+        [
+          for (final m in engine.members)
+            if (!settings.hides(m.id)) m,
+        ]..sort((a, b) {
+          // Me first, then who shares, then by name.
+          if (a.id == me.id) return -1;
+          if (b.id == me.id) return 1;
+          final shares =
+              (locations.containsKey(b.id) ? 1 : 0) -
+              (locations.containsKey(a.id) ? 1 : 0);
+          return shares != 0 ? shares : a.displayName.compareTo(b.displayName);
+        });
     return ListView(
       primary: scrollable,
       shrinkWrap: !scrollable,
@@ -47,9 +55,35 @@ class _MemberList extends StatelessWidget {
             isMe: m.id == me.id,
             canManage: me.isAdmin,
             canAsk: me.isAdult,
+            canHide: me.isAdult,
             onTap: locations[m.id] == null
                 ? null
                 : () => onFocus(locations[m.id]!),
+          ),
+        if (hidden.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 8, 4, 4),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(tr.locationHidden, style: theme.textTheme.bodySmall),
+                for (final m in hidden)
+                  me.isAdult
+                      ? ActionChip(
+                          avatar: MemberAvatar(m, radius: 10),
+                          label: Text(m.displayName),
+                          tooltip: tr.locationShowMember(m.displayName),
+                          onPressed: () =>
+                              engine.setHiddenInLocation(m.id, false),
+                        )
+                      : Chip(
+                          avatar: MemberAvatar(m, radius: 10),
+                          label: Text(m.displayName),
+                        ),
+              ],
+            ),
           ),
         if (me.isAdult) RecentCheckIns(engine: engine),
         if (engine.places.isEmpty)
@@ -73,6 +107,7 @@ class _MemberTile extends StatelessWidget {
     required this.isMe,
     required this.canManage,
     this.canAsk = false,
+    this.canHide = false,
     this.onTap,
   });
 
@@ -84,6 +119,9 @@ class _MemberTile extends StatelessWidget {
 
   /// An adult: may ask for a check-in and let the phone ring.
   final bool canAsk;
+
+  /// An adult: may hide the member here for the whole family.
+  final bool canHide;
   final VoidCallback? onTap;
 
   @override
@@ -110,7 +148,7 @@ class _MemberTile extends StatelessWidget {
         style: warn ? TextStyle(color: c.danger) : null,
       ),
       onTap: onTap,
-      trailing: canHistory || canManage || (canAsk && !isMe)
+      trailing: canHistory || canManage || canHide || (canAsk && !isMe)
           ? PopupMenuButton<String>(
               onSelected: (v) async {
                 switch (v) {
@@ -128,6 +166,8 @@ class _MemberTile extends StatelessWidget {
                     await _ring(context);
                   case 'checkin':
                     await _askCheckIn(context);
+                  case 'hide':
+                    _hide(context);
                 }
               },
               itemBuilder: (_) => [
@@ -153,10 +193,34 @@ class _MemberTile extends StatelessWidget {
                     child: Text(tr.locationRingPhone),
                   ),
                 ],
+                if (canHide)
+                  PopupMenuItem(
+                    value: 'hide',
+                    child: Text(tr.locationHideHere),
+                  ),
               ],
             )
           : null,
     );
+  }
+
+  /// Left out of list and map for everyone, e.g. a child without a phone;
+  /// "Ausgeblendet" at the end of the list brings them back.
+  void _hide(BuildContext context) {
+    final engine = AppScope.read(context).engine!;
+    engine.setHiddenInLocation(member.id, true);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          persist: false,
+          content: Text(tr.locationNameHidden(member.displayName)),
+          action: SnackBarAction(
+            label: tr.commonUndo,
+            onPressed: () => engine.setHiddenInLocation(member.id, false),
+          ),
+        ),
+      );
   }
 
   Future<void> _askCheckIn(BuildContext context) async {

@@ -2266,5 +2266,9 @@
   "tipHealth": "For each medication you decide who sees it and gets reminded to take it.",
   "tipChat": "In the chat you can also start polls, for example for the next outing.",
   "tasksWholeFamily": "Whole family (not guests)",
-  "tasksAudienceHint": "Whoever takes care of a task always sees it. Guests only see tasks assigned or shown to them."
+  "tasksAudienceHint": "Whoever takes care of a task always sees it. Guests only see tasks assigned or shown to them.",
+  "locationHideHere": "Hide here",
+  "locationHidden": "Hidden:",
+  "locationShowMember": "Show {name} again",
+  "locationNameHidden": "{name} is now hidden here for everyone. Show again under “Hidden” at the end of the list."
 }

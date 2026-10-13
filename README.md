@@ -289,7 +289,10 @@ Datensatz (`member_locations`), erkennt Ankunft und Verlassen von Orten
 (`location_alerts`) für die Mitglieder, die sie abonniert haben. Positionen
 werden nach **7 Tagen** gelöscht (Administratoren können 1 bis 365 Tage
 wählen); den Verlauf sehen nur Eltern (Administratoren) und das Mitglied
-selbst.
+selbst. Mitglieder ohne Handy (etwa kleine Kinder) blenden Erwachsene über
+„…“ → „Hier ausblenden“ in „Wo ist wer?“ für die ganze Familie aus
+(`location_settings`); unter „Ausgeblendet“ am Ende der Liste kommen sie
+zurück. Notruf und Check-ins betrifft das nicht.
 
 Pausieren und Beenden – auch Abmelden auf einem teilenden Handy – geht nur
 mit dem **Eltern-Code** (Einstellungen → Server-Verwaltung → Einstellungen).

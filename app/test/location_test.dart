@@ -118,6 +118,37 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('adults hide members without a phone for everyone', (
+    tester,
+  ) async {
+    await open(tester);
+    if (find.text('Verstanden').evaluate().isNotEmpty) {
+      await tester.tap(find.text('Verstanden'));
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(ListTile, 'Papa'),
+        matching: find.byType(PopupMenuButton<String>),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hier ausblenden'));
+    await tester.pumpAndSettle();
+    expect(engine.locationSettings.hiddenMemberIds, ['m3']);
+    expect(find.widgetWithText(ListTile, 'Papa'), findsNothing);
+    expect(find.text('Pausiert'), findsNothing);
+    expect(find.text('Ausgeblendet:'), findsOneWidget);
+    expect(find.textContaining('für alle ausgeblendet'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Papa'));
+    await tester.pumpAndSettle();
+    expect(engine.locationSettings.hiddenMemberIds, isEmpty);
+    expect(find.widgetWithText(ListTile, 'Papa'), findsOneWidget);
+    expect(find.text('Ausgeblendet:'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('the map follows members until it is moved by hand', (
     tester,
   ) async {
