@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.3 – Aufgaben für mehrere
+
+- Eine Aufgabe kann mehreren Personen gehören. Jede bekommt die
+  Erinnerung und findet die Aufgabe unter „Meine“.
+- Unter „Wer darf es sehen?“ lässt sich eine Aufgabe auf dich oder
+  ausgewählte Personen beschränken. Wer sich kümmert, sieht sie immer.
+- Gäste sehen nur noch Aufgaben, die ihnen zugewiesen oder für sie
+  freigegeben sind.
+- Die Karte in der Web-App lädt wieder.
+
 ## 2.0.2 – Tipps und Einrichtung
 
 - Beim ersten Besuch eines Bereichs erklärt ein kurzer Tipp, was dort

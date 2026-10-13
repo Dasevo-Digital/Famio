@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.3 – Tareas para varias personas
+
+- Una tarea puede ser de varias personas. Cada una recibe el recordatorio
+  y la encuentra en «Mías».
+- En «¿Quién puede verlo?» se puede limitar una tarea a ti o a personas
+  seleccionadas. Quien se encarga siempre la ve.
+- Los invitados ahora solo ven las tareas que se les asignan o muestran.
+- El mapa de la app web vuelve a cargar.
+
 ## 2.0.2 – Consejos y configuración
 
 - La primera vez que se abre un área, un consejo breve explica lo que se

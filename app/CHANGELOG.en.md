@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.3 – Tasks for several people
+
+- A task can belong to several people. Each gets the reminder and finds
+  the task under "Mine".
+- Under "Who may see it?" a task can be limited to you or selected
+  people. Whoever takes care of it always sees it.
+- Guests now only see tasks assigned or shown to them.
+- The map in the web app loads again.
+
 ## 2.0.2 – Tips and setup
 
 - On the first visit to an area, a short tip explains what is easy to
