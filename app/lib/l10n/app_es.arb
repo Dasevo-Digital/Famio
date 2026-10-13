@@ -2248,5 +2248,21 @@
   "adminPaperBuddyActive": "Conectado a {address}",
   "setupIgnore": "Ignorar",
   "setupIgnored": "Ignorado",
-  "setupShowAgain": "Mostrar de nuevo"
+  "setupShowAgain": "Mostrar de nuevo",
+  "tipTitle": "Consejo",
+  "tipGotIt": "Entendido",
+  "tipNoMore": "No más consejos",
+  "tipSettings": "Consejos para las áreas",
+  "tipSettingsSubtitle": "Una breve indicación la primera vez que abres un área",
+  "tipCalendar": "No hace falta escribir las citas: «Reconocer eventos» las lee de un texto, una foto, un PDF o un archivo de calendario.",
+  "tipTasks": "Las tareas pueden tener listas de comprobación y fotos. Deslizar a la izquierda borra, «Deshacer» las recupera.",
+  "tipShopping": "Famio ordena los artículos nuevos por los pasillos de vuestra tienda y recuerda las correcciones. Para las excursiones hay listas de equipaje a partir de plantillas.",
+  "tipKids": "Solo los tutores de un niño lo ven a él y todo lo suyo. El registro muestra un día, una semana o un mes de un vistazo.",
+  "tipDocuments": "En cada documento decides quién lo ve, por ejemplo los informes médicos solo para los padres.",
+  "tipLocation": "Añade lugares como el colegio o casa: Famio avisa cuando alguien llega o se va.",
+  "tipChores": "Las tareas del hogar hechas dan puntos: los niños los piden y los adultos los confirman.",
+  "tipMeals": "Con un toque, los ingredientes de la semana del plan de comidas pasan a la lista de la compra. Las recetas muestran lo que ya hay en la despensa.",
+  "tipBudget": "Los extractos de la banca en línea (CSV o CAMT) se pueden importar y se asignan a las categorías.",
+  "tipHealth": "En cada medicamento decides quién lo ve y recibe recordatorios para tomarlo.",
+  "tipChat": "En el chat también puedes iniciar encuestas, por ejemplo para la próxima excursión."
 }

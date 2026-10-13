@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:famio/src/widgets/section_tips.dart';
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
@@ -1095,6 +1096,8 @@ void main() {
       'hiddenModules': hiddenModules,
       // Store screenshots without the tour's card; the tour has its own.
       'tour.offered': true,
+      // Clean screens; the tips have their own shot.
+      'tips.off': true,
     });
     // ignore: invalid_use_of_visible_for_testing_member
     FlutterSecureStorage.setMockInitialValues({});
@@ -1172,6 +1175,11 @@ void main() {
     await _tour(tester, key, 'phone');
     await go(tester, 'Aufgaben');
     await _shot(tester, key, 'phone_2_aufgaben');
+    await SectionTips.setEnabled(true);
+    await go(tester, 'Einkauf');
+    await _shot(tester, key, 'phone_2b_tipp');
+    await tester.tap(find.text('Keine Tipps mehr'));
+    await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Chat').first);
     await tester.pumpAndSettle();
     await go(tester, 'Familie');

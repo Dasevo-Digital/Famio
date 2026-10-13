@@ -10,6 +10,7 @@ import '../data/family_data.dart';
 import '../design/components.dart';
 import '../widgets/famio_glyph.dart';
 import '../widgets/pixel_snap.dart';
+import '../widgets/section_tips.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
@@ -115,6 +116,9 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   var _section = FamioSection.home;
 
+  /// The area whose tip is shown (first visit), or null.
+  FamioSection? _tip;
+
   /// Sections for the member's role, updated with the member list.
   var _sections = FamioSection.values;
 
@@ -216,7 +220,22 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     setState(() {
       _section = section;
       _visited.add(section);
+      // A tip belongs to its area.
+      if (_tip != section) _tip = null;
     });
+    _offerTip(section);
+  }
+
+  Future<void> _offerTip(FamioSection section) async {
+    if (!await SectionTips.due(section)) return;
+    if (mounted && _section == section) setState(() => _tip = section);
+  }
+
+  Future<void> _closeTip({required bool noMore}) async {
+    final tip = _tip;
+    setState(() => _tip = null);
+    if (tip == null) return;
+    noMore ? await SectionTips.setEnabled(false) : await SectionTips.seen(tip);
   }
 
   Future<void> _showMore() async {
@@ -278,11 +297,43 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     );
     final c = FamioColors.of(context);
     final changed = AppScope.of(context).changedCertificate;
+    final tip = _tip;
     final body = Column(
       children: [
         if (changed != null) _CertificateBanner(fingerprint: changed),
         const SosBanner(),
-        Expanded(child: pages),
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned.fill(child: pages),
+              Positioned(
+                left: 16,
+                right: 16,
+                // Above the add button (and the floating bar on phones).
+                bottom: wide ? 100 : listBottomPadding(context),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: AnimatedSwitcher(
+                      duration: MediaQuery.disableAnimationsOf(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 220),
+                      child: tip == null
+                          ? const SizedBox.shrink()
+                          : SectionTipCard(
+                              key: ValueKey(tip),
+                              section: tip,
+                              onGotIt: () => _closeTip(noMore: false),
+                              onNoMore: () => _closeTip(noMore: true),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
 

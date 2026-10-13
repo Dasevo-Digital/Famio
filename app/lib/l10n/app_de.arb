@@ -5727,5 +5727,21 @@
   },
   "setupIgnore": "Ignorieren",
   "setupIgnored": "Ignoriert",
-  "setupShowAgain": "Wieder anzeigen"
+  "setupShowAgain": "Wieder anzeigen",
+  "tipTitle": "Tipp",
+  "tipGotIt": "Verstanden",
+  "tipNoMore": "Keine Tipps mehr",
+  "tipSettings": "Tipps zu den Bereichen",
+  "tipSettingsSubtitle": "Beim ersten Besuch eines Bereichs ein kurzer Hinweis",
+  "tipCalendar": "Termine musst du nicht abtippen: „Termine erkennen“ liest sie aus Text, Foto, PDF oder einer Kalenderdatei.",
+  "tipTasks": "Aufgaben können Checklisten und Fotos haben. Nach links wischen löscht, „Rückgängig“ holt sie zurück.",
+  "tipShopping": "Neue Artikel sortiert Famio in die Gänge eures Ladens und merkt sich Korrekturen. Für Ausflüge gibt es Packlisten aus Vorlagen.",
+  "tipKids": "Ein Kind und alles dazu sehen nur seine Sorgeberechtigten. Im Protokoll siehst du Tag, Woche oder Monat auf einen Blick.",
+  "tipDocuments": "Bei jedem Dokument legst du fest, wer es sieht, etwa Arztbriefe nur für die Eltern.",
+  "tipLocation": "Lege Orte wie Schule oder Zuhause an: Famio meldet dann, wenn jemand ankommt oder losgeht.",
+  "tipChores": "Für erledigte Ämter gibt es Punkte: Kinder fragen sie an, Erwachsene bestätigen.",
+  "tipMeals": "Aus dem Wochenplan kommen die Zutaten der Woche mit einem Fingertipp auf die Einkaufsliste. Rezepte zeigen, was davon schon im Vorrat ist.",
+  "tipBudget": "Kontoauszüge aus dem Online-Banking (CSV oder CAMT) lassen sich importieren und werden den Kategorien zugeordnet.",
+  "tipHealth": "Bei jedem Medikament legst du fest, wer es sieht und an die Einnahme erinnert wird.",
+  "tipChat": "Im Chat kannst du auch Umfragen starten, etwa für den nächsten Ausflug."
 }

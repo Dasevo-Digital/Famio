@@ -77,6 +77,7 @@ abstract final class AppIcons {
   static const IconData info = LucideIcons.info;
   static const IconData key = LucideIcons.keyRound;
   static const IconData laptop = LucideIcons.laptop;
+  static const IconData lightbulb = LucideIcons.lightbulb;
   static const IconData link = LucideIcons.link;
   static const IconData lock = LucideIcons.lock;
   static const IconData lockKey = LucideIcons.lockKeyhole;

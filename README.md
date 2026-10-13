@@ -43,7 +43,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
-| Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) | ✅ |
+| Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
 | App-Updates über den eigenen Server (Android, Windows, Linux; signiert) | ✅ |
 | Aufgaben (fällig, zuständig, Erinnerung, Wiederholung, Checkliste, Fotos) | ✅ |
 | Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |

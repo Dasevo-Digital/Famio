@@ -2248,5 +2248,21 @@
   "adminPaperBuddyActive": "Connected to {address}",
   "setupIgnore": "Ignore",
   "setupIgnored": "Ignored",
-  "setupShowAgain": "Show again"
+  "setupShowAgain": "Show again",
+  "tipTitle": "Tip",
+  "tipGotIt": "Got it",
+  "tipNoMore": "No more tips",
+  "tipSettings": "Tips for the areas",
+  "tipSettingsSubtitle": "A short hint the first time you open an area",
+  "tipCalendar": "No need to type events: \"Recognize events\" reads them from text, a photo, a PDF or a calendar file.",
+  "tipTasks": "Tasks can have checklists and photos. Swiping left deletes, \"Undo\" brings them back.",
+  "tipShopping": "Famio sorts new items into the aisles of your shop and remembers corrections. For trips there are packing lists from templates.",
+  "tipKids": "Only a child's guardians see the child and everything about it. The log shows a day, a week or a month at a glance.",
+  "tipDocuments": "For each document you decide who sees it, such as doctor's letters only for the parents.",
+  "tipLocation": "Add places like school or home: Famio then tells you when someone arrives or leaves.",
+  "tipChores": "Done chores earn points: children ask for them, adults confirm.",
+  "tipMeals": "One tap puts the week's ingredients from the meal plan on the shopping list. Recipes show what is already in the pantry.",
+  "tipBudget": "Bank statements from online banking (CSV or CAMT) can be imported and are sorted into categories.",
+  "tipHealth": "For each medication you decide who sees it and gets reminded to take it.",
+  "tipChat": "In the chat you can also start polls, for example for the next outing."
 }

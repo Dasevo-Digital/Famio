@@ -34,6 +34,7 @@ import 'deadlines_screen.dart';
 import 'waste_screen.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
+import '../widgets/section_tips.dart';
 import 'year_review_screen.dart';
 import '../widgets/famio_tour.dart';
 
@@ -380,6 +381,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(tr.tourMenuSubtitle),
             onTap: () => startTourFromShell(context),
           ),
+          const _TipsTile(),
           ListTile(
             leading: const Icon(AppIcons.sparkle),
             title: Text(context.l10n.settingsWhatsNew),
@@ -870,4 +872,38 @@ class _DeviceStorageTileState extends State<_DeviceStorageTile> {
       ),
     );
   }
+}
+
+/// Tips on the first visit of an area: off, or on again with every tip.
+class _TipsTile extends StatefulWidget {
+  const _TipsTile();
+
+  @override
+  State<_TipsTile> createState() => _TipsTileState();
+}
+
+class _TipsTileState extends State<_TipsTile> {
+  bool? _on;
+
+  @override
+  void initState() {
+    super.initState();
+    SectionTips.enabled.then((on) {
+      if (mounted) setState(() => _on = on);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => SwitchListTile(
+    secondary: const Icon(AppIcons.lightbulb),
+    title: Text(tr.tipSettings),
+    subtitle: Text(tr.tipSettingsSubtitle),
+    value: _on ?? true,
+    onChanged: _on == null
+        ? null
+        : (on) async {
+            await SectionTips.setEnabled(on);
+            if (mounted) setState(() => _on = on);
+          },
+  );
 }

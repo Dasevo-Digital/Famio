@@ -25,7 +25,8 @@ void main() {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    SharedPreferences.setMockInitialValues({});
+    // The tip of the area would cover entries the test taps.
+    SharedPreferences.setMockInitialValues({'tips.off': true});
     FlutterSecureStorage.setMockInitialValues({});
     const me = FamilyMember(id: 'm1', username: 'mama', displayName: 'Mama');
     final state = AppState();
