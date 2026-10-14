@@ -136,7 +136,7 @@ class _WeekPlan extends StatelessWidget {
             Expanded(
               child: Text(
                 '${DateFormat.MMMd(appLanguage).format(week)} – '
-                '${DateFormat.MMMd(appLanguage).format(end.subtract(const Duration(days: 1)))}',
+                '${DateFormat.MMMd(appLanguage).format(DateUtils.addDaysToDate(end, -1))}',
                 textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium,
               ),
@@ -735,7 +735,7 @@ class _MealEditorState extends State<_MealEditor> {
                       context: context,
                       initialDate: _day,
                       firstDate: DateTime(2020),
-                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                      lastDate: DateUtils.addDaysToDate(DateTime.now(), 365),
                     );
                     if (picked != null) setState(() => _day = picked);
                   },

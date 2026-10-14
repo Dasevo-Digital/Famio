@@ -53,7 +53,7 @@ class WasteScreen extends StatelessWidget {
         );
         final today = DateUtils.dateOnly(DateTime.now());
         final pickups = engine
-            .wastePickups(today, today.add(const Duration(days: 60)))
+            .wastePickups(today, DateUtils.addDaysToDate(today, 60))
             .take(8)
             .toList();
         final date = DateFormat.MMMEd(appLanguage);

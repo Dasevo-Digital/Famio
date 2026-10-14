@@ -529,7 +529,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
                 final now = DateTime.now();
                 final picked = await showDatePicker(
                   context: context,
-                  initialDate: _expires ?? now.add(const Duration(days: 365)),
+                  initialDate: _expires ?? DateUtils.addDaysToDate(now, 365),
                   firstDate: DateTime(now.year - 10),
                   lastDate: DateTime(now.year + 30),
                 );

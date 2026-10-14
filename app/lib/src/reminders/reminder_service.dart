@@ -452,7 +452,10 @@ List<DueReminder> familyReminders(
   required DateTime from,
   required DateTime to,
 }) {
-  DateTime nineOn(DateTime d) => DateTime(d.year, d.month, d.day, 9);
+  // 9 o'clock [days] calendar days after [d] (24 h steps would land on
+  // the wrong day across a clock change).
+  DateTime nineOn(DateTime d, [int days = 0]) =>
+      DateTime(d.year, d.month, d.day + days, 9);
   final result = <DueReminder>[];
   void add(String key, DateTime at, String title, String body) {
     if (!at.isBefore(from) && at.isBefore(to)) {
@@ -483,10 +486,9 @@ List<DueReminder> familyReminders(
         final clock = appointment.time == null
             ? ''
             : tr.remindersTime(appointment.time!);
-        final dayBefore = at.subtract(const Duration(days: 1));
         add(
           'kid:${child.id}:${d.id}:appt:${appointment.date.toIso8601String()}',
-          DateTime(dayBefore.year, dayBefore.month, dayBefore.day, 18),
+          DateTime(at.year, at.month, at.day - 1, 18),
           tr.remindersTomorrowWhatName(what, child.name),
           tr.remindersAppointmentDateClockBring(
             DateFormat.yMd(appLanguage).format(at),
@@ -504,9 +506,10 @@ List<DueReminder> familyReminders(
         continue;
       }
       // Pediatricians are booked out for weeks: remind to call in time.
-      final book = nineOn(d.from.subtract(const Duration(days: 28)));
+      final book = nineOn(d.from, -28);
+      final birth = child.birthDate;
       if (d.isCheckup &&
-          book.isAfter(child.birthDate.add(const Duration(days: 14)))) {
+          book.isAfter(DateTime(birth.year, birth.month, birth.day + 14))) {
         add(
           'kid:${child.id}:${d.id}:book',
           book,
@@ -527,7 +530,7 @@ List<DueReminder> familyReminders(
       if (d.isCheckup) {
         add(
           'kid:${child.id}:${d.id}:end',
-          nineOn(d.to.subtract(const Duration(days: 7))),
+          nineOn(d.to, -7),
           tr.remindersWhatNameOneWeek(what, child.name),
           tr.remindersPeriodEndsSoon,
         );
@@ -559,7 +562,7 @@ List<DueReminder> familyReminders(
     }
     add(
       'preg:${p.id}:leave',
-      nineOn(maternityLeave(p).subtract(const Duration(days: 14))),
+      nineOn(maternityLeave(p), -14),
       tr.remindersWhoMaternityLeaveStarts(who),
       tr.remindersDate(DateFormat.yMd(appLanguage).format(maternityLeave(p))),
     );
@@ -580,7 +583,7 @@ List<DueReminder> familyReminders(
     );
   }
   // Routines of the member (children's checklists), until done.
-  for (var d = 0; d < to.difference(from).inDays + 1; d++) {
+  for (var d = 0; d <= daysBetween(from, to); d++) {
     final day = DateTime(from.year, from.month, from.day + d);
     for (final r in engine.routinesFor(engine.memberId, day)) {
       final at = r.reminderOn(day);
@@ -626,9 +629,7 @@ List<DueReminder> familyReminders(
     final early = days <= m.refillDays;
     add(
       'med-refill:${m.id}:${m.stockAt!.millisecondsSinceEpoch}',
-      early
-          ? nineOn(from.add(const Duration(days: 1)))
-          : nineOn(from.add(Duration(days: days - m.refillDays))),
+      early ? nineOn(from, 1) : nineOn(from, days - m.refillDays),
       tr.remindersBuyMedicationAgainSoon(m.name),
       tr.remindersSupplyLastsAboutDays(early ? max(0, days - 1) : m.refillDays),
     );
@@ -653,7 +654,7 @@ List<DueReminder> familyReminders(
     if (d.leadDays > 0) {
       add(
         'deadline:${d.id}:${dayKey(d.due)}:lead',
-        nineOn(d.due.subtract(Duration(days: d.leadDays))),
+        nineOn(d.due, -d.leadDays),
         tr.remindersEmojiLabelDaysDays(d.area.emoji, d.label, d.leadDays),
         tr.remindersDueDateMakeAppointment(when),
       );
@@ -717,7 +718,7 @@ List<DueReminder> familyReminders(
     for (final days in [60, 7]) {
       add(
         'doc:${doc.id}:$days',
-        nineOn(expires.subtract(Duration(days: days))),
+        nineOn(expires, -days),
         tr.remindersTitleExpires(doc.title),
         tr.remindersValidUntilDateRenew(
           DateFormat.yMd(appLanguage).format(expires),

@@ -230,8 +230,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
   late var _area =
       widget.existing?.area ?? widget.preset?.area ?? DeadlineArea.car;
   late var _due =
-      widget.existing?.due ??
-      DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 30));
+      widget.existing?.due ?? DateUtils.addDaysToDate(DateTime.now(), 30);
   late int? _repeat = widget.existing != null
       ? widget.existing!.repeatMonths
       : widget.preset?.repeatMonths ?? 12;

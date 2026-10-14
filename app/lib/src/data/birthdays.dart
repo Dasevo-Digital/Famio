@@ -70,7 +70,7 @@ List<(FamilyBirthday, DateTime)> upcomingBirthdays(
   int days = 30,
 }) {
   final today = DateTime(from.year, from.month, from.day);
-  final end = today.add(Duration(days: days));
+  final end = DateTime(today.year, today.month, today.day + days);
   return [
     for (final b in familyBirthdays(engine))
       if (b.next(today) case final d when d.isBefore(end)) (b, d),
@@ -90,7 +90,7 @@ List<CalendarEvent> birthdayEvents(SyncEngine engine) => [
         id: b.sourceId,
         title: '🎂 ${b.name}',
         start: first,
-        end: first.add(const Duration(days: 1)),
+        end: DateTime(first.year, first.month, first.day + 1),
         allDay: true,
         recurrence: const Recurrence(RecurrenceFrequency.yearly),
         sourceId: b.sourceId,

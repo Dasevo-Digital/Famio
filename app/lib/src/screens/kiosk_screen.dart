@@ -407,10 +407,10 @@ class _EventsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(now);
-    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrow = DateUtils.addDaysToDate(today, 1);
     List<Widget> day(DateTime d, String label) {
       final items = engine
-          .occurrences(d, d.add(const Duration(days: 1)))
+          .occurrences(d, DateUtils.addDaysToDate(d, 1))
           .where((o) => o.event.allDay || o.end.isAfter(now))
           .toList();
       return [
@@ -579,10 +579,7 @@ class _MealsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(now);
-    final meals = engine.plannedMeals(
-      today,
-      today.add(const Duration(days: 1)),
-    );
+    final meals = engine.plannedMeals(today, DateUtils.addDaysToDate(today, 1));
     return _Panel(
       section: FamioSection.meals,
       title: tr.kioskMealsToday,
@@ -626,7 +623,7 @@ class _PeopleBoard extends StatelessWidget {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     final today = DateUtils.dateOnly(now);
-    final tomorrow = today.add(const Duration(days: 1));
+    final tomorrow = DateUtils.addDaysToDate(today, 1);
     bool on(FamioSection s) => !hidden.contains(s.name);
     final occurrences = on(FamioSection.calendar)
         ? engine

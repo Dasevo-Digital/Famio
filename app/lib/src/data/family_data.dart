@@ -213,7 +213,10 @@ extension FamilyData on SyncEngine {
     for (final e in events) {
       if (!e.countdown) continue;
       final next = e
-          .occurrencesBetween(now, today.add(const Duration(days: 366)))
+          .occurrencesBetween(
+            now,
+            DateTime(today.year, today.month, today.day + 366),
+          )
           .firstOrNull;
       if (next == null) continue;
       final day = DateTime.utc(

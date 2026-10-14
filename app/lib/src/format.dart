@@ -1,12 +1,13 @@
+import 'package:famio_client/famio_client.dart' show daysBetween;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'l10n.dart';
 
 /// "Heute", "Morgen", "Gestern" or e.g. "Fr, 2. Okt." (with year if not
 /// the current one).
-String dayLabel(DateTime day) {
-  final today = DateUtils.dateOnly(DateTime.now());
-  final diff = DateUtils.dateOnly(day).difference(today).inDays;
+String dayLabel(DateTime day, {DateTime? now}) {
+  final today = DateUtils.dateOnly(now ?? DateTime.now());
+  final diff = daysBetween(today, day);
   return switch (diff) {
     0 => tr.commonToday,
     1 => tr.commonTomorrow,

@@ -4,7 +4,7 @@ import '../l10n.dart';
 /// "3 Wochen", "5 Monate", "1 Jahr und 3 Monate", "6 Jahre".
 String ageLabel(Child child, [DateTime? at]) {
   final now = at ?? DateTime.now();
-  final days = now.difference(child.birthDate).inDays;
+  final days = daysBetween(child.birthDate, now);
   if (days < 0) return tr.ageNotBornYet;
   if (days < 14) return tr.ageDays(days);
   final months = child.ageInMonths(now);
@@ -119,13 +119,17 @@ List<DueItem> checkupPlan(
   DateTime? at,
 ]) {
   final now = at ?? DateTime.now();
+  final birth = child.birthDate;
+  // Calendar days: 24-hour steps end an hour off across a clock change.
+  DateTime afterBirth(int days) =>
+      DateTime(birth.year, birth.month, birth.day + days);
   return [
     for (final c in checkups)
       () {
         final entry = _entryFor(entries, ChildEntryKind.checkup, c.id);
-        final from = child.birthDate.add(Duration(days: c.fromDay));
-        final to = child.birthDate.add(Duration(days: c.toDay));
-        final tolerance = child.birthDate.add(Duration(days: c.toleranceTo));
+        final from = afterBirth(c.fromDay);
+        final to = afterBirth(c.toDay);
+        final tolerance = afterBirth(c.toleranceTo);
         final day = DateTime(now.year, now.month, now.day);
         final state = _stateOf(
           entry,
@@ -165,7 +169,7 @@ List<DueItem> vaccinationPlan(
         final entry = _entryFor(entries, ChildEntryKind.vaccination, v.id);
         final from = child.ageDate(v.ageMonths);
         // Vaccinations have no fixed window; a month counts as "due".
-        final to = from.add(const Duration(days: 31));
+        final to = DateTime(from.year, from.month, from.day + 31);
         final state = _stateOf(
           entry,
           () => day.isBefore(from)

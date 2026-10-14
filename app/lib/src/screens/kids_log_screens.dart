@@ -305,8 +305,7 @@ String _periodLabel(LogPeriod period, List<DateTime> days, DateTime now) {
 }
 
 String _dayLabel(DateTime day, DateTime now) {
-  final today = DateTime(now.year, now.month, now.day);
-  final diff = today.difference(day).inDays;
+  final diff = daysBetween(day, now);
   return diff == 0
       ? tr.commonToday
       : diff == 1
@@ -1309,8 +1308,8 @@ class _LogEditorState extends State<_LogEditor> {
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: widget.child.birthDate.subtract(const Duration(days: 1)),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
+      firstDate: DateUtils.addDaysToDate(widget.child.birthDate, -1),
+      lastDate: DateUtils.addDaysToDate(DateTime.now(), 1),
     );
     if (date == null || !mounted) return null;
     final time = await showTimePicker(

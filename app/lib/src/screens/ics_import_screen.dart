@@ -58,7 +58,7 @@ class _IcsImportScreenState extends State<IcsImportScreen> {
           : '${day.format(start)} ${DateFormat.jm(appLanguage).format(start)}'
                 ' – ${day.format(end)} ${DateFormat.jm(appLanguage).format(end)}';
     }
-    final last = e.end.subtract(const Duration(days: 1));
+    final last = DateUtils.addDaysToDate(e.end, -1);
     return !last.isAfter(e.start)
         ? tr.importDayAllDay(day.format(e.start))
         : '${day.format(e.start)} – ${day.format(last)}';

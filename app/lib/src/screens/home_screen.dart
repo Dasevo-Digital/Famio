@@ -149,7 +149,7 @@ class HomeScreen extends StatelessWidget {
                   engine
                       .plannedMeals(
                         DateUtils.dateOnly(now),
-                        DateUtils.dateOnly(now).add(const Duration(days: 2)),
+                        DateUtils.addDaysToDate(now, 2),
                       )
                       .isNotEmpty)
                 _MealsTile(engine: engine),
@@ -433,15 +433,12 @@ class _TodayTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
-    final todays = engine.occurrences(
-      today,
-      today.add(const Duration(days: 1)),
-    );
+    final todays = engine.occurrences(today, DateUtils.addDaysToDate(today, 1));
     final upcoming = todays.isEmpty
         ? engine
               .occurrences(
-                today.add(const Duration(days: 1)),
-                today.add(const Duration(days: 8)),
+                DateUtils.addDaysToDate(today, 1),
+                DateUtils.addDaysToDate(today, 8),
               )
               .take(3)
               .toList()
@@ -1070,7 +1067,7 @@ class _BirthdaysTile extends StatelessWidget {
               ),
               trailing: day == today
                   ? tr.homeToday
-                  : day.difference(today).inDays == 1
+                  : daysBetween(today, day) == 1
                   ? tr.commonTomorrowLower
                   : DateFormat.MEd(appLanguage).format(day),
             ),
@@ -1089,10 +1086,7 @@ class _MealsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = DateUtils.dateOnly(DateTime.now());
     final c = FamioColors.of(context);
-    final meals = engine.plannedMeals(
-      today,
-      today.add(const Duration(days: 2)),
-    );
+    final meals = engine.plannedMeals(today, DateUtils.addDaysToDate(today, 2));
     return _Tile(
       section: FamioSection.meals,
       title: tr.sectionMeals,

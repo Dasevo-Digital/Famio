@@ -114,9 +114,7 @@ YearReview yearReview(SyncEngine engine, int year) {
     tasksDone: engine.tasks.where((t) => inYear(t.completedAt)).length,
     choresDone: done.length,
     messages: messages.length,
-    meals: engine
-        .plannedMeals(from, to.subtract(const Duration(days: 1)))
-        .length,
+    meals: engine.plannedMeals(from, to).length,
     kids: [
       for (final child in engine.children)
         _child(child, engine.childEntries(child.id), inYear),

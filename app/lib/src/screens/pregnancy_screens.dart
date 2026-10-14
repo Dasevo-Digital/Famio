@@ -772,9 +772,9 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
                 onPressed: () async {
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: _due ?? now.add(const Duration(days: 200)),
-                    firstDate: now.subtract(const Duration(days: 60)),
-                    lastDate: now.add(const Duration(days: 300)),
+                    initialDate: _due ?? DateUtils.addDaysToDate(now, 200),
+                    firstDate: DateUtils.addDaysToDate(now, -60),
+                    lastDate: DateUtils.addDaysToDate(now, 300),
                   );
                   if (picked != null) setState(() => _due = picked);
                 },
@@ -786,8 +786,8 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
                   final picked = await showDatePicker(
                     context: context,
                     helpText: tr.pregnancyFirstDayLastPeriod,
-                    initialDate: now.subtract(const Duration(days: 56)),
-                    firstDate: now.subtract(const Duration(days: 300)),
+                    initialDate: DateUtils.addDaysToDate(now, -56),
+                    firstDate: DateUtils.addDaysToDate(now, -300),
                     lastDate: now,
                   );
                   if (picked != null) {

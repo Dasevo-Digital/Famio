@@ -218,7 +218,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
         DateFormat.jm(appLanguage).format(e.end),
       );
     }
-    final last = e.end.subtract(const Duration(days: 1));
+    final last = DateUtils.addDaysToDate(e.end, -1);
     return DateUtils.isSameDay(e.start, last)
         ? tr.importDayAllDay(day.format(e.start))
         : '${day.format(e.start)} – ${day.format(last)}';

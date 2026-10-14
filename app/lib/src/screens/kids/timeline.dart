@@ -15,7 +15,7 @@ class _Timeline extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final horizon = today.add(const Duration(days: 183));
+    final horizon = DateUtils.addDaysToDate(today, 183);
     final ageMonths = child.ageInMonths(now);
     final reached = {
       for (final e in entries)

@@ -213,7 +213,7 @@ String _cm(double cm) =>
 
 /// "12. Aug. – 26. Aug." (all-day ends are exclusive).
 String _span(DateFormat date, ReviewTrip t) {
-  final last = t.end.subtract(const Duration(days: 1));
+  final last = DateUtils.addDaysToDate(t.end, -1);
   return last.isAfter(t.start)
       ? '${date.format(t.start)} – ${date.format(last)}'
       : date.format(t.start);

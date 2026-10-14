@@ -18,7 +18,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
       AppScope.read(context).engine!.api.locationHistory(
         memberId: widget.member.id,
         from: _day,
-        to: _day.add(const Duration(days: 1)),
+        to: DateUtils.addDaysToDate(_day, 1),
       );
 
   void _pick(DateTime day) => setState(() {
@@ -33,7 +33,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
     final accent = Color(widget.member.color ?? 0xFF16927F);
     final today = DateUtils.dateOnly(DateTime.now());
     final days = [
-      for (var i = 0; i < 7; i++) today.subtract(Duration(days: i)),
+      for (var i = 0; i < 7; i++) DateUtils.addDaysToDate(today, -i),
     ];
     final time = DateFormat.jm(appLanguage);
     return SectionPage(
@@ -57,7 +57,7 @@ class _LocationHistoryScreenState extends State<LocationHistoryScreen> {
                       label: Text(
                         d == today
                             ? tr.commonToday
-                            : d == today.subtract(const Duration(days: 1))
+                            : d == DateUtils.addDaysToDate(today, -1)
                             ? tr.commonYesterday
                             : DateFormat.MEd(appLanguage).format(d),
                       ),

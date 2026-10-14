@@ -78,7 +78,7 @@ class _EntryEditorState extends State<_EntryEditor> {
 
   /// Done things lie in the past; appointments may lie years ahead.
   DateTime get _lastDate => _planned
-      ? DateUtils.dateOnly(DateTime.now()).add(const Duration(days: 365 * 5))
+      ? DateUtils.addDaysToDate(DateTime.now(), 365 * 5)
       : DateUtils.dateOnly(DateTime.now());
 
   DateTime get _firstDate => DateUtils.dateOnly(widget.child.birthDate);
