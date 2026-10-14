@@ -57,7 +57,7 @@ class Child {
     final fraction = months - whole;
     return fraction == 0
         ? date
-        : date.add(Duration(days: (fraction * 30.4).round()));
+        : DateTime(date.year, date.month, date.day + (fraction * 30.4).round());
   }
 
   /// Completed months of age at [at].

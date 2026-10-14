@@ -127,7 +127,8 @@ class Chore {
         final perWeek = weekdays.length;
         var turns = days ~/ 7 * perWeek;
         for (var i = days - days % 7; i < days; i++) {
-          if (weekdays.contains(start.add(Duration(days: i)).weekday)) turns++;
+          final d = DateTime(start.year, start.month, start.day + i);
+          if (weekdays.contains(d.weekday)) turns++;
         }
         return turns;
     }
@@ -326,7 +327,7 @@ class Allowance {
   /// Paydays in `[from, to]` (whole days), not before [since].
   Iterable<DateTime> paydays(DateTime from, DateTime to) sync* {
     var d = _day(from.isBefore(since) ? since : from);
-    d = d.add(Duration(days: (payday - d.weekday + 7) % 7));
+    d = DateTime(d.year, d.month, d.day + (payday - d.weekday + 7) % 7);
     while (!d.isAfter(_day(to))) {
       yield d;
       d = DateTime(d.year, d.month, d.day + 7);
