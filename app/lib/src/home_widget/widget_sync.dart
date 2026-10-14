@@ -18,7 +18,8 @@ typedef WidgetLine = ({String kind, String lead, String text});
 /// private – a home screen can be seen by others.
 (String, List<WidgetLine>) widgetLines(SyncEngine engine, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
-  final tomorrow = today.add(const Duration(days: 1));
+  // Not today + 24 h: on the day the clocks change that is 23:00 or 01:00.
+  final tomorrow = DateTime(now.year, now.month, now.day + 1);
   final time = DateFormat.jm(appLanguage);
   final lines = <WidgetLine>[];
   final events = engine

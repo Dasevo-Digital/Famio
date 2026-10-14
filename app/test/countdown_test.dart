@@ -111,8 +111,15 @@ void main() {
     await state.init();
     final engine = newEngine();
     final today = DateUtils.dateOnly(DateTime.now());
+    // Calendar days, not 12 × 24 h: those end an hour early when the
+    // clocks go back in between.
     engine.saveEvent(
-      allDay('a', 'Urlaub', today.add(const Duration(days: 12)), 7),
+      allDay(
+        'a',
+        'Urlaub',
+        DateTime(today.year, today.month, today.day + 12),
+        7,
+      ),
     );
     state
       ..me = me
