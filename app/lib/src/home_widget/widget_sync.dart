@@ -9,27 +9,35 @@ import 'package:intl/intl.dart';
 import '../data/family_data.dart';
 import '../l10n.dart';
 
-/// Title and up to five lines for the "Famio heute" widget: today's events,
-/// meals, own tasks, shopping and a sleeping baby. Nothing more private –
-/// a home screen can be seen by others.
-(String, List<String>) widgetLines(SyncEngine engine, DateTime now) {
+/// One row of the "Famio heute" widget: [kind] picks the section color
+/// (event, meal, tasks, shopping, sleep), [lead] is a time or a symbol.
+typedef WidgetLine = ({String kind, String lead, String text});
+
+/// The date and up to five rows for the "Famio heute" widget: today's
+/// events, meals, own tasks, shopping and a sleeping baby. Nothing more
+/// private – a home screen can be seen by others.
+(String, List<WidgetLine>) widgetLines(SyncEngine engine, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   final tomorrow = today.add(const Duration(days: 1));
   final time = DateFormat.jm(appLanguage);
-  final lines = <String>[];
+  final lines = <WidgetLine>[];
   final events = engine
       .occurrences(today, tomorrow)
       .where((o) => o.event.allDay || o.end.isAfter(now))
       .take(2);
   for (final o in events) {
-    lines.add(
-      o.event.allDay
-          ? '📅 ${o.event.title}'
-          : '${time.format(o.start)} ${o.event.title}',
-    );
+    lines.add((
+      kind: 'event',
+      lead: o.event.allDay ? '📅' : time.format(o.start),
+      text: o.event.title,
+    ));
   }
   for (final m in engine.plannedMeals(today, tomorrow).take(1)) {
-    lines.add('🍽 ${engine.recipe(m.recipeId)?.title ?? m.title}');
+    lines.add((
+      kind: 'meal',
+      lead: '🍽',
+      text: engine.recipe(m.recipeId)?.title ?? m.title,
+    ));
   }
   final tasks = engine.tasks
       .where(
@@ -41,14 +49,14 @@ import '../l10n.dart';
       )
       .length;
   if (tasks > 0) {
-    lines.add(tr.widgetTasksToday(tasks));
+    lines.add((kind: 'tasks', lead: '✅', text: tr.widgetTasksToday(tasks)));
   }
   var open = 0;
   for (final l in engine.shoppingLists) {
     open += engine.shoppingItems(l.id).where((i) => !i.checked).length;
   }
   if (open > 0) {
-    lines.add(tr.widgetThingsToBuy(open));
+    lines.add((kind: 'shopping', lead: '🛒', text: tr.widgetThingsToBuy(open)));
   }
   for (final k in engine.children) {
     final sleeping = engine
@@ -56,15 +64,14 @@ import '../l10n.dart';
         .where((l) => l.kind == LogKind.sleep && l.running)
         .firstOrNull;
     if (sleeping != null) {
-      lines.add(
-        tr.widgetNameAsleepSinceTime(k.name, time.format(sleeping.start)),
-      );
+      lines.add((
+        kind: 'sleep',
+        lead: '🌙',
+        text: tr.widgetNameAsleepSinceTime(k.name, time.format(sleeping.start)),
+      ));
     }
   }
-  return (
-    'Famio · ${DateFormat.MEd(appLanguage).format(now)}',
-    lines.take(5).toList(),
-  );
+  return (DateFormat.MMMEd(appLanguage).format(now), lines.take(5).toList());
 }
 
 /// Keeps the Android home screen widget up to date while the app runs.
@@ -91,7 +98,7 @@ class HomeWidgetSync {
     _current?._stop();
     _current = null;
     if (!supported) return;
-    await _write('Famio', const []);
+    await _write('', const []);
   }
 
   void _start() {
@@ -112,8 +119,8 @@ class HomeWidgetSync {
 
   Future<void> _update() async {
     final now = DateTime.now();
-    final (title, lines) = widgetLines(_engine, now);
-    await _write(title, lines);
+    final (date, lines) = widgetLines(_engine, now);
+    await _write(date, lines);
     // A new day needs new lines even without changes.
     _midnight?.cancel();
     _midnight = Timer(
@@ -122,14 +129,16 @@ class HomeWidgetSync {
     );
   }
 
-  static Future<void> _write(String title, List<String> lines) async {
+  static Future<void> _write(String date, List<WidgetLine> lines) async {
     try {
-      await HomeWidget.saveWidgetData<String>('title', title);
+      await HomeWidget.saveWidgetData<String>('date', date);
       for (var i = 0; i < 5; i++) {
-        await HomeWidget.saveWidgetData<String>(
-          'line$i',
-          i < lines.length ? lines[i] : null,
-        );
+        final line = i < lines.length ? lines[i] : null;
+        await HomeWidget.saveWidgetData<String>('kind$i', line?.kind);
+        await HomeWidget.saveWidgetData<String>('lead$i', line?.lead);
+        await HomeWidget.saveWidgetData<String>('text$i', line?.text);
+        // The single line of apps before 2.0.5.
+        await HomeWidget.saveWidgetData<String>('line$i', null);
       }
       // Qualified: "Famio Dev" has another application id than the package.
       await HomeWidget.updateWidget(

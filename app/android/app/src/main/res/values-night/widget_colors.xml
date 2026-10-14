@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Section accents at 22 % over the dark surface, as the app tints its tiles. -->
+<resources>
+    <color name="widget_bg">#FF1B1D2B</color>
+    <color name="widget_ink">#FFF4F1FA</color>
+    <color name="widget_ink_soft">#FFA9ADC6</color>
+    <color name="widget_row_event">#FF393561</color>
+    <color name="widget_row_meal">#FF364034</color>
+    <color name="widget_row_tasks">#FF274348</color>
+    <color name="widget_row_shopping">#FF51393C</color>
+    <color name="widget_row_sleep">#FF4E314B</color>
+</resources>

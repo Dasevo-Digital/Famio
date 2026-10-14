@@ -53,14 +53,17 @@ void main() {
           start: DateTime(2026, 9, 28, 8, 15),
         ),
       );
-    final (title, lines) = widgetLines(engine, now);
-    expect(title, 'Famio · Mo., 28.9.');
-    expect(lines, [
-      '17:30 Fußballtraining',
-      '🍽 Pizza',
-      '✅ 1 Aufgabe heute',
-      '🛒 1 Sache einkaufen',
-      '🌙 Emil schläft seit 08:15',
-    ]);
+    final (date, lines) = widgetLines(engine, now);
+    expect(date, 'Mo., 28. Sept.');
+    expect(
+      [for (final l in lines) (l.kind, l.lead, l.text)],
+      [
+        ('event', '17:30', 'Fußballtraining'),
+        ('meal', '🍽', 'Pizza'),
+        ('tasks', '✅', '1 Aufgabe heute'),
+        ('shopping', '🛒', '1 Sache einkaufen'),
+        ('sleep', '🌙', 'Emil schläft seit 08:15'),
+      ],
+    );
   });
 }

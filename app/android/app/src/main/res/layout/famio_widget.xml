@@ -1,33 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- "Famio heute": header with logo and date, then up to five tinted rows
+     (events, meals, tasks, shopping, a sleeping baby). Filled in by
+     FamioWidgetProvider from what the app writes. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/widget_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="8dp"
+    android:paddingBottom="10dp">
 
-    <TextView
-        android:id="@+id/widget_title"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Famio"
-        android:textColor="#FFF26B8F"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:paddingBottom="6dp" />
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp"
+        android:paddingBottom="2dp">
 
-    <TextView android:id="@+id/widget_line1" style="@style/FamioWidgetLine" />
-    <TextView android:id="@+id/widget_line2" style="@style/FamioWidgetLine" />
-    <TextView android:id="@+id/widget_line3" style="@style/FamioWidgetLine" />
-    <TextView android:id="@+id/widget_line4" style="@style/FamioWidgetLine" />
-    <TextView android:id="@+id/widget_line5" style="@style/FamioWidgetLine" />
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:importantForAccessibility="no"
+            android:src="@mipmap/ic_launcher" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Famio"
+            android:textColor="@color/widget_ink"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/widget_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:ellipsize="end"
+            android:gravity="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_ink_soft"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_row0" style="@style/FamioWidgetRow">
+        <TextView android:id="@+id/widget_lead0" style="@style/FamioWidgetLead" />
+        <TextView android:id="@+id/widget_text0" style="@style/FamioWidgetText" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_row1" style="@style/FamioWidgetRow">
+        <TextView android:id="@+id/widget_lead1" style="@style/FamioWidgetLead" />
+        <TextView android:id="@+id/widget_text1" style="@style/FamioWidgetText" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_row2" style="@style/FamioWidgetRow">
+        <TextView android:id="@+id/widget_lead2" style="@style/FamioWidgetLead" />
+        <TextView android:id="@+id/widget_text2" style="@style/FamioWidgetText" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_row3" style="@style/FamioWidgetRow">
+        <TextView android:id="@+id/widget_lead3" style="@style/FamioWidgetLead" />
+        <TextView android:id="@+id/widget_text3" style="@style/FamioWidgetText" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/widget_row4" style="@style/FamioWidgetRow">
+        <TextView android:id="@+id/widget_lead4" style="@style/FamioWidgetLead" />
+        <TextView android:id="@+id/widget_text4" style="@style/FamioWidgetText" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/widget_empty"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
         android:text="@string/widget_nothing_today"
-        android:textColor="#FF6E7393"
+        android:textColor="@color/widget_ink_soft"
         android:textSize="14sp" />
 </LinearLayout>

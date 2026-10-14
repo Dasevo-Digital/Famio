@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home screen widgets in the app's colors; dark variants in values-night. -->
+<resources>
+    <color name="widget_bg">#FFFFF8F1</color>
+    <color name="widget_ink">#FF2D3150</color>
+    <color name="widget_ink_soft">#FF646988</color>
+    <!-- Row tints of the app's sections: calendar, meals, tasks, shopping, kids. -->
+    <color name="widget_row_event">#FFE4DAFF</color>
+    <color name="widget_row_meal">#FFE6F2C4</color>
+    <color name="widget_row_tasks">#FFC9F0DD</color>
+    <color name="widget_row_shopping">#FFFFDCC8</color>
+    <color name="widget_row_sleep">#FFFFD6E4</color>
+</resources>

@@ -5009,7 +5009,7 @@
       }
     }
   },
-  "widgetTasksToday": "✅ {n, plural, =1{1 Aufgabe} other{{n} Aufgaben}} heute",
+  "widgetTasksToday": "{n, plural, =1{1 Aufgabe} other{{n} Aufgaben}} heute",
   "@widgetTasksToday": {
     "placeholders": {
       "n": {
@@ -5017,7 +5017,7 @@
       }
     }
   },
-  "widgetThingsToBuy": "🛒 {n, plural, =1{1 Sache} other{{n} Sachen}} einkaufen",
+  "widgetThingsToBuy": "{n, plural, =1{1 Sache} other{{n} Sachen}} einkaufen",
   "@widgetThingsToBuy": {
     "placeholders": {
       "n": {
@@ -5177,7 +5177,7 @@
       }
     }
   },
-  "widgetNameAsleepSinceTime": "🌙 {name} schläft seit {time}",
+  "widgetNameAsleepSinceTime": "{name} schläft seit {time}",
   "@widgetNameAsleepSinceTime": {
     "placeholders": {
       "name": {

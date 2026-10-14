@@ -40,4 +40,11 @@
     <string name="location_visible">Your family sees where you are</string>
     <string name="location_sharing_title">Famio shares your location</string>
     <string name="app_update_failed">Update failed: %1$s</string>
+    <!-- Sample rows of the "Famio heute" preview in the widget picker. -->
+    <string name="widget_sample_date">Today</string>
+    <string name="widget_sample_time" translatable="false">17:30</string>
+    <string name="widget_sample_event">Football practice</string>
+    <string name="widget_sample_meal">Pizza</string>
+    <string name="widget_sample_tasks">2 tasks today</string>
+    <string name="widget_sample_shopping">3 things to buy</string>
 </resources>
