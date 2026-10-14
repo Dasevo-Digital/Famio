@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.5 – Widgets de Android más bonitos
+
+- «Famio hoy» muestra arriba el logotipo y la fecha, y cada fila en el
+  color de su área, con diseño oscuro si el móvil está en modo oscuro.
+- El botón de emergencia tiene un degradado y cabe en cualquier tamaño de
+  celda.
+
 ## 2.0.4 – Archivos en las tareas
 
 - Además de fotos, las tareas pueden llevar PDF y otros archivos, como un

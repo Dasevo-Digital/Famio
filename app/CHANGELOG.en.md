@@ -4,6 +4,12 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.5 – Nicer Android widgets
+
+- "Famio today" shows the logo and date at the top and each row in the
+  color of its area, in a dark design when the phone is dark.
+- The emergency button has a gradient and fits every cell size.
+
 ## 2.0.4 – Files on tasks
 
 - Besides photos, tasks can now have PDFs and other files, such as a form

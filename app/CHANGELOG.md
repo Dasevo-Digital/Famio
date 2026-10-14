@@ -4,6 +4,12 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.5 – Schönere Android-Widgets
+
+- „Famio heute“ zeigt oben Logo und Datum und jede Zeile in der Farbe
+  ihres Bereichs, bei dunklem Handy im dunklen Design.
+- Der Notruf-Knopf hat einen Verlauf und passt in jede Zellengröße.
+
 ## 2.0.4 – Dateien an Aufgaben
 
 - An Aufgaben lassen sich neben Fotos auch PDFs und andere Dateien
