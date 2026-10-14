@@ -51,6 +51,8 @@ class AppUpdates {
     this.publicKey = famioReleaseKey,
     Uri? releases,
     this.retry = const Duration(hours: 6),
+    this.retrySoon = const Duration(minutes: 10),
+    this.onError,
   }) : _http = client ?? http.Client(),
        releases =
            releases ??
@@ -70,8 +72,19 @@ class AppUpdates {
   /// Release by tag: `<releases>v<version>`.
   final Uri releases;
   final Duration retry;
+
+  /// After a failed attempt (a stalled download, GitHub not reachable):
+  /// tried again this soon, up to [_quickRetries] times, before only
+  /// [retry] is left.
+  final Duration retrySoon;
+
+  /// For the server log; failures are also shown in the admin screen.
+  final void Function(String line)? onError;
   final http.Client _http;
   Timer? _timer;
+  Timer? _soon;
+  var _failures = 0;
+  static const _quickRetries = 3;
   Future<void>? _running;
 
   static const _key = 'appUpdates';
@@ -95,6 +108,8 @@ class AppUpdates {
   void stop() {
     _timer?.cancel();
     _timer = null;
+    _soon?.cancel();
+    _soon = null;
   }
 
   /// What the admin screen shows.
@@ -115,6 +130,8 @@ class AppUpdates {
     if (enabled) {
       await prepare();
     } else {
+      _soon?.cancel();
+      _failures = 0;
       db.execute('DELETE FROM settings WHERE key = ?', [_statusKey]);
       final folder = Directory(dir);
       if (folder.existsSync()) folder.deleteSync(recursive: true);
@@ -195,11 +212,17 @@ class AppUpdates {
         }
       }
       _put(_statusKey, {'checkedAt': checkedAt});
+      _failures = 0;
     } on Exception catch (e) {
-      _put(_statusKey, {
-        'checkedAt': checkedAt,
-        'error': e is _Failure ? e.message : '$e',
-      });
+      final message = e is _Failure ? e.message : '$e';
+      _put(_statusKey, {'checkedAt': checkedAt, 'error': message});
+      onError?.call('[app-updates] $version: $message');
+      if (++_failures <= _quickRetries) {
+        _soon?.cancel();
+        _soon = Timer(retrySoon, () {
+          if (enabled && !_complete) unawaited(prepare());
+        });
+      }
     }
   }
 
@@ -262,9 +285,13 @@ class AppUpdates {
         }
         sink.add(chunk);
       }
-    } finally {
+    } catch (_) {
+      // A broken download leaves nothing behind.
       await sink.close();
+      if (part.existsSync()) part.deleteSync();
+      rethrow;
     }
+    await sink.close();
     if (await sha256Hex(part.openRead()) != sha256) {
       part.deleteSync();
       throw _Failure(

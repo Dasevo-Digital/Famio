@@ -219,6 +219,7 @@ class FamioServerApp {
       version: serverVersion,
       client: httpClient,
       publicKey: releaseKey,
+      onError: auditLog,
     );
     api = FamioApi(
       accounts: accounts,
