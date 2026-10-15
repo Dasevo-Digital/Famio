@@ -284,6 +284,13 @@ void main() {
         await tester.tap(chip(name));
         await tester.pump();
       }
+      // Checklist, files and visibility are folded away for a plain task.
+      expect(find.text('Nur ich'), findsNothing);
+      await tester.ensureVisible(
+        find.text('Checkliste, Dateien, Sichtbarkeit'),
+      );
+      await tester.tap(find.text('Checkliste, Dateien, Sichtbarkeit'));
+      await tester.pump();
       await tester.ensureVisible(find.text('Nur ich'));
       await tester.tap(find.text('Nur ich'));
       await tester.pump();

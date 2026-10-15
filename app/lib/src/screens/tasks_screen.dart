@@ -448,6 +448,12 @@ class _TaskEditorState extends State<_TaskEditor> {
   late DateTime? _due = widget.task?.due;
   late final _assignees = [...?widget.task?.assigneeIds];
 
+  /// Checklist, files and who sees it; open when the task uses one of them.
+  late var _more =
+      (widget.task?.checklist.isNotEmpty ?? false) ||
+      (widget.task?.photos.isNotEmpty ?? false) ||
+      widget.task?.visibleTo != null;
+
   /// Who else may see it, apart from me and whoever takes care of it.
   late final _seers = {...?widget.task?.visibleTo}
     ..removeAll([..._assignees, AppScope.engineOf(context).memberId]);
@@ -675,87 +681,6 @@ class _TaskEditorState extends State<_TaskEditor> {
                 ),
               ],
             ),
-            ListHeading(
-              _steps.isEmpty
-                  ? tr.tasksChecklist
-                  : tr.tasksChecklistDoneTotal(
-                      _steps.where((s) => s.done).length,
-                      _steps.length,
-                    ),
-            ),
-            for (final (i, step) in _steps.indexed)
-              Row(
-                children: [
-                  Checkbox(
-                    value: step.done,
-                    onChanged: (v) => setState(
-                      () => _steps[i] = step.copyWith(done: v ?? false),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      step.text,
-                      style: step.done
-                          ? TextStyle(
-                              decoration: TextDecoration.lineThrough,
-                              color: c.inkSoft,
-                            )
-                          : null,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: tr.tasksRemoveItem,
-                    icon: Icon(AppIcons.x, size: 18, color: c.inkSoft),
-                    onPressed: () => setState(() => _steps.removeAt(i)),
-                  ),
-                ],
-              ),
-            TextField(
-              controller: _newStep,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(
-                hintText: tr.tasksAddItemEG,
-                suffixIcon: IconButton(
-                  tooltip: tr.commonAdd,
-                  icon: const Icon(AppIcons.plus),
-                  onPressed: _addStep,
-                ),
-              ),
-              onSubmitted: (_) => _addStep(),
-            ),
-            ListHeading(tr.tasksPhotos),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final (i, photo) in _photos.indexed)
-                  _PhotoThumb(
-                    photo: photo,
-                    onRemove: () => setState(() => _photos.removeAt(i)),
-                  ),
-                SizedBox.square(
-                  dimension: 72,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: _uploading ? null : _addPhoto,
-                    child: _uploading
-                        ? const SizedBox.square(
-                            dimension: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Tooltip(
-                            message: tr.tasksAddPhoto,
-                            child: Icon(AppIcons.paperclip, color: color),
-                          ),
-                  ),
-                ),
-              ],
-            ),
             ListHeading(tr.tasksWhoTakesCare),
             Wrap(
               spacing: 8,
@@ -781,63 +706,158 @@ class _TaskEditorState extends State<_TaskEditor> {
                   ),
               ],
             ),
-            ListHeading(tr.commonWhoMaySee),
-            RadioGroup<_Audience>(
-              groupValue: _audience,
-              onChanged: (v) => setState(() => _audience = v!),
-              child: Column(
-                children: [
-                  RadioListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _Audience.family,
-                    title: Text(tr.tasksWholeFamily),
-                  ),
-                  RadioListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _Audience.me,
-                    title: Text(tr.docsOnlyMe),
-                  ),
-                  if (engine.members.length > 1)
-                    RadioListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _Audience.selected,
-                      title: Text(tr.docsMe),
-                    ),
-                ],
+            // Rarely needed: folded away, unless the task already uses it.
+            if (!_more)
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  icon: const Icon(AppIcons.plus, size: 18),
+                  label: Text(tr.tasksMoreOptions),
+                  onPressed: () => setState(() => _more = true),
+                ),
               ),
-            ),
-            if (_audience == _Audience.selected)
+            if (_more) ...[
+              ListHeading(
+                _steps.isEmpty
+                    ? tr.tasksChecklist
+                    : tr.tasksChecklistDoneTotal(
+                        _steps.where((s) => s.done).length,
+                        _steps.length,
+                      ),
+              ),
+              for (final (i, step) in _steps.indexed)
+                Row(
+                  children: [
+                    Checkbox(
+                      value: step.done,
+                      onChanged: (v) => setState(
+                        () => _steps[i] = step.copyWith(done: v ?? false),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        step.text,
+                        style: step.done
+                            ? TextStyle(
+                                decoration: TextDecoration.lineThrough,
+                                color: c.inkSoft,
+                              )
+                            : null,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: tr.tasksRemoveItem,
+                      icon: Icon(AppIcons.x, size: 18, color: c.inkSoft),
+                      onPressed: () => setState(() => _steps.removeAt(i)),
+                    ),
+                  ],
+                ),
+              TextField(
+                controller: _newStep,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  hintText: tr.tasksAddItemEG,
+                  suffixIcon: IconButton(
+                    tooltip: tr.commonAdd,
+                    icon: const Icon(AppIcons.plus),
+                    onPressed: _addStep,
+                  ),
+                ),
+                onSubmitted: (_) => _addStep(),
+              ),
+              ListHeading(tr.tasksPhotos),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  for (final m in engine.members)
-                    if (m.id != engine.memberId)
-                      FilterChip(
-                        avatar: MemberAvatar(m, radius: 10),
-                        label: Text(m.displayName),
-                        selected:
-                            _seers.contains(m.id) || _assignees.contains(m.id),
-                        selectedColor: c.tint(FamioSection.tasks),
-                        // Whoever takes care of it sees it anyway.
-                        onSelected: _assignees.contains(m.id)
-                            ? null
-                            : (on) => setState(
-                                () =>
-                                    on ? _seers.add(m.id) : _seers.remove(m.id),
-                              ),
+                  for (final (i, photo) in _photos.indexed)
+                    _PhotoThumb(
+                      photo: photo,
+                      onRemove: () => setState(() => _photos.removeAt(i)),
+                    ),
+                  SizedBox.square(
+                    dimension: 72,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
+                      onPressed: _uploading ? null : _addPhoto,
+                      child: _uploading
+                          ? const SizedBox.square(
+                              dimension: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Tooltip(
+                              message: tr.tasksAddPhoto,
+                              child: Icon(AppIcons.paperclip, color: color),
+                            ),
+                    ),
+                  ),
                 ],
               ),
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                tr.tasksAudienceHint,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+              ListHeading(tr.commonWhoMaySee),
+              RadioGroup<_Audience>(
+                groupValue: _audience,
+                onChanged: (v) => setState(() => _audience = v!),
+                child: Column(
+                  children: [
+                    RadioListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _Audience.family,
+                      title: Text(tr.tasksWholeFamily),
+                    ),
+                    RadioListTile(
+                      contentPadding: EdgeInsets.zero,
+                      value: _Audience.me,
+                      title: Text(tr.docsOnlyMe),
+                    ),
+                    if (engine.members.length > 1)
+                      RadioListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _Audience.selected,
+                        title: Text(tr.docsMe),
+                      ),
+                  ],
+                ),
               ),
-            ),
+              if (_audience == _Audience.selected)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final m in engine.members)
+                      if (m.id != engine.memberId)
+                        FilterChip(
+                          avatar: MemberAvatar(m, radius: 10),
+                          label: Text(m.displayName),
+                          selected:
+                              _seers.contains(m.id) ||
+                              _assignees.contains(m.id),
+                          selectedColor: c.tint(FamioSection.tasks),
+                          // Whoever takes care of it sees it anyway.
+                          onSelected: _assignees.contains(m.id)
+                              ? null
+                              : (on) => setState(
+                                  () => on
+                                      ? _seers.add(m.id)
+                                      : _seers.remove(m.id),
+                                ),
+                        ),
+                  ],
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  tr.tasksAudienceHint,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             Row(
               children: [

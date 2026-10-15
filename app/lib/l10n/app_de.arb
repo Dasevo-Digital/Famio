@@ -5763,5 +5763,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "tasksMoreOptions": "Checkliste, Dateien, Sichtbarkeit"
 }

@@ -2270,5 +2270,6 @@
   "locationHideHere": "Hide here",
   "locationHidden": "Hidden:",
   "locationShowMember": "Show {name} again",
-  "locationNameHidden": "{name} is now hidden here for everyone. Show again under “Hidden” at the end of the list."
+  "locationNameHidden": "{name} is now hidden here for everyone. Show again under “Hidden” at the end of the list.",
+  "tasksMoreOptions": "Checklist, files, visibility"
 }
