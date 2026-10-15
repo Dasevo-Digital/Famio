@@ -129,6 +129,7 @@ String _appUpdatesReady(Map<String, Object?> info) {
       for (final p in packages)
         switch (p) {
           'android' => 'Android',
+          'androidArm64' => 'Android (64 Bit)',
           'windows' => 'Windows',
           'linux' => 'Linux',
           _ => '$p',

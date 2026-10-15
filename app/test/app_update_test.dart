@@ -90,6 +90,40 @@ void main() {
     );
   });
 
+  test(
+    '64-bit phones take the smaller package, else the one for all',
+    () async {
+      var arm64 = false;
+      final client = FamioApiClient(
+        'https://famio.test',
+        token: 't',
+        httpClient: MockClient((request) async {
+          final platform = request.url.queryParameters['platform'];
+          if (platform == 'androidArm64' && !arm64) {
+            // An older server or release: only the package for all phones.
+            return http.Response('{"error":"not_found"}', 404);
+          }
+          final file = AppPlatform.byName(platform)!.fileName('2.1.0');
+          return http.Response(jsonEncode({...offerJson, 'file': file}), 200);
+        }),
+      );
+      final fallback = await availableUpdate(
+        client,
+        platform: AppPlatform.androidArm64,
+        appVersion: '2.0.0',
+      );
+      expect(updatePlatformOf(fallback!), AppPlatform.android);
+      arm64 = true;
+      final smaller = await availableUpdate(
+        client,
+        platform: AppPlatform.androidArm64,
+        appVersion: '2.0.0',
+      );
+      expect(smaller!.file, 'Famio-2.1.0-android-arm64.apk');
+      expect(updatePlatformOf(smaller), AppPlatform.androidArm64);
+    },
+  );
+
   test('a signed package is downloaded and checked', () async {
     final progress = <double>[];
     final file = await downloadUpdate(

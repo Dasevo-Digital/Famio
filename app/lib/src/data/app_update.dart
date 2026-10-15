@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../l10n.dart';
+import '../platform/abi.dart';
 
 /// Why an update was not installed; [message] is for the family.
 class AppUpdateError implements Exception {
@@ -24,7 +25,10 @@ class AppUpdateError implements Exception {
 /// builds (Apple developer account); the web app comes with the server.
 AppPlatform? get selfUpdatePlatform {
   if (kIsWeb) return null;
-  if (Platform.isAndroid) return AppPlatform.android;
+  if (Platform.isAndroid) {
+    // A 64-bit phone takes the smaller package with only its own code.
+    return runsOnArm64 ? AppPlatform.androidArm64 : AppPlatform.android;
+  }
   if (Platform.isWindows) return AppPlatform.windows;
   if (Platform.isLinux) return AppPlatform.linux;
   return null;
@@ -38,11 +42,20 @@ Future<AppUpdateOffer?> availableUpdate(
 }) async {
   final target = platform ?? selfUpdatePlatform;
   if (target == null) return null;
-  final offer = await api.appUpdate(target);
+  var offer = await api.appUpdate(target);
+  // Servers and releases before 2.0.6 only have the package for all phones.
+  if (offer == null && target == AppPlatform.androidArm64) {
+    offer = await api.appUpdate(AppPlatform.android);
+  }
   if (offer == null) return null;
   final mine = appVersion ?? (await PackageInfo.fromPlatform()).version;
   return compareVersions(mine, offer.version) < 0 ? offer : null;
 }
+
+/// The package [offer] names (the 64-bit or the all-phones Android one …).
+AppPlatform? updatePlatformOf(AppUpdateOffer offer) => AppPlatform.values
+    .where((p) => p.fileName(offer.version) == offer.file)
+    .firstOrNull;
 
 /// Downloads [offer] into [into] (the temporary folder) and checks it:
 /// the list of checksums must carry the Famio release signature and name
@@ -112,7 +125,7 @@ Future<void> allowInstallingUpdates() =>
 /// starts the new version.
 Future<void> installUpdate(File file, AppPlatform platform) async {
   switch (platform) {
-    case AppPlatform.android:
+    case AppPlatform.android || AppPlatform.androidArm64:
       await _channel.invokeMethod<void>('install', {'path': file.path});
     case AppPlatform.windows || AppPlatform.linux:
       final exe = Platform.resolvedExecutable;

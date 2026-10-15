@@ -162,8 +162,18 @@ class AppUpdates {
     );
   }
 
-  bool get _complete =>
-      AppPlatform.values.every((platform) => package(platform) != null);
+  /// Every package the release has (older ones lack some) is here; the
+  /// signed list is written last.
+  bool get _complete {
+    final sums = File(p.join(_versionDir.path, 'SHA256SUMS.txt'));
+    if (!sums.existsSync()) return false;
+    final listed = parseChecksums(sums.readAsStringSync());
+    return AppPlatform.values.every(
+      (platform) =>
+          !listed.containsKey(platform.fileName(version)) ||
+          package(platform) != null,
+    );
+  }
 
   /// Fetches what is missing; one run at a time.
   Future<void> prepare() =>

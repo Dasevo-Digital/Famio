@@ -61,7 +61,9 @@ class _AppUpdateBannerState extends State<AppUpdateBanner> {
         final notice = snapshot.data;
         if (notice == null) return const SizedBox.shrink();
         final offer = notice.offer;
-        final platform = selfUpdatePlatform;
+        final platform = offer == null
+            ? selfUpdatePlatform
+            : updatePlatformOf(offer) ?? selfUpdatePlatform;
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: SoftCard(

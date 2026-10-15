@@ -83,4 +83,64 @@ void main() {
     }
     expect(updates.info()['error'], isNull);
   });
+
+  test('a release without the arm64 package counts as complete', () async {
+    const version = '9.9.8';
+    final pair = await Ed25519().newKeyPair();
+    final key = base64Encode((await pair.extractPublicKey()).bytes);
+    final files = {
+      for (final p in AppPlatform.values)
+        if (p != AppPlatform.androidArm64)
+          p.fileName(version): utf8.encode('Paket ${p.name}'),
+    };
+    final sums = [
+      for (final e in files.entries)
+        '${await sha256Hex(Stream.value(e.value))}  ${e.key}\n',
+    ].join();
+    final signature = base64Encode(
+      (await Ed25519().sign(utf8.encode(sums), keyPair: pair)).bytes,
+    );
+    var releaseAsked = 0;
+    final client = MockClient((request) async {
+      if (request.url.host == 'api.github.com') {
+        releaseAsked++;
+        return http.Response(
+          jsonEncode({
+            'assets': [
+              for (final name in [
+                ...files.keys,
+                'SHA256SUMS.txt',
+                'SHA256SUMS.txt.sig',
+              ])
+                {'name': name, 'browser_download_url': 'https://dl.test/$name'},
+            ],
+          }),
+          200,
+        );
+      }
+      final name = request.url.pathSegments.last;
+      if (name == 'SHA256SUMS.txt') return http.Response(sums, 200);
+      if (name == 'SHA256SUMS.txt.sig') return http.Response(signature, 200);
+      return http.Response.bytes(files[name]!, 200);
+    });
+    final db = sqlite3.openInMemory()
+      ..execute('CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT)');
+    final dir = Directory.systemTemp.createTempSync('famio_updates_');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final updates = AppUpdates(
+      db: db,
+      dir: dir.path,
+      version: version,
+      client: client,
+      publicKey: key,
+    );
+    addTearDown(updates.stop);
+    await updates.configure(enabled: true);
+    expect(updates.package(AppPlatform.android), isNotNull);
+    expect(updates.package(AppPlatform.androidArm64), isNull);
+    // Complete: a restart does not ask GitHub again.
+    updates.start();
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(releaseAsked, 1);
+  });
 }

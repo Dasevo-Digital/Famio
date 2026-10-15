@@ -40,6 +40,15 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // The smaller package for 64-bit phones (server updates): with
+        // `--target-platform android-arm64 -P famioArm64=true` also the
+        // plugins' native code (text recognition …) only for arm64.
+        if (project.hasProperty("famioArm64")) {
+            ndk {
+                abiFilters.clear()
+                abiFilters.add("arm64-v8a")
+            }
+        }
     }
 
     signingConfigs {

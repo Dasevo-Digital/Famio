@@ -18,13 +18,19 @@ const famioReleaseKey = String.fromEnvironment(
 
 /// The app packages a Famio server hands out to its apps.
 enum AppPlatform {
+  /// Every Android phone (ARM 32 and 64 bit).
   android,
+
+  /// 64-bit phones only (nearly all since 2017): about 40 % smaller.
+  /// Releases before 2.0.6 do not have it.
+  androidArm64,
   windows,
   linux;
 
   /// The file of [version] in a release.
   String fileName(String version) => switch (this) {
     android => 'Famio-$version-android.apk',
+    androidArm64 => 'Famio-$version-android-arm64.apk',
     windows => 'Famio-$version-windows-x86_64.zip',
     linux => 'Famio-$version-linux-x86_64.tar.gz',
   };
