@@ -5764,5 +5764,9 @@
       }
     }
   },
-  "tasksMoreOptions": "Checkliste, Dateien, Sichtbarkeit"
+  "tasksMoreOptions": "Checkliste, Dateien, Sichtbarkeit",
+  "filesScanDocument": "Dokument scannen",
+  "filesScanDocumentHint": "Brief oder Formular als PDF, Ränder werden erkannt",
+  "filesScanName": "Scan",
+  "filesScanUnavailable": "Der Dokumentenscanner ist auf diesem Gerät nicht verfügbar. Unter Android braucht er aktuelle Google-Play-Dienste (Play Store → Google Play-Dienste aktualisieren)."
 }

@@ -4,6 +4,8 @@ import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
@@ -12,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../platform/browser.dart';
+import '../platform/document_scanner.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
@@ -27,12 +30,14 @@ class PickedFile {
 
 bool get _hasCamera => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
-/// Lets the user pick a file; on phones photos can also come from the camera.
+/// Lets the user pick a file; on phones photos can also come from the
+/// camera, and letters can be scanned into a PDF.
 Future<PickedFile?> pickFile(
   BuildContext context, {
   bool imagesOnly = false,
 }) async {
   var fromCamera = false;
+  final scan = !imagesOnly && canScanDocuments;
   if (_hasCamera) {
     final choice = await showModalBottomSheet<String>(
       context: context,
@@ -49,6 +54,13 @@ Future<PickedFile?> pickFile(
                 title: Text(tr.importTakePhoto),
                 onTap: () => Navigator.pop(context, 'camera'),
               ),
+              if (scan)
+                ListTile(
+                  leading: const Icon(AppIcons.scanText),
+                  title: Text(tr.filesScanDocument),
+                  subtitle: Text(tr.filesScanDocumentHint),
+                  onTap: () => Navigator.pop(context, 'scan'),
+                ),
               ListTile(
                 leading: Icon(
                   imagesOnly ? AppIcons.images : AppIcons.fileArrowUp,
@@ -64,6 +76,10 @@ Future<PickedFile?> pickFile(
       ),
     );
     if (choice == null) return null;
+    if (choice == 'scan') {
+      if (!context.mounted) return null;
+      return _scan(context);
+    }
     fromCamera = choice == 'camera';
   }
 
@@ -89,6 +105,33 @@ Future<PickedFile?> pickFile(
     lookupMimeType(file.name, headerBytes: bytes.take(64).toList()) ??
         'application/octet-stream',
   );
+}
+
+/// A letter or form from the phone's document scanner, as one PDF.
+Future<PickedFile?> _scan(BuildContext context) async {
+  try {
+    final pdf = await scanDocument();
+    if (pdf == null || pdf.isEmpty) return null;
+    final stamp = DateFormat('yyyy-MM-dd HH.mm').format(DateTime.now());
+    return PickedFile(pdf, '${tr.filesScanName} $stamp.pdf', 'application/pdf');
+  } on PlatformException {
+    // A dialog: a snack bar would be hidden behind the editor sheet.
+    if (context.mounted) {
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text(tr.filesScanUnavailable),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.commonOk),
+            ),
+          ],
+        ),
+      );
+    }
+    return null;
+  }
 }
 
 /// Uploads [file] and keeps a local copy, so it opens instantly and offline.

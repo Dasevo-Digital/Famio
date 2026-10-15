@@ -167,6 +167,7 @@ abstract final class AppIcons {
   static const IconData gift = LucideIcons.gift;
   static const IconData fileText = LucideIcons.fileText;
   static const IconData scanBarcode = LucideIcons.scanBarcode;
+  static const IconData scanText = LucideIcons.scanText;
   static const IconData package = LucideIcons.package;
   static const IconData listChecks = LucideIcons.listChecks;
   static const IconData vote = LucideIcons.vote;

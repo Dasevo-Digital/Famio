@@ -112,6 +112,9 @@ dependencies {
     // Text in photos (appointments from a letter): the model is bundled,
     // nothing is downloaded and no image leaves the phone.
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Scanning letters and forms as PDF: the scanner comes with Play
+    // services, the pages stay on the phone until Famio uploads them.
+    implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
     testImplementation("junit:junit:4.13.2")
     // The real org.json: android.jar only has stubs in unit tests.
     testImplementation("org.json:json:20240303")

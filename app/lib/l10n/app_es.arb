@@ -2271,5 +2271,9 @@
   "locationHidden": "Ocultos:",
   "locationShowMember": "Mostrar de nuevo a {name}",
   "locationNameHidden": "{name} queda oculto aquí para todos. Se puede mostrar de nuevo en «Ocultos», al final de la lista.",
-  "tasksMoreOptions": "Lista, archivos, visibilidad"
+  "tasksMoreOptions": "Lista, archivos, visibilidad",
+  "filesScanDocument": "Escanear documento",
+  "filesScanDocumentHint": "Carta o formulario en PDF, se detectan los bordes",
+  "filesScanName": "Escaneo",
+  "filesScanUnavailable": "El escáner de documentos no está disponible en este dispositivo. En Android necesita los servicios de Google Play actualizados (Play Store → actualizar servicios de Google Play)."
 }

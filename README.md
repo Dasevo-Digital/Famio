@@ -52,7 +52,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
-| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy | ✅ |
+| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy; Briefe und Formulare mit der Kamera als PDF scannen (Ränder werden erkannt) | ✅ (Scannen: Android, iOS) |
 | Kinder: Meilensteine von der Geburt bis ins Erwachsenenalter (Sinne, Bewegung, Sprache, Denken, Miteinander, Selbstständigkeit, Körper mit Fontanellen und Zähnen, Pubertät nach Geschlecht), Entwicklungsphasen mit Erklärung, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
 | Baby-Protokoll: Stillen, Fläschchen, Schlaf, Windeln, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |

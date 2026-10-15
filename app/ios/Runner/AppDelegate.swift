@@ -7,6 +7,7 @@ import Flutter
 import Security
 import UIKit
 import UserNotifications
+import VisionKit
 
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
@@ -40,6 +41,9 @@ import UserNotifications
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOpenedFiles") {
       OpenedFiles.shared.register(with: registrar)
+    }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioScan") {
+      DocumentScanner.shared.register(with: registrar)
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOcr") {
       // Text in photos (appointments from a letter), on the device.
@@ -92,6 +96,89 @@ import UserNotifications
         }
       }
     }
+  }
+}
+
+/// Letters and forms with the camera (`famio/scan`): Apple's document
+/// camera finds the page edges and straightens the pages; Famio makes one
+/// PDF of them on the device and then uploads it like any file.
+final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
+  static let shared = DocumentScanner()
+
+  private var pending: FlutterResult?
+
+  func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(
+      name: "famio/scan", binaryMessenger: registrar.messenger())
+    channel.setMethodCallHandler { [weak self] call, result in
+      guard call.method == "scan" else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      self?.start(result)
+    }
+  }
+
+  private func start(_ result: @escaping FlutterResult) {
+    guard pending == nil else {
+      result(FlutterError(code: "busy", message: nil, details: nil))
+      return
+    }
+    // Not in the simulator, and not on devices without a camera.
+    guard VNDocumentCameraViewController.isSupported, let top = Self.topController() else {
+      result(FlutterError(code: "unavailable", message: nil, details: nil))
+      return
+    }
+    pending = result
+    let camera = VNDocumentCameraViewController()
+    camera.delegate = self
+    top.present(camera, animated: true)
+  }
+
+  private static func topController() -> UIViewController? {
+    let window = UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap { $0.windows }
+      .first { $0.isKeyWindow }
+    var top = window?.rootViewController
+    while let presented = top?.presentedViewController { top = presented }
+    return top
+  }
+
+  private func finish(_ value: Any?, _ controller: VNDocumentCameraViewController) {
+    controller.dismiss(animated: true)
+    pending?(value)
+    pending = nil
+  }
+
+  func documentCameraViewController(
+    _ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan
+  ) {
+    let document = PDFDocument()
+    for index in 0..<scan.pageCount {
+      let image = scan.imageOfPage(at: index)
+      let page: PDFPage?
+      if #available(iOS 16.0, *) {
+        // JPEG instead of the camera's full-size bitmap: a few hundred KB
+        // per page.
+        page = PDFPage(image: image, options: [.compressionQuality: 0.7])
+      } else {
+        page = PDFPage(image: image)
+      }
+      if let page { document.insert(page, at: document.pageCount) }
+    }
+    let data = document.pageCount > 0 ? document.dataRepresentation() : nil
+    finish(data.map { FlutterStandardTypedData(bytes: $0) }, controller)
+  }
+
+  func documentCameraViewControllerDidCancel(_ controller: VNDocumentCameraViewController) {
+    finish(nil, controller)
+  }
+
+  func documentCameraViewController(
+    _ controller: VNDocumentCameraViewController, didFailWithError error: Error
+  ) {
+    finish(nil, controller)
   }
 }
 

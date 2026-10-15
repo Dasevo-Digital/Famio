@@ -28,6 +28,7 @@ class MainActivity : FlutterActivity() {
 
     private var permissionResult: MethodChannel.Result? = null
     private var sos: SosChannel? = null
+    private var scan: ScanChannel? = null
     private var openFile: MethodChannel? = null
 
     /** A calendar file opened with Famio, until Dart takes it. */
@@ -111,6 +112,7 @@ class MainActivity : FlutterActivity() {
                 }
             }
         OcrChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)
+        scan = ScanChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         AppUpdateChannel(this, flutterEngine.dartExecutor.binaryMessenger)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/location")
             .setMethodCallHandler { call, result ->
@@ -307,6 +309,12 @@ class MainActivity : FlutterActivity() {
         }
         permissionResult = result
         requestPermissions(wanted, 4711)
+    }
+
+    @Deprecated("Flutter's activity still delivers results this way")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (scan?.onActivityResult(requestCode, resultCode, data) == true) return
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onRequestPermissionsResult(
