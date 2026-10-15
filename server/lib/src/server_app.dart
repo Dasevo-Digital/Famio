@@ -19,6 +19,7 @@ import 'calendar/calendar_access.dart';
 import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
 import 'database.dart';
+import 'fallback_fonts.dart';
 import 'dav/caldav_sync.dart';
 import 'export/data_export.dart';
 import 'lists/list_sync.dart';
@@ -221,6 +222,15 @@ class FamioServerApp {
       publicKey: releaseKey,
       onError: auditLog,
     );
+    // CJK fallback fonts through this server instead of Google's (see
+    // FallbackFonts).
+    if (webApp != null) {
+      webApp.fallbackFonts ??= FallbackFonts.forWebApp(
+        webApp.dir,
+        cacheDir: p.join(dataDir, 'font-cache'),
+        client: httpClient,
+      );
+    }
     api = FamioApi(
       accounts: accounts,
       records: records,

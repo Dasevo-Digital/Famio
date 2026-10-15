@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
 
+import 'fallback_fonts.dart';
+
 /// The Famio web app (Flutter's web build), served below `/app/` – in the
 /// Home Assistant sidebar and in any browser.
 class WebApp {
@@ -10,6 +12,9 @@ class WebApp {
 
   /// Folder with `index.html`, `main.dart.js` …
   final String dir;
+
+  /// The CJK fallback fonts not shipped with the build (set by the server).
+  FallbackFonts? fallbackFonts;
 
   /// `FAMIO_WEB_DIR`, else `web/` next to the server's `bin/` folder (the
   /// release bundle); null if there is no web app.
@@ -26,13 +31,14 @@ class WebApp {
 
   /// Content-Security-Policy of the web app. Flutter needs WebAssembly
   /// (CanvasKit) and inline styles; map tiles and the weather come from
-  /// other HTTPS servers, emoji from Google's font service.
+  /// other HTTPS servers. Fonts only from this server (see
+  /// [FallbackFonts]).
   static const policy =
       "default-src 'self'; "
       "script-src 'self' 'wasm-unsafe-eval'; "
       "style-src 'self' 'unsafe-inline'; "
       "img-src 'self' data: blob: https:; "
-      "font-src 'self' data: https://fonts.gstatic.com; "
+      "font-src 'self' data:; "
       "connect-src 'self' https:; "
       "worker-src 'self' blob:; "
       "object-src 'none'; base-uri 'self'; "
@@ -69,6 +75,19 @@ class WebApp {
     final type = _types[p.extension(file).toLowerCase()];
     final plain = File(file);
     if (type == null || !await plain.exists()) {
+      if (type != null && relative.startsWith('fonts/')) {
+        // Versioned names: the content of a path never changes.
+        if (await fallbackFonts?.file(relative.substring(6)) case final f?) {
+          return Response.ok(
+            f.openRead(),
+            headers: {
+              'content-type': type,
+              'cache-control': 'public, max-age=31536000, immutable',
+              'content-length': '${await f.length()}',
+            },
+          );
+        }
+      }
       return Response.notFound('Not found');
     }
     final stat = await plain.stat();

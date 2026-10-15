@@ -53,6 +53,12 @@ ableiten. Die Web-App schickt dabei zusätzlich die Adresse des Famio-Servers
 (ohne Pfad) als Referer mit, weil OpenStreetMap Browser-Anfragen ohne Referer
 ablehnt. Ein eigener Kartenserver hält diesen Abruf im eigenen Betrieb.
 
+**Schriften der Web-App.** Emojis und Schriftzeichen anderer Sprachen lädt die
+Web-App vom eigenen Famio-Server, nicht von Google. Für chinesische,
+japanische und koreanische Zeichen holt der Server die passende Schriftdatei
+einmal bei Google Fonts und hält sie danach selbst vor; Google sieht dabei
+nur die Adresse des Servers, nicht die der Familie.
+
 **Open-Meteo.** Wetter ist pro Gerät opt-in. Übertragen werden auf 0,01 Grad
 gerundete Koordinaten des gewählten Orts sowie die technisch notwendige
 IP-Adresse.
