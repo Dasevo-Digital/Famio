@@ -412,7 +412,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 |---|---|
 | Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
 | Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht) und Single Sign-On per OpenID Connect |
-| Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab |
+| Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store` |
 | Server | Datenbank und Dateien verschlüsselt (SQLite3MultipleCiphers, ChaCha20-Poly1305), Schlüssel getrennt von den Daten (`FAMIO_KEY_FILE`); nur für den Famio-Benutzer lesbar (umask 077), redigiertes Request-Log, Audit-Log, Größenlimits |

@@ -303,11 +303,13 @@ extension _AuthRoutes on FamioApi {
     if (done.mode == SsoMode.link) {
       return _json({'status': 'done', 'member': member.toJson()});
     }
+    final known = accounts.hasSessions(member.id);
     final token = accounts.createSession(
       member.id,
       device: done.device,
       method: 'sso',
     );
+    if (known) _announceSignIn(member, done.device);
     return _json({'status': 'done', 'token': token, 'member': member.toJson()});
   }
 

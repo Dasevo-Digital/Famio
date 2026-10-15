@@ -631,6 +631,33 @@ void main() {
       },
     );
 
+    test('a sign-in on another device is told to the member', () async {
+      await kind.call('POST', 'api/me/push', {
+        'url': 'https://push.example/kind',
+        'details': true,
+      });
+      pushed.clear();
+      final login = await http.post(
+        base.resolve('api/auth/login'),
+        headers: {'content-type': 'application/json'},
+        body: jsonEncode({
+          'username': 'kind',
+          'password': 'geheim123',
+          'device': 'Laptop im Büro',
+        }),
+      );
+      expect(login.statusCode, 200);
+      await app.push.idle;
+      expect(pushed.single['topic'], 'kind');
+      expect(pushed.single['title'], 'Neue Anmeldung bei Famio');
+      expect(pushed.single['message'], contains('Laptop im Büro'));
+      // The first device of a new member is no news.
+      pushed.clear();
+      await addMember('tante', MemberRole.adult);
+      await app.push.idle;
+      expect(pushed, isEmpty);
+    });
+
     test('point requests go to the adults', () async {
       await mama.call('POST', 'api/me/push', {
         'url': 'https://push.example/eltern',

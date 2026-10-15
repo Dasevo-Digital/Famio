@@ -406,6 +406,14 @@ class Accounts {
   /// Creates a session and returns its bearer token (only stored hashed).
   /// A [scope] limits the session to one purpose, see [userForToken].
   /// [method] tells how the member signed in: password, totp or sso.
+  /// Whether [userId] is signed in somewhere already (not counting the
+  /// phones' scoped location tokens).
+  bool hasSessions(String userId) => _db.select(
+    'SELECT 1 FROM sessions WHERE user_id = ? AND scope IS NULL'
+    ' AND last_seen > ? LIMIT 1',
+    [userId, _idleCutoff],
+  ).isNotEmpty;
+
   String createSession(
     String userId, {
     String? device,

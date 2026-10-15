@@ -456,12 +456,38 @@ class FamioApi {
       auditLog?.call('[audit] ${_who(actor)} $action');
 
   Response _session(FamilyMember member, String? device, {String? method}) {
+    final known = accounts.hasSessions(member.id);
     final token = accounts.createSession(
       member.id,
       device: device,
       method: method,
     );
+    if (known) _announceSignIn(member, device);
     return _json({'token': token, 'member': member.toJson()});
+  }
+
+  /// Someone signed in as [member] while it is signed in elsewhere: the
+  /// member's other devices hear of it, so a stolen password does not go
+  /// unnoticed. Not for the first device of an account.
+  void _announceSignIn(FamilyMember member, String? device) {
+    final name = device == null || device.trim().isEmpty ? null : device.trim();
+    _audit(
+      member,
+      'hat sich auf einem weiteren Gerät angemeldet (${name ?? '?'})',
+    );
+    push?.deliver(
+      () => PushNotice(
+        to: {member.id},
+        title: t('Neue Anmeldung bei Famio'),
+        body: t(
+          'Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.',
+          {'device': name ?? t('unbekanntes Gerät')},
+        ),
+        brief: t('Neue Anmeldung bei Famio'),
+        tag: 'key',
+      ),
+      null,
+    );
   }
 
   /// The signed-in member: Home Assistant ingress or a session token (only
