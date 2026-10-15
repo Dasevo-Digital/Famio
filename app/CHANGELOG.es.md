@@ -4,6 +4,20 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.6 – Escanear documentos
+
+- Cada selector de archivos ofrece «Escanear documento»: las páginas se
+  convierten en un PDF en el móvil, por ejemplo para documentos o tareas.
+- Si alguien inicia sesión con tu cuenta en otro dispositivo, tus demás
+  dispositivos reciben un aviso.
+- El editor de tareas es más corto. La lista, los archivos y «¿Quién
+  puede verlo?» están detrás de un botón.
+- La aplicación web ya no carga fuentes de Google.
+- Las actualizaciones a través del servidor son un 40 % más pequeñas en
+  móviles Android de 64 bits.
+- Las tareas domésticas, los días de paga y la edad en meses también son
+  correctos en torno al cambio de hora.
+
 ## 2.0.5 – Widgets de Android más bonitos
 
 - «Famio hoy» muestra arriba el logotipo y la fecha, y cada fila en el

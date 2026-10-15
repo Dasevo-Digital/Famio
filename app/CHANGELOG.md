@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.6 – Dokumente scannen
+
+- In jeder Dateiauswahl gibt es „Dokument scannen“: Die Seiten werden auf
+  dem Handy zu einem PDF, etwa für Dokumente oder Aufgaben.
+- Meldet sich jemand auf einem weiteren Gerät mit deinem Konto an,
+  bekommen deine anderen Geräte eine Mitteilung.
+- Der Aufgaben-Editor ist kürzer. Checkliste, Dateien und „Wer darf es
+  sehen?“ liegen hinter einem Knopf.
+- Die Web-App lädt keine Schriften mehr von Google.
+- Updates über den Server sind auf 64-Bit-Android-Handys etwa 40 % kleiner.
+- Ämter, Taschengeld-Zahltage und das Alter in Monaten stimmen auch rund
+  um die Zeitumstellung.
+
 ## 2.0.5 – Schönere Android-Widgets
 
 - „Famio heute“ zeigt oben Logo und Datum und jede Zeile in der Farbe

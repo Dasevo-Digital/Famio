@@ -4,6 +4,20 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.6 – Scan documents
+
+- Every file picker offers "Scan a document": the pages become a PDF on
+  the phone, for example for documents or tasks.
+- If someone signs in to your account on another device, your other
+  devices get a notification.
+- The task editor is shorter. Checklist, files and "Who may see it?" sit
+  behind a button.
+- The web app no longer loads fonts from Google.
+- Updates through the server are about 40% smaller on 64-bit Android
+  phones.
+- Chores, pocket money paydays and the age in months are correct around
+  the daylight saving time change, too.
+
 ## 2.0.5 – Nicer Android widgets
 
 - "Famio today" shows the logo and date at the top and each row in the
