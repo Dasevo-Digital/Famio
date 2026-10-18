@@ -21,13 +21,28 @@ class AppUpdateError implements Exception {
   String toString() => message;
 }
 
+/// Android: stay with the package for all phones, which has the text and
+/// barcode recognition built in, instead of the small 64-bit one, which
+/// loads them from Google Play services. Set by AppState: without Play
+/// services, or when the family chose so in the settings.
+var keepBuiltInModels = false;
+
+/// A 64-bit phone takes the smaller package with only its own code and the
+/// recognition models from Google Play, unless it should keep them built in.
+AppPlatform androidUpdatePlatform({
+  required bool arm64,
+  required bool builtInModels,
+}) => arm64 && !builtInModels ? AppPlatform.androidArm64 : AppPlatform.android;
+
 /// The packages this app installs itself. iOS and macOS follow with signed
 /// builds (Apple developer account); the web app comes with the server.
 AppPlatform? get selfUpdatePlatform {
   if (kIsWeb) return null;
   if (Platform.isAndroid) {
-    // A 64-bit phone takes the smaller package with only its own code.
-    return runsOnArm64 ? AppPlatform.androidArm64 : AppPlatform.android;
+    return androidUpdatePlatform(
+      arm64: runsOnArm64,
+      builtInModels: keepBuiltInModels,
+    );
   }
   if (Platform.isWindows) return AppPlatform.windows;
   if (Platform.isLinux) return AppPlatform.linux;
@@ -110,6 +125,19 @@ Future<File> downloadUpdate(
 }
 
 const _channel = MethodChannel('famio/app_update');
+
+/// Whether Google Play services run on this Android phone; null elsewhere
+/// or when unknown.
+Future<bool?> hasPlayServices() async {
+  if (kIsWeb || !Platform.isAndroid) return null;
+  try {
+    return await _channel.invokeMethod<bool>('playServices');
+  } on MissingPluginException {
+    return null;
+  } on PlatformException {
+    return null;
+  }
+}
 
 /// Android: whether Famio may install packages ("Apps aus dieser Quelle").
 Future<bool> canInstallUpdates() async =>

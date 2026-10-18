@@ -605,8 +605,14 @@ wenn die neueste Sicherung älter als 36 Stunden ist) oder Prometheus
 „App-Updates über den Server“ ein, holt der Server die Android-, Windows- und
 Linux-Pakete seiner eigenen Version aus dem öffentlichen GitHub-Release und
 bietet sie den Apps an (`/api/app-update`). 64-Bit-Handys bekommen ab 2.0.6
-das kleinere Paket `…-android-arm64.apk` (rund 50 statt 89 MB), alle anderen
-das für alle Handys. Vorher fragt der Server nirgends
+das kleinere Paket `…-android-arm64.apk`, alle anderen das für alle Handys.
+Ab 2.0.7 lädt das kleine Paket (rund 32 statt 87 MB) die Modelle für Text-
+und Barcode-Erkennung beim ersten Gebrauch einmal über die Google-Play-Dienste
+(die Bilder bleiben auf dem Handy); das Paket für alle Handys hat sie
+eingebaut. Handys ohne Play-Dienste und alle, die unter Einstellungen →
+„Erkennung ohne Google Play“ einschalten, bekommen das Paket für alle Handys
+(gebaut mit `-P famioArm64=true`, siehe `app/android/app/build.gradle.kts`).
+Vorher fragt der Server nirgends
 nach. Die Apps zeigen dann auf der Startseite „Famio X ist da“, laden das Paket
 vom eigenen Server und installieren es: Android nach einer Bestätigung (beim
 ersten Mal „Apps aus dieser Quelle zulassen“), Windows und Linux tauschen die

@@ -10,6 +10,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
+import com.google.android.gms.common.ConnectionResult
+import com.google.android.gms.common.GoogleApiAvailability
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -26,6 +28,12 @@ class AppUpdateChannel(private val activity: Activity, messenger: BinaryMessenge
     init {
         MethodChannel(messenger, "famio/app_update").setMethodCallHandler { call, result ->
             when (call.method) {
+                // Without Google Play services the small package could not
+                // load its recognition models: such phones keep the big one.
+                "playServices" -> result.success(
+                    GoogleApiAvailability.getInstance()
+                        .isGooglePlayServicesAvailable(activity) == ConnectionResult.SUCCESS,
+                )
                 "canInstall" -> result.success(
                     Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
                         activity.packageManager.canRequestPackageInstalls(),

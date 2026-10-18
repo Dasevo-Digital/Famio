@@ -5947,5 +5947,12 @@
   },
   "shareSent": "In den Familien-Chat geschickt",
   "shareUploading": "Wird hochgeladen …",
-  "shareShared": "Geteilt"
+  "shareShared": "Geteilt",
+  "ocrModelLoading": "Die Texterkennung wird gerade einmalig über Google Play geladen (die Bilder bleiben auf dem Handy). Bitte in einer Minute noch einmal versuchen.",
+  "ocrNeedsPlayServices": "Die Texterkennung kommt in diesem Famio-Paket über Google Play, das sie auf diesem Handy gerade nicht bereitstellt (Google-Play-Dienste fehlen oder sind veraltet). Unter Einstellungen → „Erkennung ohne Google Play“ holt Famio beim nächsten Update das Paket mit eingebauter Erkennung.",
+  "settingsBuiltInModels": "Erkennung ohne Google Play",
+  "settingsBuiltInModelsPlay": "Texterkennung (Termine aus Fotos) und Barcode-Scanner laden ihre Modelle beim ersten Gebrauch einmal über Google Play; die Bilder bleiben auf dem Handy. Eingeschaltet holt Famio beim nächsten Update das größere Paket mit eingebauter Erkennung.",
+  "settingsBuiltInModelsBundled": "In dieser Installation ist die Erkennung eingebaut. Ausgeschaltet holt Famio beim nächsten Update das kleinere Paket, das sie einmal über Google Play lädt.",
+  "settingsBuiltInModelsNoPlay": "Ohne Google-Play-Dienste bleibt Famio beim Paket mit eingebauter Erkennung.",
+  "pantryScannerFirstUse": "Beim ersten Mal lädt Google Play den Barcode-Scanner; das kann einen Moment dauern."
 }

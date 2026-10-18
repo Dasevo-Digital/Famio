@@ -2314,5 +2314,12 @@
   "shareAddedToList": "{n, plural, =1{1 artículo} other{{n} artículos}} en «{list}»",
   "shareSent": "Enviado al chat familiar",
   "shareUploading": "Subiendo…",
-  "shareShared": "Compartido"
+  "shareShared": "Compartido",
+  "ocrModelLoading": "El reconocimiento de texto se está cargando una vez a través de Google Play (las imágenes se quedan en el móvil). Vuelve a intentarlo en un minuto.",
+  "ocrNeedsPlayServices": "En este paquete de Famio el reconocimiento de texto llega a través de Google Play, que ahora no puede ofrecerlo en este móvil (faltan los servicios de Google Play o están desactualizados). En Ajustes → «Reconocimiento sin Google Play» Famio usa en la próxima actualización el paquete con reconocimiento integrado.",
+  "settingsBuiltInModels": "Reconocimiento sin Google Play",
+  "settingsBuiltInModelsPlay": "El reconocimiento de texto (citas desde fotos) y el escáner de códigos de barras cargan sus modelos una vez a través de Google Play al usarlos por primera vez; las imágenes se quedan en el móvil. Activado, Famio usa en la próxima actualización el paquete más grande con reconocimiento integrado.",
+  "settingsBuiltInModelsBundled": "Esta instalación tiene el reconocimiento integrado. Desactivado, Famio usa en la próxima actualización el paquete más pequeño, que lo carga una vez a través de Google Play.",
+  "settingsBuiltInModelsNoPlay": "Sin los servicios de Google Play, Famio se queda con el paquete con reconocimiento integrado.",
+  "pantryScannerFirstUse": "La primera vez, Google Play carga el escáner de códigos de barras; puede tardar un momento."
 }

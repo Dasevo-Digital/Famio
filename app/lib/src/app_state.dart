@@ -16,6 +16,7 @@ import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
 import 'push/own_push.dart';
 import 'secure_vault.dart';
+import 'data/app_update.dart';
 import 'data/holidays.dart';
 import 'reminders/reminder_service.dart';
 import 'weather/weather.dart';
@@ -83,6 +84,20 @@ class AppState extends ChangeNotifier {
   Future<void> setWeekPreview(bool value) async {
     await _prefs.setBool('reminders.weekPreview', value);
     _reminders?.refresh();
+    notifyListeners();
+  }
+
+  /// Android: keep the update package with the recognition models built
+  /// in (no download from Google Play), see keepBuiltInModels.
+  bool get builtInModels => _prefs.getBool('updates.builtInModels') ?? false;
+
+  /// Whether this phone has Google Play services; null until known or
+  /// where it does not matter.
+  bool? playServices;
+
+  Future<void> setBuiltInModels(bool value) async {
+    await _prefs.setBool('updates.builtInModels', value);
+    keepBuiltInModels = value || playServices == false;
     notifyListeners();
   }
 
@@ -213,6 +228,14 @@ class AppState extends ChangeNotifier {
     language.value = appLanguages.containsKey(choice) ? choice! : 'system';
     useLanguage(resolveLanguage(language.value));
     if (kIsWeb) return _initWeb();
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      unawaited(
+        hasPlayServices().then((available) {
+          playServices = available;
+          keepBuiltInModels = builtInModels || available == false;
+        }),
+      );
+    }
     unawaited(_noteAppVersion());
     try {
       vault = await SecureVault.open(_prefs);

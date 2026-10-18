@@ -63,6 +63,15 @@ nur die Adresse des Servers, nicht die der Familie.
 gerundete Koordinaten des gewählten Orts sowie die technisch notwendige
 IP-Adresse.
 
+**Text- und Barcode-Erkennung (Android).** Termine aus Fotos und der
+Barcode-Scanner werten die Bilder auf dem Handy aus; Bilder verlassen das
+Handy dafür nicht. Im kleinen Paket für 64-Bit-Handys kommen die
+Erkennungsmodelle von den Google-Play-Diensten, die sie beim ersten Gebrauch
+einmal herunterladen; dabei sieht Google die Anfrage des Handys wie bei jedem
+anderen Download aus Google Play. Wer das nicht möchte, schaltet unter
+Einstellungen → „Erkennung ohne Google Play“ das Paket mit eingebauten
+Modellen ein. Der Dokumentenscanner kommt immer von den Google-Play-Diensten.
+
 **Open Food Facts.** Eine Barcode-Suche überträgt den gescannten Barcode und
 die technisch notwendige IP-Adresse an `world.openfoodfacts.org`.
 

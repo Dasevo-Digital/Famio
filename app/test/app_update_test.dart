@@ -124,6 +124,21 @@ void main() {
     },
   );
 
+  test('built-in recognition keeps a 64-bit phone on the big package', () {
+    expect(
+      androidUpdatePlatform(arm64: true, builtInModels: false),
+      AppPlatform.androidArm64,
+    );
+    expect(
+      androidUpdatePlatform(arm64: true, builtInModels: true),
+      AppPlatform.android,
+    );
+    expect(
+      androidUpdatePlatform(arm64: false, builtInModels: false),
+      AppPlatform.android,
+    );
+  });
+
   test('a signed package is downloaded and checked', () async {
     final progress = <double>[];
     final file = await downloadUpdate(

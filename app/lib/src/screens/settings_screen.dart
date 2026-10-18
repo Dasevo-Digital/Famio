@@ -16,6 +16,7 @@ import '../app_state.dart';
 import '../environment.dart';
 import '../home_widget/widget_sync.dart';
 import '../data/family_data.dart';
+import '../data/ocr.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../location/location_sharing.dart';
@@ -272,6 +273,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           if (!kIsWeb && state.files != null) const _DeviceStorageTile(),
+          if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
+            const _BuiltInModelsTile(),
           ListHeading(context.l10n.settingsSync, color: accent),
           ListTile(
             leading: const Icon(AppIcons.hardDrives),
@@ -824,6 +827,43 @@ class VersionTileState extends State<VersionTile> {
 
 /// How much room the offline copies of photos and documents take on this
 /// device, with a button to free it.
+/// Android: whether updates bring the package with text and barcode
+/// recognition built in, or the small one that loads them through Google
+/// Play services (see keepBuiltInModels).
+class _BuiltInModelsTile extends StatefulWidget {
+  const _BuiltInModelsTile();
+
+  @override
+  State<_BuiltInModelsTile> createState() => _BuiltInModelsTileState();
+}
+
+class _BuiltInModelsTileState extends State<_BuiltInModelsTile> {
+  late final _installed = Ocr.models();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final noPlay = state.playServices == false;
+    return FutureBuilder<String?>(
+      future: _installed,
+      builder: (context, snapshot) => SwitchListTile(
+        secondary: const Icon(AppIcons.scanText),
+        title: Text(tr.settingsBuiltInModels),
+        subtitle: Text(
+          noPlay
+              ? tr.settingsBuiltInModelsNoPlay
+              : snapshot.data == 'play'
+              ? tr.settingsBuiltInModelsPlay
+              : tr.settingsBuiltInModelsBundled,
+        ),
+        isThreeLine: true,
+        value: noPlay || state.builtInModels,
+        onChanged: noPlay ? null : state.setBuiltInModels,
+      ),
+    );
+  }
+}
+
 class _DeviceStorageTile extends StatefulWidget {
   const _DeviceStorageTile();
 

@@ -11,6 +11,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
+import '../data/ocr.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -606,6 +607,18 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
   );
   var _done = false;
 
+  /// The small Android package loads the scanner through Google Play the
+  /// first time: a hint, so a slow start is no riddle.
+  var _playModels = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Ocr.models().then((m) {
+      if (mounted && m == 'play') setState(() => _playModels = true);
+    });
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -654,6 +667,19 @@ class _BarcodeScanScreenState extends State<BarcodeScanScreen> {
             ),
           ),
         ),
+        if (_playModels)
+          Positioned(
+            left: 32,
+            right: 32,
+            bottom: 48,
+            child: SafeArea(
+              child: Text(
+                tr.pantryScannerFirstUse,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ),
+          ),
       ],
     ),
   );

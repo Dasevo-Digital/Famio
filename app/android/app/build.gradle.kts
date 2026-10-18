@@ -10,6 +10,13 @@ plugins {
 // FAMIO_SIGNING (path to a key.properties with storeFile, storePassword,
 // keyAlias, keyPassword), default ~/Famio/keys/android/key.properties.
 // Without it, release builds fall back to the debug key.
+// Text recognition (appointments from photos) and the barcode scanner
+// need recognition models. The small package for 64-bit phones
+// (`-P famioArm64=true`) takes them from Google Play services, which load
+// them once on first use; the package for all phones keeps them inside and
+// works without Google services. Either way the pictures stay on the phone.
+val playServicesModels = project.hasProperty("famioArm64")
+
 val signingProperties = Properties().apply {
     val file = file(
         System.getenv("FAMIO_SIGNING")
@@ -25,6 +32,7 @@ android {
 
     buildFeatures {
         resValues = true
+        buildConfig = true
     }
 
     compileOptions {
@@ -40,6 +48,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        buildConfigField("boolean", "PLAY_SERVICES_MODELS", "$playServicesModels")
         // The smaller package for 64-bit phones (server updates): with
         // `--target-platform android-arm64 -P famioArm64=true` also the
         // plugins' native code (text recognition …) only for arm64.
@@ -109,9 +118,13 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    // Text in photos (appointments from a letter): the model is bundled,
-    // nothing is downloaded and no image leaves the phone.
-    implementation("com.google.mlkit:text-recognition:16.0.1")
+    // Text in photos (appointments from a letter), on the phone; the model
+    // inside the app or from Google Play services (see playServicesModels).
+    if (playServicesModels) {
+        implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+    } else {
+        implementation("com.google.mlkit:text-recognition:16.0.1")
+    }
     // Scanning letters and forms as PDF: the scanner comes with Play
     // services, the pages stay on the phone until Famio uploads them.
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")

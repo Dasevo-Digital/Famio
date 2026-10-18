@@ -2314,5 +2314,12 @@
   "shareAddedToList": "{n, plural, =1{1 item} other{{n} items}} on “{list}”",
   "shareSent": "Sent to the family chat",
   "shareUploading": "Uploading …",
-  "shareShared": "Shared"
+  "shareShared": "Shared",
+  "ocrModelLoading": "Text recognition is being loaded once through Google Play (the pictures stay on the phone). Please try again in a minute.",
+  "ocrNeedsPlayServices": "In this Famio package text recognition comes through Google Play, which cannot provide it on this phone right now (Google Play services missing or outdated). Under Settings → “Recognition without Google Play” Famio takes the package with built-in recognition at the next update.",
+  "settingsBuiltInModels": "Recognition without Google Play",
+  "settingsBuiltInModelsPlay": "Text recognition (appointments from photos) and the barcode scanner load their models once through Google Play on first use; the pictures stay on the phone. Switched on, Famio takes the larger package with built-in recognition at the next update.",
+  "settingsBuiltInModelsBundled": "This installation has the recognition built in. Switched off, Famio takes the smaller package at the next update, which loads it once through Google Play.",
+  "settingsBuiltInModelsNoPlay": "Without Google Play services Famio stays with the package with built-in recognition.",
+  "pantryScannerFirstUse": "The first time, Google Play loads the barcode scanner; this may take a moment."
 }

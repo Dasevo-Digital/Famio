@@ -5,6 +5,13 @@ allprojects {
     }
 }
 
+// The small package for 64-bit phones also takes the barcode model from
+// Google Play services (see app/build.gradle.kts); mobile_scanner reads
+// this property.
+if (hasProperty("famioArm64")) {
+    extra["dev.steenbakker.mobile_scanner.useUnbundled"] = "true"
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

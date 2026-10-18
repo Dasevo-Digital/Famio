@@ -68,11 +68,11 @@ class _EventImportScreenState extends State<EventImportScreen> {
       _busy = true;
       _message = null;
     });
-    final text = await Ocr.pdfText(path);
+    final text = await _read(() => Ocr.pdfText(path!));
     if (!mounted) return;
     setState(() => _busy = false);
     if (text == null) {
-      setState(() => _message = tr.importNoTextWasFound);
+      setState(() => _message ??= tr.importNoTextWasFound);
       return;
     }
     _text.text = text;
@@ -106,15 +106,26 @@ class _EventImportScreenState extends State<EventImportScreen> {
       _busy = true;
       _message = null;
     });
-    final text = await Ocr.recognize(path);
+    final text = await _read(() => Ocr.recognize(path!));
     if (!mounted) return;
     setState(() => _busy = false);
     if (text == null) {
-      setState(() => _message = tr.importNoTextWasRecognized);
+      setState(() => _message ??= tr.importNoTextWasRecognized);
       return;
     }
     _text.text = text;
     _analyse();
+  }
+
+  /// Runs the recognition; a model Google Play has not loaded yet becomes
+  /// the message instead of "no text".
+  Future<String?> _read(Future<String?> Function() recognize) async {
+    try {
+      return await recognize();
+    } on OcrModelMissing catch (e) {
+      _message = e.loading ? tr.ocrModelLoading : tr.ocrNeedsPlayServices;
+      return null;
+    }
   }
 
   void _analyse() {
