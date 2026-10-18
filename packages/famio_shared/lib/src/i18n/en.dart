@@ -761,6 +761,8 @@ const sharedEn = <String, String>{
       "Please enter a name (at most 60 characters)",
   "Server|Benutzername: 2–32 Zeichen, nur Buchstaben, Ziffern, . _ -":
       "Username: 2–32 characters, only letters, digits, . _ -",
+  "Server|Dieses Passwort ist zu leicht zu erraten. Gut sind drei oder vier zufällige Wörter, etwa mit Bindestrichen dazwischen.":
+      "This password is too easy to guess. Three or four random words work well, for example with hyphens in between.",
   "Server|Das Passwort muss mindestens 8 Zeichen haben":
       "The password must have at least 8 characters",
   "Server|Das Passwort darf höchstens 256 Zeichen haben":
@@ -1027,7 +1029,8 @@ const sharedEn = <String, String>{
   "Server|{name} · Familie": "{name} · Family",
   "Server|Neue Nachricht": "New message",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
-  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.": "Signed in on: {device}. Not you? Sign it out under Settings → My devices and change your password.",
+  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
+      "Signed in on: {device}. Not you? Sign it out under Settings → My devices and change your password.",
   "Server|unbekanntes Gerät": "unknown device",
   "Server|Neue Aufgabe für dich": "New task for you",
   "Server|Kommentar zu „{title}“": "Comment on “{title}”",

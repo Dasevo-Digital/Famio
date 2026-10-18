@@ -75,7 +75,7 @@ void main() {
     final response = await http.post(
       base.resolve('api/auth/login'),
       headers: {'content-type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': 'geheim123'}),
+      body: jsonEncode({'username': username, 'password': 'tulpe-regal-7'}),
     );
     final body = jsonDecode(response.body) as Map;
     return _Member(
@@ -94,7 +94,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       }),
     );
@@ -102,7 +102,7 @@ void main() {
     await mama.call('POST', 'api/admin/users', {
       'username': 'papa',
       'displayName': 'Papa',
-      'password': 'geheim123',
+      'password': 'tulpe-regal-7',
     });
     papa = await login('papa');
   });
@@ -140,7 +140,7 @@ void main() {
   group('deleting all data', () {
     Future<Map<String, Object?>> wipe(
       _Member who, {
-      String password = 'geheim123',
+      String password = 'tulpe-regal-7',
       String confirm = 'LÖSCHEN',
       bool removeMembers = false,
     }) => who.call('POST', 'api/admin/wipe', {

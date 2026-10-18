@@ -59,7 +59,7 @@ void main() {
       body: {
         'username': 'mama',
         'displayName': 'Mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       },
     );
@@ -71,13 +71,13 @@ void main() {
       body: {
         'username': 'kind',
         'displayName': 'Kind',
-        'password': 'kind12345',
+        'password': 'kind-wolke-5',
       },
     );
     expect(status, 201);
     return (
       admin,
-      await login('kind', 'kind12345', 'Tablet'),
+      await login('kind', 'kind-wolke-5', 'Tablet'),
       kind['id'] as String,
     );
   }
@@ -197,7 +197,7 @@ void main() {
     expect(updated['isAdmin'], isTrue);
     // Session stays valid, new username works.
     expect((await call('GET', '/api/me', token: kind)).$2['username'], 'lina');
-    await login('lina', 'kind12345');
+    await login('lina', 'kind-wolke-5');
 
     expect(
       (await call(
@@ -311,7 +311,7 @@ void main() {
 
   test('sign out single device and own other devices', () async {
     final (admin, kind, kindId) = await family();
-    final phone = await login('kind', 'kind12345', 'Handy');
+    final phone = await login('kind', 'kind-wolke-5', 'Handy');
     final (_, list) = await call('GET', '/api/me/sessions', token: kind);
     final sessions = [
       for (final s in list['sessions'] as List)
@@ -329,7 +329,7 @@ void main() {
 
     // "Everywhere" on yourself keeps the current device.
     final (_, me) = await call('GET', '/api/me', token: admin);
-    final laptop = await login('mama', 'geheim123', 'Laptop');
+    final laptop = await login('mama', 'tulpe-regal-7', 'Laptop');
     await call('DELETE', '/api/admin/users/${me['id']}/sessions', token: admin);
     expect((await call('GET', '/api/me', token: laptop)).$1, 401);
     expect((await call('GET', '/api/me', token: admin)).$1, 200);

@@ -156,7 +156,10 @@ class Invites {
       );
     }
     // Checked before anything is stored: a weak password keeps the code.
-    final hash = await accounts.hashPassword(password);
+    final hash = await accounts.hashPassword(
+      password,
+      personal: [username, displayName, invite.displayName],
+    );
     final name = displayName.trim().isEmpty
         ? invite.displayName
         : displayName.trim();

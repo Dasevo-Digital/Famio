@@ -20,7 +20,7 @@ class Node {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': username,
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       }),
     );

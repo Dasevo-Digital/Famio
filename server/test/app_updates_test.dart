@@ -81,7 +81,7 @@ void main() {
         headers: {'content-type': 'application/json'},
         body: jsonEncode({
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode,
         }),
       ),
@@ -221,14 +221,14 @@ void main() {
     await call(
       'POST',
       'api/admin/users',
-      body: {'username': 'ben', 'password': 'geheim456', 'displayName': 'Ben'},
+      body: {'username': 'ben', 'password': 'wolke-tisch-8', 'displayName': 'Ben'},
     );
     final login = await app.handler(
       Request(
         'POST',
         Uri.parse('http://famio.test/api/auth/login'),
         headers: {'content-type': 'application/json'},
-        body: jsonEncode({'username': 'ben', 'password': 'geheim456'}),
+        body: jsonEncode({'username': 'ben', 'password': 'wolke-tisch-8'}),
       ),
     );
     final ben =

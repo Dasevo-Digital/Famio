@@ -43,7 +43,7 @@ void main() {
         'api/auth/setup',
         body: {
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode,
         },
       ),
@@ -171,7 +171,7 @@ void main() {
       'POST',
       'api/admin/export',
       token: mamaToken,
-      body: {'password': 'geheim123'},
+      body: {'password': 'tulpe-regal-7'},
     );
     expect(r.statusCode, 200);
     final zip = await unzip(r);

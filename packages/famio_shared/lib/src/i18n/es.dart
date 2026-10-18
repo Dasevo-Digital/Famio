@@ -785,6 +785,8 @@ const sharedEs = <String, String>{
       "Indica un nombre (como máximo 60 caracteres)",
   "Server|Benutzername: 2–32 Zeichen, nur Buchstaben, Ziffern, . _ -":
       "Nombre de usuario: 2–32 caracteres, solo letras, cifras, . _ -",
+  "Server|Dieses Passwort ist zu leicht zu erraten. Gut sind drei oder vier zufällige Wörter, etwa mit Bindestrichen dazwischen.":
+      "Esta contraseña es demasiado fácil de adivinar. Funcionan bien tres o cuatro palabras al azar, por ejemplo con guiones entre ellas.",
   "Server|Das Passwort muss mindestens 8 Zeichen haben":
       "La contraseña debe tener al menos 8 caracteres",
   "Server|Das Passwort darf höchstens 256 Zeichen haben":
@@ -1058,7 +1060,8 @@ const sharedEs = <String, String>{
   "Server|{name} · Familie": "{name} · Familia",
   "Server|Neue Nachricht": "Mensaje nuevo",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
-  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.": "Sesión iniciada en: {device}. ¿No fuiste tú? Ciérrala en Ajustes → Mis dispositivos y cambia la contraseña.",
+  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
+      "Sesión iniciada en: {device}. ¿No fuiste tú? Ciérrala en Ajustes → Mis dispositivos y cambia la contraseña.",
   "Server|unbekanntes Gerät": "dispositivo desconocido",
   "Server|Neue Aufgabe für dich": "Nueva tarea para ti",
   "Server|Kommentar zu „{title}“": "Comentario en «{title}»",

@@ -59,7 +59,7 @@ void main() {
     final login = await api.setup(
       username: 'papa',
       displayName: 'Papa',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
       setupCode: app.setupCode,
     );
     SyncEngine device() => SyncEngine(

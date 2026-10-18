@@ -10,7 +10,7 @@ void main() {
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,
       (call) async => switch (call.method) {
-        'Clipboard.getData' => {'text': 'geheim-123'},
+        'Clipboard.getData' => {'text': 'tulpe-regal-123'},
         'Clipboard.hasStrings' => {'value': true},
         _ => null,
       },
@@ -50,7 +50,7 @@ void main() {
       expect(find.text('Einfügen'), findsOneWidget, reason: '$platform');
       await tester.tap(find.text('Einfügen'));
       await tester.pumpAndSettle();
-      expect(controller.text, 'geheim-123', reason: '$platform');
+      expect(controller.text, 'tulpe-regal-123', reason: '$platform');
       expect(find.text('Einfügen'), findsNothing);
       // Nothing to copy a password out with.
       expect(find.text('Kopieren'), findsNothing);

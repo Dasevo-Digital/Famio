@@ -48,7 +48,7 @@ void main() {
       body: {
         'username': 'mama',
         'displayName': 'Mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       },
     );
@@ -65,7 +65,7 @@ void main() {
     final (status, _) = await call(
       'POST',
       '/api/auth/setup',
-      body: {'username': 'eve', 'password': 'geheim123'},
+      body: {'username': 'eve', 'password': 'tulpe-regal-7'},
     );
     expect(status, 409);
   });
@@ -88,7 +88,7 @@ void main() {
       body: {
         'username': 'kind',
         'displayName': 'Kind',
-        'password': 'kind12345',
+        'password': 'kind-wolke-5',
       },
     );
     expect(created, 201);
@@ -96,7 +96,7 @@ void main() {
     final (_, login) = await call(
       'POST',
       '/api/auth/login',
-      body: {'username': 'KIND', 'password': 'kind12345'},
+      body: {'username': 'KIND', 'password': 'kind-wolke-5'},
     );
     final child = login['token'] as String;
     final (_, members) = await call('GET', '/api/members', token: child);
@@ -106,7 +106,7 @@ void main() {
         'POST',
         '/api/members',
         token: child,
-        body: {'username': 'x1', 'password': 'geheim123'},
+        body: {'username': 'x1', 'password': 'tulpe-regal-7'},
       )).$1,
       403,
     );
@@ -126,7 +126,7 @@ void main() {
         body: {
           'username': 'papa',
           'displayName': 'Papa',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'isAdmin': true,
         },
       );
@@ -134,7 +134,7 @@ void main() {
       final (_, login) = await call(
         'POST',
         '/api/auth/login',
-        body: {'username': 'papa', 'password': 'geheim123'},
+        body: {'username': 'papa', 'password': 'tulpe-regal-7'},
       );
       final papa = login['token'] as String;
 
@@ -152,7 +152,7 @@ void main() {
           'DELETE',
           '/api/me',
           token: papa,
-          body: {'password': 'geheim123'},
+          body: {'password': 'tulpe-regal-7'},
         )).$1,
         200,
       );
@@ -170,7 +170,7 @@ void main() {
       'DELETE',
       '/api/me',
       token: admin,
-      body: {'password': 'geheim123'},
+      body: {'password': 'tulpe-regal-7'},
     );
     expect(result.$1, 400);
     expect(result.$2['error'], 'last_admin');

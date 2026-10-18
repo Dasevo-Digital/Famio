@@ -55,7 +55,7 @@ void main() {
         'api/auth/setup',
         body: {
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode,
         },
       ),
@@ -71,13 +71,13 @@ void main() {
         'POST',
         'api/members',
         token: result['mama']!.$1,
-        body: {'username': name, 'password': 'geheim123'},
+        body: {'username': name, 'password': 'tulpe-regal-7'},
       );
       final login = json(
         await send(
           'POST',
           'api/auth/login',
-          body: {'username': name, 'password': 'geheim123'},
+          body: {'username': name, 'password': 'tulpe-regal-7'},
         ),
       );
       result[name] = (
@@ -389,7 +389,7 @@ void main() {
                   headers: {'content-type': 'application/json'},
                   body: jsonEncode({
                     'username': 'mama',
-                    'password': 'geheim123',
+                    'password': 'tulpe-regal-7',
                     'setupCode': small.setupCode,
                   }),
                 ),
@@ -430,13 +430,13 @@ void main() {
       for (var i = 0; i < 5; i++) {
         expect(await attempt('falsch$i'), 401);
       }
-      expect(await attempt('geheim123'), 429); // Even the right one waits.
+      expect(await attempt('tulpe-regal-7'), 429); // Even the right one waits.
       // Other users are not affected.
       expect(
         (await send(
           'POST',
           'api/auth/login',
-          body: {'username': 'kind', 'password': 'geheim123'},
+          body: {'username': 'kind', 'password': 'tulpe-regal-7'},
         )).statusCode,
         200,
       );
@@ -454,7 +454,7 @@ void main() {
       final localDenied = await send(
         'POST',
         'api/auth/setup',
-        body: {'username': 'eve', 'password': 'geheim123'},
+        body: {'username': 'eve', 'password': 'tulpe-regal-7'},
       );
       expect(localDenied.statusCode, 403);
 
@@ -464,7 +464,7 @@ void main() {
         headers: proxied,
         body: {
           'username': 'eve',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': 'RATEMAL1',
         },
       );
@@ -476,7 +476,7 @@ void main() {
         headers: proxied,
         body: {
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode!.toLowerCase(),
         },
       );

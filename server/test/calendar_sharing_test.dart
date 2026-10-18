@@ -97,7 +97,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': username,
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'device': 'test',
       }),
     );
@@ -113,7 +113,7 @@ void main() {
     await mama.call('POST', 'api/admin/users', {
       'username': username,
       'displayName': username,
-      'password': 'geheim123',
+      'password': 'tulpe-regal-7',
     });
     return login(username);
   }
@@ -137,7 +137,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       }),
     );

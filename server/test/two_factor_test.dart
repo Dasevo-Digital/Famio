@@ -88,7 +88,7 @@ void main() {
 
     Future<Map<String, Object?>> login(
       String user, [
-      String pw = 'geheim123',
+      String pw = 'tulpe-regal-7',
     ]) => call(
       base,
       'POST',
@@ -172,7 +172,7 @@ void main() {
         'api/auth/setup',
         body: {
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode,
         },
       );
@@ -182,7 +182,7 @@ void main() {
         'POST',
         'api/admin/users',
         token: admin,
-        body: {'username': 'papa', 'password': 'geheim123'},
+        body: {'username': 'papa', 'password': 'tulpe-regal-7'},
       );
     });
 
@@ -253,7 +253,7 @@ void main() {
         'POST',
         'api/me/two-factor/totp/disable',
         token: admin,
-        body: {'password': 'geheim123', 'code': now(1)},
+        body: {'password': 'tulpe-regal-7', 'code': now(1)},
       );
       expect(off['_status'], 200);
       expect((await login('mama'))['token'], isNotEmpty);
@@ -303,7 +303,7 @@ void main() {
         'POST',
         'api/me/two-factor/totp/disable',
         token: admin,
-        body: {'password': 'geheim123', 'code': now(1)},
+        body: {'password': 'tulpe-regal-7', 'code': now(1)},
       );
       expect(off['error'], 'two_factor_mandatory');
     });

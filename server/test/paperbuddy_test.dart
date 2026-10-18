@@ -107,7 +107,7 @@ void main() {
         headers: {'content-type': 'application/json'},
         body: jsonEncode({
           'username': 'mama',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'setupCode': app.setupCode,
         }),
       ),
@@ -140,7 +140,7 @@ void main() {
         'POST',
         Uri.parse('http://famio.test/api/auth/login'),
         headers: {'content-type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': 'geheim123'}),
+        body: jsonEncode({'username': username, 'password': 'tulpe-regal-7'}),
       ),
     );
     return (jsonDecode(await r.readAsString()) as Map)['token'] as String;
@@ -155,7 +155,7 @@ void main() {
         body: {
           'username': 'papa',
           'displayName': 'Papa',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
         },
       );
       expect(papa.statusCode, anyOf(200, 201));
@@ -165,7 +165,7 @@ void main() {
         body: {
           'username': 'mia',
           'displayName': 'Mia',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'role': 'child',
         },
       );

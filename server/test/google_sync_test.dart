@@ -146,7 +146,7 @@ void main() {
                   headers: {'content-type': 'application/json'},
                   body: jsonEncode({
                     'username': 'oma',
-                    'password': 'geheim123',
+                    'password': 'tulpe-regal-7',
                     'setupCode': setupCode,
                   }),
                 )).body,

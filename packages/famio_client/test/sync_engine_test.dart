@@ -22,7 +22,7 @@ void main() {
     final login = await FamioApiClient(url).setup(
       username: 'papa',
       displayName: 'Papa',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
       setupCode: app.setupCode,
     );
     token = login.token;
@@ -52,7 +52,7 @@ void main() {
     final ha = await FamioApiClient(url, token: token).createMember(
       username: 'homeassistant',
       displayName: 'Home Assistant',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
       role: MemberRole.service,
     );
     final engine = device();
@@ -118,12 +118,12 @@ void main() {
     final mama = await FamioApiClient(url, token: token).createMember(
       username: 'mama',
       displayName: 'Mama',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
       role: MemberRole.adult,
     );
     final mamaToken = (await FamioApiClient(
       url,
-    ).login(username: 'mama', password: 'geheim123', device: 'test')).token;
+    ).login(username: 'mama', password: 'tulpe-regal-7', device: 'test')).token;
     final papaDevice = device();
     final mamaDevice = SyncEngine(
       store: LocalStore.open(':memory:'),
@@ -271,10 +271,10 @@ void main() {
     await admin.createMember(
       username: 'oma',
       displayName: 'Oma',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
     );
     final oma = FamioApiClient(url);
-    await oma.login(username: 'oma', password: 'geheim123');
+    await oma.login(username: 'oma', password: 'tulpe-regal-7');
     final start = await oma.notices();
     expect(start.notices, isEmpty);
 
@@ -336,17 +336,17 @@ void main() {
     await admin.createMember(
       username: 'partner',
       displayName: 'Partner',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
     );
     await admin.createMember(
       username: 'kind',
       displayName: 'Kind',
-      password: 'geheim123',
+      password: 'tulpe-regal-7',
     );
     Future<SyncEngine> login(String name) async {
       final r = await FamioApiClient(
         url,
-      ).login(username: name, password: 'geheim123');
+      ).login(username: name, password: 'tulpe-regal-7');
       final e = SyncEngine(
         store: LocalStore.open(':memory:'),
         api: FamioApiClient(url, token: r.token),

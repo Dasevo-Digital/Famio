@@ -112,7 +112,7 @@ void main() {
                       headers: {'content-type': 'application/json'},
                       body: jsonEncode({
                         'username': 'mama',
-                        'password': 'geheim123',
+                        'password': 'tulpe-regal-7',
                         'setupCode': app.setupCode,
                       }),
                     )).body,

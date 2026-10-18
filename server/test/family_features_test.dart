@@ -81,7 +81,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': username,
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'device': 'test',
       }),
     );
@@ -97,7 +97,7 @@ void main() {
     final created = await mama.call('POST', 'api/admin/users', {
       'username': username,
       'displayName': username,
-      'password': 'geheim123',
+      'password': 'tulpe-regal-7',
       'role': role.name,
     });
     expect(created['role'], role.name);
@@ -123,7 +123,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       }),
     );
@@ -642,7 +642,7 @@ void main() {
         headers: {'content-type': 'application/json'},
         body: jsonEncode({
           'username': 'kind',
-          'password': 'geheim123',
+          'password': 'tulpe-regal-7',
           'device': 'Laptop im Büro',
         }),
       );

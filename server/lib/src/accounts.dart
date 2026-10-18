@@ -8,6 +8,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'api_exception.dart';
+import 'auth/password_rules.dart';
 import 'i18n.dart';
 
 /// User accounts and login sessions.
@@ -115,8 +116,14 @@ class Accounts {
     _db.execute('DELETE FROM users WHERE id = ?', [userId]);
   }
 
-  Future<void> setPassword(String userId, String password) async {
-    final hash = await hashPassword(password);
+  /// [check]: false only when the stored hash of a password already in
+  /// use is renewed (see [verify]); it is not checked against newer rules.
+  Future<void> setPassword(
+    String userId,
+    String password, {
+    bool check = true,
+  }) async {
+    final hash = check ? await hashPassword(password) : await _hash(password);
     _db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [
       hash,
       userId,
@@ -124,11 +131,23 @@ class Accounts {
   }
 
   /// Checks the password rules and hashes it off the main isolate, so a
-  /// login never stalls sync for everybody else.
-  Future<String> hashPassword(String password) {
-    _checkPassword(password);
+  /// login never stalls sync for everybody else. [personal]: the names of
+  /// the new member (the family's names are added).
+  Future<String> hashPassword(
+    String password, {
+    Iterable<String> personal = const [],
+  }) {
+    _checkPassword(password, [...personal, ..._personal()]);
     return _hash(password);
   }
+
+  /// Names and user names of every member: a password made of one of
+  /// them is quickly guessed by whoever knows the family.
+  List<String> _personal() => [
+    'famio',
+    for (final row in _db.select('SELECT username, display_name FROM users'))
+      for (final key in ['username', 'display_name']) row[key] as String,
+  ];
 
   /// Hashes another secret (e.g. the parents' code) like a password.
   Future<String> hashSecret(String secret) => _hash(secret);
@@ -365,7 +384,7 @@ class Accounts {
     final stored = row['password_hash'] as String?;
     if (stored == null || !await _matches(password, stored)) return null;
     if (_rounds(stored) < iterations) {
-      await setPassword(row['id'] as String, password);
+      await setPassword(row['id'] as String, password, check: false);
     }
     return _member(row);
   }
@@ -589,7 +608,7 @@ class Accounts {
     }
   }
 
-  void _checkPassword(String password) {
+  void _checkPassword(String password, Iterable<String> personal) {
     if (password.length < 8) {
       throw ApiException.badRequest(
         'weak_password',
@@ -600,6 +619,14 @@ class Accounts {
       throw ApiException.badRequest(
         'weak_password',
         t('Das Passwort darf höchstens 256 Zeichen haben'),
+      );
+    }
+    if (PasswordRules.isWeak(password, personal: personal)) {
+      throw ApiException.badRequest(
+        'weak_password',
+        t(
+          'Dieses Passwort ist zu leicht zu erraten. Gut sind drei oder vier zufällige Wörter, etwa mit Bindestrichen dazwischen.',
+        ),
       );
     }
   }

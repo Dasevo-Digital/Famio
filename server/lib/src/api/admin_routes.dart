@@ -611,6 +611,10 @@ extension _AdminRoutes on FamioApi {
       displayName: body['displayName'] as String? ?? '',
       passwordHash: await accounts.hashPassword(
         body['password'] as String? ?? '',
+        personal: [
+          body['username'] as String? ?? '',
+          body['displayName'] as String? ?? '',
+        ],
       ),
       isAdmin: body['isAdmin'] as bool? ?? false,
       role: MemberRole.parse(body['role']),

@@ -65,7 +65,7 @@ void main() {
       'api/auth/setup',
       body: {
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       },
     );
@@ -85,7 +85,7 @@ void main() {
       'api/me/password',
       auth: token,
       headers: {'content-type': 'text/plain'},
-      body: jsonEncode({'currentPassword': 'geheim123', 'newPassword': 'x'}),
+      body: jsonEncode({'currentPassword': 'tulpe-regal-7', 'newPassword': 'x'}),
     );
     expect(r.statusCode, 415);
   });
@@ -136,12 +136,12 @@ void main() {
   });
 
   test('changing the own password signs out other devices', () async {
-    final phone = await login('mama', 'geheim123');
+    final phone = await login('mama', 'tulpe-regal-7');
     final r = await send(
       'PUT',
       'api/me/password',
       auth: token,
-      body: {'currentPassword': 'geheim123', 'newPassword': 'neu-geheim-9'},
+      body: {'currentPassword': 'tulpe-regal-7', 'newPassword': 'neu-geheim-9'},
     );
     expect(json(r)['signedOut'], 1);
     expect((await send('GET', 'api/me', auth: phone)).statusCode, 401);
@@ -161,7 +161,7 @@ void main() {
       'PUT',
       'api/me/password',
       auth: token,
-      body: {'currentPassword': 'geheim123', 'newPassword': 'neu-geheim-9'},
+      body: {'currentPassword': 'tulpe-regal-7', 'newPassword': 'neu-geheim-9'},
     );
     expect(r.statusCode, 429);
   });
@@ -186,6 +186,8 @@ void main() {
       _legacyHash,
       id,
     ]);
+    // The old hash is of a password today's rules would refuse: in use
+    // already, it keeps working and is only hashed again.
     await login('mama', 'geheim123');
     final upgraded =
         app.db.select('SELECT password_hash FROM users').first.columnAt(0)
@@ -199,7 +201,7 @@ void main() {
       'POST',
       'api/admin/users',
       auth: token,
-      body: {'username': 'kind', 'password': 'kind12345'},
+      body: {'username': 'kind', 'password': 'kind-wolke-5'},
     );
     final id = json(r)['id'];
     await send(

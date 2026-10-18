@@ -74,7 +74,7 @@ void main() {
       headers: {'content-type': 'application/json'},
       body: jsonEncode({
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       }),
     );
@@ -176,7 +176,7 @@ void main() {
     expect(none.statusCode, 401);
     expect(none.headers['www-authenticate'], startsWith('Basic'));
     // The login password is not an app password.
-    final login = await dav('PROPFIND', 'dav/', password: 'geheim123');
+    final login = await dav('PROPFIND', 'dav/', password: 'tulpe-regal-7');
     expect(login.statusCode, 401);
     // Somebody else's calendar.
     final other = await dav('PROPFIND', 'dav/calendars/papa/famio/');

@@ -26,7 +26,13 @@ extension _AuthRoutes on FamioApi {
         );
       }
     }
-    final hash = await accounts.hashPassword(body['password'] as String? ?? '');
+    final hash = await accounts.hashPassword(
+      body['password'] as String? ?? '',
+      personal: [
+        body['username'] as String? ?? '',
+        body['displayName'] as String? ?? '',
+      ],
+    );
     // Checked again: another setup may have finished while hashing.
     if (accounts.hasUsers) {
       throw ApiException(

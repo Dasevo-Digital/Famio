@@ -36,7 +36,7 @@ void main() {
       'api/auth/setup',
       body: {
         'username': 'mama',
-        'password': 'geheim123',
+        'password': 'tulpe-regal-7',
         'setupCode': app.setupCode,
       },
     );

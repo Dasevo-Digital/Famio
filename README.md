@@ -373,6 +373,13 @@ Famio über die Seitenleiste (Ingress) öffnen, automatisch angelegt und können
 dort ein Passwort für die App setzen. Die Ingress-Header werden nur von der
 Supervisor-Adresse `172.30.32.2` akzeptiert.
 
+Ein neues Passwort braucht mindestens 8 Zeichen und darf nicht leicht zu
+erraten sein: Der Server lehnt häufige Passwörter und Wörter ab (auch mit
+Ziffern oder Zeichen davor und dahinter oder als „P@ssw0rt“), dazu
+Tastaturreihen, Zahlenfolgen, reine Zahlen unter 12 Stellen und die Namen der
+Familienmitglieder mit wenigen Zeichen drumherum. Die Prüfung läuft auf dem
+Server, ohne Online-Abfrage. Bestehende Passwörter bleiben gültig.
+
 **Zwei-Faktor-Anmeldung (TOTP):** Unter Einstellungen → Anmeldung & Sicherheit
 richtet jedes Mitglied eine Authenticator-App ein (QR-Code, RFC 6238, 30 s,
 6 Stellen) und bekommt 10 Wiederherstellungscodes, die je einmal gelten. Ein

@@ -36,7 +36,7 @@ void main() {
     final admin = app.accounts.create(
       username: 'mama',
       displayName: 'Mama',
-      passwordHash: await app.accounts.hashPassword('geheim123'),
+      passwordHash: await app.accounts.hashPassword('tulpe-regal-7'),
       isAdmin: true,
     );
     token = app.accounts.createSession(admin.id, method: 'password');

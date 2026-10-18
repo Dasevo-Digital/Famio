@@ -148,7 +148,7 @@ void main() {
         displayName: 'Mama',
         isAdmin: true,
       );
-      await family.accounts.setPassword(mama.id, 'geheim-123');
+      await family.accounts.setPassword(mama.id, 'tulpe-regal-123');
       upstream = await io.serve(
         family.handler,
         InternetAddress.loopbackIPv4,
@@ -206,7 +206,7 @@ void main() {
       final (status, login) = await call(
         'POST',
         'api/auth/login',
-        body: {'username': 'mama', 'password': 'geheim-123'},
+        body: {'username': 'mama', 'password': 'tulpe-regal-123'},
       );
       expect(status, 200);
       expect((login as Map)['token'], 'panel');
@@ -255,7 +255,7 @@ void main() {
       await call(
         'POST',
         'api/auth/login',
-        body: {'username': 'mama', 'password': 'geheim-123'},
+        body: {'username': 'mama', 'password': 'tulpe-regal-123'},
       );
       family.db.execute('DELETE FROM sessions');
       expect((await call('GET', 'api/me')).$1, 401);
@@ -269,7 +269,7 @@ void main() {
       await call(
         'POST',
         'api/auth/login',
-        body: {'username': 'mama', 'password': 'geheim-123'},
+        body: {'username': 'mama', 'password': 'tulpe-regal-123'},
       );
       final socket = IOWebSocketChannel.connect(
         Uri.parse('ws://127.0.0.1:${panel.port}/api/ws'),
