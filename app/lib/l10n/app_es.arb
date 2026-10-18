@@ -2359,5 +2359,6 @@
   "tripNoPlaces": "Primero añade un destino en Lugares (arriba a la derecha), por ejemplo Casa.",
   "tripOnTheWay": "de camino a {place}, hacia las {time}",
   "tripArrived": "He llegado",
-  "tripHint": "La familia recibe un aviso. Al llegar termina solo si compartes tu ubicación."
+  "tripHint": "La familia recibe un aviso. Al llegar termina solo si compartes tu ubicación.",
+  "dropHere": "Suéltalo aquí para compartirlo con Famio"
 }

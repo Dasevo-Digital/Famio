@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -37,6 +38,7 @@ import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import 'deferred_sections.dart';
 import 'share_target.dart';
+import '../widgets/file_drop.dart';
 
 /// Rarely opened sections are loaded on first use in the web app (see
 /// DeferredPage).
@@ -193,6 +195,27 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
+  /// Files dropped onto the window (desktop): a calendar file goes to the
+  /// import, anything else to "Teilen an Famio".
+  Future<void> _dropped(List<SharedFile> files) async {
+    if (files.length == 1 && files.single.name.toLowerCase().endsWith('.ics')) {
+      final file = File(files.single.path);
+      final bytes = await file.readAsBytes();
+      await file.delete();
+      if (mounted) {
+        await _importCalendarFile((name: files.single.name, bytes: bytes));
+      }
+      return;
+    }
+    if (!mounted) return;
+    await showShareTarget(
+      context,
+      SharedContent(files: files),
+      go: _go,
+      navigatorOf: (section) => _navigators[section]?.currentState,
+    );
+  }
+
   /// Reads a calendar file and shows in the calendar what can be taken
   /// over.
   Future<void> _importCalendarFile(
@@ -315,43 +338,46 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     final c = FamioColors.of(context);
     final changed = AppScope.of(context).changedCertificate;
     final tip = _tip;
-    final body = Column(
-      children: [
-        if (changed != null) _CertificateBanner(fingerprint: changed),
-        const SosBanner(),
-        Expanded(
-          child: Stack(
-            children: [
-              Positioned.fill(child: pages),
-              Positioned(
-                left: 16,
-                right: 16,
-                // Above the add button (and the floating bar on phones).
-                bottom: wide ? 100 : listBottomPadding(context),
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 520),
-                    child: AnimatedSwitcher(
-                      duration: MediaQuery.disableAnimationsOf(context)
-                          ? Duration.zero
-                          : const Duration(milliseconds: 220),
-                      child: tip == null
-                          ? const SizedBox.shrink()
-                          : SectionTipCard(
-                              key: ValueKey(tip),
-                              section: tip,
-                              onGotIt: () => _closeTip(noMore: false),
-                              onNoMore: () => _closeTip(noMore: true),
-                            ),
+    final body = FileDropZone(
+      onFiles: _dropped,
+      child: Column(
+        children: [
+          if (changed != null) _CertificateBanner(fingerprint: changed),
+          const SosBanner(),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(child: pages),
+                Positioned(
+                  left: 16,
+                  right: 16,
+                  // Above the add button (and the floating bar on phones).
+                  bottom: wide ? 100 : listBottomPadding(context),
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: AnimatedSwitcher(
+                        duration: MediaQuery.disableAnimationsOf(context)
+                            ? Duration.zero
+                            : const Duration(milliseconds: 220),
+                        child: tip == null
+                            ? const SizedBox.shrink()
+                            : SectionTipCard(
+                                key: ValueKey(tip),
+                                section: tip,
+                                onGotIt: () => _closeTip(noMore: false),
+                                onNoMore: () => _closeTip(noMore: true),
+                              ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
 
     return FamioNav(

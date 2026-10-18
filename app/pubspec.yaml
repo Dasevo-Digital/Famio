@@ -58,6 +58,7 @@ dependencies:
   xml: ^7.0.1
   web: ^1.1.1
   pdf: ^3.13.1
+  desktop_drop: ^0.8.0
 dev_dependencies:
   cryptography: ^2.9.0
   flutter_test:

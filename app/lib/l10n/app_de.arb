@@ -6026,5 +6026,6 @@
     }
   },
   "tripArrived": "Angekommen",
-  "tripHint": "Die Familie bekommt eine Mitteilung. Kommst du dort an, endet es von selbst, wenn du deinen Standort teilst."
+  "tripHint": "Die Familie bekommt eine Mitteilung. Kommst du dort an, endet es von selbst, wenn du deinen Standort teilst.",
+  "dropHere": "Hier ablegen, um es an Famio zu teilen"
 }
