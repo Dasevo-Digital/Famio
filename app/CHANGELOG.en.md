@@ -4,6 +4,24 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.7 – Cooking mode and sharing to Famio
+
+- Recipes have a cooking mode: step by step, the screen stays on, times in
+  the text start a timer with one tap.
+- On Android, text, links, photos and files from other apps can be shared to
+  Famio: to the shopping list, as a task, note or document, or to the chat.
+- If you like, a daily overview arrives every morning with appointments,
+  tasks, bins and weather (Settings → Notifications).
+- Places can be marked as a shop: whoever arrives there gets the open
+  shopping items.
+- Passwords that are easy to guess are refused; two-factor sign-in can now
+  be required for all adults, too.
+- The Android update for 64-bit phones is about 32 MB; appointments from
+  photos and the barcode scanner then load their recognition once through
+  Google Play.
+- Around the clock change on October 25, nothing slips to the day before or
+  after anymore.
+
 ## 2.0.6 – Scan documents
 
 - Every file picker offers "Scan a document": the pages become a PDF on

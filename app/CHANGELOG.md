@@ -4,6 +4,25 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.7 – Kochmodus und Teilen an Famio
+
+- Rezepte haben einen Kochmodus: Schritt für Schritt, der Bildschirm bleibt
+  an, Zeiten im Text starten per Tipp einen Timer.
+- Auf Android lassen sich Text, Links, Fotos und Dateien aus anderen Apps an
+  Famio teilen: auf die Einkaufsliste, als Aufgabe, Notiz oder Dokument oder
+  in den Chat.
+- Auf Wunsch kommt jeden Morgen ein Tagesüberblick mit Terminen, Aufgaben,
+  Abfall und Wetter (Einstellungen → Mitteilungen).
+- Orte lassen sich als Geschäft markieren: Wer dort ankommt, bekommt die
+  offenen Einkäufe.
+- Leicht zu erratende Passwörter werden abgelehnt; die Zwei-Faktor-Pflicht
+  gibt es auch für alle Erwachsenen.
+- Das Android-Update für 64-Bit-Handys ist rund 32 MB groß; Termine aus
+  Fotos und der Barcode-Scanner laden ihre Erkennung dann einmal über
+  Google Play.
+- Rund um die Zeitumstellung am 25. Oktober rutscht nichts mehr auf den Vor-
+  oder Folgetag.
+
 ## 2.0.6 – Dokumente scannen
 
 - In jeder Dateiauswahl gibt es „Dokument scannen“: Die Seiten werden auf

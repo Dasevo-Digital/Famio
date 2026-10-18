@@ -4,6 +4,25 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.7 – Modo cocina y compartir con Famio
+
+- Las recetas tienen un modo cocina: paso a paso, la pantalla sigue
+  encendida y los tiempos del texto inician un temporizador con un toque.
+- En Android se pueden compartir con Famio textos, enlaces, fotos y archivos
+  de otras apps: a la lista de la compra, como tarea, nota o documento, o al
+  chat.
+- Si quieres, cada mañana llega un resumen del día con citas, tareas, basura
+  y tiempo (Ajustes → Notificaciones).
+- Los lugares se pueden marcar como tienda: quien llega allí recibe las
+  compras pendientes.
+- Se rechazan las contraseñas fáciles de adivinar; el inicio de sesión en
+  dos pasos ahora también puede exigirse a todos los adultos.
+- La actualización de Android para móviles de 64 bits ocupa unos 32 MB; las
+  citas desde fotos y el escáner de códigos de barras cargan entonces su
+  reconocimiento una vez a través de Google Play.
+- En torno al cambio de hora del 25 de octubre ya nada se desplaza al día
+  anterior o siguiente.
+
 ## 2.0.6 – Escanear documentos
 
 - Cada selector de archivos ofrece «Escanear documento»: las páginas se
