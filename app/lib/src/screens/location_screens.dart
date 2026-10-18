@@ -31,6 +31,7 @@ part 'location/member_list.dart';
 part 'location/minute_ticker.dart';
 part 'location/my_sharing_card.dart';
 part 'location/places.dart';
+part 'location/trip_dialog.dart';
 part 'location/schedule_dialog.dart';
 
 const _collections = {
@@ -38,6 +39,7 @@ const _collections = {
   Collections.memberLocations,
   Collections.locationAlerts,
   Collections.locationSettings,
+  Collections.trips,
   'members',
 };
 

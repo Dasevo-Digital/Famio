@@ -623,6 +623,18 @@ extension FamilyData on SyncEngine {
 
   void deletePlace(String id) => delete(Collections.places, id);
 
+  /// "Bin unterwegs" of [memberId], while it lasts.
+  Trip? tripOf(String memberId) {
+    final r = record(Collections.trips, memberId);
+    final trip = r == null ? null : Trip.fromRecord(r);
+    return trip != null && trip.activeAt(DateTime.now()) ? trip : null;
+  }
+
+  void startTrip(Trip trip) =>
+      put(Collections.trips, trip.memberId, trip.toData());
+
+  void endTrip() => delete(Collections.trips, memberId);
+
   /// Last position and sharing status per member id.
   Map<String, MemberLocation> get memberLocations => {
     for (final r in records(Collections.memberLocations))

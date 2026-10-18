@@ -250,6 +250,7 @@ class PushService {
         Collections.eventComments when fresh => _comment(r, userId, name),
         Collections.events when fresh => _event(r, userId),
         Collections.pointEntries => _points(r, before, userId, name),
+        Collections.trips => _trip(r, userId, name),
         _ => null,
       };
       if (build() != null) deliver(() => build()!, r);
@@ -329,6 +330,30 @@ class PushService {
         r,
       );
     }
+  }
+
+  /// "Bin unterwegs": the family hears where to and when.
+  PushNotice _trip(SyncRecord r, String author, String Function(String?) name) {
+    final trip = Trip.fromRecord(r);
+    final eta = tz.TZDateTime.from(trip.eta, location());
+    String two(int n) => n.toString().padLeft(2, '0');
+    return PushNotice(
+      to: _everyone(r, except: author),
+      title: 'Famio',
+      body: t('{name} ist unterwegs nach {place}, ca. {time} da', {
+        'name': name(author),
+        'place': trip.placeName,
+        'time': '${two(eta.hour)}:${two(eta.minute)}',
+      }),
+      brief: t('Jemand ist unterwegs'),
+      tag: switch (trip.mode) {
+        TripMode.walk => 'walking',
+        TripMode.bike => 'bike',
+        TripMode.car => 'car',
+        TripMode.transit => 'bus',
+      },
+      place: true,
+    );
   }
 
   PushNotice? _chat(

@@ -83,6 +83,8 @@ class RecordStore {
           role != MemberRole.guest &&
           access != ServiceAccess.readOnly;
     }
+    // "Bin unterwegs": everyone announces only their own way.
+    if (collection == Collections.trips && incoming.id != userId) return false;
     switch (role) {
       case MemberRole.adult:
         return true;

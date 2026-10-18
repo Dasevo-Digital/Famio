@@ -296,6 +296,7 @@ class LocationService {
       ),
     );
     final notified = _sendAlerts(member.id, alerts);
+    _arrived(member.id, alerts);
     for (final a in alerts) {
       final place = places[a.placeId];
       if (a.arrived && place != null && place.shop) {
@@ -393,6 +394,23 @@ class LocationService {
               },
               updatedAt: 0,
             ),
+    ]);
+  }
+
+  /// "Bin unterwegs" ends when the member reaches the place it was for.
+  void _arrived(String memberId, List<LocationAlert> alerts) {
+    final r = records.get(Collections.trips, memberId);
+    if (r == null || r.deleted) return;
+    final trip = Trip.fromRecord(r);
+    if (!alerts.any((a) => a.arrived && a.placeId == trip.placeId)) return;
+    records.writeAsServer([
+      SyncRecord(
+        collection: Collections.trips,
+        id: memberId,
+        data: const {},
+        deleted: true,
+        updatedAt: 0,
+      ),
     ]);
   }
 

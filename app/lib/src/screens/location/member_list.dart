@@ -46,11 +46,14 @@ class _MemberList extends StatelessWidget {
           location: locations[me.id],
           place: engine.place(locations[me.id]?.placeId),
         ),
+        // Guests have no locations, so no way to announce either.
+        if (!me.isGuest) _TripCard(engine: engine),
         const SizedBox(height: 8),
         for (final m in members)
           _MemberTile(
             member: m,
             location: locations[m.id],
+            trip: engine.tripOf(m.id),
             place: engine.place(locations[m.id]?.placeId),
             isMe: m.id == me.id,
             canManage: me.isAdmin,
@@ -103,6 +106,7 @@ class _MemberTile extends StatelessWidget {
   const _MemberTile({
     required this.member,
     required this.location,
+    this.trip,
     required this.place,
     required this.isMe,
     required this.canManage,
@@ -113,6 +117,9 @@ class _MemberTile extends StatelessWidget {
 
   final FamilyMember member;
   final MemberLocation? location;
+
+  /// "Bin unterwegs", while it lasts.
+  final Trip? trip;
   final Place? place;
   final bool isMe;
   final bool canManage;
@@ -141,6 +148,7 @@ class _MemberTile extends StatelessWidget {
       title: Text(isMe ? '${member.displayName} (ich)' : member.displayName),
       subtitle: Text(
         [
+          if (trip case final t?) tripLabel(t),
           sharingLabel(l, place),
           if (l?.battery != null && l!.state != SharingState.paused)
             tr.locationBatteryBattery(l.battery),

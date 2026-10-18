@@ -66,6 +66,10 @@ abstract final class Collections {
   /// Who "Wo ist wer?" leaves out (one record, adults only).
   static const locationSettings = 'location_settings';
 
+  /// "Bin unterwegs": who is heading for which place (one per member,
+  /// removed by the server on arrival). Not for guests, like locations.
+  static const trips = 'trips';
+
   /// Chores (Ämter) with rotation and points.
   static const chores = 'chores';
 
@@ -162,6 +166,7 @@ abstract final class Collections {
   static const all = {
     conflicts,
     locationSettings,
+    trips,
     deadlines,
     wasteSettings,
     wishes,

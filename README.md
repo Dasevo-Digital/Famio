@@ -50,7 +50,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien; „Öffnen mit Famio“ aus Mail und Dateien auf allen Geräten); „Wann haben alle Zeit?“ findet gemeinsame freie Zeiten | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
-| Standort: Familienkarte, Orte mit Benachrichtigung, Geschäfte (wer ankommt, bekommt die offene Einkaufsliste), einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
+| Standort: Familienkarte, Orte mit Benachrichtigung, Geschäfte (wer ankommt, bekommt die offene Einkaufsliste), „Bin unterwegs“ mit geschätzter Ankunft (ohne fremden Routing-Dienst), einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
 | Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy; Briefe und Formulare mit der Kamera als PDF scannen (Ränder werden erkannt) | ✅ (Scannen: Android, iOS) |
 | Kinder: Meilensteine von der Geburt bis ins Erwachsenenalter (Sinne, Bewegung, Sprache, Denken, Miteinander, Selbstständigkeit, Körper mit Fontanellen und Zähnen, Pubertät nach Geschlecht), Entwicklungsphasen mit Erklärung, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |

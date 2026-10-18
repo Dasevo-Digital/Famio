@@ -2345,5 +2345,19 @@
   "freeTimeEvening": "Evenings",
   "freeTimeNone": "No common time found. Try a shorter one or another time of day.",
   "freeTimeHint": "All-day entries such as birthdays or school holidays do not count as busy. Tap one to create an appointment.",
-  "freeTimeHours": "{h} h"
+  "freeTimeHours": "{h} h",
+  "tripStart": "On my way",
+  "tripTitle": "Where are you heading?",
+  "tripPlace": "Destination",
+  "tripModeWalk": "On foot",
+  "tripModeBike": "Bike",
+  "tripModeCar": "Car",
+  "tripModeTransit": "Bus & train",
+  "tripEta": "Arrival about {time} ({minutes} min)",
+  "tripNoPosition": "Without a current location: estimate the time yourself.",
+  "tripTell": "Tell the family",
+  "tripNoPlaces": "First add a destination under Places (top right), such as Home.",
+  "tripOnTheWay": "on the way to {place}, about {time}",
+  "tripArrived": "Arrived",
+  "tripHint": "The family gets a notification. When you arrive there it ends by itself if you share your location."
 }

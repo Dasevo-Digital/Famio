@@ -133,6 +133,47 @@ void main() {
     await app.close();
   });
 
+  test('"Bin unterwegs" tells the family and ends on arrival', () async {
+    final told = <(List<String>, PushNotice)>[];
+    app.push.onNotice = (ids, notice, _) => told.add((ids, notice));
+    final now = DateTime.now();
+    Map<String, Object?> trip(String id) => SyncRecord(
+      collection: Collections.trips,
+      id: id,
+      data: Trip(
+        memberId: id,
+        placeId: 'home',
+        placeName: 'Zuhause',
+        eta: now.add(const Duration(minutes: 20)),
+        startedAt: now,
+        mode: TripMode.bike,
+      ).toData(),
+      updatedAt: now.millisecondsSinceEpoch,
+    ).toJson();
+    // Only one's own way: Mia cannot announce Mama.
+    final refused = await ok('POST', 'api/sync', kidToken, {
+      'since': 0,
+      'changes': [trip(parentId)],
+    });
+    expect(
+      [for (final r in refused['rejected'] as List? ?? []) (r as Map)['id']],
+      [parentId],
+    );
+    await ok('POST', 'api/sync', kidToken, {
+      'since': 0,
+      'changes': [trip(kidId)],
+    });
+    final notice = told.singleWhere((t) => t.$2.tag == 'bike');
+    expect(notice.$1, [parentId]);
+    expect(notice.$2.body, startsWith('Mia ist unterwegs nach Zuhause, ca. '));
+
+    // Arriving at home ends it.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, now.toUtc())],
+    });
+    expect(app.records.get(Collections.trips, kidId)?.deleted, isTrue);
+  });
+
   test(
     'arriving at a shop tells only that member what is still open',
     () async {

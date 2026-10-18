@@ -118,6 +118,34 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('"Bin unterwegs" announces the way, the list shows it', (
+    tester,
+  ) async {
+    await open(tester);
+    await tester.tap(find.text('Bin unterwegs'));
+    await tester.pumpAndSettle();
+    // Mama shares no position here: the time is estimated by hand.
+    expect(
+      find.text('Ohne aktuellen Standort: Zeit selbst schätzen.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('(15 Min.)'), findsOneWidget);
+    await tester.tap(find.text('Familie Bescheid geben'));
+    await tester.pumpAndSettle();
+    final trip = engine.tripOf('m1')!;
+    expect(trip.placeName, 'Schule');
+    expect(
+      trip.eta.difference(DateTime.now()).inMinutes,
+      inInclusiveRange(14, 15),
+    );
+    expect(find.textContaining('unterwegs nach Schule'), findsWidgets);
+    await tester.tap(find.text('Angekommen'));
+    await tester.pumpAndSettle();
+    expect(engine.tripOf('m1'), isNull);
+    expect(find.text('Bin unterwegs'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('adults hide members without a phone for everyone', (
     tester,
   ) async {

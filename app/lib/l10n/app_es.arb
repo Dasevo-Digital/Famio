@@ -2345,5 +2345,19 @@
   "freeTimeEvening": "Por la tarde-noche",
   "freeTimeNone": "No hay tiempo en común. Prueba algo más corto u otro momento del día.",
   "freeTimeHint": "Las entradas de todo el día, como cumpleaños o vacaciones escolares, no cuentan como ocupadas. Toca una para crear una cita.",
-  "freeTimeHours": "{h} h"
+  "freeTimeHours": "{h} h",
+  "tripStart": "Voy de camino",
+  "tripTitle": "¿Adónde vas?",
+  "tripPlace": "Destino",
+  "tripModeWalk": "A pie",
+  "tripModeBike": "Bici",
+  "tripModeCar": "Coche",
+  "tripModeTransit": "Bus y tren",
+  "tripEta": "Llegada hacia las {time} ({minutes} min)",
+  "tripNoPosition": "Sin ubicación actual: calcula el tiempo tú.",
+  "tripTell": "Avisar a la familia",
+  "tripNoPlaces": "Primero añade un destino en Lugares (arriba a la derecha), por ejemplo Casa.",
+  "tripOnTheWay": "de camino a {place}, hacia las {time}",
+  "tripArrived": "He llegado",
+  "tripHint": "La familia recibe un aviso. Al llegar termina solo si compartes tu ubicación."
 }

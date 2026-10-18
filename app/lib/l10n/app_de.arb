@@ -5992,5 +5992,39 @@
         "type": "String"
       }
     }
-  }
+  },
+  "tripStart": "Bin unterwegs",
+  "tripTitle": "Wohin bist du unterwegs?",
+  "tripPlace": "Ziel",
+  "tripModeWalk": "Zu Fuß",
+  "tripModeBike": "Rad",
+  "tripModeCar": "Auto",
+  "tripModeTransit": "Bus & Bahn",
+  "tripEta": "Ankunft ca. {time} ({minutes} Min.)",
+  "@tripEta": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "tripNoPosition": "Ohne aktuellen Standort: Zeit selbst schätzen.",
+  "tripTell": "Familie Bescheid geben",
+  "tripNoPlaces": "Lege zuerst unter Orte (oben rechts) ein Ziel an, etwa Zuhause.",
+  "tripOnTheWay": "unterwegs nach {place}, ca. {time}",
+  "@tripOnTheWay": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "tripArrived": "Angekommen",
+  "tripHint": "Die Familie bekommt eine Mitteilung. Kommst du dort an, endet es von selbst, wenn du deinen Standort teilst."
 }

@@ -478,6 +478,18 @@ abstract final class AppIcons {
   /// Lucide `calendar-search`.
   static const IconData calendarSearch = IconData(0xe306, fontFamily: _font);
 
+  /// Lucide `footprints`.
+  static const IconData footprints = IconData(0xe3b9, fontFamily: _font);
+
+  /// Lucide `bike`.
+  static const IconData bike = IconData(0xe1d2, fontFamily: _font);
+
+  /// Lucide `bus`.
+  static const IconData bus = IconData(0xe1d4, fontFamily: _font);
+
+  /// Lucide `navigation`.
+  static const IconData navigation = IconData(0xe123, fontFamily: _font);
+
   /// Lucide `chef-hat`.
   static const IconData chefHat = IconData(0xe2ac, fontFamily: _font);
 
