@@ -11,7 +11,7 @@ with the releases.
 - On Android, text, links, photos and files from other apps can be shared to
   Famio: to the shopping list, as a task, note or document, or to the chat.
 - If you like, a daily overview arrives every morning with appointments,
-  tasks, bins and weather (Settings → Notifications).
+  tasks, bins and weather (Settings → Push notifications).
 - Places can be marked as a shop: whoever arrives there gets the open
   shopping items.
 - Passwords that are easy to guess are refused; two-factor sign-in can now

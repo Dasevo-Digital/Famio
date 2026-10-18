@@ -12,7 +12,7 @@ stehen bei den Releases.
   Famio teilen: auf die Einkaufsliste, als Aufgabe, Notiz oder Dokument oder
   in den Chat.
 - Auf Wunsch kommt jeden Morgen ein Tagesüberblick mit Terminen, Aufgaben,
-  Abfall und Wetter (Einstellungen → Mitteilungen).
+  Abfall und Wetter (Einstellungen → Push-Benachrichtigungen).
 - Orte lassen sich als Geschäft markieren: Wer dort ankommt, bekommt die
   offenen Einkäufe.
 - Leicht zu erratende Passwörter werden abgelehnt; die Zwei-Faktor-Pflicht

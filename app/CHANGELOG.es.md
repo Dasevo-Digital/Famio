@@ -12,7 +12,7 @@ están en las versiones publicadas.
   de otras apps: a la lista de la compra, como tarea, nota o documento, o al
   chat.
 - Si quieres, cada mañana llega un resumen del día con citas, tareas, basura
-  y tiempo (Ajustes → Notificaciones).
+  y tiempo (Ajustes → Notificaciones push).
 - Los lugares se pueden marcar como tienda: quien llega allí recibe las
   compras pendientes.
 - Se rechazan las contraseñas fáciles de adivinar; el inicio de sesión en
