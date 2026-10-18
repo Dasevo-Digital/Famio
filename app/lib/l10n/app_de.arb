@@ -5829,5 +5829,84 @@
     }
   },
   "cookLeaveTitle": "Kochmodus verlassen?",
-  "cookLeaveBody": "Laufende Timer werden dann beendet."
+  "cookLeaveBody": "Laufende Timer werden dann beendet.",
+  "dayPreviewTitle": "Dein Tag",
+  "dayPreviewEvents": "{n, plural, =1{1 Termin} other{{n} Termine}}",
+  "@dayPreviewEvents": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "dayPreviewTasks": "{n, plural, =1{1 Aufgabe fällig} other{{n} Aufgaben fällig}}: {titles}",
+  "@dayPreviewTasks": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "titles": {
+        "type": "String"
+      }
+    }
+  },
+  "dayPreviewBirthday": "🎂 Geburtstag: {name}",
+  "@dayPreviewBirthday": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dayPreviewWaste": "🗑 Abfall: {bins}",
+  "@dayPreviewWaste": {
+    "placeholders": {
+      "bins": {
+        "type": "String"
+      }
+    }
+  },
+  "dayPreviewMeal": "🍽 Essen: {title}",
+  "@dayPreviewMeal": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "dayPreviewWeather": "{emoji} {text}, {min}–{max} °C",
+  "@dayPreviewWeather": {
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      },
+      "text": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "dayPreviewRain": "Regen {p} %",
+  "@dayPreviewRain": {
+    "placeholders": {
+      "p": {
+        "type": "int"
+      }
+    }
+  },
+  "pushDayPreview": "Tagesüberblick",
+  "pushDayPreviewSubtitle": "Jeden Morgen um {time}: deine Termine, fällige Aufgaben, Abfall, Geburtstage, Essen und Wetter",
+  "@pushDayPreviewSubtitle": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pushDayPreviewTime": "Uhrzeit ändern"
 }

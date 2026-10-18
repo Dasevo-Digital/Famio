@@ -91,6 +91,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
               const QuietHoursCard(),
               const SizedBox(height: 12),
               const _WeekPreviewCard(),
+              const SizedBox(height: 12),
+              const _DayPreviewCard(),
               ListHeading(
                 tr.pushAlternativelyThroughNtfy,
                 color: accent,
@@ -292,6 +294,57 @@ class _QuietHoursCardState extends State<QuietHoursCard> {
 
 /// Famio's own push on this device: switch, details, test.
 /// Sunday evening's look at the coming week (on this device).
+class _DayPreviewCard extends StatelessWidget {
+  const _DayPreviewCard();
+
+  static const _defaultMinutes = 7 * 60;
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final minutes = state.dayPreview;
+    final at = TimeOfDay(
+      hour: (minutes ?? _defaultMinutes) ~/ 60,
+      minute: (minutes ?? _defaultMinutes) % 60,
+    );
+    return SoftCard(
+      color: FamioColors.of(context).tint(FamioSection.settings),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Column(
+        children: [
+          SwitchListTile(
+            secondary: const Icon(AppIcons.sun),
+            title: Text(tr.pushDayPreview),
+            subtitle: Text(tr.pushDayPreviewSubtitle(at.format(context))),
+            value: minutes != null,
+            onChanged: (on) =>
+                state.setDayPreview(on ? at.hour * 60 + at.minute : null),
+          ),
+          if (minutes != null)
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                icon: const Icon(AppIcons.clock, size: 18),
+                label: Text(tr.pushDayPreviewTime),
+                onPressed: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: at,
+                  );
+                  if (picked != null) {
+                    await state.setDayPreview(
+                      picked.hour * 60 + picked.minute,
+                    );
+                  }
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _WeekPreviewCard extends StatelessWidget {
   const _WeekPreviewCard();
 

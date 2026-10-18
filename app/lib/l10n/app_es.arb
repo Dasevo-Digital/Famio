@@ -2288,5 +2288,16 @@
   "cookMinutes": "{n} min",
   "cookSeconds": "{n} s",
   "cookLeaveTitle": "¿Salir del modo cocina?",
-  "cookLeaveBody": "Los temporizadores en marcha se detendrán."
+  "cookLeaveBody": "Los temporizadores en marcha se detendrán.",
+  "dayPreviewTitle": "Tu día",
+  "dayPreviewEvents": "{n, plural, =1{1 cita} other{{n} citas}}",
+  "dayPreviewTasks": "{n, plural, =1{1 tarea pendiente} other{{n} tareas pendientes}}: {titles}",
+  "dayPreviewBirthday": "🎂 Cumpleaños: {name}",
+  "dayPreviewWaste": "🗑 Basura: {bins}",
+  "dayPreviewMeal": "🍽 Comida: {title}",
+  "dayPreviewWeather": "{emoji} {text}, {min}–{max} °C",
+  "dayPreviewRain": "lluvia {p} %",
+  "pushDayPreview": "Resumen del día",
+  "pushDayPreviewSubtitle": "Cada mañana a las {time}: tus citas, tareas pendientes, basura, cumpleaños, comidas y tiempo",
+  "pushDayPreviewTime": "Cambiar hora"
 }

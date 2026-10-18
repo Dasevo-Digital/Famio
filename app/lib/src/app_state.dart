@@ -18,6 +18,7 @@ import 'push/own_push.dart';
 import 'secure_vault.dart';
 import 'data/holidays.dart';
 import 'reminders/reminder_service.dart';
+import 'weather/weather.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
 import 'platform/browser.dart';
@@ -81,6 +82,20 @@ class AppState extends ChangeNotifier {
 
   Future<void> setWeekPreview(bool value) async {
     await _prefs.setBool('reminders.weekPreview', value);
+    _reminders?.refresh();
+    notifyListeners();
+  }
+
+  /// The morning overview: minutes after midnight, null when off (the
+  /// default: not everybody wants a notification every morning).
+  int? get dayPreview => _prefs.getInt('reminders.dayPreview');
+
+  Future<void> setDayPreview(int? minutes) async {
+    if (minutes == null) {
+      await _prefs.remove('reminders.dayPreview');
+    } else {
+      await _prefs.setInt('reminders.dayPreview', minutes);
+    }
     _reminders?.refresh();
     notifyListeners();
   }
@@ -728,6 +743,12 @@ class AppState extends ChangeNotifier {
     _reminders?.ownPushActive = () => push.active;
     _reminders?.quietHours = () => quietHours;
     _reminders?.weekPreview = () => weekPreview;
+    _reminders?.dayPreview = () => dayPreview;
+    _reminders?.dayWeather = () {
+      final weather = WeatherService(_prefs);
+      final place = weatherPlace(engine.places);
+      return weather.enabled && place != null ? weather.cached(place) : null;
+    };
     _loadQuietHours(api);
     if (this.engine == engine) _reminders?.attach(engine);
     _loadConfig(api);

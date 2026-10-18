@@ -18,11 +18,13 @@ import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
 import '../data/deadlines.dart';
 import '../data/waste.dart';
+import '../data/day_preview.dart';
 import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
 import '../environment.dart';
 import '../l10n.dart';
+import '../weather/weather.dart';
 
 /// Turns calendar and task reminders into local notifications on this device.
 ///
@@ -93,6 +95,12 @@ class ReminderService {
 
   /// Whether this device shows the week ahead on Sunday evening.
   bool Function()? weekPreview;
+
+  /// Minutes after midnight for the morning overview, null when off.
+  int? Function()? dayPreview;
+
+  /// The cached forecast at home for the morning overview, if any.
+  WeatherForecast? Function()? dayWeather;
 
   /// Plans again, e.g. after a setting changed.
   void refresh() => _reschedule();
@@ -216,6 +224,20 @@ class ReminderService {
         limit: _maxScheduled,
       ),
       ...familyReminders(engine, from: now, to: now.add(_window)),
+      if (dayPreview?.call() case final minutes?)
+        for (final (at, day) in dayPreviewTimes(
+          now,
+          now.add(_window),
+          minutes,
+        ))
+          if (buildDayPreview(engine, day, weather: dayWeather?.call())
+              case final p?)
+            DueReminder(
+              key: 'day:${dayKey(day)}',
+              at: at,
+              title: p.title,
+              body: p.body,
+            ),
       if (weekPreview?.call() ?? true)
         for (final (at, monday) in weekPreviewTimes(now, now.add(_window)))
           if (buildWeekPreview(engine, monday) case final p?)

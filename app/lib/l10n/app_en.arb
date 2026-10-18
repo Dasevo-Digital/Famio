@@ -2288,5 +2288,16 @@
   "cookMinutes": "{n} min",
   "cookSeconds": "{n} s",
   "cookLeaveTitle": "Leave cooking mode?",
-  "cookLeaveBody": "Running timers will be stopped."
+  "cookLeaveBody": "Running timers will be stopped.",
+  "dayPreviewTitle": "Your day",
+  "dayPreviewEvents": "{n, plural, =1{1 appointment} other{{n} appointments}}",
+  "dayPreviewTasks": "{n, plural, =1{1 task due} other{{n} tasks due}}: {titles}",
+  "dayPreviewBirthday": "🎂 Birthday: {name}",
+  "dayPreviewWaste": "🗑 Bins: {bins}",
+  "dayPreviewMeal": "🍽 Meal: {title}",
+  "dayPreviewWeather": "{emoji} {text}, {min}–{max} °C",
+  "dayPreviewRain": "rain {p}%",
+  "pushDayPreview": "Daily overview",
+  "pushDayPreviewSubtitle": "Every morning at {time}: your appointments, tasks due, bins, birthdays, meals and weather",
+  "pushDayPreviewTime": "Change time"
 }
