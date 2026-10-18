@@ -5954,5 +5954,24 @@
   "settingsBuiltInModelsPlay": "Texterkennung (Termine aus Fotos) und Barcode-Scanner laden ihre Modelle beim ersten Gebrauch einmal über Google Play; die Bilder bleiben auf dem Handy. Eingeschaltet holt Famio beim nächsten Update das größere Paket mit eingebauter Erkennung.",
   "settingsBuiltInModelsBundled": "In dieser Installation ist die Erkennung eingebaut. Ausgeschaltet holt Famio beim nächsten Update das kleinere Paket, das sie einmal über Google Play lädt.",
   "settingsBuiltInModelsNoPlay": "Ohne Google-Play-Dienste bleibt Famio beim Paket mit eingebauter Erkennung.",
-  "pantryScannerFirstUse": "Beim ersten Mal lädt Google Play den Barcode-Scanner; das kann einen Moment dauern."
+  "pantryScannerFirstUse": "Beim ersten Mal lädt Google Play den Barcode-Scanner; das kann einen Moment dauern.",
+  "vacationTitle": "Urlaub",
+  "vacationSubtitle": "Ämter, Routinen und Abfall-Erinnerungen ruhen lassen",
+  "vacationAdd": "Urlaub eintragen",
+  "vacationHint": "Im Urlaub sind Ämter und Routinen nicht fällig, und niemand wird an die Mülltonnen erinnert. Taschengeld läuft weiter, außer du pausierst es.",
+  "vacationName": "Bezeichnung (optional)",
+  "vacationDates": "Zeitraum wählen",
+  "vacationPauseAllowance": "Taschengeld pausieren",
+  "vacationPauseAllowanceHint": "Zahltage im Urlaub entfallen.",
+  "vacationAllowancePaused": "Taschengeld pausiert",
+  "vacationNone": "Kein Urlaub eingetragen.",
+  "vacationBanner": "Urlaub bis {date}: Ämter, Routinen und Abfall-Erinnerungen ruhen.",
+  "@vacationBanner": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "vacationOnlyAdults": "Urlaub tragen Erwachsene ein."
 }

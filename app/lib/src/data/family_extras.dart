@@ -36,6 +36,24 @@ extension FamilyExtras on SyncEngine {
 
   void saveChore(Chore c) => put(Collections.chores, c.id, c.toData());
 
+  /// Whether [chore] is due on [day]: not on a family holiday.
+  bool choreDue(Chore chore, DateTime day) =>
+      holidayOn(day) == null && chore.dueOn(day);
+
+  // --- holidays -------------------------------------------------------------
+
+  List<Vacation> get vacations =>
+      records(Collections.vacations).map(Vacation.fromRecord).toList()
+        ..sort((a, b) => a.from.compareTo(b.from));
+
+  /// The family holiday [day] falls into: chores and routines are not due,
+  /// no one is reminded of the bins.
+  Vacation? holidayOn(DateTime day) => vacationOn(vacations, day);
+
+  void saveVacation(Vacation v) => put(Collections.vacations, v.id, v.toData());
+
+  void deleteVacation(String id) => delete(Collections.vacations, id);
+
   void deleteChore(String id) => delete(Collections.chores, id);
 
   /// The entry recording that [chore] was done in the period of [day].
@@ -187,12 +205,17 @@ extension FamilyExtras on SyncEngine {
 
   void deleteRoutine(String id) => delete(Collections.routines, id);
 
-  /// Routines [memberId] has on [day].
-  List<Routine> routinesFor(String memberId, DateTime day) => routines
-      .where(
-        (r) => r.dueOn(day) && (r.memberId == null || r.memberId == memberId),
-      )
-      .toList();
+  /// Routines [memberId] has on [day]; none on a family holiday.
+  List<Routine> routinesFor(String memberId, DateTime day) =>
+      holidayOn(day) != null
+      ? const []
+      : routines
+            .where(
+              (r) =>
+                  r.dueOn(day) &&
+                  (r.memberId == null || r.memberId == memberId),
+            )
+            .toList();
 
   RoutineRun routineRun(Routine routine, DateTime day, String memberId) {
     final id = routine.runId(day, memberId);

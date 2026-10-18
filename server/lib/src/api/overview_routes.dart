@@ -13,6 +13,10 @@ extension _OverviewRoutes on FamioApi {
         records.all(collection, visibleToMember: member.id);
 
     // --- chores ---------------------------------------------------------
+    // On holiday nothing is due (see Vacation).
+    final holiday = vacationOn([
+      for (final r in visible(Collections.vacations)) Vacation.fromRecord(r),
+    ], today);
     final chores = [
       for (final r in visible(Collections.chores)) Chore.fromRecord(r),
     ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
@@ -92,7 +96,7 @@ extension _OverviewRoutes on FamioApi {
       'today': day(today),
       'chores': [
         for (final c in chores)
-          if (c.dueOn(today))
+          if (holiday == null && c.dueOn(today))
             {
               'id': c.id,
               'title': c.title,

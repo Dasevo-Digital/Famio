@@ -69,6 +69,9 @@ abstract final class Collections {
   /// Chores (Ämter) with rotation and points.
   static const chores = 'chores';
 
+  /// Family holidays: chores, routines and bin reminders rest (adults only).
+  static const vacations = 'vacations';
+
   /// Kids' routines (morning, evening …) and their daily progress.
   static const routines = 'routines';
   static const routineRuns = 'routine_runs';
@@ -144,6 +147,7 @@ abstract final class Collections {
     documents,
     medications,
     chores,
+    vacations,
     routines,
     rewards,
     listTemplates,
@@ -167,6 +171,7 @@ abstract final class Collections {
     sosSettings,
     sosAlerts,
     chores,
+    vacations,
     routines,
     routineRuns,
     rewards,
@@ -249,6 +254,7 @@ abstract final class Collections {
   static const adultOnly = {
     locationSettings,
     chores,
+    vacations,
     rewards,
     allowances,
     moneyEntries,

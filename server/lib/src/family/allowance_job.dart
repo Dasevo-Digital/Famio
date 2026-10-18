@@ -38,6 +38,11 @@ class AllowanceJob {
     final today = now ?? tz.TZDateTime.now(location());
     final day = DateTime(today.year, today.month, today.day);
     final members = {for (final m in accounts.members()) m.id};
+    // Holidays during which the family pauses pocket money.
+    final paused = [
+      for (final r in records.all(Collections.vacations))
+        if (Vacation.fromRecord(r) case final v when v.allowance) v,
+    ];
     final bookings = <SyncRecord>[];
     for (final r in records.all(Collections.allowances)) {
       final allowance = Allowance.fromRecord(r);
@@ -45,6 +50,7 @@ class AllowanceJob {
         continue;
       }
       for (final payday in allowance.paydays(day.subtract(catchUp), day)) {
+        if (vacationOn(paused, payday) != null) continue;
         final id = allowance.bookingId(payday);
         if (records.get(Collections.moneyEntries, id) != null) continue;
         final entry = MoneyEntry(

@@ -22,9 +22,11 @@ part 'chores/rewards.dart';
 part 'chores/routine_editor.dart';
 part 'chores/routines.dart';
 part 'chores/today_tab.dart';
+part 'chores/vacations.dart';
 
 const _collections = {
   Collections.chores,
+  Collections.vacations,
   Collections.routines,
   Collections.routineRuns,
   Collections.rewards,
@@ -72,7 +74,17 @@ class _ChoresScreenState extends State<ChoresScreen> {
       section: FamioSection.chores,
       title: tr.choresChoresPoints,
       subtitle: tr.choresHelpingOutPaysOff,
-      actions: const [SyncStatusIcon()],
+      actions: [
+        BubbleButton(
+          icon: AppIcons.palm,
+          tooltip: tr.vacationTitle,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const _VacationsScreen()),
+          ),
+        ),
+        const SizedBox(width: 8),
+        const SyncStatusIcon(),
+      ],
       floating: DataBuilder(
         collections: const {'members'},
         builder: (context, engine) {

@@ -225,11 +225,7 @@ class ReminderService {
       ),
       ...familyReminders(engine, from: now, to: now.add(_window)),
       if (dayPreview?.call() case final minutes?)
-        for (final (at, day) in dayPreviewTimes(
-          now,
-          now.add(_window),
-          minutes,
-        ))
+        for (final (at, day) in dayPreviewTimes(now, now.add(_window), minutes))
           if (buildDayPreview(engine, day, weather: dayWeather?.call())
               case final p?)
             DueReminder(
@@ -329,6 +325,7 @@ class ReminderService {
     Collections.externalDocuments,
     Collections.routines,
     Collections.routineRuns,
+    Collections.vacations,
     Collections.medications,
     Collections.medicationIntakes,
     Collections.pantryItems,
@@ -748,7 +745,8 @@ List<DueReminder> familyReminders(
       from,
       to.add(const Duration(days: 1)),
     )) {
-      if (!engine.wasteIsMine(p)) continue;
+      // Nobody is home on a family holiday.
+      if (!engine.wasteIsMine(p) || engine.holidayOn(p.day) != null) continue;
       add(
         'waste:${dayKey(p.day)}',
         DateTime(p.day.year, p.day.month, p.day.day - 1, hour),

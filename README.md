@@ -63,7 +63,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
-| Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto | ✅ |
+| Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto; Urlaubsmodus (Ämter, Routinen und Abfall-Erinnerungen ruhen, auf Wunsch auch das Taschengeld) | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
 | Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), alternativ über ntfy | ✅ |

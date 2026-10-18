@@ -472,6 +472,9 @@ abstract final class AppIcons {
   /// Lucide `timer`.
   static const IconData timer = IconData(0xe1e0, fontFamily: _font);
 
+  /// Lucide `tree-palm`.
+  static const IconData palm = IconData(0xe281, fontFamily: _font);
+
   /// Lucide `chef-hat`.
   static const IconData chefHat = IconData(0xe2ac, fontFamily: _font);
 

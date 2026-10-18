@@ -509,7 +509,7 @@ class _ChoresPanel extends StatelessWidget {
               );
             }(),
           for (final ch in engine.chores)
-            if (ch.dueOn(today) &&
+            if (engine.choreDue(ch, today) &&
                 ch.memberIds.isNotEmpty &&
                 ch.isFor(p.id, today))
               () {
@@ -800,7 +800,7 @@ class _PeopleBoard extends StatelessWidget {
                   );
                 }(),
               for (final ch in engine.chores)
-                if (ch.dueOn(today) &&
+                if (engine.choreDue(ch, today) &&
                     ch.memberIds.isNotEmpty &&
                     ch.isFor(m.id, today))
                   () {

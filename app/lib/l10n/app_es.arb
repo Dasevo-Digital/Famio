@@ -2321,5 +2321,17 @@
   "settingsBuiltInModelsPlay": "El reconocimiento de texto (citas desde fotos) y el escáner de códigos de barras cargan sus modelos una vez a través de Google Play al usarlos por primera vez; las imágenes se quedan en el móvil. Activado, Famio usa en la próxima actualización el paquete más grande con reconocimiento integrado.",
   "settingsBuiltInModelsBundled": "Esta instalación tiene el reconocimiento integrado. Desactivado, Famio usa en la próxima actualización el paquete más pequeño, que lo carga una vez a través de Google Play.",
   "settingsBuiltInModelsNoPlay": "Sin los servicios de Google Play, Famio se queda con el paquete con reconocimiento integrado.",
-  "pantryScannerFirstUse": "La primera vez, Google Play carga el escáner de códigos de barras; puede tardar un momento."
+  "pantryScannerFirstUse": "La primera vez, Google Play carga el escáner de códigos de barras; puede tardar un momento.",
+  "vacationTitle": "Vacaciones",
+  "vacationSubtitle": "Pausar tareas, rutinas y avisos de basura",
+  "vacationAdd": "Añadir vacaciones",
+  "vacationHint": "Durante las vacaciones las tareas y rutinas no tocan y nadie recibe avisos de la basura. La paga continúa salvo que la pauses.",
+  "vacationName": "Nombre (opcional)",
+  "vacationDates": "Elegir fechas",
+  "vacationPauseAllowance": "Pausar la paga",
+  "vacationPauseAllowanceHint": "Los días de paga durante las vacaciones se omiten.",
+  "vacationAllowancePaused": "Paga en pausa",
+  "vacationNone": "No hay vacaciones.",
+  "vacationBanner": "Vacaciones hasta el {date}: tareas, rutinas y avisos de basura en pausa.",
+  "vacationOnlyAdults": "Las vacaciones las añaden los adultos."
 }

@@ -246,6 +246,39 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('on holiday chores rest and the page says so', (tester) async {
+    final engine = await open(tester, memberId: 'm1', section: 'Ämter');
+    final now = DateTime.now();
+    engine
+      ..saveChore(
+        Chore(
+          id: 'c1',
+          title: 'Blumen gießen',
+          memberIds: const ['k1'],
+          start: DateTime(2026),
+        ),
+      )
+      ..saveVacation(
+        Vacation(
+          id: 'v1',
+          from: DateTime(now.year, now.month, now.day - 1),
+          to: DateTime(now.year, now.month, now.day + 6),
+        ),
+      );
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('Urlaub bis'), findsOneWidget);
+    expect(find.text('Blumen gießen'), findsNothing);
+    expect(engine.routinesFor('k1', now), isEmpty);
+
+    engine.deleteVacation('v1');
+    await tester.pump();
+    await tester.pump();
+    expect(find.textContaining('Urlaub bis'), findsNothing);
+    expect(find.text('Blumen gießen'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('the wall display shows the day', (tester) async {
     final engine = await open(tester, memberId: 'm1');
     final now = DateTime.now();

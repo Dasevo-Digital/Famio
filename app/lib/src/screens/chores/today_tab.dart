@@ -14,7 +14,7 @@ class _TodayTab extends StatelessWidget {
     final people = _people(engine);
     final shared = [
       for (final ch in engine.chores)
-        if (ch.dueOn(today) &&
+        if (engine.choreDue(ch, today) &&
             ch.assigneeOn(today) == null &&
             ch.memberIds.isEmpty)
           ch,
@@ -36,9 +36,11 @@ class _TodayTab extends StatelessWidget {
             : null,
       );
     }
+    final holiday = engine.holidayOn(today);
     return ListView(
       padding: EdgeInsets.only(bottom: listBottomPadding(context)),
       children: [
+        if (holiday != null) _HolidayBanner(holiday: holiday),
         if (pending.isNotEmpty) ...[
           ListHeading(tr.choresWaitingConfirmation, color: color),
           for (final e in pending)
@@ -144,7 +146,7 @@ class _PersonToday extends StatelessWidget {
     final routines = engine.routinesFor(person.id, day);
     final chores = [
       for (final ch in engine.chores)
-        if (ch.dueOn(day) &&
+        if (engine.choreDue(ch, day) &&
             (ch.assigneeOn(day) == person.id ||
                 (ch.assigneeOn(day) == null &&
                     ch.memberIds.contains(person.id))))

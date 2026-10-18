@@ -561,6 +561,50 @@ void main() {
     expect(app.allowances.run(), 0);
   });
 
+  test('a holiday with paused pocket money books nothing in it', () async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    await mama.sync([
+      _record(
+        Collections.allowances,
+        kind.id,
+        Allowance(
+          memberId: kind.id,
+          weeklyCents: 250,
+          payday: now.weekday,
+          since: DateTime(today.year, today.month, today.day - 20),
+        ).toData(),
+      ),
+      // Last week's payday falls into the holiday.
+      _record(
+        Collections.vacations,
+        'urlaub',
+        Vacation(
+          id: 'urlaub',
+          from: DateTime(today.year, today.month, today.day - 9),
+          to: DateTime(today.year, today.month, today.day - 3),
+          allowance: true,
+        ).toData(),
+      ),
+    ]);
+    expect(app.allowances.run(), 2); // two weeks back and today, minus one
+  });
+
+  test('children cannot declare a holiday', () async {
+    final r = await kind.sync([
+      _record(
+        Collections.vacations,
+        'frei',
+        Vacation(
+          id: 'frei',
+          from: DateTime(2026, 11, 1),
+          to: DateTime(2026, 11, 30),
+        ).toData(),
+      ),
+    ]);
+    expect(r.rejected.map((x) => x.id), ['frei']);
+  });
+
   group('push', () {
     test('rejects bad topic addresses', () async {
       for (final url in [

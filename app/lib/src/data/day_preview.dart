@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../l10n.dart';
 import '../weather/weather.dart';
 import 'birthdays.dart';
+import 'family_extras.dart';
 import 'family_data.dart';
 import 'waste.dart';
 
@@ -48,7 +49,7 @@ DayPreview? buildDayPreview(
         t,
   ];
   final birthdays = upcomingBirthdays(engine, day, days: 1);
-  final waste = engine.wasteConfigured
+  final waste = engine.wasteConfigured && engine.holidayOn(day) == null
       ? engine.wastePickups(day, end)
       : const <WastePickup>[];
   final meals = [

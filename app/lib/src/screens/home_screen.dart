@@ -251,7 +251,7 @@ class _ChoresTile extends StatelessWidget {
             () {
               final open = [
                 for (final ch in engine.chores)
-                  if (ch.dueOn(today) &&
+                  if (engine.choreDue(ch, today) &&
                       ch.isFor(p.id, today) &&
                       ch.memberIds.isNotEmpty &&
                       engine.choreCompletion(ch, today) == null)

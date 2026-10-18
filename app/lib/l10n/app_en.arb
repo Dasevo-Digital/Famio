@@ -2321,5 +2321,17 @@
   "settingsBuiltInModelsPlay": "Text recognition (appointments from photos) and the barcode scanner load their models once through Google Play on first use; the pictures stay on the phone. Switched on, Famio takes the larger package with built-in recognition at the next update.",
   "settingsBuiltInModelsBundled": "This installation has the recognition built in. Switched off, Famio takes the smaller package at the next update, which loads it once through Google Play.",
   "settingsBuiltInModelsNoPlay": "Without Google Play services Famio stays with the package with built-in recognition.",
-  "pantryScannerFirstUse": "The first time, Google Play loads the barcode scanner; this may take a moment."
+  "pantryScannerFirstUse": "The first time, Google Play loads the barcode scanner; this may take a moment.",
+  "vacationTitle": "Holidays",
+  "vacationSubtitle": "Pause chores, routines and bin reminders",
+  "vacationAdd": "Add a holiday",
+  "vacationHint": "During a holiday chores and routines are not due and no one is reminded of the bins. Pocket money continues unless you pause it.",
+  "vacationName": "Name (optional)",
+  "vacationDates": "Choose dates",
+  "vacationPauseAllowance": "Pause pocket money",
+  "vacationPauseAllowanceHint": "Paydays during the holiday are skipped.",
+  "vacationAllowancePaused": "Pocket money paused",
+  "vacationNone": "No holiday added.",
+  "vacationBanner": "Holiday until {date}: chores, routines and bin reminders are paused.",
+  "vacationOnlyAdults": "Adults add holidays."
 }
