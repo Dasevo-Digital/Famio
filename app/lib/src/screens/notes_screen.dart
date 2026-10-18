@@ -135,36 +135,43 @@ class _NoteCard extends StatelessWidget {
   }
 }
 
-Future<void> showNoteEditor(BuildContext context, {FamilyNote? note}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      useRootNavigator: true,
-      isScrollControlled: true,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (_) => _NoteEditor(note: note),
-    );
+/// [draft]: a new note filled in beforehand (e.g. shared to Famio).
+Future<void> showNoteEditor(
+  BuildContext context, {
+  FamilyNote? note,
+  FamilyNote? draft,
+}) => showModalBottomSheet<void>(
+  context: context,
+  useRootNavigator: true,
+  isScrollControlled: true,
+  showDragHandle: true,
+  useSafeArea: true,
+  builder: (_) => _NoteEditor(note: note, draft: draft),
+);
 
 enum _Audience { family, me, selected }
 
 class _NoteEditor extends StatefulWidget {
-  const _NoteEditor({this.note});
+  const _NoteEditor({this.note, this.draft});
 
   final FamilyNote? note;
+  final FamilyNote? draft;
 
   @override
   State<_NoteEditor> createState() => _NoteEditorState();
 }
 
 class _NoteEditorState extends State<_NoteEditor> {
-  late final _title = TextEditingController(text: widget.note?.title);
-  late final _text = TextEditingController(text: widget.note?.text);
-  late var _pinned = widget.note?.pinned ?? true;
-  late var _color = widget.note?.color ?? noteColors.first;
-  late var _audience = widget.note?.visibleTo == null
+  FamilyNote? get _initial => widget.note ?? widget.draft;
+
+  late final _title = TextEditingController(text: _initial?.title);
+  late final _text = TextEditingController(text: _initial?.text);
+  late var _pinned = _initial?.pinned ?? true;
+  late var _color = _initial?.color ?? noteColors.first;
+  late var _audience = _initial?.visibleTo == null
       ? _Audience.family
       : _Audience.selected;
-  late final _members = {...?widget.note?.visibleTo};
+  late final _members = {...?_initial?.visibleTo};
 
   @override
   void dispose() {

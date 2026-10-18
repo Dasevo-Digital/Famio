@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -38,6 +39,7 @@ import 'tasks_screen.dart';
 import '../environment.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
+import 'share_target.dart';
 
 Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.home => const HomeScreen(),
@@ -176,11 +178,27 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (await SosDevice.takeLaunch()) _sosLaunch();
   }
 
-  /// A calendar file opened with Famio from another app: read it and show
-  /// in the calendar what can be taken over.
+  /// A calendar file opened with Famio from another app, or text and files
+  /// shared to Famio ("Teilen an Famio" on Android).
   Future<void> _openedFile() async {
     final file = await OpenedFiles.take();
-    if (file == null || !mounted) return;
+    if (file != null && mounted) await _importCalendarFile(file);
+    final share = await OpenedFiles.takeShare();
+    if (share != null && mounted) {
+      await showShareTarget(
+        context,
+        share,
+        go: _go,
+        navigatorOf: (section) => _navigators[section]?.currentState,
+      );
+    }
+  }
+
+  /// Reads a calendar file and shows in the calendar what can be taken
+  /// over.
+  Future<void> _importCalendarFile(
+    ({String name, Uint8List bytes}) file,
+  ) async {
     final api = AppScope.read(context).engine?.api;
     if (api == null) return;
     final messenger = ScaffoldMessenger.of(context);

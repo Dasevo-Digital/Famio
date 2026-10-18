@@ -411,14 +411,15 @@ class _Assignees extends StatelessWidget {
 
 enum _Audience { family, me, selected }
 
-Future<void> showTaskEditor(BuildContext context, {Task? task}) =>
+/// [draft]: a new task filled in beforehand (e.g. shared to Famio).
+Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) =>
     showModalBottomSheet<void>(
       context: context,
       // Above the floating navigation bar.
       useRootNavigator: true,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => _TaskEditor(task: task),
+      builder: (_) => _TaskEditor(task: task, draft: draft),
     );
 
 const _repeatChoices = <(TaskRepeat?, int)>[
@@ -434,40 +435,44 @@ const _repeatChoices = <(TaskRepeat?, int)>[
 String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 class _TaskEditor extends StatefulWidget {
-  const _TaskEditor({this.task});
+  const _TaskEditor({this.task, this.draft});
 
   final Task? task;
+  final Task? draft;
 
   @override
   State<_TaskEditor> createState() => _TaskEditorState();
 }
 
 class _TaskEditorState extends State<_TaskEditor> {
-  late final _title = TextEditingController(text: widget.task?.title);
-  late final _notes = TextEditingController(text: widget.task?.notes);
-  late DateTime? _due = widget.task?.due;
-  late final _assignees = [...?widget.task?.assigneeIds];
+  /// What the fields start with: the task, or the draft of a new one.
+  Task? get _initial => widget.task ?? widget.draft;
+
+  late final _title = TextEditingController(text: _initial?.title);
+  late final _notes = TextEditingController(text: _initial?.notes);
+  late DateTime? _due = _initial?.due;
+  late final _assignees = [...?_initial?.assigneeIds];
 
   /// Checklist, files and who sees it; open when the task uses one of them.
   late var _more =
-      (widget.task?.checklist.isNotEmpty ?? false) ||
-      (widget.task?.photos.isNotEmpty ?? false) ||
-      widget.task?.visibleTo != null;
+      (_initial?.checklist.isNotEmpty ?? false) ||
+      (_initial?.photos.isNotEmpty ?? false) ||
+      _initial?.visibleTo != null;
 
   /// Who else may see it, apart from me and whoever takes care of it.
-  late final _seers = {...?widget.task?.visibleTo}
+  late final _seers = {...?_initial?.visibleTo}
     ..removeAll([..._assignees, AppScope.engineOf(context).memberId]);
-  late var _audience = widget.task?.visibleTo == null
+  late var _audience = _initial?.visibleTo == null
       ? _Audience.family
       : _seers.isEmpty
       ? _Audience.me
       : _Audience.selected;
-  late DateTime? _remindAt = widget.task?.remindAt;
-  late TaskRepeat? _repeat = widget.task?.repeat;
-  late int _repeatEvery = widget.task?.repeatEvery ?? 1;
-  late final _steps = [...?widget.task?.checklist];
+  late DateTime? _remindAt = _initial?.remindAt;
+  late TaskRepeat? _repeat = _initial?.repeat;
+  late int _repeatEvery = _initial?.repeatEvery ?? 1;
+  late final _steps = [...?_initial?.checklist];
   final _newStep = TextEditingController();
-  late final _photos = [...?widget.task?.photos];
+  late final _photos = [...?_initial?.photos];
   var _uploading = false;
 
   @override

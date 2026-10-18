@@ -1,3 +1,6 @@
+import 'package:famio/src/screens/share_target.dart';
+import 'package:famio/src/platform/opened_files.dart';
+import 'dart:async';
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
@@ -328,6 +331,34 @@ void main() {
     expect(engine.pregnancy('p1')!.childId, child.id);
     expect(engine.activePregnancies, isEmpty);
     await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('shared text lands on the shopping list, one item per line', (
+    tester,
+  ) async {
+    await open(tester, 'Einkauf');
+    engine.saveShoppingList(const ShoppingList(id: 'l1', name: 'Einkauf'));
+    await pumpData(tester);
+    unawaited(
+      showShareTarget(
+        tester.element(find.byType(Scaffold).first),
+        const SharedContent(text: '- Milch\n- 2 Brot\n\n[ ] Eier'),
+        go: (_) {},
+        navigatorOf: (_) => null,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Teilen an Famio'), findsOneWidget);
+    // Files only go to documents; text has no "Als Dokument".
+    expect(find.text('Als Dokument speichern'), findsNothing);
+    await tester.tap(find.text('Auf die Einkaufsliste'));
+    await tester.pumpAndSettle();
+    expect(
+      {for (final i in engine.shoppingItems('l1')) i.name: i.quantity},
+      {'Milch': '', 'Brot': '2', 'Eier': ''},
+    );
+    expect(find.text('3 Artikel auf „Einkauf“'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
   });
 
   testWidgets('meals: cooking mode walks through the steps with a timer', (

@@ -8,6 +8,7 @@ import android.location.LocationManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
+import android.provider.OpenableColumns
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -16,11 +17,16 @@ import io.flutter.plugin.common.MethodChannel
 /**
  * Hosts Flutter and the channels `famio/location` (location sharing),
  * `famio/notify` (Famio's own push), `famio/sos` (emergency button) and
- * `famio/open_file` (calendar files opened with Famio from other apps).
+ * `famio/open_file` (calendar files opened with Famio and text or files
+ * shared to Famio from other apps).
  */
 class MainActivity : FlutterActivity() {
     companion object {
         const val ACTION_SOS = "de.status403.famio.SOS"
+
+        /** "Teilen an Famio": at most this many files of at most 100 MB. */
+        private const val MAX_SHARED_FILES = 10
+        private const val MAX_SHARED_BYTES = 100L * 1024 * 1024
 
         fun sosIntent(context: Context) =
             Intent(context, MainActivity::class.java).setAction(ACTION_SOS)
@@ -33,6 +39,9 @@ class MainActivity : FlutterActivity() {
 
     /** A calendar file opened with Famio, until Dart takes it. */
     private var pendingFile: Pair<String, ByteArray>? = null
+
+    /** Text and files shared to Famio, until Dart takes them. */
+    private var pendingShare: Map<String, Any>? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,35 +59,106 @@ class MainActivity : FlutterActivity() {
         if (receiveFile(intent)) openFile?.invokeMethod("opened", null)
     }
 
-    /** Reads a calendar file from "Öffnen mit" (VIEW) or "Teilen" (SEND). */
+    /**
+     * Reads what another app hands to Famio: a calendar file from "Öffnen
+     * mit" (VIEW) or "Teilen" (SEND) goes to the import as before; other
+     * shared text and files wait in [pendingShare] for the "Teilen an
+     * Famio" sheet.
+     */
     private fun receiveFile(intent: Intent?): Boolean {
-        val uri = when (intent?.action) {
-            Intent.ACTION_VIEW -> intent.data
-            Intent.ACTION_SEND -> if (Build.VERSION.SDK_INT >= 33) {
-                intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-            } else {
-                @Suppress("DEPRECATION")
-                intent.getParcelableExtra(Intent.EXTRA_STREAM)
-            }
-            else -> null
-        } ?: return false
-        val bytes = runCatching {
-            contentResolver.openInputStream(uri)?.use { input ->
-                // A calendar file, not a film: at most 10 MB.
-                val limit = 10 * 1024 * 1024
-                val out = java.io.ByteArrayOutputStream()
-                val buffer = ByteArray(64 * 1024)
-                while (true) {
-                    val n = input.read(buffer)
-                    if (n < 0) break
-                    out.write(buffer, 0, n)
-                    if (out.size() > limit) return@use null
-                }
-                out.toByteArray()
-            }
-        }.getOrNull() ?: return false
-        pendingFile = (uri.lastPathSegment ?: "kalender.ics") to bytes
+        val action = intent?.action ?: return false
+        val uris = when (action) {
+            Intent.ACTION_VIEW -> listOfNotNull(intent.data)
+            Intent.ACTION_SEND -> listOfNotNull(stream(intent))
+            Intent.ACTION_SEND_MULTIPLE -> streams(intent)
+            else -> return false
+        }
+        if (uris.size == 1 && isCalendar(uris[0], intent.type)) {
+            // A calendar file, not a film: at most 10 MB.
+            val bytes = read(uris[0], 10 * 1024 * 1024) ?: return false
+            pendingFile = (displayName(uris[0]) ?: "kalender.ics") to bytes
+            return true
+        }
+        if (action == Intent.ACTION_VIEW) return false
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
+        val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty()
+        val files = copyShared(uris.take(MAX_SHARED_FILES))
+        if (text.isBlank() && files.isEmpty()) return false
+        pendingShare = mapOf("text" to text, "subject" to subject, "files" to files)
         return true
+    }
+
+    private fun stream(intent: Intent): Uri? = if (Build.VERSION.SDK_INT >= 33) {
+        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        intent.getParcelableExtra(Intent.EXTRA_STREAM)
+    }
+
+    private fun streams(intent: Intent): List<Uri> = (if (Build.VERSION.SDK_INT >= 33) {
+        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+    } else {
+        @Suppress("DEPRECATION")
+        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+    }).orEmpty()
+
+    private fun isCalendar(uri: Uri, type: String?): Boolean {
+        val mime = contentResolver.getType(uri) ?: type
+        return mime in setOf("text/calendar", "text/x-vcalendar", "application/ics") ||
+            displayName(uri)?.lowercase()?.endsWith(".ics") == true
+    }
+
+    private fun displayName(uri: Uri): String? = runCatching {
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    }.getOrNull() ?: uri.lastPathSegment
+
+    /** At most [limit] bytes of [uri]; null if larger or unreadable. */
+    private fun read(uri: Uri, limit: Int): ByteArray? = runCatching {
+        contentResolver.openInputStream(uri)?.use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                out.write(buffer, 0, n)
+                if (out.size() > limit) return@use null
+            }
+            out.toByteArray()
+        }
+    }.getOrNull()
+
+    /**
+     * Copies shared files into the cache, so Dart can read them after the
+     * sending app revoked access; copies of earlier shares older than a day
+     * are removed.
+     */
+    private fun copyShared(uris: List<Uri>): List<Map<String, String>> {
+        val dir = java.io.File(cacheDir, "shared").apply { mkdirs() }
+        val dayAgo = System.currentTimeMillis() - 24 * 3600 * 1000L
+        dir.listFiles()?.filter { it.lastModified() < dayAgo }?.forEach { it.delete() }
+        return uris.mapNotNull { uri ->
+            val name = (displayName(uri) ?: "datei").replace(Regex("[/\\\\]"), "_")
+            val target = java.io.File(dir, "${System.nanoTime()}-$name")
+            val ok = runCatching {
+                contentResolver.openInputStream(uri)?.use { input ->
+                    target.outputStream().use { out ->
+                        val copied = input.copyTo(out)
+                        copied in 1..MAX_SHARED_BYTES
+                    }
+                } ?: false
+            }.getOrDefault(false)
+            if (!ok) {
+                target.delete()
+                null
+            } else {
+                mapOf(
+                    "path" to target.absolutePath,
+                    "name" to name,
+                    "mime" to (contentResolver.getType(uri) ?: "application/octet-stream"),
+                )
+            }
+        }
     }
 
     /** "Notruf" when long-pressing the app icon (any build flavour). */
@@ -102,13 +182,19 @@ class MainActivity : FlutterActivity() {
         openFile = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/open_file")
             .apply {
                 setMethodCallHandler { call, result ->
-                    if (call.method != "take") {
-                        result.notImplemented()
-                        return@setMethodCallHandler
+                    when (call.method) {
+                        "take" -> {
+                            val file = pendingFile
+                            pendingFile = null
+                            result.success(file?.let { mapOf("name" to it.first, "bytes" to it.second) })
+                        }
+                        "takeShare" -> {
+                            val share = pendingShare
+                            pendingShare = null
+                            result.success(share)
+                        }
+                        else -> result.notImplemented()
                     }
-                    val file = pendingFile
-                    pendingFile = null
-                    result.success(file?.let { mapOf("name" to it.first, "bytes" to it.second) })
                 }
             }
         OcrChannel(applicationContext, flutterEngine.dartExecutor.binaryMessenger)

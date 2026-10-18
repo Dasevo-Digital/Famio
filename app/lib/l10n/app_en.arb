@@ -2301,5 +2301,18 @@
   "pushDayPreviewSubtitle": "Every morning at {time}: your appointments, tasks due, bins, birthdays, meals and weather",
   "pushDayPreviewTime": "Change time",
   "placesShop": "Shop",
-  "placesShopHint": "Whoever arrives here gets the open items of the shopping lists – only for themselves and at most every 3 hours. Works for everyone who shares their location."
+  "placesShopHint": "Whoever arrives here gets the open items of the shopping lists – only for themselves and at most every 3 hours. Works for everyone who shares their location.",
+  "shareTitle": "Share to Famio",
+  "shareToShopping": "Add to the shopping list",
+  "shareItems": "{n, plural, =1{1 item} other{{n} items}}",
+  "shareFiles": "{n, plural, =1{1 file} other{{n} files}}",
+  "shareAsTask": "As a task",
+  "shareAsNote": "As a note on the board",
+  "shareAsDocument": "Save as a document",
+  "shareToChat": "To the family chat",
+  "shareWhichList": "Which list?",
+  "shareAddedToList": "{n, plural, =1{1 item} other{{n} items}} on “{list}”",
+  "shareSent": "Sent to the family chat",
+  "shareUploading": "Uploading …",
+  "shareShared": "Shared"
 }

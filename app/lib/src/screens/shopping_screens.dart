@@ -193,28 +193,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     super.dispose();
   }
 
-  /// A leading count becomes the quantity: "3 Äpfel", "3x Äpfel".
   void _add(SyncEngine engine) {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    final match = RegExp(r'^(\d+)\s*[xX]?\s+(.+)$').firstMatch(text);
-    final name = match?.group(2) ?? text;
-    final packing = engine.shoppingList(widget.listId)?.packing ?? false;
     engine.saveShoppingItem(
-      ShoppingItem(
-        id: newId(),
-        listId: widget.listId,
-        name: name,
-        quantity: match?.group(1) ?? '',
-        // Packing lists have no aisles.
-        category: packing
-            ? ''
-            : guessShoppingCategory(
-                name,
-                learned: engine.learnedShoppingCategories,
-              ),
-        memberId: packing ? _who : null,
-      ),
+      newShoppingItem(engine, widget.listId, text, memberId: _who),
     );
     _input.clear();
     _focus.requestFocus();
@@ -725,4 +708,32 @@ Future<String?> _askName(
   );
   final trimmed = name?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+/// A new item for [listId] from typed or shared text. A leading count
+/// becomes the quantity: "3 Äpfel", "3x Äpfel". [memberId]: whose thing it
+/// is on a packing list.
+ShoppingItem newShoppingItem(
+  SyncEngine engine,
+  String listId,
+  String text, {
+  String? memberId,
+}) {
+  final match = RegExp(r'^(\d+)\s*[xX]?\s+(.+)$').firstMatch(text);
+  final name = match?.group(2) ?? text;
+  final packing = engine.shoppingList(listId)?.packing ?? false;
+  return ShoppingItem(
+    id: newId(),
+    listId: listId,
+    name: name,
+    quantity: match?.group(1) ?? '',
+    // Packing lists have no aisles.
+    category: packing
+        ? ''
+        : guessShoppingCategory(
+            name,
+            learned: engine.learnedShoppingCategories,
+          ),
+    memberId: packing ? memberId : null,
+  );
 }

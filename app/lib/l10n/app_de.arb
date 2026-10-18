@@ -5910,5 +5910,42 @@
   },
   "pushDayPreviewTime": "Uhrzeit ändern",
   "placesShop": "Geschäft",
-  "placesShopHint": "Wer hier ankommt, bekommt die offenen Artikel der Einkaufslisten – nur für sich und höchstens alle 3 Stunden. Klappt bei allen, die ihren Standort teilen."
+  "placesShopHint": "Wer hier ankommt, bekommt die offenen Artikel der Einkaufslisten – nur für sich und höchstens alle 3 Stunden. Klappt bei allen, die ihren Standort teilen.",
+  "shareTitle": "Teilen an Famio",
+  "shareToShopping": "Auf die Einkaufsliste",
+  "shareItems": "{n, plural, =1{1 Artikel} other{{n} Artikel}}",
+  "@shareItems": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "shareFiles": "{n, plural, =1{1 Datei} other{{n} Dateien}}",
+  "@shareFiles": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "shareAsTask": "Als Aufgabe",
+  "shareAsNote": "Als Notiz auf die Pinnwand",
+  "shareAsDocument": "Als Dokument speichern",
+  "shareToChat": "In den Familien-Chat",
+  "shareWhichList": "Auf welche Liste?",
+  "shareAddedToList": "{n, plural, =1{1 Artikel} other{{n} Artikel}} auf „{list}“",
+  "@shareAddedToList": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "list": {
+        "type": "String"
+      }
+    }
+  },
+  "shareSent": "In den Familien-Chat geschickt",
+  "shareUploading": "Wird hochgeladen …",
+  "shareShared": "Geteilt"
 }

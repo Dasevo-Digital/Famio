@@ -74,6 +74,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Wochenvorschau (sonntags 18 Uhr) und auf Wunsch ein Tagesüberblick am Morgen (Termine, Fahrten, fällige Aufgaben, Abfall, Geburtstage, Essen, Wetter) als Mitteilung | ✅ |
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Web-App im Browser und in der Home-Assistant-Seitenleiste (Add-on als Server oder nur als Client) | ✅ |
+| „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 | Datenexport als ZIP (eigene Daten bzw. ganze Familie) | ✅ |
 
