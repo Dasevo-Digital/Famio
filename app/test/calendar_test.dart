@@ -127,15 +127,26 @@ void main() {
     await openCalendar(tester);
     final now = DateTime.now();
     final tomorrow = DateTime(now.year, now.month, now.day + 1);
-    engine.saveEvent(
-      CalendarEvent(
-        id: 'busy',
-        title: 'Zahnarzt',
-        start: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 8),
-        end: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 19),
-        memberIds: const ['m1'],
-      ),
-    );
+    engine
+      ..saveEvent(
+        CalendarEvent(
+          id: 'busy',
+          title: 'Zahnarzt',
+          start: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 8),
+          end: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 19),
+          memberIds: const ['m1'],
+        ),
+      )
+      // Today is full, whatever the time: no second 19:00 slot.
+      ..saveEvent(
+        CalendarEvent(
+          id: 'today',
+          title: 'Arbeit',
+          start: DateTime(now.year, now.month, now.day, 6),
+          end: DateTime(now.year, now.month, now.day, 22),
+          memberIds: const ['m1'],
+        ),
+      );
     await pumpData(tester);
     await tester.tap(find.byTooltip('Wann haben alle Zeit?'));
     await tester.pumpAndSettle();
