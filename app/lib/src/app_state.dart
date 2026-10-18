@@ -23,6 +23,7 @@ import 'weather/weather.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
 import 'platform/browser.dart';
+import 'platform/passkey.dart';
 import 'platform/web_push.dart';
 import 'l10n.dart';
 
@@ -426,6 +427,41 @@ class AppState extends ChangeNotifier {
       result.member,
       pin: server.pin,
     );
+  }
+
+  /// Signs in with a passkey of this device (web app). [options] come
+  /// from the server before the tap: Safari only shows its prompt when it
+  /// follows the tap directly. False if the user cancelled.
+  Future<bool> signInPasskey(
+    ResolvedServer server,
+    Map<String, Object?> options,
+  ) async {
+    final credential = await usePasskey(options);
+    if (credential == null) return false;
+    final result = await _client(
+      server.url,
+      server.pin,
+    ).loginWithPasskey(credential, device: deviceName);
+    await _startSession(
+      server.url,
+      result.token,
+      result.member,
+      pin: server.pin,
+    );
+    return true;
+  }
+
+  /// A fresh challenge for [signInPasskey]; null where passkeys do not
+  /// work (no HTTPS, inside Home Assistant, older server).
+  Future<Map<String, Object?>?> passkeyLoginOptions(
+    ResolvedServer server,
+  ) async {
+    if (!kIsWeb || panelMode != 'browser' || !passkeysSupported) return null;
+    try {
+      return await _client(server.url, server.pin).passkeyLoginOptions();
+    } on ApiError {
+      return null;
+    }
   }
 
   /// Signs in with the single sign-on provider in the browser: [open]

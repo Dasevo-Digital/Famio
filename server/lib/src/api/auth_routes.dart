@@ -126,6 +126,119 @@ extension _AuthRoutes on FamioApi {
     return _session(member, challenge.device, method: 'totp');
   }
 
+  // --- passkeys --------------------------------------------------------------
+
+  /// The web app's origin for passkeys: the browser's `Origin`, which must
+  /// be this server as the browser reached it (or its public address),
+  /// over HTTPS or on this computer.
+  String _passkeyOrigin(Request request) {
+    final origin = Uri.tryParse(request.headers['origin'] ?? '');
+    final local = {'localhost', '127.0.0.1', '[::1]', '::1'};
+    final secure =
+        origin != null &&
+        origin.host.isNotEmpty &&
+        (origin.isScheme('https') ||
+            origin.isScheme('http') && local.contains(origin.host));
+    final host = request.headers['host']?.toLowerCase();
+    final public = publicUrl == null ? null : Uri.tryParse(publicUrl!);
+    if (!secure ||
+        origin.authority.toLowerCase() != host &&
+            (public == null || public.origin != origin.origin)) {
+      throw ApiException.badRequest(
+        'passkey_origin',
+        t('Passkeys gehen nur in der Web-App über HTTPS.'),
+      );
+    }
+    return origin.origin;
+  }
+
+  Future<Response> _passkeyLoginOptions(Request request) async {
+    final origin = _passkeyOrigin(request);
+    _checkThrottle(clientAddress.of(request), '#passkey');
+    return _json(passkeys.loginOptions(origin: origin));
+  }
+
+  /// Signs in with a passkey: one step, the device already checked the
+  /// fingerprint, face or PIN (counts as two factors).
+  Future<Response> _passkeyLogin(Request request) async {
+    final body = await _body(request);
+    final address = clientAddress.of(request);
+    _checkThrottle(address, '#passkey');
+    final credential = body['credential'];
+    final String userId;
+    try {
+      if (credential is! Map) {
+        throw ApiException.badRequest(
+          'passkey_invalid',
+          t('Ungültige Anfrage'),
+        );
+      }
+      userId = passkeys.login(credential.cast());
+    } on ApiException {
+      throttle.failed(address, '#passkey');
+      rethrow;
+    }
+    throttle.succeeded(address, '#passkey');
+    final member = accounts.byId(userId);
+    if (member == null) {
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
+    }
+    return _session(member, body['device'] as String?, method: 'passkey');
+  }
+
+  Response _myPasskeys(Request request) {
+    final member = _auth(request);
+    return _json({
+      'passkeys': [for (final p in passkeys.list(member.id)) p.toJson()],
+    });
+  }
+
+  /// A challenge for a new passkey; with the password, so a stolen
+  /// session cannot leave a key of its own behind. Checked before the
+  /// device creates anything.
+  Future<Response> _passkeyOptions(Request request) async {
+    final member = _auth(request);
+    final origin = _passkeyOrigin(request);
+    final body = await _body(request);
+    final address = clientAddress.of(request);
+    final key = '#password:${member.id}';
+    _checkThrottle(address, key);
+    if (accounts.hasPassword(member.id) &&
+        !await accounts.checkPassword(
+          member.id,
+          body['password'] as String? ?? '',
+        )) {
+      throttle.failed(address, key);
+      throw ApiException(403, 'invalid_password', t('Passwort falsch'));
+    }
+    throttle.succeeded(address, key);
+    return _json(passkeys.registrationOptions(member, origin: origin));
+  }
+
+  /// Stores the new passkey (the browser's answer to the challenge).
+  Future<Response> _addPasskey(Request request) async {
+    final member = _auth(request);
+    final body = await _body(request);
+    final credential = body['credential'];
+    if (credential is! Map) {
+      throw ApiException.badRequest('passkey_invalid', t('Ungültige Anfrage'));
+    }
+    final passkey = passkeys.register(
+      member,
+      credential.cast(),
+      name: body['name'] as String? ?? '',
+    );
+    _audit(member, 'hat einen Passkey hinzugefügt (${passkey.name})');
+    return _json(passkey.toJson(), status: 201);
+  }
+
+  Response _deletePasskey(Request request, String id) {
+    final member = _auth(request);
+    passkeys.remove(member.id, id);
+    _audit(member, 'hat einen Passkey entfernt');
+    return _json({'ok': true});
+  }
+
   Response _twoFactorStatus(Request request) {
     final member = _auth(request);
     final token = _bearer(request);
@@ -135,7 +248,7 @@ extension _AuthRoutes on FamioApi {
       'twoFactor': mfa.hasTotp(member.id),
       'recoveryCodesLeft': mfa.recoveryCodesLeft(member.id),
       'required': policy?.appliesTo(member) ?? false,
-      'sessionVerified': method == 'totp' || method == 'sso',
+      'sessionVerified': FamioApi._strongMethods.contains(method),
       'singleSignOn': sso?.isLinked(member.id) ?? false,
       'singleSignOnName': sso?.linkName(member.id),
       if (sso case final sso? when sso.enabled)

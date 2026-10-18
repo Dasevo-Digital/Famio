@@ -434,6 +434,29 @@ PKCE, `state`, `nonce`; Aussteller, Empfänger und Ablauf des ID-Tokens werden
 geprüft). Eine SSO-Anmeldung erfüllt auch die Zwei-Faktor-Pflicht – die
 übernimmt dann der Anbieter.
 
+**Passkeys (WebAuthn):** In der Web-App lassen sich unter Anmeldung &
+Sicherheit Passkeys anlegen. Danach meldet man sich mit Fingerabdruck,
+Gesicht oder PIN an statt mit dem Passwort („Mit Passkey anmelden“).
+
+- Der private Schlüssel bleibt auf dem Gerät oder im Passwort-Manager. Der
+  Server speichert nur den öffentlichen Schlüssel (ES256 oder RS256) und
+  prüft die Signatur über eine Challenge, die nur einmal gilt.
+- Die Gerätesperre ist Pflicht („user verification“). Darum erfüllt ein
+  Passkey auch die Zwei-Faktor-Pflicht.
+- Ein Passkey gehört zu der Adresse, unter der er angelegt wurde
+  (Relying-Party-ID ist der Hostname der Web-App). Eine nachgemachte Seite
+  kann ihn nicht benutzen.
+- Das Anlegen verlangt das Passwort. Mit einer gestohlenen Sitzung lässt sich
+  also kein eigener Schlüssel hinterlegen.
+- Passkeys gehen nur über HTTPS mit einem Domainnamen (oder auf `localhost`),
+  nicht mit einer IP-Adresse und nicht im Home-Assistant-Panel.
+- Die installierten Apps zeigen die Passkeys an und können sie entfernen, aber
+  nicht anlegen.
+
+API: `POST /api/auth/passkey/options`, `POST /api/auth/passkey`,
+`GET /api/me/passkeys`, `POST /api/me/passkeys/options` (mit `password`),
+`POST /api/me/passkeys`, `DELETE /api/me/passkeys/<id>`.
+
 ### Sicherheit und Datenschutz
 
 Famio speichert auch Gesundheitsdaten (Vorsorge, Impfungen, Wachstum,
@@ -445,7 +468,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 | Bereich | Schutz |
 |---|---|
 | Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
-| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht) und Single Sign-On per OpenID Connect |
+| Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht), Passkeys (WebAuthn) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten holt der Server für sie (ohne private Ziele, auch nicht über Weiterleitungen) |

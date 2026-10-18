@@ -144,6 +144,9 @@ abstract final class AppIcons {
   /// Lucide `file-spreadsheet`.
   static const IconData fileXls = IconData(0xe326, fontFamily: _font);
 
+  /// Lucide `fingerprint`.
+  static const IconData fingerprint = IconData(0xe2cb, fontFamily: _font);
+
   /// Lucide `heart-pulse`.
   static const IconData firstAidKit = IconData(0xe36e, fontFamily: _font);
 

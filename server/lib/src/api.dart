@@ -15,6 +15,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'accounts.dart';
 import 'api_exception.dart';
 import 'auth/mfa.dart';
+import 'auth/passkeys.dart';
 import 'auth/sso.dart';
 import 'auth/totp.dart';
 import 'calendar/calendar_feeds.dart';
@@ -117,6 +118,7 @@ class FamioApi {
     this.metricsToken,
     this.selfCheckClient,
     required this.mfa,
+    required this.passkeys,
     this.sso,
     this.webApp,
   }) : throttle = throttle ?? LoginThrottle();
@@ -127,6 +129,9 @@ class FamioApi {
 
   /// Two-factor login with an authenticator app.
   final Mfa mfa;
+
+  /// Signing in with a passkey (web app).
+  final Passkeys passkeys;
 
   /// Sign-in with an OpenID Connect provider; null in some tests.
   final SsoService? sso;
@@ -245,6 +250,12 @@ class FamioApi {
       ..post('/api/auth/setup', _setup)
       ..post('/api/auth/login', _login)
       ..post('/api/auth/login/two-factor', _loginTwoFactor)
+      ..post('/api/auth/passkey/options', _passkeyLoginOptions)
+      ..post('/api/auth/passkey', _passkeyLogin)
+      ..get('/api/me/passkeys', _myPasskeys)
+      ..post('/api/me/passkeys/options', _passkeyOptions)
+      ..post('/api/me/passkeys', _addPasskey)
+      ..delete('/api/me/passkeys/<id>', _deletePasskey)
       ..post('/api/auth/sso/start', _ssoStart)
       ..get('/api/auth/sso/callback', _ssoCallback)
       ..post('/api/auth/sso/poll', _ssoPoll)
@@ -528,7 +539,7 @@ class FamioApi {
     final policy = settings.effective.twoFactorRequired;
     if (policy == null || !policy.appliesTo(member)) return;
     final method = accounts.sessionMethod(token);
-    if (method == 'totp' || method == 'sso') return;
+    if (_strongMethods.contains(method)) return;
     final path = request.url.path;
     if (_twoFactorFree.contains(path) || path.startsWith('api/me/two-factor')) {
       return;
@@ -544,6 +555,11 @@ class FamioApi {
             ),
     );
   }
+
+  /// Sign-ins that already prove a second factor: the authenticator
+  /// code, the identity provider, or a passkey with fingerprint, face or
+  /// PIN on the device.
+  static const _strongMethods = {'totp', 'sso', 'passkey'};
 
   String _randomToken() => base64Url
       .encode(List<int>.generate(24, (_) => _random.nextInt(256)))

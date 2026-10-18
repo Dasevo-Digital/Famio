@@ -1,6 +1,8 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,6 +10,7 @@ import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../platform/passkey.dart';
 import '../widgets/password_reveal.dart';
 import '../l10n.dart';
 
@@ -647,6 +650,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         ),
                       ],
               ),
+              const _PasskeysSection(),
               if (status.singleSignOnLabel != null || status.singleSignOn) ...[
                 ListHeading('Single Sign-On', color: accent),
                 ListTile(
@@ -693,6 +697,266 @@ class _SecurityScreenState extends State<SecurityScreen> {
           );
         },
       ),
+    );
+  }
+}
+
+/// Passkeys: listed everywhere, added in the web app (WebAuthn needs the
+/// browser and HTTPS).
+class _PasskeysSection extends StatefulWidget {
+  const _PasskeysSection();
+
+  @override
+  State<_PasskeysSection> createState() => _PasskeysSectionState();
+}
+
+class _PasskeysSectionState extends State<_PasskeysSection> {
+  late Future<List<PasskeyEntry>> _list = _api.passkeys();
+
+  FamioApiClient get _api => AppScope.read(context).engine!.api;
+
+  bool get _canAdd =>
+      kIsWeb &&
+      AppScope.read(context).panelMode == 'browser' &&
+      passkeysSupported;
+
+  void _reload() => setState(() => _list = _api.passkeys());
+
+  void _say(String text) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+
+  Future<void> _add() async {
+    final added = await showDialog<bool>(
+      context: context,
+      builder: (_) => _AddPasskeyDialog(api: _api),
+    );
+    if (added == true) _say(tr.passkeyAdded);
+    if (mounted) _reload();
+  }
+
+  Future<void> _remove(PasskeyEntry passkey) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr.commonRemoveName(passkey.name)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr.commonCancel),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: FamioColors.of(context).danger,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr.commonRemove),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await _api.deletePasskey(passkey.id);
+      _say(tr.passkeyRemoved);
+    } on ApiError catch (e) {
+      _say(e.message);
+    }
+    if (mounted) _reload();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final accent = c.strong(FamioSection.settings);
+    final date = DateFormat.yMd(appLanguage);
+    return FutureBuilder(
+      future: _list,
+      builder: (context, snapshot) {
+        // Older server without passkeys: nothing to show.
+        if (snapshot.hasError) return const SizedBox.shrink();
+        final passkeys = snapshot.data ?? const <PasskeyEntry>[];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListHeading(tr.passkeysTitle, color: accent),
+            Text(tr.passkeysHint, style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 4),
+            if (snapshot.hasData && passkeys.isEmpty)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(AppIcons.fingerprint),
+                title: Text(tr.passkeysNone),
+              ),
+            for (final p in passkeys)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  AppIcons.fingerprint,
+                  color: c.strong(FamioSection.tasks),
+                ),
+                title: Text(p.name),
+                subtitle: Text(
+                  p.lastUsed == null
+                      ? tr.passkeyCreated(date.format(p.createdAt))
+                      : tr.passkeyCreatedUsed(
+                          date.format(p.createdAt),
+                          date.format(p.lastUsed!),
+                        ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(AppIcons.trash),
+                  tooltip: tr.commonRemove,
+                  onPressed: () => _remove(p),
+                ),
+              ),
+            if (_canAdd)
+              OutlinedButton.icon(
+                icon: const Icon(AppIcons.plus, size: 18),
+                label: Text(tr.passkeyAdd),
+                onPressed: _add,
+              )
+            else
+              Text(
+                tr.passkeyOnlyWeb,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Name and password first (the server checks the password before it
+/// hands out a challenge), then a second tap that lets the device create
+/// the passkey: Safari only shows its prompt right after a tap.
+class _AddPasskeyDialog extends StatefulWidget {
+  const _AddPasskeyDialog({required this.api});
+
+  final FamioApiClient api;
+
+  @override
+  State<_AddPasskeyDialog> createState() => _AddPasskeyDialogState();
+}
+
+class _AddPasskeyDialogState extends State<_AddPasskeyDialog> {
+  final _name = TextEditingController();
+  final _password = TextEditingController();
+  Map<String, Object?>? _options;
+  var _busy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _next() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final options = await widget.api.passkeyOptions(password: _password.text);
+      setState(() => _options = options);
+    } on ApiError catch (e) {
+      setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _create() async {
+    final options = _options!;
+    final navigator = Navigator.of(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      // Straight from the tap: nothing awaited before.
+      final credential = await createPasskey(options);
+      if (credential == null) {
+        navigator.pop(false);
+        return;
+      }
+      await widget.api.addPasskey(
+        credential: credential,
+        name: _name.text.trim(),
+      );
+      navigator.pop(true);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = tr.passkeyFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = _options != null;
+    return AlertDialog(
+      title: Text(tr.passkeyAdd),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!ready) ...[
+              TextField(
+                controller: _name,
+                enabled: !_busy,
+                decoration: InputDecoration(
+                  labelText: tr.commonName,
+                  hintText: tr.passkeyNameHint,
+                ),
+              ),
+              const SizedBox(height: 8),
+              PasswordReveal(
+                builder: (_, obscure, toggle) => TextField(
+                  controller: _password,
+                  enabled: !_busy,
+                  obscureText: obscure,
+                  contextMenuBuilder: PasswordReveal.contextMenu,
+                  decoration: InputDecoration(
+                    labelText: tr.commonPassword,
+                    helperText: tr.passkeyPasswordHint,
+                    suffixIcon: toggle,
+                  ),
+                  onSubmitted: (_) => _busy ? null : _next(),
+                ),
+              ),
+            ] else
+              Text(tr.passkeyNow),
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _busy ? null : () => Navigator.pop(context, false),
+          child: Text(tr.commonCancel),
+        ),
+        FilledButton.icon(
+          icon: Icon(
+            ready ? AppIcons.fingerprint : AppIcons.caretRight,
+            size: 18,
+          ),
+          label: Text(ready ? tr.passkeyCreate : tr.commonNext),
+          onPressed: _busy ? null : (ready ? _create : _next),
+        ),
+      ],
     );
   }
 }

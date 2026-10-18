@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -40,6 +42,11 @@ class _ConnectScreenState extends State<ConnectScreen> {
       .then<PackageInfo?>((info) => info)
       .catchError((Object _) => null);
 
+  /// Web app: a challenge for "Mit Passkey anmelden", fetched ahead and
+  /// renewed before it expires (5 minutes).
+  Map<String, Object?>? _passkey;
+  Timer? _passkeyRenewal;
+
   @override
   void initState() {
     super.initState();
@@ -48,14 +55,53 @@ class _ConnectScreenState extends State<ConnectScreen> {
     _error = state.notice;
     // Web app: the server is where the page came from.
     _resolved = state.webServer;
+    if (state.webServer != null) {
+      _loadPasskey();
+      _passkeyRenewal = Timer.periodic(
+        const Duration(minutes: 4),
+        (_) => _loadPasskey(),
+      );
+    }
   }
 
   @override
   void dispose() {
+    _passkeyRenewal?.cancel();
     for (final c in [_url, _displayName, _username, _password, _setupCode]) {
       c.dispose();
     }
     super.dispose();
+  }
+
+  Future<void> _loadPasskey() async {
+    final server = _resolved;
+    if (server == null || server.info.setupRequired) return;
+    final options = await AppScope.read(context).passkeyLoginOptions(server);
+    if (mounted) setState(() => _passkey = options);
+  }
+
+  Future<void> _signInPasskey() async {
+    final options = _passkey;
+    final server = _resolved;
+    if (options == null || server == null) return;
+    final state = AppScope.read(context);
+    setState(() {
+      _passkey = null; // A challenge works once.
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await state.signInPasskey(server, options);
+    } on ApiError catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } catch (_) {
+      if (mounted) setState(() => _error = tr.passkeyFailed);
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+        _loadPasskey();
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -356,6 +402,14 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                 color: accent,
                                 onPressed: _submit,
                               ),
+                        if (_passkey != null && !setup && !_busy) ...[
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            icon: const Icon(AppIcons.fingerprint, size: 18),
+                            label: Text(tr.passkeySignIn),
+                            onPressed: _signInPasskey,
+                          ),
+                        ],
                         if (server?.singleSignOn case final label?
                             when !setup && !_busy) ...[
                           const SizedBox(height: 12),

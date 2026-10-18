@@ -24,7 +24,7 @@
   "settingsExport": "Meine Daten exportieren",
   "settingsExportSubtitle": "Alles, was du siehst, als ZIP-Datei",
   "settingsSecurity": "Anmeldung & Sicherheit",
-  "settingsSecuritySubtitle": "Zwei-Faktor-Anmeldung, Single Sign-On",
+  "settingsSecuritySubtitle": "Zwei-Faktor-Anmeldung, Passkeys, Single Sign-On",
   "settingsMyDevices": "Meine Geräte",
   "settingsMyDevicesSubtitle": "Wo du angemeldet bist",
   "settingsWidget": "Widget auf den Startbildschirm",
@@ -6035,5 +6035,37 @@
   "webPushHomeScreen": "Auf iPhone und iPad: in Safari „Teilen“ → „Zum Home-Bildschirm“ wählen, Famio von dort öffnen und hier einschalten.",
   "webPushUnsupported": "Dieser Browser kann keine Mitteilungen empfangen. Sie gehen nur, wenn Famio über HTTPS geöffnet ist.",
   "webPushPanel": "In Home Assistant gibt es keine Browser-Mitteilungen. Öffne Famio dafür direkt über die Adresse des Famio-Servers (…/app/).",
-  "webPushDenied": "Mitteilungen wurden nicht erlaubt."
+  "webPushDenied": "Mitteilungen wurden nicht erlaubt.",
+  "passkeySignIn": "Mit Passkey anmelden",
+  "passkeyFailed": "Das hat mit dem Passkey nicht geklappt.",
+  "passkeysTitle": "Passkeys",
+  "passkeysHint": "Anmelden mit Fingerabdruck, Gesicht oder PIN statt Passwort. Der Schlüssel bleibt auf dem Gerät oder im Passwort-Manager, Famio kennt nur seinen öffentlichen Teil. Ein Passkey zählt auch als zweiter Faktor.",
+  "passkeysNone": "Noch keine Passkeys.",
+  "passkeyAdd": "Passkey hinzufügen",
+  "passkeyOnlyWeb": "Passkeys lassen sich zurzeit in der Web-App hinzufügen (über HTTPS, nicht im Home-Assistant-Panel).",
+  "passkeyNameHint": "z. B. MacBook oder Handy",
+  "passkeyPasswordHint": "Zur Sicherheit noch einmal dein Passwort.",
+  "passkeyNow": "Gleich fragt dein Gerät nach Fingerabdruck, Gesicht oder PIN.",
+  "passkeyCreate": "Passkey erstellen",
+  "passkeyAdded": "Passkey gespeichert",
+  "passkeyRemoved": "Passkey entfernt",
+  "passkeyCreated": "Angelegt am {date}",
+  "@passkeyCreated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "passkeyCreatedUsed": "Angelegt am {date} · zuletzt benutzt am {used}",
+  "@passkeyCreatedUsed": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "used": {
+        "type": "String"
+      }
+    }
+  }
 }

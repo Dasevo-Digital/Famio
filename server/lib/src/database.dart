@@ -299,6 +299,21 @@ const _migrations = [
   );
   CREATE INDEX web_push_member ON web_push_subscriptions (member_id);
   ''',
+  '''
+  -- Passkeys (WebAuthn): the public key of a member's device, bound to the
+  -- host it was made for (rp_id); id is the credential id (base64url).
+  CREATE TABLE passkeys (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    rp_id TEXT NOT NULL,
+    public_key BLOB NOT NULL,
+    sign_count INTEGER NOT NULL DEFAULT 0,
+    name TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_used INTEGER
+  );
+  CREATE INDEX passkeys_user ON passkeys (user_id);
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

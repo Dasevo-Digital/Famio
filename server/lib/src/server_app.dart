@@ -14,6 +14,7 @@ import 'crypto/tls.dart';
 import 'api.dart';
 import 'web_app.dart';
 import 'auth/mfa.dart';
+import 'auth/passkeys.dart';
 import 'auth/sso.dart';
 import 'calendar/calendar_access.dart';
 import 'calendar/calendar_feeds.dart';
@@ -278,6 +279,7 @@ class FamioServerApp {
       invites: invites,
       backups: backups,
       mfa: mfa,
+      passkeys: Passkeys(db),
       sso: sso,
       webApp: webApp,
       onEventsChanged: caldav.eventsChanged,

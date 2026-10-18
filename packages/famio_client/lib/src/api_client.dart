@@ -127,6 +127,14 @@ class LoginResult {
   final FamilyMember member;
 }
 
+/// A passkey of the signed-in member (see [FamioApiClient.passkeys]).
+typedef PasskeyEntry = ({
+  String id,
+  String name,
+  DateTime createdAt,
+  DateTime? lastUsed,
+});
+
 /// Thin typed wrapper around the Famio HTTP API.
 class FamioApiClient {
   FamioApiClient(
@@ -243,6 +251,52 @@ class FamioApiClient {
   });
 
   Future<void> logout() => _send('POST', 'api/auth/logout');
+
+  // --- passkeys (web app) -----------------------------------------------------
+
+  /// `PublicKeyCredentialRequestOptions` (JSON, base64url) for signing in.
+  Future<Map<String, Object?>> passkeyLoginOptions() =>
+      _send('POST', 'api/auth/passkey/options');
+
+  /// Signs in with the browser's answer to [passkeyLoginOptions].
+  Future<LoginResult> loginWithPasskey(
+    Map<String, Object?> credential, {
+    String? device,
+  }) =>
+      _login('api/auth/passkey', {'credential': credential, 'device': device});
+
+  Future<List<PasskeyEntry>> passkeys() async {
+    final json = await _send('GET', 'api/me/passkeys');
+    return [
+      for (final p in (json['passkeys'] as List).cast<Map>())
+        (
+          id: p['id'] as String,
+          name: p['name'] as String,
+          createdAt: DateTime.parse(p['createdAt'] as String).toLocal(),
+          lastUsed: switch (p['lastUsed']) {
+            final String t => DateTime.parse(t).toLocal(),
+            _ => null,
+          },
+        ),
+    ];
+  }
+
+  /// `PublicKeyCredentialCreationOptions` (JSON, base64url) for a new
+  /// passkey of this member; the server checks [password] first.
+  Future<Map<String, Object?>> passkeyOptions({required String password}) =>
+      _send('POST', 'api/me/passkeys/options', {'password': password});
+
+  /// Stores the browser's answer to [passkeyOptions].
+  Future<void> addPasskey({
+    required Map<String, Object?> credential,
+    required String name,
+  }) => _send('POST', 'api/me/passkeys', {
+    'credential': credential,
+    'name': name,
+  });
+
+  Future<void> deletePasskey(String id) =>
+      _send('DELETE', 'api/me/passkeys/${Uri.encodeComponent(id)}');
 
   // --- invitations -----------------------------------------------------------
 
