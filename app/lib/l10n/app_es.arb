@@ -2275,5 +2275,18 @@
   "filesScanDocument": "Escanear documento",
   "filesScanDocumentHint": "Carta o formulario en PDF, se detectan los bordes",
   "filesScanName": "Escaneo",
-  "filesScanUnavailable": "El escáner de documentos no está disponible en este dispositivo. En Android necesita los servicios de Google Play actualizados (Play Store → actualizar servicios de Google Play)."
+  "filesScanUnavailable": "El escáner de documentos no está disponible en este dispositivo. En Android necesita los servicios de Google Play actualizados (Play Store → actualizar servicios de Google Play).",
+  "mealsCookingMode": "Modo cocina",
+  "mealsCookingModeHint": "Paso a paso, la pantalla sigue encendida",
+  "cookStepOf": "Paso {n} de {total}",
+  "cookTickOff": "Toca para marcar",
+  "cookTimer": "Temporizador {time}",
+  "cookTimerStop": "Detener temporizador",
+  "cookTimerDone": "Temporizador terminado",
+  "cookTimerDoneBody": "{recipe}: paso {n}",
+  "cookHours": "{n} h",
+  "cookMinutes": "{n} min",
+  "cookSeconds": "{n} s",
+  "cookLeaveTitle": "¿Salir del modo cocina?",
+  "cookLeaveBody": "Los temporizadores en marcha se detendrán."
 }

@@ -2275,5 +2275,18 @@
   "filesScanDocument": "Scan a document",
   "filesScanDocumentHint": "Letter or form as PDF, edges are detected",
   "filesScanName": "Scan",
-  "filesScanUnavailable": "The document scanner is not available on this device. On Android it needs up-to-date Google Play services (Play Store → update Google Play services)."
+  "filesScanUnavailable": "The document scanner is not available on this device. On Android it needs up-to-date Google Play services (Play Store → update Google Play services).",
+  "mealsCookingMode": "Cooking mode",
+  "mealsCookingModeHint": "Step by step, the screen stays on",
+  "cookStepOf": "Step {n} of {total}",
+  "cookTickOff": "Tap to tick off",
+  "cookTimer": "Timer {time}",
+  "cookTimerStop": "Stop timer",
+  "cookTimerDone": "Timer done",
+  "cookTimerDoneBody": "{recipe}: step {n}",
+  "cookHours": "{n} h",
+  "cookMinutes": "{n} min",
+  "cookSeconds": "{n} s",
+  "cookLeaveTitle": "Leave cooking mode?",
+  "cookLeaveBody": "Running timers will be stopped."
 }

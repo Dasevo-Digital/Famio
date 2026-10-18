@@ -5768,5 +5768,66 @@
   "filesScanDocument": "Dokument scannen",
   "filesScanDocumentHint": "Brief oder Formular als PDF, Ränder werden erkannt",
   "filesScanName": "Scan",
-  "filesScanUnavailable": "Der Dokumentenscanner ist auf diesem Gerät nicht verfügbar. Unter Android braucht er aktuelle Google-Play-Dienste (Play Store → Google Play-Dienste aktualisieren)."
+  "filesScanUnavailable": "Der Dokumentenscanner ist auf diesem Gerät nicht verfügbar. Unter Android braucht er aktuelle Google-Play-Dienste (Play Store → Google Play-Dienste aktualisieren).",
+  "mealsCookingMode": "Kochmodus",
+  "mealsCookingModeHint": "Schritt für Schritt, der Bildschirm bleibt an",
+  "cookStepOf": "Schritt {n} von {total}",
+  "@cookStepOf": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "cookTickOff": "Antippen zum Abhaken",
+  "cookTimer": "Timer {time}",
+  "@cookTimer": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cookTimerStop": "Timer beenden",
+  "cookTimerDone": "Timer abgelaufen",
+  "cookTimerDoneBody": "{recipe}: Schritt {n}",
+  "@cookTimerDoneBody": {
+    "placeholders": {
+      "recipe": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "cookHours": "{n} Std.",
+  "@cookHours": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "cookMinutes": "{n} Min.",
+  "@cookMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "cookSeconds": "{n} Sek.",
+  "@cookSeconds": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "cookLeaveTitle": "Kochmodus verlassen?",
+  "cookLeaveBody": "Laufende Timer werden dann beendet."
 }

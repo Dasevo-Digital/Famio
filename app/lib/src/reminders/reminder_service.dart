@@ -97,6 +97,29 @@ class ReminderService {
   /// Plans again, e.g. after a setting changed.
   void refresh() => _reschedule();
 
+  /// A kitchen timer of the cooking mode ([slot] 0–99): rings at [at] also
+  /// while Famio is in the background (not on Linux, which cannot plan).
+  Future<void> scheduleTimer(
+    int slot,
+    DateTime at, {
+    required String title,
+    required String body,
+  }) async {
+    if (!_canSchedule) return;
+    await _plugin.zonedSchedule(
+      id: 900000 + slot,
+      scheduledDate: tz.TZDateTime.from(at.toUtc(), tz.UTC),
+      notificationDetails: _details,
+      androidScheduleMode: _exactAlarms
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle,
+      title: title,
+      body: body,
+    );
+  }
+
+  Future<void> cancelTimer(int slot) => _plugin.cancel(id: 900000 + slot);
+
   /// The member's quiet time (see QuietHours); reminders the member set
   /// themselves stay loud.
   QuietHours Function()? quietHours;

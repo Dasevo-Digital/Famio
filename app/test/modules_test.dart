@@ -330,6 +330,59 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
+  testWidgets('meals: cooking mode walks through the steps with a timer', (
+    tester,
+  ) async {
+    await open(tester, 'Essen');
+    final today = DateUtils.dateOnly(DateTime.now());
+    engine
+      ..saveRecipe(
+        Recipe(
+          id: 'r1',
+          title: 'Nudeln',
+          servings: 2,
+          ingredients: [Ingredient.parse('200 g Spaghetti')],
+          steps: 'Nudeln 10 Minuten kochen\nAbgießen',
+        ),
+      )
+      ..saveMeal(
+        PlannedMeal(
+          id: 'm1',
+          date: today,
+          slot: MealSlot.dinner,
+          recipeId: 'r1',
+          servings: 4,
+        ),
+      );
+    await pumpData(tester);
+    await tester.tap(find.text('Verstanden'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Nudeln'));
+    await tester.tap(find.text('Nudeln'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kochmodus'));
+    await tester.pumpAndSettle();
+
+    // Ingredients first, for the planned servings; tap ticks one off.
+    expect(find.text('400 g Spaghetti'), findsOneWidget);
+    await tester.tap(find.text('400 g Spaghetti'));
+    await tester.pump();
+    await tester.tap(find.text('Weiter'));
+    await tester.pumpAndSettle();
+    expect(find.text('Nudeln 10 Minuten kochen'), findsOneWidget);
+    await tester.tap(find.text('Timer 10 Min.'));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.textContaining('Schritt 1 von 2 · 09:5'), findsOneWidget);
+
+    // Leaving asks first while a timer runs.
+    await tester.tap(find.byTooltip('Schließen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kochmodus verlassen?'), findsOneWidget);
+    await tester.tap(find.text('Timer beenden'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kochmodus'), findsOneWidget);
+  });
+
   testWidgets('meals: plan a recipe and shop its ingredients', (tester) async {
     await open(tester, 'Essen');
     final today = DateUtils.dateOnly(DateTime.now());

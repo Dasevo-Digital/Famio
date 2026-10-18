@@ -15,6 +15,7 @@ import '../widgets/files.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import 'cooking_mode.dart';
 import 'nutrition_screens.dart';
 
 const _collections = {
@@ -572,6 +573,23 @@ class _RecipeScreenState extends State<RecipeScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  if (steps.isNotEmpty)
+                    Tooltip(
+                      message: tr.mealsCookingModeHint,
+                      child: ColorButton(
+                        label: tr.mealsCookingMode,
+                        icon: AppIcons.chefHat,
+                        color: color,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => CookingModeScreen(
+                              recipe: r,
+                              servings: servings,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   if (pantry.isNotEmpty &&
                       engine.stockOf(r, pantry).have.isNotEmpty &&
                       engine.stockOf(r, pantry).missing.isNotEmpty)

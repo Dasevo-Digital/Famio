@@ -138,6 +138,9 @@ class AppState extends ChangeNotifier {
   bool insecureVaultConsentRequired = false;
   ReminderService? _reminders;
 
+  /// Reminders of this device; null before sign-in and in the web app.
+  ReminderService? get reminders => _reminders;
+
   /// Famio's own push notifications (without ntfy).
   OwnPush? ownPush;
 
