@@ -4,6 +4,24 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.8 – Urlaub, freie Termine und Web-App mit Mitteilungen
+
+- Urlaubsmodus: Unter Ämter → Urlaub einen Zeitraum eintragen. Dann sind
+  Ämter und Routinen nicht fällig, niemand wird an die Mülltonnen erinnert,
+  und auf Wunsch fällt auch das Taschengeld aus.
+- „Wann haben alle Zeit?“ im Kalender schlägt freie Zeiten der nächsten zwei
+  Wochen vor. Ein Tipp legt den Termin an.
+- „Bin unterwegs“ unter Wo ist wer?: Ziel wählen, die Familie erfährt die
+  ungefähre Ankunft.
+- Gibt es eine neue App-Version, bekommen Mitglieder mit älteren Android-,
+  Windows- und Linux-Geräten einmal Bescheid.
+- Die Web-App lädt schneller, kann Mitteilungen anzeigen, auch ohne offenen
+  Tab (Einstellungen → Push-Benachrichtigungen), und meldet auf Wunsch mit
+  einem Passkey an (Anmeldung & Sicherheit). Rezepte lassen sich jetzt auch
+  dort importieren.
+- Auf dem Computer lassen sich Dateien ins Famio-Fenster ziehen: als Aufgabe,
+  Dokument oder in den Chat, Kalenderdateien in den Import.
+
 ## 2.0.7 – Kochmodus und Teilen an Famio
 
 - Rezepte haben einen Kochmodus: Schritt für Schritt, der Bildschirm bleibt

@@ -4,6 +4,23 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.8 – Holidays, free times and a web app with notifications
+
+- Holiday mode: enter a period under Chores → Holidays. Chores and routines
+  are not due then, nobody is reminded of the bins, and pocket money can be
+  skipped too.
+- "When is everyone free?" in the calendar suggests free times in the next
+  two weeks. One tap creates the appointment.
+- "On my way" under Who is where?: pick a destination, the family learns the
+  approximate arrival.
+- When a new app version is out, members with older Android, Windows and
+  Linux devices are told once.
+- The web app loads faster, can show notifications even without an open
+  tab (Settings → Push notifications) and can sign in with a passkey
+  (Sign-in & security). Recipes can now be imported there too.
+- On a computer, files can be dragged into the Famio window: as a task,
+  document or into the chat, calendar files into the import.
+
 ## 2.0.7 – Cooking mode and sharing to Famio
 
 - Recipes have a cooking mode: step by step, the screen stays on, times in

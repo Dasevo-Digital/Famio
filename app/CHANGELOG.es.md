@@ -4,6 +4,24 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.8 – Vacaciones, huecos libres y app web con notificaciones
+
+- Modo vacaciones: introduce un periodo en Encargos → Vacaciones.
+  Entonces los encargos y rutinas no vencen, nadie recibe el aviso de la
+  basura y, si quieres, también se omite la paga.
+- «¿Cuándo tienen todos tiempo?» en el calendario propone huecos libres de
+  las próximas dos semanas. Un toque crea la cita.
+- «Voy de camino» en ¿Quién está dónde?: elige un destino y la familia sabe
+  la hora aproximada de llegada.
+- Cuando sale una nueva versión de la app, los miembros con dispositivos
+  Android, Windows y Linux más antiguos reciben un aviso una vez.
+- La app web carga más rápido, puede mostrar notificaciones aunque no haya
+  ninguna pestaña abierta (Ajustes → Notificaciones push) y permite iniciar
+  sesión con una llave de acceso (Inicio de sesión y seguridad). Ahora
+  también se pueden importar recetas en ella.
+- En el ordenador se pueden arrastrar archivos a la ventana de Famio: como
+  tarea, documento o al chat, y los archivos de calendario a la importación.
+
 ## 2.0.7 – Modo cocina y compartir con Famio
 
 - Las recetas tienen un modo cocina: paso a paso, la pantalla sigue
