@@ -41,6 +41,59 @@ extension _NotificationRoutes on FamioApi {
     return _json({'ok': error == null, 'error': error});
   }
 
+  WebPush get _web =>
+      push?.web ??
+      (throw ApiException(404, 'not_found', t('Push nicht verfügbar')));
+
+  /// The server's VAPID key for the browser and the member's browsers.
+  Response _webPush(Request request) {
+    final member = _auth(request);
+    return _json({
+      'publicKey': _web.publicKey,
+      'subscriptions': [
+        for (final s in _web.subscriptions(member.id)) s.toJson(),
+      ],
+    });
+  }
+
+  /// Stores a browser's subscription (the web app repeats it on each
+  /// start, the browser may have renewed it); with `test` it gets a test
+  /// message right away.
+  Future<Response> _subscribeWebPush(Request request) async {
+    final member = _auth(request);
+    final body = await _body(request);
+    final keys = body['keys'];
+    final id = await _web.subscribe(
+      member.id,
+      endpoint: body['endpoint'] as String? ?? '',
+      p256dh: keys is Map ? keys['p256dh'] as String? ?? '' : '',
+      auth: keys is Map ? keys['auth'] as String? ?? '' : '',
+      device: body['device'] as String? ?? '',
+    );
+    final error = body['test'] == true ? await _web.test(member.id, id) : null;
+    return _json({'id': id, 'lastError': error}, status: 201);
+  }
+
+  /// The browser itself turned notifications off.
+  Future<Response> _unsubscribeWebPush(Request request) async {
+    final member = _auth(request);
+    final body = await _body(request);
+    _web.unsubscribe(member.id, endpoint: body['endpoint'] as String? ?? '');
+    return _json({'ok': true});
+  }
+
+  Response _deleteWebPush(Request request, String id) {
+    final member = _auth(request);
+    _web.unsubscribe(member.id, id: id);
+    return _json({'ok': true});
+  }
+
+  Future<Response> _testWebPush(Request request, String id) async {
+    final member = _auth(request);
+    final error = await _web.test(member.id, id);
+    return _json({'ok': error == null, 'error': error});
+  }
+
   /// Adults: whose phone gets alarms and rings (own push or ntfy).
   Response _reachability(Request request) {
     final member = _member(request);

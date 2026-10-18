@@ -284,6 +284,21 @@ const _migrations = [
   -- administration shows which devices still need an update.
   ALTER TABLE sessions ADD COLUMN app_version TEXT;
   ''',
+  '''
+  -- Browsers that get notices while the web app is closed (Web Push):
+  -- the address at the browser's push service and its keys (RFC 8291).
+  CREATE TABLE web_push_subscriptions (
+    id TEXT PRIMARY KEY,
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    device TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    last_error TEXT
+  );
+  CREATE INDEX web_push_member ON web_push_subscriptions (member_id);
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +10,7 @@ import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../platform/web_push.dart';
 import '../push/own_push.dart';
 import '../l10n.dart';
 
@@ -86,13 +88,16 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
           return ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
-              const _OwnPushCard(),
+              if (kIsWeb) const _WebPushCard() else const _OwnPushCard(),
               const SizedBox(height: 12),
               const QuietHoursCard(),
               const SizedBox(height: 12),
-              const _WeekPreviewCard(),
-              const SizedBox(height: 12),
-              const _DayPreviewCard(),
+              // Reminders the device makes itself, not in the browser.
+              if (!kIsWeb) ...[
+                const _WeekPreviewCard(),
+                const SizedBox(height: 12),
+                const _DayPreviewCard(),
+              ],
               ListHeading(
                 tr.pushAlternativelyThroughNtfy,
                 color: accent,
@@ -332,9 +337,7 @@ class _DayPreviewCard extends StatelessWidget {
                     initialTime: at,
                   );
                   if (picked != null) {
-                    await state.setDayPreview(
-                      picked.hour * 60 + picked.minute,
-                    );
+                    await state.setDayPreview(picked.hour * 60 + picked.minute);
                   }
                 },
               ),
@@ -360,6 +363,114 @@ class _WeekPreviewCard extends StatelessWidget {
         subtitle: Text(tr.pushSundays6PM),
         value: state.weekPreview,
         onChanged: state.setWeekPreview,
+      ),
+    );
+  }
+}
+
+/// The web app: Web Push through the browser's push service, also while
+/// no tab is open.
+class _WebPushCard extends StatefulWidget {
+  const _WebPushCard();
+
+  @override
+  State<_WebPushCard> createState() => _WebPushCardState();
+}
+
+class _WebPushCardState extends State<_WebPushCard> {
+  bool? _on;
+  var _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    currentWebPush().then(
+      (s) => mounted ? setState(() => _on = s != null) : null,
+      onError: (Object _) => mounted ? setState(() => _on = false) : null,
+    );
+  }
+
+  Future<void> _set(bool on) async {
+    final api = AppScope.read(context).engine!.api;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
+    try {
+      if (on) {
+        final subscription = await startWebPush(
+          () async => (await api.webPush()).publicKey,
+        );
+        if (subscription == null) {
+          messenger.showSnackBar(SnackBar(content: Text(tr.webPushDenied)));
+        } else {
+          final error = await api.subscribeWebPush(
+            endpoint: subscription.endpoint,
+            p256dh: subscription.p256dh,
+            auth: subscription.auth,
+            device: browserName,
+            test: true,
+          );
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                error == null
+                    ? tr.pushTestMessageSentDid
+                    : tr.pushAddedButError(localizeServerText(error)),
+              ),
+            ),
+          );
+        }
+      } else if (await stopWebPush() case final endpoint?) {
+        await api.unsubscribeWebPush(endpoint);
+      }
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(tr.pushNotPossible)));
+    }
+    final now = await currentWebPush().catchError((Object _) => null);
+    if (mounted) {
+      setState(() {
+        _on = now != null;
+        _busy = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final inPanel = AppScope.read(context).panelMode != 'browser';
+    final String? reason = inPanel
+        ? tr.webPushPanel
+        : webPushNeedsHomeScreen
+        ? tr.webPushHomeScreen
+        : !webPushSupported
+        ? tr.webPushUnsupported
+        : webPushBlocked
+        ? tr.webPushBlocked
+        : null;
+    return SoftCard(
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(tr.webPushTitle, style: theme.textTheme.titleMedium),
+          const SizedBox(height: 4),
+          Text(tr.webPushHint, style: theme.textTheme.bodySmall),
+          if (reason != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(reason),
+            )
+          else
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(tr.webPushSwitch),
+              subtitle: Text(browserName),
+              value: _on ?? false,
+              onChanged: _busy || _on == null ? null : _set,
+            ),
+        ],
       ),
     );
   }

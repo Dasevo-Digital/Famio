@@ -1095,6 +1095,10 @@ const sharedEs = <String, String>{
   "Server|Deine Anfrage wurde abgelehnt": "Tu solicitud ha sido rechazada",
   "Server|Push-Server antwortet {status}": "El servidor push responde {status}",
   "Server|Push-Server nicht erreichbar": "Servidor push no accesible",
+  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst": "Este navegador usa un servicio push desconocido",
+  "Server|Ungültige Schlüssel": "Claves no válidas",
+  "Server|Browser": "Navegador",
+  "Server|Der Browser hat die Benachrichtigungen abbestellt": "El navegador ha desactivado las notificaciones",
   "Server|Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.":
       "Las conexiones de listas están desactivadas en la administración del servidor.",
   "Server|Die Client-ID (Anwendungs-ID) hat die Form 00000000-0000-0000-0000-000000000000.":

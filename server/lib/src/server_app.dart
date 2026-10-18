@@ -32,6 +32,7 @@ import 'family/allowance_job.dart';
 import 'hub.dart';
 import 'push/notice_box.dart';
 import 'push/push_service.dart';
+import 'push/web_push.dart';
 import 'location/location_service.dart';
 import 'files/file_store.dart';
 import 'record_store.dart';
@@ -191,6 +192,13 @@ class FamioServerApp {
             onError: auditLog,
           );
     push.onNotice = notices.add;
+    push.web = WebPush(
+      db,
+      client: httpClient,
+      publicUrl: () => settings.publicUrl,
+      urlPolicy: RemoteUrlPolicy(allowPrivateNetwork: allowPrivatePushHosts),
+      onSent: metrics.pushResult,
+    );
     locations.onShopArrival = push.shopArrival;
     records
       ..onStored = push.stored

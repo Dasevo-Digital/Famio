@@ -23,6 +23,7 @@ import 'weather/weather.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
 import 'platform/browser.dart';
+import 'platform/web_push.dart';
 import 'l10n.dart';
 
 /// A server address checked by [AppState.resolveServer]: what to connect
@@ -318,6 +319,23 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The browser may have renewed its push address, or someone else
+  /// signed in: the server learns the current one and whose it is.
+  Future<void> _renewWebPush(FamioApiClient api) async {
+    try {
+      final s = await currentWebPush();
+      if (s == null) return;
+      await api.subscribeWebPush(
+        endpoint: s.endpoint,
+        p256dh: s.p256dh,
+        auth: s.auth,
+        device: browserName,
+      );
+    } catch (_) {
+      // Offline or push not available: next start.
+    }
+  }
+
   /// Finds the best way to reach the server at [input]:
   ///
   /// * `https://…` as given; a self-signed certificate is pinned after the
@@ -595,9 +613,14 @@ class AppState extends ChangeNotifier {
     if (engine == null) return;
     this.notice = notice;
 
+    // This browser no longer gets the member's notices.
+    final webPush = kIsWeb
+        ? await stopWebPush().catchError((Object _) => null)
+        : null;
     if (notice == null) {
       await engine.sync(); // Last chance to push pending edits.
       try {
+        if (webPush != null) await engine.api.unsubscribeWebPush(webPush);
         await engine.api.logout();
       } on ApiError {
         // Session is removed locally anyway.
@@ -739,9 +762,11 @@ class AppState extends ChangeNotifier {
         .catchError((Object _) {});
 
     if (kIsWeb) {
-      // No notifications, widgets or location sharing in the browser.
+      // No widgets or location sharing in the browser; notifications only
+      // through Web Push (see PushSettingsScreen).
       _loadConfig(api);
       refreshTwoFactor();
+      if (panelMode == 'browser') _renewWebPush(api);
       return;
     }
 

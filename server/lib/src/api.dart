@@ -48,6 +48,7 @@ import 'web_app.dart';
 import 'location/location_service.dart';
 import 'push/notice_box.dart';
 import 'push/push_service.dart';
+import 'push/web_push.dart';
 import 'record_store.dart';
 import 'i18n.dart';
 
@@ -271,6 +272,11 @@ class FamioApi {
       ..post('/api/me/push', _addPushTarget)
       ..delete('/api/me/push/<id>', _deletePushTarget)
       ..post('/api/me/push/<id>/test', _testPushTarget)
+      ..get('/api/me/web-push', _webPush)
+      ..post('/api/me/web-push', _subscribeWebPush)
+      ..post('/api/me/web-push/unsubscribe', _unsubscribeWebPush)
+      ..delete('/api/me/web-push/<id>', _deleteWebPush)
+      ..post('/api/me/web-push/<id>/test', _testWebPush)
       ..get('/api/members/reachability', _reachability)
       ..get('/api/me/quiet-hours', _quietHours)
       ..put('/api/me/quiet-hours', _setQuietHours)

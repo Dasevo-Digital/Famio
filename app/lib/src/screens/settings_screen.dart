@@ -223,8 +223,8 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
-          // The web app shows no notifications.
-          if (!kIsWeb)
+          // The web app only outside Home Assistant (Web Push).
+          if (!kIsWeb || state.panelMode == 'browser')
             ListTile(
               leading: const Icon(AppIcons.bellRing),
               title: Text(context.l10n.settingsPush),

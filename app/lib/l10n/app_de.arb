@@ -6027,5 +6027,13 @@
   },
   "tripArrived": "Angekommen",
   "tripHint": "Die Familie bekommt eine Mitteilung. Kommst du dort an, endet es von selbst, wenn du deinen Standort teilst.",
-  "dropHere": "Hier ablegen, um es an Famio zu teilen"
+  "dropHere": "Hier ablegen, um es an Famio zu teilen",
+  "webPushTitle": "Mitteilungen in diesem Browser",
+  "webPushHint": "Famio meldet sich auch, wenn kein Tab offen ist. Die Nachrichten laufen verschlüsselt über den Push-Dienst des Browsers (Google, Mozilla, Apple oder Microsoft); der sieht nicht, was drinsteht.",
+  "webPushSwitch": "Mitteilungen bekommen",
+  "webPushBlocked": "Mitteilungen sind für diese Seite im Browser gesperrt. Bitte in den Website-Einstellungen des Browsers erlauben.",
+  "webPushHomeScreen": "Auf iPhone und iPad: in Safari „Teilen“ → „Zum Home-Bildschirm“ wählen, Famio von dort öffnen und hier einschalten.",
+  "webPushUnsupported": "Dieser Browser kann keine Mitteilungen empfangen. Sie gehen nur, wenn Famio über HTTPS geöffnet ist.",
+  "webPushPanel": "In Home Assistant gibt es keine Browser-Mitteilungen. Öffne Famio dafür direkt über die Adresse des Famio-Servers (…/app/).",
+  "webPushDenied": "Mitteilungen wurden nicht erlaubt."
 }

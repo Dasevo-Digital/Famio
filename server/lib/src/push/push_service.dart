@@ -11,6 +11,7 @@ import '../api_exception.dart';
 import '../record_store.dart';
 import '../remote_url_policy.dart';
 import '../i18n.dart';
+import 'web_push.dart';
 
 /// A notification for some members, with and without details.
 class PushNotice {
@@ -72,6 +73,9 @@ class PushService {
 
   /// Called after each attempt to send to ntfy (for the metrics).
   final void Function({required bool ok})? onSent;
+
+  /// Browsers with Web Push (the web app); they get every notice too.
+  WebPush? web;
 
   /// Famio's own push (see NoticeBox): gets every notice for the members
   /// allowed to see it, whether or not they use ntfy.
@@ -147,6 +151,7 @@ class PushService {
   /// shared with other server services and remains owned by its caller.
   void close() {
     if (_ownsClient) _client.close();
+    web?.close();
   }
 
   // --- reachability -----------------------------------------------------------
@@ -557,14 +562,19 @@ class PushService {
       allowed,
     );
     for (final row in rows) {
-      late final Future<void> f;
-      f = _send(
-        row,
-        notice,
-        quiet: quiet.contains(row['member_id']),
-      ).then((_) {}).whenComplete(() => _pending.remove(f));
-      _pending.add(f);
+      _track(_send(row, notice, quiet: quiet.contains(row['member_id'])));
     }
+    if (web case final web?) {
+      for (final row in web.rowsFor(allowed)) {
+        _track(web.send(row, notice, quiet: quiet.contains(row['member_id'])));
+      }
+    }
+  }
+
+  void _track(Future<String?> send) {
+    late final Future<void> f;
+    f = send.then((_) {}).whenComplete(() => _pending.remove(f));
+    _pending.add(f);
   }
 
   /// Publishes via ntfy's JSON API; returns the error text, if any.

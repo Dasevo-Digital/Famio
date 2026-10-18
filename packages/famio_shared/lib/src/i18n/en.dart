@@ -1063,6 +1063,10 @@ const sharedEn = <String, String>{
   "Server|Deine Anfrage wurde abgelehnt": "Your request was declined",
   "Server|Push-Server antwortet {status}": "Push server answers {status}",
   "Server|Push-Server nicht erreichbar": "Push server not reachable",
+  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst": "This browser uses an unknown push service",
+  "Server|Ungültige Schlüssel": "Invalid keys",
+  "Server|Browser": "Browser",
+  "Server|Der Browser hat die Benachrichtigungen abbestellt": "The browser has turned notifications off",
   "Server|Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.":
       "List connections are turned off in the server administration.",
   "Server|Die Client-ID (Anwendungs-ID) hat die Form 00000000-0000-0000-0000-000000000000.":

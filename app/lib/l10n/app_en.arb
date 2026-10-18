@@ -2360,5 +2360,13 @@
   "tripOnTheWay": "on the way to {place}, about {time}",
   "tripArrived": "Arrived",
   "tripHint": "The family gets a notification. When you arrive there it ends by itself if you share your location.",
-  "dropHere": "Drop here to share it to Famio"
+  "dropHere": "Drop here to share it to Famio",
+  "webPushTitle": "Notifications in this browser",
+  "webPushHint": "Famio tells you about news even when no tab is open. Messages travel encrypted through the browser's push service (Google, Mozilla, Apple or Microsoft), which cannot read them.",
+  "webPushSwitch": "Receive notifications",
+  "webPushBlocked": "Notifications are blocked for this site. Please allow them in the browser's site settings.",
+  "webPushHomeScreen": "On iPhone and iPad: in Safari choose “Share” → “Add to Home Screen”, open Famio from there and switch this on.",
+  "webPushUnsupported": "This browser cannot receive notifications. They only work when Famio is opened over HTTPS.",
+  "webPushPanel": "There are no browser notifications inside Home Assistant. Open Famio directly at the Famio server's address (…/app/) for them.",
+  "webPushDenied": "Notifications were not allowed."
 }

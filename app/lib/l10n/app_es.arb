@@ -2360,5 +2360,13 @@
   "tripOnTheWay": "de camino a {place}, hacia las {time}",
   "tripArrived": "He llegado",
   "tripHint": "La familia recibe un aviso. Al llegar termina solo si compartes tu ubicación.",
-  "dropHere": "Suéltalo aquí para compartirlo con Famio"
+  "dropHere": "Suéltalo aquí para compartirlo con Famio",
+  "webPushTitle": "Notificaciones en este navegador",
+  "webPushHint": "Famio avisa de las novedades aunque no haya ninguna pestaña abierta. Los mensajes viajan cifrados por el servicio push del navegador (Google, Mozilla, Apple o Microsoft), que no puede leerlos.",
+  "webPushSwitch": "Recibir notificaciones",
+  "webPushBlocked": "Las notificaciones están bloqueadas para este sitio. Permítelas en la configuración del sitio del navegador.",
+  "webPushHomeScreen": "En iPhone y iPad: en Safari elige «Compartir» → «Añadir a pantalla de inicio», abre Famio desde allí y actívalo aquí.",
+  "webPushUnsupported": "Este navegador no puede recibir notificaciones. Solo funcionan si Famio se abre por HTTPS.",
+  "webPushPanel": "Dentro de Home Assistant no hay notificaciones del navegador. Para ello abre Famio directamente en la dirección del servidor Famio (…/app/).",
+  "webPushDenied": "No se permitieron las notificaciones."
 }

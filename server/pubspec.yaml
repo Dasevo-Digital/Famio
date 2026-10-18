@@ -18,6 +18,7 @@ dependencies:
   http: ^1.6.0
   image: ^4.10.1
   path: ^1.9.1
+  pointycastle: ^4.0.0
   rrule: ^0.2.18
   shelf: ^1.4.2
   shelf_router: ^1.1.4

@@ -769,6 +769,38 @@ class FamioApiClient {
   Future<String?> testPushTarget(String id) async =>
       (await _send('POST', 'api/me/push/$id/test'))['error'] as String?;
 
+  // --- Web Push (the web app) -------------------------------------------------
+
+  /// The server's VAPID key (the browser's `applicationServerKey`) and how
+  /// many browsers of this member get notices.
+  Future<({String publicKey, int browsers})> webPush() async {
+    final json = await _send('GET', 'api/me/web-push');
+    return (
+      publicKey: json['publicKey'] as String,
+      browsers: (json['subscriptions'] as List).length,
+    );
+  }
+
+  /// Hands the browser's subscription to the server; with [test] it sends
+  /// a test message and returns its error, if any.
+  Future<String?> subscribeWebPush({
+    required String endpoint,
+    required String p256dh,
+    required String auth,
+    required String device,
+    bool test = false,
+  }) async =>
+      (await _send('POST', 'api/me/web-push', {
+            'endpoint': endpoint,
+            'keys': {'p256dh': p256dh, 'auth': auth},
+            'device': device,
+            'test': test,
+          }))['lastError']
+          as String?;
+
+  Future<void> unsubscribeWebPush(String endpoint) =>
+      _send('POST', 'api/me/web-push/unsubscribe', {'endpoint': endpoint});
+
   Future<List<AppPassword>> appPasswords() async {
     final json = await _send('GET', 'api/me/app-passwords');
     return [

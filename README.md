@@ -66,7 +66,7 @@ jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto; Urlaubsmodus (Ämter, Routinen und Abfall-Erinnerungen ruhen, auf Wunsch auch das Taschengeld) | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
-| Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), alternativ über ntfy | ✅ |
+| Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), Web Push für die Web-App, alternativ über ntfy | ✅ |
 | Wandanzeige fürs Küchen-Tablet | ✅ |
 | Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
 | Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
@@ -346,6 +346,30 @@ offen (höchstens 300 s), bis etwas Neues kommt (Long-Polling).
   offener App – dort bleibt ntfy der Weg.
 
 Pro Gerät lässt sich einstellen, ob Namen und Texte angezeigt werden.
+
+**Web-App (Web Push):** Unter Einstellungen → Push-Benachrichtigungen lässt
+sich der Browser anmelden. Dann kommen Mitteilungen auch, wenn kein Tab offen
+ist. Der Browser gibt dafür eine Adresse bei seinem Push-Dienst heraus
+(Google, Mozilla, Apple oder Microsoft). Der Server verschlüsselt jede
+Nachricht für genau diesen Browser (RFC 8291) und signiert sie mit seinem
+VAPID-Schlüssel (RFC 8292). Der Schlüssel entsteht beim ersten Gebrauch und
+liegt in der Datenbank. Der Push-Dienst sieht also nur Chiffretext, und es
+braucht kein Konto bei ihm.
+
+- Ziele sind nur die Push-Dienste der Browser. Andere Adressen lehnt der
+  Server ab.
+- Ein Abo, das der Dienst nicht mehr kennt (404/410), löscht der Server.
+- Der Service Worker `famio_push.js` zeigt nur Mitteilungen an. Er speichert
+  nichts zwischen, die Web-App kommt also weiter immer frisch vom Server.
+- Auf iPhone und iPad geht das nur, wenn Famio über „Zum Home-Bildschirm“
+  geöffnet wird.
+- Im Home-Assistant-Panel gibt es keine Browser-Mitteilungen.
+- Beim Abmelden endet das Abo.
+
+API: `GET /api/me/web-push` (Schlüssel und Browser),
+`POST /api/me/web-push` (`endpoint`, `keys.p256dh`, `keys.auth`, `device`,
+optional `test`), `POST /api/me/web-push/unsubscribe`,
+`DELETE /api/me/web-push/<id>`, `POST /api/me/web-push/<id>/test`.
 
 **Alternativ über ntfy:** Jedes Mitglied kann in den Einstellungen Geräte mit einem ntfy-Thema
 eintragen (`https://ntfy.sh/<geheimer-name>` oder ein eigener ntfy-Server,
