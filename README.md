@@ -727,9 +727,17 @@ cd packages/famio_client
 dart run tool/smoke_test.dart <server-url> <benutzer> <passwort> [ics-url]
 ```
 
-Die CI baut Server-Binaries für LXC und Docker-Images. Für die produktive
-Gitea-Veröffentlichung liegen die Artefakte einschließlich `SHA256SUMS.txt` im
-Release-Ordner; `tool/sign_release.sh` signiert diese Liste mit dem
+Die CI baut Server-Binaries für LXC und Docker-Images. Ein Release entsteht
+mit `bash tool/release.sh <version>` auf dem Tag: Es baut Web-App und
+Server-Paket (Docker), prüft das Update mit `tool/release/smoke.sh` gegen das
+Server-Paket der Vorversion, baut macOS (ad hoc signiert) und beide
+Android-Pakete, holt Linux- und Windows-Pakete von Build-Rechnern
+(`FAMIO_LINUX_BUILD_HOST`, `FAMIO_WINDOWS_BUILD_HOST`; Skripte unter
+`tool/release/`), signiert die Prüfsummen, prüft sie wie die Apps
+(`packages/famio_shared/tool/verify_release.dart`) und durchsucht alle Pakete
+nach privaten Daten (eigene Muster in `FAMIO_PRIVATE_PATTERNS`, außerhalb des
+Repositories). Für die produktive Gitea-Veröffentlichung liegen die Artefakte
+einschließlich `SHA256SUMS.txt` im Release-Ordner; `tool/sign_release.sh` signiert diese Liste mit dem
 Release-Schlüssel (`SHA256SUMS.txt.sig`, Ed25519, privater Teil nur im
 Schlüsselbund des Maintainers), `tool/publish_gitea_release.sh` prüft beides
 vor dem Upload und legt es am Tag `v*` ab. Das Token bleibt ausschließlich in
