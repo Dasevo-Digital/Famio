@@ -1,4 +1,15 @@
-part of '../admin_screens.dart';
+import 'package:famio_client/famio_client.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../design/app_icons.dart';
+import '../design/components.dart';
+import '../design/palette.dart';
+import '../format.dart';
+import '../l10n.dart';
+
+// Shared by the settings and the server administration, which the web app
+// loads only when opened (see DeferredPage).
 
 /// A signed-in device with an optional "sign out" button.
 class DeviceTile extends StatelessWidget {
@@ -14,7 +25,7 @@ class DeviceTile extends StatelessWidget {
     final mobile = RegExp('android|ios', caseSensitive: false).hasMatch(device);
     return ListTile(
       leading: Icon(mobile ? AppIcons.smartphone : AppIcons.laptop),
-      title: Text(_deviceLabel(device)),
+      title: Text(deviceLabel(device)),
       subtitle: Text.rich(
         TextSpan(
           children: [
@@ -22,7 +33,7 @@ class DeviceTile extends StatelessWidget {
               text: session.current
                   ? tr.settingsThisDevice
                   : tr.adminLastActiveSeenSigned(
-                      _ago(session.lastSeen),
+                      agoText(session.lastSeen),
                       DateFormat.yMd(appLanguage).format(session.createdAt),
                     ),
             ),
@@ -51,7 +62,7 @@ class DeviceTile extends StatelessWidget {
   }
 
   /// `macos (Marcos-MacBook)` → `macOS · Marcos-MacBook`.
-  static String _deviceLabel(String device) {
+  static String deviceLabel(String device) {
     final match = RegExp(r'^(\w+) \((.*)\)$').firstMatch(device);
     if (match == null) return device;
     final os = switch (match[1]!.toLowerCase()) {
@@ -151,10 +162,8 @@ class ApiFutureView<T> extends StatelessWidget {
   }
 }
 
-String _devices(int n) => tr.adminDeviceCount(n);
-
 /// "vor 5 Min." style relative time.
-String _ago(DateTime t, {bool suffix = true}) {
+String agoText(DateTime t, {bool suffix = true}) {
   final d = DateTime.now().difference(t);
   if (d.inMinutes < 1) return suffix ? tr.agoJustNow : tr.agoMoment;
   if (d.inDays >= 30) return dayLabel(t);

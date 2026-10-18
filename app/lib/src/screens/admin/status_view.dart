@@ -82,7 +82,7 @@ class _StatusView extends StatelessWidget {
                   _InfoRow(
                     label: tr.adminOutdatedAppRow(
                       a.member,
-                      DeviceTile._deviceLabel(
+                      DeviceTile.deviceLabel(
                         a.device.isEmpty ? tr.adminUnknownDevice : a.device,
                       ),
                     ),

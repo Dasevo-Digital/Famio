@@ -104,18 +104,31 @@ class WebApp {
     if (match != null && match.split(',').any((t) => t.trim() == etag)) {
       return Response.notModified(headers: headers);
     }
-    final packed = File('$file.gz');
-    // Home Assistant's ingress compresses for the browser itself (and would
-    // have to unpack ours first).
-    final gzip =
-        (request.headers['accept-encoding'] ?? '').contains('gzip') &&
-        !request.headers.containsKey('x-ingress-path');
-    final send = gzip && await packed.exists() ? packed : plain;
+    // Precompressed copies: Brotli (from the Docker build) is about a fifth
+    // smaller than gzip. Home Assistant's ingress compresses for the
+    // browser itself (and would have to unpack ours first).
+    final accepted = request.headers.containsKey('x-ingress-path')
+        ? const <String>{}
+        : {
+            for (final part
+                in (request.headers['accept-encoding'] ?? '').split(','))
+              part.split(';').first.trim(),
+          };
+    var send = plain;
+    String? encoding;
+    for (final (name, suffix) in const [('br', '.br'), ('gzip', '.gz')]) {
+      final packed = File('$file$suffix');
+      if (accepted.contains(name) && await packed.exists()) {
+        send = packed;
+        encoding = name;
+        break;
+      }
+    }
     return Response.ok(
       send.openRead(),
       headers: {
         ...headers,
-        if (send == packed) 'content-encoding': 'gzip',
+        'content-encoding': ?encoding,
         'content-length': '${await send.length()}',
       },
     );

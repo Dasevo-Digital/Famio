@@ -5973,5 +5973,6 @@
       }
     }
   },
-  "vacationOnlyAdults": "Urlaub tragen Erwachsene ein."
+  "vacationOnlyAdults": "Urlaub tragen Erwachsene ein.",
+  "deferredRetry": "Konnte nicht geladen werden – nochmal versuchen"
 }

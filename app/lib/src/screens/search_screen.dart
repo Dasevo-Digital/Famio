@@ -13,9 +13,8 @@ import 'chat_screens.dart';
 import 'contacts_screens.dart';
 import 'event_editor.dart';
 import 'home_shell.dart';
-import 'meals_screens.dart';
+import 'deferred_sections.dart';
 import 'notes_screen.dart';
-import 'medication_screens.dart';
 import 'pantry_screens.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
@@ -69,11 +68,9 @@ class _SearchScreenState extends State<SearchScreen> {
           await showPantryEditor(context, initial: p, existing: true);
         }
       case SearchKind.recipe:
-        await Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => RecipeScreen(recipeId: hit.id),
-          ),
-        );
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => recipePage(hit.id)));
       case SearchKind.document:
         final nav = FamioNav.of(context);
         Navigator.of(context).pop();
@@ -84,7 +81,7 @@ class _SearchScreenState extends State<SearchScreen> {
         if (c != null) await showContactEditor(context, existing: c);
       case SearchKind.medication:
         final m = engine.medications.where((m) => m.id == hit.id).firstOrNull;
-        if (m != null) await showMedicationEditor(context, medication: m);
+        if (m != null) await openMedicationEditor(context, m);
       case SearchKind.note:
         await Navigator.of(
           context,

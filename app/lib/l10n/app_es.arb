@@ -2333,5 +2333,6 @@
   "vacationAllowancePaused": "Paga en pausa",
   "vacationNone": "No hay vacaciones.",
   "vacationBanner": "Vacaciones hasta el {date}: tareas, rutinas y avisos de basura en pausa.",
-  "vacationOnlyAdults": "Las vacaciones las añaden los adultos."
+  "vacationOnlyAdults": "Las vacaciones las añaden los adultos.",
+  "deferredRetry": "No se pudo cargar: volver a intentarlo"
 }

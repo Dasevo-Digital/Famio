@@ -18,7 +18,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'home_shell.dart';
 import 'kiosk_screen.dart';
-import 'budget_screens.dart';
+import '../data/budget_month.dart';
 import 'location_screens.dart';
 import 'settings_screen.dart';
 import '../weather/weather_tile.dart';

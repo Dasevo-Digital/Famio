@@ -9,6 +9,7 @@ import '../data/family_data.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
+import '../data/budget_month.dart';
 import 'budget_screens.dart';
 
 /// Budget → "Kontoauszug importieren": a CSV or CAMT file from the bank,

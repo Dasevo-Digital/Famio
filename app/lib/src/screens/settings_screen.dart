@@ -28,7 +28,8 @@ import '../widgets/form_dialog.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/trust_certificate.dart';
 import '../widgets/password_reveal.dart';
-import 'admin_screens.dart';
+import 'deferred_sections.dart';
+import '../widgets/account_widgets.dart';
 import 'security_screens.dart';
 import '../widgets/data_export.dart';
 import 'deadlines_screen.dart';
@@ -91,9 +92,9 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 8),
             SoftCard(
               color: c.tint(FamioSection.settings),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const AdminScreen()),
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute<void>(builder: (_) => adminPage())),
               child: Row(
                 children: [
                   IconBlob(

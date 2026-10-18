@@ -2333,5 +2333,6 @@
   "vacationAllowancePaused": "Pocket money paused",
   "vacationNone": "No holiday added.",
   "vacationBanner": "Holiday until {date}: chores, routines and bin reminders are paused.",
-  "vacationOnlyAdults": "Adults add holidays."
+  "vacationOnlyAdults": "Adults add holidays.",
+  "deferredRetry": "Could not be loaded – try again"
 }

@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'src/app.dart';
 import 'src/app_state.dart';
+import 'src/screens/deferred_sections.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,6 +24,9 @@ Future<void> main() async {
       ], await rootBundle.loadString('assets/fonts/$file'));
     }
   });
+  // The apps have the code of every area; only the web app fetches the
+  // rarely used ones when they are opened (see deferred_sections.dart).
+  if (!kIsWeb) await loadAllSections();
   final state = AppState();
   await state.init();
   runApp(FamioApp(state: state));

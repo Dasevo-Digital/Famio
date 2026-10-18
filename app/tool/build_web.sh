@@ -87,6 +87,17 @@ for name, old, new in [
     if old not in text:
         sys.exit(f'{name}: {old} not found')
     open(path, 'w').write(text.replace(old, new))
+# The parts loaded later (deferred imports, see DeferredPage) carry the
+# version as well: an old part next to a new main.dart.js would break. In
+# the file name, because dart2js escapes a query in the part's address.
+main = os.path.join(web, 'main.dart.js')
+text = open(main).read()
+safe = re.sub(r'[^A-Za-z0-9.-]', '-', tag)
+for part in set(re.findall(r'"(main\.dart\.js_[0-9]+\.part\.js)"', text)):
+    versioned = part[:-len('.js')] + f'.{safe}.js'
+    os.rename(os.path.join(web, part), os.path.join(web, versioned))
+    text = text.replace(f'"{part}"', f'"{versioned}"')
+open(main, 'w').write(text)
 # Compressed copies: the server sends them to browsers that accept gzip.
 for root, _, files in os.walk(web):
     for name in files:

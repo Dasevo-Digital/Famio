@@ -8,6 +8,9 @@ COPY packages/famio_shared packages/famio_shared
 COPY server/pubspec.* server/
 WORKDIR /src/server
 RUN dart pub get
+# Brotli copies of the web app next to the gzip ones (see web_app.dart).
+RUN apt-get update && apt-get install -y --no-install-recommends brotli \
+    && rm -rf /var/lib/apt/lists/*
 COPY server .
 # server/web is not in the repository: a web app left over from an older
 # build must not end up in the package (1.0.6 to 1.0.14 shipped 1.0.5).
@@ -18,6 +21,10 @@ RUN dart build cli -t bin/server.dart -o /out \
          grep -q "\"version\":\"$v\"" web/version.json \
            || { echo "server/web ist nicht Version $v: app/tool/build_web.sh ausführen" >&2; exit 1; }; \
          cp -R web /out/bundle/web; \
+         find /out/bundle/web -type f \( -name '*.js' -o -name '*.mjs' \
+           -o -name '*.wasm' -o -name '*.json' -o -name '*.html' \
+           -o -name '*.css' -o -name '*.ttf' -o -name '*.otf' \) \
+           -exec brotli -q 11 -k {} \; ; \
        fi
 
 # Distroless: glibc and CA certificates only (needed for fetching https

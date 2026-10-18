@@ -21,16 +21,12 @@ import 'ics_import_screen.dart';
 import '../data/family_extras.dart';
 import 'calendar_screen.dart';
 import 'chores_screens.dart';
-import 'medication_screens.dart';
 import 'chat_screens.dart';
-import 'budget_screens.dart';
 import 'contacts_screens.dart';
 import 'documents_screen.dart';
 import 'home_screen.dart';
-import 'kids_screens.dart';
 import 'kiosk_screen.dart';
 import 'location_screens.dart';
-import 'meals_screens.dart';
 import 'settings_screen.dart';
 import 'sos_screens.dart';
 import '../sos/sos_device.dart';
@@ -39,8 +35,11 @@ import 'tasks_screen.dart';
 import '../environment.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
+import 'deferred_sections.dart';
 import 'share_target.dart';
 
+/// Rarely opened sections are loaded on first use in the web app (see
+/// DeferredPage).
 Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.home => const HomeScreen(),
   FamioSection.tasks => const TasksScreen(),
@@ -48,12 +47,12 @@ Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.calendar => const CalendarScreen(),
   FamioSection.chat => const ChatListScreen(),
   FamioSection.documents => const DocumentsScreen(),
-  FamioSection.kids => const KidsScreen(),
+  FamioSection.kids => kidsPage(),
   FamioSection.location => const LocationScreen(),
   FamioSection.chores => const ChoresScreen(),
-  FamioSection.meals => const MealsScreen(),
-  FamioSection.budget => const BudgetScreen(),
-  FamioSection.health => const MedicationScreen(),
+  FamioSection.meals => mealsPage(),
+  FamioSection.budget => budgetPage(),
+  FamioSection.health => medicationPage(),
   FamioSection.contacts => const ContactsScreen(),
   FamioSection.settings => const SettingsScreen(),
 };

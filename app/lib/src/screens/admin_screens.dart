@@ -15,6 +15,7 @@ import '../design/palette.dart';
 import '../data/family_data.dart';
 import '../format.dart';
 import '../widgets/files.dart';
+import '../widgets/account_widgets.dart';
 import '../widgets/birthday_field.dart';
 import '../widgets/form_dialog.dart';
 import '../widgets/member_avatar.dart';
@@ -29,7 +30,6 @@ part 'admin/app_updates_dialog.dart';
 part 'admin/member_calendars.dart';
 part 'admin/paperbuddy_dialog.dart';
 part 'admin/settings_form.dart';
-part 'admin/shared_widgets.dart';
 part 'admin/sso_dialog.dart';
 part 'admin/status_view.dart';
 part 'admin/user_screen.dart';
@@ -455,3 +455,7 @@ class _Badge extends StatelessWidget {
     );
   }
 }
+
+String _devices(int n) => tr.adminDeviceCount(n);
+
+String _ago(DateTime t, {bool suffix = true}) => agoText(t, suffix: suffix);

@@ -50,6 +50,22 @@ void main() {
         utf8.decode(gzip.decode(await packed.read().expand((b) => b).toList())),
         'main();',
       );
+      // With a Brotli copy (from the Docker build) that one wins.
+      File('${web.path}/main.dart.js.br').writeAsBytesSync([1, 2, 3]);
+      Future<Response> asking(String encodings) async => app.handler(
+        Request(
+          'GET',
+          Uri.parse('http://famio.local/app/main.dart.js'),
+          headers: {'accept-encoding': encodings},
+        ),
+      );
+      final brotli = await asking('gzip, deflate, br');
+      expect(brotli.headers['content-encoding'], 'br');
+      expect(await brotli.read().expand((b) => b).toList(), [1, 2, 3]);
+      expect((await asking('gzip')).headers['content-encoding'], 'gzip');
+      // "br;q=0" style values name the encoding before the semicolon.
+      expect((await asking('br;q=1.0')).headers['content-encoding'], 'br');
+      File('${web.path}/main.dart.js.br').deleteSync();
       final viaHomeAssistant = await app.handler(
         Request(
           'GET',
