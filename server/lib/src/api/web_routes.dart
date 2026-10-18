@@ -2,6 +2,64 @@ part of '../api.dart';
 
 /// Start page, web app, Home Assistant panel and the WebSocket.
 extension _WebRoutes on FamioApi {
+  /// A recipe page for the web app: browsers may not read other sites
+  /// (CORS), and the web app's content policy only lets it talk to a few
+  /// hosts. HTTPS only, never into a private network (also not through a
+  /// redirect), HTML only, at most [_maxPage].
+  Future<Response> _webPage(Request request) async {
+    _member(request);
+    final body = await _body(request);
+    var uri = Uri.tryParse(body['url'] as String? ?? '');
+    if (uri == null || !uri.hasAuthority) {
+      throw ApiException.badRequest('invalid_url', t('Ungültige Adresse'));
+    }
+    final client = selfCheckClient ?? http.Client();
+    for (var hop = 0; hop < 5; hop++) {
+      await const RemoteUrlPolicy().check(uri!);
+      final response = await client
+          .send(
+            http.Request('GET', uri)
+              ..followRedirects = false
+              ..headers['user-agent'] = 'Mozilla/5.0 (Famio Rezept-Import)',
+          )
+          .timeout(const Duration(seconds: 20));
+      final location = response.headers['location'];
+      if (response.statusCode >= 300 &&
+          response.statusCode < 400 &&
+          location != null) {
+        await response.stream.drain<void>();
+        uri = uri.resolve(location);
+        continue;
+      }
+      if (response.statusCode != 200) {
+        await response.stream.drain<void>();
+        throw ApiException(
+          502,
+          'page_unavailable',
+          t('Die Seite antwortet mit {code}.', {'code': response.statusCode}),
+        );
+      }
+      if (!(response.headers['content-type'] ?? '').contains('html')) {
+        await response.stream.drain<void>();
+        throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
+      }
+      final bytes = <int>[];
+      await for (final chunk in response.stream) {
+        bytes.addAll(chunk);
+        if (bytes.length > _maxPage) {
+          throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
+        }
+      }
+      return _json({
+        'url': uri.toString(),
+        'html': utf8.decode(bytes, allowMalformed: true),
+      });
+    }
+    throw ApiException(502, 'page_unavailable', t('Zu viele Weiterleitungen.'));
+  }
+
+  static const _maxPage = 3 * 1024 * 1024;
+
   Response _health(Request request) => _json({
     'name': 'famio',
     'version': serverVersion,

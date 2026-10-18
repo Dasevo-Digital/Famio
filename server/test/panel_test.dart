@@ -29,7 +29,12 @@ void main() {
       final index = await get('/app/');
       expect(index.statusCode, 200);
       expect(await index.readAsString(), contains('Famio'));
-      expect(index.headers['content-security-policy'], WebApp.policy);
+      // Only a few hosts besides this server: OpenStreetMap by default.
+      final csp = index.headers['content-security-policy']!;
+      expect(csp, WebApp.policyFor());
+      final connect = RegExp(r'connect-src ([^;]*)').firstMatch(csp)![1]!;
+      expect(connect.split(' '), isNot(contains('https:')));
+      expect(connect, contains('https://tile.openstreetmap.org'));
       expect(index.headers['cache-control'], 'no-cache');
       expect(index.headers['etag'], isNotNull);
       final js = await get('/app/main.dart.js');

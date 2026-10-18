@@ -608,6 +608,18 @@ class FamioApiClient {
 
   /// Reads a calendar file (`.ics`) on the server without saving anything:
   /// the events to show, and what cannot be taken over.
+  /// A web page read by the server (the web app may not fetch other sites
+  /// itself): its final address and HTML.
+  Future<({Uri url, String html})> fetchWebPage(Uri url) async {
+    final page = await _send('POST', 'api/web/page', {
+      'url': url.toString(),
+    }, const Duration(seconds: 60));
+    return (
+      url: Uri.parse(page['url'] as String? ?? url.toString()),
+      html: page['html'] as String? ?? '',
+    );
+  }
+
   Future<IcsFilePreview> readIcsFile(String ics) async =>
       IcsFilePreview.fromJson(
         await _send('POST', 'api/calendar/ics-file', {

@@ -32,6 +32,7 @@ import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
 import 'dav/google_oauth.dart';
 import 'files/file_store.dart';
+import 'remote_url_policy.dart';
 import 'security.dart';
 import 'settings.dart';
 import 'family/repeating_tasks.dart';
@@ -332,6 +333,7 @@ class FamioApi {
       ..delete('/api/calendar/feeds/<id>', _deleteFeed)
       ..post('/api/calendar/subscriptions/<id>/refresh', _refreshSubscription)
       ..post('/api/calendar/ics-file', _icsFile)
+      ..post('/api/web/page', _webPage)
       ..post('/api/calendar/caldav/discover', _caldavDiscover)
       ..post('/api/calendar/google/connect', _googleConnect)
       ..get('/api/calendar/caldav', _caldavAccounts)
@@ -634,7 +636,13 @@ class FamioApi {
         // Only Home Assistant (same origin through ingress) may embed it.
         if (response.mimeType == 'text/html')
           'content-security-policy': path == 'app' || path.startsWith('app/')
-              ? WebApp.policy
+              ? WebApp.policyFor(
+                  tileUrl:
+                      settings.effective.mapProvider ==
+                          MapTileProvider.openStreetMap
+                      ? null
+                      : settings.effective.mapTileUrl,
+                )
               : landingPagePolicy,
         'permissions-policy': 'camera=(), microphone=(), geolocation=()',
         if (https) 'strict-transport-security': 'max-age=31536000',

@@ -30,9 +30,45 @@ class WebApp {
   }
 
   /// Content-Security-Policy of the web app. Flutter needs WebAssembly
-  /// (CanvasKit) and inline styles; map tiles and the weather come from
-  /// other HTTPS servers. Fonts only from this server (see
-  /// [FallbackFonts]).
+  /// (CanvasKit) and inline styles. Fonts only from this server (see
+  /// [FallbackFonts]). Besides this server the web app talks only to the
+  /// weather (Open-Meteo), Open Food Facts, GitHub's release list (version
+  /// check) and the map tiles: [tileUrl], the admins' tile server, or
+  /// OpenStreetMap. Should a flaw ever let foreign script run, it could not
+  /// send data anywhere else.
+  static String policyFor({String? tileUrl}) =>
+      "default-src 'self'; "
+      "script-src 'self' 'wasm-unsafe-eval'; "
+      "style-src 'self' 'unsafe-inline'; "
+      "img-src 'self' data: blob: https:; "
+      "font-src 'self' data:; "
+      "connect-src 'self' https://api.open-meteo.com "
+      'https://world.openfoodfacts.org https://api.github.com '
+      '${_origin(tileUrl ?? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png')}; '
+      "worker-src 'self' blob:; "
+      "object-src 'none'; base-uri 'self'; "
+      "frame-ancestors 'self'";
+
+  /// The origin of a tile address template; a placeholder in the host
+  /// (`https://{s}.tile.example.org/…`) becomes a wildcard.
+  static String _origin(String template) {
+    final at = template.indexOf('://');
+    if (at < 0) return '';
+    final rest = template.substring(at + 3);
+    final end = rest.indexOf('/');
+    var host = end < 0 ? rest : rest.substring(0, end);
+    if (host.contains('{')) {
+      final dot = host.indexOf('}.');
+      host = dot < 0 ? '' : '*.${host.substring(dot + 2)}';
+    }
+    if (host.isEmpty || !RegExp(r'^[A-Za-z0-9.*:-]+$').hasMatch(host)) {
+      return '';
+    }
+    return '${template.substring(0, at)}://$host';
+  }
+
+  /// For the Home Assistant panel connected to another Famio server: it
+  /// does not know that server's map tiles, so any HTTPS host is allowed.
   static const policy =
       "default-src 'self'; "
       "script-src 'self' 'wasm-unsafe-eval'; "

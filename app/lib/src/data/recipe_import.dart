@@ -24,12 +24,19 @@ Recipe? recipeFromHtml(String html, {required String id, String source = ''}) {
   return null;
 }
 
-/// Downloads [url] and reads its recipe.
+/// Downloads [url] and reads its recipe. The web app asks [api] to fetch
+/// it: browsers may not read other sites, and its content policy only lets
+/// it talk to a few hosts.
 Future<Recipe?> importRecipe(
   Uri url, {
   required String id,
   http.Client? client,
+  FamioApiClient? api,
 }) async {
+  if (api != null) {
+    final page = await api.fetchWebPage(url);
+    return recipeFromHtml(page.html, id: id, source: page.url.toString());
+  }
   final c = client ?? http.Client();
   try {
     final response = await c

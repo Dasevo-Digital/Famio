@@ -1038,6 +1038,11 @@ const sharedEn = <String, String>{
   "Server|{name} ist unterwegs nach {place}, ca. {time} da":
       "{name} is on the way to {place}, there at about {time}",
   "Server|Jemand ist unterwegs": "Someone is on the way",
+  "Server|Ungültige Adresse": "Invalid address",
+  "Server|Die Seite antwortet mit {code}.": "The page answers with {code}.",
+  "Server|Das ist keine Webseite.": "That is not a web page.",
+  "Server|Die Seite ist zu groß.": "The page is too large.",
+  "Server|Zu viele Weiterleitungen.": "Too many redirects.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
       "Signed in on: {device}. Not you? Sign it out under Settings → My devices and change your password.",

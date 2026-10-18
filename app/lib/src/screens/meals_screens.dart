@@ -1,4 +1,5 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -933,7 +934,11 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     try {
-      final r = await importRecipe(uri, id: _id);
+      final r = await importRecipe(
+        uri,
+        id: _id,
+        api: kIsWeb ? AppScope.read(context).engine!.api : null,
+      );
       if (r == null) {
         messenger.showSnackBar(
           SnackBar(content: Text(tr.mealsNoRecipeWasFound)),
