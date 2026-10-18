@@ -42,6 +42,7 @@ import 'remote_url_policy.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
 import 'updates/app_updates.dart';
+import 'updates/update_notices.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
 class FamioServerApp {
@@ -364,7 +365,14 @@ class FamioServerApp {
   void startBackgroundJobs() {
     importer.start();
     paperBuddy.start();
-    appUpdates.start();
+    appUpdates
+      ..onReady = UpdateNotices(
+        db: db,
+        accounts: accounts,
+        push: push,
+        version: serverVersion,
+      ).announce
+      ..start();
     caldav.start();
     lists.start();
     exports.cleanUp();

@@ -1032,6 +1032,9 @@ const sharedEn = <String, String>{
   "Server|Einkauf bei {place}": "Shopping at {place}",
   "Server|{count} offen: {items}": "{count} open: {items}",
   "Server|Offene Einkäufe": "Open shopping items",
+  "Server|Famio {version} ist da": "Famio {version} is here",
+  "Server|Auf einem deiner Geräte läuft noch eine ältere Famio-Version. Famio dort öffnen und auf der Startseite „Aktualisieren“ antippen.":
+      "One of your devices still runs an older Famio version. Open Famio there and tap “Update” on the home screen.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
       "Signed in on: {device}. Not you? Sign it out under Settings → My devices and change your password.",

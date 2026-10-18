@@ -1063,6 +1063,9 @@ const sharedEs = <String, String>{
   "Server|Einkauf bei {place}": "Compra en {place}",
   "Server|{count} offen: {items}": "{count} pendientes: {items}",
   "Server|Offene Einkäufe": "Compras pendientes",
+  "Server|Famio {version} ist da": "Ya está aquí Famio {version}",
+  "Server|Auf einem deiner Geräte läuft noch eine ältere Famio-Version. Famio dort öffnen und auf der Startseite „Aktualisieren“ antippen.":
+      "En uno de tus dispositivos todavía funciona una versión anterior de Famio. Abre Famio allí y toca «Actualizar» en la página de inicio.",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
       "Sesión iniciada en: {device}. ¿No fuiste tú? Ciérrala en Ajustes → Mis dispositivos y cambia la contraseña.",

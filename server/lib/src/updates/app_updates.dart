@@ -80,6 +80,10 @@ class AppUpdates {
 
   /// For the server log; failures are also shown in the admin screen.
   final void Function(String line)? onError;
+
+  /// Every package of the release is here (at start or after fetching):
+  /// the platforms there are packages for.
+  void Function(Set<AppPlatform> available)? onReady;
   final http.Client _http;
   Timer? _timer;
   Timer? _soon;
@@ -103,7 +107,13 @@ class AppUpdates {
       if (enabled && !_complete) unawaited(prepare());
     });
     if (enabled && !_complete) unawaited(prepare());
+    if (enabled && _complete) _ready();
   }
+
+  void _ready() => onReady?.call({
+    for (final platform in AppPlatform.values)
+      if (package(platform) != null) platform,
+  });
 
   void stop() {
     _timer?.cancel();
@@ -223,6 +233,7 @@ class AppUpdates {
       }
       _put(_statusKey, {'checkedAt': checkedAt});
       _failures = 0;
+      if (_complete) _ready();
     } on Exception catch (e) {
       final message = e is _Failure ? e.message : '$e';
       _put(_statusKey, {'checkedAt': checkedAt, 'error': message});

@@ -275,6 +275,17 @@ class Accounts {
   ];
 
   /// Device names of each member's signed-in apps ("ios (Lenas-iPhone)"),
+  /// The app version each active device reports (`<version> <os>`), as
+  /// (member, version) pairs; devices that never sent one are left out.
+  List<(String, String)> appVersions() => [
+    for (final row in _db.select(
+      'SELECT user_id, app_version FROM sessions'
+      ' WHERE scope IS NULL AND app_version IS NOT NULL AND last_seen > ?',
+      [_idleCutoff],
+    ))
+      (row['user_id'] as String, row['app_version'] as String),
+  ];
+
   /// without the narrow sessions for notifications or locations.
   Map<String, List<String>> appDevices() {
     final devices = <String, List<String>>{};

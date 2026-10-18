@@ -612,6 +612,9 @@ und Barcode-Erkennung beim ersten Gebrauch einmal über die Google-Play-Dienste
 eingebaut. Handys ohne Play-Dienste und alle, die unter Einstellungen →
 „Erkennung ohne Google Play“ einschalten, bekommen das Paket für alle Handys
 (gebaut mit `-P famioArm64=true`, siehe `app/android/app/build.gradle.kts`).
+Hat der Server alle Pakete seiner Version, bekommt jedes Mitglied, auf dessen
+Android-, Windows- oder Linux-Gerät noch eine ältere App läuft, einmal die
+Mitteilung „Famio X ist da“ (der Server merkt sich, wem er es gesagt hat).
 Vorher fragt der Server nirgends
 nach. Die Apps zeigen dann auf der Startseite „Famio X ist da“, laden das Paket
 vom eigenen Server und installieren es: Android nach einer Bestätigung (beim
