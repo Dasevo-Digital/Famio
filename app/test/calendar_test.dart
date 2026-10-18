@@ -85,12 +85,8 @@ void main() {
       CalendarEvent(
         id: 'series',
         title: 'Training',
-        start: today
-            .subtract(const Duration(days: 7))
-            .add(const Duration(hours: 17)),
-        end: today
-            .subtract(const Duration(days: 7))
-            .add(const Duration(hours: 18)),
+        start: DateTime(today.year, today.month, today.day - 7, 17),
+        end: DateTime(today.year, today.month, today.day - 7, 18),
         recurrence: const Recurrence(RecurrenceFrequency.weekly),
       ),
     );
@@ -111,12 +107,15 @@ void main() {
 
     final series = engine.event('series')!;
     expect(series.exceptions, {today});
-    final nextWeek = today.add(const Duration(days: 7));
+    // Calendar days: across the clock change a week is not 7 × 24 hours.
     expect(
       series
-          .occurrencesBetween(today, nextWeek.add(const Duration(days: 1)))
+          .occurrencesBetween(
+            today,
+            DateTime(today.year, today.month, today.day + 8),
+          )
           .map((o) => o.start),
-      [nextWeek.add(const Duration(hours: 17))],
+      [DateTime(today.year, today.month, today.day + 7, 17)],
     );
     await tester.pump(const Duration(seconds: 1));
   });

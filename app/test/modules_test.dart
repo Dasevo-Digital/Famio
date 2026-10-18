@@ -365,6 +365,13 @@ void main() {
     };
     expect(items, {'Mehl': '375 g', 'Eier': '4,5'});
 
+    // On a Sunday the meal is the last row, under the snack bar and the
+    // tip card: both go first.
+    ScaffoldMessenger.of(
+      tester.element(find.text('Pfannkuchen')),
+    ).hideCurrentSnackBar();
+    await tester.tap(find.text('Verstanden'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Pfannkuchen'));
     await tester.pumpAndSettle();
     expect(find.text('375 g'), findsOneWidget);
