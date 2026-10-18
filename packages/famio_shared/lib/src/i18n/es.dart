@@ -1060,6 +1060,9 @@ const sharedEs = <String, String>{
   "Server|Anhang": "Archivo adjunto",
   "Server|{name} · Familie": "{name} · Familia",
   "Server|Neue Nachricht": "Mensaje nuevo",
+  "Server|Einkauf bei {place}": "Compra en {place}",
+  "Server|{count} offen: {items}": "{count} pendientes: {items}",
+  "Server|Offene Einkäufe": "Compras pendientes",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
       "Sesión iniciada en: {device}. ¿No fuiste tú? Ciérrala en Ajustes → Mis dispositivos y cambia la contraseña.",

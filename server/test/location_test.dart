@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/push/push_service.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf_io.dart' as io;
@@ -131,6 +132,84 @@ void main() {
     await server.close(force: true);
     await app.close();
   });
+
+  test(
+    'arriving at a shop tells only that member what is still open',
+    () async {
+      const shop = (53.5650, 9.9850);
+      SyncRecord rec(String c, String id, Map<String, Object?> data) =>
+          SyncRecord(collection: c, id: id, data: data, updatedAt: 1);
+      await ok('POST', 'api/sync', parentToken, {
+        'since': 0,
+        'changes': [
+          rec(
+            Collections.places,
+            'shop',
+            const Place(
+              id: 'shop',
+              name: 'Markt',
+              latitude: 53.5650,
+              longitude: 9.9850,
+              shop: true,
+            ).toData(),
+          ),
+          rec(
+            Collections.shoppingLists,
+            'l1',
+            const ShoppingList(id: 'l1', name: 'Einkauf').toData(),
+          ),
+          rec(
+            Collections.shoppingLists,
+            'p1',
+            const ShoppingList(
+              id: 'p1',
+              name: 'Urlaub',
+              packing: true,
+            ).toData(),
+          ),
+          for (final (id, list, name, checked) in [
+            ('i1', 'l1', 'Milch', false),
+            ('i2', 'l1', 'Brot', true),
+            ('i3', 'l1', 'Eier', false),
+            ('i4', 'p1', 'Zahnbürste', false),
+          ])
+            rec(
+              Collections.shoppingItems,
+              id,
+              ShoppingItem(
+                id: id,
+                listId: list,
+                name: name,
+                checked: checked,
+              ).toData(),
+            ),
+        ].map((r) => r.toJson()).toList(),
+      });
+      final told = <(List<String>, PushNotice)>[];
+      app.push.onNotice = (ids, notice, _) => told.add((ids, notice));
+      final t0 = DateTime.now().toUtc().subtract(const Duration(minutes: 30));
+      await ok('POST', 'api/location/report', kidToken, {
+        'fixes': [fix(home, t0), fix(shop, t0.add(const Duration(minutes: 5)))],
+      });
+      final shopping = [
+        for (final (ids, n) in told)
+          if (n.tag == 'shopping_cart') (ids, n),
+      ];
+      expect(shopping, hasLength(1));
+      expect(shopping.single.$1, [kidId]);
+      expect(shopping.single.$2.title, 'Einkauf bei Markt');
+      expect(shopping.single.$2.body, '2 offen: Milch, Eier');
+
+      // Out and back in soon after: quiet.
+      await ok('POST', 'api/location/report', kidToken, {
+        'fixes': [
+          fix(home, t0.add(const Duration(minutes: 10))),
+          fix(shop, t0.add(const Duration(minutes: 15))),
+        ],
+      });
+      expect(told.where((t) => t.$2.tag == 'shopping_cart'), hasLength(1));
+    },
+  );
 
   test('positions update the family view and trigger place notices', () async {
     final t0 = DateTime.now().toUtc().subtract(const Duration(minutes: 30));

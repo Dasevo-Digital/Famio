@@ -33,6 +33,9 @@ class LocationService {
 
   /// Called after records changed, e.g. to notify connected apps.
   final void Function() onChanged;
+
+  /// A member arrived at a place marked as a shop (see [Place.shop]).
+  void Function(String memberId, Place place)? onShopArrival;
   final DateTime Function() _clock;
   final Duration Function() _retention;
 
@@ -293,6 +296,12 @@ class LocationService {
       ),
     );
     final notified = _sendAlerts(member.id, alerts);
+    for (final a in alerts) {
+      final place = places[a.placeId];
+      if (a.arrived && place != null && place.shop) {
+        onShopArrival?.call(member.id, place);
+      }
+    }
     if (changed || notified) onChanged();
     return LocationReportResult(
       paused: false,

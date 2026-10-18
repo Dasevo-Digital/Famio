@@ -190,6 +190,7 @@ class FamioServerApp {
             onError: auditLog,
           );
     push.onNotice = notices.add;
+    locations.onShopArrival = push.shopArrival;
     records
       ..onStored = push.stored
       ..onServerStored = push.serverStored;

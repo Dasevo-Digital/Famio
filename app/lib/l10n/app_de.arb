@@ -5908,5 +5908,7 @@
       }
     }
   },
-  "pushDayPreviewTime": "Uhrzeit ändern"
+  "pushDayPreviewTime": "Uhrzeit ändern",
+  "placesShop": "Geschäft",
+  "placesShopHint": "Wer hier ankommt, bekommt die offenen Artikel der Einkaufslisten – nur für sich und höchstens alle 3 Stunden. Klappt bei allen, die ihren Standort teilen."
 }

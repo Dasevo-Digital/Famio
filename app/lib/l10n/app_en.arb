@@ -2299,5 +2299,7 @@
   "dayPreviewRain": "rain {p}%",
   "pushDayPreview": "Daily overview",
   "pushDayPreviewSubtitle": "Every morning at {time}: your appointments, tasks due, bins, birthdays, meals and weather",
-  "pushDayPreviewTime": "Change time"
+  "pushDayPreviewTime": "Change time",
+  "placesShop": "Shop",
+  "placesShopHint": "Whoever arrives here gets the open items of the shopping lists – only for themselves and at most every 3 hours. Works for everyone who shares their location."
 }

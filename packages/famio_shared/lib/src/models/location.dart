@@ -14,6 +14,7 @@ class Place {
     required this.longitude,
     this.radius = defaultRadius,
     this.notifyMemberIds = const [],
+    this.shop = false,
   });
 
   factory Place.fromRecord(SyncRecord r) => Place(
@@ -29,6 +30,7 @@ class Place {
       for (final m in r.data['notifyMemberIds'] as List? ?? const [])
         m as String,
     ],
+    shop: r.data['shop'] as bool? ?? false,
   );
 
   static const defaultRadius = 150.0;
@@ -46,12 +48,16 @@ class Place {
   /// Members who want a notification when someone arrives or leaves.
   final List<String> notifyMemberIds;
 
+  /// A shop: whoever arrives here hears of the open shopping items.
+  final bool shop;
+
   Place copyWith({
     String? name,
     double? latitude,
     double? longitude,
     double? radius,
     List<String>? notifyMemberIds,
+    bool? shop,
   }) => Place(
     id: id,
     name: name ?? this.name,
@@ -59,6 +65,7 @@ class Place {
     longitude: longitude ?? this.longitude,
     radius: radius ?? this.radius,
     notifyMemberIds: notifyMemberIds ?? this.notifyMemberIds,
+    shop: shop ?? this.shop,
   );
 
   Map<String, Object?> toData() => {
@@ -67,6 +74,7 @@ class Place {
     'longitude': longitude,
     'radius': radius,
     'notifyMemberIds': notifyMemberIds,
+    if (shop) 'shop': true,
   };
 }
 

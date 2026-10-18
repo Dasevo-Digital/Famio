@@ -2299,5 +2299,7 @@
   "dayPreviewRain": "lluvia {p} %",
   "pushDayPreview": "Resumen del día",
   "pushDayPreviewSubtitle": "Cada mañana a las {time}: tus citas, tareas pendientes, basura, cumpleaños, comidas y tiempo",
-  "pushDayPreviewTime": "Cambiar hora"
+  "pushDayPreviewTime": "Cambiar hora",
+  "placesShop": "Tienda",
+  "placesShopHint": "Quien llega aquí recibe los artículos pendientes de las listas de la compra, solo para sí y como mucho cada 3 horas. Funciona para quien comparte su ubicación."
 }

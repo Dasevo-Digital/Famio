@@ -256,6 +256,55 @@ class PushService {
     }
   }
 
+  /// Whom Famio told about the shopping when: `member|place` → time.
+  final _shopNoticed = <String, DateTime>{};
+
+  /// Once in a while is enough: a second visit within this time (popping
+  /// back in, GPS leaving and entering again) stays quiet.
+  static const shopQuiet = Duration(hours: 3);
+
+  /// [memberId] arrived at a shop: tells only them what is still open on
+  /// the shopping lists they can see (not on packing lists).
+  void shopArrival(String memberId, Place place, {DateTime? now}) {
+    final at = now ?? DateTime.now();
+    final key = '$memberId|${place.id}';
+    final last = _shopNoticed[key];
+    if (last != null && at.difference(last) < shopQuiet) return;
+    final lists = {
+      for (final r in records.all(
+        Collections.shoppingLists,
+        visibleToMember: memberId,
+      ))
+        if (!ShoppingList.fromRecord(r).packing) r.id,
+    };
+    final open = [
+      for (final r in records.all(
+        Collections.shoppingItems,
+        visibleToMember: memberId,
+      ))
+        if (ShoppingItem.fromRecord(r) case final i
+            when !i.checked && lists.contains(i.listId) && i.name.isNotEmpty)
+          i.name,
+    ];
+    if (open.isEmpty) return;
+    _shopNoticed[key] = at;
+    final shown = [...open.take(6), if (open.length > 6) '…'].join(', ');
+    deliver(
+      () => PushNotice(
+        to: {memberId},
+        title: t('Einkauf bei {place}', {'place': place.name}),
+        body: t('{count} offen: {items}', {
+          'count': open.length,
+          'items': shown,
+        }),
+        brief: t('Offene Einkäufe'),
+        tag: 'shopping_cart',
+        place: true,
+      ),
+      null,
+    );
+  }
+
   /// Records the server wrote itself (arrival notices).
   void serverStored(Iterable<SyncRecord> changes) {
     final names = {for (final m in accounts.members()) m.id: m.displayName};

@@ -48,6 +48,12 @@ class PlacesScreen extends StatelessWidget {
                     size: 40,
                   ),
                   title: Text(p.name),
+                  trailing: p.shop
+                      ? Tooltip(
+                          message: tr.placesShop,
+                          child: const Icon(AppIcons.basket),
+                        )
+                      : null,
                   subtitle: Text(
                     tr.placesRadiusMRadiusNotify(
                       p.radius.round(),
@@ -88,6 +94,7 @@ class _PlaceEditorState extends State<PlaceEditor> {
   LatLng? _center;
   late double _radius = widget.place?.radius ?? Place.defaultRadius;
   late bool _notify;
+  late bool _shop = widget.place?.shop ?? false;
   final _map = MapController();
 
   @override
@@ -139,6 +146,7 @@ class _PlaceEditorState extends State<PlaceEditor> {
         longitude: center.longitude,
         radius: _radius,
         notifyMemberIds: notify.toList(),
+        shop: _shop,
       ),
     );
     Navigator.pop(context);
@@ -255,6 +263,15 @@ class _PlaceEditorState extends State<PlaceEditor> {
             subtitle: Text(tr.placesWhenSomeoneArrivesLeaves),
             value: _notify,
             onChanged: (v) => setState(() => _notify = v),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(AppIcons.basket),
+            title: Text(tr.placesShop),
+            subtitle: Text(tr.placesShopHint),
+            isThreeLine: true,
+            value: _shop,
+            onChanged: (v) => setState(() => _shop = v),
           ),
           if (widget.place != null) ...[
             const SizedBox(height: 16),
