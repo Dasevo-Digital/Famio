@@ -2334,5 +2334,16 @@
   "vacationNone": "No hay vacaciones.",
   "vacationBanner": "Vacaciones hasta el {date}: tareas, rutinas y avisos de basura en pausa.",
   "vacationOnlyAdults": "Las vacaciones las añaden los adultos.",
-  "deferredRetry": "No se pudo cargar: volver a intentarlo"
+  "deferredRetry": "No se pudo cargar: volver a intentarlo",
+  "freeTimeTitle": "¿Cuándo tienen todos tiempo?",
+  "freeTimeSubtitle": "Huecos libres en los próximos 14 días",
+  "freeTimeWho": "¿Quién?",
+  "freeTimeHowLong": "¿Cuánto tiempo?",
+  "freeTimeWhen": "¿En qué momento del día?",
+  "freeTimeMorning": "Por la mañana",
+  "freeTimeDay": "Durante el día",
+  "freeTimeEvening": "Por la tarde-noche",
+  "freeTimeNone": "No hay tiempo en común. Prueba algo más corto u otro momento del día.",
+  "freeTimeHint": "Las entradas de todo el día, como cumpleaños o vacaciones escolares, no cuentan como ocupadas. Toca una para crear una cita.",
+  "freeTimeHours": "{h} h"
 }

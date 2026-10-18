@@ -16,6 +16,7 @@ import 'calendar_connect_screen.dart';
 import 'event_editor.dart';
 import 'event_import_screen.dart';
 import '../l10n.dart';
+import 'free_time_screen.dart';
 
 /// Month grid plus the agenda of the selected day; side by side when wide.
 class CalendarScreen extends StatefulWidget {
@@ -57,6 +58,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
           tooltip: tr.calendarRecognizeEventsPhotoText,
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const EventImportScreen()),
+          ),
+        ),
+        BubbleButton(
+          icon: AppIcons.calendarSearch,
+          tooltip: tr.freeTimeTitle,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const FreeTimeScreen()),
           ),
         ),
         BubbleButton(

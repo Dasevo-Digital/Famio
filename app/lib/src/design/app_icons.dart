@@ -475,6 +475,9 @@ abstract final class AppIcons {
   /// Lucide `tree-palm`.
   static const IconData palm = IconData(0xe281, fontFamily: _font);
 
+  /// Lucide `calendar-search`.
+  static const IconData calendarSearch = IconData(0xe306, fontFamily: _font);
+
   /// Lucide `chef-hat`.
   static const IconData chefHat = IconData(0xe2ac, fontFamily: _font);
 

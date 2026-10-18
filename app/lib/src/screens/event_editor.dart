@@ -16,15 +16,26 @@ import '../l10n.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
 /// [occurrence] (which may be one appearance of a series).
+/// [start], [end] and [memberIds] prefill a new appointment (e.g. a free
+/// time found for several people).
 Future<void> showEventEditor(
   BuildContext context, {
   DateTime? day,
   Occurrence? occurrence,
+  DateTime? start,
+  DateTime? end,
+  Set<String>? memberIds,
 }) {
   return Navigator.of(context).push(
     MaterialPageRoute<void>(
       fullscreenDialog: true,
-      builder: (_) => _EventEditor(day: day, occurrence: occurrence),
+      builder: (_) => _EventEditor(
+        day: day,
+        occurrence: occurrence,
+        start: start,
+        end: end,
+        memberIds: memberIds,
+      ),
     ),
   );
 }
@@ -85,10 +96,19 @@ Map<int, String> get _allDayReminders => {
 enum _Scope { this_, all }
 
 class _EventEditor extends StatefulWidget {
-  const _EventEditor({this.day, this.occurrence});
+  const _EventEditor({
+    this.day,
+    this.occurrence,
+    this.start,
+    this.end,
+    this.memberIds,
+  });
 
   final DateTime? day;
   final Occurrence? occurrence;
+  final DateTime? start;
+  final DateTime? end;
+  final Set<String>? memberIds;
 
   @override
   State<_EventEditor> createState() => _EventEditorState();
@@ -142,10 +162,10 @@ class _EventEditorState extends State<_EventEditor> {
           ? (now.hour + 1).clamp(0, 23)
           : 9;
       _allDay = false;
-      _start = DateTime(day.year, day.month, day.day, hour);
-      _end = _start.add(const Duration(hours: 1));
+      _start = widget.start ?? DateTime(day.year, day.month, day.day, hour);
+      _end = widget.end ?? _start.add(const Duration(hours: 1));
       _repeat = _Repeat.none;
-      _memberIds = {};
+      _memberIds = {...?widget.memberIds};
       _reminder = 15;
     }
   }

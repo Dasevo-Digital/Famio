@@ -5,6 +5,7 @@ import 'package:famio/src/screens/calendar_connect_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -117,6 +118,35 @@ void main() {
           .map((o) => o.start),
       [DateTime(today.year, today.month, today.day + 7, 17)],
     );
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('free times skip my appointments and open the editor', (
+    tester,
+  ) async {
+    await openCalendar(tester);
+    final now = DateTime.now();
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    engine.saveEvent(
+      CalendarEvent(
+        id: 'busy',
+        title: 'Zahnarzt',
+        start: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 8),
+        end: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 19),
+        memberIds: const ['m1'],
+      ),
+    );
+    await pumpData(tester);
+    await tester.tap(find.byTooltip('Wann haben alle Zeit?'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wann haben alle Zeit?'), findsOneWidget);
+    // Tomorrow only 19:00–20:00 is left for an hour.
+    final heading = DateFormat.MMMMEEEEd('de').format(tomorrow);
+    await tester.scrollUntilVisible(find.text(heading), 300);
+    expect(find.text('19:00 – 20:00'), findsOneWidget);
+    await tester.tap(find.text('19:00 – 20:00'));
+    await tester.pumpAndSettle();
+    expect(find.text('Neuer Termin'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
 

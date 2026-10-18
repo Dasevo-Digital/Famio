@@ -5974,5 +5974,23 @@
     }
   },
   "vacationOnlyAdults": "Urlaub tragen Erwachsene ein.",
-  "deferredRetry": "Konnte nicht geladen werden – nochmal versuchen"
+  "deferredRetry": "Konnte nicht geladen werden – nochmal versuchen",
+  "freeTimeTitle": "Wann haben alle Zeit?",
+  "freeTimeSubtitle": "Freie Zeiten in den nächsten 14 Tagen",
+  "freeTimeWho": "Wer?",
+  "freeTimeHowLong": "Wie lange?",
+  "freeTimeWhen": "Wann am Tag?",
+  "freeTimeMorning": "Vormittags",
+  "freeTimeDay": "Tagsüber",
+  "freeTimeEvening": "Abends",
+  "freeTimeNone": "Keine gemeinsame Zeit gefunden. Kürzer oder zu einer anderen Tageszeit probieren.",
+  "freeTimeHint": "Ganztägige Einträge wie Geburtstage oder Ferien zählen nicht als belegt. Antippen legt einen Termin an.",
+  "freeTimeHours": "{h} Std.",
+  "@freeTimeHours": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      }
+    }
+  }
 }

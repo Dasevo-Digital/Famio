@@ -2334,5 +2334,16 @@
   "vacationNone": "No holiday added.",
   "vacationBanner": "Holiday until {date}: chores, routines and bin reminders are paused.",
   "vacationOnlyAdults": "Adults add holidays.",
-  "deferredRetry": "Could not be loaded – try again"
+  "deferredRetry": "Could not be loaded – try again",
+  "freeTimeTitle": "When is everyone free?",
+  "freeTimeSubtitle": "Free times in the next 14 days",
+  "freeTimeWho": "Who?",
+  "freeTimeHowLong": "How long?",
+  "freeTimeWhen": "When in the day?",
+  "freeTimeMorning": "Mornings",
+  "freeTimeDay": "During the day",
+  "freeTimeEvening": "Evenings",
+  "freeTimeNone": "No common time found. Try a shorter one or another time of day.",
+  "freeTimeHint": "All-day entries such as birthdays or school holidays do not count as busy. Tap one to create an appointment.",
+  "freeTimeHours": "{h} h"
 }
