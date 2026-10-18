@@ -46,7 +46,6 @@ dependencies:
   open_filex: ^4.7.0
   mime: ^2.1.0
   url_launcher: ^6.3.2
-  lucide_icons_flutter: ^3.1.20
   flutter_secure_storage: ^11.2.0
   flutter_map: ^8.3.2
   latlong2: ^0.10.1
@@ -95,6 +94,10 @@ flutter:
           weight: 500
         - asset: assets/fonts/Fredoka-600.ttf
           weight: 600
+    # Icons (see lib/src/design/app_icons.dart).
+    - family: Lucide
+      fonts:
+        - asset: assets/fonts/Lucide.ttf
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
@@ -105,6 +108,10 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
+    # Licenses of the bundled fonts (license page).
+    - assets/fonts/LICENSE-Lucide.txt
+    - assets/fonts/OFL-Nunito.txt
+    - assets/fonts/OFL-Fredoka.txt
     # Shown as "Was ist neu?" after an update.
     - CHANGELOG.md
     - CHANGELOG.en.md

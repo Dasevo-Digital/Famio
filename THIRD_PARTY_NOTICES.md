@@ -8,6 +8,8 @@ Flutter-App werden zusätzlich in Flutters Lizenzübersicht angezeigt.
 
 - Fredoka — OFL-1.1; vollständiger Text: `app/assets/fonts/OFL-Fredoka.txt`
 - Nunito — OFL-1.1; vollständiger Text: `app/assets/fonts/OFL-Nunito.txt`
+- Lucide (Symbole) — ISC, aus dem Paket lucide_icons_flutter (MIT);
+  vollständiger Text: `app/assets/fonts/LICENSE-Lucide.txt`
 
 ## Daten und optionale Dienste
 
