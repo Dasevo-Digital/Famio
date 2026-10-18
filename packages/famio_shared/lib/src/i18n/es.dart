@@ -9,6 +9,7 @@ const sharedEs = <String, String>{
   "ServiceAccess.everyday": "Marcar y compras",
   "ServiceAccess.readOnly": "Solo lectura",
   "TwoFactorPolicy.admins": "Administradores",
+  "TwoFactorPolicy.adults": "Todos los adultos",
   "TwoFactorPolicy.all": "Todos los miembros",
   "GermanState.bw": "Baden-Wurtemberg",
   "GermanState.by": "Baviera",
@@ -967,8 +968,8 @@ const sharedEs = <String, String>{
   "Server|Ausblendbar sind: {names}": "Se pueden ocultar: {names}",
   "Server|Bundesland als Kürzel, z. B. NW, BY oder BE":
       "Estado federado como abreviatura, p. ej. NW, BY o BE",
-  "Server|Zwei-Faktor-Pflicht: off, admins oder all":
-      "Obligación de dos pasos: off, admins o all",
+  "Server|Zwei-Faktor-Pflicht: off, admins, adults oder all":
+      "Obligación de dos pasos: off, admins, adults o all",
   "Server|Upload-Grenze: 1 bis {max} MB": "Límite de subida: de 1 a {max} MB",
   "Server|Externe Ziele brauchen eine HTTPS-Adresse ohne Zugangsdaten in der Adresse.":
       "Los destinos externos necesitan una dirección HTTPS sin credenciales en la dirección.",

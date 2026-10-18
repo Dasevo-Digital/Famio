@@ -308,6 +308,43 @@ void main() {
       expect(off['error'], 'two_factor_mandatory');
     });
 
+    test('mandatory for adults: children are not asked', () async {
+      await call(
+        base,
+        'POST',
+        'api/admin/users',
+        token: admin,
+        body: {'username': 'mia', 'password': 'kind-wolke-5', 'role': 'child'},
+      );
+      await call(
+        base,
+        'PATCH',
+        'api/admin/settings',
+        token: admin,
+        body: {'twoFactorRequired': 'adults'},
+      );
+      final papa = (await login('papa'))['token'] as String;
+      expect(
+        (await call(base, 'GET', 'api/members', token: papa))['error'],
+        'two_factor_setup_required',
+      );
+      final mia = await call(
+        base,
+        'POST',
+        'api/auth/login',
+        body: {'username': 'mia', 'password': 'kind-wolke-5'},
+      );
+      expect(
+        (await call(
+          base,
+          'GET',
+          'api/members',
+          token: mia['token'] as String,
+        ))['_status'],
+        200,
+      );
+    });
+
     test('admins can reset a lost authenticator', () async {
       await enable(admin);
       final users = await call(base, 'GET', 'api/admin/users', token: admin);

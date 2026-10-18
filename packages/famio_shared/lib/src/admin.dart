@@ -244,6 +244,9 @@ enum MapTileProvider {
 /// Members who must use two-factor login (or single sign-on).
 enum TwoFactorPolicy {
   admins('Administratoren'),
+
+  /// Admins and adults: children often have no authenticator app.
+  adults('Alle Erwachsenen'),
   all('Alle Mitglieder');
 
   const TwoFactorPolicy(this._label);
@@ -256,8 +259,11 @@ enum TwoFactorPolicy {
   static TwoFactorPolicy? parse(Object? value) =>
       values.where((p) => p.name == value).firstOrNull;
 
-  bool appliesTo(FamilyMember member) =>
-      this == all || (this == admins && member.isAdmin);
+  bool appliesTo(FamilyMember member) => switch (this) {
+    admins => member.isAdmin,
+    adults => member.isAdmin || member.isAdult,
+    all => true,
+  };
 }
 
 /// Status and configuration of the server, for admins.

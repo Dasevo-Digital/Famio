@@ -386,8 +386,9 @@ richtet jedes Mitglied eine Authenticator-App ein (QR-Code, RFC 6238, 30 s,
 Code gilt nur einmal (auch nicht innerhalb seiner 30 Sekunden erneut),
 Fehlversuche werden wie Passwörter gedrosselt. Ausschalten braucht Passwort und
 Code. In der Server-Verwaltung lässt sich die Zwei-Faktor-Anmeldung **für
-Administratoren oder alle** verlangen: Betroffene sehen dann nur die
-Einrichtung bzw. eine Code-Abfrage, bis sie erledigt ist. Administratoren können
+Administratoren, alle Erwachsenen (ohne Kinder und Gäste) oder alle**
+verlangen: Betroffene sehen dann nur die Einrichtung bzw. eine Code-Abfrage,
+bis sie erledigt ist. Administratoren können
 sie für ein Mitglied zurücksetzen (Handy verloren). CalDAV-App-Passwörter und
 die Standort-Tokens der Handys sind davon nicht betroffen. Die
 Home-Assistant-Integration fragt den Code bei der Einrichtung einmal ab und

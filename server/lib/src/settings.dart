@@ -258,7 +258,7 @@ class SettingsStore {
     if (policy == null) {
       throw ApiException.badRequest(
         'invalid_policy',
-        t('Zwei-Faktor-Pflicht: off, admins oder all'),
+        t('Zwei-Faktor-Pflicht: off, admins, adults oder all'),
       );
     }
     return policy.name;

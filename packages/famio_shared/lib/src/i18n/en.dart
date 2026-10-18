@@ -9,6 +9,7 @@ const sharedEn = <String, String>{
   "ServiceAccess.everyday": "Tick off and shopping",
   "ServiceAccess.readOnly": "Read only",
   "TwoFactorPolicy.admins": "Administrators",
+  "TwoFactorPolicy.adults": "All adults",
   "TwoFactorPolicy.all": "All members",
   "GermanState.bw": "Baden-Württemberg",
   "GermanState.by": "Bavaria",
@@ -937,8 +938,8 @@ const sharedEn = <String, String>{
   "Server|Ausblendbar sind: {names}": "Can be hidden: {names}",
   "Server|Bundesland als Kürzel, z. B. NW, BY oder BE":
       "Federal state as an abbreviation, e.g. NW, BY or BE",
-  "Server|Zwei-Faktor-Pflicht: off, admins oder all":
-      "Two-factor requirement: off, admins or all",
+  "Server|Zwei-Faktor-Pflicht: off, admins, adults oder all":
+      "Two-factor requirement: off, admins, adults or all",
   "Server|Upload-Grenze: 1 bis {max} MB": "Upload limit: 1 to {max} MB",
   "Server|Externe Ziele brauchen eine HTTPS-Adresse ohne Zugangsdaten in der Adresse.":
       "External targets need an HTTPS address without credentials in the address.",
