@@ -19,6 +19,7 @@ import '../data/pregnancy_logic.dart';
 import '../data/deadlines.dart';
 import '../data/waste.dart';
 import '../data/day_preview.dart';
+import '../data/departures.dart';
 import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
@@ -95,6 +96,9 @@ class ReminderService {
 
   /// Whether this device shows the week ahead on Sunday evening.
   bool Function()? weekPreview;
+
+  /// How this person travels for departure reminders; null when off.
+  TripMode? Function()? departure;
 
   /// Minutes after midnight for the morning overview, null when off.
   int? Function()? dayPreview;
@@ -224,6 +228,12 @@ class ReminderService {
         limit: _maxScheduled,
       ),
       ...familyReminders(engine, from: now, to: now.add(_window)),
+      ...departureReminders(
+        engine,
+        departure?.call(),
+        from: now,
+        to: now.add(_window),
+      ),
       if (dayPreview?.call() case final minutes?)
         for (final (at, day) in dayPreviewTimes(now, now.add(_window), minutes))
           if (buildDayPreview(engine, day, weather: dayWeather?.call())
@@ -310,6 +320,9 @@ class ReminderService {
 
   static const _scheduledCollections = {
     Collections.events,
+    // Departure reminders follow the own position and the places.
+    Collections.places,
+    Collections.memberLocations,
     Collections.externalEvents,
     Collections.wasteSettings,
     Collections.deadlines,
@@ -485,6 +498,54 @@ class ReminderService {
     final due = r.task?.due;
     return due == null ? tr.commonTask : tr.remindersTaskDueDue(dayLabel(due));
   }
+}
+
+/// "Rechtzeitig losfahren" for [engine]'s member travelling by [mode]
+/// (none when switched off): from the own position if it is recent, else
+/// from home.
+List<DueReminder> departureReminders(
+  SyncEngine engine,
+  TripMode? mode, {
+  required DateTime from,
+  required DateTime to,
+}) {
+  if (mode == null) return const [];
+  final places = engine.places;
+  final own = engine.memberLocations[engine.memberId];
+  final at = own?.at;
+  final home = homePlace(places);
+  final (double, double)? origin =
+      own != null &&
+          own.hasPosition &&
+          at != null &&
+          from.difference(at) < const Duration(hours: 3)
+      ? (own.latitude!, own.longitude!)
+      : home == null
+      ? null
+      : (home.latitude, home.longitude);
+  if (origin == null) return const [];
+  final time = DateFormat.Hm(appLanguage);
+  return [
+    for (final d in departures(
+      events: engine.events,
+      places: places,
+      memberId: engine.memberId,
+      origin: origin,
+      mode: mode,
+      from: from,
+      to: to,
+    ))
+      DueReminder(
+        key: 'departure:${d.occurrence.key}',
+        at: d.at,
+        title: '${mode.emoji} ${tr.departureTitle(d.occurrence.event.title)}',
+        body: tr.departureBody(
+          d.place.name,
+          d.minutes,
+          time.format(d.occurrence.start),
+        ),
+      ),
+  ];
 }
 
 /// Reminders beyond calendar and tasks: children's check-ups and

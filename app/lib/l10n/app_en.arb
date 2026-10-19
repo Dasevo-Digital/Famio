@@ -2396,5 +2396,9 @@
   "memberEmergencyDoctor": "Family doctor",
   "memberEmergencyDocuments": "Power of attorney and living will",
   "memberEmergencyDocumentsHint": "Where are they? e.g. folder in the study",
-  "memberEmergencyVisible": "All adults of the family see this, even offline. Children and guests do not."
+  "memberEmergencyVisible": "All adults of the family see this, even offline. Children and guests do not.",
+  "departureTitle": "Time to leave: {title}",
+  "departureBody": "{place} · about {minutes} min · starts {time}",
+  "pushDeparture": "Leave on time",
+  "pushDepartureSubtitle": "For appointments at a family place: a reminder when to set off. Famio estimates it from distance and means of transport, without any outside service."
 }

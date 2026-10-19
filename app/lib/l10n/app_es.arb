@@ -2396,5 +2396,9 @@
   "memberEmergencyDoctor": "Médico de cabecera",
   "memberEmergencyDocuments": "Poder notarial y testamento vital",
   "memberEmergencyDocumentsHint": "¿Dónde están? p. ej. carpeta en el despacho",
-  "memberEmergencyVisible": "Lo ven todos los adultos de la familia, también sin internet. Los niños y los invitados no."
+  "memberEmergencyVisible": "Lo ven todos los adultos de la familia, también sin internet. Los niños y los invitados no.",
+  "departureTitle": "Hora de salir: {title}",
+  "departureBody": "{place} · unos {minutes} min · empieza a las {time}",
+  "pushDeparture": "Salir a tiempo",
+  "pushDepartureSubtitle": "Para citas en un lugar de la familia: un aviso de cuándo salir. Famio lo calcula a partir de la distancia y el medio de transporte, sin servicios externos."
 }

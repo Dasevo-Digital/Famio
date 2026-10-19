@@ -97,6 +97,8 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                 const _WeekPreviewCard(),
                 const SizedBox(height: 12),
                 const _DayPreviewCard(),
+                const SizedBox(height: 12),
+                const _DepartureCard(),
               ],
               ListHeading(
                 tr.pushAlternativelyThroughNtfy,
@@ -363,6 +365,55 @@ class _WeekPreviewCard extends StatelessWidget {
         subtitle: Text(tr.pushSundays6PM),
         value: state.weekPreview,
         onChanged: state.setWeekPreview,
+      ),
+    );
+  }
+}
+
+/// "Rechtzeitig losfahren": on or off, and how this person travels.
+class _DepartureCard extends StatelessWidget {
+  const _DepartureCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.of(context);
+    final mode = state.departureMode;
+    return SoftCard(
+      color: FamioColors.of(context).tint(FamioSection.settings),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            secondary: const Icon(AppIcons.navigation),
+            title: Text(tr.pushDeparture),
+            subtitle: Text(tr.pushDepartureSubtitle),
+            value: mode != null,
+            onChanged: (on) => state.setDepartureMode(on ? TripMode.car : null),
+          ),
+          if (mode != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SegmentedButton<TripMode>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final (m, icon, label) in [
+                    (TripMode.walk, AppIcons.footprints, tr.tripModeWalk),
+                    (TripMode.bike, AppIcons.bike, tr.tripModeBike),
+                    (TripMode.car, AppIcons.car, tr.tripModeCar),
+                    (TripMode.transit, AppIcons.bus, tr.tripModeTransit),
+                  ])
+                    ButtonSegment(
+                      value: m,
+                      icon: Icon(icon, size: 18),
+                      tooltip: label,
+                    ),
+                ],
+                selected: {mode},
+                onSelectionChanged: (s) => state.setDepartureMode(s.first),
+              ),
+            ),
+        ],
       ),
     );
   }

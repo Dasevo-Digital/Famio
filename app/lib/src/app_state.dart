@@ -83,6 +83,19 @@ class AppState extends ChangeNotifier {
   /// Sunday evening's notification about the coming week.
   bool get weekPreview => _prefs.getBool('reminders.weekPreview') ?? true;
 
+  /// "Rechtzeitig losfahren": how this person usually travels to
+  /// appointments at family places; null when switched off.
+  TripMode? get departureMode {
+    final name = _prefs.getString('reminders.departure') ?? TripMode.car.name;
+    return name == 'off' ? null : TripMode.values.asNameMap()[name];
+  }
+
+  Future<void> setDepartureMode(TripMode? mode) async {
+    await _prefs.setString('reminders.departure', mode?.name ?? 'off');
+    _reminders?.refresh();
+    notifyListeners();
+  }
+
   Future<void> setWeekPreview(bool value) async {
     await _prefs.setBool('reminders.weekPreview', value);
     _reminders?.refresh();
@@ -827,6 +840,7 @@ class AppState extends ChangeNotifier {
     _reminders?.ownPushActive = () => push.active;
     _reminders?.quietHours = () => quietHours;
     _reminders?.weekPreview = () => weekPreview;
+    _reminders?.departure = () => departureMode;
     _reminders?.dayPreview = () => dayPreview;
     _reminders?.dayWeather = () {
       final weather = WeatherService(_prefs);

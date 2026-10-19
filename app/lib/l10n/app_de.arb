@@ -6087,5 +6087,29 @@
   "memberEmergencyDoctor": "Hausarzt",
   "memberEmergencyDocuments": "Vollmacht und Patientenverfügung",
   "memberEmergencyDocumentsHint": "Wo liegen sie? z. B. Ordner im Arbeitszimmer",
-  "memberEmergencyVisible": "Das sehen alle Erwachsenen der Familie, auch ohne Internet. Kinder und Gäste sehen es nicht."
+  "memberEmergencyVisible": "Das sehen alle Erwachsenen der Familie, auch ohne Internet. Kinder und Gäste sehen es nicht.",
+  "departureTitle": "Losfahren: {title}",
+  "@departureTitle": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "departureBody": "{place} · ca. {minutes} Min. · Beginn {time}",
+  "@departureBody": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pushDeparture": "Rechtzeitig losfahren",
+  "pushDepartureSubtitle": "Für Termine an einem Familienort: eine Erinnerung, wann du los musst. Famio schätzt das aus Entfernung und Verkehrsmittel, ohne fremden Dienst."
 }
