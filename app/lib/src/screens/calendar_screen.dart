@@ -3,16 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../design/app_icons.dart';
 
+import '../app_state.dart';
 import '../data/birthdays.dart';
 import '../data/holidays.dart';
 import '../data/family_data.dart';
+import '../data/week_plan.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/save_file.dart';
 import '../widgets/sync_status_icon.dart';
 import 'calendar_connect_screen.dart';
+import 'deferred_sections.dart';
 import 'event_editor.dart';
 import 'event_import_screen.dart';
 import '../l10n.dart';
@@ -45,6 +49,67 @@ class _CalendarScreenState extends State<CalendarScreen> {
     _month = DateTime(day.year, day.month);
   });
 
+  var _printing = false;
+
+  /// Asks for the week (this, the next or the selected day's) and saves
+  /// its plan as a PDF to print.
+  Future<void> _printWeekPlan() async {
+    final engine = AppScope.engineOf(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final thisWeek = weekPlanMonday(DateUtils.dateOnly(DateTime.now()));
+    final nextWeek = DateTime(thisWeek.year, thisWeek.month, thisWeek.day + 7);
+    final selectedWeek = weekPlanMonday(_selected);
+    String range(DateTime monday) =>
+        '${DateFormat.MMMd(appLanguage).format(monday)} – '
+        '${DateFormat.MMMd(appLanguage).format(DateTime(monday.year, monday.month, monday.day + 6))}';
+    final monday = await showModalBottomSheet<DateTime>(
+      context: context,
+      useRootNavigator: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              title: Text(tr.weekPlanWhichWeek),
+              subtitle: Text(tr.weekPlanWhichWeekHint),
+            ),
+            for (final (week, label) in [
+              (thisWeek, tr.weekPlanThisWeekOption),
+              (nextWeek, tr.weekPlanNextWeekOption),
+              if (selectedWeek != thisWeek && selectedWeek != nextWeek)
+                (selectedWeek, tr.weekPlanSelectedWeek),
+            ])
+              ListTile(
+                leading: const Icon(AppIcons.printer),
+                title: Text(label),
+                subtitle: Text(range(week)),
+                onTap: () => Navigator.pop(context, week),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (monday == null || !mounted) return;
+    setState(() => _printing = true);
+    try {
+      final bytes = await weekPlanPdf(buildWeekPlan(engine, monday));
+      final saved = await saveBytes(
+        dialogTitle: tr.weekPlanPrint,
+        fileName: 'famio-plan-${dayKey(monday)}.pdf',
+        bytes: bytes,
+        mimeType: 'application/pdf',
+      );
+      messenger.showSnackBar(
+        SnackBar(content: Text(saved ? tr.weekPlanSaved : tr.weekPlanNotSaved)),
+      );
+    } on Object {
+      // In the browser offline, the PDF part could not be fetched.
+      messenger.showSnackBar(SnackBar(content: Text(tr.weekPlanFailed)));
+    } finally {
+      if (mounted) setState(() => _printing = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
@@ -66,6 +131,11 @@ class _CalendarScreenState extends State<CalendarScreen> {
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute<void>(builder: (_) => const FreeTimeScreen()),
           ),
+        ),
+        BubbleButton(
+          icon: AppIcons.printer,
+          tooltip: tr.weekPlanPrint,
+          onPressed: _printing ? null : _printWeekPlan,
         ),
         BubbleButton(
           icon: AppIcons.arrowsLeftRight,

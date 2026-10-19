@@ -6284,5 +6284,52 @@
         "type": "String"
       }
     }
+  },
+  "weekPlanPrint": "Wochenplan drucken",
+  "weekPlanWhichWeek": "Welche Woche?",
+  "weekPlanWhichWeekHint": "Als PDF für den Kühlschrank: Termine, Essen, Ämter und Tonnen.",
+  "weekPlanThisWeekOption": "Diese Woche",
+  "weekPlanNextWeekOption": "Nächste Woche",
+  "weekPlanSelectedWeek": "Woche des gewählten Tags",
+  "weekPlanSaved": "Wochenplan gespeichert.",
+  "weekPlanNotSaved": "Nicht gespeichert.",
+  "weekPlanFailed": "Der Wochenplan ließ sich nicht erstellen.",
+  "weekPlanTitle": "Wochenplan {range}",
+  "@weekPlanTitle": {
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "weekPlanHeading": "Wochenplan",
+  "weekPlanMadeOn": "Mit Famio erstellt am {date}",
+  "@weekPlanMadeOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "weekPlanAppointments": "Termine",
+  "weekPlanMeals": "Essen",
+  "weekPlanChoresBins": "Ämter & Tonnen",
+  "weekPlanEveryDay": "Jeden Tag",
+  "weekPlanThisWeek": "Einmal in dieser Woche",
+  "weekPlanBrings": "bringt: {name}",
+  "@weekPlanBrings": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "weekPlanPicksUp": "holt: {name}",
+  "@weekPlanPicksUp": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

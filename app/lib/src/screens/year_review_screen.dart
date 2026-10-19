@@ -1,5 +1,4 @@
 import 'package:famio_client/famio_client.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -7,12 +6,14 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 import '../app_state.dart';
+import '../data/plain_text.dart';
 import '../data/year_review.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
+import '../widgets/save_file.dart';
 import '../l10n.dart';
 
 const _collections = {
@@ -47,7 +48,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
     setState(() => _saving = true);
     try {
       final bytes = await yearReviewPdf(review, files: files);
-      final saved = await FilePicker.saveFile(
+      final saved = await saveBytes(
         dialogTitle: tr.yearReviewPdf,
         fileName: 'famio-${review.year}.pdf',
         bytes: bytes,
@@ -55,9 +56,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
       );
       messenger.showSnackBar(
         SnackBar(
-          content: Text(
-            saved == null ? tr.yearReviewNotSaved : tr.yearReviewSaved,
-          ),
+          content: Text(saved ? tr.yearReviewSaved : tr.yearReviewNotSaved),
         ),
       );
     } finally {
@@ -302,19 +301,19 @@ Future<Uint8List> yearReviewPdf(YearReview review, {FileCache? files}) async {
           for (final k in review.kids.where(_hasNews)) ...[
             pw.Text(
               [
-                k.child.name,
+                withoutEmoji(k.child.name),
                 if (k.grownCm case final cm?) tr.yearReviewGrown(_cm(cm)),
               ].join(' · '),
               style: pw.TextStyle(font: bold, fontSize: 13),
             ),
-            for (final m in k.milestones) pw.Bullet(text: m),
+            for (final m in k.milestones) pw.Bullet(text: withoutEmoji(m)),
             pw.SizedBox(height: 6),
           ],
         ],
         if (review.trips.isNotEmpty) ...[
           heading(tr.yearReviewTrips),
           for (final t in review.trips)
-            pw.Bullet(text: '${t.title} · ${_span(date, t)}'),
+            pw.Bullet(text: '${withoutEmoji(t.title)} · ${_span(date, t)}'),
         ],
         if (images.isNotEmpty) ...[
           heading(tr.yearReviewPhotos),
@@ -331,7 +330,9 @@ Future<Uint8List> yearReviewPdf(YearReview review, {FileCache? files}) async {
         if (review.chores.isNotEmpty) ...[
           heading(tr.yearReviewChoreChampions),
           for (final c in review.chores.take(5))
-            pw.Bullet(text: '${c.member.displayName}: ${c.count}'),
+            pw.Bullet(
+              text: '${withoutEmoji(c.member.displayName)}: ${c.count}',
+            ),
         ],
       ],
     ),

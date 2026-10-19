@@ -309,6 +309,18 @@ abstract final class AppIcons {
   /// Lucide `plus`.
   static const IconData plus = IconData(0xe13d, fontFamily: _font);
 
+  /// Lucide `printer`.
+  static const IconData printer = IconData(0xe141, fontFamily: _font);
+
+  /// Lucide `receipt`.
+  static const IconData receipt = IconData(0xe3d3, fontFamily: _font);
+
+  /// Lucide `shuffle`.
+  static const IconData shuffle = IconData(0xe15e, fontFamily: _font);
+
+  /// Lucide `wand-sparkles`.
+  static const IconData magicWand = IconData(0xe357, fontFamily: _font);
+
   /// Lucide `circle-help`.
   static const IconData question = IconData(0xe082, fontFamily: _font);
 

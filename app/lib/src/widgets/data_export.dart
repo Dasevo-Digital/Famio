@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import 'form_dialog.dart';
 import 'password_reveal.dart';
+import 'save_file.dart';
 import '../l10n.dart';
 
 /// Asks for the password, fetches the export (own data or, with [family],
@@ -47,15 +47,13 @@ Future<void> exportData(BuildContext context, {bool family = false}) async {
   final bytes = zip;
   if (bytes == null) return;
   final day = DateTime.now().toIso8601String().substring(0, 10);
-  final saved = await FilePicker.saveFile(
+  final saved = await saveBytes(
     dialogTitle: tr.exportSaveExport,
     fileName: family ? 'famio-familie-$day.zip' : 'famio-meine-daten-$day.zip',
     bytes: Uint8List.fromList(bytes),
     mimeType: 'application/zip',
   );
   messenger.showSnackBar(
-    SnackBar(
-      content: Text(saved == null ? tr.exportNotSaved : tr.exportExportSaved),
-    ),
+    SnackBar(content: Text(saved ? tr.exportExportSaved : tr.exportNotSaved)),
   );
 }

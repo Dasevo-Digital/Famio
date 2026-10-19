@@ -1,6 +1,8 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
+import '../data/week_plan.dart';
 import '../widgets/deferred_page.dart';
 import 'admin_screens.dart' deferred as admin;
 import 'budget_screens.dart' deferred as budget;
@@ -9,13 +11,15 @@ import 'location_screens.dart' deferred as location;
 import 'meals_screens.dart' deferred as meals;
 import 'medication_screens.dart' deferred as health;
 import 'sos_alert_screen.dart' deferred as sos;
+import 'week_plan_pdf.dart' deferred as weekplan;
 import 'year_review_screen.dart' deferred as review;
 
 // Rarely opened areas: the web app fetches their code on first use, which
 // makes its first start about a quarter lighter (the server administration
 // alone brings the whole time zone database; the map and the PDF packages
-// come with "Wo ist wer?", an emergency and the year in review). One library for all deferred
-// imports, so the apps can load every part at start.
+// come with "Wo ist wer?", an emergency, the year in review and the printed
+// week plan). One library for all deferred imports, so the apps can load
+// every part at start.
 
 /// Every part, loaded once: the apps call this at start (their code is
 /// there already), as do the tests.
@@ -28,7 +32,14 @@ Future<void> loadAllSections() => Future.wait([
   DeferredPage.ensure('location', location.loadLibrary),
   DeferredPage.ensure('sos', sos.loadLibrary),
   DeferredPage.ensure('review', review.loadLibrary),
+  DeferredPage.ensure('weekplan', weekplan.loadLibrary),
 ]);
+
+/// The week plan as a PDF (the PDF package comes with it).
+Future<Uint8List> weekPlanPdf(WeekPlan plan) async {
+  await DeferredPage.ensure('weekplan', weekplan.loadLibrary);
+  return weekplan.weekPlanPdf(plan);
+}
 
 /// "Wo ist wer?" with the map (the map package comes with it).
 Widget locationPage() => DeferredPage(

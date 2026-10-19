@@ -274,4 +274,18 @@ void main() {
     expect(find.text('Müllabfuhr'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgets('the week plan to print: this or the next week', (tester) async {
+    await openCalendar(tester);
+    await tester.tap(find.byTooltip('Wochenplan drucken'));
+    await tester.pumpAndSettle();
+    expect(find.text('Welche Woche?'), findsOneWidget);
+    expect(find.text('Diese Woche'), findsOneWidget);
+    expect(find.text('Nächste Woche'), findsOneWidget);
+    // Today is in this week: no third choice.
+    expect(find.text('Woche des gewählten Tags'), findsNothing);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+    expect(find.text('Welche Woche?'), findsNothing);
+  });
 }
