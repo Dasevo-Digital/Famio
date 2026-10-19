@@ -1,4 +1,15 @@
-part of '../location_screens.dart';
+import 'package:famio_client/famio_client.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../../format.dart';
+import '../../l10n.dart';
+
+// Its own library, not a part of location_screens: the start page needs
+// these lines, the map and the rest of "Wo ist wer?" load on first use.
+
+/// After this long without a fresh fix a position counts as old.
+const positionStaleAfter = Duration(minutes: 30);
 
 /// "Bei „Schule“ seit 8:02", "Unterwegs · vor 5 Min." …
 String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
@@ -23,7 +34,7 @@ String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
     case SharingState.active:
       final at = l.at;
       if (at == null) return tr.locationNoPositionYet;
-      if (_positionStale(l, now)) {
+      if (positionStale(l, now)) {
         final suffix = place == null ? '' : ': „${place.name}“';
         return tr.locationLastLocationPlaceAgo(suffix, ago(at, now: now));
       }
@@ -42,8 +53,8 @@ String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
 
 /// A heartbeat only proves that the phone reached the server. It must not
 /// make an older measured coordinate appear current on the family map.
-bool _positionStale(MemberLocation l, DateTime now) =>
-    l.at == null || now.difference(l.at!) >= _stale;
+bool positionStale(MemberLocation l, DateTime now) =>
+    l.at == null || now.difference(l.at!) >= positionStaleAfter;
 
 String ago(DateTime t, {DateTime? now}) {
   final d = (now ?? DateTime.now()).difference(t);

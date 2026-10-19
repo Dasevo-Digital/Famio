@@ -219,7 +219,7 @@ class _FamilyMapState extends State<FamilyMap> {
                     Opacity(
                       opacity:
                           l.state == SharingState.active &&
-                              !_positionStale(l, now)
+                              !positionStale(l, now)
                           ? 1
                           : 0.5,
                       child: Container(
@@ -231,7 +231,7 @@ class _FamilyMapState extends State<FamilyMap> {
                         child: MemberAvatar(members[l.memberId]!, radius: 20),
                       ),
                     ),
-                    if (_positionStale(l, now))
+                    if (positionStale(l, now))
                       Positioned(
                         right: -2,
                         bottom: -2,

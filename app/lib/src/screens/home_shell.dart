@@ -27,7 +27,6 @@ import 'contacts_screens.dart';
 import 'documents_screen.dart';
 import 'home_screen.dart';
 import 'kiosk_screen.dart';
-import 'location_screens.dart';
 import 'settings_screen.dart';
 import 'sos_screens.dart';
 import '../sos/sos_device.dart';
@@ -50,7 +49,7 @@ Widget _pageFor(FamioSection section) => switch (section) {
   FamioSection.chat => const ChatListScreen(),
   FamioSection.documents => const DocumentsScreen(),
   FamioSection.kids => kidsPage(),
-  FamioSection.location => const LocationScreen(),
+  FamioSection.location => locationPage(),
   FamioSection.chores => const ChoresScreen(),
   FamioSection.meals => mealsPage(),
   FamioSection.budget => budgetPage(),

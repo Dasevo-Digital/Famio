@@ -19,7 +19,7 @@ import '../widgets/sync_status_icon.dart';
 import 'home_shell.dart';
 import 'kiosk_screen.dart';
 import '../data/budget_month.dart';
-import 'location_screens.dart';
+import 'location/labels.dart';
 import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 import 'search_screen.dart';
@@ -34,7 +34,7 @@ import '../widgets/app_update_banner.dart';
 import '../widgets/famio_tour.dart';
 import '../widgets/setup_checklist.dart';
 import '../data/year_review.dart';
-import 'year_review_screen.dart';
+import 'deferred_sections.dart';
 import 'sos_screens.dart';
 import '../l10n.dart';
 
@@ -630,7 +630,7 @@ class _YearReviewBanner extends StatelessWidget {
     return SoftCard(
       color: c.tint(FamioSection.home),
       onTap: () => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => YearReviewScreen(year: year)),
+        MaterialPageRoute<void>(builder: (_) => yearReviewPage(year: year)),
       ),
       child: Row(
         children: [

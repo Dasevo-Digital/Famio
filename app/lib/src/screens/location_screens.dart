@@ -17,16 +17,17 @@ import '../design/palette.dart';
 import '../location/location_sharing.dart';
 import '../platform/browser.dart' show mapTileClient;
 import '../widgets/data_builder.dart';
-import '../widgets/form_dialog.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
+import 'location/labels.dart';
+export 'location/labels.dart';
+import 'location/pause_dialog.dart';
 import 'sos_screens.dart' show RecentCheckIns, showCheckIn;
 import '../l10n.dart';
 import '../format.dart';
 
 part 'location/family_map.dart';
 part 'location/history.dart';
-part 'location/labels.dart';
 part 'location/member_list.dart';
 part 'location/minute_ticker.dart';
 part 'location/my_sharing_card.dart';
@@ -47,7 +48,6 @@ const _collections = {
 const _fallbackCenter = LatLng(51.16, 10.45);
 
 /// A position older than this is shown as outdated.
-const _stale = Duration(minutes: 30);
 
 /// Who is where: family map, places and the own sharing switch.
 class LocationScreen extends StatefulWidget {

@@ -20,7 +20,7 @@ import '../data/ocr.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../location/location_sharing.dart';
-import 'location_screens.dart';
+import 'location/pause_dialog.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/birthday_field.dart';
@@ -38,7 +38,6 @@ import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import '../widgets/section_tips.dart';
 import 'member_emergency_screen.dart';
-import 'year_review_screen.dart';
 import '../widgets/famio_tour.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -384,9 +383,9 @@ class SettingsScreen extends StatelessWidget {
             leading: const Icon(AppIcons.calendarHeart),
             title: Text(tr.yearReviewMenu),
             subtitle: Text(tr.yearReviewMenuSubtitle),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const YearReviewScreen()),
-            ),
+            onTap: () => Navigator.of(
+              context,
+            ).push(MaterialPageRoute<void>(builder: (_) => yearReviewPage())),
           ),
           ListTile(
             leading: const Icon(AppIcons.question),

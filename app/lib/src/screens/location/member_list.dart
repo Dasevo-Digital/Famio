@@ -140,7 +140,7 @@ class _MemberTile extends StatelessWidget {
         (l.state == SharingState.denied ||
             l.state == SharingState.off ||
             (l.state == SharingState.active &&
-                _positionStale(l, DateTime.now())));
+                positionStale(l, DateTime.now())));
     final canHistory = (isMe || canManage) && l != null;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
@@ -270,7 +270,7 @@ class _MemberTile extends StatelessWidget {
     final state = AppScope.read(context);
     try {
       await state.engine!.api.resumeLocation(memberId: member.id);
-      if (isMe) await _refreshService(state);
+      if (isMe) await refreshLocationService(state);
       unawaited(state.engine!.sync());
     } on ApiError catch (e) {
       if (context.mounted) {
@@ -280,91 +280,4 @@ class _MemberTile extends StatelessWidget {
       }
     }
   }
-}
-
-Future<void> _refreshService(AppState state) => LocationSharing.refresh(
-  serverUrl: state.serverUrl!,
-  certificatePin: state.certificatePin,
-  device: AppState.deviceName,
-  places: state.engine!.places,
-);
-
-/// Asks for the parents' code and how long, then pauses [member].
-/// Returns whether it was paused.
-Future<bool> showPauseDialog(
-  BuildContext context, {
-  required FamilyMember member,
-  bool stopOnThisDevice = false,
-}) async {
-  final state = AppScope.read(context);
-  final api = state.engine!.api;
-  final code = TextEditingController();
-  Duration? duration = const Duration(hours: 1);
-  var done = false;
-  final now = DateTime.now();
-  final morning = DateTime(now.year, now.month, now.day + 1, 7);
-  final choices = <String, Duration?>{
-    tr.location1Hour: const Duration(hours: 1),
-    tr.location3Hours: const Duration(hours: 3),
-    tr.locationUntilTomorrowMorning: morning.difference(now),
-    tr.locationUntilResumed: null,
-  };
-  await showDialog<void>(
-    context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => FormDialog(
-        title: stopOnThisDevice
-            ? tr.locationEndLocationSharing
-            : tr.locationPauseNameSLocation(member.displayName),
-        submitLabel: stopOnThisDevice ? tr.commonEnd2 : tr.locationPause,
-        controllers: [code],
-        fields: [
-          Text(
-            stopOnThisDevice
-                ? tr.locationLocationNoLongerShared
-                : tr.locationNeedsParentsCode,
-          ),
-          if (!stopOnThisDevice)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final MapEntry(key: label, value: d) in choices.entries)
-                  ChoiceChip(
-                    label: Text(label),
-                    selected: duration == d,
-                    onSelected: (_) => setState(() => duration = d),
-                  ),
-              ],
-            ),
-          PasswordReveal(
-            builder: (_, obscure, toggle) => TextField(
-              controller: code,
-              autofocus: true,
-              obscureText: obscure,
-              contextMenuBuilder: PasswordReveal.contextMenu,
-              keyboardType: TextInputType.visiblePassword,
-              decoration: InputDecoration(
-                suffixIcon: toggle,
-                labelText: tr.adminParentsCode,
-                prefixIcon: Icon(AppIcons.lockKey),
-              ),
-            ),
-          ),
-        ],
-        onSubmit: () async {
-          await api.pauseLocation(
-            code: code.text,
-            memberId: member.id,
-            duration: stopOnThisDevice ? null : duration,
-          );
-          if (stopOnThisDevice) await LocationSharing.disable(api: api);
-          done = true;
-          // Show the new state at once instead of with the next sync.
-          unawaited(state.engine?.sync());
-        },
-      ),
-    ),
-  );
-  return done;
 }

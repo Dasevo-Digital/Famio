@@ -187,7 +187,7 @@ class _MySharingCardState extends State<MySharingCard>
             if (s.permission == LocationPermission.none) {
               await LocationSharing.openAppSettings();
             } else {
-              await _refreshService(state);
+              await refreshLocationService(state);
             }
           },
         ),
@@ -282,7 +282,7 @@ class _MySharingCardState extends State<MySharingCard>
                       ? null
                       : () => _run(() async {
                           await state.engine!.api.resumeLocation();
-                          await _refreshService(state);
+                          await refreshLocationService(state);
                           unawaited(state.engine!.sync());
                         }),
                 )
