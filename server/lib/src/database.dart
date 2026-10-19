@@ -314,6 +314,18 @@ const _migrations = [
   );
   CREATE INDEX passkeys_user ON passkeys (user_id);
   ''',
+  '''
+  -- Properties calendar apps set on a Famio calendar (colour, order,
+  -- name), per member (see DavProperties).
+  CREATE TABLE dav_props (
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    calendar TEXT NOT NULL,
+    ns TEXT NOT NULL,
+    name TEXT NOT NULL,
+    value TEXT NOT NULL,
+    PRIMARY KEY (member_id, calendar, ns, name)
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

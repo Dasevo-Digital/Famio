@@ -502,4 +502,104 @@ END:VCALENDAR
     );
     expect((await dav('PROPFIND', 'dav/')).statusCode, 401);
   });
+
+  test('a calendar app keeps its colour, order and name per member', () async {
+    String patch(String set, [String remove = '']) =>
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<d:propertyupdate xmlns:d="DAV:" xmlns:a="http://apple.com/ns/ical/"'
+        ' xmlns:cs="http://calendarserver.org/ns/">'
+        '${set.isEmpty ? '' : '<d:set><d:prop>$set</d:prop></d:set>'}'
+        '${remove.isEmpty ? '' : '<d:remove><d:prop>$remove</d:prop></d:remove>'}'
+        '</d:propertyupdate>';
+    const ask =
+        '<?xml version="1.0" encoding="utf-8"?>'
+        '<d:propfind xmlns:d="DAV:" xmlns:a="http://apple.com/ns/ical/"'
+        ' xmlns:cs="http://calendarserver.org/ns/"><d:prop>'
+        '<d:displayname/><a:calendar-color/><a:calendar-order/><cs:getctag/>'
+        '</d:prop></d:propfind>';
+    Future<String> props({String user = 'mama', String? password}) async {
+      final r = await dav(
+        'PROPFIND',
+        'dav/calendars/$user/famio/',
+        body: ask,
+        headers: {'depth': '0'},
+        user: user,
+        password: password,
+      );
+      expect(r.statusCode, 207);
+      return r.body;
+    }
+
+    final before = await props();
+    expect(before, contains('#7B5BE0FF'));
+    final ctag = RegExp(r'<cs:getctag>([^<]*)').firstMatch(before)!.group(1);
+
+    final patched = await dav(
+      'PROPPATCH',
+      'dav/calendars/mama/famio/',
+      body: patch(
+        '<a:calendar-color>#FF2968FF</a:calendar-color>'
+        '<a:calendar-order>3</a:calendar-order>'
+        '<d:displayname>Familie</d:displayname>'
+        // Computed by the server: confirmed, not kept.
+        '<cs:getctag>"999"</cs:getctag>'
+        // Markup inside: confirmed, not kept.
+        '<a:calendar-wild><x/></a:calendar-wild>',
+      ),
+    );
+    expect(patched.statusCode, 207);
+    expect(patched.body, contains('200 OK'));
+
+    var after = await props();
+    expect(
+      after,
+      contains('<ical:calendar-color>#FF2968FF</ical:calendar-color>'),
+    );
+    expect(after, contains('<ical:calendar-order>3</ical:calendar-order>'));
+    expect(after, contains('<d:displayname>Familie</d:displayname>'));
+    expect(after, contains('<cs:getctag>$ctag</cs:getctag>'));
+
+    // Removed again: the default comes back, the order is gone.
+    await dav(
+      'PROPPATCH',
+      'dav/calendars/mama/famio/',
+      body: patch('', '<a:calendar-order/><a:calendar-color/>'),
+    );
+    after = await props();
+    expect(after, contains('#7B5BE0FF'));
+    expect(after, isNot(contains('<ical:calendar-order>3')));
+    expect(after, contains('<d:displayname>Familie</d:displayname>'));
+
+    // Another member's calendar app sees the defaults.
+    final papa = await http.post(
+      base.resolve('api/admin/users'),
+      headers: {
+        'authorization': 'Bearer $token',
+        'content-type': 'application/json',
+      },
+      body: jsonEncode({
+        'username': 'papa',
+        'displayName': 'Papa',
+        'password': 'tulpe-regal-7',
+      }),
+    );
+    expect(papa.statusCode, 201);
+    final login = await http.post(
+      base.resolve('api/auth/login'),
+      headers: {'content-type': 'application/json'},
+      body: jsonEncode({'username': 'papa', 'password': 'tulpe-regal-7'}),
+    );
+    final papaToken = (jsonDecode(login.body) as Map)['token'] as String;
+    final app = await http.post(
+      base.resolve('api/me/app-passwords'),
+      headers: {
+        'authorization': 'Bearer $papaToken',
+        'content-type': 'application/json',
+      },
+      body: jsonEncode({'name': 'Mac'}),
+    );
+    final papaSecret = (jsonDecode(app.body) as Map)['secret'] as String;
+    final papaView = await props(user: 'papa', password: papaSecret);
+    expect(papaView, isNot(contains('Familie')));
+  });
 }

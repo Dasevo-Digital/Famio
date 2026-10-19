@@ -15,6 +15,7 @@ import '../family/repeating_tasks.dart';
 import '../record_store.dart';
 import '../security.dart';
 import '../i18n.dart';
+import 'dav_properties.dart';
 import 'step_marks.dart';
 
 const _dav = 'DAV:';
@@ -51,7 +52,9 @@ class CalDavServer {
     required this.onChanged,
     this.onRecordsChanged,
     DavStepMarks? stepMarks,
-  }) : stepMarks = stepMarks ?? DavStepMarks.none;
+    DavProperties? properties,
+  }) : stepMarks = stepMarks ?? DavStepMarks.none,
+       properties = properties ?? DavProperties.none;
 
   final Accounts accounts;
   final RecordStore records;
@@ -67,6 +70,9 @@ class CalDavServer {
 
   /// Steps apps saw, to report removed ones in a sync-collection.
   final DavStepMarks stepMarks;
+
+  /// Colour, order and name members' apps gave the calendars.
+  final DavProperties properties;
 
   static const calendarSlug = 'famio';
   static const tasksSlug = 'aufgaben';
@@ -125,7 +131,7 @@ class CalDavServer {
         'GET' || 'HEAD' => _get(request, context, target),
         'PUT' => await _put(request, context, target),
         'DELETE' => _delete(request, context, target),
-        'PROPPATCH' => await _proppatch(request, target),
+        'PROPPATCH' => await _proppatch(request, context, target),
         _ => _status(405),
       };
     } on XmlException {
@@ -336,8 +342,32 @@ class CalDavServer {
         ])
           '<d:supported-report><d:report><$r/></d:report></d:supported-report>',
       ].join(),
+      // What the member's calendar app set (colour, order, name).
+      for (final MapEntry(:key, :value)
+          in properties.of(c.member.id, collection.slug).entries)
+        if (!_protected.contains(key)) key: _esc(value),
     };
   }
+
+  /// Properties the server computes; a PROPPATCH cannot change them.
+  static const _protected = {
+    (_dav, 'resourcetype'),
+    (_dav, 'getetag'),
+    (_dav, 'getcontenttype'),
+    (_dav, 'sync-token'),
+    (_dav, 'owner'),
+    (_dav, 'current-user-principal'),
+    (_dav, 'current-user-privilege-set'),
+    (_dav, 'supported-report-set'),
+    (_dav, 'principal-URL'),
+    (_cs, 'getctag'),
+    (_caldav, 'calendar-home-set'),
+    (_caldav, 'calendar-timezone'),
+    (_caldav, 'calendar-user-type'),
+    (_caldav, 'supported-calendar-component-set'),
+    (_caldav, 'supported-calendar-data'),
+    (_caldav, 'max-resource-size'),
+  };
 
   String _vtimezone() {
     final zone = location();
@@ -840,15 +870,42 @@ class CalDavServer {
 
   /// Apps set color and order of the calendar; Famio keeps its own, but
   /// answers as if accepted so the apps do not report an error.
-  Future<Response> _proppatch(Request request, _Target target) async {
+  /// Keeps what calendar apps set on a calendar (colour, order, name) for
+  /// this member; properties the server computes, values with markup and
+  /// changes elsewhere are confirmed but not kept, as before.
+  Future<Response> _proppatch(
+    Request request,
+    _Context context,
+    _Target target,
+  ) async {
     final body = await _xmlBody(request);
-    final names = [
-      for (final e
-          in body?.rootElement.findAllElements('prop', namespaceUri: _dav) ??
-              const <XmlElement>[])
-        for (final p in e.childElements)
-          (p.name.namespaceUri ?? '', p.name.local),
-    ];
+    final collection = target.kind == _Kind.calendar
+        ? _collection(context, target)
+        : null;
+    if (target.kind == _Kind.calendar && collection == null) {
+      return _status(404);
+    }
+    final names = <(String, String)>[];
+    for (final op in body?.rootElement.childElements ?? const <XmlElement>[]) {
+      final remove = op.name.local == 'remove';
+      for (final prop in op.findElements('prop', namespaceUri: _dav)) {
+        for (final p in prop.childElements) {
+          final name = (p.name.namespaceUri ?? '', p.name.local);
+          names.add(name);
+          if (collection == null || _protected.contains(name)) continue;
+          if (remove) {
+            properties.remove(context.member.id, collection.slug, name);
+          } else if (p.childElements.isEmpty) {
+            properties.set(
+              context.member.id,
+              collection.slug,
+              name,
+              p.innerText,
+            );
+          }
+        }
+      }
+    }
     final href = '/${target.path}';
     return _multistatus(
       '<d:response><d:href>${_esc(href)}</d:href><d:propstat><d:prop>'

@@ -41,6 +41,7 @@ import 'security.dart';
 import 'settings.dart';
 import 'crypto/encrypted_db.dart';
 import 'remote_url_policy.dart';
+import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
 import 'updates/app_updates.dart';
@@ -260,6 +261,7 @@ class FamioServerApp {
       selfCheckClient: httpClient ?? http.Client(),
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
+      davProperties: DavProperties(db),
       paperBuddy: paperBuddy,
       appUpdates: appUpdates,
       auditLog: auditLog,

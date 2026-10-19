@@ -26,6 +26,7 @@ import 'crypto/tls.dart';
 import 'dav/apple_profile.dart';
 import 'calendar/calendar_access.dart';
 import 'dav/caldav_server.dart';
+import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
 import 'updates/app_updates.dart';
@@ -95,6 +96,7 @@ class FamioApi {
     this.dbSize,
     this.compactDatabase,
     this.davSteps,
+    this.davProperties,
     this.paperBuddy,
     this.appUpdates,
     this.auditLog,
@@ -225,6 +227,9 @@ class FamioApi {
 
   /// Remembers checklist steps calendar apps saw (see [CalDavServer]).
   final DavStepMarks? davSteps;
+
+  /// Colour, order and name members' calendar apps set.
+  final DavProperties? davProperties;
 
   /// The family's PaperBuddy documents, if an admin connected it.
   final PaperBuddyLink? paperBuddy;
@@ -393,6 +398,7 @@ class FamioApi {
         lists?.poke();
       },
       stepMarks: davSteps,
+      properties: davProperties,
     );
     useRequestLanguage();
     return Pipeline()
