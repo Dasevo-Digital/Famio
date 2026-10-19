@@ -6331,5 +6331,44 @@
         "type": "String"
       }
     }
-  }
+  },
+  "mealsSuggestWeek": "Woche vorschlagen",
+  "mealsSuggestTitle": "Vorschlag für die Woche",
+  "mealsSuggestHint": "Aus euren Lieblingsrezepten (★), nichts, was es in den letzten zwei Wochen gab, und was der Vorrat hergibt zuerst. Tage, die schon geplant sind, bleiben, wie sie sind.",
+  "mealsSuggestOther": "Andere Vorschläge",
+  "mealsSuggestAllPlanned": "Für die übrigen Tage dieser Woche ist schon etwas geplant.",
+  "mealsSuggestNoRecipes": "Kein Rezept, das nicht schon in den letzten zwei Wochen dran war. Legt Rezepte an und markiert eure Lieblinge mit dem Stern.",
+  "mealsSuggestStock": "{have} von {total} Zutaten im Vorrat",
+  "@mealsSuggestStock": {
+    "placeholders": {
+      "have": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "mealsSuggestExpiring": "verbraucht, was bald abläuft",
+  "mealsSuggestSwap": "Anderes Rezept",
+  "mealsSuggestAdd": "Rezept vorschlagen",
+  "mealsSuggestLeaveOut": "Weglassen",
+  "mealsSuggestLeftOut": "– nichts –",
+  "mealsSuggestApply": "{count} einplanen",
+  "@mealsSuggestApply": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mealsSuggestPlanned": "{count, plural, =1{1 Essen eingeplant.} other{{count} Essen eingeplant.}}",
+  "@mealsSuggestPlanned": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mealsSuggestShopMissing": "Fehlendes einkaufen"
 }

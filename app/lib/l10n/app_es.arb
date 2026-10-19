@@ -2456,5 +2456,20 @@
   "weekPlanEveryDay": "Cada día",
   "weekPlanThisWeek": "Una vez esta semana",
   "weekPlanBrings": "lleva: {name}",
-  "weekPlanPicksUp": "recoge: {name}"
+  "weekPlanPicksUp": "recoge: {name}",
+  "mealsSuggestWeek": "Proponer la semana",
+  "mealsSuggestTitle": "Propuesta para la semana",
+  "mealsSuggestHint": "De vuestras recetas favoritas (★), nada de lo que hubo en las dos últimas semanas, y primero lo que cubre la despensa. Los días ya planificados se quedan como están.",
+  "mealsSuggestOther": "Otras propuestas",
+  "mealsSuggestAllPlanned": "Ya hay algo planificado para los días que quedan de esta semana.",
+  "mealsSuggestNoRecipes": "Ninguna receta que no se haya hecho en las dos últimas semanas. Añadid recetas y marcad vuestras favoritas con la estrella.",
+  "mealsSuggestStock": "{have} de {total} ingredientes en la despensa",
+  "mealsSuggestExpiring": "aprovecha lo que caduca pronto",
+  "mealsSuggestSwap": "Otra receta",
+  "mealsSuggestAdd": "Proponer una receta",
+  "mealsSuggestLeaveOut": "Quitar",
+  "mealsSuggestLeftOut": "– nada –",
+  "mealsSuggestApply": "Planificar {count}",
+  "mealsSuggestPlanned": "{count, plural, =1{1 comida planificada.} other{{count} comidas planificadas.}}",
+  "mealsSuggestShopMissing": "Comprar lo que falta"
 }

@@ -618,6 +618,61 @@ void main() {
       );
       await tester.pump(const Duration(seconds: 5));
     });
+
+    testWidgets('the week suggested from the favourites', (tester) async {
+      await open(tester, section: 'Essen');
+      final today = DateUtils.dateOnly(DateTime.now());
+      engine
+        ..savePantryItem(const PantryItem(id: 'reis', name: 'Reis', amount: 1))
+        ..saveRecipe(
+          const Recipe(
+            id: 'curry',
+            title: 'Curry',
+            favorite: true,
+            ingredients: [
+              Ingredient(name: 'Reis'),
+              Ingredient(name: 'Kokosmilch'),
+            ],
+          ),
+        )
+        ..saveRecipe(const Recipe(id: 'pizza', title: 'Pizza', favorite: true))
+        ..saveMeal(
+          PlannedMeal(
+            id: 'p1',
+            date: today.subtract(const Duration(days: 7)),
+            slot: MealSlot.dinner,
+            recipeId: 'pizza',
+          ),
+        );
+      await _pumpData(tester);
+
+      await tester.tap(find.text('Woche vorschlagen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Vorschlag für die Woche'), findsOneWidget);
+      // Today first; the pizza of last week is not suggested again.
+      expect(find.text('Curry ★'), findsOneWidget);
+      expect(find.text('1 von 2 Zutaten im Vorrat'), findsOneWidget);
+      expect(find.textContaining('Pizza'), findsNothing);
+
+      await tester.tap(find.text('1 einplanen'));
+      await _pumpData(tester);
+      // The snack bar slides in.
+      await tester.pumpAndSettle();
+      final planned = engine.plannedMeals(
+        today,
+        today.add(const Duration(days: 1)),
+      );
+      expect(planned.single.recipeId, 'curry');
+      expect(planned.single.slot, MealSlot.dinner);
+      expect(find.text('1 Essen eingeplant.'), findsOneWidget);
+
+      // What the pantry lacks onto the shopping list.
+      await tester.tap(find.text('Fehlendes einkaufen'));
+      await _pumpData(tester);
+      final list = engine.shoppingLists.single;
+      expect(engine.shoppingItems(list.id).map((i) => i.name), ['Kokosmilch']);
+      await tester.pump(const Duration(seconds: 5));
+    });
   });
 
   group('pantry', () {

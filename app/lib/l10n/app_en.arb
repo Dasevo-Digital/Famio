@@ -2456,5 +2456,20 @@
   "weekPlanEveryDay": "Every day",
   "weekPlanThisWeek": "Once this week",
   "weekPlanBrings": "drop-off: {name}",
-  "weekPlanPicksUp": "pick-up: {name}"
+  "weekPlanPicksUp": "pick-up: {name}",
+  "mealsSuggestWeek": "Suggest the week",
+  "mealsSuggestTitle": "Suggestion for the week",
+  "mealsSuggestHint": "From your favourite recipes (★), nothing you had in the last two weeks, and what the pantry covers first. Days already planned stay as they are.",
+  "mealsSuggestOther": "Other suggestions",
+  "mealsSuggestAllPlanned": "Something is already planned for the remaining days of this week.",
+  "mealsSuggestNoRecipes": "No recipe that was not on the table in the last two weeks. Add recipes and mark your favourites with the star.",
+  "mealsSuggestStock": "{have} of {total} ingredients in the pantry",
+  "mealsSuggestExpiring": "uses up what expires soon",
+  "mealsSuggestSwap": "Another recipe",
+  "mealsSuggestAdd": "Suggest a recipe",
+  "mealsSuggestLeaveOut": "Leave out",
+  "mealsSuggestLeftOut": "– nothing –",
+  "mealsSuggestApply": "Plan {count}",
+  "mealsSuggestPlanned": "{count, plural, =1{1 meal planned.} other{{count} meals planned.}}",
+  "mealsSuggestShopMissing": "Shop for what's missing"
 }

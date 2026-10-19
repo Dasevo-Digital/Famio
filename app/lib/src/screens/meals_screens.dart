@@ -17,6 +17,7 @@ import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 import 'cooking_mode.dart';
+import 'meal_suggest_screen.dart';
 import 'nutrition_screens.dart';
 
 const _collections = {
@@ -151,18 +152,27 @@ class _WeekPlan extends StatelessWidget {
             ),
           ],
         ),
-        if (withRecipes.isNotEmpty)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              icon: const Icon(AppIcons.basket, size: 18),
-              label: Text(tr.mealsPutWeekSIngredients),
-              onPressed: () => _toShopping(context, engine, [
-                for (final m in withRecipes)
-                  ..._scaled(engine.recipe(m.recipeId)!, m.servings),
-              ]),
-            ),
-          ),
+        Wrap(
+          spacing: 4,
+          children: [
+            // Not for weeks that are over.
+            if (end.isAfter(today))
+              TextButton.icon(
+                icon: const Icon(AppIcons.magicWand, size: 18),
+                label: Text(tr.mealsSuggestWeek),
+                onPressed: () => _suggestWeek(context),
+              ),
+            if (withRecipes.isNotEmpty)
+              TextButton.icon(
+                icon: const Icon(AppIcons.basket, size: 18),
+                label: Text(tr.mealsPutWeekSIngredients),
+                onPressed: () => _toShopping(context, engine, [
+                  for (final m in withRecipes)
+                    ..._scaled(engine.recipe(m.recipeId)!, m.servings),
+                ]),
+              ),
+          ],
+        ),
         for (var i = 0; i < 7; i++)
           () {
             final day = DateTime(week.year, week.month, week.day + i);
@@ -249,6 +259,27 @@ class _WeekPlan extends StatelessWidget {
             );
           }(),
       ],
+    );
+  }
+
+  /// Plans the free days from the suggestions; then offers to put what
+  /// the pantry lacks on the shopping list.
+  Future<void> _suggestWeek(BuildContext context) async {
+    final planned = await showMealSuggestions(context, week);
+    if (planned == null || planned.isEmpty || !context.mounted) return;
+    final missing = [for (final c in planned) ...c.stock.missing];
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(tr.mealsSuggestPlanned(planned.length)),
+        action: missing.isEmpty
+            ? null
+            : SnackBarAction(
+                label: tr.mealsSuggestShopMissing,
+                onPressed: () {
+                  if (context.mounted) _toShopping(context, engine, missing);
+                },
+              ),
+      ),
     );
   }
 }
