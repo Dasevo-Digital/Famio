@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 
+import 'family_data.dart';
 import 'family_extras.dart';
 import '../l10n.dart';
 
@@ -10,12 +11,40 @@ extension DeadlineData on SyncEngine {
       records(Collections.deadlines).map(Deadline.fromRecord).toList()
         ..sort((a, b) {
           if (a.done != b.done) return a.done ? 1 : -1;
-          return a.due.compareTo(b.due);
+          return a.actionDay.compareTo(b.actionDay);
         });
 
   void saveDeadline(Deadline d) => put(Collections.deadlines, d.id, d.toData());
 
   void deleteDeadline(String id) => delete(Collections.deadlines, id);
+
+  /// Saves [d] and keeps a contract's monthly amount in the household
+  /// budget (entry `contract-<id>`): from the month it was first added,
+  /// until the end of the term once cancelled; removed when switched off.
+  void saveDeadlineWithBudget(Deadline d) {
+    saveDeadline(d);
+    final id = 'contract-${d.id}';
+    final existing = record(Collections.budgetEntries, id);
+    final cents = d.monthlyCents ?? 0;
+    if (!d.isContract || !d.inBudget || cents <= 0) {
+      if (existing != null) deleteBudgetEntry(id);
+      return;
+    }
+    final now = DateTime.now();
+    saveBudgetEntry(
+      BudgetEntry(
+        id: id,
+        date: existing == null
+            ? DateTime(now.year, now.month)
+            : BudgetEntry.fromRecord(existing).date,
+        cents: cents,
+        category: d.budgetCategory ?? 'Sonstiges',
+        note: d.label,
+        monthly: true,
+        until: d.done ? d.due : null,
+      ),
+    );
+  }
 
   /// Whether [d] is the signed-in member's to take care of: theirs, or
   /// nobody's and they are an adult.

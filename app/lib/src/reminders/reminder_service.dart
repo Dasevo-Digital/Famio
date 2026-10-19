@@ -750,23 +750,36 @@ List<DueReminder> familyReminders(
       );
     }
   }
-  // Deadlines (car, house, pets): ahead of time and on the day.
+  // Deadlines (car, house, pets, contracts): ahead of time and on the
+  // day; for a contract with a notice period the last day to cancel.
   for (final d in engine.deadlines) {
     if (d.done || !engine.deadlineIsMine(d)) continue;
-    final when = DateFormat.yMd(appLanguage).format(d.due);
+    final day = d.actionDay;
+    final when = DateFormat.yMd(appLanguage).format(day);
+    final cancel = d.cancelBy != null;
     if (d.leadDays > 0) {
       add(
-        'deadline:${d.id}:${dayKey(d.due)}:lead',
-        nineOn(d.due, -d.leadDays),
-        tr.remindersEmojiLabelDaysDays(d.area.emoji, d.label, d.leadDays),
-        tr.remindersDueDateMakeAppointment(when),
+        'deadline:${d.id}:${dayKey(day)}:lead',
+        nineOn(day, -d.leadDays),
+        cancel
+            ? tr.remindersContractLead(d.area.emoji, d.label, d.leadDays)
+            : tr.remindersEmojiLabelDaysDays(d.area.emoji, d.label, d.leadDays),
+        cancel
+            ? tr.remindersContractLeadBody(when)
+            : tr.remindersDueDateMakeAppointment(when),
       );
     }
     add(
-      'deadline:${d.id}:${dayKey(d.due)}',
-      nineOn(d.due),
-      tr.remindersEmojiDueTodayLabel(d.area.emoji, d.label),
-      d.note.isEmpty ? tr.remindersMarkDoneFamio : d.note,
+      'deadline:${d.id}:${dayKey(day)}',
+      nineOn(day),
+      cancel
+          ? tr.remindersContractToday(d.area.emoji, d.label)
+          : tr.remindersEmojiDueTodayLabel(d.area.emoji, d.label),
+      d.note.isNotEmpty
+          ? d.note
+          : cancel
+          ? tr.remindersContractTodayBody
+          : tr.remindersMarkDoneFamio,
     );
   }
   // Packing lists: the evening before the trip, while I still have to pack.

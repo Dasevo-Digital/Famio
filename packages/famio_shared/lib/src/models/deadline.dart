@@ -6,6 +6,7 @@ enum DeadlineArea {
   car('Auto', '🚗'),
   home('Haus & Wohnung', '🏠'),
   pet('Haustiere', '🐾'),
+  contract('Verträge & Abos', '📄'),
   other('Sonstiges', '📌');
 
   const DeadlineArea(this._label, this.emoji);
@@ -33,6 +34,11 @@ class Deadline {
     this.note = '',
     this.lastDone,
     this.done = false,
+    this.noticeMonths,
+    this.noticeWeeks,
+    this.monthlyCents,
+    this.inBudget = false,
+    this.budgetCategory,
   });
 
   factory Deadline.fromRecord(SyncRecord r) => Deadline(
@@ -51,6 +57,11 @@ class Deadline {
     note: r.data['note'] as String? ?? '',
     lastDone: _date(r.data['lastDone']),
     done: r.data['done'] as bool? ?? false,
+    noticeMonths: (r.data['noticeMonths'] as num?)?.toInt(),
+    noticeWeeks: (r.data['noticeWeeks'] as num?)?.toInt(),
+    monthlyCents: (r.data['monthlyCents'] as num?)?.toInt(),
+    inBudget: r.data['inBudget'] as bool? ?? false,
+    budgetCategory: r.data['budgetCategory'] as String?,
   );
 
   final String id;
@@ -74,30 +85,68 @@ class Deadline {
   final String note;
   final DateTime? lastDone;
 
-  /// A one-off deadline that was taken care of.
+  /// A one-off deadline that was taken care of; a contract: cancelled.
   final bool done;
+
+  /// Contracts: the notice period before [due] (the end of the term), in
+  /// months or in weeks.
+  final int? noticeMonths;
+  final int? noticeWeeks;
+
+  /// Contracts: what it costs per month.
+  final int? monthlyCents;
+
+  /// Contracts: kept in the household budget as a monthly expense.
+  final bool inBudget;
+
+  /// Contracts: the budget category of that expense.
+  final String? budgetCategory;
 
   /// "HU/TÜV · Golf".
   String get label => subject.isEmpty ? title : '$title · $subject';
 
-  /// Days from [today] until [due]; negative when overdue.
-  int daysLeft(DateTime today) => DateTime.utc(
-    due.year,
-    due.month,
-    due.day,
-  ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+  bool get isContract => area == DeadlineArea.contract;
+
+  /// Contracts: the last day to give notice, else the term goes on.
+  DateTime? get cancelBy {
+    if (!isContract) return null;
+    if (noticeMonths case final m? when m > 0) return _addMonths(due, -m);
+    if (noticeWeeks case final w? when w > 0) {
+      return DateTime(due.year, due.month, due.day - 7 * w);
+    }
+    return null;
+  }
+
+  /// The day something has to happen: giving notice for a contract,
+  /// otherwise [due]. Reminders, the start page and the order go by it.
+  DateTime get actionDay => cancelBy ?? due;
+
+  /// Days from [today] until [actionDay]; negative when overdue.
+  int daysLeft(DateTime today) {
+    final day = actionDay;
+    return DateTime.utc(
+      day.year,
+      day.month,
+      day.day,
+    ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+  }
 
   /// Taken care of on [day]: a recurring one moves on by [repeatMonths]
-  /// from that day, a one-off one is done.
+  /// from that day, a one-off one is done. A contract that was not
+  /// cancelled runs on for [repeatMonths] from the end of its term.
   Deadline completed(DateTime day) {
     final on = DateTime(day.year, day.month, day.day);
     final months = repeatMonths;
     return _copy(
-      due: months == null ? due : _addMonths(on, months),
+      due: months == null ? due : _addMonths(isContract ? due : on, months),
       lastDone: on,
       done: months == null,
     );
   }
+
+  /// A contract cancelled on [day]: it ends with its term ([due]).
+  Deadline cancelled(DateTime day) =>
+      _copy(lastDone: DateTime(day.year, day.month, day.day), done: true);
 
   Deadline _copy({DateTime? due, DateTime? lastDone, bool? done}) => Deadline(
     id: id,
@@ -111,6 +160,11 @@ class Deadline {
     note: note,
     lastDone: lastDone ?? this.lastDone,
     done: done ?? this.done,
+    noticeMonths: noticeMonths,
+    noticeWeeks: noticeWeeks,
+    monthlyCents: monthlyCents,
+    inBudget: inBudget,
+    budgetCategory: budgetCategory,
   );
 
   Map<String, Object?> toData() => {
@@ -124,6 +178,11 @@ class Deadline {
     'note': note,
     'lastDone': lastDone == null ? null : _format(lastDone!),
     if (done) 'done': true,
+    'noticeMonths': ?noticeMonths,
+    'noticeWeeks': ?noticeWeeks,
+    'monthlyCents': ?monthlyCents,
+    if (inBudget) 'inBudget': true,
+    'budgetCategory': ?budgetCategory,
   };
 }
 
@@ -170,6 +229,25 @@ const deadlinePresets = [
   DeadlinePreset(DeadlineArea.pet, 'Floh- und Zeckenschutz', 1),
   DeadlinePreset(DeadlineArea.pet, 'Tierarzt-Check', 12),
   DeadlinePreset(DeadlineArea.pet, 'Hundesteuer', 12),
+  DeadlinePreset(
+    DeadlineArea.contract,
+    'Handyvertrag',
+    12,
+    'Kündigungsfrist meist 1 bis 3 Monate zum Ende der Laufzeit',
+  ),
+  DeadlinePreset(DeadlineArea.contract, 'Strom', 12),
+  DeadlinePreset(DeadlineArea.contract, 'Gas', 12),
+  DeadlinePreset(DeadlineArea.contract, 'Internet', 12),
+  DeadlinePreset(DeadlineArea.contract, 'Hausratversicherung', 12),
+  DeadlinePreset(DeadlineArea.contract, 'Haftpflichtversicherung', 12),
+  DeadlinePreset(DeadlineArea.contract, 'Fitnessstudio', 12),
+  DeadlinePreset(
+    DeadlineArea.contract,
+    'Streaming-Abo',
+    1,
+    'Meist monatlich kündbar',
+  ),
+  DeadlinePreset(DeadlineArea.contract, 'Zeitschrift', 12),
 ];
 
 /// [months] later; the 31st becomes the last day of a shorter month.

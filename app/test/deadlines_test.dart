@@ -1,6 +1,8 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/deadlines.dart';
+import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/screens/deadlines_screen.dart';
 import 'package:famio/src/reminders/reminder_service.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -125,6 +127,97 @@ void main() {
       (tuev.subject, tuev.repeatMonths, tuev.area),
       ('Golf', 24, DeadlineArea.car),
     );
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  test('a contract reminds before the last day to cancel', () {
+    final now = DateTime(2026, 12, 1, 12);
+    final phone = Deadline(
+      id: 'c',
+      title: 'Handyvertrag',
+      due: DateTime(2027, 3, 31),
+      area: DeadlineArea.contract,
+      repeatMonths: 12,
+      noticeMonths: 3,
+      leadDays: 14,
+    );
+    final reminders = [
+      for (final r in familyReminders(
+        _engine('m1')..saveDeadline(phone),
+        from: now,
+        to: now.add(const Duration(days: 40)),
+      ))
+        if (r.key.startsWith('deadline:'))
+          '${r.at.day}.${r.at.month}. ${r.title}',
+    ];
+    expect(reminders, [
+      '17.12. 📄 Handyvertrag: noch 14 Tage zum Kündigen',
+      '31.12. 📄 Heute letzter Tag zum Kündigen: Handyvertrag',
+    ]);
+  });
+
+  testWidgets('a contract with notice period, in the budget, cancelled', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    const me = FamilyMember(id: 'm1', username: 'mama', displayName: 'Mama');
+    final state = AppState();
+    await state.init();
+    final engine = _engine('m1');
+    state
+      ..me = me
+      ..engine = engine;
+    await tester.pumpWidget(FamioApp(state: state));
+    final context = tester.element(find.byType(Scaffold).first);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const DeadlinesScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Frist hinzufügen'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('📄 Verträge & Abos'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ActionChip, 'Handyvertrag'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Keine'));
+    await tester.tap(find.text('Keine'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('3 Monate').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, 'Kosten pro Monat'),
+      '19,99',
+    );
+    final budget = find.text('Im Haushaltsbuch als monatliche Ausgabe');
+    await tester.ensureVisible(budget);
+    await tester.tap(budget);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Speichern'));
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+
+    final contract = engine.deadlines.single;
+    expect(contract.area, DeadlineArea.contract);
+    expect((contract.noticeMonths, contract.monthlyCents), (3, 1999));
+    var entry = engine.budgetEntries.single;
+    expect(
+      (entry.id, entry.cents, entry.monthly, entry.until),
+      ('contract-${contract.id}', 1999, true, null),
+    );
+    expect(find.textContaining('Kündigen bis'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(Chip, 'Erledigt'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gekündigt').last);
+    await tester.pumpAndSettle();
+    expect(engine.deadlines.single.done, isTrue);
+    entry = engine.budgetEntries.single;
+    expect(entry.until, contract.due);
     await tester.pump(const Duration(seconds: 5));
   });
 }

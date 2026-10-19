@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/budget_month.dart';
 import '../data/deadlines.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
@@ -131,7 +132,17 @@ class _DeadlineCard extends StatelessWidget {
                   Text(d.label, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 2),
                   Text(
-                    d.done
+                    d.isContract
+                        ? d.done
+                              ? tr.contractCancelledOn(
+                                  _date.format(d.lastDone ?? d.due),
+                                  _date.format(d.due),
+                                )
+                              : '${switch (d.cancelBy) {
+                                  final c? => tr.contractCancelBy(_date.format(c)),
+                                  null => tr.contractRunsUntil(_date.format(d.due)),
+                                }} · ${deadlineWhen(d, now)}'
+                        : d.done
                         ? tr.deadlinesDoneDate(
                             _date.format(d.lastDone ?? d.due),
                           )
@@ -145,9 +156,13 @@ class _DeadlineCard extends StatelessWidget {
                       fontWeight: urgent ? FontWeight.w600 : null,
                     ),
                   ),
-                  if (d.repeatMonths != null || d.note.isNotEmpty)
+                  if (d.repeatMonths != null ||
+                      d.note.isNotEmpty ||
+                      d.monthlyCents != null)
                     Text(
                       [
+                        if (d.monthlyCents case final cents?)
+                          tr.contractPerMonth(formatEuro(cents)),
                         if (d.repeatMonths != null) _every(d.repeatMonths!),
                         if (d.note.isNotEmpty) d.note,
                       ].join(' · '),
@@ -160,7 +175,42 @@ class _DeadlineCard extends StatelessWidget {
               MemberAvatar(who, radius: 14),
               const SizedBox(width: 8),
             ],
-            if (!d.done && (engine.iAmAdult || d.assigneeId == engine.memberId))
+            if (!d.done &&
+                d.isContract &&
+                (engine.iAmAdult || d.assigneeId == engine.memberId))
+              PopupMenuButton<bool>(
+                tooltip: tr.commonDoneCap,
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: true, child: Text(tr.contractCancelled)),
+                  if (d.repeatMonths != null)
+                    PopupMenuItem(value: false, child: Text(tr.contractRunsOn)),
+                ],
+                onSelected: (cancel) {
+                  final now = DateTime.now();
+                  final next = cancel ? d.cancelled(now) : d.completed(now);
+                  engine.saveDeadlineWithBudget(next);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      persist: false,
+                      content: Text(
+                        cancel
+                            ? tr.contractCancelledSnack(
+                                d.label,
+                                _date.format(d.due),
+                              )
+                            : tr.contractRunsOnUntil(_date.format(next.due)),
+                      ),
+                      action: SnackBarAction(
+                        label: tr.commonUndo,
+                        onPressed: () => engine.saveDeadlineWithBudget(d),
+                      ),
+                    ),
+                  );
+                },
+                child: Chip(label: Text(tr.commonDoneCap)),
+              )
+            else if (!d.done &&
+                (engine.iAmAdult || d.assigneeId == engine.memberId))
               FilledButton.tonal(
                 onPressed: () {
                   final next = d.completed(DateTime.now());
@@ -237,12 +287,38 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
   late var _lead = widget.existing?.leadDays ?? 14;
   late String? _assignee = widget.existing?.assigneeId;
 
+  /// Contracts: notice period as `w2` (weeks) or `m3` (months), null for none.
+  late String? _notice = switch (widget.existing) {
+    Deadline(noticeMonths: final m?) => 'm$m',
+    Deadline(noticeWeeks: final w?) => 'w$w',
+    _ => null,
+  };
+  late final _monthly = TextEditingController(
+    text: switch (widget.existing?.monthlyCents) {
+      final c? => formatEuro(c).replaceAll(' €', ''),
+      null => '',
+    },
+  );
+  late var _inBudget = widget.existing?.inBudget ?? false;
+  late var _category = widget.existing?.budgetCategory ?? 'Sonstiges';
+
+  static const _notices = ['w2', 'w4', 'w6', 'm1', 'm2', 'm3', 'm6'];
+
+  String _noticeLabel(String code) {
+    final n = int.parse(code.substring(1));
+    if (code.startsWith('w')) return tr.contractNoticeWeeks(n);
+    return n == 1 ? tr.contractNoticeMonth : tr.contractNoticeMonths(n);
+  }
+
   void _save() {
     final title = _title.text.trim();
     if (title.isEmpty) return;
     final engine = AppScope.engineOf(context);
     final old = widget.existing;
-    engine.saveDeadline(
+    final contract = _area == DeadlineArea.contract;
+    final notice = contract ? _notice : null;
+    final cents = contract ? parseEuro(_monthly.text) : null;
+    engine.saveDeadlineWithBudget(
       Deadline(
         id: old?.id ?? newId(),
         title: title,
@@ -256,6 +332,15 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
         lastDone: old?.lastDone,
         // A new date opens a finished one-off again.
         done: (old?.done ?? false) && old?.due == _due,
+        noticeMonths: notice != null && notice.startsWith('m')
+            ? int.parse(notice.substring(1))
+            : null,
+        noticeWeeks: notice != null && notice.startsWith('w')
+            ? int.parse(notice.substring(1))
+            : null,
+        monthlyCents: cents == null || cents <= 0 ? null : cents,
+        inBudget: contract && _inBudget,
+        budgetCategory: contract && _inBudget ? _category : null,
       ),
     );
     Navigator.pop(context);
@@ -269,8 +354,9 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
       for (final m in engine.members)
         if (!m.isGuest && !m.isService) m,
     ];
+    final contract = _area == DeadlineArea.contract;
     return DisposeWith(
-      controllers: [_title, _subject, _note],
+      controllers: [_title, _subject, _note, _monthly],
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           24,
@@ -346,7 +432,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.calendarBlank),
-                title: Text(tr.deadlinesDue),
+                title: Text(contract ? tr.contractEnd : tr.deadlinesDue),
                 trailing: Text(_date.format(_due)),
                 onTap: () async {
                   final picked = await showDatePicker(
@@ -361,7 +447,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.arrowsClockwise),
-                title: Text(tr.eventRepeat),
+                title: Text(contract ? tr.contractRenews : tr.eventRepeat),
                 trailing: DropdownButton<int?>(
                   value: _repeat,
                   items: [
@@ -381,6 +467,62 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                   onChanged: (v) => setState(() => _repeat = v),
                 ),
               ),
+              if (contract) ...[
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(AppIcons.hourglassMedium),
+                  title: Text(tr.contractNotice),
+                  trailing: DropdownButton<String?>(
+                    value: _notice,
+                    items: [
+                      DropdownMenuItem(
+                        value: null,
+                        child: Text(tr.contractNoticeNone),
+                      ),
+                      for (final n in {..._notices, ?_notice})
+                        DropdownMenuItem(
+                          value: n,
+                          child: Text(_noticeLabel(n)),
+                        ),
+                    ],
+                    onChanged: (v) => setState(() => _notice = v),
+                  ),
+                ),
+                TextField(
+                  controller: _monthly,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: tr.contractMonthly,
+                    suffixText: '€',
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(tr.contractInBudget),
+                  subtitle: Text(tr.contractInBudgetHint),
+                  value: _inBudget,
+                  onChanged: (v) => setState(() => _inBudget = v),
+                ),
+                if (_inBudget)
+                  DropdownButtonFormField<String>(
+                    initialValue: expenseCategories.contains(_category)
+                        ? _category
+                        : 'Sonstiges',
+                    decoration: InputDecoration(labelText: tr.contractCategory),
+                    items: [
+                      for (final c in expenseCategories)
+                        DropdownMenuItem(
+                          value: c,
+                          child: Text(categoryLabel(c)),
+                        ),
+                    ],
+                    onChanged: (v) =>
+                        setState(() => _category = v ?? _category),
+                  ),
+                const SizedBox(height: 8),
+              ],
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(AppIcons.bell),

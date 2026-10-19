@@ -6111,5 +6111,120 @@
     }
   },
   "pushDeparture": "Rechtzeitig losfahren",
-  "pushDepartureSubtitle": "Für Termine an einem Familienort: eine Erinnerung, wann du los musst. Famio schätzt das aus Entfernung und Verkehrsmittel, ohne fremden Dienst."
+  "pushDepartureSubtitle": "Für Termine an einem Familienort: eine Erinnerung, wann du los musst. Famio schätzt das aus Entfernung und Verkehrsmittel, ohne fremden Dienst.",
+  "contractEnd": "Ende der Laufzeit",
+  "contractRenews": "Verlängert sich um",
+  "contractNotice": "Kündigungsfrist",
+  "contractNoticeNone": "Keine",
+  "contractNoticeWeeks": "{n} Wochen",
+  "@contractNoticeWeeks": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "contractNoticeMonth": "1 Monat",
+  "contractNoticeMonths": "{n} Monate",
+  "@contractNoticeMonths": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "contractMonthly": "Kosten pro Monat",
+  "contractInBudget": "Im Haushaltsbuch als monatliche Ausgabe",
+  "contractInBudgetHint": "Endet dort mit der Kündigung.",
+  "contractCategory": "Kategorie",
+  "contractCancelBy": "Kündigen bis {date}",
+  "@contractCancelBy": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contractRunsUntil": "Läuft bis {date}",
+  "@contractRunsUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contractCancelledOn": "Gekündigt am {date} · endet am {end}",
+  "@contractCancelledOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "contractPerMonth": "{amount} im Monat",
+  "@contractPerMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "contractCancelled": "Gekündigt",
+  "contractRunsOn": "Läuft weiter",
+  "contractRunsOnUntil": "Läuft weiter bis {date}",
+  "@contractRunsOnUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "contractCancelledSnack": "{title} gekündigt, endet am {date}",
+  "@contractCancelledSnack": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersContractLead": "{emoji} {label}: noch {days} Tage zum Kündigen",
+  "@remindersContractLead": {
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      },
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "remindersContractLeadBody": "Kündigen bis {date}, sonst verlängert sich der Vertrag.",
+  "@remindersContractLeadBody": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersContractToday": "{emoji} Heute letzter Tag zum Kündigen: {label}",
+  "@remindersContractToday": {
+    "placeholders": {
+      "emoji": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "remindersContractTodayBody": "Danach in Famio als gekündigt oder weiterlaufend markieren."
 }
