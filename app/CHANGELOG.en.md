@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.10 – Android starts again
+
+- On Android, Famio 2.0.8 and 2.0.9 stayed white after starting. This is
+  fixed. If you have one of these versions, install 2.0.10 once by hand,
+  because the app could not offer the update itself.
+- Home Assistant shows the Famio icon for the integration and in the add-on
+  store.
+
 ## 2.0.9 – Week plan, contracts and savings goals
 
 - The calendar prints a week plan for the fridge (printer icon):

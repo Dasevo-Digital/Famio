@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.10 – Android startet wieder
+
+- Auf Android blieb Famio 2.0.8 und 2.0.9 nach dem Start weiß. Das ist
+  behoben. Wer eine dieser Versionen hat, installiert 2.0.10 einmal von
+  Hand, weil die App das Update selbst nicht mehr anbieten konnte.
+- Home Assistant zeigt das Famio-Symbol bei der Integration und im
+  Add-on-Store.
+
 ## 2.0.9 – Wochenplan, Verträge und Sparziele
 
 - Der Kalender druckt einen Wochenplan für den Kühlschrank (Drucker-Symbol):

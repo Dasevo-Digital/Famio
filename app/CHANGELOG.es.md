@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.10 – Android vuelve a arrancar
+
+- En Android, Famio 2.0.8 y 2.0.9 se quedaba en blanco al arrancar. Ya está
+  corregido. Si tienes una de estas versiones, instala 2.0.10 una vez a
+  mano, porque la app no podía ofrecer la actualización por sí misma.
+- Home Assistant muestra el icono de Famio en la integración y en la tienda
+  de complementos.
+
 ## 2.0.9 – Plan semanal, contratos y metas de ahorro
 
 - El calendario imprime un plan semanal para la nevera (icono de
