@@ -76,6 +76,10 @@ abstract final class Collections {
   /// Family holidays: chores, routines and bin reminders rest (adults only).
   static const vacations = 'vacations';
 
+  /// Emergency facts of an adult (one per member, id = member id): written
+  /// by that member, received only by adults (see [adultReadable]).
+  static const memberEmergency = 'member_emergency';
+
   /// Kids' routines (morning, evening …) and their daily progress.
   static const routines = 'routines';
   static const routineRuns = 'routine_runs';
@@ -165,6 +169,7 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    memberEmergency,
     locationSettings,
     trips,
     deadlines,
@@ -257,6 +262,7 @@ abstract final class Collections {
   /// Managed by adults only; children earn points through [pointEntries]
   /// (as requests an adult confirms).
   static const adultOnly = {
+    memberEmergency,
     locationSettings,
     chores,
     vacations,
@@ -268,6 +274,10 @@ abstract final class Collections {
     wasteSettings,
     deadlines,
   };
+
+  /// Health data of adults: children, guests and service accounts (the
+  /// wall display, Home Assistant) never receive it.
+  static const adultReadable = {memberEmergency};
 
   /// Collections clients may read but never write.
   static const serverOwned = {

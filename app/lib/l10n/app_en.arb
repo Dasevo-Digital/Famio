@@ -2385,5 +2385,16 @@
   "passkeyCreated": "Added on {date}",
   "passkeyCreatedUsed": "Added on {date} · last used on {used}",
   "supportTitle": "Support Famio",
-  "supportSubtitle": "Famio is free and has no ads. If you like, you can support its development on Ko-fi."
+  "supportSubtitle": "Famio is free and has no ads. If you like, you can support its development on Ko-fi.",
+  "memberEmergencyMine": "My emergency info",
+  "memberEmergencyMineSubtitle": "Allergies, medicines, emergency contact – only for the family's adults",
+  "memberEmergencyOf": "Emergency info of {name}",
+  "memberEmergencyNone": "No emergency info yet.",
+  "memberEmergencyAdd": "Add emergency info",
+  "memberEmergencyEdit": "Edit emergency info",
+  "memberEmergencyContact": "Emergency contact",
+  "memberEmergencyDoctor": "Family doctor",
+  "memberEmergencyDocuments": "Power of attorney and living will",
+  "memberEmergencyDocumentsHint": "Where are they? e.g. folder in the study",
+  "memberEmergencyVisible": "All adults of the family see this, even offline. Children and guests do not."
 }

@@ -1096,14 +1096,20 @@ const sharedEs = <String, String>{
   "Server|Push-Server antwortet {status}": "El servidor push responde {status}",
   "Server|Push-Server nicht erreichbar": "Servidor push no accesible",
   "Server|Passkey": "Llave de acceso",
-  "Server|Der Passkey konnte nicht geprüft werden. Bitte noch einmal.": "No se pudo comprobar la llave de acceso. Inténtalo de nuevo.",
-  "Server|Anmeldung mit Passkey fehlgeschlagen": "Error al iniciar sesión con la llave de acceso",
-  "Server|Zu viele Versuche. Bitte kurz warten.": "Demasiados intentos. Espera un momento.",
-  "Server|Passkeys gehen nur in der Web-App über HTTPS.": "Las llaves de acceso solo funcionan en la app web por HTTPS.",
-  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst": "Este navegador usa un servicio push desconocido",
+  "Server|Der Passkey konnte nicht geprüft werden. Bitte noch einmal.":
+      "No se pudo comprobar la llave de acceso. Inténtalo de nuevo.",
+  "Server|Anmeldung mit Passkey fehlgeschlagen":
+      "Error al iniciar sesión con la llave de acceso",
+  "Server|Zu viele Versuche. Bitte kurz warten.":
+      "Demasiados intentos. Espera un momento.",
+  "Server|Passkeys gehen nur in der Web-App über HTTPS.":
+      "Las llaves de acceso solo funcionan en la app web por HTTPS.",
+  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst":
+      "Este navegador usa un servicio push desconocido",
   "Server|Ungültige Schlüssel": "Claves no válidas",
   "Server|Browser": "Navegador",
-  "Server|Der Browser hat die Benachrichtigungen abbestellt": "El navegador ha desactivado las notificaciones",
+  "Server|Der Browser hat die Benachrichtigungen abbestellt":
+      "El navegador ha desactivado las notificaciones",
   "Server|Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.":
       "Las conexiones de listas están desactivadas en la administración del servidor.",
   "Server|Die Client-ID (Anwendungs-ID) hat die Form 00000000-0000-0000-0000-000000000000.":

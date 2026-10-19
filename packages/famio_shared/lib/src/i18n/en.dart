@@ -1064,14 +1064,20 @@ const sharedEn = <String, String>{
   "Server|Push-Server antwortet {status}": "Push server answers {status}",
   "Server|Push-Server nicht erreichbar": "Push server not reachable",
   "Server|Passkey": "Passkey",
-  "Server|Der Passkey konnte nicht geprüft werden. Bitte noch einmal.": "The passkey could not be verified. Please try again.",
-  "Server|Anmeldung mit Passkey fehlgeschlagen": "Signing in with the passkey failed",
-  "Server|Zu viele Versuche. Bitte kurz warten.": "Too many attempts. Please wait a moment.",
-  "Server|Passkeys gehen nur in der Web-App über HTTPS.": "Passkeys only work in the web app over HTTPS.",
-  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst": "This browser uses an unknown push service",
+  "Server|Der Passkey konnte nicht geprüft werden. Bitte noch einmal.":
+      "The passkey could not be verified. Please try again.",
+  "Server|Anmeldung mit Passkey fehlgeschlagen":
+      "Signing in with the passkey failed",
+  "Server|Zu viele Versuche. Bitte kurz warten.":
+      "Too many attempts. Please wait a moment.",
+  "Server|Passkeys gehen nur in der Web-App über HTTPS.":
+      "Passkeys only work in the web app over HTTPS.",
+  "Server|Dieser Browser nutzt einen unbekannten Push-Dienst":
+      "This browser uses an unknown push service",
   "Server|Ungültige Schlüssel": "Invalid keys",
   "Server|Browser": "Browser",
-  "Server|Der Browser hat die Benachrichtigungen abbestellt": "The browser has turned notifications off",
+  "Server|Der Browser hat die Benachrichtigungen abbestellt":
+      "The browser has turned notifications off",
   "Server|Listen-Anbindungen sind in der Server-Verwaltung ausgeschaltet.":
       "List connections are turned off in the server administration.",
   "Server|Die Client-ID (Anwendungs-ID) hat die Form 00000000-0000-0000-0000-000000000000.":

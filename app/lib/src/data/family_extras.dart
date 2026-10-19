@@ -54,6 +54,20 @@ extension FamilyExtras on SyncEngine {
 
   void deleteVacation(String id) => delete(Collections.vacations, id);
 
+  // --- emergency facts of adults --------------------------------------------
+
+  /// What [memberId] noted for emergencies; null if nothing, and always on
+  /// the devices of children and guests (the server sends it to adults
+  /// only).
+  MemberEmergency? memberEmergency(String memberId) {
+    final r = record(Collections.memberEmergency, memberId);
+    return r == null ? null : MemberEmergency.fromRecord(r);
+  }
+
+  /// Only the own one: the server refuses others.
+  void saveMemberEmergency(MemberEmergency e) =>
+      put(Collections.memberEmergency, e.memberId, e.toData());
+
   void deleteChore(String id) => delete(Collections.chores, id);
 
   /// The entry recording that [chore] was done in the period of [day].

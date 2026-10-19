@@ -19,6 +19,7 @@ import '../sos/sos_device.dart';
 import '../widgets/data_builder.dart';
 import 'location_screens.dart' show tileLayer;
 import '../l10n.dart';
+import 'member_emergency_screen.dart';
 
 const _sosRed = Color(0xFFD32F2F);
 
@@ -668,6 +669,7 @@ class SosAlertScreen extends StatelessWidget {
       collections: const {
         Collections.sosAlerts,
         Collections.sosSettings,
+        Collections.memberEmergency,
         'members',
       },
       builder: (context, engine) {
@@ -786,6 +788,16 @@ class SosAlertScreen extends StatelessWidget {
                   icon: const Icon(AppIcons.phoneCall),
                   label: Text(tr.commonCallName(name)),
                   onPressed: () => launchUrl(Uri(scheme: 'tel', path: phone)),
+                ),
+              ],
+              // Allergies, medicines, whom to call: for the adults helping.
+              if (engine.memberEmergency(a.memberId) case final e?
+                  when !e.isEmpty) ...[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.firstAidKit),
+                  label: Text(tr.memberEmergencyOf(name)),
+                  onPressed: () => showMemberEmergency(context, a.memberId),
                 ),
               ],
               if (a.mapLink != null) ...[

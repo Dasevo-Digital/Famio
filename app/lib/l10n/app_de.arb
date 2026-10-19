@@ -6069,5 +6069,23 @@
     }
   },
   "supportTitle": "Famio unterstützen",
-  "supportSubtitle": "Famio ist kostenlos und ohne Werbung. Wer mag, kann die Entwicklung über Ko-fi unterstützen."
+  "supportSubtitle": "Famio ist kostenlos und ohne Werbung. Wer mag, kann die Entwicklung über Ko-fi unterstützen.",
+  "memberEmergencyMine": "Meine Notfall-Infos",
+  "memberEmergencyMineSubtitle": "Allergien, Medikamente, Notfallkontakt – nur für die Erwachsenen der Familie",
+  "memberEmergencyOf": "Notfall-Infos von {name}",
+  "@memberEmergencyOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "memberEmergencyNone": "Noch keine Notfall-Infos eingetragen.",
+  "memberEmergencyAdd": "Notfall-Infos eintragen",
+  "memberEmergencyEdit": "Notfall-Infos bearbeiten",
+  "memberEmergencyContact": "Notfallkontakt",
+  "memberEmergencyDoctor": "Hausarzt",
+  "memberEmergencyDocuments": "Vollmacht und Patientenverfügung",
+  "memberEmergencyDocumentsHint": "Wo liegen sie? z. B. Ordner im Arbeitszimmer",
+  "memberEmergencyVisible": "Das sehen alle Erwachsenen der Familie, auch ohne Internet. Kinder und Gäste sehen es nicht."
 }

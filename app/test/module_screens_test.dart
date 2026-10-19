@@ -10,6 +10,7 @@ import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
+import 'package:famio/src/screens/member_emergency_screen.dart';
 import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
@@ -37,6 +38,18 @@ const _members =
 Future<void> _pumpData(WidgetTester tester) async {
   await tester.pump();
   await tester.pump();
+}
+
+/// Whether [text] shows up anywhere while scrolling through the last list
+/// (lists build only what is on screen).
+Future<bool> _seenWhileScrolling(WidgetTester tester, String text) async {
+  final list = find.byType(Scrollable).last;
+  for (var i = 0; i < 30; i++) {
+    if (find.text(text).evaluate().isNotEmpty) return true;
+    await tester.drag(list, const Offset(0, -300));
+    await tester.pump();
+  }
+  return false;
 }
 
 void main() {
@@ -936,24 +949,56 @@ void main() {
   });
 
   group('settings', () {
-    Future<void> scrollToEnd(WidgetTester tester) => tester.scrollUntilVisible(
-      find.text('Was ist neu?'),
-      400,
-      scrollable: find.byType(Scrollable).last,
-    );
-
     testWidgets('adults find the Ko-fi link, children do not', (tester) async {
       await open(tester);
       await push(tester, const SettingsScreen());
-      await scrollToEnd(tester);
-      expect(find.text('Famio unterstützen'), findsOneWidget);
+      expect(await _seenWhileScrolling(tester, 'Famio unterstützen'), isTrue);
 
       Navigator.of(tester.element(find.byType(SettingsScreen))).pop();
       await tester.pumpAndSettle();
       appState.me = engine.members.firstWhere((m) => m.id == 'k1');
       await push(tester, const SettingsScreen());
-      await scrollToEnd(tester);
-      expect(find.text('Famio unterstützen'), findsNothing);
+      expect(await _seenWhileScrolling(tester, 'Famio unterstützen'), isFalse);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('emergency facts of adults', () {
+    testWidgets('entered once, shown with the emergency numbers', (
+      tester,
+    ) async {
+      await open(tester);
+      await push(tester, const MemberEmergencyScreen(memberId: 'm1'));
+      expect(find.text('Meine Notfall-Infos'), findsOneWidget);
+      await tester.tap(find.text('Notfall-Infos eintragen'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Allergien'), 'Penicillin');
+      await tester.enterText(
+        field('Vollmacht und Patientenverfügung'),
+        'Ordner im Arbeitszimmer',
+      );
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      await _pumpData(tester);
+
+      final saved = engine.memberEmergency('m1')!;
+      expect(saved.info.allergies, 'Penicillin');
+      expect(saved.documents, 'Ordner im Arbeitszimmer');
+      expect(find.text('Penicillin'), findsOneWidget);
+      expect(find.textContaining('112'), findsWidgets);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('in the settings for adults, not for children', (tester) async {
+      await open(tester);
+      await push(tester, const SettingsScreen());
+      expect(await _seenWhileScrolling(tester, 'Meine Notfall-Infos'), isTrue);
+
+      Navigator.of(tester.element(find.byType(SettingsScreen))).pop();
+      await tester.pumpAndSettle();
+      appState.me = engine.members.firstWhere((m) => m.id == 'k1');
+      await push(tester, const SettingsScreen());
+      expect(await _seenWhileScrolling(tester, 'Meine Notfall-Infos'), isFalse);
       await tester.pump(const Duration(seconds: 5));
     });
   });

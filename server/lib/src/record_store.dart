@@ -32,11 +32,24 @@ class RecordStore {
   void Function(List<SyncRecord> stored)? onServerStored;
 
   /// Whether [userId] may receive [r]: its audience and the member's role.
-  bool canAccess(SyncRecord r, String userId) =>
-      _canSee(r, userId) &&
-      (_role(userId) != MemberRole.guest ||
-          (Collections.guestReadable.contains(r.collection) &&
-              _guestMaySee(r, userId)));
+  bool canAccess(SyncRecord r, String userId) {
+    final role = _role(userId);
+    if (role != MemberRole.adult &&
+        Collections.adultReadable.contains(r.collection)) {
+      return false;
+    }
+    return _canSee(r, userId) &&
+        (role != MemberRole.guest ||
+            (Collections.guestReadable.contains(r.collection) &&
+                _guestMaySee(r, userId)));
+  }
+
+  /// Leaves out [Collections.adultReadable] for everyone but adults (names
+  /// are constants, no input).
+  static String _adultsOnlySql(MemberRole role) => role == MemberRole.adult
+      ? ''
+      : 'AND collection NOT IN '
+            '(${Collections.adultReadable.map((c) => "'$c'").join(', ')})';
 
   /// Guests see a task of the whole family only if it is assigned to them;
   /// others they see when its audience names them.
@@ -83,8 +96,12 @@ class RecordStore {
           role != MemberRole.guest &&
           access != ServiceAccess.readOnly;
     }
-    // "Bin unterwegs": everyone announces only their own way.
-    if (collection == Collections.trips && incoming.id != userId) return false;
+    // "Bin unterwegs" and emergency facts: everyone writes only their own.
+    if ((collection == Collections.trips ||
+            collection == Collections.memberEmergency) &&
+        incoming.id != userId) {
+      return false;
+    }
     switch (role) {
       case MemberRole.adult:
         return true;
@@ -454,17 +471,18 @@ class RecordStore {
         ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
         : '';
     final tasks = role == MemberRole.guest ? _guestTasksSql : '';
+    final adults = _adultsOnlySql(role);
     final rows = _db.select(
       '''
       SELECT collection, id, data, deleted, updated_at, updated_by, rev
         FROM records
-       WHERE rev > ?1 $only $tasks
+       WHERE rev > ?1 $only $tasks $adults
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
       UNION ALL
       SELECT collection, id, '{}', 1, $revokedAt, '$serverMemberId', rev
         FROM revocations
-       WHERE member_id = ?2 AND rev > ?1 $only
+       WHERE member_id = ?2 AND rev > ?1 $only $adults
       ORDER BY rev
       LIMIT ?3
       ''',
@@ -704,8 +722,10 @@ class RecordStore {
   /// [visibleToMember].
   List<SyncRecord> all(String collection, {String? visibleToMember}) {
     if (visibleToMember != null &&
-        _role(visibleToMember) == MemberRole.guest &&
-        !Collections.guestReadable.contains(collection)) {
+        ((_role(visibleToMember) == MemberRole.guest &&
+                !Collections.guestReadable.contains(collection)) ||
+            (_role(visibleToMember) != MemberRole.adult &&
+                Collections.adultReadable.contains(collection)))) {
       return const [];
     }
     return [
@@ -721,11 +741,11 @@ class RecordStore {
   /// Whether a live record visible to [memberId] mentions [text] (e.g. a
   /// file id) in its data. Used to authorise file downloads.
   bool referencedFor(String text, String memberId) {
-    final guest = _role(memberId) == MemberRole.guest;
-    final only = guest
-        ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
-              '$_guestTasksSql'
-        : '';
+    final role = _role(memberId);
+    final guest = role == MemberRole.guest;
+    final only =
+        '${guest ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
+                  '$_guestTasksSql' : ''} ${_adultsOnlySql(role)}';
     final rows = _db.select(
       '''
       SELECT 1 FROM records

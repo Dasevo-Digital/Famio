@@ -2385,5 +2385,16 @@
   "passkeyCreated": "Añadida el {date}",
   "passkeyCreatedUsed": "Añadida el {date} · último uso el {used}",
   "supportTitle": "Apoyar a Famio",
-  "supportSubtitle": "Famio es gratuito y sin publicidad. Si quieres, puedes apoyar su desarrollo en Ko-fi."
+  "supportSubtitle": "Famio es gratuito y sin publicidad. Si quieres, puedes apoyar su desarrollo en Ko-fi.",
+  "memberEmergencyMine": "Mi información de emergencia",
+  "memberEmergencyMineSubtitle": "Alergias, medicamentos, contacto de emergencia – solo para los adultos de la familia",
+  "memberEmergencyOf": "Información de emergencia de {name}",
+  "memberEmergencyNone": "Todavía no hay información de emergencia.",
+  "memberEmergencyAdd": "Añadir información de emergencia",
+  "memberEmergencyEdit": "Editar información de emergencia",
+  "memberEmergencyContact": "Contacto de emergencia",
+  "memberEmergencyDoctor": "Médico de cabecera",
+  "memberEmergencyDocuments": "Poder notarial y testamento vital",
+  "memberEmergencyDocumentsHint": "¿Dónde están? p. ej. carpeta en el despacho",
+  "memberEmergencyVisible": "Lo ven todos los adultos de la familia, también sin internet. Los niños y los invitados no."
 }

@@ -22,6 +22,102 @@ List<(String, String, String)> get emergencyNumbers => [
   ('03019240', tr.kidsPoisonControl, tr.kids03019240ReachableNationwide),
 ];
 
+/// The emergency numbers as large buttons; 112 first and red.
+List<Widget> emergencyNumberCards(BuildContext context) {
+  final theme = Theme.of(context);
+  final danger = theme.colorScheme.error;
+  return [
+    for (final (number, title, subtitle) in emergencyNumbers)
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: SoftCard(
+          color: number == '112' ? danger : danger.withValues(alpha: 0.12),
+          onTap: () => callNumber(context, number),
+          padding: EdgeInsets.symmetric(
+            horizontal: 18,
+            vertical: number == '112' ? 18 : 12,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                number == '112' ? AppIcons.siren : AppIcons.phoneCall,
+                color: number == '112' ? Colors.white : danger,
+                size: number == '112' ? 34 : 24,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      number == '112' ? '112 – $title' : title,
+                      style:
+                          (number == '112'
+                                  ? theme.textTheme.headlineSmall
+                                  : theme.textTheme.titleMedium)
+                              ?.copyWith(
+                                color: number == '112' ? Colors.white : null,
+                              ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: number == '112'
+                            ? Colors.white.withValues(alpha: 0.9)
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+  ];
+}
+
+/// One line of facts on an emergency page; [important] ones in red.
+class EmergencyFact extends StatelessWidget {
+  const EmergencyFact(
+    this.label,
+    this.value, {
+    super.key,
+    this.important = false,
+  });
+
+  final String label;
+  final String value;
+  final bool important;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (value.trim().isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 130,
+            child: Text(label, style: theme.textTheme.bodySmall),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                fontWeight: important ? FontWeight.w800 : null,
+                color: important ? theme.colorScheme.error : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The emergency page of [child]: works offline from the local copy.
 Future<void> showEmergency(BuildContext context, Child child) =>
     Navigator.of(context).push(
@@ -82,31 +178,6 @@ class EmergencyScreen extends StatelessWidget {
             .toList();
         final time = DateFormat.Md(appLanguage).add_jm();
 
-        Widget fact(String label, String value, {bool important = false}) =>
-            value.trim().isEmpty
-            ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 130,
-                      child: Text(label, style: theme.textTheme.bodySmall),
-                    ),
-                    Expanded(
-                      child: Text(
-                        value,
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: important ? FontWeight.w800 : null,
-                          color: important ? danger : null,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-
         return SectionPage(
           section: FamioSection.kids,
           title: tr.kidsEmergencyName(child.name),
@@ -128,57 +199,7 @@ class EmergencyScreen extends StatelessWidget {
               bottom: listBottomPadding(context),
             ),
             children: [
-              for (final (number, title, subtitle) in emergencyNumbers)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SoftCard(
-                    color: number == '112'
-                        ? danger
-                        : danger.withValues(alpha: 0.12),
-                    onTap: () => callNumber(context, number),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: number == '112' ? 18 : 12,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          number == '112' ? AppIcons.siren : AppIcons.phoneCall,
-                          color: number == '112' ? Colors.white : danger,
-                          size: number == '112' ? 34 : 24,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                number == '112' ? '112 – $title' : title,
-                                style:
-                                    (number == '112'
-                                            ? theme.textTheme.headlineSmall
-                                            : theme.textTheme.titleMedium)
-                                        ?.copyWith(
-                                          color: number == '112'
-                                              ? Colors.white
-                                              : null,
-                                        ),
-                              ),
-                              Text(
-                                subtitle,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: number == '112'
-                                      ? Colors.white.withValues(alpha: 0.9)
-                                      : null,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              ...emergencyNumberCards(context),
               if (doctor != null)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -227,7 +248,7 @@ class EmergencyScreen extends StatelessWidget {
                   children: [
                     Text(child.name, style: theme.textTheme.titleLarge),
                     const SizedBox(height: 6),
-                    fact(
+                    EmergencyFact(
                       tr.kidsAge,
                       tr.kidsAgeBornBorn(
                         ageLabel(child),
@@ -235,22 +256,30 @@ class EmergencyScreen extends StatelessWidget {
                       ),
                     ),
                     if (weight != null)
-                      fact(
+                      EmergencyFact(
                         tr.kidsLogWeight,
                         tr.kidsWeightKgDate(
                           decimal(weight.weightKg!),
                           DateFormat.yMd(appLanguage).format(weight.date),
                         ),
                       ),
-                    fact(tr.kidsAllergies, info.allergies, important: true),
-                    fact(tr.kidsPreexisting, info.conditions, important: true),
-                    fact(tr.kidsLongTermMedication, info.medications),
-                    fact(tr.kidsBloodType, info.bloodType),
-                    fact(tr.kidsInsurance, info.insurance),
-                    fact(tr.kidsInsuranceNo, info.insuranceNumber),
-                    fact(tr.kidsNotes, info.note),
+                    EmergencyFact(
+                      tr.kidsAllergies,
+                      info.allergies,
+                      important: true,
+                    ),
+                    EmergencyFact(
+                      tr.kidsPreexisting,
+                      info.conditions,
+                      important: true,
+                    ),
+                    EmergencyFact(tr.kidsLongTermMedication, info.medications),
+                    EmergencyFact(tr.kidsBloodType, info.bloodType),
+                    EmergencyFact(tr.kidsInsurance, info.insurance),
+                    EmergencyFact(tr.kidsInsuranceNo, info.insuranceNumber),
+                    EmergencyFact(tr.kidsNotes, info.note),
                     if (lastTemp?.temperatureC != null)
-                      fact(
+                      EmergencyFact(
                         tr.kidsLogTemperature,
                         tr.commonAtTime(
                           logText(lastTemp!),
@@ -258,7 +287,7 @@ class EmergencyScreen extends StatelessWidget {
                         ),
                       ),
                     for (final m in recentMeds)
-                      fact(
+                      EmergencyFact(
                         tr.kidsLastGiven,
                         tr.commonAtTime(logText(m), time.format(m.start)),
                         important: true,

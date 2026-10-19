@@ -37,6 +37,7 @@ import 'waste_screen.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import '../widgets/section_tips.dart';
+import 'member_emergency_screen.dart';
 import 'year_review_screen.dart';
 import '../widgets/famio_tour.dart';
 
@@ -223,6 +224,14 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ),
+          // Health data: only adults have it (see Collections.adultReadable).
+          if (me.isAdult)
+            ListTile(
+              leading: const Icon(AppIcons.firstAidKit),
+              title: Text(tr.memberEmergencyMine),
+              subtitle: Text(tr.memberEmergencyMineSubtitle),
+              onTap: () => showMemberEmergency(context, me.id),
+            ),
           // The web app only outside Home Assistant (Web Push).
           if (!kIsWeb || state.panelMode == 'browser')
             ListTile(

@@ -590,6 +590,40 @@ void main() {
     expect(app.allowances.run(), 2); // two weeks back and today, minus one
   });
 
+  test(
+    'emergency facts of adults: own only, never to children or guests',
+    () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      final mine = MemberEmergency(
+        memberId: mama.id,
+        info: const EmergencyInfo(allergies: 'Penicillin', bloodType: 'A+'),
+        documents: 'Ordner im Arbeitszimmer',
+      );
+      final r = await mama.sync([
+        _record(Collections.memberEmergency, mama.id, mine.toData()),
+        // Not someone else's.
+        _record(Collections.memberEmergency, papa.id, mine.toData()),
+      ]);
+      expect(r.rejected.map((x) => x.id), [papa.id]);
+
+      await papa.sync();
+      final seen = papa.seen['${Collections.memberEmergency}/${mama.id}'];
+      expect(MemberEmergency.fromRecord(seen!).info.allergies, 'Penicillin');
+      await kind.sync();
+      await oma.sync();
+      expect(kind.collections(), isNot(contains(Collections.memberEmergency)));
+      expect(oma.collections(), isNot(contains(Collections.memberEmergency)));
+      final childWrite = await kind.sync([
+        _record(Collections.memberEmergency, kind.id, mine.toData()),
+      ]);
+      expect(childWrite.rejected.map((x) => x.id), [kind.id]);
+      expect(
+        app.records.all(Collections.memberEmergency, visibleToMember: kind.id),
+        isEmpty,
+      );
+    },
+  );
+
   test('children cannot declare a holiday', () async {
     final r = await kind.sync([
       _record(

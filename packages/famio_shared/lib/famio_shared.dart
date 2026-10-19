@@ -40,6 +40,7 @@ export 'src/models/sos.dart';
 export 'src/models/task.dart';
 export 'src/models/timetable.dart';
 export 'src/models/trip.dart';
+export 'src/models/member_emergency.dart';
 export 'src/models/vacation.dart';
 export 'src/models/waste.dart';
 export 'src/models/wish.dart';
