@@ -27,6 +27,7 @@ class ServerConfig {
     this.upstream,
     this.upstreamPin,
     this.clientMode = false,
+    this.fullAccessLog = false,
   });
 
   /// Reads configuration from CLI args, environment and, when running as a
@@ -94,6 +95,7 @@ class ServerConfig {
           if (n.trim().isNotEmpty) n.trim().toLowerCase(),
       ],
       webDir: _nonEmpty(env['FAMIO_WEB_DIR']),
+      fullAccessLog: env['FAMIO_ACCESS_LOG']?.trim().toLowerCase() == 'full',
       // Add-on in client mode: only the sidebar, the family's server runs
       // elsewhere.
       upstream: options['mode'] == 'client'
@@ -154,6 +156,10 @@ class ServerConfig {
 
   /// Explicit opt-in for CalDAV/ICS servers in the home network.
   final bool allowPrivateCalendarHosts;
+
+  /// `FAMIO_ACCESS_LOG=full`: every request in the log (see [RequestLog]);
+  /// otherwise only problems, slow requests and a daily summary.
+  final bool fullAccessLog;
 
   /// Explicit opt-in for a self-hosted ntfy server in the home network.
   /// Public push targets are always HTTPS-only.

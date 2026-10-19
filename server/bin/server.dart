@@ -86,7 +86,9 @@ Future<void> main(List<String> args) async {
   )..startBackgroundJobs();
 
   final handler = const Pipeline()
-      .addMiddleware(logRequests(logger: _redactedLog))
+      .addMiddleware(
+        RequestLog(write: _log, full: config.fullAccessLog).middleware,
+      )
       .addHandler(app.handler);
   // No "X-Powered-By" header: it only tells attackers what runs here.
   final server = await io.serve(
@@ -171,7 +173,9 @@ Future<void> _runPanelProxy(
     webApp: webApp,
   );
   final handler = const Pipeline()
-      .addMiddleware(logRequests(logger: _redactedLog))
+      .addMiddleware(
+        RequestLog(write: _log, full: config.fullAccessLog).middleware,
+      )
       .addHandler(proxy.handler);
   final server = await io.serve(
     handler,
@@ -222,14 +226,8 @@ tz.Location _location(String name) {
   }
 }
 
-/// Request log without secrets: calendar feed tokens are credentials, and
-/// query strings carry file names (e.g. of medical documents).
-void _redactedLog(String message, bool isError) {
-  final safe = message
-      .replaceAll(RegExp(r'/ical/[A-Za-z0-9_-]+'), '/ical/***')
-      .replaceAll(RegExp(r'\?\S*'), '');
-  (isError ? stderr : stdout).writeln(safe);
-}
+void _log(String line, bool isError) =>
+    (isError ? stderr : stdout).writeln(line);
 
 /// Database, uploads and thumbnails hold family and health data: files the
 /// server creates are readable by its own user only (umask 077).

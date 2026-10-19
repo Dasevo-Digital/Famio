@@ -636,6 +636,7 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 | `FAMIO_LOCATION_HISTORY_DAYS` | Standard-Aufbewahrung für präzise Standortpunkte (1–365, Standard 7; in der App übersteuerbar) |
 | `FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS` | Private/HTTP-ICS- und CalDAV-Ziele erlauben (Standard `false`; nur für bewusst lokal betriebene Kalender) |
 | `FAMIO_ALLOW_PRIVATE_PUSH_HOSTS` | Privaten ntfy-Server oder HTTP-Pushziel erlauben (Standard `false`; sonst ausschließlich HTTPS und keine privaten/Loopback-Ziele) |
+| `FAMIO_ACCESS_LOG` | `full` schreibt jede Anfrage ins Protokoll (zur Fehlersuche). Standard: nur Serverfehler, abgewiesene (außer 401/404) und langsame Anfragen (ab 2 s), dazu einmal am Tag eine Zusammenfassung |
 | `FAMIO_PORT`, `FAMIO_DATA_DIR` | Port (8765) und Datenverzeichnis |
 | `FAMIO_REQUIRE_TLS` | Klartext-API aus dem Netz sperren (Standard `true`; `false` nur befristet für alte Clients) |
 | `FAMIO_TLS_NAMES` | Zusätzliche Hostnamen/IP-Adressen für das HTTPS-Zertifikat (Port 8766), z. B. `192.168.1.5,famio.fritz.box` |

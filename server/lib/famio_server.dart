@@ -16,6 +16,7 @@ export 'src/metrics.dart';
 export 'src/hub.dart';
 export 'src/files/file_store.dart';
 export 'src/record_store.dart';
+export 'src/request_log.dart';
 export 'src/security.dart';
 export 'src/panel_proxy.dart';
 export 'src/server_app.dart';

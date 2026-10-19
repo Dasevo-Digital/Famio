@@ -1,0 +1,101 @@
+import 'package:shelf/shelf.dart';
+
+/// The server's request log. Every request in it meant thousands of lines a
+/// day (health checks, syncs, calendar apps), with the calendar user name
+/// in many paths. By default it now names only what needs attention:
+/// server errors, refused requests (except the usual 401 of calendar apps
+/// and 404 of probes) and slow ones, plus a summary once a day.
+/// `FAMIO_ACCESS_LOG=full` writes every request again, for debugging.
+class RequestLog {
+  RequestLog({
+    required this.write,
+    this.full = false,
+    this.slow = const Duration(seconds: 2),
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now {
+    _since = _now();
+  }
+
+  /// Gets each line; `isError` for failures (stderr).
+  final void Function(String line, bool isError) write;
+
+  /// Every request, like before.
+  final bool full;
+
+  /// Requests taking longer are logged.
+  final Duration slow;
+
+  final DateTime Function() _now;
+  late DateTime _since;
+  final _counts = <String, int>{};
+  var _slowCount = 0;
+
+  /// Kept open on purpose: waiting for notifications, the WebSocket.
+  static const _longLived = {'api/notifications', 'api/ws'};
+
+  Middleware get middleware =>
+      (inner) => (request) async {
+        _summaryIfDue();
+        final watch = Stopwatch()..start();
+        final Response response;
+        try {
+          response = await inner(request);
+        } on HijackException {
+          rethrow;
+        } catch (error, stack) {
+          write(_line(request, watch.elapsed, 'ERROR'), true);
+          write('$error\n$stack', true);
+          _count('5xx');
+          rethrow;
+        }
+        final status = response.statusCode;
+        final elapsed = watch.elapsed;
+        final isSlow =
+            elapsed >= slow && !_longLived.contains(request.url.path);
+        _count('${status ~/ 100}xx');
+        if (isSlow) _slowCount++;
+        final problem =
+            status >= 500 || (status >= 400 && status != 401 && status != 404);
+        if (full || problem || isSlow) {
+          write(
+            '${_line(request, elapsed, '[$status]')}${isSlow && !full ? ' (langsam)' : ''}',
+            status >= 500,
+          );
+        }
+        return response;
+      };
+
+  void _count(String kind) => _counts[kind] = (_counts[kind] ?? 0) + 1;
+
+  void _summaryIfDue() {
+    final now = _now();
+    if (now.difference(_since) < const Duration(hours: 24)) return;
+    final total = _counts.values.fold(0, (a, b) => a + b);
+    if (total > 0) {
+      final kinds = [
+        for (final k in ['2xx', '3xx', '4xx', '5xx'])
+          if (_counts[k] case final n?) '$k $n',
+      ].join(', ');
+      write(
+        'Anfragen seit ${_since.toIso8601String()}: $total ($kinds)'
+        '${_slowCount > 0 ? ', langsam: $_slowCount' : ''}',
+        false,
+      );
+    }
+    _counts.clear();
+    _slowCount = 0;
+    _since = now;
+  }
+
+  /// Like shelf's log line, without secrets: calendar feed tokens are
+  /// credentials, and query strings carry file names (e.g. of medical
+  /// documents).
+  String _line(Request request, Duration elapsed, String status) {
+    final path = '/${request.url.path}'.replaceAll(
+      RegExp(r'/ical/[A-Za-z0-9_-]+'),
+      '/ical/***',
+    );
+    return '${_now().toIso8601String()} $elapsed '
+        '${request.method.padRight(7)} $status $path';
+  }
+}
