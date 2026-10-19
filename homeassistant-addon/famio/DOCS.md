@@ -12,6 +12,20 @@ Das Add-on hat zwei Betriebsarten (Option `mode`):
 - **client**: Euer Famio-Server läuft schon woanders (z. B. Proxmox, Docker,
   NAS). Das Add-on zeigt nur die Seitenleiste und verbindet sich mit ihm.
 
+## Installation
+
+1. In Home Assistant *Einstellungen → Add-ons → Add-on-Store* öffnen, oben
+   rechts *⋮ → Repositories* wählen und
+   `https://github.com/Dasevo-Digital/Famio` hinzufügen.
+2. **Famio** im Store auswählen und installieren.
+
+Home Assistant baut das Add-on dabei selbst. Es lädt das Server-Paket der
+Version aus dem Famio-Release und prüft vorher die Prüfsummen samt ihrer
+Signatur. Das ist derselbe Schlüssel, dem auch die Apps vertrauen. Die erste
+Installation und jedes Update dauern deshalb ein, zwei Minuten. Unterstützt
+sind 64-Bit-Systeme mit Intel/AMD (amd64) und ARM (aarch64, z. B. Raspberry Pi
+4/5 oder Home Assistant Green); ARM ab Version 2.0.9.
+
 ## Betriebsart „client“
 
 1. Optionen: `mode: client`, `server_url` = Adresse eures Famio-Servers,

@@ -6,9 +6,8 @@ url: https://gitea.status403.de/dasevo-digital/Famio
 arch:
   - aarch64
   - amd64
-# Prebuilt by .github/workflows/server-image.yml; the add-on folder itself
-# has no sources, so Home Assistant cannot build it locally.
-image: ghcr.io/YOUR_GITHUB_USER/famio-{arch}
+# No "image": Home Assistant builds the add-on from the Dockerfile, which
+# fetches the signed server package of this version from the release.
 init: false
 startup: application
 ingress: true

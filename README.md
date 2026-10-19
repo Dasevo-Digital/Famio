@@ -622,7 +622,7 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 | Docker (NAS, Server) | `docker compose up -d` im Repository, Daten in `./data` |
 | Docker hinter **Nginx Proxy Manager** | [deploy/npm/README.md](deploy/npm/README.md) |
 | **Proxmox-LXC** (empfohlen: Debian 13), auch Umzug von Docker | [deploy/lxc/README.md](deploy/lxc/README.md) – `proxmox-create.sh` |
-| Home-Assistant-**Add-on** (Seitenleiste; als Server oder als Client eines vorhandenen Servers) | [homeassistant-addon/famio/DOCS.md](homeassistant-addon/famio/DOCS.md) – lokal: `homeassistant-addon/local/` |
+| Home-Assistant-**Add-on** (Seitenleiste; als Server oder als Client eines vorhandenen Servers) | Add-on-Repository `https://github.com/Dasevo-Digital/Famio` in Home Assistant hinzufügen; Home Assistant baut das Add-on aus dem signierten Server-Paket des Releases (amd64, aarch64): [homeassistant-addon/famio/DOCS.md](homeassistant-addon/famio/DOCS.md) – ohne Internet: `homeassistant-addon/local/` |
 | Home-Assistant-**Integration** (Client: Kalender, To-dos, Sensoren, Standorte; Installation über HACS) | [homeassistant-integration/README.md](homeassistant-integration/README.md) |
 | **LXC** (Proxmox) ohne Docker, systemd | [deploy/lxc/README.md](deploy/lxc/README.md) |
 

@@ -6,8 +6,8 @@
 # 1. sources to the Linux and Windows build machines, their builds in the
 #    background (FAMIO_LINUX_BUILD_HOST / FAMIO_WINDOWS_BUILD_HOST: ssh
 #    destinations; unset = that package is left out)
-# 2. web app and server package (Docker), smoke test against the previous
-#    server package
+# 2. web app and server packages (Docker, x64 and arm64), smoke test
+#    against the previous server package
 # 3. macOS (ad hoc signed) and the two Android packages (all phones with the
 #    recognition built in; 64-bit with it from Google Play)
 # 4. SHA256SUMS.txt, its Ed25519 signature, the check the apps do, and a
@@ -91,7 +91,24 @@ cid=$(docker create --platform linux/amd64 "famio-build:$V")
 docker cp -q "$cid:/out/bundle" "$SRV/bundle"
 docker container rm "$cid" > /dev/null
 grep -q "\"version\":\"$V\"" "$SRV/bundle/web/version.json" || fail "Server-Paket hat nicht Version $V"
+out=$(file "$SRV/bundle/bin/server")
+[[ "$out" == *x86-64* ]] || fail "Server-Paket ist nicht x86-64"
 (cd "$SRV" && COPYFILE_DISABLE=1 tar --no-xattrs -czf "$R/famio-server-$V-linux-x64.tar.gz" bundle)
+
+# Raspberry Pi, Home Assistant Green/Yellow: the add-on builds itself from
+# this package (homeassistant-addon/famio/Dockerfile).
+step "Server-Paket arm64 (Docker)"
+docker build --platform linux/arm64 --target build -t "famio-build:$V-arm64" . > "$LOGS/docker-arm64.log" 2>&1 ||
+  { tail -20 "$LOGS/docker-arm64.log"; fail "Docker-Build arm64"; }
+SRV_ARM="$WORK/server-$V-arm64"
+rm -rf "$SRV_ARM" && mkdir -p "$SRV_ARM"
+cid=$(docker create --platform linux/arm64 "famio-build:$V-arm64")
+docker cp -q "$cid:/out/bundle" "$SRV_ARM/bundle"
+docker container rm "$cid" > /dev/null
+grep -q "\"version\":\"$V\"" "$SRV_ARM/bundle/web/version.json" || fail "arm64-Paket hat nicht Version $V"
+out=$(file "$SRV_ARM/bundle/bin/server")
+[[ "$out" == *aarch64* ]] || fail "arm64-Paket ist nicht aarch64"
+(cd "$SRV_ARM" && COPYFILE_DISABLE=1 tar --no-xattrs -czf "$R/famio-server-$V-linux-arm64.tar.gz" bundle)
 
 step "Smoke-Test"
 PREV=$(git describe --tags --abbrev=0 "v$V^" 2>/dev/null || true)
@@ -156,7 +173,7 @@ done
 
 # --- 4. collect, sign, check --------------------------------------------------
 step "Linux- und Windows-Pakete abholen"
-FILES=("Famio-$V-android.apk" "Famio-$V-android-arm64.apk" "Famio-$V-macOS.zip" "famio-server-$V-linux-x64.tar.gz")
+FILES=("Famio-$V-android.apk" "Famio-$V-android-arm64.apk" "Famio-$V-macOS.zip" "famio-server-$V-linux-x64.tar.gz" "famio-server-$V-linux-arm64.tar.gz")
 if [ -n "$LINUX_PID" ]; then
   wait "$LINUX_PID" || { tail -20 "$LOGS/linux.log"; fail "Linux-Build"; }
   scp -q "$LINUX:Famio-$V-linux-x86_64.tar.gz" "$R/"
