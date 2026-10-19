@@ -6370,5 +6370,30 @@
       }
     }
   },
-  "mealsSuggestShopMissing": "Fehlendes einkaufen"
+  "mealsSuggestShopMissing": "Fehlendes einkaufen",
+  "purchaseTitle": "Einkauf ins Haushaltsbuch",
+  "purchaseButton": "Bezahlt? Betrag ins Haushaltsbuch",
+  "purchaseAmount": "Betrag laut Kassenbon",
+  "purchaseCategory": "Kategorie",
+  "purchaseNote": "Was oder wo (optional)",
+  "purchaseClear": "{count, plural, =1{Die abgehakte Sache von der Liste nehmen} other{Die {count} abgehakten Sachen von der Liste nehmen}}",
+  "@purchaseClear": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "purchaseSave": "Eintragen",
+  "purchaseBooked": "{amount} als Ausgabe für {category} eingetragen.",
+  "@purchaseBooked": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      },
+      "category": {
+        "type": "String"
+      }
+    }
+  }
 }

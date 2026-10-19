@@ -7,6 +7,7 @@ import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import 'list_templates.dart';
 import 'pantry_screens.dart';
+import 'purchase_dialog.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
@@ -22,6 +23,8 @@ const _shopping = {
   Collections.shoppingLists,
   Collections.shoppingItems,
   Collections.pantryItems,
+  // Who sees the budget, for "Einkauf ins Haushaltsbuch".
+  Collections.budgetSettings,
 };
 
 class ShoppingListsScreen extends StatelessWidget {
@@ -285,6 +288,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
           byAisle[engine.shoppingCategoryOf(i, learned)]!.add(i);
         }
         final aisles = byAisle.entries.where((e) => e.value.isNotEmpty);
+        final canBook =
+            !list.packing &&
+            done.isNotEmpty &&
+            canBookPurchase(AppScope.of(context), engine);
 
         return SectionPage(
           maxBodyWidth: 960,
@@ -317,6 +324,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   for (final i in done)
                     engine.saveShoppingItem(i.copyWith(checked: false)),
                 ],
+                'budget' => bookPurchase(context, list, done),
                 'template' => _saveTemplate(engine, list),
                 'preppsuite' => importFromPreppSuite(context, engine, list),
                 'rename' => _rename(engine, list),
@@ -334,6 +342,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   enabled: done.isNotEmpty,
                   child: Text(tr.shoppingRemoveAllCheckmarks),
                 ),
+                if (canBook)
+                  PopupMenuItem(value: 'budget', child: Text(tr.purchaseTitle)),
                 PopupMenuItem(
                   value: 'template',
                   enabled: items.isNotEmpty,
@@ -432,6 +442,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                             : tr.shoppingCartCount(done.length),
                         color: color,
                       ),
+                      if (canBook)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            icon: const Icon(AppIcons.receipt, size: 18),
+                            label: Text(tr.purchaseButton),
+                            onPressed: () => bookPurchase(context, list, done),
+                          ),
+                        ),
                       for (final item in done)
                         _ItemTile(
                           item: item,

@@ -2471,5 +2471,13 @@
   "mealsSuggestLeftOut": "– nada –",
   "mealsSuggestApply": "Planificar {count}",
   "mealsSuggestPlanned": "{count, plural, =1{1 comida planificada.} other{{count} comidas planificadas.}}",
-  "mealsSuggestShopMissing": "Comprar lo que falta"
+  "mealsSuggestShopMissing": "Comprar lo que falta",
+  "purchaseTitle": "Compra al libro de cuentas",
+  "purchaseButton": "¿Pagado? Importe al libro de cuentas",
+  "purchaseAmount": "Importe del tique",
+  "purchaseCategory": "Categoría",
+  "purchaseNote": "Qué o dónde (opcional)",
+  "purchaseClear": "{count, plural, =1{Quitar de la lista lo marcado} other{Quitar de la lista las {count} cosas marcadas}}",
+  "purchaseSave": "Anotar",
+  "purchaseBooked": "{amount} anotado como gasto en {category}."
 }

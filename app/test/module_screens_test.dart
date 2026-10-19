@@ -387,6 +387,85 @@ void main() {
     });
   });
 
+  group('purchase into the budget', () {
+    Future<void> openCart(WidgetTester tester) async {
+      engine
+        ..saveShoppingList(const ShoppingList(id: 'l1', name: 'Wocheneinkauf'))
+        ..saveShoppingItem(
+          const ShoppingItem(
+            id: 'a',
+            listId: 'l1',
+            name: 'Milch',
+            checked: true,
+          ),
+        )
+        ..saveShoppingItem(
+          const ShoppingItem(
+            id: 'b',
+            listId: 'l1',
+            name: 'Brot',
+            checked: true,
+          ),
+        )
+        ..saveShoppingItem(
+          const ShoppingItem(id: 'c', listId: 'l1', name: 'Käse'),
+        );
+      await push(tester, const ShoppingListScreen(listId: 'l1'));
+    }
+
+    testWidgets('the receipt as groceries, the cart emptied, undone', (
+      tester,
+    ) async {
+      await open(tester);
+      await openCart(tester);
+      await tester.tap(find.text('Bezahlt? Betrag ins Haushaltsbuch'));
+      await tester.pumpAndSettle();
+      expect(find.text('Einkauf ins Haushaltsbuch'), findsOneWidget);
+      expect(
+        find.text('Die 2 abgehakten Sachen von der Liste nehmen'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Eintragen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bitte einen Betrag angeben'), findsOneWidget);
+
+      await tester.enterText(field('Betrag laut Kassenbon'), '23,45');
+      await tester.tap(find.text('Eintragen'));
+      await tester.pumpAndSettle();
+      final entry = engine.budgetEntries.single;
+      expect(
+        (entry.cents, entry.category, entry.note, entry.income, entry.memberId),
+        (2345, 'Lebensmittel', 'Wocheneinkauf', false, 'm1'),
+      );
+      expect(entry.date, DateUtils.dateOnly(DateTime.now()));
+      expect(engine.shoppingItems('l1').map((i) => i.name), ['Käse']);
+      expect(
+        find.text('23,45 € als Ausgabe für Lebensmittel eingetragen.'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Rückgängig'));
+      await _pumpData(tester);
+      expect(engine.budgetEntries, isEmpty);
+      expect(
+        engine.shoppingItems('l1').map((i) => i.name),
+        unorderedEquals(['Milch', 'Brot', 'Käse']),
+      );
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('only for those who see the budget', (tester) async {
+      await open(tester);
+      engine.saveBudgetSettings(const BudgetSettings(memberIds: ['m2']));
+      await openCart(tester);
+      expect(find.text('Bezahlt? Betrag ins Haushaltsbuch'), findsNothing);
+      engine.saveBudgetSettings(const BudgetSettings(memberIds: ['m1', 'm2']));
+      await _pumpData(tester);
+      expect(find.text('Bezahlt? Betrag ins Haushaltsbuch'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
   group('shopping aisles', () {
     testWidgets('new items find their aisle; corrections are remembered', (
       tester,

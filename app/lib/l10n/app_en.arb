@@ -2471,5 +2471,13 @@
   "mealsSuggestLeftOut": "– nothing –",
   "mealsSuggestApply": "Plan {count}",
   "mealsSuggestPlanned": "{count, plural, =1{1 meal planned.} other{{count} meals planned.}}",
-  "mealsSuggestShopMissing": "Shop for what's missing"
+  "mealsSuggestShopMissing": "Shop for what's missing",
+  "purchaseTitle": "Add purchase to the budget",
+  "purchaseButton": "Paid? Amount into the budget",
+  "purchaseAmount": "Amount on the receipt",
+  "purchaseCategory": "Category",
+  "purchaseNote": "What or where (optional)",
+  "purchaseClear": "{count, plural, =1{Remove the ticked item from the list} other{Remove the {count} ticked items from the list}}",
+  "purchaseSave": "Add",
+  "purchaseBooked": "{amount} added as an expense for {category}."
 }
