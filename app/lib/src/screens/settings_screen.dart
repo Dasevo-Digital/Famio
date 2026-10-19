@@ -397,6 +397,18 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+          // A payment page: only for adults, and not in store builds.
+          if (me.isAdult && !AppEnv.storeBuild)
+            ListTile(
+              leading: const Icon(AppIcons.heart),
+              title: Text(tr.supportTitle),
+              subtitle: Text(tr.supportSubtitle),
+              trailing: const Icon(AppIcons.arrowSquareOut, size: 18),
+              onTap: () => launchUrl(
+                Uri.parse(AppEnv.supportUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
         ],
       ),
     );

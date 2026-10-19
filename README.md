@@ -24,6 +24,12 @@ Komponenten und Daten Dritter in
 Installationen gelten die [Datenschutzinformationen](docs/datenschutz.md); der
 jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 
+Famio ist kostenlos und ohne Werbung. Wer die Entwicklung unterstützen
+möchte, kann das über [Ko-fi](https://ko-fi.com/superkuh86) tun. In der App
+steht der Link unter Einstellungen → Über, nur für Erwachsene. Builds für
+App-Stores lassen ihn mit `--dart-define=FAMIO_STORE=true` weg, weil Apple
+und Google Trinkgeld nur über die eigene Bezahlung erlauben.
+
 ## Ein Blick in Famio
 
 <p align="center">

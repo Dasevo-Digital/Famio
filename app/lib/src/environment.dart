@@ -27,4 +27,12 @@ abstract final class AppEnv {
   /// beside the family's one on its own ports.
   static const tlsPort = isDev ? 8776 : 8766;
   static const httpPort = isDev ? 8775 : 8765;
+
+  /// A build for an app store (`--dart-define=FAMIO_STORE=true`): Apple and
+  /// Google only allow tips through their own payment, so the Ko-fi link
+  /// stays out.
+  static const storeBuild = bool.fromEnvironment('FAMIO_STORE');
+
+  /// Where the family can support Famio's development.
+  static const supportUrl = 'https://ko-fi.com/superkuh86';
 }

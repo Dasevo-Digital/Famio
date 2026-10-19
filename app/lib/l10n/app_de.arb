@@ -6067,5 +6067,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "supportTitle": "Famio unterstützen",
+  "supportSubtitle": "Famio ist kostenlos und ohne Werbung. Wer mag, kann die Entwicklung über Ko-fi unterstützen."
 }

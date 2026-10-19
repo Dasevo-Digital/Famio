@@ -2383,5 +2383,7 @@
   "passkeyAdded": "Llave de acceso guardada",
   "passkeyRemoved": "Llave de acceso eliminada",
   "passkeyCreated": "Añadida el {date}",
-  "passkeyCreatedUsed": "Añadida el {date} · último uso el {used}"
+  "passkeyCreatedUsed": "Añadida el {date} · último uso el {used}",
+  "supportTitle": "Apoyar a Famio",
+  "supportSubtitle": "Famio es gratuito y sin publicidad. Si quieres, puedes apoyar su desarrollo en Ko-fi."
 }

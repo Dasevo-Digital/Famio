@@ -2383,5 +2383,7 @@
   "passkeyAdded": "Passkey saved",
   "passkeyRemoved": "Passkey removed",
   "passkeyCreated": "Added on {date}",
-  "passkeyCreatedUsed": "Added on {date} · last used on {used}"
+  "passkeyCreatedUsed": "Added on {date} · last used on {used}",
+  "supportTitle": "Support Famio",
+  "supportSubtitle": "Famio is free and has no ads. If you like, you can support its development on Ko-fi."
 }

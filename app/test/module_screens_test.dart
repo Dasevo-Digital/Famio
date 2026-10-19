@@ -10,6 +10,7 @@ import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
+import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/screens/wishes_screen.dart';
@@ -930,6 +931,29 @@ void main() {
       expect(find.text('Emil'), findsOneWidget);
       expect(find.text('Nur Mama'), findsNothing);
       // Let the sync engine's retry timer run out.
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('settings', () {
+    Future<void> scrollToEnd(WidgetTester tester) => tester.scrollUntilVisible(
+      find.text('Was ist neu?'),
+      400,
+      scrollable: find.byType(Scrollable).last,
+    );
+
+    testWidgets('adults find the Ko-fi link, children do not', (tester) async {
+      await open(tester);
+      await push(tester, const SettingsScreen());
+      await scrollToEnd(tester);
+      expect(find.text('Famio unterstützen'), findsOneWidget);
+
+      Navigator.of(tester.element(find.byType(SettingsScreen))).pop();
+      await tester.pumpAndSettle();
+      appState.me = engine.members.firstWhere((m) => m.id == 'k1');
+      await push(tester, const SettingsScreen());
+      await scrollToEnd(tester);
+      expect(find.text('Famio unterstützen'), findsNothing);
       await tester.pump(const Duration(seconds: 5));
     });
   });
