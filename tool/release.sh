@@ -21,7 +21,9 @@
 # Other settings: FAMIO_RELEASE_WORK (server packages of each version for
 # the next smoke test, default ~/Famio/release-work), FAMIO_PRIVATE_PATTERNS
 # (file with one extended regex per line: names, team ids, device ids, home
-# network addresses – kept outside the repository).
+# network addresses – kept outside the repository), FAMIO_ANDROID_EMULATOR
+# (running emulator that starts the 64-bit package once, default
+# emulator-5554; "none" leaves the start out – never a phone).
 set -euo pipefail
 
 V=${1:?Aufruf: bash tool/release.sh <version>}
@@ -32,6 +34,7 @@ WORK=${FAMIO_RELEASE_WORK:-$HOME/Famio/release-work}
 LINUX=${FAMIO_LINUX_BUILD_HOST:-}
 WINDOWS=${FAMIO_WINDOWS_BUILD_HOST:-}
 PATTERNS=${FAMIO_PRIVATE_PATTERNS:-}
+EMULATOR=${FAMIO_ANDROID_EMULATOR:-emulator-5554}
 ANDROID_SDK=${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}
 BUILD_TOOLS=$(ls -d "$ANDROID_SDK"/build-tools/* | sort -V | tail -1)
 JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home}
@@ -167,6 +170,39 @@ A2="$R/Famio-$V-android-arm64.apk"
   fail "Paket für alle Handys ohne eingebaute Erkennung"
 [[ "$(unzip -l "$A2")" != *libmlkit_google_ocr_pipeline* ]] ||
   fail "arm64-Paket hat die Erkennung eingebaut (famioArm64 nicht gewirkt)"
+# Plugins that call Kotlin over JNI find their methods by signature: a type
+# renamed by R8 (kotlin.coroutines.Continuation in 2.0.8/2.0.9) leaves the
+# app white at start, which neither tests nor debug builds show.
+jni_ok() {
+  local dir
+  dir=$(mktemp -d)
+  unzip -q -o "$1" 'classes*.dex' -d "$dir"
+  local dump
+  dump=$(for d in "$dir"/classes*.dex; do "$BUILD_TOOLS/dexdump" "$d" 2> /dev/null; done)
+  rm -rf "$dir"
+  grep -A3 "name          : 'getAll'" <<< "$dump" |
+    grep -q "Ljava/util/List;Lkotlin/coroutines/Continuation;"
+}
+for f in "$A1" "$A2"; do
+  jni_ok "$f" || fail "$(basename "$f"): JNI-Signaturen von R8 umbenannt (proguard-rules.pro)"
+done
+# The release package must start: only a shrunk build shows such errors.
+if [ "$EMULATOR" != none ]; then
+  [[ "$EMULATOR" == emulator-* ]] || fail "FAMIO_ANDROID_EMULATOR muss ein Emulator sein"
+  ADB="$ANDROID_SDK/platform-tools/adb"
+  [ "$("$ADB" -s "$EMULATOR" get-state 2> /dev/null)" = device ] ||
+    fail "Emulator $EMULATOR läuft nicht (emulator -avd famio_test -no-window) oder FAMIO_ANDROID_EMULATOR=none"
+  "$ADB" -s "$EMULATOR" install -r "$A2" > /dev/null
+  "$ADB" -s "$EMULATOR" logcat -c
+  "$ADB" -s "$EMULATOR" shell am start -n de.status403.famio/.MainActivity > /dev/null
+  sleep 15
+  pid=$("$ADB" -s "$EMULATOR" shell pidof de.status403.famio | tr -d '\r')
+  [ -n "$pid" ] || fail "Android-Paket startet nicht auf $EMULATOR"
+  errors=$("$ADB" -s "$EMULATOR" logcat -d --pid="$pid" |
+    grep -E "Unhandled Exception|FATAL EXCEPTION|NoSuchMethodError|ClassNotFoundException" || true)
+  [ -z "$errors" ] || { printf '%s\n' "$errors" | head -5 >&2; fail "Android-Paket: Fehler beim Start"; }
+  echo "Start auf $EMULATOR: ohne Fehler"
+fi
 for f in "$A1" "$A2"; do
   printf '%s: %s MB, %s\n' "$(basename "$f")" "$(($(stat -f %z "$f") / 1048576))" "$(code "$f")"
 done
