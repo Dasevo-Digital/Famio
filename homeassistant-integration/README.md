@@ -37,6 +37,15 @@ aus dem Repository nach `/config/custom_components/famio` kopieren (z. B.
 mit dem Samba- oder „Studio Code Server“-Add-on) und Home Assistant neu
 starten; Updates dann ebenso von Hand.
 
+Von Hand kopiert kennt HACS die Integration nicht und listet sie auch nicht.
+Zum Umstieg wie oben das Repository in HACS hinzufügen und **Famio**
+herunterladen: HACS ersetzt den kopierten Ordner, die Einrichtung unter
+Geräte & Dienste bleibt erhalten. Danach Home Assistant neu starten.
+
+Das Symbol der Integration liegt im Ordner `brand` der Integration. Home
+Assistant zeigt es ab Version 2026.3, ältere Versionen zeigen einen
+Platzhalter.
+
 Danach:
 
 1. Server-Adresse (z. B. `192.168.1.50` – dann HTTPS auf Port 8766 – oder
