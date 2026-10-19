@@ -4,6 +4,23 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.9 – Wochenplan, Verträge und Sparziele
+
+- Der Kalender druckt einen Wochenplan für den Kühlschrank (Drucker-Symbol):
+  Termine, Essen, Ämter und Tonnen, eine Zeile je Tag.
+- „Woche vorschlagen“ im Essensplan füllt die freien Tage aus euren
+  Lieblingsrezepten, ohne Wiederholung der letzten zwei Wochen und mit dem,
+  was der Vorrat hergibt. Nach dem Einkauf trägt „Bezahlt? Betrag ins
+  Haushaltsbuch“ den Betrag als Ausgabe ein.
+- Fristen kennen Verträge und Abos: Famio erinnert vor dem letzten
+  Kündigungstag, auf Wunsch steht der Monatsbetrag im Haushaltsbuch.
+- Kinder legen im Taschengeld-Konto Sparziele an und sehen, wann es reicht.
+- Für Termine an Familienorten erinnert Famio, wann man losfahren muss
+  (Einstellungen → Push-Benachrichtigungen).
+- Erwachsene können eigene Notfall-Infos hinterlegen (Einstellungen → Meine
+  Notfall-Infos); beim SOS-Alarm sehen die anderen Erwachsenen sie.
+- Kalender-Apps behalten Farbe und Reihenfolge der Famio-Kalender.
+
 ## 2.0.8 – Urlaub, freie Termine und Web-App mit Mitteilungen
 
 - Urlaubsmodus: Unter Ämter → Urlaub einen Zeitraum eintragen. Dann sind

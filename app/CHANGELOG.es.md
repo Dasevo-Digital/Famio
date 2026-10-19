@@ -4,6 +4,27 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.9 – Plan semanal, contratos y metas de ahorro
+
+- El calendario imprime un plan semanal para la nevera (icono de
+  impresora): citas, comidas, encargos y basura, una fila por día.
+- «Proponer la semana» en el plan de comidas rellena los días libres con
+  vuestras recetas favoritas, sin repetir las dos últimas semanas y con lo
+  que hay en la despensa. Después de la compra, «¿Pagado? Importe al libro
+  de cuentas» anota el importe como gasto.
+- Los plazos conocen contratos y suscripciones: Famio avisa antes del último
+  día para darse de baja y, si quieres, el importe mensual figura en el
+  libro de cuentas.
+- Los niños crean metas de ahorro en su cuenta de paga y ven cuándo les
+  alcanza.
+- Para citas en lugares de la familia, Famio avisa de cuándo hay que salir
+  (Ajustes → Notificaciones push).
+- Los adultos pueden guardar su propia información de emergencia (Ajustes →
+  Mi información de emergencia); durante una alarma SOS los demás adultos
+  la ven.
+- Las apps de calendario conservan el color y el orden de los calendarios
+  de Famio.
+
 ## 2.0.8 – Vacaciones, huecos libres y app web con notificaciones
 
 - Modo vacaciones: introduce un periodo en Encargos → Vacaciones.

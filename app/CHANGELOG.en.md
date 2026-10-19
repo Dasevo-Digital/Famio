@@ -4,6 +4,24 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.9 – Week plan, contracts and savings goals
+
+- The calendar prints a week plan for the fridge (printer icon):
+  appointments, meals, chores and bins, one row per day.
+- "Suggest the week" in the meal plan fills the free days from your
+  favourite recipes, without repeating the last two weeks and with what the
+  pantry has. After shopping, "Paid? Amount into the budget" adds the amount
+  as an expense.
+- Deadlines know contracts and subscriptions: Famio reminds you before the
+  last day to cancel, and the monthly amount can go into the budget.
+- Children set savings goals in their pocket money account and see when
+  they will have enough.
+- For appointments at family places, Famio reminds you when to leave
+  (Settings → Push notifications).
+- Adults can store their own emergency information (Settings → My emergency
+  info); during an SOS alarm the other adults see it.
+- Calendar apps keep the colour and order of the Famio calendars.
+
 ## 2.0.8 – Holidays, free times and a web app with notifications
 
 - Holiday mode: enter a period under Chores → Holidays. Chores and routines
