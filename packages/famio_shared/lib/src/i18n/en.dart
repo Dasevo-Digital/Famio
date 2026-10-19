@@ -104,7 +104,8 @@ const sharedEn = <String, String>{
   "DeadlineArea.pet": "Pets",
   "DeadlineArea.contract": "Contracts & subscriptions",
   "DeadlinePreset|Handyvertrag": "Mobile contract",
-  "DeadlinePreset|Kündigungsfrist meist 1 bis 3 Monate zum Ende der Laufzeit": "Notice period usually 1 to 3 months before the end of the term",
+  "DeadlinePreset|Kündigungsfrist meist 1 bis 3 Monate zum Ende der Laufzeit":
+      "Notice period usually 1 to 3 months before the end of the term",
   "DeadlinePreset|Strom": "Electricity",
   "DeadlinePreset|Gas": "Gas",
   "DeadlinePreset|Internet": "Internet",

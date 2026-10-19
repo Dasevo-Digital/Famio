@@ -2423,5 +2423,19 @@
   "remindersContractLead": "{emoji} {label}: {days} days left to cancel",
   "remindersContractLeadBody": "Cancel by {date}, otherwise the contract renews.",
   "remindersContractToday": "{emoji} Last day to cancel: {label}",
-  "remindersContractTodayBody": "Then mark it as cancelled or running on in Famio."
+  "remindersContractTodayBody": "Then mark it as cancelled or running on in Famio.",
+  "savingsGoals": "Savings goals",
+  "savingsGoalAdd": "Savings goal",
+  "savingsGoalNew": "New savings goal",
+  "savingsGoalEdit": "Edit savings goal",
+  "savingsGoalWhat": "What for?",
+  "savingsGoalWhatHint": "e.g. a bike",
+  "savingsGoalAmount": "How much?",
+  "savingsGoalProgress": "{saved} of {target}",
+  "savingsGoalWhen": "about {weeks} more weeks, until {date}",
+  "savingsGoalNextPayday": "with the next pocket money on {date}",
+  "savingsGoalLeft": "{amount} still missing.",
+  "savingsGoalReached": "Done! 🎉",
+  "savingsGoalBuy": "Bought",
+  "savingsGoalBuyConfirm": "Bought {title} for {amount}? The amount is taken off the pocket money."
 }

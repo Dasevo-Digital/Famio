@@ -76,6 +76,9 @@ abstract final class Collections {
   /// Family holidays: chores, routines and bin reminders rest (adults only).
   static const vacations = 'vacations';
 
+  /// What children save their pocket money for (children set their own).
+  static const savingsGoals = 'savings_goals';
+
   /// Emergency facts of an adult (one per member, id = member id): written
   /// by that member, received only by adults (see [adultReadable]).
   static const memberEmergency = 'member_emergency';
@@ -169,6 +172,7 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    savingsGoals,
     memberEmergency,
     locationSettings,
     trips,

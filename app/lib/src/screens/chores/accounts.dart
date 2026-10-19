@@ -129,6 +129,7 @@ class MemberAccountScreen extends StatelessWidget {
                   ),
                 ],
               ),
+              _SavingsGoals(memberId: memberId, engine: engine),
               if (adult) ...[
                 const SizedBox(height: 12),
                 Wrap(
@@ -504,5 +505,256 @@ class MemberAccountScreen extends StatelessWidget {
       ),
     );
     if (ok == true) engine.convertPoints(memberId, points);
+  }
+}
+
+/// What the child saves for: progress from the pocket money balance and,
+/// with a weekly amount, when it will be enough.
+class _SavingsGoals extends StatelessWidget {
+  const _SavingsGoals({required this.memberId, required this.engine});
+
+  final String memberId;
+  final SyncEngine engine;
+
+  static const _emojis = [
+    '🎯',
+    '🚲',
+    '🎮',
+    '🧸',
+    '📚',
+    '⚽',
+    '🎧',
+    '🛹',
+    '👟',
+    '🎁',
+  ];
+
+  bool get _mayEdit => engine.iAmAdult || engine.memberId == memberId;
+
+  Future<void> _edit(BuildContext context, [SavingsGoal? old]) async {
+    final title = TextEditingController(text: old?.title);
+    final amount = TextEditingController(
+      text: old == null ? '' : formatEuro(old.targetCents).replaceAll(' €', ''),
+    );
+    var emoji = old?.emoji ?? _emojis.first;
+    // The values come back from the dialog; its fields stay alive until it
+    // has faded out (saving rebuilds the screen meanwhile).
+    final result = await showDialog<(String, int?, String)>(
+      context: context,
+      builder: (context) => DisposeWith(
+        controllers: [title, amount],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            scrollable: true,
+            title: Text(old == null ? tr.savingsGoalNew : tr.savingsGoalEdit),
+            content: SizedBox(
+              width: 340,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final e in _emojis)
+                        ChoiceChip(
+                          label: Text(e, style: const TextStyle(fontSize: 20)),
+                          selected: emoji == e,
+                          onSelected: (_) => setState(() => emoji = e),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: title,
+                    autofocus: old == null,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: InputDecoration(
+                      labelText: tr.savingsGoalWhat,
+                      hintText: tr.savingsGoalWhatHint,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amount,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.savingsGoalAmount,
+                      suffixText: '€',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(tr.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, (
+                  title.text.trim(),
+                  parseEuro(amount.text),
+                  emoji,
+                )),
+                child: Text(tr.commonSave),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (result == null) return;
+    final (what, cents, chosen) = result;
+    if (cents == null || cents <= 0 || what.isEmpty) return;
+    engine.saveSavingsGoal(
+      SavingsGoal(
+        id: old?.id ?? newId(),
+        memberId: memberId,
+        title: what,
+        targetCents: cents,
+        emoji: chosen,
+      ),
+    );
+  }
+
+  Future<void> _buy(BuildContext context, SavingsGoal g) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(
+          tr.savingsGoalBuyConfirm(
+            '${g.emoji} ${g.title}',
+            formatEuro(g.targetCents),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr.savingsGoalBuy),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) engine.buySavingsGoal(g);
+  }
+
+  String _when(SavingsGoal g, int balance, Allowance? allowance) {
+    final missing = g.targetCents - balance;
+    final on = g.reachedOn(
+      balanceCents: balance,
+      allowance: allowance,
+      today: DateTime.now(),
+    );
+    if (on == null) return tr.savingsGoalLeft(formatEuro(missing));
+    final date = DateFormat.MMMd(appLanguage).format(on);
+    final weeks = (missing / allowance!.weeklyCents).ceil();
+    return weeks <= 1
+        ? tr.savingsGoalNextPayday(date)
+        : tr.savingsGoalWhen(weeks, date);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final goals = engine.savingsGoals(memberId);
+    if (goals.isEmpty && !_mayEdit) return const SizedBox.shrink();
+    final c = FamioColors.of(context);
+    final color = c.strong(FamioSection.chores);
+    final theme = Theme.of(context);
+    final balance = engine.moneyBalance(memberId);
+    final allowance = engine.allowance(memberId);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListHeading(
+          tr.savingsGoals,
+          color: color,
+          trailing: _mayEdit
+              ? TextButton.icon(
+                  icon: const Icon(AppIcons.plus, size: 18),
+                  label: Text(tr.savingsGoalAdd),
+                  onPressed: () => _edit(context),
+                )
+              : null,
+        ),
+        for (final g in goals)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: GestureDetector(
+              onLongPress: _mayEdit
+                  ? () => deleteWithUndo(
+                      context,
+                      what: g.title,
+                      collections: const {Collections.savingsGoals},
+                      delete: () => engine.deleteSavingsGoal(g.id),
+                    )
+                  : null,
+              child: SoftCard(
+                onTap: _mayEdit ? () => _edit(context, g) : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(g.emoji, style: theme.textTheme.headlineSmall),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            g.title,
+                            style: theme.textTheme.titleMedium,
+                          ),
+                        ),
+                        Text(
+                          tr.savingsGoalProgress(
+                            formatEuro(balance.clamp(0, g.targetCents).toInt()),
+                            formatEuro(g.targetCents),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: LinearProgressIndicator(
+                        value: g.progress(balance),
+                        minHeight: 10,
+                        color: color,
+                        backgroundColor: c.tint(FamioSection.chores),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    if (balance >= g.targetCents)
+                      Row(
+                        children: [
+                          Text(
+                            tr.savingsGoalReached,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                          const Spacer(),
+                          if (engine.iAmAdult)
+                            FilledButton.tonal(
+                              onPressed: () => _buy(context, g),
+                              child: Text(tr.savingsGoalBuy),
+                            ),
+                        ],
+                      )
+                    else
+                      Text(
+                        _when(g, balance, allowance),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

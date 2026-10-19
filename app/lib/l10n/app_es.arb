@@ -2423,5 +2423,19 @@
   "remindersContractLead": "{emoji} {label}: quedan {days} días para cancelar",
   "remindersContractLeadBody": "Cancela antes del {date}; si no, el contrato se renueva.",
   "remindersContractToday": "{emoji} Último día para cancelar: {label}",
-  "remindersContractTodayBody": "Después márcalo en Famio como cancelado o vigente."
+  "remindersContractTodayBody": "Después márcalo en Famio como cancelado o vigente.",
+  "savingsGoals": "Metas de ahorro",
+  "savingsGoalAdd": "Meta de ahorro",
+  "savingsGoalNew": "Nueva meta de ahorro",
+  "savingsGoalEdit": "Editar meta de ahorro",
+  "savingsGoalWhat": "¿Para qué?",
+  "savingsGoalWhatHint": "p. ej. una bici",
+  "savingsGoalAmount": "¿Cuánto?",
+  "savingsGoalProgress": "{saved} de {target}",
+  "savingsGoalWhen": "unas {weeks} semanas más, hasta el {date}",
+  "savingsGoalNextPayday": "con la próxima paga el {date}",
+  "savingsGoalLeft": "Faltan {amount}.",
+  "savingsGoalReached": "¡Conseguido! 🎉",
+  "savingsGoalBuy": "Comprado",
+  "savingsGoalBuyConfirm": "¿Comprado {title} por {amount}? El importe se descuenta de la paga."
 }

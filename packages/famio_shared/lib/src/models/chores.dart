@@ -403,6 +403,67 @@ class MoneyEntry {
   };
 }
 
+/// What a child saves for (`Collections.savingsGoals`): children set their
+/// own, adults anyone's.
+class SavingsGoal {
+  const SavingsGoal({
+    required this.id,
+    required this.memberId,
+    required this.title,
+    required this.targetCents,
+    this.emoji = '🎯',
+  });
+
+  factory SavingsGoal.fromRecord(SyncRecord r) => SavingsGoal(
+    id: r.id,
+    memberId: r.data['memberId'] as String? ?? '',
+    title: r.data['title'] as String? ?? '',
+    targetCents: (r.data['targetCents'] as num?)?.toInt() ?? 0,
+    emoji: r.data['emoji'] as String? ?? '🎯',
+  );
+
+  final String id;
+  final String memberId;
+  final String title;
+  final int targetCents;
+  final String emoji;
+
+  /// How far [balanceCents] gets towards it, 0 … 1.
+  double progress(int balanceCents) => targetCents <= 0
+      ? 1
+      : (balanceCents / targetCents).clamp(0, 1).toDouble();
+
+  /// When it is reached: [today] if the balance covers it, else the payday
+  /// on which the weekly pocket money makes up the rest; null without a
+  /// weekly amount.
+  DateTime? reachedOn({
+    required int balanceCents,
+    required Allowance? allowance,
+    required DateTime today,
+  }) {
+    final day = DateTime(today.year, today.month, today.day);
+    if (balanceCents >= targetCents) return day;
+    final weekly = allowance?.weeklyCents ?? 0;
+    if (allowance == null || weekly <= 0) return null;
+    final weeks = ((targetCents - balanceCents) / weekly).ceil();
+    // Today's pocket money is booked already (see AllowanceJob).
+    final next = allowance
+        .paydays(
+          DateTime(day.year, day.month, day.day + 1),
+          DateTime(day.year, day.month, day.day + 7),
+        )
+        .first;
+    return DateTime(next.year, next.month, next.day + 7 * (weeks - 1));
+  }
+
+  Map<String, Object?> toData() => {
+    'memberId': memberId,
+    'title': title,
+    'targetCents': targetCents,
+    'emoji': emoji,
+  };
+}
+
 /// One step of a [Routine].
 class RoutineStep {
   const RoutineStep({required this.id, required this.title, this.emoji = ''});

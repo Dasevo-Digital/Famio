@@ -4,6 +4,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/screens/chores_screens.dart';
 import 'package:famio/src/screens/event_editor.dart';
 import 'package:famio/src/screens/event_import_screen.dart';
 import 'package:famio/src/screens/notes_screen.dart';
@@ -999,6 +1000,57 @@ void main() {
       appState.me = engine.members.firstWhere((m) => m.id == 'k1');
       await push(tester, const SettingsScreen());
       expect(await _seenWhileScrolling(tester, 'Meine Notfall-Infos'), isFalse);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('savings goals', () {
+    testWidgets('saved towards, reached, bought', (tester) async {
+      await open(tester);
+      engine
+        ..saveAllowance(
+          Allowance(memberId: 'k1', weeklyCents: 500, since: DateTime(2026)),
+        )
+        ..saveMoneyEntry(
+          MoneyEntry(
+            id: 'm',
+            memberId: 'k1',
+            cents: 3000,
+            at: DateTime.now(),
+            kind: MoneyKind.gift,
+          ),
+        );
+      await push(tester, const MemberAccountScreen(memberId: 'k1'));
+      await tester.tap(find.text('Sparziel'));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Wofür?'), 'Fahrrad');
+      await tester.enterText(field('Wie viel?'), '120');
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      await _pumpData(tester);
+
+      expect(find.text('Fahrrad'), findsOneWidget);
+      expect(find.text('30,00 € von 120,00 €'), findsOneWidget);
+      expect(find.textContaining('noch etwa 18 Wochen'), findsOneWidget);
+
+      engine.saveMoneyEntry(
+        MoneyEntry(
+          id: 'oma',
+          memberId: 'k1',
+          cents: 9000,
+          at: DateTime.now(),
+          kind: MoneyKind.gift,
+        ),
+      );
+      await _pumpData(tester);
+      expect(find.text('Geschafft! 🎉'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Gekauft'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Gekauft').last);
+      await tester.pumpAndSettle();
+      await _pumpData(tester);
+      expect(engine.savingsGoals('k1'), isEmpty);
+      expect(engine.moneyBalance('k1'), 0);
       await tester.pump(const Duration(seconds: 5));
     });
   });

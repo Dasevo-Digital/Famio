@@ -9,6 +9,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
@@ -33,6 +34,7 @@ const _collections = {
   Collections.pointEntries,
   Collections.allowances,
   Collections.moneyEntries,
+  Collections.savingsGoals,
   'members',
 };
 

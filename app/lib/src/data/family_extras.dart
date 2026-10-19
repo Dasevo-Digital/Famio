@@ -181,6 +181,35 @@ extension FamilyExtras on SyncEngine {
 
   void deleteMoneyEntry(String id) => delete(Collections.moneyEntries, id);
 
+  // --- savings goals --------------------------------------------------------
+
+  List<SavingsGoal> savingsGoals(String memberId) =>
+      records(Collections.savingsGoals)
+          .map(SavingsGoal.fromRecord)
+          .where((g) => g.memberId == memberId)
+          .toList()
+        ..sort((a, b) => a.targetCents.compareTo(b.targetCents));
+
+  void saveSavingsGoal(SavingsGoal g) =>
+      put(Collections.savingsGoals, g.id, g.toData());
+
+  void deleteSavingsGoal(String id) => delete(Collections.savingsGoals, id);
+
+  /// Bought: the amount goes off the pocket money, the goal is done.
+  void buySavingsGoal(SavingsGoal g) {
+    saveMoneyEntry(
+      MoneyEntry(
+        id: newId(),
+        memberId: g.memberId,
+        cents: -g.targetCents,
+        at: DateTime.now(),
+        kind: MoneyKind.spent,
+        note: '${g.emoji} ${g.title}',
+      ),
+    );
+    deleteSavingsGoal(g.id);
+  }
+
   /// Turns [points] into pocket money at the member's rate.
   void convertPoints(String memberId, int points) {
     final rate = allowance(memberId)?.centsPerPoint ?? 0;

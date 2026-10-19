@@ -6226,5 +6226,63 @@
       }
     }
   },
-  "remindersContractTodayBody": "Danach in Famio als gekündigt oder weiterlaufend markieren."
+  "remindersContractTodayBody": "Danach in Famio als gekündigt oder weiterlaufend markieren.",
+  "savingsGoals": "Sparziele",
+  "savingsGoalAdd": "Sparziel",
+  "savingsGoalNew": "Neues Sparziel",
+  "savingsGoalEdit": "Sparziel ändern",
+  "savingsGoalWhat": "Wofür?",
+  "savingsGoalWhatHint": "z. B. Fahrrad",
+  "savingsGoalAmount": "Wie viel?",
+  "savingsGoalProgress": "{saved} von {target}",
+  "@savingsGoalProgress": {
+    "placeholders": {
+      "saved": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "savingsGoalWhen": "noch etwa {weeks} Wochen, bis {date}",
+  "@savingsGoalWhen": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "savingsGoalNextPayday": "mit dem nächsten Taschengeld am {date}",
+  "@savingsGoalNextPayday": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "savingsGoalLeft": "Es fehlen noch {amount}.",
+  "@savingsGoalLeft": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "savingsGoalReached": "Geschafft! 🎉",
+  "savingsGoalBuy": "Gekauft",
+  "savingsGoalBuyConfirm": "{title} für {amount} gekauft? Der Betrag wird vom Taschengeld abgebucht.",
+  "@savingsGoalBuyConfirm": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

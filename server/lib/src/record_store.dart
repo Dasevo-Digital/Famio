@@ -115,6 +115,12 @@ class RecordStore {
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
         if (Collections.adultOnly.contains(collection)) return false;
+        // Children save for their own goals only.
+        if (collection == Collections.savingsGoals) {
+          bool own(SyncRecord? r) =>
+              r == null || r.deleted || r.data['memberId'] == userId;
+          return own(existing) && (incoming.deleted || own(incoming));
+        }
         if (collection != Collections.pointEntries) return true;
         // Children ask for points (done chores, wished rewards); adults
         // decide. Their own open requests they may change or withdraw.

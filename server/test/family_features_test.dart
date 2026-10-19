@@ -624,6 +624,27 @@ void main() {
     },
   );
 
+  test('children save for their own goals, adults for anyone', () async {
+    SyncRecord goal(String id, String memberId) => _record(
+      Collections.savingsGoals,
+      id,
+      SavingsGoal(
+        id: id,
+        memberId: memberId,
+        title: 'Fahrrad',
+        targetCents: 12000,
+      ).toData(),
+    );
+    final r = await kind.sync([goal('own', kind.id), goal('mamas', mama.id)]);
+    expect(r.rejected.map((x) => x.id), ['mamas']);
+    // An adult's goal for the child: the child cannot take it over.
+    await mama.sync([goal('given', kind.id), goal('mine', mama.id)]);
+    await kind.sync();
+    final takeOver = await kind.sync([goal('mine', kind.id)]);
+    expect(takeOver.rejected.map((x) => x.id), ['mine']);
+    expect(kind.collections(), contains(Collections.savingsGoals));
+  });
+
   test('children cannot declare a holiday', () async {
     final r = await kind.sync([
       _record(
