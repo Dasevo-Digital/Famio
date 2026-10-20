@@ -2,7 +2,7 @@
 # Build from the repository root: docker build -t famio-server .
 # The web app comes from server/web (app/tool/build_web.sh), if built.
 # Pinned multi-architecture image digests make release builds reproducible.
-FROM dart:3.12.2@sha256:5ac89dbcae4327278b257920e2786df0f22c87adc630017266b67cfcceef8348 AS build
+FROM dart:3.13.5@sha256:8604cbd137b6d67c24f49b916f2aa9b67d71b539576e0178bf161d831c9e344f AS build
 WORKDIR /src
 COPY packages/famio_shared packages/famio_shared
 COPY server/pubspec.* server/
