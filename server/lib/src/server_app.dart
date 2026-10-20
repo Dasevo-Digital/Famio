@@ -44,6 +44,7 @@ import 'remote_url_policy.dart';
 import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
+import 'photos/photovault.dart';
 import 'updates/app_updates.dart';
 import 'updates/update_notices.dart';
 
@@ -226,6 +227,15 @@ class FamioServerApp {
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
     );
+    photoVault = PhotoVaultLink(
+      db: db,
+      records: records,
+      accounts: accounts,
+      files: files,
+      location: () => settings.location,
+      onChanged: () => hub.notifyRev(records.currentRev),
+      client: httpClient,
+    );
     appUpdates = AppUpdates(
       db: db,
       dir: p.join(dataDir, 'app-updates'),
@@ -263,6 +273,7 @@ class FamioServerApp {
       davSteps: DavStepMarks(db),
       davProperties: DavProperties(db),
       paperBuddy: paperBuddy,
+      photoVault: photoVault,
       appUpdates: appUpdates,
       auditLog: auditLog,
       requireTls: requireTls,
@@ -329,6 +340,7 @@ class FamioServerApp {
   late final CalendarAccess calendarAccess;
   late final CalendarImporter importer;
   late final PaperBuddyLink paperBuddy;
+  late final PhotoVaultLink photoVault;
   late final AppUpdates appUpdates;
   late final CalDavSync caldav;
 
@@ -377,6 +389,7 @@ class FamioServerApp {
   void startBackgroundJobs() {
     importer.start();
     paperBuddy.start();
+    photoVault.start();
     appUpdates
       ..onReady = UpdateNotices(
         db: db,
@@ -412,6 +425,7 @@ class FamioServerApp {
     backups?.stop();
     importer.stop();
     paperBuddy.stop();
+    photoVault.stop();
     appUpdates.stop();
     caldav.stop();
     lists.stop();

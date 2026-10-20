@@ -736,6 +736,40 @@ const sharedEn = <String, String>{
       "The PaperBuddy address starts with http:// or https://.",
   "Server|Keine Verbindung zu PaperBuddy ({error}).":
       "No connection to PaperBuddy ({error}).",
+  "Server|Das PhotoVault-Konto muss erst in PhotoVault die Zwei-Faktor-Anmeldung einrichten.":
+      "The PhotoVault account must first set up two-factor sign-in in PhotoVault.",
+  "Server|Unter dieser Adresse antwortet kein PhotoVault.":
+      "No PhotoVault answers at this address.",
+  "Server|Erst mit PhotoVault verbinden.": "Connect to PhotoVault first.",
+  "Server|Dieses Album gibt es in PhotoVault nicht.":
+      "This album does not exist in PhotoVault.",
+  "Server|Keine Verbindung zu PhotoVault ({error}).":
+      "No connection to PhotoVault ({error}).",
+  "Server|Mitglied „{name}“": "Member “{name}”",
+  "Server|Kind „{name}“": "Child “{name}”",
+  "Server|Kontakt „{name}“": "Contact “{name}”",
+  "Server|Kalender: „{title}“": "Calendar: “{title}”",
+  "Server|Kalender „{calendar}“: „{title}“": "Calendar “{calendar}”: “{title}”",
+  "Server|PhotoVault nimmt das Foto nicht an ({status} {body}).":
+      "PhotoVault does not accept the photo ({status} {body}).",
+  "Server|Das ist kein PhotoVault-Link zum Teilen (…/teilen/…).":
+      "This is not a PhotoVault share link (…/teilen/…).",
+  "Server|Der Link ist mit einem Passwort geschützt: bitte eintragen.":
+      "The link is protected by a password: please enter it.",
+  "Server|PhotoVault kennt diesen Link nicht (mehr).":
+      "PhotoVault does not know this link (any more).",
+  "Server|Dieser Link nimmt keine Beiträge an: in PhotoVault beim Teilen „Beiträge erlauben“ einschalten.":
+      "This link does not take contributions: switch on “Allow contributions” when sharing in PhotoVault.",
+  "Server|PhotoVault lehnt das Passwort des Links ab.":
+      "PhotoVault rejects the link’s password.",
+  "Server|PhotoVault antwortet mit Fehler {status}.":
+      "PhotoVault answers with error {status}.",
+  "Server|Die Adresse von PhotoVault beginnt mit http:// oder https://.":
+      "PhotoVault’s address starts with http:// or https://.",
+  "Server|PhotoVault lehnt die Anmeldung ab.":
+      "PhotoVault rejects the sign-in.",
+  "Server|PhotoVault: zu viele Versuche, bitte später noch einmal.":
+      "PhotoVault: too many attempts, please try again later.",
   "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rejects the token.",
   "Server|PaperBuddy antwortet mit Fehler {status}.":
       "PaperBuddy answers with error {status}.",

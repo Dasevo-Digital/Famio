@@ -6423,7 +6423,7 @@
       }
     }
   },
-  "memoriesPhotos": "{count, plural, =1{1 Foto aus dem Chat} other{{count} Fotos aus dem Chat}}",
+  "memoriesPhotos": "{count, plural, =1{1 Foto von diesem Tag} other{{count} Fotos von diesem Tag}}",
   "@memoriesPhotos": {
     "placeholders": {
       "count": {
@@ -6472,5 +6472,67 @@
     }
   },
   "settingsKeepWebData": "Daten in diesem Browser behalten",
-  "settingsKeepWebDataSubtitle": "Famio startet schneller und lädt nur, was sich geändert hat. Verschlüsselt gespeichert, Abmelden löscht die Kopie. Nicht auf Computern, die andere mitbenutzen."
+  "settingsKeepWebDataSubtitle": "Famio startet schneller und lädt nur, was sich geändert hat. Verschlüsselt gespeichert, Abmelden löscht die Kopie. Nicht auf Computern, die andere mitbenutzen.",
+  "adminPhotoVault": "PhotoVault",
+  "adminPhotoVaultSubtitle": "Fotos für Erinnerungen und Wandanzeige, Chat-Fotos als Beiträge, Geburtstage aus dem Stammbaum",
+  "adminPhotoVaultActive": "Verbunden mit {host}",
+  "@adminPhotoVaultActive": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPhotoVaultIntro": "Famio meldet sich einmal mit einem PhotoVault-Konto an. Dort erscheint es als Gerät „Famio“ und lässt sich jederzeit abmelden; Famio behält nur diesen Zugang, nicht das Passwort.",
+  "adminPhotoVaultUrl": "Adresse von PhotoVault",
+  "adminPhotoVaultName": "PhotoVault-Konto",
+  "adminPhotoVaultPassword": "Passwort",
+  "adminPhotoVaultCode": "Code aus der Authenticator-App",
+  "adminPhotoVaultConnect": "Verbinden",
+  "adminPhotoVaultConfirm": "Bestätigen",
+  "adminPhotoVaultConnected": "Verbunden als {account} mit {host}",
+  "@adminPhotoVaultConnected": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      },
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "adminPhotoVaultStatus": "Zuletzt abgeglichen {time}: {memories} Erinnerungen, {album} Fotos im Album, {birthdays} Geburtstage, {sent} Chat-Fotos gesendet",
+  "@adminPhotoVaultStatus": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "memories": {
+        "type": "int"
+      },
+      "album": {
+        "type": "int"
+      },
+      "birthdays": {
+        "type": "int"
+      },
+      "sent": {
+        "type": "int"
+      }
+    }
+  },
+  "adminPhotoVaultMemories": "„Heute vor einem Jahr“ mit Fotos aus PhotoVault",
+  "adminPhotoVaultAlbum": "Album für die Wandanzeige",
+  "adminPhotoVaultNoAlbum": "Kein Album",
+  "adminPhotoVaultShare": "Link zum Teilen mit Beiträgen",
+  "adminPhotoVaultShareHint": "Neue Fotos aus dem Familien-Chat (nie Direktnachrichten) gehen an diesen Link; in PhotoVault nimmst du sie an oder lehnst sie ab. Leer lassen, um nichts zu senden.",
+  "adminPhotoVaultSharePassword": "Passwort des Links (falls er eines hat)",
+  "adminPhotoVaultBirthdays": "Geburtstage aus dem Stammbaum übernehmen",
+  "adminPhotoVaultBirthdaysHint": "Nur lebende Verwandte, und nur wenn der Geburtstag nicht schon bei einem Mitglied, Kind, Kontakt oder in einem Kalender steht.",
+  "adminPhotoVaultSkipped": "Schon eingetragen, nicht übernommen:",
+  "adminPhotoVaultWho": "Wer sieht Fotos und Geburtstage (ohne Auswahl: alle außer Gästen)",
+  "adminPhotoVaultSaved": "PhotoVault gespeichert.",
+  "adminPhotoVaultRemove": "PhotoVault trennen",
+  "adminPhotoVaultRemoveText": "Famio meldet sich bei PhotoVault ab und entfernt die Fotos und Geburtstage von dort. In PhotoVault bleibt alles, wie es ist.",
+  "adminPhotoVaultSyncNow": "Jetzt abgleichen"
 }

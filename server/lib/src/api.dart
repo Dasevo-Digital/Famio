@@ -29,6 +29,7 @@ import 'dav/caldav_server.dart';
 import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
+import 'photos/photovault.dart';
 import 'updates/app_updates.dart';
 import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
@@ -66,6 +67,7 @@ part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
 part 'api/overview_routes.dart';
 part 'api/paperbuddy_routes.dart';
+part 'api/photovault_routes.dart';
 part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
 part 'api/web_routes.dart';
@@ -98,6 +100,7 @@ class FamioApi {
     this.davSteps,
     this.davProperties,
     this.paperBuddy,
+    this.photoVault,
     this.appUpdates,
     this.auditLog,
     this.requireTls = false,
@@ -234,6 +237,9 @@ class FamioApi {
   /// The family's PaperBuddy documents, if an admin connected it.
   final PaperBuddyLink? paperBuddy;
 
+  /// The family's PhotoVault, if an admin connected it.
+  final PhotoVaultLink? photoVault;
+
   /// App packages for the family's apps, if an admin switched it on.
   final AppUpdates? appUpdates;
   final _startedAt = DateTime.now();
@@ -334,6 +340,12 @@ class FamioApi {
       ..put('/api/admin/paperbuddy', _adminSavePaperBuddy)
       ..delete('/api/admin/paperbuddy', _adminDeletePaperBuddy)
       ..post('/api/admin/paperbuddy/sync', _adminSyncPaperBuddy)
+      ..get('/api/admin/photovault', _adminPhotoVault)
+      ..post('/api/admin/photovault/connect', _adminConnectPhotoVault)
+      ..put('/api/admin/photovault', _adminSavePhotoVault)
+      ..delete('/api/admin/photovault', _adminDeletePhotoVault)
+      ..post('/api/admin/photovault/sync', _adminSyncPhotoVault)
+      ..get('/api/admin/photovault/albums', _adminPhotoVaultAlbums)
       ..get('/api/admin/app-updates', _adminAppUpdates)
       ..put('/api/admin/app-updates', _adminSaveAppUpdates)
       ..post('/api/admin/app-updates/refresh', _adminRefreshAppUpdates)

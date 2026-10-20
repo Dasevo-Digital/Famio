@@ -607,6 +607,17 @@ class _SettingsFormState extends State<_SettingsForm> {
               open: showPaperBuddyDialog,
             ),
             _IntegrationTile(
+              icon: AppIcons.images,
+              title: tr.adminPhotoVault,
+              subtitle: tr.adminPhotoVaultSubtitle,
+              enabled: !_busy,
+              load: (api) => api.photoVault(),
+              state: (info) => info['connected'] == true
+                  ? tr.adminPhotoVaultActive(_host('${info['url'] ?? ''}'))
+                  : null,
+              open: showPhotoVaultDialog,
+            ),
+            _IntegrationTile(
               icon: AppIcons.cloudArrowDown,
               title: tr.adminAppUpdates,
               subtitle: tr.adminAppUpdatesSubtitle,

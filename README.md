@@ -69,6 +69,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
+| PhotoVault: „Heute vor einem Jahr“ und Wandanzeige mit Fotos aus PhotoVault, Chat-Fotos als Beiträge an einen Link, Geburtstage aus dem Stammbaum (nur was noch nirgends steht) | ✅ |
 | Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto; Urlaubsmodus (Ämter, Routinen und Abfall-Erinnerungen ruhen, auf Wunsch auch das Taschengeld) | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
@@ -247,6 +248,38 @@ die Datei holt der Famio-Server erst, wenn ein Mitglied sie öffnet, und nur
 für Mitglieder, die das Dokument sehen (Auswahl in der Einstellung, sonst
 alle Erwachsenen). Das Token bleibt auf dem Famio-Server. Wird ein Tag in
 PaperBuddy entfernt, verschwindet das Dokument beim nächsten Abgleich.
+
+### PhotoVault
+
+Ein Admin verbindet unter Server-Verwaltung → Einstellungen → PhotoVault die
+Fotobibliothek der Familie: Adresse, PhotoVault-Konto und Passwort, bei
+Zwei-Faktor-Anmeldung dazu der Code. Famio erscheint in PhotoVault als Gerät
+„Famio“ (dort jederzeit abmeldbar) und behält nur dessen Zugang, nicht das
+Passwort. Alle 15 Minuten gleicht der Server ab:
+
+- **Erinnerungen:** Was PhotoVaults Rückblick für den heutigen Tag früherer
+  Jahre zeigt, erscheint in der Kachel „Heute vor einem Jahr“.
+- **Wandanzeige:** Die Fotos eines gewählten Albums (die neuesten 300) laufen
+  in der Diashow der Wandanzeige.
+- **Chat-Fotos:** Neue Fotos aus dem Familien-Chat (nie aus Direktnachrichten)
+  gehen als Beiträge an einen PhotoVault-Link zum Teilen, bei dem „Beiträge
+  erlauben“ eingeschaltet ist (mit oder ohne Passwort); in PhotoVault werden
+  sie angenommen oder abgelehnt. Gesendet wird erst ab dem Eintragen des
+  Links, jedes Foto einmal.
+- **Geburtstage:** Lebende Verwandte aus dem Stammbaum mit Geburtsdatum
+  kommen zu den Geburtstagen – aber nur, wenn der Geburtstag noch nirgends
+  steht: nicht bei einem Mitglied, Kind oder Kontakt mit demselben Tag und
+  Namen und nicht in einem Kalender (eigene oder verbundene) als Eintrag an
+  diesem Tag, der den Namen nennt oder „Geburtstag“ heißt. Was deshalb
+  ausgelassen wird, zeigt die Einstellung mit Grund.
+
+Bilder bleiben in PhotoVault; der Famio-Server holt eine Vorschau oder das
+Bild erst, wenn ein Mitglied es ansieht, und nur für Mitglieder, die es sehen
+dürfen (Auswahl in der Einstellung, sonst alle außer Gästen). Beim Trennen
+meldet sich Famio in PhotoVault ab und entfernt Fotos und Geburtstage von
+dort; in PhotoVault ändert sich nichts. Läuft PhotoVault im Heimnetz mit
+eigenem Zertifikat, die Adresse mit `http://` eintragen oder ein gültiges
+Zertifikat verwenden.
 
 ### PreppSuite
 

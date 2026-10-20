@@ -104,6 +104,8 @@ class HomeScreen extends StatelessWidget {
           Collections.childEntries,
           Collections.childLogs,
           Collections.contacts,
+          Collections.externalBirthdays,
+          Collections.externalPhotos,
           Collections.pregnancies,
           Collections.timetables,
           Collections.recipes,

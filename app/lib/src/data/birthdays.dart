@@ -2,7 +2,9 @@ import 'package:famio_client/famio_client.dart';
 
 import 'family_data.dart';
 
-enum BirthdayOf { member, child, contact }
+/// Whose birthday: a member, a child, a contact, or someone of PhotoVault's
+/// family tree the family has nowhere else (see `PhotoVaultLink`).
+enum BirthdayOf { member, child, contact, photoVault }
 
 /// Someone's birthday in the family's view.
 class FamilyBirthday {
@@ -33,8 +35,8 @@ class FamilyBirthday {
   }
 }
 
-/// Birthdays of members, children (only those this member may see) and
-/// contacts.
+/// Birthdays of members, children (only those this member may see),
+/// contacts and PhotoVault's family tree.
 List<FamilyBirthday> familyBirthdays(SyncEngine engine) => [
   for (final m in engine.members)
     if (m.birthday case final b?)
@@ -59,6 +61,14 @@ List<FamilyBirthday> familyBirthdays(SyncEngine engine) => [
         of: BirthdayOf.contact,
         id: c.id,
         name: c.name,
+        birthday: b,
+      ),
+  for (final r in engine.records(Collections.externalBirthdays))
+    if (Birthday.tryParse(r.data['birthday']) case final b?)
+      FamilyBirthday(
+        of: BirthdayOf.photoVault,
+        id: r.id,
+        name: '${r.data['name'] ?? ''}',
         birthday: b,
       ),
 ];

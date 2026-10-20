@@ -333,6 +333,7 @@ class ReminderService {
     Collections.childEntries,
     Collections.childLogs,
     Collections.contacts,
+    Collections.externalBirthdays,
     Collections.pregnancies,
     Collections.documents,
     Collections.externalDocuments,

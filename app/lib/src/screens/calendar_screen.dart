@@ -165,6 +165,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           Collections.calendarSubscriptions,
           Collections.children,
           Collections.contacts,
+          Collections.externalBirthdays,
           'members',
         },
         builder: (context, engine) => LayoutBuilder(

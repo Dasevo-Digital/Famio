@@ -19,6 +19,7 @@ export 'src/record_store.dart';
 export 'src/request_log.dart';
 export 'src/security.dart';
 export 'src/panel_proxy.dart';
+export 'src/photos/photovault.dart';
 export 'src/server_app.dart';
 export 'src/web_app.dart';
 export 'src/settings.dart';

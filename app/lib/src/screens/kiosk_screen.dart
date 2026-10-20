@@ -35,6 +35,7 @@ Future<void> openKiosk(BuildContext context) =>
 
 const _collections = {
   Collections.documents,
+  Collections.externalPhotos,
   Collections.tasks,
   Collections.events,
   Collections.externalEvents,
@@ -839,13 +840,16 @@ class _PeopleBoard extends StatelessWidget {
   }
 }
 
-/// Images in the documents category "Fotos" the member may see.
+/// Images in the documents category "Fotos" the member may see, and the
+/// album the family chose in PhotoVault.
 List<FileRef> familyPhotos(SyncEngine engine) => [
   for (final d in engine.documents)
     if (d.category == DocumentCategory.photos &&
         d.file != null &&
         d.file!.mime.startsWith('image/'))
       d.file!,
+  for (final r in engine.records(Collections.externalPhotos))
+    if (r.data['album'] == true) ?FileRef.fromJson(r.data['file']),
 ];
 
 /// The wall display while nobody uses it: one family photo after the

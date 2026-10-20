@@ -29,6 +29,7 @@ import '../l10n.dart';
 part 'admin/app_updates_dialog.dart';
 part 'admin/member_calendars.dart';
 part 'admin/paperbuddy_dialog.dart';
+part 'admin/photovault_dialog.dart';
 part 'admin/settings_form.dart';
 part 'admin/sso_dialog.dart';
 part 'admin/status_view.dart';

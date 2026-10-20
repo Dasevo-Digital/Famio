@@ -34,6 +34,14 @@ abstract final class Collections {
   /// Documents of a connected PaperBuddy archive; written by the server
   /// only (see the PaperBuddy connection in the server administration).
   static const externalDocuments = 'external_documents';
+
+  /// Photos of the family's PhotoVault (memories of the day, the wall
+  /// display's album); written by the server only, files fetched on demand.
+  static const externalPhotos = 'external_photos';
+
+  /// Birthdays from PhotoVault's family tree that the family has nowhere
+  /// else yet; written by the server only.
+  static const externalBirthdays = 'external_birthdays';
   static const children = 'children';
   static const childEntries = 'child_entries';
 
@@ -176,6 +184,8 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    externalPhotos,
+    externalBirthdays,
     shoppingHistory,
     savingsGoals,
     memberEmergency,
@@ -295,6 +305,8 @@ abstract final class Collections {
   static const serverOwned = {
     externalEvents,
     externalDocuments,
+    externalPhotos,
+    externalBirthdays,
     calendarSyncStatus,
     memberLocations,
     locationAlerts,

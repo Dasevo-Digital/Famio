@@ -660,6 +660,47 @@ class FamioApiClient {
   Future<Map<String, Object?>> syncPaperBuddy() =>
       _send('POST', 'api/admin/paperbuddy/sync');
 
+  /// The PhotoVault connection (without token or passwords), its options
+  /// and the last sync.
+  Future<Map<String, Object?>> photoVault() =>
+      _send('GET', 'api/admin/photovault');
+
+  /// Signs the server in to PhotoVault: [url], [name] and [password], then
+  /// [vorgang] and [code] if the answer is `{step: 'totp', vorgang}`.
+  Future<Map<String, Object?>> connectPhotoVault({
+    String? url,
+    String? name,
+    String? password,
+    String? vorgang,
+    String? code,
+  }) => _send('POST', 'api/admin/photovault/connect', {
+    'url': ?url,
+    'name': ?name,
+    'password': ?password,
+    'vorgang': ?vorgang,
+    'code': ?code,
+  });
+
+  /// Saves the options (`memories`, `albumId`, `shareUrl`,
+  /// `sharePassword`, `birthdays`, `memberIds`) and syncs.
+  Future<Map<String, Object?>> savePhotoVault(Map<String, Object?> options) =>
+      _send('PUT', 'api/admin/photovault', options);
+
+  Future<Map<String, Object?>> deletePhotoVault() =>
+      _send('DELETE', 'api/admin/photovault');
+
+  Future<Map<String, Object?>> syncPhotoVault() =>
+      _send('POST', 'api/admin/photovault/sync');
+
+  /// PhotoVault's albums: `{id, name, count}`.
+  Future<List<Map<String, Object?>>> photoVaultAlbums() async => [
+    for (final a
+        in (await _send('GET', 'api/admin/photovault/albums'))['albums']
+                as List? ??
+            const [])
+      (a as Map).cast<String, Object?>(),
+  ];
+
   /// Reads a calendar file (`.ics`) on the server without saving anything:
   /// the events to show, and what cannot be taken over.
   /// A web page read by the server (the web app may not fetch other sites

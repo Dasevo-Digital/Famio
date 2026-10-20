@@ -7,14 +7,15 @@ import '../l10n.dart';
 typedef MemoryLine = ({int yearsAgo, String text});
 
 /// "Heute vor einem Jahr": what happened on [Memories.day]'s date in
-/// earlier years – the children's milestones, trips, photos of the chat.
+/// earlier years – the children's milestones, trips, photos of the chat
+/// and of PhotoVault.
 class Memories {
   const Memories({required this.lines, required this.photos});
 
   /// Newest first.
   final List<MemoryLine> lines;
 
-  /// Photos of the chat from those days, newest first.
+  /// Photos of the chat and of PhotoVault from those days, newest first.
   final List<FileRef> photos;
 
   bool get isEmpty => lines.isEmpty && photos.isEmpty;
@@ -86,6 +87,14 @@ Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
     if (m.attachment case final a?
         when a.isImage && _onThisDay(sent, today) && ago(sent) <= years) {
       photos.add((sent, a));
+    }
+  }
+  // What PhotoVault remembers for today (the server fetches it).
+  for (final r in engine.records(Collections.externalPhotos)) {
+    if (r.data['memoryOf'] != dayKey(today)) continue;
+    final taken = DateTime.tryParse('${r.data['takenAt'] ?? ''}')?.toLocal();
+    if (FileRef.fromJson(r.data['file']) case final f? when taken != null) {
+      photos.add((taken, f));
     }
   }
   photos.sort((a, b) => b.$1.compareTo(a.$1));
