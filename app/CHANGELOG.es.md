@@ -4,6 +4,23 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.11 – PhotoVault, artículos habituales y recuerdos
+
+- Se puede conectar PhotoVault (Administración del servidor → Ajustes):
+  fotos del día en «Hoy hace un año», un álbum en la pantalla de pared,
+  fotos del chat como aportaciones a un enlace de PhotoVault y cumpleaños
+  del árbol genealógico si aún no figuran en ninguna parte.
+- «Hoy hace un año» en la página de inicio muestra hitos, excursiones y
+  fotos del mismo día de años anteriores.
+- La lista de la compra propone lo que compráis a menudo. Los artículos
+  habituales con ritmo vuelven solos a la lista. La lista se puede compartir
+  como texto.
+- Fotografía el tique y el importe va al libro de cuentas.
+- Las automatizaciones de Home Assistant envían mensajes al chat familiar o
+  a personas concretas.
+- La app web puede guardar sus datos cifrados en el navegador y entonces
+  arranca más rápido (Ajustes → Este dispositivo).
+
 ## 2.0.10 – Android vuelve a arrancar
 
 - En Android, Famio 2.0.8 y 2.0.9 se quedaba en blanco al arrancar. Ya está

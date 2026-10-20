@@ -4,6 +4,23 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.11 – PhotoVault, Stammartikel und Erinnerungen
+
+- PhotoVault lässt sich anbinden (Server-Verwaltung → Einstellungen):
+  Fotos des Tages in „Heute vor einem Jahr“, ein Album auf der Wandanzeige,
+  Chat-Fotos als Beiträge an einen PhotoVault-Link und Geburtstage aus dem
+  Stammbaum, sofern sie noch nirgends stehen.
+- „Heute vor einem Jahr“ auf der Startseite zeigt Meilensteine, Ausflüge und
+  Fotos vom selben Tag früherer Jahre.
+- Die Einkaufsliste schlägt vor, was ihr oft kauft. Stammartikel mit
+  Rhythmus kommen von selbst wieder auf die Liste. Die Liste lässt sich als
+  Text teilen.
+- Den Kassenbon fotografieren, und der Betrag steht im Haushaltsbuch.
+- Home-Assistant-Automationen schicken Nachrichten in den Familien-Chat oder
+  an einzelne Personen.
+- Die Web-App kann ihre Daten verschlüsselt im Browser behalten und startet
+  dann schneller (Einstellungen → Dieses Gerät).
+
 ## 2.0.10 – Android startet wieder
 
 - Auf Android blieb Famio 2.0.8 und 2.0.9 nach dem Start weiß. Das ist

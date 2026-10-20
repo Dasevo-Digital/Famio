@@ -4,6 +4,22 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.11 – PhotoVault, staples and memories
+
+- PhotoVault can be connected (Server administration → Settings): photos of
+  the day in "One year ago today", an album on the wall display, chat
+  photos as contributions to a PhotoVault link, and birthdays from the
+  family tree if they are not noted anywhere yet.
+- "One year ago today" on the start page shows milestones, trips and photos
+  of the same day in earlier years.
+- The shopping list suggests what you buy often. Staples with a rhythm go
+  back on the list by themselves. The list can be shared as text.
+- Photograph the receipt and the amount goes into the budget.
+- Home Assistant automations send messages to the family chat or to single
+  people.
+- The web app can keep its data encrypted in the browser and then starts
+  faster (Settings → This device).
+
 ## 2.0.10 – Android starts again
 
 - On Android, Famio 2.0.8 and 2.0.9 stayed white after starting. This is
