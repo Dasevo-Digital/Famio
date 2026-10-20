@@ -88,6 +88,14 @@
       "countdown": {
         "name": "Countdown"
       }
+    },
+    "notify": {
+      "family_chat": {
+        "name": "Familien-Chat"
+      },
+      "direct_message": {
+        "name": "Nachricht"
+      }
     }
   },
   "services": {

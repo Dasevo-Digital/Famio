@@ -29,6 +29,10 @@ PLACES: Final = "places"
 POINT_ENTRIES: Final = "point_entries"
 SOS_ALERTS: Final = "sos_alerts"
 LOCATION_ALERTS: Final = "location_alerts"
+CHAT_MESSAGES: Final = "chat_messages"
+
+# The family chat; direct chats derive their id from both members.
+FAMILY_CHAT: Final = "family"
 
 # Fired when someone presses the emergency button (and when it changes).
 EVENT_SOS: Final = "famio_sos"

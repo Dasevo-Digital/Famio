@@ -51,7 +51,9 @@ void main() {
       ..setMeta(
         'members',
         '[{"id":"m1","username":"mama","displayName":"Mama"},'
-            '{"id":"m2","username":"papa","displayName":"Papa"}]',
+            '{"id":"m2","username":"papa","displayName":"Papa"},'
+            '{"id":"ha","username":"ha","displayName":"Home Assistant",'
+            '"role":"service"}]',
       );
     engine = SyncEngine(
       store: store,
@@ -82,6 +84,30 @@ void main() {
     final message = engine.records(Collections.chatMessages).single;
     expect(message.visibleTo, unorderedEquals([me.id, papa.id]));
     expect(find.text('Holst du die Kinder ab?'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  testWidgets('chat: messages from Home Assistant can be read', (tester) async {
+    await open(tester, 'Chat');
+    // A service account is no chat partner until it wrote something.
+    expect(find.text('Home Assistant'), findsNothing);
+    engine.put(
+      Collections.chatMessages,
+      'w1',
+      ChatMessage(
+        id: 'w1',
+        chatId: ChatIds.direct('ha', me.id),
+        authorId: 'ha',
+        sentAt: DateTime.now(),
+        text: 'Waschmaschine fertig',
+        visibleTo: const ['ha', 'm1'],
+      ).toData(),
+    );
+    await pumpData(tester);
+    expect(find.text('Home Assistant'), findsOneWidget);
+    await tester.tap(find.text('Home Assistant'));
+    await tester.pumpAndSettle();
+    expect(find.text('Waschmaschine fertig'), findsWidgets);
     await tester.pump(const Duration(seconds: 1));
   });
 

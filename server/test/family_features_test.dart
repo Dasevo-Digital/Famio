@@ -384,6 +384,53 @@ void main() {
       expect(promote['error'], 'service_admin');
     });
 
+    test('messages from Home Assistant: family chat and direct', () async {
+      // What the integration's notify entities write (notify.py).
+      final ha = await addMember('homeassistant', MemberRole.service);
+      final papa = await addMember('papa', MemberRole.adult);
+      for (final (m, topic) in [(mama, 'mama'), (papa, 'papa')]) {
+        await m.call('POST', 'api/me/push', {
+          'url': 'https://push.example/$topic',
+          'details': true,
+        });
+      }
+      pushed.clear();
+      final dm = ChatIds.direct(ha.id, mama.id);
+      final response = await ha.sync([
+        _record(Collections.chatMessages, 'w1', {
+          'chatId': dm,
+          'authorId': ha.id,
+          'sentAt': DateTime.now().toUtc().toIso8601String(),
+          'text': 'Waschmaschine fertig',
+          'attachment': null,
+          'visibleTo': [ha.id, mama.id],
+        }),
+        _record(Collections.chatMessages, 'w2', {
+          'chatId': ChatIds.family,
+          'authorId': ha.id,
+          'sentAt': DateTime.now().toUtc().toIso8601String(),
+          'text': 'Haustür offen',
+          'attachment': null,
+          'visibleTo': null,
+        }),
+      ]);
+      expect(response.rejected, isEmpty);
+      await app.push.idle;
+      expect(
+        [for (final p in pushed) '${p['topic']}: ${p['message']}']..sort(),
+        [
+          'mama: Haustür offen',
+          'mama: Waschmaschine fertig',
+          'papa: Haustür offen',
+        ],
+      );
+      await mama.sync();
+      await papa.sync();
+      expect(mama.seen.containsKey('chat_messages/w1'), isTrue);
+      expect(papa.seen.containsKey('chat_messages/w1'), isFalse);
+      expect(papa.seen.containsKey('chat_messages/w2'), isTrue);
+    });
+
     test('"Abhaken und Einkauf" ticks off and shops, nothing else', () async {
       final ha = await addMember('homeassistant', MemberRole.service);
       final set = await mama.call('PATCH', 'api/admin/users/${ha.id}', {

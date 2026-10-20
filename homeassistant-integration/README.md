@@ -15,7 +15,8 @@ Famio-Mitglied sieht:
 | Sensor „Nächste Abfuhr“ (ab 1.0.13) | Datum der nächsten Abholung aus dem Abfallkalender; Attribute `tonnen`, `in_tagen`, `zustaendig`, `weitere` |
 | Sensor „Countdown“ (ab 1.0.13) | Tage bis zum nächsten Countdown-Termin; Attribute `titel`, `datum`, `laeuft`, `alle` |
 | Tracker je Mitglied | Standort der Mitglieder, die ihn in Famio teilen (Akku, Famio-Ort, Pause) |
-| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“, „Ämter“ (heute für diese Person offen) |
+| Benachrichtigung „Familien-Chat“ (ab 2.0.11) | Nachricht von Home Assistant in den Familien-Chat, mit Push an alle |
+| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“, „Ämter“ (heute für diese Person offen); ab 2.0.11 die Benachrichtigung „Nachricht“ (Direktnachricht nur an diese Person) |
 
 Änderungen kommen live über die WebSocket-Verbindung des Servers an (ohne
 Verbindung alle 5 Minuten).
@@ -119,6 +120,35 @@ automation:
 Ereignisse kommen nur für frische Notrufe und Check-ins (höchstens 30 Minuten
 alt), nicht für alte Einträge beim ersten Abgleich.
 
+## Mitteilungen aus Automationen
+
+Mit `notify.send_message` schreibt Home Assistant in Famio: in den
+Familien-Chat (alle bekommen die Mitteilung) oder als Direktnachricht an eine
+Person (Entität „Nachricht“ auf dem Gerät „Famio <Name>“). Ein `title` wird
+zur ersten Zeile. In Famio steht die Direktnachricht im Chat unter „Home
+Assistant“; Ruhezeiten gelten wie für jede Chat-Nachricht. Home Assistant
+braucht dafür „Lesen und ändern“ (siehe unten).
+
+```yaml
+automation:
+  - alias: Waschmaschine fertig
+    triggers:
+      - trigger: state
+        entity_id: sensor.waschmaschine_status
+        to: fertig
+    actions:
+      - action: notify.send_message
+        target:
+          entity_id: notify.famio_lena_nachricht
+        data:
+          title: Keller
+          message: Die Waschmaschine ist fertig.
+```
+
+Die Entitäts-IDs hängen vom Namen der Verbindung und der Mitglieder ab
+(z. B. `notify.famio_familien_chat`); sie stehen unter Einstellungen →
+Geräte & Dienste → Famio.
+
 ## Dienstkonto und Schreibrechte
 
 Am besten verbindet sich Home Assistant mit einem eigenen Mitglied mit der
@@ -129,7 +159,7 @@ der Server setzt das durch, die Entitäten passen sich an:
 
 | Einstellung | Home Assistant darf |
 |---|---|
-| Lesen und ändern | alles wie ein Erwachsener |
+| Lesen und ändern | alles wie ein Erwachsener, auch Mitteilungen schicken |
 | Abhaken und Einkauf | Aufgaben abhaken, Einkaufslisten führen – keine Termine, keine neuen Aufgaben |
 | Nur lesen | nichts ändern (am sichersten) |
 

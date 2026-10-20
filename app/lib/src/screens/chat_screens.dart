@@ -77,6 +77,17 @@ class _ChatListScreenState extends State<ChatListScreen> {
           final others = engine.members
               .where((m) => m.id != engine.memberId)
               .toList();
+          // Service accounts (Home Assistant) are no chat partners, but
+          // what they sent ("Waschmaschine fertig") must be readable.
+          final services = [
+            for (final m in engine.allMembers)
+              if (m.isService &&
+                  m.id != engine.memberId &&
+                  engine
+                      .chatMessages(ChatIds.direct(engine.memberId, m.id))
+                      .isNotEmpty)
+                m,
+          ];
           return ListView(
             padding: EdgeInsets.only(
               top: 8,
@@ -103,6 +114,25 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     chatId: ChatIds.direct(engine.memberId, m.id),
                     title: m.displayName,
                     leading: MemberAvatar(m, radius: 26),
+                    engine: engine,
+                    selected: selected == ChatIds.direct(engine.memberId, m.id),
+                    onTap: () => open(
+                      ChatIds.direct(engine.memberId, m.id),
+                      m.displayName,
+                    ),
+                  ),
+                ),
+              for (final m in services)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ChatTile(
+                    chatId: ChatIds.direct(engine.memberId, m.id),
+                    title: m.displayName,
+                    leading: IconBlob(
+                      AppIcons.bot,
+                      color: c.strong(FamioSection.chat),
+                      size: 52,
+                    ),
                     engine: engine,
                     selected: selected == ChatIds.direct(engine.memberId, m.id),
                     onTap: () => open(

@@ -24,6 +24,7 @@ PLATFORMS = [
     Platform.BINARY_SENSOR,
     Platform.CALENDAR,
     Platform.DEVICE_TRACKER,
+    Platform.NOTIFY,
     Platform.SENSOR,
     Platform.TODO,
 ]
