@@ -6398,5 +6398,8 @@
   },
   "purchaseScan": "Kassenbon fotografieren",
   "purchaseScanned": "Vom Kassenbon gelesen – bitte prüfen.",
-  "purchaseNotRead": "Auf dem Bon war kein Betrag zu erkennen."
+  "purchaseNotRead": "Auf dem Bon war kein Betrag zu erkennen.",
+  "shoppingShareText": "Als Text teilen",
+  "shoppingCopyText": "Liste als Text kopieren",
+  "shoppingTextCopied": "Liste kopiert – zum Einfügen in eine Nachricht."
 }

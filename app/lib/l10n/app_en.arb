@@ -2482,5 +2482,8 @@
   "purchaseBooked": "{amount} added as an expense for {category}.",
   "purchaseScan": "Photograph the receipt",
   "purchaseScanned": "Read from the receipt – please check.",
-  "purchaseNotRead": "No amount could be read on the receipt."
+  "purchaseNotRead": "No amount could be read on the receipt.",
+  "shoppingShareText": "Share as text",
+  "shoppingCopyText": "Copy list as text",
+  "shoppingTextCopied": "List copied – paste it into a message."
 }

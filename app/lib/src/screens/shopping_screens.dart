@@ -1,5 +1,12 @@
+import 'dart:io';
+
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+
+import '../data/shopping_text.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
@@ -222,6 +229,36 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     );
   }
 
+  /// The phones and the Mac have a share sheet; elsewhere (Windows, Linux,
+  /// the browser) the text goes to the clipboard.
+  static bool get _canShare =>
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+
+  /// The open items as text for someone without Famio.
+  Future<void> _shareText(SyncEngine engine, ShoppingList list) async {
+    final text = shoppingListText(engine, list);
+    if (!_canShare) {
+      await Clipboard.setData(ClipboardData(text: text));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr.shoppingTextCopied)));
+      }
+      return;
+    }
+    // The iPad and the Mac anchor the share sheet to a place on screen.
+    final box = context.findRenderObject() as RenderBox?;
+    await SharePlus.instance.share(
+      ShareParams(
+        text: text,
+        subject: list.name,
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
+  }
+
   Future<void> _deleteList(SyncEngine engine, ShoppingList list) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -325,6 +362,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     engine.saveShoppingItem(i.copyWith(checked: false)),
                 ],
                 'budget' => bookPurchase(context, list, done),
+                'share' => _shareText(engine, list),
                 'template' => _saveTemplate(engine, list),
                 'preppsuite' => importFromPreppSuite(context, engine, list),
                 'rename' => _rename(engine, list),
@@ -344,6 +382,13 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 if (canBook)
                   PopupMenuItem(value: 'budget', child: Text(tr.purchaseTitle)),
+                PopupMenuItem(
+                  value: 'share',
+                  enabled: open.isNotEmpty,
+                  child: Text(
+                    _canShare ? tr.shoppingShareText : tr.shoppingCopyText,
+                  ),
+                ),
                 PopupMenuItem(
                   value: 'template',
                   enabled: items.isNotEmpty,
