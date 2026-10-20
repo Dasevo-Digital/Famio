@@ -27,7 +27,15 @@ Future<void> main(List<String> args) async {
     exit(78); // EX_CONFIG
   }
   if (config.upstream case final upstream?) {
-    return _runPanelProxy(config, Uri.parse(upstream), webApp);
+    final address = upstreamAddress(upstream);
+    if (address == null) {
+      stderr.writeln(
+        'FEHLER: Die Server-Adresse „$upstream“ ist keine gültige Adresse '
+        '(z. B. https://famio.example.de oder https://192.168.1.20:8766).',
+      );
+      exit(78); // EX_CONFIG
+    }
+    return _runPanelProxy(config, address, webApp);
   }
 
   // Encryption at rest: the key should live outside the data directory, so

@@ -20,13 +20,19 @@ ports:
 ports_description:
   8765/tcp: Famio-Server für Home-Assistant-Ingress (API verlangt HTTPS)
   8766/tcp: Famio-Server für die Apps (HTTPS mit eigenem Zertifikat)
+# server_url and server_fingerprint are listed (empty) so that Home
+# Assistant shows them: optional fields without a value only appear after
+# "show unused optional configuration options". The server checks the
+# address (an empty one in client mode stops it with a message).
 options:
   mode: server
   ingress_auth: true
+  server_url: ""
+  server_fingerprint: ""
 schema:
   # server: Famio runs in Home Assistant. client: only the sidebar,
   # connected to the family's Famio server elsewhere (server_url).
   mode: list(server|client)
   ingress_auth: bool
-  server_url: url?
+  server_url: str?
   server_fingerprint: str?

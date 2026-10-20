@@ -208,6 +208,23 @@ int _boundedInt(
 
 String? _nonEmpty(String? v) => v == null || v.trim().isEmpty ? null : v.trim();
 
+/// The family server of an add-on in client mode, from what was typed in
+/// the options: "famio.example.de" gets https, a path is kept. Null if it
+/// is no usable http(s) address (Home Assistant checks only that the field
+/// is text, so that it can show it empty).
+Uri? upstreamAddress(String text) {
+  var t = text.trim();
+  if (t.contains(RegExp(r'\s'))) return null;
+  if (!t.contains('://')) t = 'https://$t';
+  final uri = Uri.tryParse(t);
+  if (uri == null ||
+      (uri.scheme != 'https' && uri.scheme != 'http') ||
+      uri.host.isEmpty) {
+    return null;
+  }
+  return uri;
+}
+
 /// `TZ` may also hold POSIX strings like `CET-1CEST`; only accept IANA names.
 String? _ianaZone(String? tz) =>
     tz != null && tz.contains('/') && !tz.startsWith(':') ? tz : null;
