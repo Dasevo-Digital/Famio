@@ -3,7 +3,8 @@
 #   sh tool/release/smoke.sh <dir>   with <dir>/old/bundle and
 # <dir>/new/bundle (unpacked server packages) and an empty <dir>/data.
 # Account, guest and a family task survive the update; the new server
-# answers, serves the web app and refuses a weak password.
+# answers, serves the web app with all its parts, which starts in a
+# headless Firefox without errors, and refuses a weak password.
 S=$1
 U=https://localhost:18766
 up() { for i in $(seq 1 40); do curl -s localhost:18765/api/health >/dev/null && return; sleep 1; done; }
@@ -25,6 +26,14 @@ up
 echo "new: $(curl -s localhost:18765/api/health | cut -c1-45)"
 echo "web: $(curl -s localhost:18765/app/version.json)"
 echo "index: $(curl -s localhost:18765/app/ | grep -o 'flutter_bootstrap.js?v=[^"]*')"
+# Every part the web app loads later (maps, PDF, administration …).
+for f in "$S"/new/bundle/web/main.dart.js_*.part.*.js; do
+  n=$(basename "$f")
+  code=$(curl -s -o /dev/null -w '%{http_code}' "localhost:18765/app/$n")
+  [ "$code" = 200 ] || echo "part missing: $n ($code)"
+done
+# The web app itself, once in a browser (tool/release/web_start.dart).
+dart tool/release/web_start.dart http://localhost:18765/app/
 curl -sk -X POST -H "authorization: Bearer $GUEST" -H 'content-type: application/json' -d '{"since":0,"changes":[]}' $U/api/sync | j "'guest sees tasks:', [c['id'] for c in d['changes'] if c['collection']=='tasks' and not c.get('deleted')]"
 curl -sk -X POST -H "authorization: Bearer $ADMIN" -H 'content-type: application/json' -d '{"since":0,"changes":[]}' $U/api/sync | j "'admin sees tasks:', [c['id'] for c in d['changes'] if c['collection']=='tasks' and not c.get('deleted')]"
 curl -sk -X POST -H "authorization: Bearer $ADMIN" -H 'content-type: application/json' -d '{"username":"papa","password":"passwort1"}' $U/api/admin/users | j "'weak password:', d.get('error')"

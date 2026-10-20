@@ -7,7 +7,8 @@
 #    background (FAMIO_LINUX_BUILD_HOST / FAMIO_WINDOWS_BUILD_HOST: ssh
 #    destinations; unset = that package is left out)
 # 2. web app and server packages (Docker, x64 and arm64), smoke test
-#    against the previous server package
+#    against the previous server package, with the web app started once in
+#    a headless Firefox (FIREFOX: path to the binary)
 # 3. macOS (ad hoc signed) and the two Android packages (all phones with the
 #    recognition built in; 64-bit with it from Google Play)
 # 4. SHA256SUMS.txt, its Ed25519 signature, the check the apps do, and a
@@ -125,6 +126,8 @@ if [ -n "$PREV" ] && [ -d "$OLD" ]; then
   grep -q "\"version\":\"$V\"" "$LOGS/smoke.log" || fail "Smoke-Test: neue Version antwortet nicht"
   grep -q "admin sees tasks: \['muell'\]" "$LOGS/smoke.log" || fail "Smoke-Test: Daten fehlen nach dem Update"
   grep -q "weak password: weak_password" "$LOGS/smoke.log" || fail "Smoke-Test: Passwortregel"
+  ! grep -q "^part missing" "$LOGS/smoke.log" || fail "Smoke-Test: Teile der Web-App fehlen"
+  grep -q "^web start: ok" "$LOGS/smoke.log" || fail "Smoke-Test: Web-App startet nicht fehlerfrei"
 else
   echo "Kein Server-Paket von ${PREV:-einer Vorversion} in $WORK: Smoke-Test übersprungen" \
     "(FAMIO_SMOKE_OLD=<bundle-Ordner> setzen)"
