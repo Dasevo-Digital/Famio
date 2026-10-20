@@ -150,6 +150,10 @@ ditto "$APP" "$R/Famio.app"
 rm -rf "$APP"
 
 step "Android"
+# Gradle keeps the build of each plugin: after a plugin update (2.0.11:
+# shared_preferences_android 2.5.1) javac found an old class list and the
+# build failed. A clean build each release.
+(cd app/android && ./gradlew -q clean > /dev/null)
 (cd app && flutter build apk --release --flavor prod 2>&1 | tail -1)
 cp app/build/app/outputs/flutter-apk/app-prod-release.apk "$R/Famio-$V-android.apk"
 (cd app && flutter build apk --release --flavor prod --target-platform android-arm64 -P famioArm64=true 2>&1 | tail -1)
