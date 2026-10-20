@@ -2479,5 +2479,8 @@
   "purchaseNote": "What or where (optional)",
   "purchaseClear": "{count, plural, =1{Remove the ticked item from the list} other{Remove the {count} ticked items from the list}}",
   "purchaseSave": "Add",
-  "purchaseBooked": "{amount} added as an expense for {category}."
+  "purchaseBooked": "{amount} added as an expense for {category}.",
+  "purchaseScan": "Photograph the receipt",
+  "purchaseScanned": "Read from the receipt – please check.",
+  "purchaseNotRead": "No amount could be read on the receipt."
 }

@@ -6395,5 +6395,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "purchaseScan": "Kassenbon fotografieren",
+  "purchaseScanned": "Vom Kassenbon gelesen – bitte prüfen.",
+  "purchaseNotRead": "Auf dem Bon war kein Betrag zu erkennen."
 }

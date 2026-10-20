@@ -1,9 +1,16 @@
+import 'dart:io';
+
 import 'package:famio_client/famio_client.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../app_state.dart';
 import '../data/budget_month.dart';
 import '../data/family_data.dart';
+import '../data/ocr.dart';
+import '../data/receipt.dart';
+import '../design/app_icons.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
 import '../widgets/undo_delete.dart';
@@ -93,6 +100,50 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
   var _category = expenseCategories.first;
   var _clear = true;
   String? _error;
+  String? _hint;
+  var _reading = false;
+
+  /// The receipt's photo, read on the device (the picture stays there):
+  /// amount and shop go into the fields to check.
+  Future<void> _scan() async {
+    String? path;
+    if (Platform.isAndroid || Platform.isIOS) {
+      final shot = await ImagePicker().pickImage(
+        source: ImageSource.camera,
+        maxWidth: 3000,
+      );
+      path = shot?.path;
+    } else {
+      final picked = await FilePicker.pickFiles(type: FileType.image);
+      if (picked.isEmpty) return;
+      path = picked.first.path;
+    }
+    if (path == null || !mounted) return;
+    setState(() {
+      _reading = true;
+      _error = null;
+      _hint = null;
+    });
+    String? text;
+    String? problem;
+    try {
+      text = await Ocr.recognize(path);
+    } on OcrModelMissing catch (e) {
+      problem = e.loading ? tr.ocrModelLoading : tr.ocrNeedsPlayServices;
+    }
+    if (!mounted) return;
+    final reading = text == null ? null : readReceipt(text);
+    setState(() {
+      _reading = false;
+      if (reading?.cents case final cents?) {
+        _amount.text = formatEuro(cents).replaceAll(' €', '');
+        _hint = tr.purchaseScanned;
+      } else {
+        _error = problem ?? tr.purchaseNotRead;
+      }
+      if (reading?.store case final store?) _note.text = store;
+    });
+  }
 
   @override
   void dispose() {
@@ -134,6 +185,22 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
               labelText: tr.purchaseAmount,
               suffixText: '€',
               errorText: _error,
+              helperText: _hint,
+              suffixIcon: !Ocr.available
+                  ? null
+                  : _reading
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox.square(
+                        dimension: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : IconButton(
+                      icon: const Icon(AppIcons.camera),
+                      tooltip: tr.purchaseScan,
+                      onPressed: _scan,
+                    ),
             ),
             onSubmitted: (_) => _save(),
           ),
