@@ -6431,5 +6431,44 @@
       }
     }
   },
-  "memoriesHide": "Für heute ausblenden"
+  "memoriesHide": "Für heute ausblenden",
+  "shoppingFrequent": "Oft gekauft:",
+  "shoppingStaples": "Stammartikel",
+  "shoppingStaplesHint": "Was ihr kauft, merkt sich Famio beim Abhaken. Mit einem Rhythmus kommt ein Artikel nach so vielen Tagen von selbst wieder auf die Liste.",
+  "shoppingStaplesEmpty": "Noch nichts gekauft – abgehakte Sachen merkt sich Famio.",
+  "shoppingRhythmNone": "Kein Rhythmus",
+  "shoppingBoughtTimes": "{count, plural, =1{1-mal gekauft} other{{count}-mal gekauft}}",
+  "@shoppingBoughtTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingNextOn": "wieder am {date}",
+  "@shoppingNextOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "shoppingForget": "Vergessen",
+  "shoppingStaplesAdded": "{count, plural, =1{1 Stammartikel wieder auf der Liste.} other{{count} Stammartikel wieder auf der Liste.}}",
+  "@shoppingStaplesAdded": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "shoppingRhythmWeekly": "jede Woche",
+  "shoppingRhythmWeeks": "alle {weeks} Wochen",
+  "@shoppingRhythmWeeks": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  }
 }

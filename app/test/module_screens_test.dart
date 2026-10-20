@@ -2,6 +2,7 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
+import 'package:famio/src/data/shopping_history.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/chores_screens.dart';
@@ -413,6 +414,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Heute vor einem Jahr'), findsNothing);
       expect(appState.memoriesHiddenOn, isNotNull);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('shopping history', () {
+    testWidgets('ticked items come back as suggestions and staples', (
+      tester,
+    ) async {
+      await open(tester);
+      engine
+        ..saveShoppingList(const ShoppingList(id: 'l1', name: 'Einkauf'))
+        ..saveShoppingItem(
+          const ShoppingItem(
+            id: 'a',
+            listId: 'l1',
+            name: 'Milch',
+            quantity: '2 l',
+          ),
+        );
+      await push(tester, const ShoppingListScreen(listId: 'l1'));
+      expect(find.text('Oft gekauft:'), findsNothing);
+
+      await tester.tap(find.text('Milch'));
+      await _pumpData(tester);
+      engine.deleteShoppingItem('a');
+      await _pumpData(tester);
+      expect(engine.boughtItem('milch')!.count, 1);
+      expect(find.text('Oft gekauft:'), findsOneWidget);
+
+      // One tap puts it back, with the amount of last time.
+      await tester.tap(find.widgetWithText(ActionChip, 'Milch'));
+      await _pumpData(tester);
+      final again = engine.shoppingItems('l1').single;
+      expect((again.name, again.quantity), ('Milch', '2 l'));
+      expect(find.widgetWithText(ActionChip, 'Milch'), findsNothing);
+
+      // A rhythm makes it a staple.
+      await tester.tap(find.byTooltip('Mehr'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Stammartikel'));
+      await tester.pumpAndSettle();
+      expect(find.text('1-mal gekauft'), findsOneWidget);
+      await tester.tap(find.text('Kein Rhythmus'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('alle 2 Wochen').last);
+      await tester.pumpAndSettle();
+      expect(engine.boughtItem('milch')!.everyDays, 14);
+      expect(find.textContaining('wieder am'), findsOneWidget);
       await tester.pump(const Duration(seconds: 5));
     });
   });

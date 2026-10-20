@@ -104,3 +104,91 @@ class ShoppingItem {
     'memberId': ?memberId,
   };
 }
+
+/// An article the family buys, stored in `Collections.shoppingHistory`
+/// (record id: `shoppingKey` of the name). Ticked items are deleted from the
+/// lists, so this is what Famio remembers: how often, when last, and – for a
+/// staple – after how many days it goes back on the list by itself.
+class BoughtItem {
+  const BoughtItem({
+    required this.key,
+    required this.name,
+    this.quantity = '',
+    this.count = 0,
+    this.lastBought,
+    this.listId,
+    this.everyDays,
+    this.lastAdded,
+  });
+
+  factory BoughtItem.fromRecord(SyncRecord r) => BoughtItem(
+    key: r.id,
+    name: r.data['name'] as String? ?? r.id,
+    quantity: r.data['quantity'] as String? ?? '',
+    count: (r.data['count'] as num?)?.toInt() ?? 0,
+    lastBought: DateTime.tryParse(r.data['lastBought'] as String? ?? ''),
+    listId: r.data['listId'] as String?,
+    everyDays: (r.data['everyDays'] as num?)?.toInt(),
+    lastAdded: DateTime.tryParse(r.data['lastAdded'] as String? ?? ''),
+  );
+
+  final String key;
+  final String name;
+
+  /// The amount bought last time ("2 l").
+  final String quantity;
+  final int count;
+  final DateTime? lastBought;
+
+  /// The list it was bought from last; staples go back there.
+  final String? listId;
+
+  /// A staple: back on the list this many days after it was last bought
+  /// (or put back); null for none.
+  final int? everyDays;
+
+  /// When it was last put back on the list as a staple.
+  final DateTime? lastAdded;
+
+  /// When a staple is due again; null for others.
+  DateTime? get nextDue {
+    final days = everyDays;
+    if (days == null || days <= 0) return null;
+    final base = [
+      ?lastBought,
+      ?lastAdded,
+    ].fold<DateTime?>(null, (a, b) => a == null || b.isAfter(a) ? b : a);
+    if (base == null) return null;
+    final day = DateTime(base.year, base.month, base.day);
+    return DateTime(day.year, day.month, day.day + days);
+  }
+
+  BoughtItem copyWith({
+    String? name,
+    String? quantity,
+    int? count,
+    DateTime? lastBought,
+    String? listId,
+    int? Function()? everyDays,
+    DateTime? lastAdded,
+  }) => BoughtItem(
+    key: key,
+    name: name ?? this.name,
+    quantity: quantity ?? this.quantity,
+    count: count ?? this.count,
+    lastBought: lastBought ?? this.lastBought,
+    listId: listId ?? this.listId,
+    everyDays: everyDays == null ? this.everyDays : everyDays(),
+    lastAdded: lastAdded ?? this.lastAdded,
+  );
+
+  Map<String, Object?> toData() => {
+    'name': name,
+    'quantity': quantity,
+    'count': count,
+    'lastBought': lastBought?.toUtc().toIso8601String(),
+    'listId': listId,
+    'everyDays': everyDays,
+    'lastAdded': lastAdded?.toUtc().toIso8601String(),
+  };
+}

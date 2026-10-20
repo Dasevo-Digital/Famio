@@ -2491,5 +2491,16 @@
   "memoriesYearsAgo": "{count, plural, =1{hace un año} other{hace {count} años}}",
   "memoriesMilestone": "{name}: {title}",
   "memoriesPhotos": "{count, plural, =1{1 foto del chat} other{{count} fotos del chat}}",
-  "memoriesHide": "Ocultar por hoy"
+  "memoriesHide": "Ocultar por hoy",
+  "shoppingFrequent": "Comprado a menudo:",
+  "shoppingStaples": "Artículos habituales",
+  "shoppingStaplesHint": "Famio recuerda lo que compráis al marcarlo. Con un ritmo, un artículo vuelve solo a la lista pasados esos días.",
+  "shoppingStaplesEmpty": "Aún no hay compras: Famio recuerda lo que se marca.",
+  "shoppingRhythmNone": "Sin ritmo",
+  "shoppingBoughtTimes": "{count, plural, =1{comprado 1 vez} other{comprado {count} veces}}",
+  "shoppingNextOn": "de nuevo el {date}",
+  "shoppingForget": "Olvidar",
+  "shoppingStaplesAdded": "{count, plural, =1{1 artículo habitual de vuelta en la lista.} other{{count} artículos habituales de vuelta en la lista.}}",
+  "shoppingRhythmWeekly": "cada semana",
+  "shoppingRhythmWeeks": "cada {weeks} semanas"
 }

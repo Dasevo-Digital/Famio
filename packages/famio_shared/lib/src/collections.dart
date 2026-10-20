@@ -12,6 +12,10 @@ abstract final class Collections {
   /// article key → category key; outlives the items.
   static const shoppingAisles = 'shopping_aisles';
   static const shoppingAislesId = 'family';
+
+  /// What the family buys, one record per article (id: `shoppingKey`):
+  /// for suggestions and staples that come back by themselves.
+  static const shoppingHistory = 'shopping_history';
   static const events = 'events';
 
   /// External calendars (ICS URLs) the server imports; edited by members.
@@ -172,6 +176,7 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    shoppingHistory,
     savingsGoals,
     memberEmergency,
     locationSettings,
@@ -233,6 +238,7 @@ abstract final class Collections {
     // per note.
     notes,
     shoppingAisles,
+    shoppingHistory,
     tasks,
     shoppingLists,
     shoppingItems,
@@ -256,6 +262,8 @@ abstract final class Collections {
     wishClaims,
     tasks,
     shoppingItems,
+    // Ticking an item off counts it as bought.
+    shoppingHistory,
     eventComments,
     chatMessages,
     chatReads,

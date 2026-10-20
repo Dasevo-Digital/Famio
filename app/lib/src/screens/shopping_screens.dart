@@ -4,8 +4,10 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../data/shopping_history.dart';
 import '../data/shopping_text.dart';
 import '../design/app_icons.dart';
 
@@ -32,6 +34,7 @@ const _shopping = {
   Collections.pantryItems,
   // Who sees the budget, for "Einkauf ins Haushaltsbuch".
   Collections.budgetSettings,
+  Collections.shoppingHistory,
 };
 
 class ShoppingListsScreen extends StatelessWidget {
@@ -195,6 +198,35 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   /// Packing lists: only this member's things (null: everyone's).
   String? _who;
+
+  @override
+  void initState() {
+    super.initState();
+    // Suggestions follow what is typed.
+    _input.addListener(() => setState(() {}));
+    // Staples that are due go back on the list when someone opens one.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final added = AppScope.engineOf(context).addDueStaples();
+      if (added > 0) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(tr.shoppingStaplesAdded(added))));
+      }
+    });
+  }
+
+  /// A suggestion becomes an item, with the amount bought last time.
+  void _pick(SyncEngine engine, BoughtItem b) {
+    engine.saveShoppingItem(
+      newShoppingItem(
+        engine,
+        widget.listId,
+        b.name,
+      ).copyWith(quantity: b.quantity),
+    );
+    _input.clear();
+  }
 
   @override
   void dispose() {
@@ -363,6 +395,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ],
                 'budget' => bookPurchase(context, list, done),
                 'share' => _shareText(engine, list),
+                'staples' => showStaples(context),
                 'template' => _saveTemplate(engine, list),
                 'preppsuite' => importFromPreppSuite(context, engine, list),
                 'rename' => _rename(engine, list),
@@ -382,6 +415,11 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 if (canBook)
                   PopupMenuItem(value: 'budget', child: Text(tr.purchaseTitle)),
+                if (!list.packing)
+                  PopupMenuItem(
+                    value: 'staples',
+                    child: Text(tr.shoppingStaples),
+                  ),
                 PopupMenuItem(
                   value: 'share',
                   enabled: open.isNotEmpty,
@@ -428,6 +466,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 ),
                 onSubmitted: (_) => _add(engine),
               ),
+              if (!list.packing)
+                _Suggestions(
+                  items: engine.shoppingSuggestions(
+                    list.id,
+                    typed: _input.text,
+                  ),
+                  typing: _input.text.trim().isNotEmpty,
+                  onPick: (b) => _pick(engine, b),
+                ),
               Expanded(
                 child: ListView(
                   padding: EdgeInsets.only(
@@ -684,16 +731,14 @@ class _ItemTile extends StatelessWidget {
         child: SoftCard(
           padding: const EdgeInsets.fromLTRB(6, 4, 8, 4),
           color: item.checked ? c.surfaceSoft : null,
-          onTap: () =>
-              engine.saveShoppingItem(item.copyWith(checked: !item.checked)),
+          onTap: () => _setChecked(engine, item, !item.checked),
           child: Row(
             children: [
               RoundCheck(
                 label: item.name,
                 value: item.checked,
                 color: c.strong(FamioSection.shopping),
-                onChanged: (checked) =>
-                    engine.saveShoppingItem(item.copyWith(checked: checked)),
+                onChanged: (checked) => _setChecked(engine, item, checked),
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -772,6 +817,169 @@ Future<String?> _askName(
   );
   final trimmed = name?.trim();
   return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+/// Ticks [item] on or off; ticking off counts it as bought (suggestions,
+/// staples).
+void _setChecked(SyncEngine engine, ShoppingItem item, bool checked) {
+  engine.saveShoppingItem(item.copyWith(checked: checked));
+  if (checked && !item.checked) engine.noteBought(item);
+}
+
+/// What the family buys: quick picks under the input, or what matches the
+/// typed text.
+class _Suggestions extends StatelessWidget {
+  const _Suggestions({
+    required this.items,
+    required this.typing,
+    required this.onPick,
+  });
+
+  final List<BoughtItem> items;
+  final bool typing;
+  final ValueChanged<BoughtItem> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox(height: 4);
+    final c = FamioColors.of(context);
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(top: 8),
+        children: [
+          if (!typing)
+            Padding(
+              padding: const EdgeInsets.only(right: 8, top: 8),
+              child: Text(
+                tr.shoppingFrequent,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: c.inkSoft),
+              ),
+            ),
+          for (final b in items)
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ActionChip(
+                avatar: Icon(
+                  b.everyDays == null ? AppIcons.plus : AppIcons.repeat,
+                  size: 16,
+                ),
+                label: Text(b.name),
+                onPressed: () => onPick(b),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Stammartikel": what the family bought, with a rhythm after which an
+/// article goes back on the list by itself.
+Future<void> showStaples(BuildContext context) => showModalBottomSheet<void>(
+  context: context,
+  useRootNavigator: true,
+  isScrollControlled: true,
+  builder: (_) => const _StaplesSheet(),
+);
+
+class _StaplesSheet extends StatelessWidget {
+  const _StaplesSheet();
+
+  static const _rhythms = [null, 7, 14, 28];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final date = DateFormat.MMMd(appLanguage);
+    return DataBuilder(
+      collections: const {Collections.shoppingHistory},
+      builder: (context, engine) {
+        final items = engine.boughtItems
+          ..sort((a, b) {
+            // Staples first, then by how often.
+            if ((a.everyDays == null) != (b.everyDays == null)) {
+              return a.everyDays == null ? 1 : -1;
+            }
+            return b.count.compareTo(a.count);
+          });
+        return SafeArea(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * 0.8,
+            ),
+            child: ListView(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+              children: [
+                Text(tr.shoppingStaples, style: theme.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Text(tr.shoppingStaplesHint, style: theme.textTheme.bodySmall),
+                const SizedBox(height: 8),
+                if (items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Text(tr.shoppingStaplesEmpty),
+                  ),
+                for (final b in items)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      b.quantity.isEmpty ? b.name : '${b.quantity} ${b.name}',
+                    ),
+                    subtitle: Text(
+                      [
+                        tr.shoppingBoughtTimes(b.count),
+                        if (b.nextDue case final due?)
+                          tr.shoppingNextOn(date.format(due)),
+                      ].join(' · '),
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        DropdownButton<int?>(
+                          value: _rhythms.contains(b.everyDays)
+                              ? b.everyDays
+                              : null,
+                          underline: const SizedBox.shrink(),
+                          items: [
+                            for (final days in _rhythms)
+                              DropdownMenuItem(
+                                value: days,
+                                child: Text(switch (days) {
+                                  null => tr.shoppingRhythmNone,
+                                  7 => tr.shoppingRhythmWeekly,
+                                  _ => tr.shoppingRhythmWeeks(days ~/ 7),
+                                }),
+                              ),
+                          ],
+                          onChanged: (days) => engine.saveBoughtItem(
+                            b.copyWith(everyDays: () => days),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(AppIcons.trash),
+                          tooltip: tr.shoppingForget,
+                          onPressed: () => deleteWithUndo(
+                            context,
+                            what: b.name,
+                            collections: const {Collections.shoppingHistory},
+                            delete: () => engine.forgetBoughtItem(b.key),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// A new item for [listId] from typed or shared text. A leading count
