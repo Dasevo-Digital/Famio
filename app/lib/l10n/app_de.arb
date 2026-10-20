@@ -6470,5 +6470,7 @@
         "type": "int"
       }
     }
-  }
+  },
+  "settingsKeepWebData": "Daten in diesem Browser behalten",
+  "settingsKeepWebDataSubtitle": "Famio startet schneller und lädt nur, was sich geändert hat. Verschlüsselt gespeichert, Abmelden löscht die Kopie. Nicht auf Computern, die andere mitbenutzen."
 }

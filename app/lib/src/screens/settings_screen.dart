@@ -281,6 +281,14 @@ class SettingsScreen extends StatelessWidget {
               onChanged: (v) => state.setLanguage(v ?? 'system'),
             ),
           ),
+          if (kIsWeb)
+            SwitchListTile(
+              secondary: const Icon(AppIcons.database),
+              title: Text(context.l10n.settingsKeepWebData),
+              subtitle: Text(context.l10n.settingsKeepWebDataSubtitle),
+              value: state.keepWebData,
+              onChanged: state.setKeepWebData,
+            ),
           if (!kIsWeb && state.files != null) const _DeviceStorageTile(),
           if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android)
             const _BuiltInModelsTile(),

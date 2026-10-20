@@ -2502,5 +2502,7 @@
   "shoppingForget": "Olvidar",
   "shoppingStaplesAdded": "{count, plural, =1{1 artículo habitual de vuelta en la lista.} other{{count} artículos habituales de vuelta en la lista.}}",
   "shoppingRhythmWeekly": "cada semana",
-  "shoppingRhythmWeeks": "cada {weeks} semanas"
+  "shoppingRhythmWeeks": "cada {weeks} semanas",
+  "settingsKeepWebData": "Guardar los datos en este navegador",
+  "settingsKeepWebDataSubtitle": "Famio arranca más rápido y solo carga lo que ha cambiado. Se guarda cifrado; al cerrar sesión se borra la copia. No en ordenadores que usan otras personas."
 }

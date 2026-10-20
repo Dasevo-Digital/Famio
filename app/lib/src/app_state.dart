@@ -59,6 +59,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The web app keeps an encrypted copy of the family's data in this
+  /// browser and starts with it, fetching only what changed. Off by
+  /// default (shared computers); signing out deletes it.
+  bool get keepWebData => _prefs.getBool('web.keepData') ?? false;
+
+  Future<void> setKeepWebData(bool value) async {
+    await _prefs.setBool('web.keepData', value);
+    engine?.store.keepInBrowser(value);
+    notifyListeners();
+  }
+
   /// The wall display shows one column per member instead of topics.
   bool get kioskByPerson => _prefs.getBool('kiosk.byPerson') ?? false;
 
@@ -692,6 +703,12 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // Not available on this platform.
     }
+    // The browser's copy goes with the session, and the next one to sign
+    // in here decides anew.
+    if (kIsWeb) {
+      engine.store.keepInBrowser(false);
+      await _prefs.remove('web.keepData');
+    }
     // Signing out ends location sharing on this phone as well.
     try {
       if (!kIsWeb) await LocationSharing.disable(api: engine.api);
@@ -750,23 +767,30 @@ class AppState extends ChangeNotifier {
     if (kIsWeb && panelMode == 'browser') setTabValue('famio.token', token);
 
     // Local copy and file cache are encrypted with a key from the keystore
-    // (the web app keeps them in memory).
+    // (the web app keeps them in memory, the records on request also as an
+    // encrypted copy in the browser).
     final key = kIsWeb ? null : await vault.deviceKey();
     final support = kIsWeb ? '' : await _supportDir();
+    final path = p.join(support, 'famio_${member.id}.db');
+    final keep = kIsWeb && keepWebData;
+    final store = keep
+        ? await LocalStore.openWithBrowserCopy(path)
+        : LocalStore.open(path, hexKey: key);
+    if (kIsWeb) {
+      if (keep) {
+        store.keepInBrowser(true);
+      } else {
+        // A copy from before, when this browser still kept one.
+        unawaited(LocalStore.deleteBrowserCopy(path).catchError((Object _) {}));
+      }
+    }
     final api = FamioApiClient(
       normalized,
       // "panel": Home Assistant's proxy holds the real session.
       token: token == 'panel' ? null : token,
       pinnedCertificate: pin,
     );
-    final engine = SyncEngine(
-      store: LocalStore.open(
-        p.join(support, 'famio_${member.id}.db'),
-        hexKey: key,
-      ),
-      api: api,
-      memberId: member.id,
-    );
+    final engine = SyncEngine(store: store, api: api, memberId: member.id);
     engine.statusChanges.listen((status) {
       if (status.state == SyncState.unauthorized && this.engine == engine) {
         signOut(notice: tr.appSessionHasExpiredPlease);

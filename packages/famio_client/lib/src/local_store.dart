@@ -1,5 +1,8 @@
 import 'package:famio_shared/famio_shared.dart';
+
+import 'platform/browser_copy.dart' as browser;
 import 'platform/platform.dart';
+import 'snapshot_codec.dart';
 
 /// A record in the local store plus whether it still has to be pushed.
 class LocalRecord {
@@ -29,6 +32,29 @@ class LocalStore {
   /// for tests. In the browser everything stays in memory.
   factory LocalStore.open(String path, {String? hexKey}) =>
       LocalStore._(openRecordBackend(path, hexKey: hexKey));
+
+  /// Opens the store at [path]; in the browser starting from the copy kept
+  /// there ([keepInBrowser]), so the web app shows the family's data at
+  /// once, also offline, and only fetches what changed. Elsewhere the same
+  /// as [LocalStore.open].
+  static Future<LocalStore> openWithBrowserCopy(
+    String path, {
+    String? hexKey,
+  }) async {
+    final bytes = await browser.readBrowserCopy(path);
+    final snapshot = bytes == null ? null : decodeSnapshot(bytes);
+    if (snapshot != null) restoreCopy(path, snapshot);
+    return LocalStore.open(path, hexKey: hexKey);
+  }
+
+  /// Browser: deletes the copy of [path] and its key (signing out, or the
+  /// member no longer wants it).
+  static Future<void> deleteBrowserCopy(String path) =>
+      browser.deleteBrowserCopy(path);
+
+  /// Browser: keeps an encrypted copy of the records from now on (true), or
+  /// deletes it (false). No effect in the apps, which keep their database.
+  void keepInBrowser(bool keep) => _backend.keepCopy(keep);
 
   final RecordBackend _backend;
   final _cache = <String, Map<String, LocalRecord>>{};

@@ -6,6 +6,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../encrypted_db.dart';
+import '../snapshot_codec.dart';
 import 'storage.dart';
 
 RecordBackend openRecordBackend(String path, {String? hexKey}) =>
@@ -22,6 +23,9 @@ Future<String> writeTempFile(String dir, String name, List<int> data) async {
   await file.writeAsBytes(data, flush: true);
   return file.path;
 }
+
+/// Only the browser restores a copy before opening (storage_web.dart).
+void restoreCopy(String path, StoreSnapshot snapshot) {}
 
 void clearTempFiles(String dir) {
   final directory = Directory(dir);
@@ -118,6 +122,9 @@ class _SqliteRecords implements RecordBackend {
     'INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)',
     [key, value],
   );
+
+  @override
+  void keepCopy(bool keep) {}
 
   @override
   void close() => _db.close();

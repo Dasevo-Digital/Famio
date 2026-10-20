@@ -2502,5 +2502,7 @@
   "shoppingForget": "Forget",
   "shoppingStaplesAdded": "{count, plural, =1{1 staple back on the list.} other{{count} staples back on the list.}}",
   "shoppingRhythmWeekly": "every week",
-  "shoppingRhythmWeeks": "every {weeks} weeks"
+  "shoppingRhythmWeeks": "every {weeks} weeks",
+  "settingsKeepWebData": "Keep data in this browser",
+  "settingsKeepWebDataSubtitle": "Famio starts faster and only loads what changed. Stored encrypted; signing out deletes the copy. Not on computers others use too."
 }
