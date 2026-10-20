@@ -2485,5 +2485,11 @@
   "purchaseNotRead": "No se pudo leer ningún importe en el tique.",
   "shoppingShareText": "Compartir como texto",
   "shoppingCopyText": "Copiar la lista como texto",
-  "shoppingTextCopied": "Lista copiada: pégala en un mensaje."
+  "shoppingTextCopied": "Lista copiada: pégala en un mensaje.",
+  "memoriesTitle": "Hoy hace un año",
+  "memoriesTitleYears": "Tal día como hoy",
+  "memoriesYearsAgo": "{count, plural, =1{hace un año} other{hace {count} años}}",
+  "memoriesMilestone": "{name}: {title}",
+  "memoriesPhotos": "{count, plural, =1{1 foto del chat} other{{count} fotos del chat}}",
+  "memoriesHide": "Ocultar por hoy"
 }

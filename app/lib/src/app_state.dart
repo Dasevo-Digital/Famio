@@ -50,6 +50,15 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The day ("2026-10-20") the memories on the start page were put away;
+  /// they come back the next day.
+  String? get memoriesHiddenOn => _prefs.getString('home.memoriesHidden');
+
+  Future<void> hideMemoriesToday() async {
+    await _prefs.setString('home.memoriesHidden', dayKey(DateTime.now()));
+    notifyListeners();
+  }
+
   /// The wall display shows one column per member instead of topics.
   bool get kioskByPerson => _prefs.getBool('kiosk.byPerson') ?? false;
 

@@ -6401,5 +6401,35 @@
   "purchaseNotRead": "Auf dem Bon war kein Betrag zu erkennen.",
   "shoppingShareText": "Als Text teilen",
   "shoppingCopyText": "Liste als Text kopieren",
-  "shoppingTextCopied": "Liste kopiert – zum Einfügen in eine Nachricht."
+  "shoppingTextCopied": "Liste kopiert – zum Einfügen in eine Nachricht.",
+  "memoriesTitle": "Heute vor einem Jahr",
+  "memoriesTitleYears": "An diesem Tag",
+  "memoriesYearsAgo": "{count, plural, =1{vor einem Jahr} other{vor {count} Jahren}}",
+  "@memoriesYearsAgo": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memoriesMilestone": "{name}: {title}",
+  "@memoriesMilestone": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "memoriesPhotos": "{count, plural, =1{1 Foto aus dem Chat} other{{count} Fotos aus dem Chat}}",
+  "@memoriesPhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "memoriesHide": "Für heute ausblenden"
 }

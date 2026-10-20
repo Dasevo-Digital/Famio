@@ -33,6 +33,8 @@ import 'conflicts_screen.dart';
 import '../widgets/app_update_banner.dart';
 import '../widgets/famio_tour.dart';
 import '../widgets/setup_checklist.dart';
+import '../data/memories.dart';
+import '../widgets/files.dart';
 import '../data/year_review.dart';
 import 'deferred_sections.dart';
 import 'sos_screens.dart';
@@ -133,9 +135,14 @@ class HomeScreen extends StatelessWidget {
             // Areas the family switched off get no tile either.
             final hidden = AppScope.of(context).hiddenModules;
             bool on(FamioSection s) => !hidden.contains(s.name);
+            final memories = memoriesOn(engine, now);
+            final showMemories =
+                !memories.isEmpty &&
+                AppScope.of(context).memoriesHiddenOn != dayKey(now);
             final tiles = [
               if (on(FamioSection.calendar)) _TodayTile(engine: engine),
               WeatherTile(engine: engine),
+              if (showMemories) _MemoriesTile(memories: memories),
               if (on(FamioSection.calendar) &&
                   engine.countdowns(now).isNotEmpty)
                 _CountdownTile(engine: engine),
@@ -481,6 +488,72 @@ class _TodayTile extends StatelessWidget {
 }
 
 /// Looking forward: the next marked event big, a few more below.
+/// "Heute vor einem Jahr": milestones, trips and chat photos of this date
+/// in earlier years; put away until tomorrow with one tap.
+class _MemoriesTile extends StatelessWidget {
+  const _MemoriesTile({required this.memories});
+
+  final Memories memories;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final photos = memories.photos;
+    return _Tile(
+      section: FamioSection.home,
+      title: memories.oneYearAgo ? tr.memoriesTitle : tr.memoriesTitleYears,
+      icon: AppIcons.images,
+      onTap: photos.isEmpty ? () {} : () => openFileRef(context, photos.first),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final l in memories.lines.take(4))
+            _Line(
+              l.text,
+              leading: _Dot(c.strong(FamioSection.home)),
+              trailing: memories.oneYearAgo
+                  ? null
+                  : tr.memoriesYearsAgo(l.yearsAgo),
+            ),
+          if (photos.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                for (final p in photos.take(3)) ...[
+                  SizedBox.square(
+                    dimension: 72,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => openFileRef(context, p),
+                      child: CachedImage(p, thumb: 240, radius: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Expanded(
+                  child: Text(
+                    tr.memoriesPhotos(photos.length),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelMedium?.copyWith(color: c.inkSoft),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => AppScope.read(context).hideMemoriesToday(),
+              child: Text(tr.memoriesHide),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _CountdownTile extends StatelessWidget {
   const _CountdownTile({required this.engine});
 

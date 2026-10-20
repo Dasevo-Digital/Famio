@@ -2485,5 +2485,11 @@
   "purchaseNotRead": "No amount could be read on the receipt.",
   "shoppingShareText": "Share as text",
   "shoppingCopyText": "Copy list as text",
-  "shoppingTextCopied": "List copied – paste it into a message."
+  "shoppingTextCopied": "List copied – paste it into a message.",
+  "memoriesTitle": "One year ago today",
+  "memoriesTitleYears": "On this day",
+  "memoriesYearsAgo": "{count, plural, =1{a year ago} other{{count} years ago}}",
+  "memoriesMilestone": "{name}: {title}",
+  "memoriesPhotos": "{count, plural, =1{1 photo from the chat} other{{count} photos from the chat}}",
+  "memoriesHide": "Hide for today"
 }

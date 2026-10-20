@@ -387,6 +387,36 @@ void main() {
     });
   });
 
+  group('memories', () {
+    testWidgets('a year ago today on the start page, hidden until tomorrow', (
+      tester,
+    ) async {
+      await open(tester);
+      final today = DateTime.now();
+      engine
+        ..saveChild(Child(id: 'k', name: 'Mia', birthDate: DateTime(2023)))
+        ..saveChildEntry(
+          ChildEntry(
+            id: 'm',
+            childId: 'k',
+            kind: ChildEntryKind.milestone,
+            date: DateTime(today.year - 1, today.month, today.day),
+            title: 'Erste Schritte',
+          ),
+        );
+      await _pumpData(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('Heute vor einem Jahr'), findsOneWidget);
+      expect(find.text('Mia: Erste Schritte'), findsOneWidget);
+
+      await tester.tap(find.text('Für heute ausblenden'));
+      await tester.pumpAndSettle();
+      expect(find.text('Heute vor einem Jahr'), findsNothing);
+      expect(appState.memoriesHiddenOn, isNotNull);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
   group('purchase into the budget', () {
     Future<void> openCart(WidgetTester tester) async {
       engine
