@@ -4,6 +4,15 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.12 – Zufällige Fotos auf der Wandanzeige
+
+- Die Wandanzeige zeigt auf Wunsch zufällige Fotos aus dem ganzen
+  PhotoVault-Zeitstrahl, alle drei Stunden 100 neue (Server-Verwaltung →
+  Einstellungen → PhotoVault → Fotos für die Wandanzeige).
+- Die Diashow übernimmt neue Fotos sofort, statt bei der alten Auswahl zu
+  bleiben.
+- Die Beschreibung von Famio in HACS zeigt wieder Bilder und Links.
+
 ## 2.0.11 – PhotoVault, Stammartikel und Erinnerungen
 
 - PhotoVault lässt sich anbinden (Server-Verwaltung → Einstellungen):

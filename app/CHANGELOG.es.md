@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.12 – Fotos al azar en la pantalla de pared
+
+- La pantalla de pared puede mostrar fotos al azar de toda la cronología de
+  PhotoVault, 100 nuevas cada tres horas (Administración del servidor →
+  Ajustes → PhotoVault → Fotos para la pantalla de pared).
+- La presentación toma las fotos nuevas enseguida en lugar de quedarse con
+  la selección anterior.
+- La descripción de Famio en HACS vuelve a mostrar imágenes y enlaces.
+
 ## 2.0.11 – PhotoVault, artículos habituales y recuerdos
 
 - Se puede conectar PhotoVault (Administración del servidor → Ajustes):

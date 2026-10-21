@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.12 – Random photos on the wall display
+
+- The wall display can show random photos from the whole PhotoVault
+  timeline, 100 new ones every three hours (Server administration →
+  Settings → PhotoVault → Photos for the wall display).
+- The slideshow takes new photos right away instead of keeping the old
+  selection.
+- Famio's description in HACS shows its pictures and links again.
+
 ## 2.0.11 – PhotoVault, staples and memories
 
 - PhotoVault can be connected (Server administration → Settings): photos of
