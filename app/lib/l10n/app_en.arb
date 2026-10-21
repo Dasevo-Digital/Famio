@@ -1969,6 +1969,8 @@
   "locationLocationSharingOffRight": "Location sharing is off right now by schedule",
   "locationNoPositionYet": "No position yet",
   "locationLastLocationPlaceAgo": "Last location{place} · {ago} · possibly outdated",
+  "locationDeviceSilent": "Phone not reporting since {since}{place}",
+  "locationDeviceSilentPlace": " · last at “{place}”",
   "locationPlaceSinceLastConfirmed": "At “{place}”{since} · last confirmed {ago}",
   "locationSinceTime": "since {time}",
   "locationWayLastConfirmedAgo": "On the way · last confirmed {ago}",

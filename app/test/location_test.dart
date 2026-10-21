@@ -328,6 +328,22 @@ void main() {
       ),
       'Letzter Standort: „Zuhause“ · vor 3 Std. · möglicherweise veraltet',
     );
+    // A whole day without a report: the phone is silent, not at home.
+    expect(
+      sharingLabel(
+        MemberLocation(
+          memberId: 'x',
+          state: SharingState.active,
+          latitude: 1,
+          longitude: 1,
+          at: DateTime(2026, 10, 18, 14, 12),
+          lastContact: DateTime(2026, 10, 18, 14, 12),
+        ),
+        const Place(id: 'home', name: 'Zuhause', latitude: 1, longitude: 1),
+        now: DateTime(2026, 10, 21, 11),
+      ),
+      'Handy meldet sich seit 18.10. 14:12 nicht · zuletzt bei „Zuhause“',
+    );
     expect(
       sharingLabel(
         MemberLocation(

@@ -1969,6 +1969,8 @@
   "locationLocationSharingOffRight": "El uso compartido de la ubicación está desactivado ahora por horario",
   "locationNoPositionYet": "Aún no hay posición",
   "locationLastLocationPlaceAgo": "Última ubicación{place} · {ago} · puede estar desactualizada",
+  "locationDeviceSilent": "El móvil no informa desde {since}{place}",
+  "locationDeviceSilentPlace": " · último lugar: «{place}»",
   "locationPlaceSinceLastConfirmed": "En «{place}»{since} · confirmado por última vez {ago}",
   "locationSinceTime": "desde las {time}",
   "locationWayLastConfirmedAgo": "En camino · confirmado por última vez {ago}",

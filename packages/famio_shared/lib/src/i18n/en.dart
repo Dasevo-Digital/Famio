@@ -1014,6 +1014,9 @@ const sharedEn = <String, String>{
   "Server|Bald kann Famio {name}s Standort nicht mehr zeigen.":
       "Famio will soon no longer be able to show {name}'s location.",
   "Server|Akku fast leer": "Battery almost empty",
+  "Server|{name}s Handy meldet sich nicht": "{name}'s phone is not reporting",
+  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.": "No location for {days} days although sharing is on. Please open Famio on the phone once: after a restart or a new installation the phone often does not start the app by itself.",
+  "Server|Ein Handy meldet sich nicht": "A phone is not reporting",
   "Server|Dienstkonten legt ein Admin direkt an":
       "An admin creates service accounts directly",
   "Server|Diese Einladung wurde gerade schon benutzt.":

@@ -52,8 +52,20 @@ class LocationService {
   static const _heartbeat = Duration(minutes: 5);
   static const _minMove = 30.0;
 
-  /// Fixes less precise than this never change the place (cell towers).
+  /// Fixes less precise than this never enter a place (cell towers) …
   static const _placeAccuracy = 250.0;
+
+  /// … and leave one only from this far away, plus twice their uncertainty:
+  /// an iPhone on the move often reports nothing but cell fixes, and 6 km
+  /// away is not at home whatever the accuracy, while 1 km off with ±500 m
+  /// may well be a poor fix indoors.
+  static const _coarseLeave = 1000.0;
+
+  /// A device sharing its location that has not reported for this long is
+  /// silent: an iPhone lying still reports nothing for hours, but not for
+  /// days – then the app no longer runs (see [newlySilent]).
+  static const silentAfter = Duration(hours: 48);
+  static const _silentKey = 'locationSilent';
 
   static const _codeKey = 'locationCode';
 
@@ -214,10 +226,11 @@ class LocationService {
     }
     final alerts = <LocationAlert>[];
     for (final f in valid) {
-      if ((f.accuracy ?? 0) > _placeAccuracy) continue;
       if (status.lastFix != null && !f.at.isAfter(status.lastFix!)) {
         continue; // Already evaluated (sent again after a lost answer).
       }
+      final accuracy = f.accuracy ?? 0;
+      final precise = accuracy <= _placeAccuracy;
       final current = placeId == null ? null : places[placeId];
       if (current != null) {
         final distance = distanceMeters(
@@ -227,11 +240,15 @@ class LocationService {
           current.longitude,
         );
         // Leaving needs a margin, so GPS jitter at the edge stays quiet.
-        if (distance <= current.radius + max(50, f.accuracy ?? 0)) continue;
+        final margin = precise
+            ? max(50.0, accuracy)
+            : max(_coarseLeave, 2 * accuracy);
+        if (distance <= current.radius + margin) continue;
         alerts.add(_alert(member.id, current, arrived: false, at: f.at));
         placeId = null;
         placeSince = null;
       }
+      if (!precise) continue;
       Place? nearest;
       var best = double.infinity;
       for (final p in places.values) {
@@ -611,6 +628,44 @@ class LocationService {
           ),
         ),
     ];
+  }
+
+  /// Members whose sharing is on but whose device has been silent for
+  /// [silentAfter], with their last contact – each silence only once; a
+  /// report from the device ends it.
+  List<(FamilyMember, DateTime)> newlySilent({DateTime? now}) {
+    now ??= _clock();
+    final rows = db.select('SELECT value FROM settings WHERE key = ?', [
+      _silentKey,
+    ]);
+    final told = rows.isEmpty
+        ? const <String, Object?>{}
+        : (jsonDecode(rows.first.columnAt(0) as String) as Map)
+              .cast<String, Object?>();
+    final silent = <String, int>{};
+    final fresh = <(FamilyMember, DateTime)>[];
+    for (final r in records.all(Collections.memberLocations)) {
+      if (r.deleted) continue;
+      final l = MemberLocation.fromRecord(r);
+      final last = l.lastContact ?? l.at;
+      if (l.state != SharingState.active ||
+          last == null ||
+          now.difference(last) < silentAfter) {
+        continue;
+      }
+      final member = accounts.byId(l.memberId);
+      if (member == null) continue;
+      silent[l.memberId] = last.millisecondsSinceEpoch;
+      if (told[l.memberId] != last.millisecondsSinceEpoch) {
+        fresh.add((member, last));
+      }
+    }
+    db.execute(
+      'INSERT INTO settings (key, value) VALUES (?, ?)'
+      ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      [_silentKey, jsonEncode(silent)],
+    );
+    return fresh;
   }
 
   /// Deletes positions and notices older than [retention]; returns whether

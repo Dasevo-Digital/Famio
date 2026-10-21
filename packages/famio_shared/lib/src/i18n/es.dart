@@ -1046,6 +1046,9 @@ const sharedEs = <String, String>{
   "Server|Bald kann Famio {name}s Standort nicht mehr zeigen.":
       "Pronto Famio ya no podrá mostrar la ubicación de {name}.",
   "Server|Akku fast leer": "Batería casi agotada",
+  "Server|{name}s Handy meldet sich nicht": "El móvil de {name} no informa",
+  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.": "Hace {days} días que no llega ninguna ubicación aunque compartir está activado. Abre Famio una vez en el móvil: tras un reinicio o una nueva instalación, el móvil a menudo no inicia la app por sí solo.",
+  "Server|Ein Handy meldet sich nicht": "Un móvil no informa",
   "Server|Dienstkonten legt ein Admin direkt an":
       "Las cuentas de servicio las crea directamente un administrador",
   "Server|Diese Einladung wurde gerade schon benutzt.":

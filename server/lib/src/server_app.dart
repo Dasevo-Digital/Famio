@@ -366,6 +366,7 @@ class FamioServerApp {
   late final SsoService sso;
   late final String? setupCode;
   Timer? _gc;
+  Timer? _silent;
   late final FamioApi api;
 
   /// The family's time zone (may be changed by admins at runtime).
@@ -409,6 +410,13 @@ class FamioServerApp {
     records.expireConflicts();
     invites.collectGarbage();
     backups?.start();
+    // Hourly, the first time an hour after the start: after the server was
+    // down, devices report again before anybody counts as silent.
+    _silent = Timer.periodic(const Duration(hours: 1), (_) {
+      for (final (member, since) in locations.newlySilent()) {
+        sos.deviceSilent(member, since);
+      }
+    });
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
       notices.collectGarbage();
       records.purgeDeleted();
@@ -422,6 +430,7 @@ class FamioServerApp {
 
   Future<void> close() async {
     _gc?.cancel();
+    _silent?.cancel();
     backups?.stop();
     importer.stop();
     paperBuddy.stop();

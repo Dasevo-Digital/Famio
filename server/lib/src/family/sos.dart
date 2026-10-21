@@ -387,6 +387,32 @@ class SosService {
     );
   }
 
+  /// [member]'s phone shares its location but has not reported since
+  /// [since] (see LocationService.newlySilent): the adults hear it once, so
+  /// the old position on the map is no mystery and somebody can open Famio
+  /// on that phone.
+  void deviceSilent(FamilyMember member, DateTime since, {DateTime? now}) {
+    final days = (now ?? DateTime.now()).difference(since).inDays;
+    push?.deliver(
+      () => PushNotice(
+        to: {for (final a in _adults(member.id)) a.id},
+        title: t('{name}s Handy meldet sich nicht', {
+          'name': member.displayName,
+        }),
+        body: t(
+          'Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. '
+          'Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder '
+          'einer neuen Installation startet das Handy die App sonst oft '
+          'nicht von selbst.',
+          {'days': days},
+        ),
+        brief: t('Ein Handy meldet sich nicht'),
+        tag: 'warning',
+      ),
+      records.get(Collections.memberLocations, member.id),
+    );
+  }
+
   /// ntfy tag of a ring; the apps sound the siren for it.
   static const ringTag = 'loud_sound';
 

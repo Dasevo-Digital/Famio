@@ -4692,6 +4692,25 @@
   "locationLocationSharingOffRight": "Standortfreigabe ist nach Zeitplan gerade aus",
   "locationNoPositionYet": "Noch keine Position",
   "locationLastLocationPlaceAgo": "Letzter Standort{place} · {ago} · möglicherweise veraltet",
+  "locationDeviceSilent": "Handy meldet sich seit {since} nicht{place}",
+  "@locationDeviceSilent": {
+    "placeholders": {
+      "since": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "locationDeviceSilentPlace": " · zuletzt bei „{place}“",
+  "@locationDeviceSilentPlace": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "@locationLastLocationPlaceAgo": {
     "placeholders": {
       "place": {

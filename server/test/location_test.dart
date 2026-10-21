@@ -341,6 +341,83 @@ void main() {
     expect(mia.accuracy, 2500);
   });
 
+  test('a cell fix far away leaves the place, one nearby does not', () async {
+    final t0 = DateTime.now().toUtc().subtract(const Duration(minutes: 30));
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, t0)],
+    });
+    expect(locationOf(kidId)!.placeId, 'home');
+
+    // 800 m off with ±500 m: a poor fix indoors, still at home.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [
+        fix(
+          (home.$1 + 0.0072, home.$2),
+          t0.add(const Duration(minutes: 5)),
+          acc: 500,
+        ),
+      ],
+    });
+    expect(locationOf(kidId)!.placeId, 'home');
+
+    // 6 km away with ±1.5 km (an iPhone on the move): gone, whatever the
+    // accuracy.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [
+        fix(
+          (home.$1 + 0.054, home.$2),
+          t0.add(const Duration(minutes: 10)),
+          acc: 1500,
+        ),
+      ],
+    });
+    expect(locationOf(kidId)!.placeId, isNull);
+    expect([
+      for (final a in alertsFor(parentId)) a.text('Mia'),
+    ], contains('Mia hat „Zuhause“ verlassen'));
+    // Arriving still takes a precise fix.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(school, t0.add(const Duration(minutes: 20)), acc: 900)],
+    });
+    expect(locationOf(kidId)!.placeId, isNull);
+  });
+
+  test('a phone silent for two days is told to the adults once', () async {
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, DateTime.now().toUtc())],
+    });
+    final now = DateTime.now();
+    expect(
+      app.locations.newlySilent(now: now.add(const Duration(days: 1))),
+      isEmpty,
+    );
+    final later = now.add(const Duration(days: 3));
+    final silent = app.locations.newlySilent(now: later);
+    expect([for (final (m, _) in silent) m.id], [kidId]);
+    expect(app.locations.newlySilent(now: later), isEmpty);
+
+    final (member, since) = silent.single;
+    app.sos.deviceSilent(member, since, now: later);
+    await app.push.idle;
+    final notice = app.notices.after(parentId, 0).last;
+    expect(notice['title'], 'Mias Handy meldet sich nicht');
+    expect('${notice['body']}', startsWith('Seit 3 Tagen kommt kein Standort'));
+    expect(app.notices.after(kidId, 0), isEmpty);
+
+    // A report from the phone ends the silence; the next one is told again.
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, DateTime.now().toUtc())],
+    });
+    expect(
+      app.locations.newlySilent(now: now.add(const Duration(days: 1))),
+      isEmpty,
+    );
+    expect(
+      app.locations.newlySilent(now: later.add(const Duration(days: 1))),
+      hasLength(1),
+    );
+  });
+
   test('pausing needs the parents code; resuming does not', () async {
     // No code set yet.
     var r = await call('POST', 'api/location/pause', kidToken, {'code': '1'});

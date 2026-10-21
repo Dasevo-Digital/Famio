@@ -331,11 +331,19 @@ Benachrichtigung), auch bei geschlossener App und nach einem Neustart; er
 nutzt den stromsparenden Fused-Provider (bei ausgeschalteter
 Netzwerk-Ortung GPS). Unter iOS übernimmt das Core Location im Hintergrund
 (blaue Standortanzeige); nach dem Schließen startet iOS die App bei
-größeren Ortswechseln selbst wieder. iPhones melden nur bei Bewegung, daher
-gilt ein iPhone erst nach 12 Stunden Stille als „keine Verbindung“. Beide
+größeren Ortswechseln selbst wieder – aber erst, wenn sie seit ihrer
+Installation einmal lief. Wer Famio selbst über den Mac aufs iPhone spielt,
+nimmt deshalb `app/tool/ios_install.sh <Runner.app> <Geräte-ID>…`: Es
+installiert und startet Famio einmal (iPhone entsperrt). iPhones melden nur
+bei Bewegung. Eine Position gilt nach 30 Minuten als möglicherweise
+veraltet; meldet sich ein Handy einen Tag lang gar nicht, steht in „Wo ist
+wer?“ „Handy meldet sich seit … nicht“, und nach zwei Tagen bekommen die
+Erwachsenen einmal einen Hinweis. Beide
 melden sich mit einem eigenen Token, das nur Positionen melden kann. Der Server hält die letzte Position pro Mitglied als
 Datensatz (`member_locations`), erkennt Ankunft und Verlassen von Orten
-(`places`, mit Toleranz gegen GPS-Sprünge) und schreibt Hinweise
+(`places`, mit Toleranz gegen GPS-Sprünge; ankommen nur mit genauen
+Positionen, verlassen auch mit ungenauen aus der Funkzelle, wenn sie
+mindestens 1 km und die doppelte Ungenauigkeit entfernt liegen) und schreibt Hinweise
 (`location_alerts`) für die Mitglieder, die sie abonniert haben. Positionen
 werden nach **7 Tagen** gelöscht (Administratoren können 1 bis 365 Tage
 wählen); den Verlauf sehen nur Eltern (Administratoren) und das Mitglied
