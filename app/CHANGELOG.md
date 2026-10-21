@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.13 – Fotos in Famio ansehen
+
+- Ein Tipp auf ein Foto öffnet es in Famio statt als Download oder in
+  einer anderen App: zum Weiterwischen, mit Zoom und den Pfeiltasten. Der
+  Knopf oben rechts lädt das Original wie bisher herunter.
+- Ist die Bibliothek des verbundenen PhotoVault-Kontos leer, sagt die
+  Einstellung das jetzt und rät zum Konto, dem die Fotos gehören.
+
 ## 2.0.12 – Zufällige Fotos auf der Wandanzeige
 
 - Die Wandanzeige zeigt auf Wunsch zufällige Fotos aus dem ganzen

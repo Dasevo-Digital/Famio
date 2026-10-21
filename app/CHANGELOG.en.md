@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.13 – Viewing photos in Famio
+
+- Tapping a photo opens it in Famio instead of as a download or in another
+  app: swipe on, zoom and use the arrow keys. The button at the top right
+  still hands on the original.
+- If the library of the connected PhotoVault account is empty, the setting
+  now says so and suggests the account the photos belong to.
+
 ## 2.0.12 – Random photos on the wall display
 
 - The wall display can show random photos from the whole PhotoVault

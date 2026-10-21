@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.13 – Ver fotos en Famio
+
+- Al tocar una foto se abre en Famio en lugar de descargarse o abrirse en
+  otra app: se puede deslizar, ampliar y usar las flechas. El botón de
+  arriba a la derecha sigue entregando el original.
+- Si la biblioteca de la cuenta de PhotoVault conectada está vacía, el
+  ajuste ahora lo indica y recomienda la cuenta a la que pertenecen las
+  fotos.
+
 ## 2.0.12 – Fotos al azar en la pantalla de pared
 
 - La pantalla de pared puede mostrar fotos al azar de toda la cronología de
