@@ -7,7 +7,8 @@
 # significant changes) only once it has run since it was installed. Without
 # it, location sharing stays silent until somebody opens Famio on that
 # phone – in October 2026 a family phone reported nothing for three days
-# after its weekly reinstall. The phone must be unlocked for the start.
+# after its weekly reinstall. The phone must be unlocked for the start, and
+# the start also shows when iOS no longer trusts the developer.
 set -eu
 
 if [ $# -lt 2 ]; then
@@ -34,13 +35,26 @@ for device in "$@"; do
     status=1
     continue
   fi
-  if xcrun devicectl device process launch --device "$device" "$bundle" \
-    > /dev/null 2>&1; then
+  if launch=$(xcrun devicectl device process launch --device "$device" \
+    "$bundle" 2>&1); then
     echo "$device: $version installiert und gestartet"
-  else
-    echo "$device: $version installiert, Start fehlgeschlagen (gesperrt?)" \
-      "– Famio dort einmal öffnen, sonst bleibt der Standort stumm"
-    status=1
+    continue
   fi
+  status=1
+  case $launch in
+    *"reason: Locked"*)
+      echo "$device: $version installiert, aber das iPhone ist gesperrt" \
+        "– entsperren und Famio einmal öffnen" ;;
+    *"reason: Security"*)
+      # The free team's trust in the developer is gone when every profile
+      # of that developer on the phone has expired at once: no app of it
+      # starts any more, not even in the background.
+      echo "$device: $version installiert, aber iOS vertraut dem Entwickler" \
+        "nicht mehr – Einstellungen → Allgemein → VPN und Geräteverwaltung" \
+        "→ Entwickler-App → vertrauen, dann Famio öffnen" ;;
+    *)
+      echo "$device: $version installiert, Start fehlgeschlagen" \
+        "– Famio dort einmal öffnen, sonst bleibt der Standort stumm" ;;
+  esac
 done
 exit $status
