@@ -191,6 +191,95 @@ void main() {
     });
   });
 
+  group('shopping lists', () {
+    var clock = DateTime.now().millisecondsSinceEpoch;
+    SyncRecord list(ShoppingList l, {bool knowsAudience = true}) => SyncRecord(
+      collection: Collections.shoppingLists,
+      id: l.id,
+      data: {
+        ...l.toData(),
+      }..removeWhere((k, _) => !knowsAudience && k == SyncRecord.visibilityKey),
+      updatedAt: ++clock,
+    );
+    SyncRecord item(String id, String listId, String name) => SyncRecord(
+      collection: Collections.shoppingItems,
+      id: id,
+      data: ShoppingItem(id: id, listId: listId, name: name).toData(),
+      updatedAt: ++clock,
+    );
+    bool has(_Member m, String collection, String id) =>
+        m.seen.containsKey('$collection/$id');
+    List<String>? audience(String id) =>
+        app.records.get(Collections.shoppingItems, id)!.visibleTo;
+
+    test('items go only to who sees their list', () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      // Mama keeps a list for the presents to herself and Papa.
+      await mama.sync([
+        list(
+          ShoppingList(
+            id: 'geschenke',
+            name: 'Geschenke',
+            visibleTo: [mama.id, papa.id],
+          ),
+        ),
+        item('lego', 'geschenke', 'Lego'),
+      ]);
+      expect(audience('lego'), unorderedEquals([mama.id, papa.id]));
+      await papa.sync();
+      await kind.sync();
+      expect(has(papa, Collections.shoppingItems, 'lego'), isTrue);
+      expect(has(kind, Collections.shoppingLists, 'geschenke'), isFalse);
+      expect(has(kind, Collections.shoppingItems, 'lego'), isFalse);
+
+      // Papa adds one from an app that knows nothing of audiences.
+      await papa.sync([item('buch', 'geschenke', 'Buch')]);
+      expect(audience('buch'), unorderedEquals([mama.id, papa.id]));
+      // The child cannot write into it, not even by its id.
+      final tried = await kind.sync([item('spion', 'geschenke', 'Spion')]);
+      expect(tried.rejected.single.deleted, isTrue);
+      expect(app.records.get(Collections.shoppingItems, 'spion'), isNull);
+
+      // An older app renames the list: it stays private.
+      await papa.sync([
+        list(
+          const ShoppingList(id: 'geschenke', name: 'Weihnachten'),
+          knowsAudience: false,
+        ),
+      ]);
+      expect(
+        app.records.get(Collections.shoppingLists, 'geschenke')!.visibleTo,
+        unorderedEquals([mama.id, papa.id]),
+      );
+
+      // For the whole family: the items come along …
+      await mama.sync([
+        list(const ShoppingList(id: 'geschenke', name: 'Weihnachten')),
+      ]);
+      expect(audience('lego'), isNull);
+      await kind.sync();
+      expect(has(kind, Collections.shoppingItems, 'lego'), isTrue);
+      expect(has(kind, Collections.shoppingItems, 'buch'), isTrue);
+
+      // … and private again: they leave the child's device.
+      await mama.sync([
+        list(
+          ShoppingList(
+            id: 'geschenke',
+            name: 'Weihnachten',
+            visibleTo: [mama.id],
+          ),
+        ),
+      ]);
+      await kind.sync();
+      await papa.sync();
+      expect(has(kind, Collections.shoppingLists, 'geschenke'), isFalse);
+      expect(has(kind, Collections.shoppingItems, 'lego'), isFalse);
+      expect(has(papa, Collections.shoppingItems, 'buch'), isFalse);
+      expect(audience('buch'), [mama.id]);
+    });
+  });
+
   group('tasks', () {
     var clock = DateTime.now().millisecondsSinceEpoch;
     SyncRecord task(Task t, {bool knowsAudience = true}) => SyncRecord(

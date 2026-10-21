@@ -8,6 +8,7 @@ class ShoppingList {
     this.sort = 0,
     this.packing = false,
     this.eventId,
+    this.visibleTo,
   });
 
   factory ShoppingList.fromRecord(SyncRecord r) => ShoppingList(
@@ -16,6 +17,7 @@ class ShoppingList {
     sort: r.data['sort'] as int? ?? 0,
     packing: r.data['packing'] as bool? ?? false,
     eventId: r.data['eventId'] as String?,
+    visibleTo: r.visibleTo,
   );
 
   final String id;
@@ -29,12 +31,21 @@ class ShoppingList {
   /// before it starts.
   final String? eventId;
 
-  ShoppingList copyWith({String? name, int? sort}) => ShoppingList(
+  /// Who sees the list and its items (see [SyncRecord.visibleTo]); null:
+  /// the whole family. The server gives every item its list's audience.
+  final List<String>? visibleTo;
+
+  ShoppingList copyWith({
+    String? name,
+    int? sort,
+    List<String>? Function()? visibleTo,
+  }) => ShoppingList(
     id: id,
     name: name ?? this.name,
     sort: sort ?? this.sort,
     packing: packing,
     eventId: eventId,
+    visibleTo: visibleTo == null ? this.visibleTo : visibleTo(),
   );
 
   Map<String, Object?> toData() => {
@@ -42,6 +53,9 @@ class ShoppingList {
     'sort': sort,
     if (packing) 'packing': true,
     'eventId': ?eventId,
+    // Always written: "the whole family" (null) lifts a restriction, while
+    // older apps leave the key out and the server keeps what was set.
+    SyncRecord.visibilityKey: visibleTo,
   };
 }
 

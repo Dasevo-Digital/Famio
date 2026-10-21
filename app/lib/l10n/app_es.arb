@@ -2490,6 +2490,8 @@
   "purchaseScanned": "Leído del tique: compruébalo.",
   "purchaseNotRead": "No se pudo leer ningún importe en el tique.",
   "shoppingShareText": "Compartir como texto",
+  "shoppingWhoSees": "¿Quién ve la lista?",
+  "shoppingWhoSeesHint": "Solo estas personas ven sus artículos, también en apps de recordatorios, Bring!, Microsoft To Do y Home Assistant. Lo que se compra de esta lista no aparece en las sugerencias de la familia.",
   "shoppingCopyText": "Copiar la lista como texto",
   "shoppingTextCopied": "Lista copiada: pégala en un mensaje.",
   "memoriesTitle": "Hoy hace un año",

@@ -412,6 +412,31 @@ class RecordStore {
           rejected.add(existing);
           continue;
         }
+        if (change.collection == Collections.shoppingLists &&
+            !incoming.deleted) {
+          incoming = _keepAudience(incoming, existing);
+        }
+        if (change.collection == Collections.shoppingItems &&
+            !incoming.deleted) {
+          // An item goes where its list goes, whoever writes it (older apps,
+          // Bring!, CalDAV); into a list they cannot see nobody writes.
+          final list = _listOf(incoming);
+          if (list != null && !_canSee(list, userId)) {
+            rejected.add(
+              existing ??
+                  SyncRecord(
+                    collection: change.collection,
+                    id: change.id,
+                    data: const {},
+                    deleted: true,
+                    updatedAt: revokedAt,
+                    updatedBy: serverMemberId,
+                  ),
+            );
+            continue;
+          }
+          incoming = _itemAudience(incoming);
+        }
         if (change.collection == Collections.tasks && !incoming.deleted) {
           incoming = _taskAudience(incoming, existing);
           if (role == MemberRole.guest &&
@@ -436,8 +461,10 @@ class RecordStore {
             },
           );
         } else if (incoming.visibleTo case final ids?
-            when !ids.contains(userId)) {
-          // Authors always keep access to what they write.
+            when !ids.contains(userId) &&
+                incoming.collection != Collections.shoppingItems) {
+          // Authors always keep access to what they write (an item: as long
+          // as they see its list).
           incoming = incoming.copyWith(
             data: {
               ...incoming.data,
@@ -446,6 +473,7 @@ class RecordStore {
           );
         }
         _put(incoming, previous: existing);
+        _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
         if (existing != null) {
           _keepConflict(
@@ -657,6 +685,64 @@ class RecordStore {
     }
   }
 
+  /// Apps before 2.0.15 know nothing of who sees a shopping list and leave
+  /// the key out; their changes keep the stored audience.
+  static SyncRecord _keepAudience(SyncRecord incoming, SyncRecord? existing) {
+    if (incoming.data.containsKey(SyncRecord.visibilityKey) ||
+        existing == null ||
+        existing.deleted ||
+        existing.visibleTo == null) {
+      return incoming;
+    }
+    return incoming.copyWith(
+      data: {...incoming.data, SyncRecord.visibilityKey: existing.visibleTo},
+    );
+  }
+
+  /// The live shopping list [item] belongs to, if any.
+  SyncRecord? _listOf(SyncRecord item) {
+    final listId = item.data['listId'];
+    final list = listId is String
+        ? _get(Collections.shoppingLists, listId)
+        : null;
+    return list == null || list.deleted ? null : list;
+  }
+
+  /// A shopping item is seen by exactly those who see its list (as it is
+  /// stored); without a list it keeps what it says.
+  SyncRecord _itemAudience(SyncRecord item) {
+    if (item.collection != Collections.shoppingItems || item.deleted) {
+      return item;
+    }
+    final list = _listOf(item);
+    if (list == null) return item;
+    final data = {...item.data}..remove(SyncRecord.visibilityKey);
+    if (list.visibleTo case final ids?) data[SyncRecord.visibilityKey] = ids;
+    return item.copyWith(data: data);
+  }
+
+  /// After [list] was stored: its items follow a changed audience, so those
+  /// who no longer see the list lose its items too (revocations).
+  void _itemsFollowList(SyncRecord list, SyncRecord? before) {
+    if (list.collection != Collections.shoppingLists || list.deleted) return;
+    if (before != null &&
+        !before.deleted &&
+        jsonEncode(before.visibleTo) == jsonEncode(list.visibleTo)) {
+      return;
+    }
+    for (final row in _db.select(
+      "SELECT * FROM records WHERE collection = ? AND deleted = 0"
+      " AND json_extract(data, '\$.listId') = ?",
+      [Collections.shoppingItems, list.id],
+    )) {
+      final item = _record(row);
+      final next = _itemAudience(item);
+      if (jsonEncode(next.visibleTo) != jsonEncode(item.visibleTo)) {
+        _put(next, previous: item);
+      }
+    }
+  }
+
   /// Apps before 2.0.3 know nothing of who sees a task and leave the key
   /// out; their changes keep the stored audience. Whoever takes care of a
   /// task always sees it.
@@ -837,13 +923,16 @@ class RecordStore {
           continue;
         }
         if (existing == null && r.deleted) continue;
-        final record = r.copyWith(
-          data: data,
-          // Ahead of any client edit, so server data always wins.
-          updatedAt: max(now, (existing?.updatedAt ?? 0) + 1),
-          updatedBy: serverMemberId,
+        final record = _itemAudience(
+          r.copyWith(
+            data: data,
+            // Ahead of any client edit, so server data always wins.
+            updatedAt: max(now, (existing?.updatedAt ?? 0) + 1),
+            updatedBy: serverMemberId,
+          ),
         );
         _put(record, previous: existing);
+        _itemsFollowList(record, existing);
         if (existing == null || existing.deleted) stored.add(record);
         changed = true;
       }

@@ -2490,6 +2490,8 @@
   "purchaseScanned": "Read from the receipt – please check.",
   "purchaseNotRead": "No amount could be read on the receipt.",
   "shoppingShareText": "Share as text",
+  "shoppingWhoSees": "Who sees the list?",
+  "shoppingWhoSeesHint": "Only these people see its items, also in reminder apps, Bring!, Microsoft To Do and Home Assistant. What is bought from this list does not show up in the family's suggestions.",
   "shoppingCopyText": "Copy list as text",
   "shoppingTextCopied": "List copied – paste it into a message.",
   "memoriesTitle": "One year ago today",

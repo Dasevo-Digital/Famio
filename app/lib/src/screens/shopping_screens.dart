@@ -151,6 +151,8 @@ class ShoppingListsScreen extends StatelessWidget {
                                 : tr.commonOpenCount(open),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
+                          if (list.visibleTo case final ids?)
+                            _VisibleTo(engine: engine, ids: ids),
                         ],
                       ),
                     ),
@@ -252,6 +254,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       initial: list.name,
     );
     if (name != null) engine.saveShoppingList(list.copyWith(name: name));
+  }
+
+  Future<void> _audience(SyncEngine engine, ShoppingList list) async {
+    final chosen = await showDialog<({List<String>? ids})>(
+      context: context,
+      builder: (_) => _AudienceDialog(engine: engine, initial: list.visibleTo),
+    );
+    if (chosen == null) return;
+    engine.saveShoppingList(list.copyWith(visibleTo: () => chosen.ids));
   }
 
   void _saveTemplate(SyncEngine engine, ShoppingList list) {
@@ -399,6 +410,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                 'template' => _saveTemplate(engine, list),
                 'preppsuite' => importFromPreppSuite(context, engine, list),
                 'rename' => _rename(engine, list),
+                'audience' => _audience(engine, list),
                 'delete' => _deleteList(engine, list),
                 _ => null,
               },
@@ -437,6 +449,10 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   child: Text(tr.shoppingPreppSuiteMenu),
                 ),
                 PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
+                PopupMenuItem(
+                  value: 'audience',
+                  child: Text(tr.shoppingWhoSees),
+                ),
                 PopupMenuItem(
                   value: 'delete',
                   child: Text(tr.shoppingDeleteList),
@@ -1008,4 +1024,146 @@ ShoppingItem newShoppingItem(
           ),
     memberId: packing ? memberId : null,
   );
+}
+
+/// "Sichtbar für: Mama, Papa" with a lock, under a list only some see.
+class _VisibleTo extends StatelessWidget {
+  const _VisibleTo({required this.engine, required this.ids});
+
+  final SyncEngine engine;
+  final List<String> ids;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodySmall;
+    final names = [
+      for (final id in ids) engine.member(id)?.displayName ?? '?',
+    ].join(', ');
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          Icon(AppIcons.lockKey, size: 14, color: style?.color),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              tr.commonVisibleTo(names),
+              style: style,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _Audience { family, me, selected }
+
+/// Who sees a list – and so its items, on every device and in every
+/// connected app (the server gives each item its list's audience).
+class _AudienceDialog extends StatefulWidget {
+  const _AudienceDialog({required this.engine, required this.initial});
+
+  final SyncEngine engine;
+  final List<String>? initial;
+
+  @override
+  State<_AudienceDialog> createState() => _AudienceDialogState();
+}
+
+class _AudienceDialogState extends State<_AudienceDialog> {
+  late final _me = widget.engine.memberId;
+  late var _choice = switch (widget.initial) {
+    null => _Audience.family,
+    final ids when ids.every((id) => id == _me) => _Audience.me,
+    _ => _Audience.selected,
+  };
+  late final _chosen = {...?widget.initial}..remove(_me);
+
+  @override
+  Widget build(BuildContext context) {
+    final others = [
+      for (final m in widget.engine.members)
+        if (m.id != _me) m,
+    ];
+    return AlertDialog(
+      title: Text(tr.shoppingWhoSees),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            RadioGroup<_Audience>(
+              groupValue: _choice,
+              onChanged: (v) => setState(() => _choice = v!),
+              child: Column(
+                children: [
+                  RadioListTile(
+                    value: _Audience.family,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(tr.commonWholeFamily),
+                    secondary: const Icon(AppIcons.usersThree),
+                  ),
+                  RadioListTile(
+                    value: _Audience.me,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(tr.docsOnlyMe),
+                    secondary: const Icon(AppIcons.lockKey),
+                  ),
+                  if (others.isNotEmpty)
+                    RadioListTile(
+                      value: _Audience.selected,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(tr.docsMe),
+                      secondary: const Icon(AppIcons.userList),
+                    ),
+                ],
+              ),
+            ),
+            if (_choice == _Audience.selected) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in others)
+                    FilterChip(
+                      avatar: MemberAvatar(m, radius: 10),
+                      label: Text(m.displayName),
+                      selected: _chosen.contains(m.id),
+                      onSelected: (on) => setState(
+                        () => on ? _chosen.add(m.id) : _chosen.remove(m.id),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 12),
+            Text(
+              tr.shoppingWhoSeesHint,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(tr.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, (
+            ids: switch (_choice) {
+              _Audience.family => null,
+              _Audience.me => [_me],
+              _Audience.selected => [_me, ..._chosen],
+            },
+          )),
+          child: Text(tr.commonSave),
+        ),
+      ],
+    );
+  }
 }

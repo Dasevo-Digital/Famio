@@ -463,7 +463,11 @@ class ListSync {
     final collection = isTasks ? Collections.tasks : Collections.shoppingItems;
     if (!isTasks) {
       final list = records.get(Collections.shoppingLists, famioList);
-      if (list == null || list.deleted) {
+      // Also gone for whoever connected it once the list is no longer
+      // theirs to see: their sync would take its items for deleted.
+      if (list == null ||
+          list.deleted ||
+          !RecordStore.canSee(list, memberId)) {
         stats.missing = true;
         return false;
       }

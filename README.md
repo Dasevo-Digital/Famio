@@ -52,7 +52,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
 | App-Updates über den eigenen Server (Android, Windows, Linux; signiert) | ✅ |
 | Aufgaben (fällig, eine oder mehrere zuständige Personen, wer sie sieht, Erinnerung, Wiederholung, Checkliste, Fotos und Dateien wie PDFs) | ✅ |
-| Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen) | ✅ |
+| Einkaufslisten (Gänge, Vorlagen, Fehlbestände aus PreppSuite übernehmen; je Liste einstellbar, wer sie sieht – ihre Einträge sieht dann auch niemand sonst, auch nicht über CalDAV, Bring! oder Home Assistant) | ✅ |
 | Abgleich von Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do (optional) | ✅ |
 | Kalender mit Wiederholungen, Erinnerungen, Google/Apple-Abos, Import von Kalenderdateien (.ics, Serien bleiben Serien; „Öffnen mit Famio“ aus Mail und Dateien auf allen Geräten); „Wann haben alle Zeit?“ findet gemeinsame freie Zeiten | ✅ |
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |

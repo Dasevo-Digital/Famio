@@ -37,6 +37,15 @@ void main() {
     expect(e.boughtItem('sonnencreme'), isNull);
   });
 
+  test('a list only some see stays out of the family history', () {
+    final e = _engine()
+      ..saveShoppingList(
+        const ShoppingList(id: 'g', name: 'Geschenke', visibleTo: ['m1']),
+      )
+      ..noteBought(_item('a', 'Lego', list: 'g'), now: now);
+    expect(e.boughtItem('lego'), isNull);
+  });
+
   test(
     'suggestions: what matches, often and lately bought, not on the list',
     () {

@@ -8,6 +8,7 @@ import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
+import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/widgets/photo_viewer.dart';
 import 'package:famio_client/famio_client.dart';
@@ -308,6 +309,51 @@ void main() {
     expect(find.text('Ämter & Routinen'), findsOneWidget);
     await tester.tap(find.byTooltip('Wandanzeige beenden'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('a shopping list only some see', (tester) async {
+    final engine = await open(tester, memberId: 'm1');
+    engine.saveShoppingList(const ShoppingList(id: 'l1', name: 'Geschenke'));
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const ShoppingListScreen(listId: 'l1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wer sieht die Liste?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ich und …'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mia'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(engine.shoppingList('l1')!.visibleTo, ['m1', 'k1']);
+
+    // Back for the whole family.
+    await tester.tap(find.byTooltip('Mehr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Wer sieht die Liste?'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ganze Familie'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(engine.shoppingList('l1')!.visibleTo, isNull);
+    expect(
+      engine.store
+          .get(Collections.shoppingLists, 'l1')!
+          .record
+          .data
+          .containsKey(SyncRecord.visibilityKey),
+      isTrue,
+    );
   });
 
   testWidgets('pictures open in Famio, one after the other', (tester) async {

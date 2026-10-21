@@ -22,7 +22,12 @@ extension ShoppingHistory on SyncEngine {
   /// Counts [item] as bought when it is ticked off (not on packing lists).
   void noteBought(ShoppingItem item, {DateTime? now}) {
     final key = shoppingKey(item.name);
-    if (key.isEmpty || (shoppingList(item.listId)?.packing ?? false)) return;
+    final list = shoppingList(item.listId);
+    // The history is the whole family's: what is bought from a list only
+    // some see stays out of everybody's suggestions.
+    if (key.isEmpty || list == null || list.packing || list.visibleTo != null) {
+      return;
+    }
     final before =
         boughtItem(key) ?? BoughtItem(key: key, name: item.name.trim());
     saveBoughtItem(
