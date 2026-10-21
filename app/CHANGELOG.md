@@ -4,6 +4,13 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.14 – Fotos in voller Qualität
+
+- Der Bildbetrachter zeigt erst eine Vorschau und dann das Original in
+  voller Schärfe, auch beim Zoomen.
+- Fotos aus PhotoVault kommen im Betrachter und auf der Wandanzeige in
+  voller Größe statt als kleine Miniatur.
+
 ## 2.0.13 – Fotos in Famio ansehen
 
 - Ein Tipp auf ein Foto öffnet es in Famio statt als Download oder in

@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.14 – Fotos con calidad completa
+
+- El visor muestra primero una vista previa y después el original con toda
+  su nitidez, también al ampliar.
+- Las fotos de PhotoVault llegan a tamaño completo al visor y a la
+  pantalla de pared en lugar de como miniatura pequeña.
+
 ## 2.0.13 – Ver fotos en Famio
 
 - Al tocar una foto se abre en Famio en lugar de descargarse o abrirse en

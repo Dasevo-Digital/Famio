@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.14 – Photos in full quality
+
+- The photo viewer shows a preview first, then the original in full
+  sharpness, also when zoomed.
+- Photos from PhotoVault come in full size in the viewer and on the wall
+  display instead of as a small thumbnail.
+
 ## 2.0.13 – Viewing photos in Famio
 
 - Tapping a photo opens it in Famio instead of as a download or in another
