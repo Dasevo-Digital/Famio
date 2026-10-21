@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.15 – Private shopping lists and appearance
+
+- Each shopping list can be limited to certain people (list menu → “Who
+  sees the list?”). Nobody else sees its items either.
+- Light, dark or like the system: under Settings → This device →
+  Appearance.
+
 ## 2.0.14 – Photos in full quality, more reliable location
 
 - The photo viewer shows a preview first, then the original in full

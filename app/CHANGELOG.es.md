@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.15 – Listas de compra privadas y apariencia
+
+- En cada lista de compra se puede elegir quién la ve (menú de la lista →
+  «¿Quién ve la lista?»). Nadie más ve tampoco sus artículos.
+- Claro, oscuro o como el sistema: en Ajustes → Este dispositivo →
+  Apariencia.
+
 ## 2.0.14 – Fotos con calidad completa, ubicación más fiable
 
 - El visor muestra primero una vista previa y después el original con toda

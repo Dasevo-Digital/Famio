@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.15 – Private Einkaufslisten und Darstellung
+
+- Bei jeder Einkaufsliste lässt sich einstellen, wer sie sieht (Menü der
+  Liste → „Wer sieht die Liste?“). Ihre Einträge sieht dann auch sonst
+  niemand.
+- Hell, dunkel oder wie das System: unter Einstellungen → Dieses Gerät →
+  Darstellung.
+
 ## 2.0.14 – Fotos in voller Qualität, verlässlicherer Standort
 
 - Der Bildbetrachter zeigt erst eine Vorschau und dann das Original in
