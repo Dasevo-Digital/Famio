@@ -257,6 +257,22 @@ class SettingsScreen extends StatelessWidget {
               value: state.kioskAutostart,
               onChanged: state.setKioskAutostart,
             ),
+          ListTile(
+            leading: const Icon(AppIcons.moon),
+            title: Text(context.l10n.settingsAppearance),
+            trailing: DropdownButton<ThemeMode>(
+              value: state.themeMode.value,
+              items: [
+                for (final (mode, label) in [
+                  (ThemeMode.system, context.l10n.settingsAppearanceSystem),
+                  (ThemeMode.light, context.l10n.settingsAppearanceLight),
+                  (ThemeMode.dark, context.l10n.settingsAppearanceDark),
+                ])
+                  DropdownMenuItem(value: mode, child: Text(label)),
+              ],
+              onChanged: state.setThemeMode,
+            ),
+          ),
           SwitchListTile(
             secondary: const Icon(AppIcons.contrast),
             title: Text(context.l10n.settingsHighContrast),

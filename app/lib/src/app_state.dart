@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show ThemeMode;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -163,6 +164,15 @@ class AppState extends ChangeNotifier {
   /// "Hoher Kontrast" on this device; the theme listens to it alone.
   final highContrast = ValueNotifier(false);
 
+  /// Light, dark or as the system says, on this device.
+  final themeMode = ValueNotifier(ThemeMode.system);
+
+  Future<void> setThemeMode(ThemeMode? value) async {
+    themeMode.value = value ?? ThemeMode.system;
+    await _prefs.setString('themeMode', themeMode.value.name);
+    notifyListeners();
+  }
+
   Future<void> setHighContrast(bool value) async {
     highContrast.value = value;
     await _prefs.setBool('highContrast', value);
@@ -259,6 +269,11 @@ class AppState extends ChangeNotifier {
     _lifecycle;
     _prefs = await SharedPreferences.getInstance();
     highContrast.value = _prefs.getBool('highContrast') ?? false;
+    themeMode.value =
+        ThemeMode.values
+            .where((m) => m.name == _prefs.getString('themeMode'))
+            .firstOrNull ??
+        ThemeMode.system;
     final choice = _prefs.getString('language');
     language.value = appLanguages.containsKey(choice) ? choice! : 'system';
     useLanguage(resolveLanguage(language.value));

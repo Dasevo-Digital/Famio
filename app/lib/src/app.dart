@@ -19,7 +19,11 @@ class FamioApp extends StatelessWidget {
     return AppScope(
       state: state,
       child: ListenableBuilder(
-        listenable: Listenable.merge([state.highContrast, state.language]),
+        listenable: Listenable.merge([
+          state.highContrast,
+          state.themeMode,
+          state.language,
+        ]),
         builder: (context, _) => MaterialApp(
           // A new language rebuilds everything, also the texts of widgets
           // that would otherwise stay as they are.
@@ -40,6 +44,7 @@ class FamioApp extends StatelessWidget {
             Brightness.dark,
             highContrast: true,
           ),
+          themeMode: state.themeMode.value,
           scrollBehavior: const FamioScrollBehavior(),
           locale: Locale(appLanguage),
           supportedLocales: L10n.supportedLocales,

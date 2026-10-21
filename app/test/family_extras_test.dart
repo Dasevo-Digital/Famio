@@ -8,6 +8,7 @@ import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
+import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/widgets/photo_viewer.dart';
@@ -309,6 +310,33 @@ void main() {
     expect(find.text('Ämter & Routinen'), findsOneWidget);
     await tester.tap(find.byTooltip('Wandanzeige beenden'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('light or dark is chosen per device', (tester) async {
+    await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Darstellung'), 200);
+    await tester.tap(find.text('Wie das System'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dunkel').last);
+    await tester.pumpAndSettle();
+    final app = tester.widget<MaterialApp>(find.byType(MaterialApp));
+    expect(app.themeMode, ThemeMode.dark);
+    expect(
+      Theme.of(tester.element(find.text('Darstellung'))).brightness,
+      Brightness.dark,
+    );
+    // Kept for the next start.
+    final again = AppState();
+    await again.init();
+    expect(again.themeMode.value, ThemeMode.dark);
   });
 
   testWidgets('a shopping list only some see', (tester) async {
