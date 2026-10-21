@@ -191,6 +191,10 @@ class PhotoVaultLink {
   static const timelineCount = 100;
   static const timelineEvery = Duration(hours: 3);
 
+  /// Previews up to this size come from PhotoVault's thumbnail, bigger ones
+  /// (viewer, wall display) are the picture itself.
+  static const thumbnailUpTo = 640;
+
   /// Photos of the chat sent to PhotoVault per run.
   static const contributeLimit = 50;
 

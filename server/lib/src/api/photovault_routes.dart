@@ -55,10 +55,13 @@ extension _PhotoVaultRoutes on FamioApi {
     String id,
     FamilyMember member,
   ) async {
+    // PhotoVault's thumbnail is small: for anything bigger (the photo
+    // viewer, the wall display) the picture as PhotoVault's viewer shows it.
+    final thumb = int.tryParse(request.url.queryParameters['thumb'] ?? '');
     final file = await photoVault?.download(
       id,
       member.id,
-      thumbnail: request.url.queryParameters.containsKey('thumb'),
+      thumbnail: thumb != null && thumb <= PhotoVaultLink.thumbnailUpTo,
     );
     if (file == null) {
       throw ApiException(404, 'not_found', t('Datei nicht gefunden'));

@@ -318,6 +318,9 @@ void main() {
       expect(await thumb.readAsString(), 'JPEG-klein');
       final full = await call('GET', 'api/files/${file.id}');
       expect(await full.readAsString(), 'JPEG-gross');
+      // The viewer and the wall display ask for big previews: the picture.
+      final big = await call('GET', 'api/files/${file.id}?thumb=1920');
+      expect(await big.readAsString(), 'JPEG-gross');
       expect(
         (await call('GET', 'api/files/${file.id}', as: oma)).statusCode,
         404,

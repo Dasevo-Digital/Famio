@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../app_state.dart';
 import '../design/app_icons.dart';
 import '../l10n.dart';
 import 'files.dart';
@@ -29,8 +30,12 @@ class PhotoViewer extends StatefulWidget {
   final List<FileRef> photos;
   final int initial;
 
-  /// Sharp on a screen, a fraction of a camera's original.
-  static const size = 1920;
+  /// Shown at once, a fraction of a camera's original …
+  static const previewSize = 1920;
+
+  /// … until the original is there, decoded at most this big: sharp when
+  /// zoomed, without a 50-megapixel photo filling the memory.
+  static const maxSide = 4096;
 
   @override
   State<PhotoViewer> createState() => _PhotoViewerState();
@@ -116,15 +121,7 @@ class _PhotoViewerState extends State<PhotoViewer> {
                     transformationController: i == _index ? _zoom : null,
                     maxScale: 5,
                     onInteractionEnd: (_) => _zoomChanged(),
-                    child: SizedBox.expand(
-                      child: CachedImage(
-                        photos[i],
-                        thumb: PhotoViewer.size,
-                        fit: BoxFit.contain,
-                        radius: 0,
-                        onDark: true,
-                      ),
-                    ),
+                    child: SizedBox.expand(child: _Picture(photos[i])),
                   ),
                 ),
               ),
@@ -200,6 +197,65 @@ class _PhotoViewerState extends State<PhotoViewer> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// The preview at once, the original in its place as soon as it is loaded
+/// and decoded. An original the device cannot show (HEIC on Windows …)
+/// leaves the preview.
+class _Picture extends StatefulWidget {
+  const _Picture(this.photo);
+
+  final FileRef photo;
+
+  @override
+  State<_Picture> createState() => _PictureState();
+}
+
+class _PictureState extends State<_Picture> {
+  FileCache? _files;
+  Future<Uint8List>? _original;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final files = AppScope.of(context).files;
+    if (files != _files) {
+      _files = files;
+      _original = files?.bytes(widget.photo);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = CachedImage(
+      widget.photo,
+      thumb: PhotoViewer.previewSize,
+      fit: BoxFit.contain,
+      radius: 0,
+      onDark: true,
+    );
+    return FutureBuilder<Uint8List>(
+      future: _original,
+      builder: (context, snapshot) {
+        final bytes = snapshot.data;
+        if (bytes == null) return preview;
+        return Image(
+          image: ResizeImage(
+            MemoryImage(bytes),
+            width: PhotoViewer.maxSide,
+            height: PhotoViewer.maxSide,
+            policy: ResizeImagePolicy.fit,
+            allowUpscaling: false,
+          ),
+          fit: BoxFit.contain,
+          gaplessPlayback: true,
+          frameBuilder: (context, child, frame, _) =>
+              frame == null ? preview : child,
+          errorBuilder: (_, _, _) => preview,
+        );
+      },
     );
   }
 }
