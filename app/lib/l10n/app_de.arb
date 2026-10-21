@@ -6483,7 +6483,15 @@
       }
     }
   },
-  "adminPhotoVaultIntro": "Famio meldet sich einmal mit einem PhotoVault-Konto an. Dort erscheint es als Gerät „Famio“ und lässt sich jederzeit abmelden; Famio behält nur diesen Zugang, nicht das Passwort.",
+  "adminPhotoVaultIntro": "Famio meldet sich einmal mit einem PhotoVault-Konto an. Dort erscheint es als Gerät „Famio“ und lässt sich jederzeit abmelden; Famio behält nur diesen Zugang, nicht das Passwort. Nimm das Konto, dem die Fotos gehören: In PhotoVault hat jedes Konto seine eigene Bibliothek.",
+  "adminPhotoVaultEmpty": "Die Bibliothek des PhotoVault-Kontos „{account}“ ist leer, darum kommen keine Fotos und keine Geburtstage. In PhotoVault hat jedes Konto seine eigene Bibliothek: Trenne die Verbindung und verbinde Famio mit dem Konto, dem die Fotos und der Stammbaum gehören.",
+  "@adminPhotoVaultEmpty": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
   "adminPhotoVaultUrl": "Adresse von PhotoVault",
   "adminPhotoVaultName": "PhotoVault-Konto",
   "adminPhotoVaultPassword": "Passwort",

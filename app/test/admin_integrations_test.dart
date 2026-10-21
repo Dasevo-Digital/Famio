@@ -130,6 +130,7 @@ void main() {
       'birthdays': false,
       'memberIds': <String>[],
       'lastSync': '2026-10-20T08:00:00Z',
+      'libraryCount': 0,
       'skippedBirthdays': [
         {'name': 'Mia', 'birthday': '2019-06-05', 'reason': 'Kind „Mia“'},
       ],
@@ -216,6 +217,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(
       find.text('Verbunden als familie mit photos.example'),
+      findsOneWidget,
+    );
+    // An account made just for Famio has an empty library of its own.
+    expect(
+      find.textContaining(
+        'Die Bibliothek des PhotoVault-Kontos „familie“ ist leer',
+      ),
       findsOneWidget,
     );
 

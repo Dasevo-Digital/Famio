@@ -360,6 +360,14 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
                       const SizedBox(height: 4),
                       Text(status),
                     ],
+                    // Every PhotoVault account has a library of its own.
+                    if (_connected && _info['libraryCount'] == 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        tr.adminPhotoVaultEmpty('${_info['account'] ?? ''}'),
+                        style: TextStyle(color: c.danger),
+                      ),
+                    ],
                     if (lastError != null && lastError.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(

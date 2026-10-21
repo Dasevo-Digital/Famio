@@ -283,8 +283,13 @@ void main() {
         await call('PUT', 'api/admin/photovault', body: {'albumId': 'al1'}),
       );
       expect(
-        (info['albumName'], info['memoryCount'], info['albumCount']),
-        ('Familie', 1, 2),
+        (
+          info['albumName'],
+          info['memoryCount'],
+          info['albumCount'],
+          info['libraryCount'],
+        ),
+        ('Familie', 1, 2, 6),
       );
 
       final a1 = app.records.get(Collections.externalPhotos, 'pv-a1')!;

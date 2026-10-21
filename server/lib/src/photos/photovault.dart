@@ -412,6 +412,10 @@ class PhotoVaultLink {
       ...?(_setting(_statusKey) as Map?)?.cast<String, Object?>(),
     };
     try {
+      // Every PhotoVault account has a library of its own: an empty one
+      // (an account made just for Famio) is worth a hint in the settings.
+      final library = await _get(c.url, c.token, '/api/v1/bibliothek');
+      final libraryCount = (library['aufnahmen'] as num?)?.toInt() ?? 0;
       final photos = <String, _Photo>{};
       final today = _today();
       if (c.memories) {
@@ -437,7 +441,7 @@ class PhotoVaultLink {
         }
       }
       if (c.timeline) {
-        for (final a in await _timeline(c)) {
+        for (final a in await _timeline(c, libraryCount)) {
           photos[a.id] = (photos[a.id] ?? a).copyWith(album: true);
         }
       } else {
@@ -453,6 +457,7 @@ class PhotoVaultLink {
       final sent = c.shareUrl == null ? 0 : await _contribute(c);
       status
         ..['lastSync'] = _now().toUtc().toIso8601String()
+        ..['libraryCount'] = libraryCount
         ..['memoryCount'] = photos.values
             .where((p) => p.memoryOf != null)
             .length
@@ -476,10 +481,10 @@ class PhotoVaultLink {
 
   /// [timelineCount] random photos of PhotoVault's whole timeline, the
   /// same ones for [timelineEvery]. PhotoVault cannot sort by chance, so
-  /// Famio asks how many photos there are and then for the one at each of
-  /// some random places of the timeline (oldest first); videos are left
-  /// out. Locked photos and the trash are not part of the timeline.
-  Future<List<_Photo>> _timeline(PhotoVaultConfig c) async {
+  /// Famio takes the number of photos ([count]) and asks for the one at
+  /// each of some random places of the timeline (oldest first); videos are
+  /// left out. Locked photos and the trash are not part of the timeline.
+  Future<List<_Photo>> _timeline(PhotoVaultConfig c, int count) async {
     final source = '${c.url}|${c.account}';
     final kept = (_setting(_timelineKey) as Map?)?.cast<String, Object?>();
     final drawn = DateTime.tryParse('${kept?['drawnAt'] ?? ''}');
@@ -489,8 +494,6 @@ class PhotoVaultLink {
         _now().difference(drawn) < timelineEvery) {
       return _images(kept['photos']).toList();
     }
-    final library = await _get(c.url, c.token, '/api/v1/bibliothek');
-    final count = (library['aufnahmen'] as num?)?.toInt() ?? 0;
     final random = Random();
     final tried = <int>{};
     final picked = <String, Map<String, Object?>>{};

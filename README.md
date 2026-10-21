@@ -253,7 +253,10 @@ PaperBuddy entfernt, verschwindet das Dokument beim nächsten Abgleich.
 
 Ein Admin verbindet unter Server-Verwaltung → Einstellungen → PhotoVault die
 Fotobibliothek der Familie: Adresse, PhotoVault-Konto und Passwort, bei
-Zwei-Faktor-Anmeldung dazu der Code. Famio erscheint in PhotoVault als Gerät
+Zwei-Faktor-Anmeldung dazu der Code. Gemeint ist das Konto, dem die Fotos und
+der Stammbaum gehören: In PhotoVault hat jedes Konto seine eigene Bibliothek,
+ein eigens für Famio angelegtes Konto ist leer (die Einstellung weist dann
+darauf hin). Famio erscheint in PhotoVault als Gerät
 „Famio“ (dort jederzeit abmeldbar) und behält nur dessen Zugang, nicht das
 Passwort. Alle 15 Minuten gleicht der Server ab:
 
