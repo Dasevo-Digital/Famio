@@ -1,7 +1,7 @@
 # Famio
 
 <p align="center">
-  <img src="app/assets/icon/app_icon.png" width="112" alt="Famio App-Symbol">
+  <img src="https://raw.githubusercontent.com/Dasevo-Digital/Famio/main/app/assets/icon/app_icon.png" width="112" alt="Famio App-Symbol">
 </p>
 
 <p align="center">
@@ -15,13 +15,13 @@ läuft als Home-Assistant-Add-on oder eigenständig mit Docker bzw.
 Proxmox-LXC.
 
 Der Quellcode ist einsehbar, aber **nicht Open Source**: Der Projektcode steht
-unter der [PolyForm Strict License 1.0.0](LICENSE) (© 2026 Dasevo Digital
+unter der [PolyForm Strict License 1.0.0](https://github.com/Dasevo-Digital/Famio/blob/main/LICENSE) (© 2026 Dasevo Digital
 und superkuh). Erlaubt sind die nichtkommerzielle Nutzung der App und das
 Prüfen des Quellcodes; Kopieren, Ändern, Weitergeben und jede kommerzielle
 Nutzung sind ohne gesonderte schriftliche Genehmigung nicht gestattet. Hinweise zu
 Komponenten und Daten Dritter in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Für selbst gehostete
-Installationen gelten die [Datenschutzinformationen](docs/datenschutz.md); der
+[THIRD_PARTY_NOTICES.md](https://github.com/Dasevo-Digital/Famio/blob/main/THIRD_PARTY_NOTICES.md). Für selbst gehostete
+Installationen gelten die [Datenschutzinformationen](https://github.com/Dasevo-Digital/Famio/blob/main/docs/datenschutz.md); der
 jeweilige Betreiber muss darin seine eigene Kontaktstelle ergänzen.
 
 Famio ist kostenlos und ohne Werbung. Wer die Entwicklung unterstützen
@@ -33,12 +33,12 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 ## Ein Blick in Famio
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" width="74%" alt="Famio Familien-Dashboard auf dem Desktop">
-  <img src="docs/screenshots/tasks-mobile.png" width="24%" alt="Famio Aufgabenansicht auf dem Smartphone">
+  <img src="https://raw.githubusercontent.com/Dasevo-Digital/Famio/main/docs/screenshots/dashboard.png" width="74%" alt="Famio Familien-Dashboard auf dem Desktop">
+  <img src="https://raw.githubusercontent.com/Dasevo-Digital/Famio/main/docs/screenshots/tasks-mobile.png" width="24%" alt="Famio Aufgabenansicht auf dem Smartphone">
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/calendar.png" width="74%" alt="Famio Kalender auf dem Desktop">
+  <img src="https://raw.githubusercontent.com/Dasevo-Digital/Famio/main/docs/screenshots/calendar.png" width="74%" alt="Famio Kalender auf dem Desktop">
 </p>
 
 *Die Screenshots zeigen ausschließlich anonymisierte Demo-Daten.*
@@ -343,7 +343,7 @@ wenn ein Handy keine Positionen mehr schickt, die Berechtigung fehlt oder
 GPS aus ist. Kartenkacheln kommen von OpenStreetMap oder von einem eigenen
 Kachelserver (Server-Verwaltung → Einstellungen → Kartenserver). Eine fertige
 self-hosted Martin-Konfiguration für PMTiles/MBTiles liegt unter
-[`deploy/maps/`](deploy/maps/README.md).
+[`deploy/maps/`](https://github.com/Dasevo-Digital/Famio/blob/main/deploy/maps/README.md).
 
 In der Server-Verwaltung ist der Anbieter familienweit auswählbar:
 **OpenStreetMap**, **eigener Martin-Server** oder **eigene XYZ-Adresse**.
@@ -502,7 +502,7 @@ Famio speichert auch Gesundheitsdaten (Vorsorge, Impfungen, Wachstum,
 Dokumente). Umgesetzt ist:
 
 Die folgende technische Übersicht ergänzt die ausführlichen
-[Datenschutzinformationen](docs/datenschutz.md), ersetzt sie aber nicht.
+[Datenschutzinformationen](https://github.com/Dasevo-Digital/Famio/blob/main/docs/datenschutz.md), ersetzt sie aber nicht.
 
 | Bereich | Schutz |
 |---|---|
@@ -520,7 +520,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 
 Bewusst offen bzw. Aufgabe des Betriebs:
 
-- **Sicherung testen:** [`tool/famio-backup.sh`](tool/famio-backup.sh)
+- **Sicherung testen:** [`tool/famio-backup.sh`](https://github.com/Dasevo-Digital/Famio/blob/main/tool/famio-backup.sh)
   erzeugt mit `age` eine authentifizierte, verschlüsselte Sicherung aus
   Daten und getrenntem Schlüssel und entpackt sie nur in ein neues Ziel. Den
   Dienst dafür kurz stoppen; die vollständige Anleitung steht weiter unten.
@@ -653,11 +653,11 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 | Variante | Anleitung |
 |---|---|
 | Docker (NAS, Server) | `docker compose up -d` im Repository, Daten in `./data` |
-| Docker hinter **Nginx Proxy Manager** | [deploy/npm/README.md](deploy/npm/README.md) |
-| **Proxmox-LXC** (empfohlen: Debian 13), auch Umzug von Docker | [deploy/lxc/README.md](deploy/lxc/README.md) – `proxmox-create.sh` |
-| Home-Assistant-**Add-on** (Seitenleiste; als Server oder als Client eines vorhandenen Servers) | Add-on-Repository `https://github.com/Dasevo-Digital/Famio` in Home Assistant hinzufügen; Home Assistant baut das Add-on aus dem signierten Server-Paket des Releases (amd64, aarch64): [homeassistant-addon/famio/DOCS.md](homeassistant-addon/famio/DOCS.md) – ohne Internet: `homeassistant-addon/local/` |
-| Home-Assistant-**Integration** (Client: Kalender, To-dos, Sensoren, Standorte; Installation über HACS) | [homeassistant-integration/README.md](homeassistant-integration/README.md) |
-| **LXC** (Proxmox) ohne Docker, systemd | [deploy/lxc/README.md](deploy/lxc/README.md) |
+| Docker hinter **Nginx Proxy Manager** | [deploy/npm/README.md](https://github.com/Dasevo-Digital/Famio/blob/main/deploy/npm/README.md) |
+| **Proxmox-LXC** (empfohlen: Debian 13), auch Umzug von Docker | [deploy/lxc/README.md](https://github.com/Dasevo-Digital/Famio/blob/main/deploy/lxc/README.md) – `proxmox-create.sh` |
+| Home-Assistant-**Add-on** (Seitenleiste; als Server oder als Client eines vorhandenen Servers) | Add-on-Repository `https://github.com/Dasevo-Digital/Famio` in Home Assistant hinzufügen; Home Assistant baut das Add-on aus dem signierten Server-Paket des Releases (amd64, aarch64): [homeassistant-addon/famio/DOCS.md](https://github.com/Dasevo-Digital/Famio/blob/main/homeassistant-addon/famio/DOCS.md) – ohne Internet: `homeassistant-addon/local/` |
+| Home-Assistant-**Integration** (Client: Kalender, To-dos, Sensoren, Standorte; Installation über HACS) | [homeassistant-integration/README.md](https://github.com/Dasevo-Digital/Famio/blob/main/homeassistant-integration/README.md) |
+| **LXC** (Proxmox) ohne Docker, systemd | [deploy/lxc/README.md](https://github.com/Dasevo-Digital/Famio/blob/main/deploy/lxc/README.md) |
 
 | Variable | Bedeutung |
 |---|---|
@@ -861,7 +861,7 @@ Einstellungen → Sprache lässt sie sich festlegen.
   Code stehen.
 
 **Was ist neu:** Je Version stehen ein bis acht Punkte in Nutzersprache in
-[`app/CHANGELOG.md`](app/CHANGELOG.md), übersetzt in `CHANGELOG.en.md` und
+[`app/CHANGELOG.md`](https://github.com/Dasevo-Digital/Famio/blob/main/app/CHANGELOG.md), übersetzt in `CHANGELOG.en.md` und
 `CHANGELOG.es.md`. `dart run tool/check_versions.dart` (auch vor jedem Push
 und in der CI) verlangt den Abschnitt zur Version in `VERSION` in allen drei
 Dateien; `--notes` gibt ihn für den Anfang des Release-Textes aus. Die App
