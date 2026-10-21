@@ -219,7 +219,7 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.text('Kein Album'));
+    await tester.tap(find.text('Keine'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Familie (2)').last);
     await tester.pumpAndSettle();
@@ -241,6 +241,20 @@ void main() {
       ),
       ('al1', true, true),
     );
+
+    // Random photos of the whole timeline instead of the album.
+    await tester.tap(find.text('Familie (2)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.textContaining('Zufällig aus dem ganzen').last);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Speichern'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect((sent.last['albumId'], sent.last['timeline']), ('', true));
     await tester.pump(const Duration(seconds: 5));
   });
 }

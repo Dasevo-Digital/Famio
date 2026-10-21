@@ -6501,7 +6501,7 @@
       }
     }
   },
-  "adminPhotoVaultStatus": "Zuletzt abgeglichen {time}: {memories} Erinnerungen, {album} Fotos im Album, {birthdays} Geburtstage, {sent} Chat-Fotos gesendet",
+  "adminPhotoVaultStatus": "Zuletzt abgeglichen {time}: {memories} Erinnerungen, {album} Fotos für die Wandanzeige, {birthdays} Geburtstage, {sent} Chat-Fotos gesendet",
   "@adminPhotoVaultStatus": {
     "placeholders": {
       "time": {
@@ -6522,8 +6522,9 @@
     }
   },
   "adminPhotoVaultMemories": "„Heute vor einem Jahr“ mit Fotos aus PhotoVault",
-  "adminPhotoVaultAlbum": "Album für die Wandanzeige",
-  "adminPhotoVaultNoAlbum": "Kein Album",
+  "adminPhotoVaultAlbum": "Fotos für die Wandanzeige",
+  "adminPhotoVaultNoAlbum": "Keine",
+  "adminPhotoVaultTimeline": "Zufällig aus dem ganzen Zeitstrahl (alle 3 Stunden 100 neue)",
   "adminPhotoVaultShare": "Link zum Teilen mit Beiträgen",
   "adminPhotoVaultShareHint": "Neue Fotos aus dem Familien-Chat (nie Direktnachrichten) gehen an diesen Link; in PhotoVault nimmst du sie an oder lehnst sie ab. Leer lassen, um nichts zu senden.",
   "adminPhotoVaultSharePassword": "Passwort des Links (falls er eines hat)",

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +24,7 @@ class PhotoVaultConfig {
     this.memories = true,
     this.albumId,
     this.albumName = '',
+    this.timeline = false,
     this.shareUrl,
     this.sharePassword,
     this.contributeSince,
@@ -38,6 +40,7 @@ class PhotoVaultConfig {
         memories: json['memories'] as bool? ?? true,
         albumId: json['albumId'] as String?,
         albumName: json['albumName'] as String? ?? '',
+        timeline: json['timeline'] as bool? ?? false,
         shareUrl: json['shareUrl'] as String?,
         sharePassword: json['sharePassword'] as String?,
         contributeSince: DateTime.tryParse(
@@ -63,6 +66,9 @@ class PhotoVaultConfig {
   final String? albumId;
   final String albumName;
 
+  /// A: random photos of the whole timeline on the wall display.
+  final bool timeline;
+
   /// B: a PhotoVault share link that takes contributions; photos of the
   /// family chat go there, to be accepted in PhotoVault.
   final String? shareUrl;
@@ -84,6 +90,7 @@ class PhotoVaultConfig {
     bool? memories,
     String? Function()? albumId,
     String? albumName,
+    bool? timeline,
     String? Function()? shareUrl,
     String? Function()? sharePassword,
     DateTime? Function()? contributeSince,
@@ -96,6 +103,7 @@ class PhotoVaultConfig {
     memories: memories ?? this.memories,
     albumId: albumId == null ? this.albumId : albumId(),
     albumName: albumName ?? this.albumName,
+    timeline: timeline ?? this.timeline,
     shareUrl: shareUrl == null ? this.shareUrl : shareUrl(),
     sharePassword: sharePassword == null ? this.sharePassword : sharePassword(),
     contributeSince: contributeSince == null
@@ -112,6 +120,7 @@ class PhotoVaultConfig {
     'memories': memories,
     'albumId': albumId,
     'albumName': albumName,
+    'timeline': timeline,
     'shareUrl': shareUrl,
     'sharePassword': sharePassword,
     'contributeSince': contributeSince?.toUtc().toIso8601String(),
@@ -126,9 +135,10 @@ typedef SkippedBirthday = ({String name, String birthday, String reason});
 /// PhotoVault for the family (issue #218):
 ///
 /// - A: the photos PhotoVault remembers for today (`/api/v1/rueckblick`)
-///   in "Heute vor einem Jahr", and an album as the wall display's
-///   slideshow – both in `external_photos`; the files stay in PhotoVault,
-///   Famio fetches a picture when a member opens it.
+///   in "Heute vor einem Jahr", and an album or random photos of the whole
+///   timeline as the wall display's slideshow – all in `external_photos`;
+///   the files stay in PhotoVault, Famio fetches a picture when a member
+///   opens it.
 /// - B: photos of the family chat (never direct messages) go to a
 ///   PhotoVault share link that takes contributions; they are accepted or
 ///   refused in PhotoVault.
@@ -170,10 +180,16 @@ class PhotoVaultLink {
   static const _key = 'photovault';
   static const _statusKey = 'photovault.status';
   static const _sentKey = 'photovault.sent';
+  static const _timelineKey = 'photovault.timeline';
   static const idPrefix = 'pv-';
 
   /// At most this many album photos on the wall display.
   static const albumLimit = 300;
+
+  /// Random photos of the timeline on the wall display, drawn anew every
+  /// [timelineEvery].
+  static const timelineCount = 100;
+  static const timelineEvery = Duration(hours: 3);
 
   /// Photos of the chat sent to PhotoVault per run.
   static const contributeLimit = 50;
@@ -206,6 +222,7 @@ class PhotoVaultLink {
         'memories': c.memories,
         'albumId': c.albumId,
         'albumName': c.albumName,
+        'timeline': c.timeline,
         'shareUrl': c.shareUrl,
         'sharePassword': c.sharePassword != null,
         'birthdays': c.birthdays,
@@ -283,6 +300,7 @@ class PhotoVaultLink {
     var next = c.copyWith(
       memories: body['memories'] as bool? ?? c.memories,
       birthdays: body['birthdays'] as bool? ?? c.birthdays,
+      timeline: body['timeline'] as bool? ?? c.timeline,
       memberIds: body.containsKey('memberIds')
           ? [
               for (final m in body['memberIds'] as List? ?? const [])
@@ -343,10 +361,11 @@ class PhotoVaultLink {
   /// deletes the photos and birthdays it brought.
   Future<Map<String, Object?>> disconnect() async {
     final c = config;
-    db.execute('DELETE FROM settings WHERE key IN (?, ?, ?)', [
+    db.execute('DELETE FROM settings WHERE key IN (?, ?, ?, ?)', [
       _key,
       _statusKey,
       _sentKey,
+      _timelineKey,
     ]);
     _shareCookie = null;
     if (c != null) unawaited(_signOut(c));
@@ -381,7 +400,7 @@ class PhotoVaultLink {
 
   // --- syncing ---------------------------------------------------------------
 
-  /// Fetches memories, album and birthdays, sends new chat photos; runs
+  /// Fetches memories, wall photos and birthdays, sends new chat photos; runs
   /// never overlap.
   Future<void> sync() =>
       _running ??= _sync().whenComplete(() => _running = null);
@@ -417,6 +436,13 @@ class PhotoVaultLink {
           photos[a.id] = (photos[a.id] ?? a).copyWith(album: true);
         }
       }
+      if (c.timeline) {
+        for (final a in await _timeline(c)) {
+          photos[a.id] = (photos[a.id] ?? a).copyWith(album: true);
+        }
+      } else {
+        db.execute('DELETE FROM settings WHERE key = ?', [_timelineKey]);
+      }
       var birthdays = const <_Birthday>[];
       var skipped = const <SkippedBirthday>[];
       if (c.birthdays) {
@@ -446,6 +472,55 @@ class PhotoVaultLink {
       });
     }
     _put(_statusKey, status);
+  }
+
+  /// [timelineCount] random photos of PhotoVault's whole timeline, the
+  /// same ones for [timelineEvery]. PhotoVault cannot sort by chance, so
+  /// Famio asks how many photos there are and then for the one at each of
+  /// some random places of the timeline (oldest first); videos are left
+  /// out. Locked photos and the trash are not part of the timeline.
+  Future<List<_Photo>> _timeline(PhotoVaultConfig c) async {
+    final source = '${c.url}|${c.account}';
+    final kept = (_setting(_timelineKey) as Map?)?.cast<String, Object?>();
+    final drawn = DateTime.tryParse('${kept?['drawnAt'] ?? ''}');
+    if (kept != null &&
+        kept['source'] == source &&
+        drawn != null &&
+        _now().difference(drawn) < timelineEvery) {
+      return _images(kept['photos']).toList();
+    }
+    final library = await _get(c.url, c.token, '/api/v1/bibliothek');
+    final count = (library['aufnahmen'] as num?)?.toInt() ?? 0;
+    final random = Random();
+    final tried = <int>{};
+    final picked = <String, Map<String, Object?>>{};
+    // Room for the videos among them.
+    final places = min(count, timelineCount * 2);
+    while (picked.length < timelineCount && tried.length < places) {
+      final at = random.nextInt(count);
+      if (!tried.add(at)) continue;
+      final json = await _get(c.url, c.token, '/api/v1/aufnahmen', {
+        'sortierung': 'aufnahmeAlt',
+        'anzahl': '1',
+        'nach': 'o:$at',
+      });
+      for (final a in json['aufnahmen'] as List? ?? const []) {
+        if (a is Map && a['art'] == 'bild' && a['id'] != null) {
+          picked['${a['id']}'] = {
+            'id': a['id'],
+            'art': 'bild',
+            'name': a['name'],
+            'aufgenommen': a['aufgenommen'],
+          };
+        }
+      }
+    }
+    _put(_timelineKey, {
+      'source': source,
+      'drawnAt': _now().toUtc().toIso8601String(),
+      'photos': picked.values.toList(),
+    });
+    return _images(picked.values.toList()).toList();
   }
 
   DateTime _today() {
@@ -1016,7 +1091,7 @@ class _Photo {
   final String? memoryOf;
   final int? yearsAgo;
 
-  /// In the wall display's album.
+  /// On the wall display (the album or drawn from the timeline).
   final bool album;
 
   _Photo copyWith({String? memoryOf, int? yearsAgo, bool? album}) => _Photo(

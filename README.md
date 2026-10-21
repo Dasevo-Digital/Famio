@@ -258,9 +258,15 @@ Zwei-Faktor-Anmeldung dazu der Code. Famio erscheint in PhotoVault als Gerät
 Passwort. Alle 15 Minuten gleicht der Server ab:
 
 - **Erinnerungen:** Was PhotoVaults Rückblick für den heutigen Tag früherer
-  Jahre zeigt, erscheint in der Kachel „Heute vor einem Jahr“.
-- **Wandanzeige:** Die Fotos eines gewählten Albums (die neuesten 300) laufen
-  in der Diashow der Wandanzeige.
+  Jahre zeigt, erscheint auf der Startseite in der Kachel „Heute vor einem
+  Jahr“. Die Kachel erscheint nur an Tagen, für die es etwas gibt, und lässt
+  sich für den Tag ausblenden.
+- **Wandanzeige:** In der Diashow der Wandanzeige laufen entweder die Fotos
+  eines gewählten Albums (die neuesten 300) oder zufällige Fotos aus dem
+  ganzen Zeitstrahl: alle drei Stunden 100 neue, ohne Videos, gesperrte
+  Fotos und Papierkorb. PhotoVault kennt keine zufällige Reihenfolge; Famio
+  fragt deshalb nach der Zahl der Fotos und holt dann einzeln das Foto an
+  zufälligen Stellen des Zeitstrahls.
 - **Chat-Fotos:** Neue Fotos aus dem Familien-Chat (nie aus Direktnachrichten)
   gehen als Beiträge an einen PhotoVault-Link zum Teilen, bei dem „Beiträge
   erlauben“ eingeschaltet ist (mit oder ohne Passwort); in PhotoVault werden

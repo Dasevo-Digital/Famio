@@ -873,11 +873,27 @@ class PhotoSlideshow extends StatefulWidget {
 }
 
 class _PhotoSlideshowState extends State<PhotoSlideshow> {
-  late final _order = [...widget.photos]..shuffle();
+  late var _order = [...widget.photos]..shuffle();
   var _index = 0;
   late final Timer _next = Timer.periodic(PhotoSlideshow.every, (_) {
     if (mounted) setState(() => _index = (_index + 1) % _order.length);
   });
+
+  @override
+  void didUpdateWidget(PhotoSlideshow old) {
+    super.didUpdateWidget(old);
+    final ids = {for (final p in widget.photos) p.id};
+    if (ids.length == _order.length &&
+        _order.every((p) => ids.contains(p.id))) {
+      return;
+    }
+    // Other photos now (PhotoVault's timeline is drawn anew every few
+    // hours, an album changes): the one on screen stays if it still may.
+    final current = _order[_index % _order.length].id;
+    _order = [...widget.photos]..shuffle();
+    final at = _order.indexWhere((p) => p.id == current);
+    _index = at < 0 ? 0 : at;
+  }
 
   @override
   void initState() {

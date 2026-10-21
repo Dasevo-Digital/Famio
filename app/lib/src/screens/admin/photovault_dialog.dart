@@ -26,6 +26,10 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
   var _memories = true;
   var _birthdays = false;
   String? _album;
+
+  /// Random photos of the whole timeline instead of an album.
+  var _timeline = false;
+  static const _timelineChoice = '\u0000timeline';
   List<Map<String, Object?>> _albums = const [];
 
   /// PhotoVault asked for a code: the second step of signing in.
@@ -66,6 +70,7 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
     _memories = json['memories'] as bool? ?? true;
     _birthdays = json['birthdays'] as bool? ?? false;
     _album = json['albumId'] as String?;
+    _timeline = json['timeline'] as bool? ?? false;
     _share.text = json['shareUrl'] as String? ?? '';
     _sharePassword.clear();
     _members
@@ -127,6 +132,7 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
       () => _api.savePhotoVault({
         'memories': _memories,
         'albumId': _album ?? '',
+        'timeline': _timeline,
         'shareUrl': _share.text.trim(),
         if (_sharePassword.text.isNotEmpty)
           'sharePassword': _sharePassword.text,
@@ -225,17 +231,35 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
         title: Text(tr.adminPhotoVaultMemories),
       ),
       DropdownButtonFormField<String?>(
-        initialValue: _albums.any((a) => a['id'] == _album) ? _album : null,
+        initialValue: _timeline
+            ? _timelineChoice
+            : _albums.any((a) => a['id'] == _album)
+            ? _album
+            : null,
+        isExpanded: true,
         decoration: InputDecoration(labelText: tr.adminPhotoVaultAlbum),
         items: [
           DropdownMenuItem(value: null, child: Text(tr.adminPhotoVaultNoAlbum)),
+          DropdownMenuItem(
+            value: _timelineChoice,
+            child: Text(
+              tr.adminPhotoVaultTimeline,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           for (final a in _albums)
             DropdownMenuItem(
               value: '${a['id']}',
-              child: Text('${a['name']} (${a['count'] ?? 0})'),
+              child: Text(
+                '${a['name']} (${a['count'] ?? 0})',
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
         ],
-        onChanged: (v) => setState(() => _album = v),
+        onChanged: (v) => setState(() {
+          _timeline = v == _timelineChoice;
+          _album = _timeline ? null : v;
+        }),
       ),
       const SizedBox(height: 12),
       TextField(

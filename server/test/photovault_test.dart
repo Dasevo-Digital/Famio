@@ -100,6 +100,22 @@ void main() {
             },
           ],
         });
+      case '/api/v1/bibliothek':
+        return json({'schema': 1, 'protokoll': 1, 'aufnahmen': 6});
+      case '/api/v1/aufnahmen':
+        // The timeline, oldest first, one photo at a place.
+        final q = request.url.queryParameters;
+        expect((q['sortierung'], q['anzahl']), ('aufnahmeAlt', '1'));
+        final at = int.parse(q['nach']!.replaceFirst('o:', ''));
+        return json({
+          'aufnahmen': [
+            if (at == 3)
+              {'id': 't3', 'art': 'video', 'name': 'film.mp4'}
+            else
+              image('t$at', '201$at-01-01T10:00:00'),
+          ],
+          'weiter': 'o:${at + 1}',
+        });
       case '/api/v1/alben':
         return json({
           'alben': [
@@ -324,6 +340,44 @@ void main() {
       expect(asked, contains('POST /api/v1/abmelden'));
     },
   );
+
+  test('A: random photos of the timeline on the wall display', () async {
+    await connect();
+    List<String> wall() => [
+      for (final r in app.records.all(Collections.externalPhotos))
+        if (!r.deleted && r.data['album'] == true) r.id,
+    ]..sort();
+    int places() => asked.where((a) => a == 'GET /api/v1/aufnahmen').length;
+
+    asked.clear();
+    final info = await ok(
+      await call('PUT', 'api/admin/photovault', body: {'timeline': true}),
+    );
+    expect((info['timeline'], info['albumCount']), (true, 5));
+    // All six places of the small timeline, without the video.
+    expect(wall(), ['pv-t0', 'pv-t1', 'pv-t2', 'pv-t4', 'pv-t5']);
+    expect(places(), 6);
+
+    // The same photos until they are drawn anew.
+    asked.clear();
+    await app.photoVault.sync();
+    expect(places(), 0);
+    app.db.execute(
+      "UPDATE settings SET value = json_set(value, '\$.drawnAt', "
+      "'2020-01-01T00:00:00Z') WHERE key = 'photovault.timeline'",
+    );
+    await app.photoVault.sync();
+    expect(places(), 6);
+
+    await ok(
+      await call('PUT', 'api/admin/photovault', body: {'timeline': false}),
+    );
+    expect(wall(), isEmpty);
+    expect(
+      app.db.select("SELECT 1 FROM settings WHERE key = 'photovault.timeline'"),
+      isEmpty,
+    );
+  });
 
   test('C: birthdays of the family tree not noted anywhere else', () async {
     // What the family has already.

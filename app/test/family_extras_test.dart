@@ -334,6 +334,29 @@ void main() {
       await tester.pump(const Duration(seconds: 15));
     }
     expect(find.byType(PhotoSlideshow), findsOneWidget);
+    expect(find.byKey(const ValueKey('f1')), findsOneWidget);
+    // Other photos meanwhile (PhotoVault draws new ones): the slideshow
+    // takes them and leaves out the one that is gone.
+    engine
+      ..saveDocument(
+        FamilyDocument(
+          id: 'd2',
+          title: 'Garten',
+          category: DocumentCategory.photos,
+          file: const FileRef(
+            id: 'f2',
+            name: 'garten.jpg',
+            mime: 'image/jpeg',
+            size: 10,
+          ),
+          createdAt: DateTime.now(),
+        ),
+      )
+      ..deleteDocument('d1');
+    // After the fade.
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('f2')), findsOneWidget);
+    expect(find.byKey(const ValueKey('f1')), findsNothing);
     // A touch brings the day back.
     await tester.tapAt(const Offset(200, 200));
     await tester.pump();
