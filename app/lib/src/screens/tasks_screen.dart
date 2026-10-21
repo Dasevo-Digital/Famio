@@ -778,6 +778,7 @@ class _TaskEditorState extends State<_TaskEditor> {
                   for (final (i, photo) in _photos.indexed)
                     _PhotoThumb(
                       photo: photo,
+                      gallery: _photos,
                       onRemove: () => setState(() => _photos.removeAt(i)),
                     ),
                   SizedBox.square(
@@ -900,9 +901,16 @@ class _TaskEditorState extends State<_TaskEditor> {
 
 /// A task's photo in the editor: tap opens it, the cross takes it off.
 class _PhotoThumb extends StatelessWidget {
-  const _PhotoThumb({required this.photo, required this.onRemove});
+  const _PhotoThumb({
+    required this.photo,
+    required this.gallery,
+    required this.onRemove,
+  });
 
   final FileRef photo;
+
+  /// The task's other pictures, to go through in the viewer.
+  final List<FileRef> gallery;
   final VoidCallback onRemove;
 
   @override
@@ -913,7 +921,7 @@ class _PhotoThumb extends StatelessWidget {
       button: true,
       label: '${tr.tasksOpenPhoto}: ${photo.name}',
       child: GestureDetector(
-        onTap: () => openFileRef(context, photo),
+        onTap: () => openFileRef(context, photo, gallery: gallery),
         child: photo.isImage
             ? CachedImage(photo, thumb: 160, radius: 14)
             // Other files (PDF …) as their icon and name.

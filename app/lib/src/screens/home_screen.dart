@@ -505,7 +505,9 @@ class _MemoriesTile extends StatelessWidget {
       section: FamioSection.home,
       title: memories.oneYearAgo ? tr.memoriesTitle : tr.memoriesTitleYears,
       icon: AppIcons.images,
-      onTap: photos.isEmpty ? () {} : () => openFileRef(context, photos.first),
+      onTap: photos.isEmpty
+          ? () {}
+          : () => openFileRef(context, photos.first, gallery: photos),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -526,7 +528,7 @@ class _MemoriesTile extends StatelessWidget {
                     dimension: 72,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
-                      onTap: () => openFileRef(context, p),
+                      onTap: () => openFileRef(context, p, gallery: photos),
                       child: CachedImage(p, thumb: 240, radius: 14),
                     ),
                   ),

@@ -291,7 +291,11 @@ class _TimelineRow extends StatelessWidget {
                             separatorBuilder: (_, _) =>
                                 const SizedBox(width: 8),
                             itemBuilder: (context, i) => GestureDetector(
-                              onTap: () => openFileRef(context, item.photos[i]),
+                              onTap: () => openFileRef(
+                                context,
+                                item.photos[i],
+                                gallery: item.photos,
+                              ),
                               child: SizedBox(
                                 width: 110,
                                 child: CachedImage(item.photos[i], thumb: 480),

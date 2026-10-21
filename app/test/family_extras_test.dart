@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio/src/app.dart';
@@ -7,8 +8,11 @@ import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
+import 'package:famio/src/widgets/files.dart';
+import 'package:famio/src/widgets/photo_viewer.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -304,6 +308,36 @@ void main() {
     expect(find.text('Ämter & Routinen'), findsOneWidget);
     await tester.tap(find.byTooltip('Wandanzeige beenden'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('pictures open in Famio, one after the other', (tester) async {
+    await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    const a = FileRef(id: 'f1', name: 'a.jpg', mime: 'image/jpeg', size: 1);
+    const b = FileRef(id: 'f2', name: 'b.jpg', mime: 'image/jpeg', size: 1);
+    const pdf = FileRef(
+      id: 'f3',
+      name: 'c.pdf',
+      mime: 'application/pdf',
+      size: 1,
+    );
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(openFileRef(context, b, gallery: const [a, pdf, b]));
+    await tester.pumpAndSettle();
+    // The PDF is no picture; the viewer starts at the tapped one.
+    expect(find.text('2 / 2'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+    await tester.pumpAndSettle();
+    expect(find.text('1 / 2'), findsOneWidget);
+    expect(find.byTooltip('Vorheriges Foto'), findsNothing);
+    await tester.tap(find.byTooltip('Nächstes Foto'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 / 2'), findsOneWidget);
+    expect(find.byTooltip('Nächstes Foto'), findsNothing);
+    expect(find.byTooltip('In anderer App öffnen'), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pumpAndSettle();
+    expect(find.byType(PhotoViewer), findsNothing);
   });
 
   testWidgets('the wall display shows family photos when nobody uses it', (

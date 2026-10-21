@@ -929,6 +929,7 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
               thumb: 1920,
               fit: BoxFit.contain,
               radius: 0,
+              onDark: true,
             ),
           ),
           Positioned(

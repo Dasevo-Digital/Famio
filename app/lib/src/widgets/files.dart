@@ -15,6 +15,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app_state.dart';
 import '../platform/browser.dart';
 import '../platform/document_scanner.dart';
+import 'photo_viewer.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
@@ -146,8 +147,31 @@ Future<FileRef> uploadPicked(BuildContext context, PickedFile file) async {
   return ref;
 }
 
-/// Opens a file with the system's default app (PDF viewer, image viewer, …).
-Future<void> openFileRef(BuildContext context, FileRef ref) async {
+/// Opens a file: pictures in Famio's own viewer, together with the other
+/// pictures of [gallery] to go through; everything else in the device's
+/// app for it (PDF viewer …), in the browser as a download.
+Future<void> openFileRef(
+  BuildContext context,
+  FileRef ref, {
+  List<FileRef> gallery = const [],
+}) async {
+  if (ref.isImage) {
+    final photos = [
+      for (final f in gallery)
+        if (f.isImage) f,
+    ];
+    if (!photos.any((f) => f.id == ref.id)) photos.insert(0, ref);
+    return showPhotoViewer(
+      context,
+      photos,
+      initial: photos.indexWhere((f) => f.id == ref.id),
+    );
+  }
+  return openFileExternally(context, ref);
+}
+
+/// Hands [ref] to the device's app for it; in the browser a download.
+Future<void> openFileExternally(BuildContext context, FileRef ref) async {
   final messenger = ScaffoldMessenger.of(context);
   try {
     final files = AppScope.read(context).files!;
@@ -175,12 +199,16 @@ class CachedImage extends StatefulWidget {
     this.thumb = 480,
     this.fit = BoxFit.cover,
     this.radius = 18,
+    this.onDark = false,
   });
 
   final FileRef ref;
   final int? thumb;
   final BoxFit fit;
   final double radius;
+
+  /// On black (viewer, slideshow): no light box while it loads.
+  final bool onDark;
 
   @override
   State<CachedImage> createState() => _CachedImageState();
@@ -213,9 +241,13 @@ class _CachedImageState extends State<CachedImage> {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     Widget placeholder([IconData icon = AppIcons.image]) => Container(
-      color: c.surfaceSoft,
+      color: widget.onDark ? Colors.transparent : c.surfaceSoft,
       alignment: Alignment.center,
-      child: Icon(icon, color: c.inkSoft, size: 32),
+      child: Icon(
+        icon,
+        color: widget.onDark ? Colors.white54 : c.inkSoft,
+        size: 32,
+      ),
     );
     final bytes = _bytes;
     return ClipRRect(

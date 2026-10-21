@@ -2509,6 +2509,10 @@
   "choresEG010": "z. B. 0,10 – leer: Punkte nicht eintauschbar",
   "choresRedeem": "Eintauschen",
   "commonOpen": "Öffnen",
+  "photoViewerDownload": "Herunterladen",
+  "photoViewerOpenWith": "In anderer App öffnen",
+  "photoViewerPrevious": "Vorheriges Foto",
+  "photoViewerNext": "Nächstes Foto",
   "remindersNotificationsNotAvailableError": "Benachrichtigungen nicht verfügbar: {error}",
   "@remindersNotificationsNotAvailableError": {
     "placeholders": {
