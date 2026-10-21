@@ -4,12 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
-## 2.0.14 – Fotos in voller Qualität
+## 2.0.14 – Fotos in voller Qualität, verlässlicherer Standort
 
 - Der Bildbetrachter zeigt erst eine Vorschau und dann das Original in
   voller Schärfe, auch beim Zoomen.
 - Fotos aus PhotoVault kommen im Betrachter und auf der Wandanzeige in
   voller Größe statt als kleine Miniatur.
+- Meldet sich ein Handy einen Tag lang nicht, sagt „Wo ist wer?“ das
+  deutlich; nach zwei Tagen bekommen die Erwachsenen einen Hinweis.
+- Wer weit weg ist, verlässt „Zuhause“ jetzt auch, wenn das Handy nur
+  ungenaue Positionen schickt.
 
 ## 2.0.13 – Fotos in Famio ansehen
 

@@ -4,12 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
-## 2.0.14 – Fotos con calidad completa
+## 2.0.14 – Fotos con calidad completa, ubicación más fiable
 
 - El visor muestra primero una vista previa y después el original con toda
   su nitidez, también al ampliar.
 - Las fotos de PhotoVault llegan a tamaño completo al visor y a la
   pantalla de pared en lugar de como miniatura pequeña.
+- Si un móvil no informa durante un día, «¿Quién está dónde?» lo indica
+  claramente; tras dos días los adultos reciben un aviso.
+- Quien está lejos ahora sale de «Casa» aunque el móvil solo envíe
+  posiciones imprecisas.
 
 ## 2.0.13 – Ver fotos en Famio
 
