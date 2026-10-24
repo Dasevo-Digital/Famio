@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.16 – No more duplicate entries
+
+- Adding something again that is still ticked off on the list brings that
+  entry back; if it is still open, Famio says so instead of adding it twice.
+- Lists connected to Bring! no longer get duplicate entries; existing ones
+  are merged during the sync.
+
 ## 2.0.15 – Private shopping lists and appearance
 
 - Each shopping list can be limited to certain people (list menu → “Who

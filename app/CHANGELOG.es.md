@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.16 – Sin artículos duplicados
+
+- Si se vuelve a añadir algo que sigue marcado en la lista, vuelve ese
+  artículo; si sigue pendiente, Famio lo indica en lugar de añadirlo dos
+  veces.
+- Las listas conectadas con Bring! ya no reciben duplicados; los existentes
+  se unen al sincronizar.
+
 ## 2.0.15 – Listas de compra privadas y apariencia
 
 - En cada lista de compra se puede elegir quién la ve (menú de la lista →

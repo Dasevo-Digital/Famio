@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.16 – Keine doppelten Einträge mehr
+
+- Wird etwas erneut eingetragen, das abgehakt noch auf der Liste steht,
+  kommt der abgehakte Eintrag zurück; steht es noch offen drauf, sagt
+  Famio das, statt es doppelt einzutragen.
+- Mit Bring! verbundene Listen bekommen keine doppelten Einträge mehr;
+  vorhandene werden beim Abgleich zusammengeführt.
+
 ## 2.0.15 – Private Einkaufslisten und Darstellung
 
 - Bei jeder Einkaufsliste lässt sich einstellen, wer sie sieht (Menü der
