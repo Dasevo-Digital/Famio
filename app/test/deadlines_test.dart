@@ -85,7 +85,8 @@ void main() {
       Deadline(
         id: 'r',
         title: 'Rauchmelder testen',
-        due: today.add(const Duration(days: 3)),
+        // Calendar days: 72 hours are a day less across a DST change.
+        due: DateUtils.addDaysToDate(today, 3),
         area: DeadlineArea.home,
         repeatMonths: 12,
       ),
