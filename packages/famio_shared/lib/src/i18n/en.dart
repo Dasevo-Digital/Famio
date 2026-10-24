@@ -1142,6 +1142,7 @@ const sharedEn = <String, String>{
       "the Famio list no longer exists",
   "Server|Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht":
       "Famio {famio}, there {remote} entries; {sent} sent, {taken} taken over, {deleted} deleted",
+  "Server|, {merged} doppelte zusammengeführt": ", {merged} duplicates merged",
   "Server|Bring! hat E-Mail-Adresse oder Passwort nicht angenommen.":
       "Bring! did not accept the email address or password.",
   "Server|Bring! antwortet mit Fehler {status}.":

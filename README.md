@@ -208,7 +208,13 @@ neuere Änderung, Löschungen gehen in beide Richtungen.
   nutzt die der Bring!-Apps (wie die Home-Assistant-Integration). Ändert
   Bring! sie, pausiert der Abgleich mit einer Fehlermeldung. Gleichnamige
   Artikel werden beim ersten Abgleich zusammengeführt, die Menge steht in
-  der Spezifikation.
+  der Spezifikation. Bring! führt jeden Artikel nur einmal: Wird in Famio
+  etwas erneut eingetragen, das abgehakt noch auf der Liste steht, kommt
+  der abgehakte Eintrag zurück; zeigen trotzdem mehrere Famio-Einträge auf
+  denselben Artikel (etwa von älteren Apps), bleibt beim Abgleich einer.
+  Famio legt in Bring! keine Listen an: Eine neue Famio-Liste gleicht erst
+  ab, wenn sie unter „Mit anderen Apps verbinden“ einer Bring!-Liste
+  zugeordnet ist.
 - **Microsoft To Do** (Aufgaben und Einkaufslisten): einmalig im
   Microsoft-Entra-Portal eine App registrieren (Kontotyp „beliebiges
   Organisationsverzeichnis und persönliche Microsoft-Konten“,

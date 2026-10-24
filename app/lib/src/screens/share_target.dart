@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/shopping_history.dart';
 import '../design/app_icons.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
@@ -130,7 +131,7 @@ Future<void> showShareTarget(
         final list = await _pickList(context, engine);
         if (list == null) break;
         for (final line in lines) {
-          engine.saveShoppingItem(newShoppingItem(engine, list.id, line));
+          engine.putOnList(newShoppingItem(engine, list.id, line));
         }
         go(FamioSection.shopping);
         messenger.showSnackBar(

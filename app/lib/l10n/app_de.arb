@@ -6429,6 +6429,14 @@
   "shoppingShareText": "Als Text teilen",
   "shoppingWhoSees": "Wer sieht die Liste?",
   "shoppingWhoSeesHint": "Ihre Einträge sehen nur diese Personen, auch in Erinnerungen-Apps, Bring!, Microsoft To Do und Home Assistant. Was von dieser Liste gekauft wird, taucht nicht in den Vorschlägen der Familie auf.",
+  "shoppingAlreadyOnList": "„{name}“ steht schon auf der Liste",
+  "@shoppingAlreadyOnList": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "shoppingCopyText": "Liste als Text kopieren",
   "shoppingTextCopied": "Liste kopiert – zum Einfügen in eine Nachricht.",
   "memoriesTitle": "Heute vor einem Jahr",

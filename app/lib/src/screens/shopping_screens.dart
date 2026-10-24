@@ -220,7 +220,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 
   /// A suggestion becomes an item, with the amount bought last time.
   void _pick(SyncEngine engine, BoughtItem b) {
-    engine.saveShoppingItem(
+    _put(
+      engine,
       newShoppingItem(
         engine,
         widget.listId,
@@ -228,6 +229,16 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
       ).copyWith(quantity: b.quantity),
     );
     _input.clear();
+  }
+
+  /// One entry per thing: a ticked-off one comes back, an open one is
+  /// only pointed out.
+  void _put(SyncEngine engine, ShoppingItem item) {
+    if (engine.putOnList(item)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(tr.shoppingAlreadyOnList(item.name))),
+      );
+    }
   }
 
   @override
@@ -240,9 +251,7 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
   void _add(SyncEngine engine) {
     final text = _input.text.trim();
     if (text.isEmpty) return;
-    engine.saveShoppingItem(
-      newShoppingItem(engine, widget.listId, text, memberId: _who),
-    );
+    _put(engine, newShoppingItem(engine, widget.listId, text, memberId: _who));
     _input.clear();
     _focus.requestFocus();
   }

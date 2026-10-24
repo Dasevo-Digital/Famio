@@ -19,6 +19,30 @@ extension ShoppingHistory on SyncEngine {
 
   void forgetBoughtItem(String key) => delete(Collections.shoppingHistory, key);
 
+  /// Puts [item] on its list the way Bring! does: an entry of the same
+  /// name that is ticked off comes back (with the new amount, if any)
+  /// instead of a second one, and one still open stays as it is – also so
+  /// a linked Bring! list does not count it twice. Returns whether it was
+  /// open already.
+  bool putOnList(ShoppingItem item) {
+    final key = shoppingKey(item.name);
+    final same = [
+      for (final i in shoppingItems(item.listId))
+        if (shoppingKey(i.name) == key && i.memberId == item.memberId) i,
+    ];
+    if (same.any((i) => !i.checked)) return true;
+    final done = same.firstOrNull;
+    saveShoppingItem(
+      done == null
+          ? item
+          : done.copyWith(
+              checked: false,
+              quantity: item.quantity.isEmpty ? null : item.quantity,
+            ),
+    );
+    return false;
+  }
+
   /// Counts [item] as bought when it is ticked off (not on packing lists).
   void noteBought(ShoppingItem item, {DateTime? now}) {
     final key = shoppingKey(item.name);
@@ -101,23 +125,31 @@ extension ShoppingHistory on SyncEngine {
         (l) => l.id == b.listId,
         orElse: () => lists.first,
       );
-      final onList = shoppingItems(
-        list.id,
-      ).any((i) => !i.checked && shoppingKey(i.name) == b.key);
-      if (!onList) {
-        saveShoppingItem(
-          ShoppingItem(
-            id: newId(),
-            listId: list.id,
-            name: b.name,
-            quantity: b.quantity,
-            category: guessShoppingCategory(b.name, learned: learned),
-          ),
-        );
-        added++;
-      }
+      final open = putOnList(
+        ShoppingItem(
+          // The same on every device: phones that open the list before they
+          // heard of each other write one entry, not one each.
+          id: _stapleId(b.key, due),
+          listId: list.id,
+          name: b.name,
+          quantity: b.quantity,
+          category: guessShoppingCategory(b.name, learned: learned),
+        ),
+      );
+      if (!open) added++;
       saveBoughtItem(b.copyWith(lastAdded: moment));
     }
     return added;
   }
+}
+
+/// The entry a staple due on [due] becomes: from its name and the day.
+String _stapleId(String key, DateTime due) {
+  // djb2 kept below 2^31: the same on phones, desktops and in the browser
+  // (String.hashCode is not, and bigger products lose bits in JavaScript).
+  var hash = 5381;
+  for (final unit in key.codeUnits) {
+    hash = (hash * 33 + unit) % 0x7fffffff;
+  }
+  return 'staple-${dayKey(due)}-${hash.toRadixString(16)}';
 }

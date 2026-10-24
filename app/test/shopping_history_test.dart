@@ -80,6 +80,53 @@ void main() {
     },
   );
 
+  test('putting it on again reopens the ticked-off entry', () {
+    final e = _engine()
+      ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))
+      ..saveShoppingItem(
+        const ShoppingItem(
+          id: 'eier',
+          listId: 'l',
+          name: 'Eier',
+          quantity: '6',
+          checked: true,
+        ),
+      );
+    expect(e.putOnList(_item('neu', ' eier ', q: '10')), isFalse);
+    final only = e.shoppingItems('l').single;
+    expect((only.id, only.checked, only.quantity), ('eier', false, '10'));
+    // Open already: pointed out, nothing added.
+    expect(e.putOnList(_item('noch', 'Eier')), isTrue);
+    expect(e.shoppingItems('l'), hasLength(1));
+    // Something else is new.
+    expect(e.putOnList(_item('milch', 'Milch')), isFalse);
+    expect(e.shoppingItems('l'), hasLength(2));
+  });
+
+  test('two devices put a due staple on the list as one entry', () {
+    BoughtItem staple() => BoughtItem(
+      key: 'eier',
+      name: 'Eier',
+      count: 4,
+      listId: 'l',
+      everyDays: 7,
+      lastBought: DateTime(2026, 10, 13, 9),
+    );
+    final phone = _engine()
+      ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))
+      ..saveBoughtItem(staple());
+    final tablet = _engine()
+      ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))
+      ..saveBoughtItem(staple());
+    // Both open the list before hearing of each other.
+    expect(phone.addDueStaples(now: now), 1);
+    expect(tablet.addDueStaples(now: now), 1);
+    expect(
+      phone.shoppingItems('l').single.id,
+      tablet.shoppingItems('l').single.id,
+    );
+  });
+
   test('staples go back on their list once when due', () {
     final e = _engine()
       ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))

@@ -2496,6 +2496,7 @@
   "shoppingShareText": "Share as text",
   "shoppingWhoSees": "Who sees the list?",
   "shoppingWhoSeesHint": "Only these people see its items, also in reminder apps, Bring!, Microsoft To Do and Home Assistant. What is bought from this list does not show up in the family's suggestions.",
+  "shoppingAlreadyOnList": "“{name}” is already on the list",
   "shoppingCopyText": "Copy list as text",
   "shoppingTextCopied": "List copied – paste it into a message.",
   "memoriesTitle": "One year ago today",

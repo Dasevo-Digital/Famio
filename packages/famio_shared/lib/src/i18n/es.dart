@@ -1175,6 +1175,7 @@ const sharedEs = <String, String>{
   "Server|die Famio-Liste gibt es nicht mehr": "la lista de Famio ya no existe",
   "Server|Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht":
       "Famio {famio}, allí {remote} entradas; {sent} enviadas, {taken} recibidas, {deleted} borradas",
+  "Server|, {merged} doppelte zusammengeführt": ", {merged} duplicados unidos",
   "Server|Bring! hat E-Mail-Adresse oder Passwort nicht angenommen.":
       "Bring! no aceptó el correo electrónico o la contraseña.",
   "Server|Bring! antwortet mit Fehler {status}.":

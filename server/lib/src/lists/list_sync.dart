@@ -465,9 +465,7 @@ class ListSync {
       final list = records.get(Collections.shoppingLists, famioList);
       // Also gone for whoever connected it once the list is no longer
       // theirs to see: their sync would take its items for deleted.
-      if (list == null ||
-          list.deleted ||
-          !RecordStore.canSee(list, memberId)) {
+      if (list == null || list.deleted || !RecordStore.canSee(list, memberId)) {
         stats.missing = true;
         return false;
       }
@@ -541,6 +539,33 @@ class ListSync {
       link(itemId, there.id, remoteState(there));
     }
 
+    // Bring! keeps one entry per name. Several entries here linked to the
+    // same one there (added again in Famio while a ticked-off one was still
+    // on the list, before 2.0.16) are one thing: the open, newest one stays.
+    if (provider.oneEntryPerTitle) {
+      final byRemote = <String, List<String>>{};
+      for (final MapEntry(key: itemId, value: l) in links.entries) {
+        (byRemote[l.remote] ??= []).add(itemId);
+      }
+      for (final ids in byRemote.values) {
+        if (ids.length < 2) continue;
+        final alive = [
+          for (final id in ids)
+            if (famio[id] case final r? when !r.deleted) r,
+        ]..sort(_openNewestFirst);
+        final keep = alive.firstOrNull?.id;
+        for (final id in ids) {
+          if (id == keep) continue;
+          if (famio[id] case final r? when !r.deleted) {
+            famioWrites.add(_tombstone(r));
+            stats.merged++;
+          }
+          unlink(id);
+          links.remove(id);
+        }
+      }
+    }
+
     final linkedRemote = <String>{};
     for (final MapEntry(key: itemId, value: l) in links.entries) {
       final record = famio[itemId] ?? records.get(collection, itemId);
@@ -604,10 +629,53 @@ class ListSync {
         for (final r in unlinkedRemote) r.title.trim().toLowerCase(): r,
     };
     final paired = <String>{};
-    for (final record in famio.values) {
-      if (links.containsKey(record.id)) continue;
+    // Names linked there now (one entry per name): a new entry of the same
+    // name here is that entry again. Entries just removed above are gone.
+    final gone = {
+      for (final w in famioWrites)
+        if (w.deleted) w.id,
+    };
+    final linkedTitles = <String, String>{
+      if (provider.oneEntryPerTitle)
+        for (final row in db.select(
+          'SELECT item_id, remote_id FROM list_items'
+          ' WHERE account_id = ? AND famio_list = ?',
+          [accountId, famioList],
+        ))
+          (row['remote_id'] as String).trim().toLowerCase():
+              row['item_id'] as String,
+    };
+    for (final record in [...famio.values]) {
+      if (links.containsKey(record.id) || gone.contains(record.id)) continue;
       final here = famioState(record)!;
-      final same = byTitle[here.title.trim().toLowerCase()];
+      final title = here.title.trim().toLowerCase();
+      if (linkedTitles[title] case final otherId?) {
+        final other = gone.contains(otherId) ? null : famio[otherId];
+        final otherState = famioState(other);
+        if (!here.done && (otherState == null || otherState.done)) {
+          // Bought before, needed again: the new entry takes over the one
+          // there, the ticked-off one here goes.
+          if (other != null && !other.deleted) {
+            famioWrites.add(_tombstone(other));
+            stats.merged++;
+          }
+          unlink(otherId);
+          linkedTitles[title] = record.id;
+          await push(
+            record.id,
+            here,
+            remote.values
+                .where((r) => r.title.trim().toLowerCase() == title)
+                .firstOrNull,
+          );
+        } else {
+          // Still open (or this one is done): one entry is enough.
+          famioWrites.add(_tombstone(record));
+          stats.merged++;
+        }
+        continue;
+      }
+      final same = byTitle[title];
       if (same != null && paired.add(same.id)) {
         // Still needed on one side beats bought long ago on the other.
         if (here.done && !same.done) {
@@ -655,6 +723,14 @@ class ListSync {
             done: step.done,
           ),
     ];
+  }
+
+  /// Open before ticked off, then the latest change first.
+  static int _openNewestFirst(SyncRecord a, SyncRecord b) {
+    final aDone = a.data['checked'] == true;
+    final bDone = b.data['checked'] == true;
+    if (aDone != bDone) return aDone ? 1 : -1;
+    return b.updatedAt.compareTo(a.updatedAt);
   }
 
   static SyncRecord _tombstone(SyncRecord r) => SyncRecord(
@@ -728,23 +804,29 @@ class _SyncStats {
   int sent = 0;
   int taken = 0;
   int deleted = 0;
+
+  /// Entries here that were one entry there (see [ListProvider.oneEntryPerTitle]).
+  int merged = 0;
   bool missing = false;
 
-  int get changes => sent + taken + deleted;
+  int get changes => sent + taken + deleted + merged;
 
   @override
   String toString() => missing
       ? t('die Famio-Liste gibt es nicht mehr')
       : t(
-          'Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht',
-          {
-            'famio': famio,
-            'remote': remote,
-            'sent': sent,
-            'taken': taken,
-            'deleted': deleted,
-          },
-        );
+              'Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht',
+              {
+                'famio': famio,
+                'remote': remote,
+                'sent': sent,
+                'taken': taken,
+                'deleted': deleted,
+              },
+            ) +
+            (merged == 0
+                ? ''
+                : t(', {merged} doppelte zusammengeführt', {'merged': merged}));
 }
 
 /// What both sides compare: title, note (quantity), done, due day and the

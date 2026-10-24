@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_data.dart';
+import '../data/shopping_history.dart';
 import '../data/preppsuite_import.dart';
 import '../l10n.dart';
 
@@ -68,7 +69,7 @@ Future<void> addFromPreppSuite(
   if (chosen == null || chosen.isEmpty) return;
   final learned = engine.learnedShoppingCategories;
   for (final item in chosen) {
-    engine.saveShoppingItem(
+    engine.putOnList(
       ShoppingItem(
         id: newId(),
         listId: list.id,

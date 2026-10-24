@@ -440,6 +440,84 @@ void main() {
     expect(fake.entries['Milch']!.done, isTrue);
   });
 
+  test(
+    'Bring!: added again in Famio while ticked off stays one entry',
+    () async {
+      fake = FakeProvider(kind: 'bring', oneEntryPerTitle: true);
+      final id = account(provider: 'bring');
+      write(Collections.shoppingLists, 'l1', {'name': 'Einkauf'});
+      lists.setLinks(id, mama, [
+        {'famioList': 'l1', 'remoteList': 'L'},
+      ]);
+      void item(String itemId, {bool checked = false}) => write(
+        Collections.shoppingItems,
+        itemId,
+        ShoppingItem(
+          id: itemId,
+          listId: 'l1',
+          name: 'Eier',
+          quantity: '10',
+          checked: checked,
+        ).toData(),
+      );
+      List<ShoppingItem> eggs() => [
+        for (final r in app.records.all(Collections.shoppingItems))
+          if (ShoppingItem.fromRecord(r) case final i when i.name == 'Eier') i,
+      ];
+
+      item('eier1');
+      await lists.syncAccount(id);
+      item('eier1', checked: true);
+      await lists.syncAccount(id);
+      expect(fake.entries['Eier']!.done, isTrue);
+
+      // An app before 2.0.16 adds Eier again instead of reopening the entry.
+      item('eier2');
+      await lists.syncAccount(id);
+      await lists.syncAccount(id);
+      expect([for (final e in eggs()) (e.id, e.checked)], [('eier2', false)]);
+      expect(fake.entries['Eier']!.done, isFalse);
+      expect(logLines.last, contains('1 doppelte zusammengeführt'));
+
+      // Once more while it is still open: still one.
+      item('eier3');
+      await lists.syncAccount(id);
+      expect([for (final e in eggs()) e.id], ['eier2']);
+    },
+  );
+
+  test('Bring!: entries already doubled here become one', () async {
+    fake = FakeProvider(kind: 'bring', oneEntryPerTitle: true);
+    final id = account(provider: 'bring');
+    write(Collections.shoppingLists, 'l1', {'name': 'Einkauf'});
+    lists.setLinks(id, mama, [
+      {'famioList': 'l1', 'remoteList': 'L'},
+    ]);
+    for (final itemId in ['a', 'b', 'c']) {
+      write(
+        Collections.shoppingItems,
+        itemId,
+        ShoppingItem(id: itemId, listId: 'l1', name: 'Eier').toData(),
+      );
+    }
+    fake.add('Eier');
+    // As versions before 2.0.16 left them: three entries, one there.
+    for (final itemId in ['a', 'b', 'c']) {
+      app.db.execute(
+        "INSERT INTO list_items (account_id, famio_list, item_id, remote_id,"
+        " hash) VALUES (?, 'l1', ?, 'Eier', '')",
+        [id, itemId],
+      );
+    }
+    await lists.syncAccount(id);
+    final left = [
+      for (final r in app.records.all(Collections.shoppingItems)) r.id,
+    ];
+    expect(left, hasLength(1));
+    expect(fake.entries.keys, ['Eier']);
+    expect(app.db.select('SELECT count(*) AS n FROM list_items').first['n'], 1);
+  });
+
   test('done entries new on one side are not copied over', () async {
     fake = FakeProvider(kind: 'bring', oneEntryPerTitle: true);
     final id = account(provider: 'bring');
