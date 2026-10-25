@@ -69,6 +69,7 @@ Future<void> main(List<String> args) async {
     maxUploadMb: config.maxUploadMb,
     locationHistoryDays: config.locationHistoryDays,
     maxStorageMb: config.maxStorageMb,
+    maxExportMb: config.maxExportMb,
     backupDir: config.backupDir,
     metricsToken: switch (config.metricsToken) {
       final t? when t.length >= 16 => t,

@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:archive/archive.dart';
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/api_exception.dart';
+import 'package:famio_server/src/export/data_export.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
@@ -14,6 +16,8 @@ void main() {
   late String kindToken;
   late String mama;
   late String kind;
+  late DateTime clock;
+  late LoginThrottle throttle;
 
   Future<Response> call(
     String method,
@@ -36,7 +40,14 @@ void main() {
       jsonDecode(await r.readAsString()) as Map;
 
   setUp(() async {
-    app = FamioServerApp.inMemory();
+    clock = DateTime.utc(2026, 10, 25, 12);
+    throttle = LoginThrottle(
+      freeAttempts: 2,
+      addressAttempts: 100,
+      accountAttempts: 100,
+      clock: () => clock,
+    );
+    app = FamioServerApp.inMemory(throttle: throttle);
     final setup = await json(
       await call(
         'POST',
@@ -183,6 +194,96 @@ void main() {
     expect(zip.findFile('settings.json'), isNotNull);
     final members = jsonDecode(text(zip, 'members.json')) as List;
     expect(members.map((m) => m['username']), containsAll(['mama', 'kind']));
+  });
+
+  test('a successful password confirmation resets its failure count', () async {
+    final key = '#pw:$kind';
+    final firstWrong = await call(
+      'POST',
+      'api/me/export',
+      token: kindToken,
+      body: {'password': 'falsch'},
+    );
+    expect(firstWrong.statusCode, 403);
+    expect(throttle.blockedFor('unknown', key), isNull);
+    final secondWrong = await call(
+      'POST',
+      'api/me/export',
+      token: kindToken,
+      body: {'password': 'noch-falsch'},
+    );
+    expect(secondWrong.statusCode, 403);
+    expect(throttle.blockedFor('unknown', key), const Duration(seconds: 30));
+
+    clock = clock.add(const Duration(seconds: 31));
+    final success = await call(
+      'POST',
+      'api/me/export',
+      token: kindToken,
+      body: {'password': 'kindpass123'},
+    );
+    expect(success.statusCode, 200);
+    await success.read().drain<void>();
+
+    final nextWrong = await call(
+      'POST',
+      'api/me/export',
+      token: kindToken,
+      body: {'password': 'wieder-falsch'},
+    );
+    expect(nextWrong.statusCode, 403);
+    expect(throttle.blockedFor('unknown', key), isNull);
+    final nextWrongAgain = await call(
+      'POST',
+      'api/me/export',
+      token: kindToken,
+      body: {'password': 'erneut-falsch'},
+    );
+    expect(nextWrongAgain.statusCode, 403);
+    expect(throttle.blockedFor('unknown', key), const Duration(seconds: 30));
+  });
+
+  test(
+    'exports reject excess file volume before creating an archive',
+    () async {
+      final limited = DataExport(
+        db: app.db,
+        records: app.records,
+        accounts: app.accounts,
+        files: app.files,
+        settings: app.settings,
+        tempDir: p.join(app.dataDir, 'limited-export'),
+        maxExportBytes: 2,
+      );
+      final member = app.accounts.members().firstWhere((m) => m.id == kind);
+      await expectLater(
+        limited.member(member),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.status, 'status', 413)
+              .having((e) => e.code, 'code', 'export_too_large'),
+        ),
+      );
+      expect(
+        Directory(p.join(app.dataDir, 'limited-export')).existsSync(),
+        isFalse,
+      );
+    },
+  );
+
+  test('only one archive is built at a time', () async {
+    final first = app.exports.family();
+    await expectLater(
+      app.exports.family(),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.status, 'status', 429)
+            .having((e) => e.code, 'code', 'export_in_progress'),
+      ),
+    );
+    final file = await first;
+    expect(file.existsSync(), isTrue);
+    file.deleteSync();
   });
 
   test('archives left by a broken download are removed at start', () {

@@ -9,6 +9,8 @@ readonly IDENTITY="superkuh86 <$PROJECT_EMAIL>"
 readonly EXCLUDED=(
   ':(exclude)app/assets/fonts/OFL-Fredoka.txt'
   ':(exclude)app/assets/fonts/OFL-Nunito.txt'
+  ':(exclude)app/ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json'
+  ':(exclude)app/ios/Runner/Assets.xcassets/LaunchImage.imageset/Contents.json'
 )
 
 fail=0
@@ -17,20 +19,36 @@ report() {
   fail=1
 }
 
-if matches=$(git grep -n -I -E '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -- . "${EXCLUDED[@]}" || true); then
+# Findings can themselves contain the data this check is meant to protect.
+# Keep only the tracked path and line number in diagnostics.
+masked_locations() {
+  sed -E 's/^([^:]+:[0-9]+):.*/\1: [masked]/'
+}
+
+# Example domains and the listed lines are deliberate synthetic fixtures or
+# iCalendar UIDs. Exact line allowlisting makes a moved/changed fixture visible
+# again and therefore subject to review.
+if matches=$(git grep -n -I -i -E '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -- . "${EXCLUDED[@]}" \
+  | grep -vi -E '@example\.(com|org|net)' \
+  | grep -v -E ':[0-9]+:UID:|^app/tool/render_screens_test.dart:624:|^server/test/family_features_test.dart:807:|^server/test/ics_file_import_test.dart:75:' \
+  || true); then
   if [[ -n "$matches" ]]; then
     report "Email address in a tracked file:"
-    printf '%s\n' "$matches" >&2
+    printf '%s\n' "$matches" | masked_locations >&2
   fi
 fi
 
 # Inspect the branch intended for publication. Local backup and
 # remote-tracking refs are deliberately excluded because a normal branch push
 # does not publish them.
-if identities=$(git log HEAD --format='%aN <%aE>%n%cN <%cE>' | sort -u | grep -vFx "$IDENTITY" || true); then
-  if [[ -n "$identities" ]]; then
+if identity_commits=$(git log HEAD --format='%h%x09%aN <%aE>%x09%cN <%cE>' | while IFS=$'\t' read -r commit author committer; do
+  if [[ "$author" != "$IDENTITY" || "$committer" != "$IDENTITY" ]]; then
+    printf '%s\n' "$commit"
+  fi
+done); then
+  if [[ -n "$identity_commits" ]]; then
     report "Non-project author or committer identity in reachable Git history:"
-    printf '%s\n' "$identities" >&2
+    printf '%s\n' "$identity_commits" >&2
   fi
 fi
 
@@ -40,13 +58,13 @@ readonly MESSAGE_RE='[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}|co-authored-by:|gener
 for commit in $(git rev-list HEAD); do
   if hits=$(git log -1 --format=%B "$commit" | grep -i -E "$MESSAGE_RE" | grep -vF "$PROJECT_EMAIL" || true); [[ -n "$hits" ]]; then
     report "Commit ${commit:0:7}: message names a person or a tool:"
-    printf '%s\n' "$hits" >&2
+    printf '[masked]\n' >&2
   fi
 done
 while IFS= read -r tag; do
   if hits=$(git for-each-ref "refs/tags/$tag" --format='%(contents)' | grep -i -E "$MESSAGE_RE" | grep -vF "$PROJECT_EMAIL" || true); [[ -n "$hits" ]]; then
     report "Tag $tag: message names a person or a tool:"
-    printf '%s\n' "$hits" >&2
+    printf '[masked]\n' >&2
   fi
 done < <(git tag -l)
 
@@ -56,9 +74,9 @@ readonly SECRET_RE='-----BEGIN ([A-Z]+ )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{
 readonly SELF=':(exclude)tool/repo_privacy_check.sh'
 if matches=$(git grep -n -I -E -e "$SECRET_RE" -- . "$SELF" || true); [[ -n "$matches" ]]; then
   report "Possible secret in a tracked file:"
-  printf '%s\n' "$matches" >&2
+  printf '%s\n' "$matches" | masked_locations >&2
 fi
-if commits=$(git log HEAD --format='%h %s' --extended-regexp -G"$SECRET_RE" -- . "$SELF"); [[ -n "$commits" ]]; then
+if commits=$(git log HEAD --format='%h' --extended-regexp -G"$SECRET_RE" -- . "$SELF"); [[ -n "$commits" ]]; then
   report "Possible secret added or removed in Git history:"
   printf '%s\n' "$commits" >&2
 fi

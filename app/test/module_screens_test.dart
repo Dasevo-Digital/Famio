@@ -1047,6 +1047,7 @@ void main() {
       await tester.tap(find.byTooltip('Suchen'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, 'muell');
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
       expect(find.text('Müll rausbringen'), findsOneWidget);
       await tester.tap(find.text('Müll rausbringen'));

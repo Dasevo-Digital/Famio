@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:famio_shared/famio_shared.dart';
@@ -9,7 +8,9 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../accounts.dart';
+import '../api_exception.dart';
 import '../files/file_store.dart';
+import '../i18n.dart';
 import '../record_store.dart';
 import '../settings.dart';
 
@@ -28,6 +29,7 @@ class DataExport {
     required this.files,
     required this.settings,
     required this.tempDir,
+    this.maxExportBytes = 4 * 1024 * 1024 * 1024,
   });
 
   final Database db;
@@ -36,6 +38,8 @@ class DataExport {
   final FileStore files;
   final SettingsStore settings;
   final String tempDir;
+  final int maxExportBytes;
+  var _running = false;
 
   static const _readme = '''
 Famio – Datenexport
@@ -60,45 +64,67 @@ Alle Zeiten in UTC, Texte in UTF-8.
   }
 
   /// What [member] may see.
-  Future<File> member(FamilyMember member) => _write(
-    scope: 'member',
-    members: [member],
-    records: (collection) =>
-        records.all(collection, visibleToMember: member.id),
-    files: [
-      for (final f in files.all())
-        if (files.mayRead(f, member.id)) f,
-    ],
-    extra: {
-      'location.json': [
-        for (final row in db.select(
-          'SELECT at, latitude, longitude, accuracy FROM location_points'
-          ' WHERE member_id = ? ORDER BY at',
-          [member.id],
-        ))
-          {
-            'at': DateTime.fromMillisecondsSinceEpoch(
-              row['at'] as int,
-              isUtc: true,
-            ).toIso8601String(),
-            'latitude': row['latitude'],
-            'longitude': row['longitude'],
-            'accuracy': row['accuracy'],
-          },
+  Future<File> member(FamilyMember member) => _exclusive(
+    () => _write(
+      scope: 'member',
+      members: [member],
+      records: (collection) =>
+          records.all(collection, visibleToMember: member.id),
+      files: [
+        for (final f in files.all())
+          if (files.mayRead(f, member.id)) f,
       ],
-    },
+      extra: {
+        'location.json': [
+          for (final row in db.select(
+            'SELECT at, latitude, longitude, accuracy FROM location_points'
+            ' WHERE member_id = ? ORDER BY at',
+            [member.id],
+          ))
+            {
+              'at': DateTime.fromMillisecondsSinceEpoch(
+                row['at'] as int,
+                isUtc: true,
+              ).toIso8601String(),
+              'latitude': row['latitude'],
+              'longitude': row['longitude'],
+              'accuracy': row['accuracy'],
+            },
+        ],
+      },
+    ),
   );
 
   /// Everything, for an admin.
-  Future<File> family() => _write(
-    scope: 'family',
-    members: accounts.members(),
-    records: records.all,
-    files: files.all(),
-    extra: {
-      'settings.json': {...settings.effective.toJson()},
-    },
+  Future<File> family() => _exclusive(
+    () => _write(
+      scope: 'family',
+      members: accounts.members(),
+      records: records.all,
+      files: files.all(),
+      extra: {
+        'settings.json': {...settings.effective.toJson()},
+      },
+    ),
   );
+
+  Future<File> _exclusive(Future<File> Function() write) async {
+    if (_running) {
+      throw ApiException(
+        429,
+        'export_in_progress',
+        t(
+          'Ein Datenexport wird bereits erstellt. Bitte später erneut versuchen.',
+        ),
+      );
+    }
+    _running = true;
+    try {
+      return await write();
+    } finally {
+      _running = false;
+    }
+  }
 
   Future<File> _write({
     required String scope,
@@ -107,17 +133,31 @@ Alle Zeiten in UTC, Texte in UTF-8.
     required List<StoredFile> files,
     Map<String, Object?> extra = const {},
   }) async {
+    var exportBytes = files.fold<int>(0, (sum, file) => sum + file.size);
+    void checkSize() {
+      if (exportBytes <= maxExportBytes) return;
+      throw ApiException(
+        413,
+        'export_too_large',
+        t('Die Daten im Export überschreiten das erlaubte Gesamtlimit.'),
+      );
+    }
+
+    checkSize();
     Directory(tempDir).createSync(recursive: true);
     final path = p.join(tempDir, 'export-${newId()}.zip');
     final zip = ZipFileEncoder()..create(path);
-    void json(String name, Object? value) => zip.addArchiveFile(
-      ArchiveFile.string(
-        name,
-        const JsonEncoder.withIndent('  ').convert(value),
-      ),
-    );
+    File? staged;
+    void string(String name, String value) {
+      exportBytes += utf8.encode(value).length;
+      checkSize();
+      zip.addArchiveFile(ArchiveFile.string(name, value));
+    }
+
+    void json(String name, Object? value) =>
+        string(name, const JsonEncoder.withIndent('  ').convert(value));
     try {
-      zip.addArchiveFile(ArchiveFile.string('LIESMICH.txt', _readme));
+      string('LIESMICH.txt', _readme);
       json('famio.json', {
         'format': 1,
         'scope': scope,
@@ -137,16 +177,11 @@ Alle Zeiten in UTC, Texte in UTF-8.
         json(e.key, e.value);
       }
       for (final f in files) {
-        final bytes = BytesBuilder(copy: false);
-        await for (final chunk in this.files.read(f)) {
-          bytes.add(chunk);
-        }
-        zip.addArchiveFile(
-          ArchiveFile.bytes(
-            'files/${f.id}-${_safe(f.name)}',
-            bytes.takeBytes(),
-          ),
-        );
+        staged = File('$path.part');
+        await this.files.read(f).pipe(staged.openWrite());
+        await zip.addFile(staged, 'files/${f.id}-${_safe(f.name)}');
+        await staged.delete();
+        staged = null;
       }
       await zip.close();
       return File(path);
@@ -154,6 +189,7 @@ Alle Zeiten in UTC, Texte in UTF-8.
       try {
         await zip.close();
       } catch (_) {}
+      if (staged?.existsSync() ?? false) staged!.deleteSync();
       final file = File(path);
       if (file.existsSync()) file.deleteSync();
       rethrow;

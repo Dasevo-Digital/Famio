@@ -85,9 +85,10 @@ void main() {
     final state = AppState();
     await state.init();
     final engine = _engine('m1');
-    final tomorrow = DateUtils.dateOnly(
-      DateTime.now(),
-    ).add(const Duration(days: 1));
+    final tomorrow = DateUtils.addDaysToDate(
+      DateUtils.dateOnly(DateTime.now()),
+      1,
+    );
     engine
       ..saveEvent(_bin('a', 'Altpapier', tomorrow))
       ..saveWasteSettings(const WasteSettings(memberIds: ['m1']));

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -30,10 +32,68 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  static const _searchDelay = Duration(milliseconds: 250);
   final _query = TextEditingController();
+  Timer? _searchTimer;
+  StreamSubscription<Set<String>>? _changes;
+  SyncEngine? _listenedEngine;
+  List<SearchHit> _hits = const [];
+  var _searchPending = false;
+
+  void _searchChanged(String value, {bool immediately = false}) {
+    _searchTimer?.cancel();
+    if (value.trim().isEmpty) {
+      setState(() {
+        _hits = const [];
+        _searchPending = false;
+      });
+      return;
+    }
+    setState(() {
+      _hits = const [];
+      _searchPending = true;
+    });
+    void search() {
+      if (!mounted || _query.text != value) return;
+      final state = AppScope.of(context);
+      final engine = state.engine!;
+      final sections = sectionsFor(
+        engine.myRole,
+        hidden: state.hiddenModules,
+      ).toSet();
+      final hits = searchFamily(engine, value, sections: sections);
+      if (!mounted || _query.text != value) return;
+      setState(() {
+        _hits = hits;
+        _searchPending = false;
+      });
+    }
+
+    if (immediately) {
+      search();
+    } else {
+      _searchTimer = Timer(_searchDelay, search);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final engine = AppScope.of(context).engine;
+    if (identical(engine, _listenedEngine)) return;
+    unawaited(_changes?.cancel());
+    _listenedEngine = engine;
+    _changes = engine?.changes.listen((_) {
+      if (mounted && _query.text.trim().isNotEmpty) {
+        _searchChanged(_query.text, immediately: true);
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _searchTimer?.cancel();
+    unawaited(_changes?.cancel());
     _query.dispose();
     super.dispose();
   }
@@ -97,7 +157,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
         );
     }
-    if (mounted) setState(() {});
+    if (mounted) _searchChanged(_query.text, immediately: true);
   }
 
   static String _chatTitle(SyncEngine engine, String chatId) {
@@ -116,11 +176,6 @@ class _SearchScreenState extends State<SearchScreen> {
     final engine = state.engine!;
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
-    final sections = sectionsFor(
-      engine.myRole,
-      hidden: state.hiddenModules,
-    ).toSet();
-    final hits = searchFamily(engine, _query.text, sections: sections);
     final day = DateFormat.yMMMd(appLanguage);
     return SectionPage(
       section: FamioSection.home,
@@ -145,16 +200,23 @@ class _SearchScreenState extends State<SearchScreen> {
                         : IconButton(
                             icon: const Icon(AppIcons.x),
                             tooltip: tr.settingsStorageClear,
-                            onPressed: () => setState(_query.clear),
+                            onPressed: () {
+                              _query.clear();
+                              _searchChanged('');
+                            },
                           ),
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: _searchChanged,
+                  onSubmitted: (value) =>
+                      _searchChanged(value, immediately: true),
                 ),
               ),
               Expanded(
                 child: _query.text.trim().isEmpty
                     ? const SizedBox.shrink()
-                    : hits.isEmpty
+                    : _searchPending
+                    ? const SizedBox.shrink()
+                    : _hits.isEmpty
                     ? Padding(
                         padding: const EdgeInsets.all(24),
                         child: Text(
@@ -168,12 +230,14 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                         children: [
                           for (final kind in SearchKind.values)
-                            if (hits.any((h) => h.kind == kind)) ...[
+                            if (_hits.any((h) => h.kind == kind)) ...[
                               ListHeading(
                                 kind.label,
                                 color: c.strong(kind.section),
                               ),
-                              for (final h in hits.where((h) => h.kind == kind))
+                              for (final h in _hits.where(
+                                (h) => h.kind == kind,
+                              ))
                                 ListTile(
                                   leading: Icon(
                                     kind.section.icon,

@@ -60,6 +60,7 @@ class FamioServerApp {
     int maxUploadMb = 100,
     int locationHistoryDays = 7,
     int maxStorageMb = 5120,
+    int maxExportMb = 4096,
     bool allowPrivateCalendarHosts = false,
     bool allowPrivatePushHosts = false,
     http.Client? httpClient,
@@ -75,6 +76,7 @@ class FamioServerApp {
     String? backupDir,
     String? metricsToken,
     String releaseKey = famioReleaseKey,
+    LoginThrottle? throttle,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -168,6 +170,7 @@ class FamioServerApp {
       files: files,
       settings: settings,
       tempDir: p.join(dataDir, 'tmp'),
+      maxExportBytes: maxExportMb * 1024 * 1024,
     );
     push = PushService(
       db: db,
@@ -260,6 +263,7 @@ class FamioServerApp {
       feeds: CalendarFeeds(db),
       files: files,
       clientAddress: ClientAddress(trustProxy: trustProxy),
+      throttle: throttle,
       setupCode: setupCode,
       importer: importer,
       settings: settings,
@@ -306,6 +310,7 @@ class FamioServerApp {
     WebApp? webApp,
     String? metricsToken,
     String releaseKey = famioReleaseKey,
+    LoginThrottle? throttle,
   }) {
     initTimeZones();
     return FamioServerApp(
@@ -318,6 +323,7 @@ class FamioServerApp {
       allowPrivateCalendarHosts: true,
       googleBase: googleBase,
       webApp: webApp,
+      throttle: throttle,
     );
   }
 

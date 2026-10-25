@@ -930,6 +930,10 @@ const sharedEn = <String, String>{
   "Server|Verbundener Kalender": "Connected calendar",
   "Server|Unbekannter Kalender": "Unknown calendar",
   "Server|Export fehlt": "Export missing",
+  "Server|Ein Datenexport wird bereits erstellt. Bitte später erneut versuchen.":
+      "A data export is already being created. Please try again later.",
+  "Server|Die Daten im Export überschreiten das erlaubte Gesamtlimit.":
+      "The data in the export exceeds the allowed total limit.",
   "Server|Datei ist größer als {mb} MB": "File is larger than {mb} MB",
   "Server|Datei nicht gefunden": "File not found",
   "Server|Keine Vorschau verfügbar": "No preview available",
@@ -1015,7 +1019,8 @@ const sharedEn = <String, String>{
       "Famio will soon no longer be able to show {name}'s location.",
   "Server|Akku fast leer": "Battery almost empty",
   "Server|{name}s Handy meldet sich nicht": "{name}'s phone is not reporting",
-  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.": "No location for {days} days although sharing is on. Please open Famio on the phone once: after a restart or a new installation the phone often does not start the app by itself.",
+  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.":
+      "No location for {days} days although sharing is on. Please open Famio on the phone once: after a restart or a new installation the phone often does not start the app by itself.",
   "Server|Ein Handy meldet sich nicht": "A phone is not reporting",
   "Server|Dienstkonten legt ein Admin direkt an":
       "An admin creates service accounts directly",
@@ -1138,6 +1143,10 @@ const sharedEn = <String, String>{
   "Server|Diese Einkaufsliste gibt es nicht.":
       "This shopping list does not exist.",
   "Server|Keine Verbindung zu {provider}.": "No connection to {provider}.",
+  "Server|{provider} antwortet nicht rechtzeitig.":
+      "{provider} did not respond in time.",
+  "Server|Unerwarteter Fehler beim Abgleich mit {provider}.":
+      "Unexpected error while syncing with {provider}.",
   "Server|die Famio-Liste gibt es nicht mehr":
       "the Famio list no longer exists",
   "Server|Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht":

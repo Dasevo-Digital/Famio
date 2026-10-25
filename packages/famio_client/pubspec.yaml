@@ -11,8 +11,8 @@ dependencies:
   famio_shared:
     path: ../famio_shared
   http: ^1.6.0
-  sqlite3: ^3.5.0
-  web: ^1.1.1
+  sqlite3: ^3.8.0
+  web: ^1.1.2
   web_socket_channel: ^3.0.3
 dev_dependencies:
   famio_server:

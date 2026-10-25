@@ -34,6 +34,7 @@ class ListSync {
     this.location,
     http.Client? client,
     this.interval = const Duration(minutes: 5),
+    this.requestTimeout = const Duration(seconds: 20),
     this.providerFor,
     this.bringBase,
     this.graphBase,
@@ -56,6 +57,7 @@ class ListSync {
   /// The family's zone, for advancing repeating tasks ticked off there.
   final tz.Location Function()? location;
   final Duration interval;
+  final Duration requestTimeout;
 
   /// Tests replace the providers; otherwise Bring! or Microsoft To Do.
   final ListProvider Function(String kind, Map<String, Object?> credentials)?
@@ -106,9 +108,28 @@ class ListSync {
   Future<void> syncAll() async {
     if (!enabled()) return;
     for (final row in db.select('SELECT id FROM list_accounts')) {
-      await syncAccount(row['id'] as String);
+      try {
+        await syncAccount(row['id'] as String);
+      } on Object {
+        log?.call('[listen] Verbindung konnte nicht abgeglichen werden');
+      }
     }
   }
+
+  Future<T> _providerCall<T>(String provider, Future<T> Function() call) async {
+    try {
+      return await call().timeout(requestTimeout);
+    } on TimeoutException {
+      throw ListProviderException(
+        t('{provider} antwortet nicht rechtzeitig.', {'provider': provider}),
+      );
+    }
+  }
+
+  Future<T> _callProvider<T>(
+    ListProvider provider,
+    Future<T> Function() call,
+  ) => _providerCall(_label(provider), call);
 
   // --- accounts --------------------------------------------------------------
 
@@ -193,11 +214,14 @@ class ListSync {
   }) async {
     _checkEnabled();
     try {
-      final credentials = await BringProvider.signIn(
-        _client,
-        email: email.trim(),
-        password: password,
-        base: bringBase,
+      final credentials = await _providerCall(
+        'Bring!',
+        () => BringProvider.signIn(
+          _client,
+          email: email.trim(),
+          password: password,
+          base: bringBase,
+        ),
       );
       return _store(memberId, 'bring', 'Bring! (${email.trim()})', credentials);
     } on ListProviderException catch (e) {
@@ -221,10 +245,13 @@ class ListSync {
       );
     }
     try {
-      final json = await MsTodoProvider.startDeviceLogin(
-        _client,
-        clientId: id,
-        login: loginBase,
+      final json = await _providerCall(
+        'Microsoft To Do',
+        () => MsTodoProvider.startDeviceLogin(
+          _client,
+          clientId: id,
+          login: loginBase,
+        ),
       );
       final flow = newId();
       _deviceLogins.removeWhere((_, f) => f.expires.isBefore(DateTime.now()));
@@ -258,11 +285,14 @@ class ListSync {
       throw ApiException(404, 'not_found', t('Anmeldung nicht gefunden'));
     }
     try {
-      final credentials = await MsTodoProvider.pollDeviceLogin(
-        _client,
-        clientId: login.clientId,
-        deviceCode: login.deviceCode,
-        login: loginBase,
+      final credentials = await _providerCall(
+        'Microsoft To Do',
+        () => MsTodoProvider.pollDeviceLogin(
+          _client,
+          clientId: login.clientId,
+          deviceCode: login.deviceCode,
+          login: loginBase,
+        ),
       );
       if (credentials == null) return {'status': 'pending'};
       _deviceLogins.remove(flow);
@@ -311,7 +341,7 @@ class ListSync {
     final account = _account(id, memberId);
     final provider = _provider(account);
     try {
-      final lists = await provider.lists();
+      final lists = await _callProvider(provider, provider.lists);
       _keepCredentials(id, provider);
       return [for (final l in lists) l.toJson()];
     } on ListProviderException catch (e) {
@@ -437,6 +467,11 @@ class ListSync {
           'provider': _label(provider),
         });
         log?.call('[listen] $name: $error (${e.message})');
+      } on Object {
+        error = t('Unerwarteter Fehler beim Abgleich mit {provider}.', {
+          'provider': _label(provider),
+        });
+        log?.call('[listen] $name: $error');
       }
     }
     _keepCredentials(id, provider);
@@ -471,7 +506,13 @@ class ListSync {
       }
     }
 
-    final remote = {for (final r in await provider.items(remoteList)) r.id: r};
+    final remote = {
+      for (final r in await _callProvider(
+        provider,
+        () => provider.items(remoteList),
+      ))
+        r.id: r,
+    };
     stats.remote = remote.length;
     final links = {
       for (final row in db.select(
@@ -514,10 +555,16 @@ class ListSync {
     Future<void> push(String itemId, _State state, RemoteItem? there) async {
       stats.sent++;
       if (there == null) {
-        final created = await provider.create(remoteList, state.draft);
+        final created = await _callProvider(
+          provider,
+          () => provider.create(remoteList, state.draft),
+        );
         link(itemId, created.id, state);
       } else {
-        await provider.update(remoteList, there, state.draft);
+        await _callProvider(
+          provider,
+          () => provider.update(remoteList, there, state.draft),
+        );
         link(itemId, provider.oneEntryPerTitle ? state.title : there.id, state);
       }
     }
@@ -598,7 +645,10 @@ class ListSync {
                   there!.modified!.millisecondsSinceEpoch);
       if (famioWins) {
         if (here == null) {
-          await provider.delete(remoteList, there!);
+          await _callProvider(
+            provider,
+            () => provider.delete(remoteList, there!),
+          );
           stats.deleted++;
           unlink(itemId);
         } else {

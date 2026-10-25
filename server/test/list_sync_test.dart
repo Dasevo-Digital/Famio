@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio_server/famio_server.dart';
@@ -26,7 +27,9 @@ class FakeProvider implements ListProvider {
   Map<String, Object?> get credentials => const {'token': 'x'};
 
   final entries = <String, RemoteItem>{};
+  Future<List<RemoteItem>> Function()? itemsOverride;
   var writes = 0;
+  var reads = 0;
   var _next = 0;
 
   RemoteItem add(
@@ -57,7 +60,10 @@ class FakeProvider implements ListProvider {
   ];
 
   @override
-  Future<List<RemoteItem>> items(String listId) async => [...entries.values];
+  Future<List<RemoteItem>> items(String listId) async {
+    reads++;
+    return itemsOverride?.call() ?? [...entries.values];
+  }
 
   @override
   Future<RemoteItem> create(String listId, ItemDraft item) async {
@@ -136,12 +142,15 @@ void main() {
 
   tearDown(() => app.close());
 
-  String account({String provider = 'mstodo'}) {
-    const id = 'acc';
+  String account({
+    String id = 'acc',
+    String provider = 'mstodo',
+    Map<String, Object?> credentials = const {},
+  }) {
     app.db.execute(
       'INSERT INTO list_accounts (id, user_id, provider, name, credentials,'
       ' created_at) VALUES (?, ?, ?, ?, ?, 0)',
-      [id, mama, provider, 'Test', jsonEncode({})],
+      [id, mama, provider, 'Test', jsonEncode(credentials)],
     );
     return id;
   }
@@ -214,6 +223,69 @@ void main() {
     expect(logLines.last, contains('0 gesendet, 0 übernommen, 0 gelöscht'));
     expect(tasks(), hasLength(2));
     expect(lists.accounts(mama).single['lastError'], isNull);
+  });
+
+  test('a provider timeout is bounded and recorded', () async {
+    final pending = Completer<List<RemoteItem>>();
+    fake.itemsOverride = () => pending.future;
+    lists = ListSync(
+      db: app.db,
+      records: app.records,
+      timeZone: () => 'Europe/Berlin',
+      onChanged: () {},
+      enabled: () => enabled,
+      providerFor: (_, _) => fake,
+      requestTimeout: const Duration(milliseconds: 10),
+      log: logLines.add,
+    );
+    final id = account();
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L', 'remoteName': 'Aufgaben'},
+    ]);
+
+    await lists.syncAccount(id);
+
+    expect(
+      lists.accounts(mama).single['lastError'],
+      contains('antwortet nicht rechtzeitig'),
+    );
+    expect(logLines.single, contains('antwortet nicht rechtzeitig'));
+  });
+
+  test('syncAll continues after an unexpected provider failure', () async {
+    final broken = FakeProvider()
+      ..itemsOverride = () => Future.error(StateError('kaputt'));
+    final working = FakeProvider()..add('Weiter synchronisiert');
+    lists = ListSync(
+      db: app.db,
+      records: app.records,
+      timeZone: () => 'Europe/Berlin',
+      onChanged: () {},
+      enabled: () => enabled,
+      providerFor: (_, credentials) =>
+          credentials['token'] == 'broken' ? broken : working,
+      log: logLines.add,
+    );
+    final badId = account(id: 'bad', credentials: const {'token': 'broken'});
+    final goodId = account(id: 'good', credentials: const {'token': 'good'});
+    for (final id in [badId, goodId]) {
+      lists.setLinks(id, mama, [
+        {'famioList': 'tasks', 'remoteList': 'L', 'remoteName': id},
+      ]);
+    }
+
+    await lists.syncAll();
+
+    expect(broken.reads, 1);
+    expect(working.reads, 1);
+    expect(
+      tasks().map((task) => task.title),
+      contains('Weiter synchronisiert'),
+    );
+    expect(
+      lists.accounts(mama).firstWhere((a) => a['id'] == badId)['lastError'],
+      contains('Unerwarteter Fehler'),
+    );
   });
 
   test('changes and deletions travel in both directions', () async {

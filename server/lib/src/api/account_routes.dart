@@ -140,6 +140,7 @@ extension _AccountRoutes on FamioApi {
       throttle.failed(address, '#delete:${member.id}');
       throw ApiException(403, 'reauth_required', t('Bestätigungscode falsch'));
     }
+    throttle.succeeded(address, '#delete:${member.id}');
     await caldav?.disconnectUser(member.id);
     locations?.memberDeleted(member.id);
     accounts.delete(
@@ -189,6 +190,7 @@ extension _AccountRoutes on FamioApi {
         t('Aktuelles Passwort falsch'),
       );
     }
+    throttle.succeeded(address, '#pw:${member.id}');
     await accounts.setPassword(member.id, body['newPassword'] as String? ?? '');
     // A new password also locks out whoever may know the old one.
     final signedOut = accounts.deleteSessions(

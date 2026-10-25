@@ -18,6 +18,7 @@ extension _ExportRoutes on FamioApi {
       throttle.failed(address, '#pw:${member.id}');
       throw ApiException(403, 'invalid_credentials', t('Passwort falsch'));
     }
+    throttle.succeeded(address, '#pw:${member.id}');
   }
 
   Response _zip(File file, String name) => Response.ok(

@@ -960,6 +960,10 @@ const sharedEs = <String, String>{
   "Server|Verbundener Kalender": "Calendario conectado",
   "Server|Unbekannter Kalender": "Calendario desconocido",
   "Server|Export fehlt": "Falta la exportación",
+  "Server|Ein Datenexport wird bereits erstellt. Bitte später erneut versuchen.":
+      "Ya se está creando una exportación de datos. Inténtalo de nuevo más tarde.",
+  "Server|Die Daten im Export überschreiten das erlaubte Gesamtlimit.":
+      "Los datos de la exportación superan el límite total permitido.",
   "Server|Datei ist größer als {mb} MB": "El archivo supera los {mb} MB",
   "Server|Datei nicht gefunden": "Archivo no encontrado",
   "Server|Keine Vorschau verfügbar": "No hay vista previa disponible",
@@ -1047,7 +1051,8 @@ const sharedEs = <String, String>{
       "Pronto Famio ya no podrá mostrar la ubicación de {name}.",
   "Server|Akku fast leer": "Batería casi agotada",
   "Server|{name}s Handy meldet sich nicht": "El móvil de {name} no informa",
-  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.": "Hace {days} días que no llega ninguna ubicación aunque compartir está activado. Abre Famio una vez en el móvil: tras un reinicio o una nueva instalación, el móvil a menudo no inicia la app por sí solo.",
+  "Server|Seit {days} Tagen kommt kein Standort, obwohl das Teilen an ist. Bitte Famio auf dem Handy einmal öffnen: Nach einem Neustart oder einer neuen Installation startet das Handy die App sonst oft nicht von selbst.":
+      "Hace {days} días que no llega ninguna ubicación aunque compartir está activado. Abre Famio una vez en el móvil: tras un reinicio o una nueva instalación, el móvil a menudo no inicia la app por sí solo.",
   "Server|Ein Handy meldet sich nicht": "Un móvil no informa",
   "Server|Dienstkonten legt ein Admin direkt an":
       "Las cuentas de servicio las crea directamente un administrador",
@@ -1172,6 +1177,10 @@ const sharedEs = <String, String>{
   "Server|Diese Einkaufsliste gibt es nicht.":
       "Esta lista de la compra no existe.",
   "Server|Keine Verbindung zu {provider}.": "Sin conexión con {provider}.",
+  "Server|{provider} antwortet nicht rechtzeitig.":
+      "{provider} no responde a tiempo.",
+  "Server|Unerwarteter Fehler beim Abgleich mit {provider}.":
+      "Error inesperado al sincronizar con {provider}.",
   "Server|die Famio-Liste gibt es nicht mehr": "la lista de Famio ya no existe",
   "Server|Famio {famio}, dort {remote} Einträge; {sent} gesendet, {taken} übernommen, {deleted} gelöscht":
       "Famio {famio}, allí {remote} entradas; {sent} enviadas, {taken} recibidas, {deleted} borradas",

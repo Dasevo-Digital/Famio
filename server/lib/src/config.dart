@@ -15,6 +15,7 @@ class ServerConfig {
     this.maxUploadMb = 100,
     this.locationHistoryDays = 7,
     this.maxStorageMb = 5120,
+    this.maxExportMb = 4096,
     this.allowPrivateCalendarHosts = false,
     this.allowPrivatePushHosts = false,
     this.keyFile,
@@ -79,6 +80,12 @@ class ServerConfig {
         max: 365,
       ),
       maxStorageMb: int.tryParse(env['FAMIO_MAX_STORAGE_MB'] ?? '') ?? 5120,
+      maxExportMb: _boundedInt(
+        env['FAMIO_MAX_EXPORT_MB'],
+        fallback: 4096,
+        min: 1,
+        max: 16384,
+      ),
       allowPrivateCalendarHosts: _flag(
         env['FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS'],
       ),
@@ -153,6 +160,9 @@ class ServerConfig {
 
   /// Hard storage budget for all uploads of this Famio installation.
   final int maxStorageMb;
+
+  /// Maximum uncompressed data volume included in one export.
+  final int maxExportMb;
 
   /// Explicit opt-in for CalDAV/ICS servers in the home network.
   final bool allowPrivateCalendarHosts;

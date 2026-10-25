@@ -404,6 +404,7 @@ extension _AdminRoutes on FamioApi {
       throttle.failed(address, '#pw:${admin.id}');
       throw ApiException(403, 'invalid_credentials', t('Passwort falsch'));
     }
+    throttle.succeeded(address, '#pw:${admin.id}');
     final removeMembers = body['removeMembers'] as bool? ?? false;
     // First, so nothing of the deletion reaches iCloud, Google & Co.
     await caldav?.disconnectAll();

@@ -689,6 +689,7 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 | `FAMIO_TRUST_PROXY` | Client-IP aus `X-Forwarded-For` (nur hinter Reverse-Proxy) |
 | `FAMIO_MAX_UPLOAD_MB` | Maximale Dateigröße (Standard 100) |
 | `FAMIO_MAX_STORAGE_MB` | Gesamtes Upload-Speicherbudget der Familie in MB (Standard 5120) |
+| `FAMIO_MAX_EXPORT_MB` | Maximale unkomprimierte Datenmenge je Export (1–16384, Standard 4096) |
 | `FAMIO_LOCATION_HISTORY_DAYS` | Standard-Aufbewahrung für präzise Standortpunkte (1–365, Standard 7; in der App übersteuerbar) |
 | `FAMIO_ALLOW_PRIVATE_CALENDAR_HOSTS` | Private/HTTP-ICS- und CalDAV-Ziele erlauben (Standard `false`; nur für bewusst lokal betriebene Kalender) |
 | `FAMIO_ALLOW_PRIVATE_PUSH_HOSTS` | Privaten ntfy-Server oder HTTP-Pushziel erlauben (Standard `false`; sonst ausschließlich HTTPS und keine privaten/Loopback-Ziele) |
