@@ -30,7 +30,7 @@ masked_locations() {
 # again and therefore subject to review.
 if matches=$(git grep -n -I -i -E '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -- . "${EXCLUDED[@]}" \
   | grep -vi -E '@example\.(com|org|net)' \
-  | grep -v -E ':[0-9]+:UID:|^app/tool/render_screens_test.dart:624:|^server/test/family_features_test.dart:807:|^server/test/ics_file_import_test.dart:75:' \
+  | grep -v -E ':[0-9]+:UID:|^app/tool/render_screens_test.dart:624:|^server/test/family_features_test.dart:830:|^server/test/ics_file_import_test.dart:75:' \
   || true); then
   if [[ -n "$matches" ]]; then
     report "Email address in a tracked file:"

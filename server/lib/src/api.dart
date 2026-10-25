@@ -152,7 +152,8 @@ class FamioApi {
   /// Short-lived, one-time approvals for signing the same account in on a
   /// second device. Only the SHA-256 digest is kept in memory; restarting the
   /// server invalidates every open pairing.
-  final _devicePairings = <String, ({String userId, DateTime expires})>{};
+  final _devicePairings =
+      <String, ({String userId, DateTime expires, bool verified})>{};
 
   final Accounts accounts;
   final RecordStore records;
@@ -586,6 +587,12 @@ class FamioApi {
   /// code, the identity provider, or a passkey with fingerprint, face or
   /// PIN on the device.
   static const _strongMethods = {'totp', 'sso', 'passkey', 'pair'};
+
+  /// A paired device is as verified as the device that approved it: a
+  /// session without second factor pairs one without it ("pair-password"),
+  /// which a two-factor policy switched on later still asks for the code.
+  static String pairingMethod({required bool verified}) =>
+      verified ? 'pair' : 'pair-password';
 
   String _randomToken() => base64Url
       .encode(List<int>.generate(24, (_) => _random.nextInt(256)))

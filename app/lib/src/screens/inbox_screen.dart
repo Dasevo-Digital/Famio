@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/shopping_history.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -249,7 +250,8 @@ class InboxScreen extends StatelessWidget {
       case _InboxAction.shopping:
         final list = await _pickShoppingList(context, engine);
         if (list == null) return;
-        engine.saveShoppingItem(newShoppingItem(engine, list.id, item.title));
+        // Ticked off already: comes back instead of a second entry.
+        engine.putOnList(newShoppingItem(engine, list.id, item.title));
       case _InboxAction.delete:
         engine.deleteInboxItem(item.id);
         return;

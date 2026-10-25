@@ -71,12 +71,14 @@ void main() {
     expect(paired, 200);
     expect((login['member'] as Map)['username'], 'mama');
     expect(login['token'], isNot(session));
+    // Approved by a session without second factor: no second factor
+    // either, so a two-factor policy switched on later still asks for it.
     final (_, twoFactor) = await call(
       'GET',
       'api/me/two-factor',
       token: login['token'] as String,
     );
-    expect(twoFactor['sessionVerified'], isTrue);
+    expect(twoFactor['sessionVerified'], isFalse);
 
     final (again, _) = await call(
       'POST',
@@ -84,6 +86,31 @@ void main() {
       body: {'secret': secret, 'device': 'Drittes Gerät'},
     );
     expect(again, 401, reason: 'the approval is consumed atomically');
+  });
+
+  test('a device is as verified as the one that approved it', () async {
+    final mama = app.accounts.members().firstWhere((m) => m.username == 'mama');
+    final verified = app.accounts.createSession(
+      mama.id,
+      device: 'Mit Code angemeldet',
+      method: 'totp',
+    );
+    final (_, pairing) = await call(
+      'POST',
+      'api/me/device-pairings',
+      token: verified,
+    );
+    final (_, login) = await call(
+      'POST',
+      'api/auth/device-pair',
+      body: {'secret': pairing['secret']},
+    );
+    final (_, twoFactor) = await call(
+      'GET',
+      'api/me/two-factor',
+      token: login['token'] as String,
+    );
+    expect(twoFactor['sessionVerified'], isTrue);
   });
 
   test('only a signed-in device can create a pairing', () async {

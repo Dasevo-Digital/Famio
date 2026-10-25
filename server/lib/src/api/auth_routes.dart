@@ -132,6 +132,10 @@ extension _AuthRoutes on FamioApi {
   /// plain secret is returned exactly once and is never persisted.
   Response _createDevicePairing(Request request) {
     final member = _auth(request);
+    final token = _bearer(request);
+    final verified = FamioApi._strongMethods.contains(
+      token == null ? null : accounts.sessionMethod(token),
+    );
     final now = DateTime.now();
     _devicePairings.removeWhere(
       (_, pairing) =>
@@ -140,7 +144,11 @@ extension _AuthRoutes on FamioApi {
     final secret = _randomToken();
     final digest = sha256.convert(utf8.encode(secret)).toString();
     final expires = now.add(_pairingLifetime);
-    _devicePairings[digest] = (userId: member.id, expires: expires);
+    _devicePairings[digest] = (
+      userId: member.id,
+      expires: expires,
+      verified: verified,
+    );
     _audit(member, 'hat eine Gerätekopplung freigegeben');
     return _json({
       'secret': secret,
@@ -178,7 +186,11 @@ extension _AuthRoutes on FamioApi {
     throttle.succeeded(address, throttleKey);
     _audit(member, 'hat ein neues Gerät gekoppelt');
     final device = body['device'];
-    return _session(member, device is String ? device : null, method: 'pair');
+    return _session(
+      member,
+      device is String ? device : null,
+      method: FamioApi.pairingMethod(verified: pairing.verified),
+    );
   }
 
   // --- passkeys --------------------------------------------------------------

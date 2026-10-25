@@ -191,6 +191,29 @@ void main() {
     });
   });
 
+  test('absences reach the family, children may not write them', () async {
+    final papa = await addMember('papa', MemberRole.adult);
+    final absence = MemberAbsence(
+      id: 'a1',
+      memberId: mama.id,
+      from: DateTime(2026, 11, 2),
+      to: DateTime(2026, 11, 6),
+      substituteId: papa.id,
+    );
+    final stored = await mama.sync([
+      _record(Collections.absences, 'a1', absence.toData()),
+    ]);
+    expect(stored.unsupported, isEmpty);
+    await papa.sync();
+    final seen = papa.seen['${Collections.absences}/a1'];
+    expect(seen, isNotNull);
+    expect(MemberAbsence.fromRecord(seen!).substituteId, papa.id);
+    final byChild = await kind.sync([
+      _record(Collections.absences, 'a2', absence.toData()),
+    ]);
+    expect(byChild.rejected, isNotEmpty);
+  });
+
   group('shopping lists', () {
     var clock = DateTime.now().millisecondsSinceEpoch;
     SyncRecord list(ShoppingList l, {bool knowsAudience = true}) => SyncRecord(

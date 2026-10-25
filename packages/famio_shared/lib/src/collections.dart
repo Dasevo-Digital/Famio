@@ -209,6 +209,7 @@ abstract final class Collections {
     sosAlerts,
     chores,
     vacations,
+    absences,
     routines,
     routineRuns,
     rewards,
