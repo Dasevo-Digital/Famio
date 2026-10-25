@@ -1295,4 +1295,6 @@ const sharedEn = <String, String>{
       "Please open Famio in the browser or in the app and continue under Settings → Delete my account.",
   "Server|Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.":
       "To confirm, you need your password and, if enabled, your two-factor code. As the last administrator, you must first hand over the administration to another member.",
+  "Server|Der Kopplungscode ist ungültig oder abgelaufen.":
+      "The pairing code is invalid or has expired.",
 };

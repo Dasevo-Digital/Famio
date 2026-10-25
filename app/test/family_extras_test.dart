@@ -114,6 +114,53 @@ void main() {
     });
   });
 
+  test('family inbox sorts newest first', () {
+    final engine = _engine('m1')
+      ..saveInboxItem(
+        InboxItem(id: 'old', title: 'Alt', createdAt: DateTime(2026, 10, 24)),
+      )
+      ..saveInboxItem(
+        InboxItem(id: 'new', title: 'Neu', createdAt: DateTime(2026, 10, 25)),
+      );
+    expect(engine.inboxItems.map((item) => item.id), ['new', 'old']);
+  });
+
+  test('absence delegates tasks only inside its date range', () {
+    final engine = _engine('m1')
+      ..saveAbsence(
+        MemberAbsence(
+          id: 'away',
+          memberId: 'k1',
+          substituteId: 'm1',
+          from: DateTime(2026, 10, 25),
+          to: DateTime(2026, 10, 27),
+        ),
+      );
+    final task = Task(
+      id: 'task',
+      title: 'Pflanzen gießen',
+      assigneeIds: const ['k1'],
+      due: DateTime(2026, 10, 26),
+    );
+
+    expect(engine.taskIsAssignedTo(task, 'm1'), isTrue);
+    expect(engine.taskIsAssignedTo(task, 'k1'), isFalse);
+    expect(
+      engine.taskIsAssignedTo(task, 'k1', on: DateTime(2026, 10, 28)),
+      isTrue,
+    );
+
+    engine.saveAbsence(
+      MemberAbsence(
+        id: 'away',
+        memberId: 'k1',
+        from: DateTime(2026, 10, 25),
+        to: DateTime(2026, 10, 27),
+      ),
+    );
+    expect(engine.effectiveTaskAssignees(task, task.due!), isEmpty);
+  });
+
   test('lists from templates and back', () {
     final engine = _engine('m1');
     final id = engine.listFromTemplate(builtInTemplates.first);

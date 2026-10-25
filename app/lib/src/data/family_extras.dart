@@ -54,6 +54,37 @@ extension FamilyExtras on SyncEngine {
 
   void deleteVacation(String id) => delete(Collections.vacations, id);
 
+  // --- personal absences ----------------------------------------------------
+
+  List<MemberAbsence> get absences =>
+      records(Collections.absences).map(MemberAbsence.fromRecord).toList()
+        ..sort((a, b) => a.from.compareTo(b.from));
+
+  MemberAbsence? absenceOf(String memberId, DateTime day) =>
+      absenceFor(absences, memberId, day);
+
+  void saveAbsence(MemberAbsence absence) =>
+      put(Collections.absences, absence.id, absence.toData());
+
+  void deleteAbsence(String id) => delete(Collections.absences, id);
+
+  /// A personal absence does not rewrite the original assignment. It only
+  /// changes who takes care of it for the covered day.
+  String? effectiveAssignee(String? memberId, DateTime day) {
+    if (memberId == null) return null;
+    final absence = absenceOf(memberId, day);
+    return absence == null ? memberId : absence.substituteId;
+  }
+
+  List<String> effectiveTaskAssignees(Task task, DateTime day) => {
+    for (final assigned in task.assigneeIds) ?effectiveAssignee(assigned, day),
+  }.toList();
+
+  bool taskIsAssignedTo(Task task, String memberId, {DateTime? on}) {
+    final day = on ?? task.due ?? task.remindAt ?? DateTime.now();
+    return effectiveTaskAssignees(task, day).contains(memberId);
+  }
+
   // --- emergency facts of adults --------------------------------------------
 
   /// What [memberId] noted for emergencies; null if nothing, and always on

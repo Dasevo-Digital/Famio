@@ -45,7 +45,7 @@ DayPreview? buildDayPreview(
       if (!t.done &&
           t.due != null &&
           t.due!.isBefore(end) &&
-          (t.assigneeIds.isEmpty || t.isAssignedTo(me)))
+          (t.assigneeIds.isEmpty || engine.taskIsAssignedTo(t, me, on: day)))
         t,
   ];
   final birthdays = upcomingBirthdays(engine, day, days: 1);

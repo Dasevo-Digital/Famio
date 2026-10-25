@@ -16,7 +16,8 @@ enum SearchKind {
   chat(FamioSection.chat),
   pantry(FamioSection.shopping),
   medication(FamioSection.health),
-  note(FamioSection.home);
+  note(FamioSection.home),
+  inbox(FamioSection.home);
 
   const SearchKind(this.section);
 
@@ -31,6 +32,7 @@ enum SearchKind {
     pantry => tr.conflictsPantry,
     medication => tr.commonMedications,
     note => tr.commonPinboard,
+    inbox => tr.inboxTitle,
   };
 
   final FamioSection section;
@@ -235,6 +237,18 @@ List<SearchHit> searchFamily(
         [n.text],
         detail: n.text.split('\n').first,
         at: n.updatedAt,
+      );
+    }
+  }
+  if (shows(SearchKind.inbox)) {
+    for (final item in engine.inboxItems) {
+      consider(
+        SearchKind.inbox,
+        item.id,
+        item.title,
+        [item.text, ...item.files.map((file) => file.name)],
+        detail: item.text.split('\n').first,
+        at: item.createdAt,
       );
     }
   }

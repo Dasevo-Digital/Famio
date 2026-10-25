@@ -16,7 +16,7 @@ import 'notes_screen.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 
-enum _Target { shopping, task, note, document, chat }
+enum _Target { inbox, shopping, task, note, document, chat }
 
 /// "Teilen an Famio": text, a link or files from another app go to the
 /// shopping list (one item per line), a new task or note, the documents
@@ -79,6 +79,14 @@ Future<void> showShareTarget(
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              if (!me.isGuest)
+                option(
+                  _Target.inbox,
+                  AppIcons.clipboardList,
+                  FamioSection.home,
+                  tr.shareToInbox,
+                  tr.shareToInboxHint,
+                ),
               if (files.isEmpty && lines.isNotEmpty)
                 option(
                   _Target.shopping,
@@ -127,6 +135,21 @@ Future<void> showShareTarget(
   final messenger = ScaffoldMessenger.of(context);
   try {
     switch (target) {
+      case _Target.inbox:
+        final refs = await _upload(context, files);
+        if (refs == null) break;
+        final (title, text) = _titleAndNotes(share);
+        engine.saveInboxItem(
+          InboxItem(
+            id: newId(),
+            title: title,
+            text: text,
+            files: refs,
+            createdAt: DateTime.now(),
+            createdBy: me.id,
+          ),
+        );
+        messenger.showSnackBar(SnackBar(content: Text(tr.inboxSaved)));
       case _Target.shopping:
         final list = await _pickList(context, engine);
         if (list == null) break;

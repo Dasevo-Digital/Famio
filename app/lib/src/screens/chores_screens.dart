@@ -24,10 +24,12 @@ part 'chores/routine_editor.dart';
 part 'chores/routines.dart';
 part 'chores/today_tab.dart';
 part 'chores/vacations.dart';
+part 'chores/absences.dart';
 
 const _collections = {
   Collections.chores,
   Collections.vacations,
+  Collections.absences,
   Collections.routines,
   Collections.routineRuns,
   Collections.rewards,
@@ -77,6 +79,14 @@ class _ChoresScreenState extends State<ChoresScreen> {
       title: tr.choresChoresPoints,
       subtitle: tr.choresHelpingOutPaysOff,
       actions: [
+        if (!AppScope.of(context).me!.isGuest)
+          BubbleButton(
+            icon: AppIcons.calendarX,
+            tooltip: tr.absenceTitle,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const _AbsencesScreen()),
+            ),
+          ),
         BubbleButton(
           icon: AppIcons.palm,
           tooltip: tr.vacationTitle,

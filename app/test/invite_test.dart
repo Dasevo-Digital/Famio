@@ -29,4 +29,24 @@ void main() {
     // Desktop tests have no camera: no scan button.
     expect(find.text('QR-Code scannen'), findsNothing);
   });
+
+  testWidgets('the sign-in screen offers pairing an existing account', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final state = AppState();
+    await state.init();
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Vorhandenes Konto koppeln'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kopplungscode'), findsOneWidget);
+    expect(find.text('Dieses Gerät koppeln'), findsOneWidget);
+    expect(find.text('Kopplungs-QR-Code scannen'), findsNothing);
+  });
 }

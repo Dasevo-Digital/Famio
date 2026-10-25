@@ -28,4 +28,26 @@ void main() {
     expect(InviteLink.parse('famio-invite:!!!'), isNull);
     expect(InviteLink.parse('famio-invite:e30'), isNull, reason: '{}');
   });
+
+  test('a device pairing QR code round-trips', () {
+    const link = DevicePairLink(
+      server: 'https://192.168.1.5:8766/',
+      secret: 'one-time-secret',
+      pin: 'AB:CD:EF',
+    );
+    final text = link.encode();
+    expect(text, startsWith('famio-pair:'));
+    final back = DevicePairLink.parse(text)!;
+    expect(
+      (back.server, back.secret, back.pin),
+      ('https://192.168.1.5:8766/', 'one-time-secret', 'AB:CD:EF'),
+    );
+  });
+
+  test('other codes are no device pairings', () {
+    expect(DevicePairLink.parse('4006381333931'), isNull);
+    expect(DevicePairLink.parse('famio-pair:!!!'), isNull);
+    expect(DevicePairLink.parse('famio-pair:e30'), isNull, reason: '{}');
+    expect(DevicePairLink.parse('famio-pair:W10'), isNull, reason: '[]');
+  });
 }

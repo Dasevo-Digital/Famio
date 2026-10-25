@@ -2,6 +2,8 @@ part of '../api.dart';
 
 /// Setup, login, two-factor and single sign-on.
 extension _AuthRoutes on FamioApi {
+  static const _pairingLifetime = Duration(minutes: 5);
+
   Future<Response> _setup(Request request) async {
     if (accounts.hasUsers) {
       throw ApiException(
@@ -124,6 +126,59 @@ extension _AuthRoutes on FamioApi {
       throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
     }
     return _session(member, challenge.device, method: 'totp');
+  }
+
+  /// The signed-in device approves one new device of the same account. The
+  /// plain secret is returned exactly once and is never persisted.
+  Response _createDevicePairing(Request request) {
+    final member = _auth(request);
+    final now = DateTime.now();
+    _devicePairings.removeWhere(
+      (_, pairing) =>
+          pairing.expires.isBefore(now) || pairing.userId == member.id,
+    );
+    final secret = _randomToken();
+    final digest = sha256.convert(utf8.encode(secret)).toString();
+    final expires = now.add(_pairingLifetime);
+    _devicePairings[digest] = (userId: member.id, expires: expires);
+    _audit(member, 'hat eine Gerätekopplung freigegeben');
+    return _json({
+      'secret': secret,
+      'expiresAt': expires.toUtc().toIso8601String(),
+    }, status: 201);
+  }
+
+  /// Consumes a pairing approval atomically and creates a normal session for
+  /// the already existing member. A used secret cannot be retried.
+  Future<Response> _redeemDevicePairing(Request request) async {
+    final body = await _body(request);
+    final address = clientAddress.of(request);
+    const throttleKey = '#device-pair';
+    _checkThrottle(address, throttleKey);
+    final secret = switch (body['secret']) {
+      final String value => value.trim(),
+      _ => '',
+    };
+    final digest = sha256.convert(utf8.encode(secret)).toString();
+    final pairing = _devicePairings.remove(digest);
+    if (secret.isEmpty ||
+        pairing == null ||
+        pairing.expires.isBefore(DateTime.now())) {
+      throttle.failed(address, throttleKey);
+      throw ApiException(
+        401,
+        'invalid_pairing',
+        t('Der Kopplungscode ist ungültig oder abgelaufen.'),
+      );
+    }
+    final member = accounts.byId(pairing.userId);
+    if (member == null) {
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
+    }
+    throttle.succeeded(address, throttleKey);
+    _audit(member, 'hat ein neues Gerät gekoppelt');
+    final device = body['device'];
+    return _session(member, device is String ? device : null, method: 'pair');
   }
 
   // --- passkeys --------------------------------------------------------------

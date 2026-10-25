@@ -49,6 +49,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
+| Familien-Eingang für noch unsortierte Texte, Links, Fotos und Scans; später als Aufgabe, Termin, Notiz, Dokument oder Einkauf einsortieren | ✅ |
 | Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
 | App-Updates über den eigenen Server (Android, Windows, Linux; signiert) | ✅ |
 | Aufgaben (fällig, eine oder mehrere zuständige Personen, wer sie sieht, Erinnerung, Wiederholung, Checkliste, Fotos und Dateien wie PDFs) | ✅ |
@@ -70,9 +71,10 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
 | PhotoVault: „Heute vor einem Jahr“ und Wandanzeige mit Fotos aus PhotoVault, Chat-Fotos als Beiträge an einen Link, Geburtstage aus dem Stammbaum (nur was noch nirgends steht) | ✅ |
-| Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto; Urlaubsmodus (Ämter, Routinen und Abfall-Erinnerungen ruhen, auf Wunsch auch das Taschengeld) | ✅ |
+| Ämter mit Punkten und Rotation, Belohnungen, Taschengeld-Konto; Urlaubsmodus für alle sowie persönliche Abwesenheiten mit optionaler Vertretung für Aufgaben und Ämter | ✅ |
 | Routinen für Kinder (Morgen/Abend-Checklisten mit Bildern) | ✅ |
 | Rollen: Erwachsen, Kind, Gast (Großeltern/Babysitter mit eingeschränkter Sicht) | ✅ |
+| Ein bestehendes Konto über einen einmaligen, fünf Minuten gültigen QR-Code mit einem neuen Gerät koppeln | ✅ |
 | Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), Web Push für die Web-App, alternativ über ntfy | ✅ |
 | Wandanzeige fürs Küchen-Tablet | ✅ |
 | Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
@@ -81,7 +83,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Wochenvorschau (sonntags 18 Uhr) und auf Wunsch ein Tagesüberblick am Morgen (Termine, Fahrten, fällige Aufgaben, Abfall, Geburtstage, Essen, Wetter) als Mitteilung | ✅ |
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Web-App im Browser und in der Home-Assistant-Seitenleiste (Add-on als Server oder nur als Client) | ✅ |
-| „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat; am Computer Dateien ins Fenster ziehen | ✅ Android, macOS, Windows, Linux (iOS: braucht bezahlten Apple-Entwickler-Account) |
+| „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps in den Familien-Eingang, auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat; am Computer Dateien ins Fenster ziehen | ✅ Android, macOS, Windows, Linux (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 | Datenexport als ZIP (eigene Daten bzw. ganze Familie) | ✅ |
 
@@ -531,7 +533,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 |---|---|
 | Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
 | Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht), Passkeys (WebAuthn) und Single Sign-On per OpenID Connect |
-| Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung |
+| Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; ein neues Gerät kann einmalig per fünf Minuten gültigem QR-Code gekoppelt werden; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten holt der Server für sie (ohne private Ziele, auch nicht über Weiterleitungen) |
 | Server | Datenbank und Dateien verschlüsselt (SQLite3MultipleCiphers, ChaCha20-Poly1305), Schlüssel getrennt von den Daten (`FAMIO_KEY_FILE`); nur für den Famio-Benutzer lesbar (umask 077), redigiertes Request-Log, Audit-Log, Größenlimits |

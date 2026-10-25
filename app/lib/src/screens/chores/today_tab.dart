@@ -143,13 +143,17 @@ class _PersonToday extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final routines = engine.routinesFor(person.id, day);
+    final absence = engine.absenceOf(person.id, day);
+    final routines = absence == null
+        ? engine.routinesFor(person.id, day)
+        : <Routine>[];
     final chores = [
       for (final ch in engine.chores)
         if (engine.choreDue(ch, day) &&
             (ch.assigneeOn(day) == person.id ||
                 (ch.assigneeOn(day) == null &&
-                    ch.memberIds.contains(person.id))))
+                    ch.memberIds.contains(person.id))) &&
+            (absence == null || absence.substituteId != null))
           ch,
     ];
     return Column(
@@ -162,9 +166,26 @@ class _PersonToday extends StatelessWidget {
               MemberAvatar(person, radius: 16),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  person.displayName,
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      person.displayName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    if (absence != null)
+                      Text(
+                        absence.substituteId == null
+                            ? tr.absenceAway
+                            : tr.absenceRepresentedBy(
+                                engine
+                                        .member(absence.substituteId!)
+                                        ?.displayName ??
+                                    tr.absenceUnknownMember,
+                              ),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                  ],
                 ),
               ),
               _PointsChip(engine.pointBalance(person.id)),
@@ -196,7 +217,7 @@ class _PersonToday extends StatelessWidget {
               chore: chore,
               engine: engine,
               day: day,
-              forMember: person.id,
+              forMember: engine.effectiveAssignee(person.id, day),
             ),
           ),
       ],

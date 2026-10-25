@@ -17,13 +17,14 @@ import 'event_editor.dart';
 import 'home_shell.dart';
 import 'deferred_sections.dart';
 import 'notes_screen.dart';
+import 'inbox_screen.dart';
 import 'pantry_screens.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 import '../l10n.dart';
 
 /// Searches everything on this device: events, tasks, shopping, recipes,
-/// documents, contacts, chat, pantry and medications.
+/// documents, contacts, chat, pantry, medications and the family inbox.
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
 
@@ -156,6 +157,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 ChatScreen(chatId: chatId, title: _chatTitle(engine, chatId)),
           ),
         );
+      case SearchKind.inbox:
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen()));
     }
     if (mounted) _searchChanged(_query.text, immediately: true);
   }

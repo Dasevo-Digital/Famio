@@ -7,6 +7,7 @@ import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../l10n.dart';
 
 /// One row of the "Famio heute" widget: [kind] picks the section color
@@ -44,7 +45,8 @@ typedef WidgetLine = ({String kind, String lead, String text});
       .where(
         (t) =>
             !t.done &&
-            (t.assigneeIds.isEmpty || t.isAssignedTo(engine.memberId)) &&
+            (t.assigneeIds.isEmpty ||
+                engine.taskIsAssignedTo(t, engine.memberId, on: today)) &&
             t.due != null &&
             t.due!.isBefore(tomorrow),
       )

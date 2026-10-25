@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:famio_shared/famio_shared.dart';
+import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
@@ -148,6 +149,11 @@ class FamioApi {
         ({String userId, String? device, DateTime expires, int tries})
       >{};
 
+  /// Short-lived, one-time approvals for signing the same account in on a
+  /// second device. Only the SHA-256 digest is kept in memory; restarting the
+  /// server invalidates every open pairing.
+  final _devicePairings = <String, ({String userId, DateTime expires})>{};
+
   final Accounts accounts;
   final RecordStore records;
   final ChangeHub hub;
@@ -261,6 +267,7 @@ class FamioApi {
       ..post('/api/auth/setup', _setup)
       ..post('/api/auth/login', _login)
       ..post('/api/auth/login/two-factor', _loginTwoFactor)
+      ..post('/api/auth/device-pair', _redeemDevicePairing)
       ..post('/api/auth/passkey/options', _passkeyLoginOptions)
       ..post('/api/auth/passkey', _passkeyLogin)
       ..get('/api/me/passkeys', _myPasskeys)
@@ -285,6 +292,7 @@ class FamioApi {
       ..post('/api/me/export', _exportMine)
       ..post('/api/admin/export', _exportFamily)
       ..get('/api/me/sessions', _mySessions)
+      ..post('/api/me/device-pairings', _createDevicePairing)
       ..delete('/api/me/sessions/<sid>', _deleteMySession)
       ..get('/api/me/app-passwords', _appPasswords)
       ..post('/api/me/app-passwords', _createAppPassword)
@@ -577,7 +585,7 @@ class FamioApi {
   /// Sign-ins that already prove a second factor: the authenticator
   /// code, the identity provider, or a passkey with fingerprint, face or
   /// PIN on the device.
-  static const _strongMethods = {'totp', 'sso', 'passkey'};
+  static const _strongMethods = {'totp', 'sso', 'passkey', 'pair'};
 
   String _randomToken() => base64Url
       .encode(List<int>.generate(24, (_) => _random.nextInt(256)))

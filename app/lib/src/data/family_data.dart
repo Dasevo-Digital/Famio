@@ -6,6 +6,19 @@ import '../l10n.dart';
 
 /// Typed access to the generic records, one section per module.
 extension FamilyData on SyncEngine {
+  // --- family inbox ---------------------------------------------------------
+
+  List<InboxItem> get inboxItems =>
+      records(Collections.inbox).map(InboxItem.fromRecord).toList()..sort(
+        (a, b) =>
+            (b.createdAt ?? DateTime(0)).compareTo(a.createdAt ?? DateTime(0)),
+      );
+
+  void saveInboxItem(InboxItem item) =>
+      put(Collections.inbox, item.id, item.toData());
+
+  void deleteInboxItem(String id) => delete(Collections.inbox, id);
+
   // --- tasks ----------------------------------------------------------------
 
   List<Task> get tasks =>

@@ -5,6 +5,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
@@ -91,7 +92,7 @@ class _TasksScreenState extends State<TasksScreen> {
         onPressed: () => showTaskEditor(context),
       ),
       body: DataBuilder(
-        collections: const {Collections.tasks, 'members'},
+        collections: const {Collections.tasks, Collections.absences, 'members'},
         builder: (context, engine) {
           final sections = _sections(engine);
           return Column(
@@ -182,7 +183,8 @@ class _TasksScreenState extends State<TasksScreen> {
     final open = all.where(
       (t) =>
           !t.done &&
-          (_filter != _Filter.mine || t.isAssignedTo(engine.memberId)),
+          (_filter != _Filter.mine ||
+              engine.taskIsAssignedTo(t, engine.memberId)),
     );
     final today = DateUtils.dateOnly(DateTime.now());
     final overdue = <Task>[],

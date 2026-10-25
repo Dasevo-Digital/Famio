@@ -595,6 +595,24 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  /// Signs this device into the same account as the device that approved the
+  /// short-lived pairing.
+  Future<void> pairDevice(
+    ResolvedServer server, {
+    required String secret,
+  }) async {
+    final result = await _client(
+      server.url,
+      server.pin,
+    ).redeemDevicePairing(secret: secret, device: deviceName);
+    await _startSession(
+      server.url,
+      result.token,
+      result.member,
+      pin: server.pin,
+    );
+  }
+
   Future<void> setupServer(
     ResolvedServer server, {
     required String displayName,

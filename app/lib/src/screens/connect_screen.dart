@@ -4,6 +4,7 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'invite_screens.dart';
+import 'device_pairing_screen.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
@@ -370,6 +371,18 @@ class _ConnectScreenState extends State<ConnectScreen> {
                                     MaterialPageRoute<void>(
                                       builder: (_) =>
                                           const JoinWithInviteScreen(),
+                                    ),
+                                  ),
+                          ),
+                          TextButton.icon(
+                            icon: const Icon(AppIcons.qrCode, size: 18),
+                            label: Text(tr.pairJoinTitle),
+                            onPressed: _busy
+                                ? null
+                                : () => Navigator.of(context).push(
+                                    MaterialPageRoute<void>(
+                                      builder: (_) =>
+                                          const JoinPairedDeviceScreen(),
                                     ),
                                   ),
                           ),

@@ -31,6 +31,9 @@ abstract final class Collections {
   static const chatReads = 'chat_reads';
   static const documents = 'documents';
 
+  /// Unsorted texts, links and uploads the family files later.
+  static const inbox = 'inbox';
+
   /// Documents of a connected PaperBuddy archive; written by the server
   /// only (see the PaperBuddy connection in the server administration).
   static const externalDocuments = 'external_documents';
@@ -87,6 +90,9 @@ abstract final class Collections {
 
   /// Family holidays: chores, routines and bin reminders rest (adults only).
   static const vacations = 'vacations';
+
+  /// One member is away for a period; an optional member stands in.
+  static const absences = 'absences';
 
   /// What children save their pocket money for (children set their own).
   static const savingsGoals = 'savings_goals';
@@ -168,9 +174,11 @@ abstract final class Collections {
     timetables,
     budgetEntries,
     documents,
+    inbox,
     medications,
     chores,
     vacations,
+    absences,
     routines,
     rewards,
     listTemplates,
@@ -216,6 +224,7 @@ abstract final class Collections {
     chatMessages,
     chatReads,
     documents,
+    inbox,
     children,
     childEntries,
     childLogs,
@@ -288,6 +297,7 @@ abstract final class Collections {
     locationSettings,
     chores,
     vacations,
+    absences,
     rewards,
     allowances,
     moneyEntries,

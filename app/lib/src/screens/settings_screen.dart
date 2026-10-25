@@ -38,6 +38,7 @@ import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import '../widgets/section_tips.dart';
 import 'member_emergency_screen.dart';
+import 'device_pairing_screen.dart';
 import '../widgets/famio_tour.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -614,6 +615,17 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
       section: FamioSection.settings,
       title: tr.settingsMyDevices,
       subtitle: tr.settingsMyDevicesTitleSubtitle,
+      actions: [
+        BubbleButton(
+          icon: AppIcons.qrCode,
+          tooltip: tr.pairTitle,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const DevicePairingScreen(),
+            ),
+          ),
+        ),
+      ],
       body: FutureBuilder(
         future: _sessions,
         builder: (context, snapshot) => ApiFutureView(

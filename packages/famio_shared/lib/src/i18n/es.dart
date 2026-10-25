@@ -1337,4 +1337,6 @@ const sharedEs = <String, String>{
       "Abre Famio en el navegador o en la app y continúa en Ajustes → Eliminar mi cuenta.",
   "Server|Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.":
       "Para confirmar necesitas tu contraseña y, si está activada, tu código de dos pasos. Si eres el último administrador, primero tienes que traspasar la administración a otro miembro.",
+  "Server|Der Kopplungscode ist ungültig oder abgelaufen.":
+      "El código de vinculación no es válido o ha caducado.",
 };

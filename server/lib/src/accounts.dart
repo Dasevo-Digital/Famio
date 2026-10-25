@@ -486,8 +486,8 @@ class Accounts {
     return _member(rows.first);
   }
 
-  /// How the session of [token] signed in (password, totp, sso or null
-  /// for sessions of older versions).
+  /// How the session of [token] signed in (password, totp, sso, passkey,
+  /// device pairing or null for sessions of older versions).
   String? sessionMethod(String token) =>
       _db.select('SELECT method FROM sessions WHERE token_hash = ?', [
             _tokenHash(token),

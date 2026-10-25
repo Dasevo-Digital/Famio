@@ -510,6 +510,16 @@ class FamioApiClient {
   Future<void> deleteMySession(String sessionId) =>
       _send('DELETE', 'api/me/sessions/$sessionId');
 
+  /// Approves one new device of the current account for five minutes.
+  Future<DevicePairing> createDevicePairing() async =>
+      DevicePairing.fromJson(await _send('POST', 'api/me/device-pairings'));
+
+  /// Signs in with a one-time approval created on another signed-in device.
+  Future<LoginResult> redeemDevicePairing({
+    required String secret,
+    String? device,
+  }) => _login('api/auth/device-pair', {'secret': secret, 'device': device});
+
   // --- server administration (admins only) ---------------------------------
 
   Future<ServerOverview> adminOverview() async =>
@@ -1667,6 +1677,67 @@ class InviteLink {
       if (server is! String || code is! String) return null;
       return InviteLink(server: server, code: code, pin: json['p'] as String?);
     } on FormatException {
+      return null;
+    }
+  }
+}
+
+/// A short-lived approval returned only to the already signed-in device.
+class DevicePairing {
+  const DevicePairing({required this.secret, required this.expiresAt});
+
+  factory DevicePairing.fromJson(Map<String, Object?> json) => DevicePairing(
+    secret: json['secret'] as String,
+    expiresAt: DateTime.parse(json['expiresAt'] as String).toLocal(),
+  );
+
+  final String secret;
+  final DateTime expiresAt;
+}
+
+/// What a device-pairing QR code holds. The certificate pin is the one the
+/// already signed-in device trusts, so a scanned code cannot be redirected.
+class DevicePairLink {
+  const DevicePairLink({required this.server, required this.secret, this.pin});
+
+  static const _prefix = 'famio-pair:';
+
+  final String server;
+  final String secret;
+  final String? pin;
+
+  String encode() =>
+      _prefix +
+      base64Url
+          .encode(
+            utf8.encode(jsonEncode({'s': server, 'k': secret, 'p': ?pin})),
+          )
+          .replaceAll('=', '');
+
+  static DevicePairLink? parse(String text) {
+    final value = text.trim();
+    if (!value.startsWith(_prefix)) return null;
+    try {
+      var payload = value.substring(_prefix.length);
+      payload = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
+      final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)));
+      if (decoded is! Map) return null;
+      final json = decoded;
+      final server = json['s'];
+      final secret = json['k'];
+      final pin = json['p'];
+      if (server is! String ||
+          secret is! String ||
+          secret.isEmpty ||
+          pin != null && pin is! String) {
+        return null;
+      }
+      return DevicePairLink(
+        server: server,
+        secret: secret,
+        pin: pin as String?,
+      );
+    } on Object {
       return null;
     }
   }

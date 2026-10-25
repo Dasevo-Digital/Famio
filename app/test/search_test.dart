@@ -46,6 +46,14 @@ void main() {
           title: 'Pfannkuchen',
           ingredients: [Ingredient(name: 'Eier')],
         ),
+      )
+      ..saveInboxItem(
+        InboxItem(
+          id: 'inbox-1',
+          title: 'Brief ablegen',
+          text: 'Versicherung bis Freitag',
+          createdAt: DateTime(2026, 10, 25),
+        ),
       );
   });
 
@@ -89,5 +97,10 @@ void main() {
       sections: all.difference({FamioSection.shopping}),
     );
     expect(hits.map((h) => h.kind), isNot(contains(SearchKind.shopping)));
+  });
+
+  test('family inbox searches text kept for later', () {
+    final hit = searchFamily(engine, 'versicherung', sections: all).single;
+    expect((hit.kind, hit.id), (SearchKind.inbox, 'inbox-1'));
   });
 }

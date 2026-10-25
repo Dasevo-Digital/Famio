@@ -24,6 +24,7 @@ import 'settings_screen.dart';
 import '../weather/weather_tile.dart';
 import 'search_screen.dart';
 import 'notes_screen.dart';
+import 'inbox_screen.dart';
 import 'wishes_screen.dart';
 import 'waste_screen.dart';
 import '../data/waste.dart';
@@ -116,12 +117,14 @@ class HomeScreen extends StatelessWidget {
           Collections.places,
           Collections.memberLocations,
           Collections.chores,
+          Collections.absences,
           Collections.routines,
           Collections.routineRuns,
           Collections.pointEntries,
           Collections.medications,
           Collections.medicationIntakes,
           Collections.notes,
+          Collections.inbox,
           Collections.wishes,
           Collections.wasteSettings,
           Collections.deadlines,
@@ -142,6 +145,7 @@ class HomeScreen extends StatelessWidget {
                 !memories.isEmpty &&
                 AppScope.of(context).memoriesHiddenOn != dayKey(now);
             final tiles = [
+              if (!guest) _InboxTile(engine: engine),
               if (on(FamioSection.calendar)) _TodayTile(engine: engine),
               WeatherTile(engine: engine),
               if (showMemories) _MemoriesTile(memories: memories),
@@ -234,6 +238,32 @@ class HomeScreen extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _InboxTile extends StatelessWidget {
+  const _InboxTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = engine.inboxItems;
+    return _Tile(
+      section: FamioSection.home,
+      title: tr.inboxTitle,
+      icon: AppIcons.clipboardList,
+      badge: items.isEmpty ? null : '${items.length}',
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen())),
+      child: Column(
+        children: [
+          if (items.isEmpty) _Line(tr.inboxEmptyShort, dim: true),
+          for (final item in items.take(3)) _Line(item.title),
+        ],
       ),
     );
   }
@@ -774,8 +804,8 @@ class _TasksTile extends StatelessWidget {
       ..sort((a, b) {
         // Mine first, then by due date.
         final mine =
-            (b.isAssignedTo(engine.memberId) ? 1 : 0) -
-            (a.isAssignedTo(engine.memberId) ? 1 : 0);
+            (engine.taskIsAssignedTo(b, engine.memberId) ? 1 : 0) -
+            (engine.taskIsAssignedTo(a, engine.memberId) ? 1 : 0);
         if (mine != 0) return mine;
         return (a.due ?? DateTime(9999)).compareTo(b.due ?? DateTime(9999));
       });

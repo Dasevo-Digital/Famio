@@ -221,7 +221,16 @@ class ReminderService {
     final due = [
       ...upcomingReminders(
         events: engine.events,
-        tasks: engine.tasks,
+        tasks: [
+          for (final task in engine.tasks)
+            if (engine.effectiveTaskAssignees(
+                  task,
+                  task.remindAt ?? task.due ?? now,
+                )
+                case final assignees
+                when task.assigneeIds.isEmpty || assignees.isNotEmpty)
+              task.copyWith(assigneeIds: assignees),
+        ],
         memberId: engine.memberId,
         from: now,
         to: now.add(_window),
@@ -329,6 +338,7 @@ class ReminderService {
     Collections.shoppingLists,
     Collections.shoppingItems,
     Collections.tasks,
+    Collections.absences,
     Collections.children,
     Collections.childEntries,
     Collections.childLogs,

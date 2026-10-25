@@ -14,6 +14,8 @@ class _StatusView extends StatelessWidget {
     Collections.externalEvents: tr.adminImportedEvents,
     Collections.chatMessages: tr.adminChatMessages,
     Collections.documents: tr.sectionDocuments,
+    Collections.inbox: tr.inboxTitle,
+    Collections.absences: tr.absenceTitle,
     Collections.children: tr.sectionKids,
     Collections.childEntries: tr.adminKidsEntries,
   };

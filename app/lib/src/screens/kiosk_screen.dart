@@ -777,7 +777,7 @@ class _PeopleBoard extends StatelessWidget {
           ],
           tasks: [
             for (final t in openTasks)
-              if (t.isAssignedTo(m.id)) t,
+              if (engine.taskIsAssignedTo(t, m.id)) t,
           ],
           extra: [
             if (on(FamioSection.chores)) ...[
