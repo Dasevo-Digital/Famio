@@ -396,7 +396,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       )
                     : ListView.builder(
                         reverse: true,
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        // The newest message stays above a section's tip.
+                        padding: EdgeInsets.fromLTRB(
+                          16,
+                          8,
+                          16,
+                          8 + TipInset.of(context),
+                        ),
                         itemCount: messages.length,
                         itemBuilder: (context, i) {
                           final index = messages.length - 1 - i;

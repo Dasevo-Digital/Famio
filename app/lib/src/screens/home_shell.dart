@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
@@ -120,6 +121,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   /// The area whose tip is shown (first visit), or null.
   FamioSection? _tip;
+
+  /// How tall the shown tip is: the pages keep that much free at the bottom.
+  double _tipHeight = 0;
 
   /// Sections for the member's role, updated with the member list.
   var _sections = FamioSection.values;
@@ -346,7 +350,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           Expanded(
             child: Stack(
               children: [
-                Positioned.fill(child: pages),
+                // A tip sits above the bottom of the page: lists keep that
+                // space free below their last entry, so it hides nothing
+                // (in the chat it covered the newest message).
+                Positioned.fill(
+                  child: TipInset(
+                    height: tip == null ? 0 : _tipHeight + 12,
+                    child: pages,
+                  ),
+                ),
                 Positioned(
                   left: 16,
                   right: 16,
@@ -362,11 +374,18 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                             : const Duration(milliseconds: 220),
                         child: tip == null
                             ? const SizedBox.shrink()
-                            : SectionTipCard(
+                            : _ReportHeight(
                                 key: ValueKey(tip),
-                                section: tip,
-                                onGotIt: () => _closeTip(noMore: false),
-                                onNoMore: () => _closeTip(noMore: true),
+                                onHeight: (h) {
+                                  if (mounted && h != _tipHeight) {
+                                    setState(() => _tipHeight = h);
+                                  }
+                                },
+                                child: SectionTipCard(
+                                  section: tip,
+                                  onGotIt: () => _closeTip(noMore: false),
+                                  onNoMore: () => _closeTip(noMore: true),
+                                ),
                               ),
                       ),
                     ),
@@ -928,5 +947,37 @@ class _CertificateBanner extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// Tells [onHeight] its child's height after each layout that changed it.
+class _ReportHeight extends SingleChildRenderObjectWidget {
+  const _ReportHeight({super.key, required this.onHeight, super.child});
+
+  final ValueChanged<double> onHeight;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderReportHeight(onHeight);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderReportHeight r) =>
+      r.onHeight = onHeight;
+}
+
+class _RenderReportHeight extends RenderProxyBox {
+  _RenderReportHeight(this.onHeight);
+
+  ValueChanged<double> onHeight;
+  double? _reported;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    final height = size.height;
+    if (height == _reported) return;
+    _reported = height;
+    // Not during layout: the shell rebuilds with it.
+    WidgetsBinding.instance.addPostFrameCallback((_) => onHeight(height));
   }
 }

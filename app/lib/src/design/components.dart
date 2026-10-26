@@ -558,6 +558,22 @@ double floatingNavigationClearance(BuildContext context) =>
 /// Bottom padding so the last list item is not hidden behind the
 /// floating navigation bar and add button.
 double listBottomPadding(BuildContext context) =>
-    MediaQuery.sizeOf(context).width < 720
-    ? 192 + MediaQuery.viewPaddingOf(context).bottom
-    : 100;
+    (MediaQuery.sizeOf(context).width < 720
+        ? 192 + MediaQuery.viewPaddingOf(context).bottom
+        : 100) +
+    TipInset.of(context);
+
+/// Space a section's tip takes above the bottom of the page (see HomeShell):
+/// lists add it below their last entry. The add button stays where it is,
+/// between the navigation bar and the tip.
+class TipInset extends InheritedWidget {
+  const TipInset({super.key, required this.height, required super.child});
+
+  final double height;
+
+  static double of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<TipInset>()?.height ?? 0;
+
+  @override
+  bool updateShouldNotify(TipInset old) => old.height != height;
+}

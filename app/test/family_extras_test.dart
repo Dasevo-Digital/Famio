@@ -388,6 +388,19 @@ void main() {
     expect(find.byTooltip('Wandanzeige'), findsOneWidget);
   });
 
+  testWidgets('a tip leaves the bottom of the page free', (tester) async {
+    await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Einkauf').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Verstanden'), findsOneWidget);
+    final page = tester.element(find.text('Was brauchen wir?'));
+    expect(TipInset.of(page), greaterThan(60));
+    await tester.tap(find.text('Verstanden'));
+    await tester.pumpAndSettle();
+    expect(TipInset.of(tester.element(find.text('Was brauchen wir?'))), 0);
+  });
+
   testWidgets('light or dark is chosen per device', (tester) async {
     await open(tester, memberId: 'm1');
     await tester.pumpAndSettle();
