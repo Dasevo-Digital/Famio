@@ -37,7 +37,11 @@ class FamilyDocument {
     this.visibleTo,
     this.createdAt,
     this.source,
+    this.content = '',
   });
+
+  /// At most this much recognised text is kept per document.
+  static const maxContent = 20000;
 
   factory FamilyDocument.fromRecord(SyncRecord r) => FamilyDocument(
     id: r.id,
@@ -56,6 +60,7 @@ class FamilyDocument {
     visibleTo: r.visibleTo,
     createdAt: _date(r.data['createdAt']),
     source: r.data['source'] as String?,
+    content: r.data['content'] as String? ?? '',
   );
 
   final String id;
@@ -78,6 +83,10 @@ class FamilyDocument {
   /// edited there, read-only here.
   final String? source;
 
+  /// The file's text, recognised on the device when it was added (PDF text
+  /// layer or text recognition), so documents are found by what they say.
+  final String content;
+
   bool get fromArchive => source != null;
 
   Map<String, Object?> toData() => {
@@ -89,6 +98,10 @@ class FamilyDocument {
     'expiresAt': expiresAt == null ? null : _day(expiresAt!),
     'createdAt': createdAt?.toUtc().toIso8601String(),
     'source': ?source,
+    if (content.isNotEmpty)
+      'content': content.length > maxContent
+          ? content.substring(0, maxContent)
+          : content,
     SyncRecord.visibilityKey: visibleTo,
   };
 }

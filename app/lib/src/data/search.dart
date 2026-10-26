@@ -89,6 +89,33 @@ String foldForSearch(String s) {
       .replaceAll('ue', 'u');
 }
 
+/// About 60 characters of [text] around the first of [words] (folded
+/// like [foldForSearch]), with … where cut; null if it is not in there.
+String? textSnippet(String text, List<String> words) {
+  if (text.isEmpty || words.isEmpty) return null;
+  final flat = text.replaceAll(RegExp(r'\s+'), ' ');
+  final at = foldForSearch(flat).indexOf(words.first);
+  if (at < 0) return null;
+  // Folding changes lengths (ß, ae …): the shortest start of the text that
+  // folds to at least [at] characters ends where the word begins.
+  var low = 0, high = flat.length;
+  while (low < high) {
+    final mid = (low + high) ~/ 2;
+    if (foldForSearch(flat.substring(0, mid)).length < at) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  final start = (low - 25).clamp(0, flat.length);
+  final end = (start + 60).clamp(0, flat.length);
+  return [
+    if (start > 0) '…',
+    flat.substring(start, end).trim(),
+    if (end < flat.length) '…',
+  ].join();
+}
+
 /// Everything on this device that matches all words of [query], best and
 /// newest first. Only what the member sees in the app ([sections]); nothing
 /// leaves the device.
@@ -188,10 +215,24 @@ List<SearchHit> searchFamily(
   }
   if (shows(SearchKind.document)) {
     for (final d in engine.documents) {
-      consider(SearchKind.document, d.id, d.title, [
-        d.notes,
-        d.category.label,
-      ], detail: d.category.label);
+      // Found only in its text: where, so one sees why.
+      final snippet = textSnippet(d.content, words);
+      consider(
+        SearchKind.document,
+        d.id,
+        d.title,
+        [d.notes, d.category.label, d.content],
+        detail: [
+          d.category.label,
+          if (snippet != null &&
+              !words.every(
+                foldForSearch(
+                  '${d.title} ${d.notes} ${d.category.label}',
+                ).contains,
+              ))
+            snippet,
+        ].join(' · '),
+      );
     }
   }
   if (shows(SearchKind.contact)) {

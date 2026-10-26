@@ -3560,6 +3560,17 @@
   "docsOnlyMe": "Nur ich",
   "docsMe": "Ich und …",
   "docsEGIdNumber": "z. B. Ausweisnummer, Ansprechpartner …",
+  "docsReadingText": "Text wird erkannt …",
+  "docsTextFound": "Text erkannt ({count} Zeichen): das Dokument wird auch über seinen Inhalt gefunden.",
+  "@docsTextFound": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "docsRecognizeText": "Text erkennen (für die Suche)",
+  "docsNoTextFound": "Kein Text gefunden.",
   "wishesWhatYouWish": "Was du dir wünschst",
   "wishesWhatNameWishes": "Was sich {name} wünscht",
   "@wishesWhatNameWishes": {

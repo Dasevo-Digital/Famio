@@ -103,4 +103,37 @@ void main() {
     final hit = searchFamily(engine, 'versicherung', sections: all).single;
     expect((hit.kind, hit.id), (SearchKind.inbox, 'inbox-1'));
   });
+
+  test('documents are found by their recognised text', () {
+    engine.saveDocument(
+      FamilyDocument(
+        id: 'd1',
+        title: 'Brief Krankenkasse',
+        category: DocumentCategory.health,
+        file: null,
+        content:
+            'Sehr geehrte Frau Muster,\n\nanbei Ihre neue Versicherten-'
+            'karte. Die Beitragsrückerstattung für 2025 beträgt 120 Euro und '
+            'wird im Mai überwiesen. Mit freundlichen Grüßen',
+      ),
+    );
+    final hit = searchFamily(
+      engine,
+      'beitragsruckerstattung',
+      sections: all,
+    ).single;
+    expect(hit.id, 'd1');
+    expect(
+      hit.detail,
+      'Gesundheit · …Versicherten-karte. Die Beitragsrückerstattung für '
+      '2025 bet…',
+    );
+    // Found by its title: no snippet needed.
+    expect(
+      searchFamily(engine, 'krankenkasse', sections: all).single.detail,
+      'Gesundheit',
+    );
+    expect(textSnippet('Größe: Straße 5', ['strasse']), 'Größe: Straße 5');
+    expect(textSnippet('kurz', ['lang']), isNull);
+  });
 }

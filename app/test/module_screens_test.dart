@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
@@ -19,9 +21,12 @@ import 'package:famio/src/screens/timetable_view.dart';
 import 'package:famio/src/screens/wishes_screen.dart';
 import 'package:famio/src/widgets/data_builder.dart';
 import 'package:famio/src/widgets/files.dart';
+import 'package:famio/src/data/ocr.dart';
+import 'package:famio/src/screens/documents_screen.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -1075,6 +1080,53 @@ void main() {
       await tester.tap(find.text('Einkauf').first);
       await tester.pumpAndSettle();
       expect(find.byTooltip('Mit anderen Apps verbinden'), findsNothing);
+    });
+  });
+
+  group('documents', () {
+    testWidgets('a new PDF is read for the search', (tester) async {
+      await open(tester);
+      Ocr.debugAvailable = true;
+      addTearDown(() => Ocr.debugAvailable = null);
+      const channel = MethodChannel('famio/ocr');
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final asked = <String>[];
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        asked.add(call.method);
+        return 'Ihre Versichertennummer lautet A123456789.';
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+
+      final context = tester.element(find.byType(Scaffold).first);
+      unawaited(
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => const DocumentEditor(
+              picked: PickedFile(
+                [37, 80, 68, 70],
+                'brief.pdf',
+                'application/pdf',
+              ),
+            ),
+          ),
+        ),
+      );
+      // The first frame of a new page is offstage.
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Text wird erkannt …'), findsOneWidget);
+      // The file is written for the recognition: that takes real time.
+      final reading = find.text('Text wird erkannt …');
+      for (var i = 0; i < 100 && reading.evaluate().isNotEmpty; i++) {
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pump();
+      }
+      await tester.pumpAndSettle();
+      expect(asked, ['pdfText']);
+      expect(find.textContaining('Text erkannt (42 Zeichen)'), findsOneWidget);
     });
   });
 

@@ -20,7 +20,12 @@ class Ocr {
   static const _channel = MethodChannel('famio/ocr');
 
   static bool get available =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+      debugAvailable ??
+      (!kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS));
+
+  /// Tests on any machine pretend to have (or not have) the recognition.
+  @visibleForTesting
+  static bool? debugAvailable;
 
   /// Android: where the recognition models come from, `play` (Google Play
   /// services) or `bundled` (inside the app); null elsewhere.
@@ -72,6 +77,39 @@ class Ocr {
     } catch (e) {
       debugPrint(tr.ocrTextRecognitionNotPossible(e));
       return null;
+    }
+  }
+
+  /// Whether [mime] is something [textOfFile] can read.
+  static bool readable(String mime) =>
+      available && (mime == 'application/pdf' || mime.startsWith('image/'));
+
+  /// The text of a PDF or picture at [path], for finding it later; null
+  /// where there is none or it cannot be read (also while the model is
+  /// missing: it is only a help).
+  static Future<String?> textOfFile(String path, String mime) async {
+    if (!readable(mime)) return null;
+    try {
+      return mime == 'application/pdf'
+          ? await pdfText(path)
+          : await recognize(path);
+    } on OcrModelMissing {
+      return null;
+    }
+  }
+
+  /// [textOfFile] for [bytes] not yet on disk (a file just picked).
+  static Future<String?> textOf(List<int> bytes, String mime) async {
+    if (!readable(mime)) return null;
+    final file = File(
+      '${Directory.systemTemp.path}/famio-text-${DateTime.now().microsecondsSinceEpoch}'
+      '${mime == 'application/pdf' ? '.pdf' : ''}',
+    );
+    try {
+      await file.writeAsBytes(bytes);
+      return await textOfFile(file.path, mime);
+    } finally {
+      if (await file.exists()) await file.delete();
     }
   }
 }

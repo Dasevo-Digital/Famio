@@ -5,6 +5,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/ocr.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
@@ -80,6 +81,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             if (query.isEmpty) return true;
             return d.title.toLowerCase().contains(query) ||
                 d.notes.toLowerCase().contains(query) ||
+                d.content.toLowerCase().contains(query) ||
                 (d.file?.name.toLowerCase().contains(query) ?? false);
           }).toList();
           final used = {for (final d in all) d.category};
@@ -399,6 +401,47 @@ class _DocumentEditorState extends State<DocumentEditor> {
   late final _audience = {...?widget.existing?.visibleTo};
   var _saving = false;
 
+  /// The file's text for the search, recognised on the device.
+  late var _content = widget.existing?.content ?? '';
+  var _reading = false;
+  var _readNothing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final picked = widget.picked;
+    if (picked != null && Ocr.readable(picked.mime)) {
+      _reading = true;
+      _read(() => Ocr.textOf(picked.bytes, picked.mime));
+    }
+  }
+
+  /// Reads in the background; [_reading] is set by the caller.
+  Future<void> _read(Future<String?> Function() recognize) async {
+    String? text;
+    try {
+      text = await recognize();
+    } catch (_) {
+      text = null; // Not fetched or not readable: no text either.
+    }
+    if (!mounted) return;
+    setState(() {
+      _reading = false;
+      _content = text?.trim() ?? _content;
+      _readNothing = text == null;
+    });
+  }
+
+  /// An existing file: fetched (or from the cache) and read.
+  void _readExisting(FileRef file) {
+    final files = AppScope.read(context).files!;
+    setState(() {
+      _reading = true;
+      _readNothing = false;
+    });
+    _read(() async => Ocr.textOfFile(await files.openable(file), file.mime));
+  }
+
   static String _titleFromName(String name) {
     final dot = name.lastIndexOf('.');
     return (dot > 0 ? name.substring(0, dot) : name)
@@ -437,6 +480,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
           expiresAt: _expires,
           visibleTo: visibleTo,
           createdAt: widget.existing?.createdAt ?? DateTime.now(),
+          content: _content,
         ),
       );
       if (mounted) Navigator.pop(context);
@@ -480,6 +524,40 @@ class _DocumentEditorState extends State<DocumentEditor> {
             controller: _title,
             decoration: InputDecoration(labelText: tr.commonTitle),
           ),
+          if (_reading)
+            Padding(
+              padding: const EdgeInsets.only(top: 10, left: 4),
+              child: Row(
+                children: [
+                  const SizedBox.square(
+                    dimension: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(tr.docsReadingText, style: theme.textTheme.bodySmall),
+                ],
+              ),
+            )
+          else if (_content.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10, left: 4),
+              child: Text(
+                tr.docsTextFound(_content.length),
+                style: theme.textTheme.bodySmall,
+              ),
+            )
+          else if (widget.existing?.file case final file?
+              when widget.picked == null && Ocr.readable(file.mime))
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                icon: const Icon(AppIcons.scanText),
+                label: Text(
+                  _readNothing ? tr.docsNoTextFound : tr.docsRecognizeText,
+                ),
+                onPressed: _readNothing ? null : () => _readExisting(file),
+              ),
+            ),
           ListHeading(tr.commonCategory),
           Wrap(
             spacing: 8,
