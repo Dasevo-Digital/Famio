@@ -10,9 +10,23 @@ import 'i18n.dart';
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
 class RecordStore {
-  RecordStore(this._db, {required this.memberIds, this.roleOf, this.accessOf});
+  RecordStore(
+    this._db, {
+    required this.memberIds,
+    this.roleOf,
+    this.accessOf,
+    DateTime Function()? today,
+  }) : _today = today ?? _localToday;
 
   final Database _db;
+
+  /// The family's day (its time zone), for absences.
+  final DateTime Function() _today;
+
+  static DateTime _localToday() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   /// Roles limit guests to some collections and keep children from
   /// managing chores and pocket money (see [Collections.guestReadable]).
@@ -438,7 +452,10 @@ class RecordStore {
           incoming = _itemAudience(incoming);
         }
         if (change.collection == Collections.tasks && !incoming.deleted) {
-          incoming = _taskAudience(incoming, existing);
+          incoming = _withSubstitutes(
+            _taskAudience(incoming, existing),
+            existing,
+          );
           if (role == MemberRole.guest &&
               incoming.visibleTo == null &&
               !Task.assigneesIn(incoming.data).contains(userId)) {
@@ -487,6 +504,9 @@ class RecordStore {
       }
     });
 
+    if (stored.any((s) => s.$1.collection == Collections.absences)) {
+      refreshSubstitutes();
+    }
     if (stored.isNotEmpty) onStored?.call(userId, stored);
     return _pull(userId, since, now, rejected, unsupported, role, reset: reset);
   }
@@ -741,6 +761,66 @@ class RecordStore {
         _put(next, previous: item);
       }
     }
+  }
+
+  /// Key of a task's data: who sees it only because they stand in for an
+  /// absent assignee (see [MemberAbsence]); taken out again when the
+  /// absence is over.
+  static const substitutesKey = 'substitutes';
+
+  /// The substitutes of [assignees] absent on [day].
+  List<String> _standingIn(List<String> assignees, DateTime day) => {
+    for (final r in all(Collections.absences))
+      if (MemberAbsence.fromRecord(r) case final a
+          when assignees.contains(a.memberId) &&
+              a.covers(day) &&
+              a.substituteId != null)
+        a.substituteId!,
+  }.toList();
+
+  /// A task only some see is also seen by whoever stands in for one of its
+  /// assignees today; who was added for an absence is noted, so they lose
+  /// it again afterwards. Apps do not know the note and send the audience
+  /// with the substitute in it: those added before count as added.
+  SyncRecord _withSubstitutes(SyncRecord task, SyncRecord? previous) {
+    final added = {
+      for (final id in previous?.data[substitutesKey] as List? ?? const [])
+        '$id',
+    };
+    final data = {...task.data}..remove(substitutesKey);
+    final ids = task.visibleTo;
+    if (ids == null) return task.copyWith(data: data);
+    final assignees = Task.assigneesIn(data);
+    final base = {
+      for (final id in ids)
+        if (!added.contains(id) || assignees.contains(id)) id,
+    };
+    final standing = [
+      for (final id in _standingIn(assignees, _today()))
+        if (!base.contains(id)) id,
+    ];
+    data[SyncRecord.visibilityKey] = [...base, ...standing];
+    if (standing.isNotEmpty) data[substitutesKey] = standing;
+    return task.copyWith(data: data);
+  }
+
+  /// Gives the substitutes of today's absences their tasks and takes them
+  /// away from those whose absence is over: after absences changed and
+  /// regularly for the change of day. Returns whether anything changed.
+  bool refreshSubstitutes() {
+    var changed = false;
+    _transaction(() {
+      for (final task in all(Collections.tasks)) {
+        if (task.visibleTo == null && task.data[substitutesKey] == null) {
+          continue;
+        }
+        final next = _withSubstitutes(task, task);
+        if (jsonEncode(next.data) == jsonEncode(task.data)) continue;
+        _put(next, previous: task);
+        changed = true;
+      }
+    });
+    return changed;
   }
 
   /// Apps before 2.0.3 know nothing of who sees a task and leave the key

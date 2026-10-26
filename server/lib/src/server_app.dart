@@ -95,6 +95,10 @@ class FamioServerApp {
       memberIds: () => [for (final m in accounts.members()) m.id],
       roleOf: accounts.roleOf,
       accessOf: accounts.accessOf,
+      today: () {
+        final now = tz.TZDateTime.now(settings.location);
+        return DateTime(now.year, now.month, now.day);
+      },
     );
     records.restrictGuestTasks();
     calendarAccess = CalendarAccess(
@@ -422,6 +426,8 @@ class FamioServerApp {
       for (final (member, since) in locations.newlySilent()) {
         sos.deviceSilent(member, since);
       }
+      // Absences begin and end with the day.
+      if (records.refreshSubstitutes()) hub.notifyRev(records.currentRev);
     });
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
       notices.collectGarbage();

@@ -214,6 +214,72 @@ void main() {
     expect(byChild.rejected, isNotEmpty);
   });
 
+  test('a substitute sees the private tasks while standing in', () async {
+    final papa = await addMember('papa', MemberRole.adult);
+    var clock = DateTime.now().millisecondsSinceEpoch;
+    SyncRecord task(List<String> visibleTo) => SyncRecord(
+      collection: Collections.tasks,
+      id: 'arzt',
+      data: Task(
+        id: 'arzt',
+        title: 'Arzttermin verschieben',
+        assigneeIds: [mama.id],
+        visibleTo: visibleTo,
+      ).toData(),
+      updatedAt: ++clock,
+    );
+    bool papaSees() => papa.seen.containsKey('${Collections.tasks}/arzt');
+    await mama.sync([
+      task([mama.id]),
+    ]);
+    await papa.sync();
+    expect(papaSees(), isFalse);
+
+    final today = DateTime.now();
+    final absence = MemberAbsence(
+      id: 'weg',
+      memberId: mama.id,
+      from: today.subtract(const Duration(days: 1)),
+      to: today.add(const Duration(days: 2)),
+      substituteId: papa.id,
+    );
+    await mama.sync([
+      SyncRecord(
+        collection: Collections.absences,
+        id: 'weg',
+        data: absence.toData(),
+        updatedAt: ++clock,
+      ),
+    ]);
+    await papa.sync();
+    expect(papaSees(), isTrue);
+
+    // Mama's app writes the task back as it has it (with Papa in it).
+    await mama.sync();
+    final copy = mama.seen['${Collections.tasks}/arzt']!;
+    await mama.sync([
+      SyncRecord(
+        collection: Collections.tasks,
+        id: 'arzt',
+        data: {...copy.data}..remove(RecordStore.substitutesKey),
+        updatedAt: ++clock,
+      ),
+    ]);
+    // Back: the absence is deleted, Papa no longer sees the task.
+    await mama.sync([
+      SyncRecord(
+        collection: Collections.absences,
+        id: 'weg',
+        data: const {},
+        deleted: true,
+        updatedAt: ++clock,
+      ),
+    ]);
+    await papa.sync();
+    expect(papaSees(), isFalse);
+    expect(app.records.get(Collections.tasks, 'arzt')!.visibleTo, [mama.id]);
+  });
+
   group('shopping lists', () {
     var clock = DateTime.now().millisecondsSinceEpoch;
     SyncRecord list(ShoppingList l, {bool knowsAudience = true}) => SyncRecord(
