@@ -55,6 +55,7 @@ Map<String, String> get _collectionLabels => {
   Collections.pantryItems: tr.conflictsPantry,
   Collections.wishes: tr.commonWish,
   Collections.deadlines: tr.commonDeadline,
+  Collections.loans: tr.loansTitle,
   Collections.wasteSettings: tr.settingsWaste,
   Collections.sosSettings: tr.settingsSos,
   Collections.shoppingLists: tr.commonShoppingList,

@@ -30,6 +30,7 @@ export 'src/models/event.dart';
 export 'src/models/event_comment.dart';
 export 'src/models/inbox.dart';
 export 'src/models/list_template.dart';
+export 'src/models/loan.dart';
 export 'src/models/medication.dart';
 export 'src/models/note.dart';
 export 'src/models/pantry.dart';

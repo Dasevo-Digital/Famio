@@ -1,6 +1,7 @@
 import 'kiosk_screen.dart';
 import 'push_settings_screen.dart';
 import 'sos_screens.dart';
+import 'loans_screen.dart';
 import 'wishes_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
@@ -203,6 +204,14 @@ class SettingsScreen extends StatelessWidget {
                 MaterialPageRoute<void>(
                   builder: (_) => const DeadlinesScreen(),
                 ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(AppIcons.package),
+              title: Text(tr.loansTitle),
+              subtitle: Text(tr.loansSubtitle),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const LoansScreen()),
               ),
             ),
             ListTile(

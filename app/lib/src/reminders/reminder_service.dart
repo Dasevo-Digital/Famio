@@ -17,6 +17,7 @@ import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
 import '../data/deadlines.dart';
+import '../data/loans.dart';
 import '../data/waste.dart';
 import '../data/day_preview.dart';
 import '../data/departures.dart';
@@ -335,6 +336,7 @@ class ReminderService {
     Collections.externalEvents,
     Collections.wasteSettings,
     Collections.deadlines,
+    Collections.loans,
     Collections.shoppingLists,
     Collections.shoppingItems,
     Collections.tasks,
@@ -791,6 +793,37 @@ List<DueReminder> familyReminders(
           : cancel
           ? tr.remindersContractTodayBody
           : tr.remindersMarkDoneFamio,
+    );
+  }
+  // Loans: on the day they should be back; what we borrowed also two days
+  // before, to have it ready.
+  for (final l in engine.loans) {
+    final day = l.due;
+    if (l.returned ||
+        day == null ||
+        !engine.loanIsMine(l, adult: engine.iAmAdult)) {
+      continue;
+    }
+    final who = l.person.isEmpty
+        ? ''
+        : l.lentOut
+        ? tr.loansLentTo(l.person)
+        : tr.loansBorrowedFrom(l.person);
+    if (!l.lentOut) {
+      add(
+        'loan:${l.id}:${dayKey(day)}:soon',
+        nineOn(day, -2),
+        tr.remindersLoanSoonBorrowed(l.title),
+        who,
+      );
+    }
+    add(
+      'loan:${l.id}:${dayKey(day)}',
+      nineOn(day),
+      l.lentOut
+          ? tr.remindersLoanDueLent(l.title)
+          : tr.remindersLoanDueBorrowed(l.title),
+      who,
     );
   }
   // Packing lists: the evening before the trip, while I still have to pack.

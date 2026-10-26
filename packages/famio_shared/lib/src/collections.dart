@@ -154,6 +154,9 @@ abstract final class Collections {
   /// pet's vaccination (set by adults).
   static const deadlines = 'deadlines';
 
+  /// What the family lent to others or borrowed from them.
+  static const loans = 'loans';
+
   /// Versions that lost against a change made without seeing them (see
   /// [conflictTracked]); written by the server, deleted by the apps once
   /// someone decided.
@@ -185,6 +188,7 @@ abstract final class Collections {
     pantryItems,
     wishes,
     deadlines,
+    loans,
     wasteSettings,
     sosSettings,
     shoppingLists,
@@ -192,6 +196,7 @@ abstract final class Collections {
 
   static const all = {
     conflicts,
+    loans,
     externalPhotos,
     externalBirthdays,
     shoppingHistory,

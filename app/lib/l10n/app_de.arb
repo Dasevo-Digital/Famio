@@ -3593,6 +3593,112 @@
     }
   },
   "wishesRelease": "Freigeben",
+  "loansTitle": "Verliehen & geliehen",
+  "loansSubtitle": "Wer hat was von uns – und wir von wem",
+  "loansAdd": "Leihgabe eintragen",
+  "loansEmpty": "Noch nichts eingetragen. Famio erinnert, wenn etwas zurück soll.",
+  "loansLentOut": "Verliehen",
+  "loansBorrowed": "Geliehen",
+  "loansReturnedHeading": "Zurückgegeben",
+  "loansNew": "Neue Leihgabe",
+  "loansEdit": "Leihgabe bearbeiten",
+  "loansWhat": "Was?",
+  "loansToWhom": "An wen?",
+  "loansFromWhom": "Von wem?",
+  "loansWhoOfUs": "Wer von uns?",
+  "loansAllAdults": "Niemand Bestimmtes (alle Erwachsenen werden erinnert)",
+  "loansDueBack": "Zurück bis",
+  "loansNoDate": "Ohne Datum",
+  "loansLentTo": "an {person}",
+  "@loansLentTo": {
+    "placeholders": {
+      "person": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansBorrowedFrom": "von {person}",
+  "@loansBorrowedFrom": {
+    "placeholders": {
+      "person": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansSince": "seit {date}",
+  "@loansSince": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansDueOn": "zurück bis {date}",
+  "@loansDueOn": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansOverdueSince": "überfällig seit {date}",
+  "@loansOverdueSince": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansMarkReturned": "Ist zurück",
+  "loansNotReturned": "Doch nicht zurück",
+  "loansLentCount": "{count} verliehen",
+  "@loansLentCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansBorrowedCount": "{count} geliehen",
+  "@loansBorrowedCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "loansOverdueCount": "{count} überfällig",
+  "@loansOverdueCount": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersLoanDueLent": "„{title}“ sollte heute zurückkommen",
+  "@remindersLoanDueLent": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersLoanDueBorrowed": "„{title}“ heute zurückgeben",
+  "@remindersLoanDueBorrowed": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersLoanSoonBorrowed": "„{title}“ in zwei Tagen zurückgeben",
+  "@remindersLoanSoonBorrowed": {
+    "placeholders": {
+      "title": {
+        "type": "Object?"
+      }
+    }
+  },
   "wishesGiftIdeas": "Geschenkideen",
   "wishesIdeasHidden": "{name} sieht sie nicht.",
   "@wishesIdeasHidden": {

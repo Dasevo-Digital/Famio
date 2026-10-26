@@ -6,6 +6,7 @@ import '../design/app_icons.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
+import '../data/loans.dart';
 import '../data/birthdays.dart';
 import '../data/health_logic.dart';
 import '../data/kids_logic.dart';
@@ -25,6 +26,7 @@ import '../weather/weather_tile.dart';
 import 'search_screen.dart';
 import 'notes_screen.dart';
 import 'inbox_screen.dart';
+import 'loans_screen.dart';
 import 'wishes_screen.dart';
 import 'waste_screen.dart';
 import '../data/waste.dart';
@@ -141,6 +143,7 @@ class HomeScreen extends StatelessWidget {
           Collections.wishes,
           Collections.wasteSettings,
           Collections.deadlines,
+          Collections.loans,
           Collections.conflicts,
           'members',
         },
@@ -201,6 +204,8 @@ class HomeScreen extends StatelessWidget {
                   (engine.wishes.isNotEmpty ||
                       upcomingBirthdays(engine, now).isNotEmpty))
                 _WishesTile(engine: engine),
+              if (!guest && engine.loans.any((l) => !l.returned))
+                _LoansTile(engine: engine),
             ];
             const gap = 16.0;
             // Tiles of a row share its height, so the grid has no holes.
@@ -1059,6 +1064,48 @@ class _WishesTile extends StatelessWidget {
                   ].join(' · '),
             dim: open.isEmpty,
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoansTile extends StatelessWidget {
+  const _LoansTile({required this.engine});
+
+  final SyncEngine engine;
+
+  @override
+  Widget build(BuildContext context) {
+    final open = engine.loans.where((l) => !l.returned).toList();
+    final now = DateTime.now();
+    final overdue = open.where((l) => l.overdueOn(now)).length;
+    final lent = open.where((l) => l.lentOut).length;
+    final borrowed = open.length - lent;
+    return _Tile(
+      section: FamioSection.home,
+      title: tr.loansTitle,
+      icon: AppIcons.package,
+      badge: overdue > 0 ? tr.loansOverdueCount(overdue) : null,
+      onTap: () => Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const LoansScreen())),
+      child: Column(
+        children: [
+          _Line(
+            [
+              if (lent > 0) tr.loansLentCount(lent),
+              if (borrowed > 0) tr.loansBorrowedCount(borrowed),
+            ].join(' · '),
+            dim: true,
+          ),
+          for (final l in open.take(3))
+            _Line(
+              l.title,
+              trailing: l.due == null
+                  ? null
+                  : DateFormat.Md(appLanguage).format(l.due!),
+            ),
         ],
       ),
     );

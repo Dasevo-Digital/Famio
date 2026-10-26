@@ -112,4 +112,30 @@ void main() {
     expect(back.visibleTo, [a]);
     expect(back.category, DocumentCategory.identity);
   });
+
+  test('a loan keeps its days and knows when it is overdue', () {
+    final loan = Loan(
+      id: 'l',
+      title: 'Leiter',
+      lentOut: false,
+      person: 'Nachbarn',
+      memberId: 'm1',
+      since: DateTime(2026, 10, 1, 18),
+      due: DateTime(2026, 10, 15),
+      note: 'Bis zum Umzug',
+    );
+    final back = Loan.fromRecord(
+      SyncRecord(
+        collection: Collections.loans,
+        id: 'l',
+        data: loan.toData(),
+        updatedAt: 1,
+      ),
+    );
+    expect(back.toData(), loan.toData());
+    expect(back.since, DateTime(2026, 10, 1));
+    expect(back.overdueOn(DateTime(2026, 10, 15, 23)), isFalse);
+    expect(back.overdueOn(DateTime(2026, 10, 16)), isTrue);
+    expect(back.copyWith(returned: true).overdueOn(DateTime(2027)), isFalse);
+  });
 }
