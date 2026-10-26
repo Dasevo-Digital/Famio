@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/school_bag.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -47,7 +48,9 @@ class TimetableView extends StatelessWidget {
     final engine = AppScope.engineOf(context);
     final t = engine.timetable(child.id) ?? Timetable(childId: child.id);
     final theme = Theme.of(context);
-    final today = DateTime.now().weekday;
+    final now = DateTime.now();
+    final today = now.weekday;
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
     // Rows up to the last used period plus one free row.
     final used = t.lessons.fold<int>(-1, (m, l) => l.period > m ? l.period : m);
     final rows = (used + 2).clamp(6, t.periods.length);
@@ -112,7 +115,70 @@ class TimetableView extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Text(tr.timetableTapSubjectEnterTap, style: theme.textTheme.bodySmall),
+        const SizedBox(height: 16),
+        if (schoolBag(engine, child, tomorrow) case final bag?)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SoftCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tr.timetableForTomorrow,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(bag.summary),
+                ],
+              ),
+            ),
+          ),
+        SoftCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                secondary: const Icon(AppIcons.backpack),
+                title: Text(tr.timetableBagCheck),
+                subtitle: Text(
+                  t.bagCheck == null
+                      ? tr.timetableBagCheckOff
+                      : tr.timetableBagCheckOn(t.bagCheck!),
+                ),
+                value: t.bagCheck != null,
+                onChanged: (on) => engine.saveTimetable(
+                  t.withBagCheck(on ? Timetable.defaultBagCheck : null),
+                ),
+              ),
+              if (t.bagCheck != null)
+                TextButton.icon(
+                  icon: const Icon(AppIcons.clock),
+                  label: Text(tr.timetableBagCheckTime),
+                  onPressed: () => _editBagCheck(context, t),
+                ),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Future<void> _editBagCheck(BuildContext context, Timetable t) async {
+    final engine = AppScope.engineOf(context);
+    final (hour, minute) =
+        parseClock(t.bagCheck) ?? parseClock(Timetable.defaultBagCheck)!;
+    final picked = await showTimePicker(
+      context: context,
+      helpText: tr.timetableBagCheck,
+      initialTime: TimeOfDay(hour: hour, minute: minute),
+    );
+    if (picked == null) return;
+    engine.saveTimetable(
+      t.withBagCheck(
+        '${picked.hour.toString().padLeft(2, '0')}:'
+        '${picked.minute.toString().padLeft(2, '0')}',
+      ),
     );
   }
 
@@ -126,6 +192,9 @@ class TimetableView extends StatelessWidget {
     final existing = t.lesson(weekday, period);
     final subject = TextEditingController(text: existing?.subject);
     final room = TextEditingController(text: existing?.room);
+    final bring = TextEditingController(
+      text: existing == null ? '' : t.bring[existing.subject],
+    );
     final subjects = {for (final l in t.lessons) l.subject}.toList()..sort();
     final ok = await showDialog<bool>(
       context: context,
@@ -151,7 +220,10 @@ class TimetableView extends StatelessWidget {
                     for (final s in subjects)
                       ActionChip(
                         label: Text(s),
-                        onPressed: () => setState(() => subject.text = s),
+                        onPressed: () => setState(() {
+                          subject.text = s;
+                          bring.text = t.bring[s] ?? '';
+                        }),
                       ),
                   ],
                 ),
@@ -161,6 +233,13 @@ class TimetableView extends StatelessWidget {
                 controller: room,
                 decoration: InputDecoration(
                   labelText: tr.timetableRoomOptional,
+                ),
+              ),
+              TextField(
+                controller: bring,
+                decoration: InputDecoration(
+                  labelText: tr.timetableBring,
+                  hintText: tr.timetableBringHint,
                 ),
               ),
             ],
@@ -187,9 +266,11 @@ class TimetableView extends StatelessWidget {
       ),
     );
     if (ok == true) {
-      engine.saveTimetable(
-        t.withLesson(weekday, period, subject.text, room.text),
-      );
+      var next = t.withLesson(weekday, period, subject.text, room.text);
+      if (subject.text.trim().isNotEmpty) {
+        next = next.withBring(subject.text.trim(), bring.text);
+      }
+      engine.saveTimetable(next);
     }
   }
 

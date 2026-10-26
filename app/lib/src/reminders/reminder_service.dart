@@ -16,6 +16,7 @@ import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
+import '../data/school_bag.dart';
 import '../data/deadlines.dart';
 import '../data/loans.dart';
 import '../data/waste.dart';
@@ -337,6 +338,7 @@ class ReminderService {
     Collections.wasteSettings,
     Collections.deadlines,
     Collections.loans,
+    Collections.timetables,
     Collections.shoppingLists,
     Collections.shoppingItems,
     Collections.tasks,
@@ -825,6 +827,35 @@ List<DueReminder> familyReminders(
           : tr.remindersLoanDueBorrowed(l.title),
       who,
     );
+  }
+  // The school bag: the evening before each school day, for the child's
+  // people.
+  for (final child in engine.children) {
+    if (child.guardianIds.isNotEmpty &&
+        !child.guardianIds.contains(engine.memberId)) {
+      continue;
+    }
+    final clock = parseClock(engine.timetable(child.id)?.bagCheck);
+    if (clock == null) continue;
+    for (var d = 0; d <= daysBetween(from, to); d++) {
+      final (hour, minute) = clock;
+      final evening = DateTime(
+        from.year,
+        from.month,
+        from.day + d,
+        hour,
+        minute,
+      );
+      final next = DateTime(evening.year, evening.month, evening.day + 1);
+      final bag = schoolBag(engine, child, next);
+      if (bag == null) continue;
+      add(
+        'bag:${child.id}:${dayKey(next)}',
+        evening,
+        tr.schoolBagTitle(child.name),
+        bag.summary,
+      );
+    }
   }
   // Packing lists: the evening before the trip, while I still have to pack.
   final events = {for (final e in engine.events) e.id: e};

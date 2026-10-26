@@ -4924,6 +4924,36 @@
     }
   },
   "timetableTapSubjectEnterTap": "Fach antippen zum Eintragen, Stundennummer antippen für die Zeiten.",
+  "timetableBring": "Mitbringen (zu jeder Stunde des Fachs)",
+  "timetableBringHint": "z. B. Sportzeug, Flöte",
+  "timetableBagCheck": "Schulranzen-Check am Vorabend",
+  "timetableBagCheckOn": "Um {time} erinnert Famio an die Fächer von morgen und was mit muss.",
+  "@timetableBagCheckOn": {
+    "placeholders": {
+      "time": {
+        "type": "Object?"
+      }
+    }
+  },
+  "timetableBagCheckOff": "Erinnert am Abend vor jedem Schultag an Fächer und Sachen.",
+  "timetableBagCheckTime": "Uhrzeit ändern",
+  "timetableForTomorrow": "Für morgen",
+  "schoolBagTitle": "Schulranzen für morgen: {name}",
+  "@schoolBagTitle": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "schoolBagBring": "Mitnehmen: {items}",
+  "@schoolBagBring": {
+    "placeholders": {
+      "items": {
+        "type": "Object?"
+      }
+    }
+  },
   "timetableSubject": "Fach",
   "timetableRoomOptional": "Raum (optional)",
   "timetablePeriodPeriodStarts": "{period}. Stunde beginnt",

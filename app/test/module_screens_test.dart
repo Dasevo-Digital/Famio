@@ -1098,13 +1098,27 @@ void main() {
       expect(find.text('Mo, 1. Stunde'), findsOneWidget);
       await tester.enterText(field('Fach'), 'Mathe');
       await tester.enterText(field('Raum (optional)'), '204');
+      // A Sunday's preview would otherwise also read just "Mathe".
+      await tester.enterText(
+        field('Mitbringen (zu jeder Stunde des Fachs)'),
+        'Zirkel',
+      );
       await tester.tap(find.text('Speichern'));
       await tester.pumpAndSettle();
 
       final lesson = engine.timetable('c1')!.lesson(1, 0)!;
       expect(lesson.subject, 'Mathe');
       expect(lesson.room, '204');
+      expect(engine.timetable('c1')!.bring, {'Mathe': 'Zirkel'});
       expect(find.text('Mathe'), findsOneWidget);
+
+      final check = find.text('Schulranzen-Check am Vorabend');
+      await tester.ensureVisible(check);
+      await tester.tap(check);
+      await tester.pumpAndSettle();
+      expect(engine.timetable('c1')!.bagCheck, '18:30');
+      expect(find.textContaining('Um 18:30 erinnert Famio'), findsOneWidget);
+      await tester.ensureVisible(find.text('Mathe'));
 
       await tester.tap(find.text('Mathe'));
       await tester.pumpAndSettle();

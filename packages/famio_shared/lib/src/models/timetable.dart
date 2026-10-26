@@ -48,7 +48,12 @@ class Timetable {
     this.periods = defaultPeriods,
     this.lessons = const [],
     this.school = '',
+    this.bring = const {},
+    this.bagCheck,
   });
+
+  /// When the school bag check reminds, unless set otherwise.
+  static const defaultBagCheck = '18:30';
 
   static const defaultPeriods = [
     Period('08:00', '08:45'),
@@ -74,12 +79,24 @@ class Timetable {
         Lesson.fromJson((l as Map).cast()),
     ],
     school: r.data['school'] as String? ?? '',
+    bring: {
+      for (final e in (r.data['bring'] as Map? ?? const {}).entries)
+        if ('${e.value}'.trim().isNotEmpty) '${e.key}': '${e.value}',
+    },
+    bagCheck: r.data['bagCheck'] as String?,
   );
 
   final String childId;
   final List<Period> periods;
   final List<Lesson> lessons;
   final String school;
+
+  /// What to bring for a subject ("Sport" → "Sportzeug").
+  final Map<String, String> bring;
+
+  /// The evening before a school day at this time ("18:30") the child's
+  /// people are reminded of the subjects and what to bring; null: off.
+  final String? bagCheck;
 
   Lesson? lesson(int weekday, int period) => lessons
       .where((l) => l.weekday == weekday && l.period == period)
@@ -89,6 +106,10 @@ class Timetable {
   List<Lesson> day(int weekday) =>
       lessons.where((l) => l.weekday == weekday).toList()
         ..sort((a, b) => a.period.compareTo(b.period));
+
+  /// What to bring on [weekday], in the order of its lessons.
+  List<String> bringOn(int weekday) =>
+      {for (final l in day(weekday)) ?bring[l.subject]}.toList();
 
   /// End of the last lesson on [weekday] ("12:30"), if any.
   String? endOf(int weekday) {
@@ -101,11 +122,33 @@ class Timetable {
     List<Period>? periods,
     List<Lesson>? lessons,
     String? school,
+    Map<String, String>? bring,
   }) => Timetable(
     childId: childId,
     periods: periods ?? this.periods,
     lessons: lessons ?? this.lessons,
     school: school ?? this.school,
+    bring: bring ?? this.bring,
+    bagCheck: bagCheck,
+  );
+
+  /// Switches the school bag check on at [time] or off (null).
+  Timetable withBagCheck(String? time) => Timetable(
+    childId: childId,
+    periods: periods,
+    lessons: lessons,
+    school: school,
+    bring: bring,
+    bagCheck: time,
+  );
+
+  /// Sets or clears (empty) what to bring for [subject].
+  Timetable withBring(String subject, String what) => copyWith(
+    bring: {
+      for (final e in bring.entries)
+        if (e.key != subject) e.key: e.value,
+      if (what.trim().isNotEmpty) subject: what.trim(),
+    },
   );
 
   /// Sets or clears (empty subject) one lesson.
@@ -134,5 +177,7 @@ class Timetable {
     ],
     'lessons': [for (final l in lessons) l.toJson()],
     'school': school,
+    'bring': bring,
+    'bagCheck': bagCheck,
   };
 }
