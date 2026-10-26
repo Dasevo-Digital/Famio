@@ -4,6 +4,21 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.18 – Ideas de regalo, préstamos y la mochila
+
+- Ideas de regalo: en la lista de deseos de otra persona anotáis ideas para
+  su cumpleaños o Navidad; esa persona nunca las ve.
+- Préstamos (Ajustes): quién tiene algo vuestro y qué tenéis de otros, con
+  aviso el día de la devolución.
+- Revisar la mochila: en el horario se anota qué hace falta para cada
+  asignatura; la tarde anterior Famio recuerda asignaturas y cosas.
+- Los documentos también se encuentran por su contenido: al añadirlos, el
+  dispositivo lee el texto de un PDF o una foto.
+- Durante una ausencia, el sustituto también ve las tareas que solo
+  algunos pueden ver.
+- iPhone (instalado desde el Mac): Famio avisa a tiempo cuándo hay que
+  reinstalarlo.
+
 ## 2.0.17 – Bandeja, sustitutos y vincular un dispositivo
 
 - La bandeja familiar de la página de inicio reúne lo que aún no tiene sitio

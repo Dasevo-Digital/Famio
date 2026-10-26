@@ -4,6 +4,21 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.18 – Geschenkideen, Leihgaben und Schulranzen
+
+- Geschenkideen: Auf der Wunschliste eines anderen notiert ihr Ideen für
+  Geburtstag oder Weihnachten; die Person selbst sieht sie nie.
+- Verliehen & geliehen (Einstellungen): wer was von euch hat und ihr von
+  wem, mit Erinnerung am Rückgabetag.
+- Schulranzen-Check: Im Stundenplan je Fach eintragen, was mit muss; am
+  Vorabend erinnert Famio an Fächer und Sachen für morgen.
+- Dokumente werden auch über ihren Inhalt gefunden: Beim Hinzufügen liest
+  das Gerät den Text eines PDFs oder Fotos.
+- Eine Vertretung sieht während der Abwesenheit auch die Aufgaben, die nur
+  einige sehen dürfen.
+- iPhone (vom Mac installiert): Famio sagt rechtzeitig, wann es neu
+  installiert werden muss.
+
 ## 2.0.17 – Eingang, Vertretungen und Gerät koppeln
 
 - Der Familien-Eingang auf der Startseite sammelt, was noch keinen Platz hat

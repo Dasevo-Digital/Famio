@@ -4,6 +4,20 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.18 – Gift ideas, loans and the school bag
+
+- Gift ideas: on someone else's wish list you note ideas for a birthday or
+  Christmas; that person never sees them.
+- Lent & borrowed (Settings): who has what of yours and you of theirs,
+  with a reminder on the day it is due back.
+- School bag check: note in the timetable what each subject needs; the
+  evening before, Famio lists tomorrow's subjects and things.
+- Documents are also found by their content: when adding one, the device
+  reads the text of a PDF or photo.
+- During an absence, the stand-in also sees tasks only some may see.
+- iPhone (installed from the Mac): Famio tells you in time when it has to
+  be reinstalled.
+
 ## 2.0.17 – Inbox, stand-ins and pairing a device
 
 - The family inbox on the start page collects what has no place yet (texts,
