@@ -32,6 +32,10 @@ class FakeProvider implements ListProvider {
   var reads = 0;
   var _next = 0;
 
+  /// The next create arrives there, but its answer does not come back
+  /// (like a request that runs into the time limit).
+  var loseNextAnswer = false;
+
   RemoteItem add(
     String title, {
     String note = '',
@@ -69,6 +73,11 @@ class FakeProvider implements ListProvider {
   Future<RemoteItem> create(String listId, ItemDraft item) async {
     writes++;
     final id = oneEntryPerTitle ? item.title : 'r${_next++}';
+    if (loseNextAnswer) {
+      loseNextAnswer = false;
+      entries[id] = RemoteItem(id: id, title: item.title, note: item.note);
+      throw ListProviderException('antwortet nicht rechtzeitig');
+    }
     return entries[id] = RemoteItem(
       id: id,
       title: item.title,
@@ -450,6 +459,26 @@ void main() {
     await lists.syncAccount(id);
     expect(tasks().single.title, 'Famio, später');
     expect(fake.entries[remoteId]!.title, 'Famio, später');
+  });
+
+  test('an answer lost in time does not create the entry twice', () async {
+    final id = account();
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L'},
+    ]);
+    write(
+      Collections.tasks,
+      't1',
+      const Task(id: 't1', title: 'Steuer machen', notes: 'Belege').toData(),
+    );
+    fake.loseNextAnswer = true;
+    await lists.syncAccount(id);
+    expect(fake.entries, hasLength(1));
+    // The next run finds it there instead of creating it again.
+    await lists.syncAccount(id);
+    await lists.syncAccount(id);
+    expect(fake.entries, hasLength(1));
+    expect(app.records.all(Collections.tasks), hasLength(1));
   });
 
   test('Bring!: one shopping list, same names are paired', () async {

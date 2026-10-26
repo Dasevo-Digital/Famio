@@ -678,6 +678,17 @@ class ListSync {
       if (provider.oneEntryPerTitle)
         for (final r in unlinkedRemote) r.title.trim().toLowerCase(): r,
     };
+    // Other apps: an entry there just like a new one here (same title and
+    // note) is that one – created by a run whose answer did not come in
+    // time, or already on both sides when they were connected.
+    String twinKey(String title, String note) =>
+        '${title.trim().toLowerCase()}\n${note.trim()}';
+    final twins = <String, List<RemoteItem>>{};
+    if (!provider.oneEntryPerTitle) {
+      for (final r in unlinkedRemote) {
+        (twins[twinKey(r.title, r.note)] ??= []).add(r);
+      }
+    }
     final paired = <String>{};
     // Names linked there now (one entry per name): a new entry of the same
     // name here is that entry again. Entries just removed above are gone.
@@ -725,10 +736,17 @@ class ListSync {
         }
         continue;
       }
-      final same = byTitle[title];
+      final same = provider.oneEntryPerTitle
+          ? byTitle[title]
+          : twins[twinKey(here.title, here.note)]
+                ?.where((r) => !paired.contains(r.id))
+                .firstOrNull;
       if (same != null && paired.add(same.id)) {
-        // Still needed on one side beats bought long ago on the other.
-        if (here.done && !same.done) {
+        if (hashOf(here) == remoteState(same).hash) {
+          // Already the same on both sides: only linked.
+          link(record.id, same.id, here);
+        } else if (here.done && !same.done) {
+          // Still needed on one side beats bought long ago on the other.
           pull(record.id, same);
         } else {
           await push(record.id, here, same);
