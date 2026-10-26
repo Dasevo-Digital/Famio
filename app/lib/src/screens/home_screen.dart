@@ -153,7 +153,7 @@ class HomeScreen extends StatelessWidget {
             // Areas the family switched off get no tile either.
             final hidden = AppScope.of(context).hiddenModules;
             bool on(FamioSection s) => !hidden.contains(s.name);
-            final memories = memoriesOn(engine, now);
+            final memories = memoriesToday(engine, now);
             final showMemories =
                 !memories.isEmpty &&
                 AppScope.of(context).memoriesHiddenOn != dayKey(now);

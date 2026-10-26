@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 
+import 'engine_memo.dart';
 import 'family_data.dart';
 import '../l10n.dart';
 
@@ -38,6 +39,24 @@ bool _onThisDay(DateTime d, DateTime today) {
       d.month == 2 &&
       d.day == 29;
 }
+
+/// What [memoriesOn] reads.
+const _memoryCollections = {
+  Collections.childEntries,
+  Collections.children,
+  Collections.events,
+  Collections.chatMessages,
+  Collections.externalPhotos,
+};
+
+/// [memoriesOn] for the start page: computed once per day and language
+/// until one of its collections changes (see [EngineMemo]).
+Memories memoriesToday(SyncEngine engine, DateTime now) =>
+    EngineMemo.of(engine).get(
+      'memories ${dayKey(now)} $appLanguage',
+      _memoryCollections,
+      () => memoriesOn(engine, DateTime(now.year, now.month, now.day)),
+    );
 
 /// The memories of [today] in the last [years] years: only what the device
 /// may see (the server sends nothing else).
