@@ -25,12 +25,14 @@ masked_locations() {
   sed -E 's/^([^:]+:[0-9]+):.*/\1: [masked]/'
 }
 
-# Example domains and the listed lines are deliberate synthetic fixtures or
-# iCalendar UIDs. Exact line allowlisting makes a moved/changed fixture visible
-# again and therefore subject to review.
+# Synthetic fixtures: the reserved example domains (RFC 2606: example.com/
+# .org/.net and the whole .example TLD, which can never be a real address),
+# iCalendar UIDs and the one ntfy test URL with credentials. By domain, not by
+# line number: a pinned line broke the check whenever a test above it changed.
+# .invalid stays reported, the masking test relies on it.
 if matches=$(git grep -n -I -i -E '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' -- . "${EXCLUDED[@]}" \
-  | grep -vi -E '@example\.(com|org|net)' \
-  | grep -v -E ':[0-9]+:UID:|^app/tool/render_screens_test.dart:624:|^server/test/family_features_test.dart:830:|^server/test/ics_file_import_test.dart:75:' \
+  | grep -vi -E '@example\.(com|org|net)|@[A-Z0-9.-]+\.example([^A-Z0-9.-]|$)' \
+  | grep -v -E ':[0-9]+:UID:|^server/test/family_features_test\.dart:[0-9]+: +.https://u:p@ntfy\.sh/x.,$' \
   || true); then
   if [[ -n "$matches" ]]; then
     report "Email address in a tracked file:"
