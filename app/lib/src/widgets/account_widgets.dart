@@ -7,6 +7,8 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
+import '../platform/app_profile.dart';
+import 'profile_banner.dart';
 
 // Shared by the settings and the server administration, which the web app
 // loads only when opened (see DeferredPage).
@@ -37,6 +39,14 @@ class DeviceTile extends StatelessWidget {
                       DateFormat.yMd(appLanguage).format(session.createdAt),
                     ),
             ),
+            if (session.profileExpires case final end?)
+              TextSpan(
+                text:
+                    '\n${tr.adminProfileUntil(ProfileBanner.when(end.toLocal()))}',
+                style: end.difference(DateTime.now()) <= profileWarning
+                    ? TextStyle(color: c.danger, fontWeight: FontWeight.w700)
+                    : null,
+              ),
             if (session.appVersionNumber case final version?) ...[
               TextSpan(text: '\n${tr.adminAppVersion(version)}'),
               if (session.outdated)

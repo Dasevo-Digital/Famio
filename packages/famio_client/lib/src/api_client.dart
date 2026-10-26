@@ -175,6 +175,10 @@ class FamioApiClient {
   /// still need an update. Not sent by the web app, which the server serves.
   static String? appVersion;
 
+  /// When this iPhone app stops opening (see [appProfileHeader]); the
+  /// administration warns ahead of time.
+  static String? profileExpires;
+
   /// Accepts user input like `homeassistant.local:8765` and returns a URL.
   static const _web = bool.fromEnvironment('dart.library.js_interop');
 
@@ -1393,6 +1397,7 @@ class FamioApiClient {
     if (token != null) 'authorization': 'Bearer $token',
     'accept-language': ?language,
     appVersionHeader: ?appVersion,
+    appProfileHeader: ?profileExpires,
   };
 
   /// WebSocket URL for change notifications; authenticate with

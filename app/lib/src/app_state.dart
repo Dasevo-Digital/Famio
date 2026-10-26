@@ -16,6 +16,7 @@ import 'data/family_data.dart';
 import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
 import 'push/own_push.dart';
+import 'platform/app_profile.dart';
 import 'secure_vault.dart';
 import 'data/app_update.dart';
 import 'data/holidays.dart';
@@ -298,14 +299,24 @@ class AppState extends ChangeNotifier {
 
   /// Sent with every request: the administration shows which devices
   /// still run an older app.
-  static Future<void> _noteAppVersion() async {
+  Future<void> _noteAppVersion() async {
     try {
       final info = await PackageInfo.fromPlatform();
       FamioApiClient.appVersion = '${info.version} ${Platform.operatingSystem}';
     } catch (_) {
       // Tests and unusual platforms: the server just does not know.
     }
+    // iPhones installed from the Mac: the admins hear ahead of time.
+    final end = await appProfileExpires();
+    FamioApiClient.profileExpires = end?.toUtc().toIso8601String();
+    if (end != profileExpires.value) {
+      profileExpires.value = end;
+      _reminders?.refresh();
+    }
   }
+
+  /// When iOS stops opening this app (see [appProfileExpires]).
+  final profileExpires = ValueNotifier<DateTime?>(null);
 
   Future<void> _restoreSession() async {
     serverUrl = _prefs.getString('serverUrl');
@@ -908,6 +919,7 @@ class AppState extends ChangeNotifier {
     _reminders?.weekPreview = () => weekPreview;
     _reminders?.departure = () => departureMode;
     _reminders?.dayPreview = () => dayPreview;
+    _reminders?.profileExpires = () => profileExpires.value;
     _reminders?.dayWeather = () {
       final weather = WeatherService(_prefs);
       final place = weatherPlace(engine.places);

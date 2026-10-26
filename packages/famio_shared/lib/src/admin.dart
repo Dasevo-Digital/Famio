@@ -6,6 +6,11 @@ import 'texts.dart';
 /// ("2.0.1 android").
 const appVersionHeader = 'x-famio-app';
 
+/// Header in which an iPhone app installed from a Mac sends when its
+/// provisioning profile ends (ISO 8601): with a free developer account
+/// iOS no longer opens it a week after installing.
+const appProfileHeader = 'x-famio-profile';
+
 class DeviceSession {
   const DeviceSession({
     required this.id,
@@ -15,6 +20,7 @@ class DeviceSession {
     this.current = false,
     this.appVersion,
     this.outdated = false,
+    this.profileExpires,
   });
 
   factory DeviceSession.fromJson(Map<String, Object?> json) => DeviceSession(
@@ -25,7 +31,23 @@ class DeviceSession {
     current: json['current'] as bool? ?? false,
     appVersion: json['appVersion'] as String?,
     outdated: json['outdated'] as bool? ?? false,
+    profileExpires: switch (json['profileExpires']) {
+      final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+      _ => null,
+    },
   );
+
+  /// The end in [header] ([appProfileHeader]) if it is a sensible date.
+  static DateTime? parseProfileHeader(String? header) {
+    if (header == null || header.length > 40) return null;
+    final at = DateTime.tryParse(header.trim());
+    if (at == null) return null;
+    final now = DateTime.now();
+    return at.isAfter(now.subtract(const Duration(days: 30))) &&
+            at.isBefore(now.add(const Duration(days: 400)))
+        ? at
+        : null;
+  }
 
   /// [header] if it is a version with an optional platform; anything else
   /// is not stored.
@@ -55,6 +77,10 @@ class DeviceSession {
   /// write, or drop it when saving.
   final bool outdated;
 
+  /// An iPhone app installed from a Mac stops opening at this time (see
+  /// [appProfileHeader]); null for all others.
+  final DateTime? profileExpires;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'device': device,
@@ -63,6 +89,7 @@ class DeviceSession {
     'current': current,
     'appVersion': ?appVersion,
     if (outdated) 'outdated': true,
+    'profileExpires': ?profileExpires?.millisecondsSinceEpoch,
   };
 }
 

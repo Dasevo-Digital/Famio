@@ -555,6 +555,10 @@ class FamioApi {
         case final v?) {
       accounts.noteAppVersion(token, v);
     }
+    if (DeviceSession.parseProfileHeader(request.headers[appProfileHeader])
+        case final end?) {
+      accounts.noteProfileExpiry(token, end);
+    }
     return member;
   }
 

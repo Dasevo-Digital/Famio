@@ -326,6 +326,13 @@ const _migrations = [
     PRIMARY KEY (member_id, calendar, ns, name)
   );
   ''',
+  '''
+  -- iPhone apps installed from a Mac stop opening when their provisioning
+  -- profile ends (x-famio-profile); the admins are told ahead of time,
+  -- once per device and end (profile_noticed holds the end told about).
+  ALTER TABLE sessions ADD COLUMN profile_expires INTEGER;
+  ALTER TABLE sessions ADD COLUMN profile_noticed INTEGER;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

@@ -5728,6 +5728,23 @@
     }
   },
   "appUpdateFromServer": "Vom Famio-Server, mit Signatur geprüft",
+  "profileExpiresTitle": "Famio läuft auf diesem iPhone bald ab",
+  "profileExpiresText": "Ab {when} öffnet sich Famio hier nicht mehr. Das iPhone vorher an den Mac anschließen, damit Famio neu installiert wird.",
+  "@profileExpiresText": {
+    "placeholders": {
+      "when": {
+        "type": "Object?"
+      }
+    }
+  },
+  "adminProfileUntil": "Läuft ab: {when}",
+  "@adminProfileUntil": {
+    "placeholders": {
+      "when": {
+        "type": "Object?"
+      }
+    }
+  },
   "appUpdateRestartHint": "Famio lädt die neue Version vom Server, prüft sie, schließt sich und startet mit ihr neu.",
   "appUpdateAndroidHint": "Famio lädt die neue Version vom Server und prüft sie. Danach fragt Android, ob sie installiert werden soll; deine Daten bleiben erhalten.",
   "appUpdateAllowInstall": "Damit Famio sich selbst aktualisieren kann, einmal „Apps aus dieser Quelle zulassen“ einschalten und dann zurückkehren.",

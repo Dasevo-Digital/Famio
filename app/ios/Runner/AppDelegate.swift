@@ -45,6 +45,18 @@ import VisionKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioScan") {
       DocumentScanner.shared.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioProfile") {
+      // When iOS stops opening this build (see ProvisioningProfile).
+      let profile = FlutterMethodChannel(
+        name: "famio/profile", binaryMessenger: registrar.messenger())
+      profile.setMethodCallHandler { call, result in
+        guard call.method == "expires" else {
+          result(FlutterMethodNotImplemented)
+          return
+        }
+        result(ProvisioningProfile.expires().map { ISO8601DateFormatter().string(from: $0) })
+      }
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOcr") {
       // Text in photos (appointments from a letter), on the device.
       let ocr = FlutterMethodChannel(
@@ -96,6 +108,24 @@ import VisionKit
         }
       }
     }
+  }
+}
+
+/// A build installed from a Mac carries the provisioning profile it was
+/// signed for; iOS no longer opens the app once it ends (a week after
+/// installing with a free developer account). App Store builds have none.
+enum ProvisioningProfile {
+  static func expires() -> Date? {
+    guard
+      let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+      let data = try? Data(contentsOf: url),
+      let start = data.range(of: Data("<?xml".utf8)),
+      let end = data.range(of: Data("</plist>".utf8), in: start.lowerBound..<data.endIndex)
+    else { return nil }
+    let plist = data.subdata(in: start.lowerBound..<end.upperBound)
+    let dict =
+      (try? PropertyListSerialization.propertyList(from: plist, format: nil)) as? [String: Any]
+    return dict?["ExpirationDate"] as? Date
   }
 }
 

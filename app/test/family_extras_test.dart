@@ -12,6 +12,7 @@ import 'package:famio/src/screens/inbox_screen.dart';
 import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/screens/wishes_screen.dart';
+import 'package:famio/src/widgets/account_widgets.dart';
 import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/widgets/photo_viewer.dart';
 import 'package:famio_client/famio_client.dart';
@@ -474,6 +475,52 @@ void main() {
     );
   });
 
+  testWidgets('the start page warns before this iPhone stops opening Famio', (
+    tester,
+  ) async {
+    await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    final state = AppScope.read(tester.element(find.byType(Scaffold).first));
+    const title = 'Famio läuft auf diesem iPhone bald ab';
+    expect(find.text(title), findsNothing);
+    state.profileExpires.value = DateTime.now().add(const Duration(days: 8));
+    await tester.pumpAndSettle();
+    expect(find.text(title), findsNothing);
+    state.profileExpires.value = DateTime.now().add(const Duration(days: 2));
+    await tester.pumpAndSettle();
+    expect(find.text(title), findsOneWidget);
+    expect(find.textContaining('an den Mac anschließen'), findsOneWidget);
+    state.profileExpires.value = null;
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('the device list shows when an iPhone stops opening Famio', (
+    tester,
+  ) async {
+    await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => Scaffold(
+            body: DeviceTile(
+              session: DeviceSession(
+                id: 's',
+                device: 'ios (Marlys-iPhone)',
+                createdAt: DateTime(2026, 10, 25),
+                lastSeen: DateTime(2026, 10, 26),
+                profileExpires: DateTime(2026, 11, 1, 18, 29),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Läuft ab: '), findsOneWidget);
+  });
+
   testWidgets('gift ideas for Mia are hidden from her', (tester) async {
     final engine = await open(tester, memberId: 'm1');
     await tester.pumpAndSettle();
@@ -496,10 +543,10 @@ void main() {
 
     final idea = engine.wishes.single;
     expect((idea.ownerId, idea.ideaBy, idea.isIdea), ('k1', 'm1', true));
-    expect(
-      engine.store.get(Collections.wishes, idea.id)!.record.visibleTo,
-      ['m1', 'g1'],
-    );
+    expect(engine.store.get(Collections.wishes, idea.id)!.record.visibleTo, [
+      'm1',
+      'g1',
+    ]);
     expect(find.text('Deine Idee'), findsOneWidget);
     expect(find.text('Mia sieht sie nicht.'), findsOneWidget);
     // Not one of Mia's own wishes.

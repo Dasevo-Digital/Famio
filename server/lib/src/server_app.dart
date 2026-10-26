@@ -46,6 +46,7 @@ import 'dav/step_marks.dart';
 import 'documents/paperbuddy.dart';
 import 'photos/photovault.dart';
 import 'updates/app_updates.dart';
+import 'updates/profile_notices.dart';
 import 'updates/update_notices.dart';
 
 /// Wires all server components together; used by `bin/server.dart` and tests.
@@ -422,7 +423,14 @@ class FamioServerApp {
     backups?.start();
     // Hourly, the first time an hour after the start: after the server was
     // down, devices report again before anybody counts as silent.
+    final profiles = ProfileNotices(
+      accounts: accounts,
+      push: push,
+      location: () => settings.location,
+    );
     _silent = Timer.periodic(const Duration(hours: 1), (_) {
+      // iPhones whose Famio stops opening soon.
+      profiles.check();
       for (final (member, since) in locations.newlySilent()) {
         sos.deviceSilent(member, since);
       }

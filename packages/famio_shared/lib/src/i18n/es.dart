@@ -1120,6 +1120,9 @@ const sharedEs = <String, String>{
   "Server|Einkauf bei {place}": "Compra en {place}",
   "Server|{count} offen: {items}": "{count} pendientes: {items}",
   "Server|Offene Einkäufe": "Compras pendientes",
+  "Server|Famio läuft bald ab": "Famio caduca pronto",
+  "Server|Auf „{device}“ von {name} öffnet sich Famio ab {when} nicht mehr. Das iPhone an den Mac anschließen und Famio neu installieren.":
+      "En «{device}» de {name}, Famio dejará de abrirse a partir del {when}. Conecta el iPhone al Mac y vuelve a instalar Famio.",
   "Server|Famio {version} ist da": "Ya está aquí Famio {version}",
   "Server|Auf einem deiner Geräte läuft noch eine ältere Famio-Version. Famio dort öffnen und auf der Startseite „Aktualisieren“ antippen.":
       "En uno de tus dispositivos todavía funciona una versión anterior de Famio. Abre Famio allí y toca «Actualizar» en la página de inicio.",

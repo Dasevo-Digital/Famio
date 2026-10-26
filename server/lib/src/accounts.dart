@@ -65,6 +65,52 @@ class Accounts {
     _appVersions[hash] = version;
   }
 
+  /// Profile ends of the sessions as stored, so that only a change writes.
+  final _profileEnds = <String, int>{};
+
+  /// Remembers when the iPhone app of [token] stops opening.
+  void noteProfileExpiry(String token, DateTime expires) {
+    final hash = _tokenHash(token);
+    final ms = expires.millisecondsSinceEpoch;
+    if (_profileEnds[hash] == ms) return;
+    _db.execute(
+      'UPDATE sessions SET profile_expires = ? WHERE token_hash = ?',
+      [ms, hash],
+    );
+    _profileEnds[hash] = ms;
+  }
+
+  /// Active sessions whose app stops opening before [until] (and did not
+  /// stop more than a day ago) that nobody was told about yet.
+  List<({String session, String member, String device, DateTime expires})>
+  expiringProfiles(DateTime until) => [
+    for (final row in _db.select(
+      'SELECT token_hash, user_id, device, profile_expires FROM sessions'
+      ' WHERE scope IS NULL AND last_seen > ? AND profile_expires <= ?'
+      ' AND profile_expires > ?'
+      ' AND (profile_noticed IS NULL OR profile_noticed != profile_expires)',
+      [
+        _idleCutoff,
+        until.millisecondsSinceEpoch,
+        DateTime.now().subtract(const Duration(days: 1)).millisecondsSinceEpoch,
+      ],
+    ))
+      (
+        session: row['token_hash'] as String,
+        member: row['user_id'] as String,
+        device: row['device'] as String? ?? '',
+        expires: DateTime.fromMillisecondsSinceEpoch(
+          row['profile_expires'] as int,
+        ),
+      ),
+  ];
+
+  /// [expiringProfiles] told about.
+  void markProfileNoticed(String session, DateTime expires) => _db.execute(
+    'UPDATE sessions SET profile_noticed = ? WHERE token_hash = ?',
+    [expires.millisecondsSinceEpoch, session],
+  );
+
   FamilyMember? byId(String id) {
     final rows = _db.select('SELECT * FROM users WHERE id = ?', [id]);
     return rows.isEmpty ? null : _member(rows.first);
@@ -331,6 +377,10 @@ class Accounts {
           ),
           current: hash == current,
           appVersion: row['app_version'] as String?,
+          profileExpires: switch (row['profile_expires']) {
+            final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+            _ => null,
+          },
           outdated: switch ((row['app_version'] as String?, serverVersion)) {
             (final String app, final String server) =>
               compareVersions(app.split(' ').first, server) < 0,

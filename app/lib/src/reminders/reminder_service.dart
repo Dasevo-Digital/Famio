@@ -108,6 +108,9 @@ class ReminderService {
   /// The cached forecast at home for the morning overview, if any.
   WeatherForecast? Function()? dayWeather;
 
+  /// When iOS stops opening this app (a build from the Mac), if it does.
+  DateTime? Function()? profileExpires;
+
   /// Plans again, e.g. after a setting changed.
   void refresh() => _reschedule();
 
@@ -255,6 +258,17 @@ class ReminderService {
               title: p.title,
               body: p.body,
             ),
+      // A day and three hours before this iPhone's Famio stops opening.
+      if (profileExpires?.call() case final end?)
+        for (final before in const [Duration(days: 1), Duration(hours: 3)])
+          DueReminder(
+            key: 'profile:${end.millisecondsSinceEpoch}:${before.inHours}',
+            at: end.subtract(before),
+            title: tr.profileExpiresTitle,
+            body: tr.profileExpiresText(
+              DateFormat.MMMEd(appLanguage).add_Hm().format(end),
+            ),
+          ),
       if (weekPreview?.call() ?? true)
         for (final (at, monday) in weekPreviewTimes(now, now.add(_window)))
           if (buildWeekPreview(engine, monday) case final p?)

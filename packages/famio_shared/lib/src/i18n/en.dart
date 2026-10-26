@@ -1087,6 +1087,9 @@ const sharedEn = <String, String>{
   "Server|Einkauf bei {place}": "Shopping at {place}",
   "Server|{count} offen: {items}": "{count} open: {items}",
   "Server|Offene Einkäufe": "Open shopping items",
+  "Server|Famio läuft bald ab": "Famio expires soon",
+  "Server|Auf „{device}“ von {name} öffnet sich Famio ab {when} nicht mehr. Das iPhone an den Mac anschließen und Famio neu installieren.":
+      "On “{device}” of {name}, Famio no longer opens from {when}. Connect the iPhone to the Mac and reinstall Famio.",
   "Server|Famio {version} ist da": "Famio {version} is here",
   "Server|Auf einem deiner Geräte läuft noch eine ältere Famio-Version. Famio dort öffnen und auf der Startseite „Aktualisieren“ antippen.":
       "One of your devices still runs an older Famio version. Open Famio there and tap “Update” on the home screen.",

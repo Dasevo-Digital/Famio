@@ -34,6 +34,7 @@ import '../data/deadlines.dart';
 import 'deadlines_screen.dart';
 import 'conflicts_screen.dart';
 import '../widgets/app_update_banner.dart';
+import '../widgets/profile_banner.dart';
 import '../widgets/famio_tour.dart';
 import '../widgets/setup_checklist.dart';
 import '../data/memories.dart';
@@ -222,6 +223,7 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(height: gap),
                   ],
                   const AppUpdateBanner(),
+                  const ProfileBanner(),
                   if (!me.isService)
                     TourBanner(onStart: () => startTourFromShell(context)),
                   if (me.isAdmin) const SetupBanner(),
