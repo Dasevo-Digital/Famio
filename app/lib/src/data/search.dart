@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 
 import '../design/palette.dart';
+import 'engine_memo.dart';
 import 'family_data.dart';
 import 'family_extras.dart';
 import '../l10n.dart';
@@ -138,9 +139,10 @@ List<SearchHit> searchFamily(
     List<String> more, {
     String detail = '',
     DateTime? at,
+    String folded = '',
   }) {
     final t = foldForSearch(title);
-    final all = '$t ${foldForSearch(more.join(' '))}';
+    final all = '$t ${foldForSearch(more.join(' '))} $folded';
     if (!words.every(all.contains)) return;
     final score = t.startsWith(words.first)
         ? 3
@@ -214,6 +216,15 @@ List<SearchHit> searchFamily(
     }
   }
   if (shows(SearchKind.document)) {
+    // Recognised texts are long: folded once until the documents change.
+    final texts = EngineMemo.of(engine).get(
+      'search documents',
+      const {Collections.documents, Collections.externalDocuments},
+      () => {
+        for (final d in engine.documents)
+          if (d.content.isNotEmpty) d.id: foldForSearch(d.content),
+      },
+    );
     for (final d in engine.documents) {
       // Found only in its text: where, so one sees why.
       final snippet = textSnippet(d.content, words);
@@ -221,7 +232,8 @@ List<SearchHit> searchFamily(
         SearchKind.document,
         d.id,
         d.title,
-        [d.notes, d.category.label, d.content],
+        [d.notes, d.category.label],
+        folded: texts[d.id] ?? '',
         detail: [
           d.category.label,
           if (snippet != null &&
