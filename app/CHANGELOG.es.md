@@ -4,6 +4,19 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.17 – Bandeja, sustitutos y vincular un dispositivo
+
+- La bandeja familiar de la página de inicio reúne lo que aún no tiene sitio
+  (textos, enlaces, archivos, también con «Compartir con Famio»); después
+  se convierte en tarea, cita, nota, documento o compra.
+- Ausencias con sustituto: mientras alguien está fuera, otra persona se
+  encarga de sus encargos y tareas (Encargos → Ausencias).
+- Un dispositivo nuevo inicia sesión con un código QR desde un dispositivo
+  ya conectado, sin contraseña (allí Ajustes → icono QR «Vincular un dispositivo
+  nuevo», en el nuevo «Vincular una cuenta existente»).
+- Las exportaciones grandes son más fiables y Bring!/Microsoft To Do ya no
+  se quedan colgados.
+
 ## 2.0.16 – Sin artículos duplicados
 
 - Si se vuelve a añadir algo que sigue marcado en la lista, vuelve ese

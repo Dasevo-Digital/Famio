@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.17 – Eingang, Vertretungen und Gerät koppeln
+
+- Der Familien-Eingang auf der Startseite sammelt, was noch keinen Platz hat
+  (Texte, Links, Dateien, auch über „Teilen an Famio“); später wird daraus
+  eine Aufgabe, ein Termin, eine Notiz, ein Dokument oder ein Einkauf.
+- Abwesenheiten mit Vertretung: Wer verreist ist, dessen Ämter und Aufgaben
+  übernimmt für die Zeit eine andere Person (Ämter → Abwesenheiten).
+- Ein neues Gerät meldet sich per QR-Code von einem angemeldeten Gerät aus
+  an, ohne Passwort (dort Einstellungen → QR-Symbol „Neues Gerät koppeln“, auf dem
+  neuen „Vorhandenes Konto koppeln“).
+- Große Datenexporte laufen zuverlässiger, und Bring!/Microsoft To Do
+  bleiben nicht mehr hängen.
+
 ## 2.0.16 – Keine doppelten Einträge mehr
 
 - Wird etwas erneut eingetragen, das abgehakt noch auf der Liste steht,

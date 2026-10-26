@@ -4,6 +4,19 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.17 – Inbox, stand-ins and pairing a device
+
+- The family inbox on the start page collects what has no place yet (texts,
+  links, files, also via “Share to Famio”); later it becomes a task, an
+  event, a note, a document or a shopping item.
+- Absences with a stand-in: while someone is away, another person takes
+  over their chores and tasks (Chores → Absences).
+- A new device signs in with a QR code from a signed-in device, without a
+  password (there Settings → QR icon “Pair a new device”, on the new one “Pair an
+  existing account”).
+- Large data exports are more reliable, and Bring!/Microsoft To Do no
+  longer get stuck.
+
 ## 2.0.16 – No more duplicate entries
 
 - Adding something again that is still ticked off on the list brings that
