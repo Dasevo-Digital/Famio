@@ -46,9 +46,8 @@ Future<void> _loadFonts() async {
     'assets/fonts/Fredoka-500.ttf',
     'assets/fonts/Fredoka-600.ttf',
   ]);
-  await load('packages/lucide_icons_flutter/Lucide', [
-    'packages/lucide_icons_flutter/assets/lucide.ttf',
-  ]);
+  // The app's own icon font (see AppIcons).
+  await load('Lucide', ['assets/fonts/Lucide.ttf']);
 }
 
 String _weatherCache() {

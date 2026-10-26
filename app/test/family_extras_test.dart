@@ -8,6 +8,7 @@ import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
+import 'package:famio/src/screens/inbox_screen.dart';
 import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
 import 'package:famio/src/widgets/files.dart';
@@ -357,6 +358,34 @@ void main() {
     expect(find.text('Ämter & Routinen'), findsOneWidget);
     await tester.tap(find.byTooltip('Wandanzeige beenden'));
     await tester.pumpAndSettle();
+  });
+
+  testWidgets('the inbox: always in the header, as a tile when not empty', (
+    tester,
+  ) async {
+    final engine = await open(tester, memberId: 'm1');
+    // A phone: the inbox takes the wall display's place up there.
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Wandanzeige'), findsNothing);
+    expect(find.text('Familien-Eingang'), findsNothing);
+    await tester.tap(find.byTooltip('Familien-Eingang'));
+    await tester.pumpAndSettle();
+    expect(find.byType(InboxScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(InboxScreen))).pop();
+    await tester.pumpAndSettle();
+
+    engine.saveInboxItem(
+      InboxItem(id: 'i1', title: 'Elternbrief', createdAt: DateTime.now()),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Familien-Eingang'), findsOneWidget);
+    expect(find.text('Elternbrief'), findsOneWidget);
+
+    // Wider screens keep the wall display next to it.
+    tester.view.physicalSize = const Size(1400, 1000);
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Wandanzeige'), findsOneWidget);
   });
 
   testWidgets('light or dark is chosen per device', (tester) async {

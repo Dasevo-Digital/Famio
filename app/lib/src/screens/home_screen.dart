@@ -71,6 +71,16 @@ class HomeScreen extends StatelessWidget {
               child: const SosHoldButton(),
             ),
           ),
+        // Always reachable, also while empty: the tile below only shows
+        // with something in it.
+        if (!me.isGuest)
+          BubbleButton(
+            icon: AppIcons.clipboardList,
+            tooltip: tr.inboxTitle,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const InboxScreen()),
+            ),
+          ),
         BubbleButton(
           icon: AppIcons.magnifyingGlass,
           tooltip: tr.commonSearch,
@@ -78,11 +88,14 @@ class HomeScreen extends StatelessWidget {
             context,
           ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen())),
         ),
-        BubbleButton(
-          icon: AppIcons.tv,
-          tooltip: tr.homeWallDisplay,
-          onPressed: () => openKiosk(context),
-        ),
+        // On phones the inbox takes the wall display's place (that one is
+        // for tablets; phones open it under Einstellungen → Dieses Gerät).
+        if (me.isGuest || MediaQuery.sizeOf(context).width >= 600)
+          BubbleButton(
+            icon: AppIcons.tv,
+            tooltip: tr.homeWallDisplay,
+            onPressed: () => openKiosk(context),
+          ),
         const SyncStatusIcon(),
         MemberAvatar(
           me,
@@ -145,7 +158,8 @@ class HomeScreen extends StatelessWidget {
                 !memories.isEmpty &&
                 AppScope.of(context).memoriesHiddenOn != dayKey(now);
             final tiles = [
-              if (!guest) _InboxTile(engine: engine),
+              if (!guest && engine.inboxItems.isNotEmpty)
+                _InboxTile(engine: engine),
               if (on(FamioSection.calendar)) _TodayTile(engine: engine),
               WeatherTile(engine: engine),
               if (showMemories) _MemoriesTile(memories: memories),
@@ -260,10 +274,7 @@ class _InboxTile extends StatelessWidget {
         context,
       ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen())),
       child: Column(
-        children: [
-          if (items.isEmpty) _Line(tr.inboxEmptyShort, dim: true),
-          for (final item in items.take(3)) _Line(item.title),
-        ],
+        children: [for (final item in items.take(3)) _Line(item.title)],
       ),
     );
   }
