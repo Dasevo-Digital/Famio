@@ -89,6 +89,12 @@ void main() {
       await tap(tester, find.byTooltip('Mehr').last);
       await tap(tester, find.text(label).last);
     }
+    // The first visit's tip sits above the bottom of the page (in the chat
+    // over the newest message); a person reads it and puts it away.
+    await tester.pump(const Duration(milliseconds: 500));
+    if (find.text('Verstanden').evaluate().isNotEmpty) {
+      await tap(tester, find.text('Verstanden').last);
+    }
   }
 
   testWidgets('chores, points, wall display, poll and pantry', (tester) async {
