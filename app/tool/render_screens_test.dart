@@ -12,6 +12,7 @@ import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/push/own_push.dart';
+import 'package:famio/src/screens/deferred_sections.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/widgets/famio_tour.dart';
 import 'package:famio/src/design/app_icons.dart';
@@ -1071,6 +1072,11 @@ void main() {
   setUpAll(() async {
     await initializeDateFormatting('de');
     await _loadFonts();
+    // Once, in real time: Dart keeps a deferred library's load. Started
+    // inside one scenario's fake time and not finished there, it never
+    // finished for the next one either ("pumpAndSettle timed out" behind a
+    // loading spinner, only when all scenarios ran together).
+    await loadAllSections();
   });
 
   Future<GlobalKey> start(

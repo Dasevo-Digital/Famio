@@ -68,10 +68,9 @@ class _SetupChecklistState extends State<SetupChecklist> {
   Future<void> _ignore(SetupStep step, bool ignored) async {
     final messenger = ScaffoldMessenger.of(context);
     try {
-      await AppScope.read(
-        context,
-      ).engine!.api.ignoreSetupStep(step.id, ignored: ignored);
-      SetupBanner._cached = null;
+      final engine = AppScope.read(context).engine!;
+      await engine.api.ignoreSetupStep(step.id, ignored: ignored);
+      SetupBanner._cached[engine] = null;
       if (mounted) {
         setState(() {
           _steps = _load();
@@ -205,8 +204,9 @@ class SetupBanner extends StatefulWidget {
 
   static const _hiddenKey = 'setup.hidden';
 
-  /// One request per app start (the start page rebuilds often).
-  static Future<List<SetupStep>?>? _cached;
+  /// One request per connection (the start page rebuilds often); signed
+  /// in to another server or account, the banner asks again.
+  static final _cached = Expando<Future<List<SetupStep>?>>();
 
   @override
   State<SetupBanner> createState() => _SetupBannerState();
@@ -231,7 +231,7 @@ class _SetupBannerState extends State<SetupBanner> {
     if (_hidden) return const SizedBox.shrink();
     final c = FamioColors.of(context);
     return FutureBuilder<List<SetupStep>?>(
-      future: SetupBanner._cached ??= _load(),
+      future: SetupBanner._cached[AppScope.of(context).engine!] ??= _load(),
       builder: (context, snapshot) {
         final steps = snapshot.data;
         if (steps == null || !steps.any((s) => s.open)) {
@@ -243,22 +243,24 @@ class _SetupBannerState extends State<SetupBanner> {
           padding: const EdgeInsets.only(bottom: 16),
           child: SoftCard(
             color: c.tint(FamioSection.settings),
-            onTap: () =>
-                showModalBottomSheet<void>(
-                  context: context,
-                  useRootNavigator: true,
-                  isScrollControlled: true,
-                  showDragHandle: true,
-                  useSafeArea: true,
-                  builder: (_) => const SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    child: SetupChecklist(),
-                  ),
-                ).then((_) {
-                  // Steps done or left as they are meanwhile: ask again.
-                  SetupBanner._cached = null;
-                  if (mounted) setState(() {});
-                }),
+            onTap: () {
+              final engine = AppScope.read(context).engine!;
+              showModalBottomSheet<void>(
+                context: context,
+                useRootNavigator: true,
+                isScrollControlled: true,
+                showDragHandle: true,
+                useSafeArea: true,
+                builder: (_) => const SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  child: SetupChecklist(),
+                ),
+              ).then((_) {
+                // Steps done or left as they are meanwhile: ask again.
+                SetupBanner._cached[engine] = null;
+                if (mounted) setState(() {});
+              });
+            },
             child: Row(
               children: [
                 Icon(
