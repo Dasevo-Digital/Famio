@@ -72,6 +72,9 @@ class SyncEngine {
   Timer? _debounce;
   WebSocketChannel? _socket;
   var _socketUp = false;
+
+  /// Change hints arrive over the WebSocket right now (polling is rare).
+  bool get live => _socketUp;
   var _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
   var _reconnectDelay = const Duration(seconds: 2);
 

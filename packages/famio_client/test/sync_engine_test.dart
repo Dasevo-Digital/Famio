@@ -254,9 +254,17 @@ void main() {
       });
       b.start();
       await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+      // Until the websocket is up the engine polls; on a busy machine that
+      // takes a while (this test once failed in the pre-push check).
+      for (var i = 0; i < 200 && !b.live; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      expect(b.live, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final up = syncs;
       await Future<void>.delayed(const Duration(milliseconds: 600));
-      // The first sync and at most the one of the websocket's greeting.
-      expect(syncs, lessThanOrEqualTo(2));
+      // Up, it no longer polls every 50 ms: at most the greeting's sync.
+      expect(syncs - up, lessThanOrEqualTo(1));
 
       final before = syncs;
       b.resumed();

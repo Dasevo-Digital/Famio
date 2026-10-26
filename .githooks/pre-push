@@ -51,7 +51,11 @@ step() {
   echo "pre-push: $*" >&2
   if ! "$@" >"$log" 2>&1; then
     tail -n 60 "$log" >&2
+    # The whole output stays: a rare failure can be looked at later.
+    kept=$(mktemp "${TMPDIR:-/tmp}/famio-pre-push-failed.XXXXXX")
+    cp "$log" "$kept"
     echo "pre-push: failed: $* (push cancelled; skip with --no-verify)" >&2
+    echo "pre-push: full output in $kept" >&2
     exit 1
   fi
 }
