@@ -3593,6 +3593,42 @@
     }
   },
   "wishesRelease": "Freigeben",
+  "wishesGiftIdeas": "Geschenkideen",
+  "wishesIdeasHidden": "{name} sieht sie nicht.",
+  "@wishesIdeasHidden": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wishesAddIdea": "Geschenkidee notieren",
+  "wishesNewIdea": "Neue Geschenkidee für {name}",
+  "@wishesNewIdea": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wishesEditIdea": "Geschenkidee bearbeiten",
+  "wishesIdeaBy": "Idee von {name}",
+  "@wishesIdeaBy": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
+  "wishesYourIdea": "Deine Idee",
+  "wishesNoIdeasYet": "Noch keine Geschenkideen. Was hier steht, sieht {name} nicht.",
+  "@wishesNoIdeasYet": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      }
+    }
+  },
   "kidsPleaseEnterNameBirthday": "Bitte Name und Geburtstag angeben",
   "kidsAllEntriesMilestonesMeasurements": "Alle Einträge, Meilensteine und Messungen dieses Kindes werden gelöscht.",
   "kidsChoosePhoto": "Foto wählen",
@@ -6586,7 +6622,13 @@
   "pairSecurityHint": "Öffne Famio auf dem neuen Gerät und scanne diesen Code dort. Die Freigabe gilt einmalig und nur fünf Minuten.",
   "pairCreate": "Kopplungscode erstellen",
   "pairValidUntil": "Gültig bis {time}",
-  "@pairValidUntil": {"placeholders": {"time": {"type": "String"}}},
+  "@pairValidUntil": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "pairCopied": "Kopplungscode kopiert.",
   "pairCopy": "Code zum Einfügen kopieren",
   "pairReplace": "Neuen Code erstellen",
@@ -6602,7 +6644,13 @@
   "inboxEmpty": "Der Familien-Eingang ist leer. Hier kannst du Texte, Links, Fotos und Scans zunächst unsortiert ablegen.",
   "inboxEmptyShort": "Nichts einzusortieren",
   "inboxFiles": "{count, plural, =1{1 Datei} other{{count} Dateien}}",
-  "@inboxFiles": {"placeholders": {"count": {"type": "int"}}},
+  "@inboxFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "inboxFileAs": "Einsortieren als …",
   "inboxShoppingItem": "Einkaufsartikel",
   "inboxEventDate": "Tag des Termins wählen",
@@ -6623,8 +6671,20 @@
   "absenceReason": "Grund oder Hinweis (optional)",
   "absenceUnknownMember": "Unbekanntes Mitglied",
   "absenceSubstituteName": "Vertretung: {name}",
-  "@absenceSubstituteName": {"placeholders": {"name": {"type": "String"}}},
+  "@absenceSubstituteName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "absenceAway": "Abwesend",
   "absenceRepresentedBy": "Abwesend · Vertretung: {name}",
-  "@absenceRepresentedBy": {"placeholders": {"name": {"type": "String"}}}
+  "@absenceRepresentedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -214,6 +214,49 @@ void main() {
     expect(byChild.rejected, isNotEmpty);
   });
 
+  test('gift ideas never reach the member they are for', () async {
+    final papa = await addMember('papa', MemberRole.adult);
+    var clock = DateTime.now().millisecondsSinceEpoch;
+    final idea = Wish(
+      id: 'idee',
+      ownerId: mama.id,
+      title: 'Kochkurs',
+      ideaBy: papa.id,
+    );
+    // An app that sends no audience (or one with Mama in it).
+    await papa.sync([
+      SyncRecord(
+        collection: Collections.wishes,
+        id: 'idee',
+        data: idea.toData([mama.id, papa.id, kind.id]),
+        updatedAt: ++clock,
+      ),
+    ]);
+    await mama.sync();
+    await kind.sync();
+    expect(mama.seen.containsKey('${Collections.wishes}/idee'), isFalse);
+    expect(kind.seen.containsKey('${Collections.wishes}/idee'), isTrue);
+
+    // An older app writes it back without knowing ideas: still one.
+    final old = {...kind.seen['${Collections.wishes}/idee']!.data}
+      ..remove(Wish.ideaByKey)
+      ..remove(SyncRecord.visibilityKey);
+    await kind.sync([
+      SyncRecord(
+        collection: Collections.wishes,
+        id: 'idee',
+        data: {...old, 'title': 'Kochkurs (Italienisch)'},
+        updatedAt: ++clock,
+      ),
+    ]);
+    await mama.sync();
+    expect(mama.seen.containsKey('${Collections.wishes}/idee'), isFalse);
+    final stored = app.records.get(Collections.wishes, 'idee')!;
+    expect(stored.data[Wish.ideaByKey], papa.id);
+    expect(stored.visibleTo, isNot(contains(mama.id)));
+    expect(stored.visibleTo, containsAll([papa.id, kind.id]));
+  });
+
   test('a substitute sees the private tasks while standing in', () async {
     final papa = await addMember('papa', MemberRole.adult);
     var clock = DateTime.now().millisecondsSinceEpoch;

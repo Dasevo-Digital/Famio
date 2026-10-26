@@ -26,7 +26,12 @@ extension WishData on SyncEngine {
       r.id: WishClaim.fromRecord(r),
   };
 
-  void saveWish(Wish w) => put(Collections.wishes, w.id, w.toData());
+  /// An idea goes to everyone but its owner (the server makes sure).
+  void saveWish(Wish w) => put(
+    Collections.wishes,
+    w.id,
+    w.toData(w.isIdea ? [for (final m in members) m.id] : null),
+  );
 
   void deleteWish(String id) => delete(Collections.wishes, id);
 
@@ -44,7 +49,8 @@ extension WishData on SyncEngine {
 }
 
 /// Wish lists of the whole family: my own to edit, the others' to see what
-/// they would like and say "Ich besorge das" – they never see who.
+/// they would like and say "Ich besorge das" – they never see who. On the
+/// others' lists the family also notes gift ideas, hidden from that person.
 class WishesScreen extends StatefulWidget {
   const WishesScreen({super.key, this.memberId});
 
@@ -75,28 +81,34 @@ class _WishesScreenState extends State<WishesScreen> {
         final mine = selected == engine.memberId;
         final wishes = [
           for (final w in engine.wishes)
-            if (w.ownerId == selected && (mine || !w.received)) w,
+            if (w.ownerId == selected && !w.isIdea && (mine || !w.received)) w,
         ];
+        final ideas = [
+          for (final w in engine.wishes)
+            if (w.ownerId == selected && w.isIdea && !mine) w,
+        ];
+        final name = engine.member(selected)?.displayName ?? '';
         final claims = engine.wishClaims;
         final c = FamioColors.of(context);
         final accent = c.strong(FamioSection.home);
         return SectionPage(
           section: FamioSection.home,
           title: tr.settingsWishes,
-          subtitle: mine
-              ? tr.wishesWhatYouWish
-              : tr.wishesWhatNameWishes(
-                  engine.member(selected)?.displayName ?? '',
-                ),
+          subtitle: mine ? tr.wishesWhatYouWish : tr.wishesWhatNameWishes(name),
           maxBodyWidth: 720,
-          floating: mine && !engine.iAmGuest
-              ? AddButton(
+          floating: engine.iAmGuest
+              ? null
+              : AddButton(
                   color: accent,
-                  tooltip: tr.wishesAddWish,
-                  icon: AppIcons.plus,
-                  onPressed: () => _edit(context, engine, null),
-                )
-              : null,
+                  tooltip: mine ? tr.wishesAddWish : tr.wishesAddIdea,
+                  icon: mine ? AppIcons.plus : AppIcons.lightbulb,
+                  onPressed: () => _edit(
+                    context,
+                    engine,
+                    null,
+                    ideaFor: mine ? null : selected,
+                  ),
+                ),
           body: ListView(
             padding: EdgeInsets.only(bottom: listBottomPadding(context)),
             children: [
@@ -141,6 +153,35 @@ class _WishesScreenState extends State<WishesScreen> {
                     onEdit: () => _edit(context, engine, w),
                   ),
                 ),
+              if (!mine && !engine.iAmGuest) ...[
+                ListHeading(tr.wishesGiftIdeas, color: accent),
+                if (ideas.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
+                    child: Text(
+                      tr.wishesIdeasHidden(name),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+                    ),
+                  ),
+                if (ideas.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(tr.wishesNoIdeasYet(name)),
+                  ),
+                for (final w in ideas)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _WishCard(
+                      wish: w,
+                      mine: false,
+                      claim: claims[w.id],
+                      engine: engine,
+                      onEdit: () => _edit(context, engine, w),
+                    ),
+                  ),
+              ],
             ],
           ),
         );
@@ -148,7 +189,15 @@ class _WishesScreenState extends State<WishesScreen> {
     );
   }
 
-  Future<void> _edit(BuildContext context, SyncEngine engine, Wish? w) async {
+  /// [w] or a new wish; with [ideaFor] a new gift idea for that member.
+  Future<void> _edit(
+    BuildContext context,
+    SyncEngine engine,
+    Wish? w, {
+    String? ideaFor,
+  }) async {
+    final idea = w?.isIdea ?? ideaFor != null;
+    final owner = w?.ownerId ?? ideaFor ?? engine.memberId;
     final title = TextEditingController(text: w?.title);
     final link = TextEditingController(text: w?.link);
     final price = TextEditingController(text: w?.price);
@@ -156,7 +205,13 @@ class _WishesScreenState extends State<WishesScreen> {
     final save = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(w == null ? tr.wishesNewWish : tr.wishesEditWish),
+        title: Text(
+          idea
+              ? (w == null
+                    ? tr.wishesNewIdea(engine.member(owner)?.displayName ?? '')
+                    : tr.wishesEditIdea)
+              : (w == null ? tr.wishesNewWish : tr.wishesEditWish),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -215,19 +270,18 @@ class _WishesScreenState extends State<WishesScreen> {
       engine.saveWish(
         Wish(
           id: w?.id ?? newId(),
-          ownerId: engine.memberId,
+          ownerId: owner,
           title: title.text.trim(),
           link: link.text.trim(),
           price: price.text.trim(),
           note: note.text.trim(),
           received: w?.received ?? false,
           createdAt: w?.createdAt ?? DateTime.now(),
+          ideaBy: idea ? (w?.ideaBy ?? engine.memberId) : null,
         ),
       );
     }
-    for (final c in [title, link, price, note]) {
-      c.dispose();
-    }
+    // Not disposed: the dialog still shows them while it closes.
   }
 }
 
@@ -256,7 +310,7 @@ class _WishCard extends StatelessWidget {
       if (wish.note.isNotEmpty) wish.note,
     ].join(' · ');
     return SoftCard(
-      onTap: mine ? onEdit : null,
+      onTap: mine || wish.isIdea ? onEdit : null,
       color: wish.received ? c.surfaceSoft : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,6 +343,16 @@ class _WishCard extends StatelessWidget {
             ],
           ),
           if (details.isNotEmpty) Text(details),
+          if (wish.isIdea)
+            Text(
+              wish.ideaBy == engine.memberId
+                  ? tr.wishesYourIdea
+                  : tr.wishesIdeaBy(
+                      engine.member(wish.ideaBy!)?.displayName ??
+                          tr.commonSomeone,
+                    ),
+              style: theme.textTheme.bodySmall?.copyWith(color: c.inkSoft),
+            ),
           const SizedBox(height: 6),
           if (mine)
             Align(
@@ -298,18 +362,8 @@ class _WishCard extends StatelessWidget {
                 label: Text(
                   wish.received ? tr.wishesWishAgain : tr.wishesReceived,
                 ),
-                onPressed: () => engine.saveWish(
-                  Wish(
-                    id: wish.id,
-                    ownerId: wish.ownerId,
-                    title: wish.title,
-                    link: wish.link,
-                    price: wish.price,
-                    note: wish.note,
-                    received: !wish.received,
-                    createdAt: wish.createdAt,
-                  ),
-                ),
+                onPressed: () =>
+                    engine.saveWish(wish.copyWith(received: !wish.received)),
               ),
             )
           else if (claim == null)

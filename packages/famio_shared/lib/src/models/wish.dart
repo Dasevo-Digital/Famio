@@ -1,6 +1,7 @@
 import '../sync_record.dart';
 
-/// A wish on a member's wish list (birthday, Christmas …).
+/// A wish on a member's wish list (birthday, Christmas …), or a gift idea
+/// others noted for them ([ideaBy]), which they never see.
 class Wish {
   const Wish({
     required this.id,
@@ -11,6 +12,7 @@ class Wish {
     this.note = '',
     this.received = false,
     this.createdAt,
+    this.ideaBy,
   });
 
   factory Wish.fromRecord(SyncRecord r) => Wish(
@@ -22,7 +24,10 @@ class Wish {
     note: r.data['note'] as String? ?? '',
     received: r.data['received'] as bool? ?? false,
     createdAt: DateTime.tryParse(r.data['createdAt'] as String? ?? ''),
+    ideaBy: r.data[ideaByKey] as String?,
   );
+
+  static const ideaByKey = 'ideaBy';
 
   final String id;
 
@@ -39,7 +44,14 @@ class Wish {
   final bool received;
   final DateTime? createdAt;
 
-  Map<String, Object?> toData() => {
+  /// Who noted this gift idea for [ownerId]; null for the owner's own wish.
+  /// The server never sends an idea to its owner.
+  final String? ideaBy;
+
+  bool get isIdea => ideaBy != null;
+
+  /// [audience] for an idea: everyone but its owner.
+  Map<String, Object?> toData([List<String>? audience]) => {
     'ownerId': ownerId,
     'title': title,
     'link': link,
@@ -47,7 +59,25 @@ class Wish {
     'note': note,
     'received': received,
     'createdAt': createdAt?.toUtc().toIso8601String(),
+    ideaByKey: ?ideaBy,
+    if (ideaBy != null && audience != null)
+      SyncRecord.visibilityKey: [
+        for (final id in audience)
+          if (id != ownerId) id,
+      ],
   };
+
+  Wish copyWith({bool? received}) => Wish(
+    id: id,
+    ownerId: ownerId,
+    title: title,
+    link: link,
+    price: price,
+    note: note,
+    received: received ?? this.received,
+    createdAt: createdAt,
+    ideaBy: ideaBy,
+  );
 }
 
 /// "I'll get that": record id = the wish's id. Visible to everyone except

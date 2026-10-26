@@ -489,6 +489,9 @@ class RecordStore {
             },
           );
         }
+        if (change.collection == Collections.wishes && !incoming.deleted) {
+          incoming = _ideaAudience(incoming, existing);
+        }
         _put(incoming, previous: existing);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
@@ -821,6 +824,29 @@ class RecordStore {
       }
     });
     return changed;
+  }
+
+  /// A gift idea (see [Wish.ideaBy]) is seen by everyone but the member
+  /// it is for, whatever an app sends; one written by an app that does not
+  /// know ideas stays an idea.
+  SyncRecord _ideaAudience(SyncRecord incoming, SyncRecord? existing) {
+    final before = existing == null || existing.deleted ? null : existing;
+    final ideaBy =
+        incoming.data[Wish.ideaByKey] ?? before?.data[Wish.ideaByKey];
+    if (ideaBy == null) return incoming;
+    final owner = incoming.data['ownerId'] ?? before?.data['ownerId'];
+    final audience = incoming.visibleTo ?? before?.visibleTo ?? memberIds();
+    return incoming.copyWith(
+      data: {
+        ...incoming.data,
+        Wish.ideaByKey: ideaBy,
+        'ownerId': owner,
+        SyncRecord.visibilityKey: [
+          for (final id in audience)
+            if (id != owner) id,
+        ],
+      },
+    );
   }
 
   /// Apps before 2.0.3 know nothing of who sees a task and leave the key

@@ -11,6 +11,7 @@ import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/inbox_screen.dart';
 import 'package:famio/src/screens/settings_screen.dart';
 import 'package:famio/src/screens/shopping_screens.dart';
+import 'package:famio/src/screens/wishes_screen.dart';
 import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/widgets/photo_viewer.dart';
 import 'package:famio_client/famio_client.dart';
@@ -471,6 +472,38 @@ void main() {
           .containsKey(SyncRecord.visibilityKey),
       isTrue,
     );
+  });
+
+  testWidgets('gift ideas for Mia are hidden from her', (tester) async {
+    final engine = await open(tester, memberId: 'm1');
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => const WishesScreen(memberId: 'k1'),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Geschenkideen'), findsOneWidget);
+    await tester.tap(find.byTooltip('Geschenkidee notieren'));
+    await tester.pumpAndSettle();
+    expect(find.text('Neue Geschenkidee für Mia'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).first, 'Fahrradhelm');
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+
+    final idea = engine.wishes.single;
+    expect((idea.ownerId, idea.ideaBy, idea.isIdea), ('k1', 'm1', true));
+    expect(
+      engine.store.get(Collections.wishes, idea.id)!.record.visibleTo,
+      ['m1', 'g1'],
+    );
+    expect(find.text('Deine Idee'), findsOneWidget);
+    expect(find.text('Mia sieht sie nicht.'), findsOneWidget);
+    // Not one of Mia's own wishes.
+    expect(find.text('Noch keine Wünsche.'), findsOneWidget);
   });
 
   testWidgets('pictures open in Famio, one after the other', (tester) async {

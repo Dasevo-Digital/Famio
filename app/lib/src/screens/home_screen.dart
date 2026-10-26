@@ -1038,7 +1038,7 @@ class _WishesTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final open = engine.wishes.where((w) => !w.received).toList();
+    final open = engine.wishes.where((w) => !w.received && !w.isIdea).toList();
     final mine = open.where((w) => w.ownerId == engine.memberId).length;
     final others = open.length - mine;
     return _Tile(
