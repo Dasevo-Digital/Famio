@@ -1,39 +1,50 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# famio_shared
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Gemeinsamer Kern von Famio-Server und -App, in reinem Dart (ohne Flutter).
+Was hier steht, gilt auf beiden Seiten gleich.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Inhalt
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- **Sync-Protokoll:** `SyncRecord`, `SyncRequest`/`SyncResponse` und
+  `Collections` mit den Lese- und Schreibrechten je Rolle (Erwachsene,
+  Kinder, Gäste, Dienstkonten).
+- **Datenmodelle** der Module unter `lib/src/models/` (Termine, Aufgaben,
+  Einkauf, Abwesenheiten, Kinder, Medikamente usw.). Regeln, die App und
+  Server gleich anwenden müssen, stehen beim Modell, etwa welche
+  Abwesenheit bei Überschneidungen gilt (`absenceFor`).
+- **Kataloge** unter `lib/src/catalog/`: Feiertage, Vorsorge- und
+  Impftermine, Meilensteine, Wachstumskurven, Einkaufskategorien.
+- **Querschnitt:** Server-Texte auf Englisch und Spanisch (`lib/src/i18n/`),
+  Zertifikats-Pins (`tls_pin.dart`), Versionsvergleich und die Prüfung der
+  Release-Signatur (`release_signature.dart`, Ed25519 über
+  `SHA256SUMS.txt`).
 
-## Features
+## Verwendung
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+Das Paket wird nicht auf pub.dev veröffentlicht. Server, App und
+`famio_client` binden es per Pfad ein:
 
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
-```dart
-const like = 'sample';
+```yaml
+dependencies:
+  famio_shared:
+    path: ../packages/famio_shared
 ```
 
-## Additional information
+```dart
+import 'package:famio_shared/famio_shared.dart';
+```
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+## Prüfen
+
+```sh
+dart analyze --fatal-infos
+dart test
+```
+
+`dart run tool/verify_release.dart <release-ordner>` prüft Prüfsummen und
+Signatur eines Release-Ordners so, wie es die Apps vor einem Update tun.
+
+## Lizenz
+
+Wie das ganze Repository: [PolyForm Strict License 1.0.0](../../LICENSE).
+Aufbau und Abläufe beschreibt die [README im Hauptverzeichnis](../../README.md).

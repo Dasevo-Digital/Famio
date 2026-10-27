@@ -1,39 +1,40 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# famio_client
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+Client-Kern der Famio-Apps in reinem Dart: Server-Anbindung, verschlüsselte
+lokale Datenbank und Synchronisierung. Die Flutter-App baut darauf auf; weil
+nichts davon Flutter braucht, laufen die Tests Ende-zu-Ende gegen einen
+echten Famio-Server im selben Prozess.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Inhalt
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+- **`FamioApiClient`:** HTTP-Zugriff auf den Server mit Zertifikats-Pinning,
+  Anmeldung (Passwort, Zwei-Faktor, Passkey, SSO, Gerätekopplung), Dateien
+  und WebSocket für Änderungsmeldungen.
+- **`LocalStore`:** die Daten der Familie offline in SQLite, auf Geräten mit
+  einem Schlüssel aus dem sicheren Speicher verschlüsselt.
+- **`SyncEngine`:** gleicht lokale Änderungen mit dem Server ab, auch nach
+  langer Offline-Zeit, und meldet den Apps, welche Bereiche sich geändert
+  haben.
+- **Dazu:** Dateicache, Erinnerungsplanung und die Texte des Clients.
 
-## Features
+## Verwendung
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
-
-## Usage
-
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
+Das Paket wird nicht auf pub.dev veröffentlicht; die App bindet es per Pfad
+ein (`path: ../packages/famio_client`). Es exportiert auch
+`famio_shared`:
 
 ```dart
-const like = 'sample';
+import 'package:famio_client/famio_client.dart';
 ```
 
-## Additional information
+## Prüfen
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```sh
+dart analyze --fatal-infos
+dart test        # startet dafür den Server aus ../../server
+```
+
+## Lizenz
+
+Wie das ganze Repository: [PolyForm Strict License 1.0.0](../../LICENSE).
+Aufbau und Abläufe beschreibt die [README im Hauptverzeichnis](../../README.md).

@@ -833,13 +833,6 @@ einer Sichtprüfung den Famio-Dienst stoppen und diese beiden Verzeichnisse
 gezielt übernehmen. Home-Assistant-Nutzer verwenden für reguläre Sicherungen
 zusätzlich den verschlüsselten Home-Assistant-Backup-Mechanismus.
 
-Prüfen einer Installation (arm64/amd64, Docker, LXC, hinter NPM):
-
-```sh
-cd packages/famio_client
-dart run tool/smoke_test.dart <server-url> <benutzer> <passwort> [ics-url]
-```
-
 Die CI baut Server-Binaries für LXC und Docker-Images. Ein Release entsteht
 mit `bash tool/release.sh <version>` auf dem Tag: Es baut Web-App und
 Server-Paket (Docker), prüft das Update mit `tool/release/smoke.sh` gegen das
