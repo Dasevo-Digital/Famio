@@ -833,7 +833,12 @@ einer Sichtprüfung den Famio-Dienst stoppen und diese beiden Verzeichnisse
 gezielt übernehmen. Home-Assistant-Nutzer verwenden für reguläre Sicherungen
 zusätzlich den verschlüsselten Home-Assistant-Backup-Mechanismus.
 
-Die CI baut Server-Binaries für LXC und Docker-Images. Ein Release entsteht
+Jeder Push auf `main` und jeder Tag läuft durch zwei CIs: Gitea prüft auf
+einem eigenen Runner (`.gitea/workflows/ci.yml`, Label `famio-linux`) dasselbe
+wie der Pre-Push-Hook unter `.githooks/` (Datenschutz, Versionen, Analyse und
+alle Tests); der GitHub-Spiegel baut zusätzlich alle Plattformen
+(`.github/workflows/`, von Gitea nicht ausgeführt). Die CI baut dort auch
+Server-Binaries für LXC und Docker-Images. Ein Release entsteht
 mit `bash tool/release.sh <version>` auf dem Tag: Es baut Web-App und
 Server-Paket (Docker), prüft das Update mit `tool/release/smoke.sh` gegen das
 Server-Paket der Vorversion, baut macOS (ad hoc signiert) und beide
@@ -849,9 +854,9 @@ Schlüsselbund des Maintainers), `tool/publish_gitea_release.sh` prüft beides
 vor dem Upload und legt am Tag `v*` genau die in `SHA256SUMS.txt` genannten
 Dateien, die Liste und ihre Signatur ab; die entpackte App und der
 Release-Text im selben Ordner bleiben lokal. Vorher prüft
-`tool/check_ci.dart`, dass Tests und Build-Checks des Tags auf GitHub
-bestanden haben (Gitea hat keinen eigenen Runner); ausgelassen wird das nur
-mit einer Begründung in `FAMIO_CI_OVERRIDE`. Die Tokens bleiben
+`tool/check_ci.dart`, dass der Gitea-Lauf sowie Tests und Build-Checks des
+Tags auf GitHub bestanden haben; ausgelassen wird das nur mit einer
+Begründung in `FAMIO_CI_OVERRIDE`. Die Tokens bleiben
 ausschließlich in `GITEA_TOKEN` und `GITHUB_TOKEN` (nur Lesezugriff auf
 Actions) außerhalb des Repositories. Release-Builds, CI und der
 Release-Check nutzen dieselbe Flutter-Version (`dart tool/check_versions.dart`

@@ -1,0 +1,58 @@
+# Gitea's own CI, on the family's runner (label famio-linux: a container
+# that runs the jobs directly, without Docker, and cannot reach the home
+# network). The checks of the pre-push hook, so a push that skipped the hook
+# is still checked; the native builds stay with GitHub (.github/workflows,
+# which Gitea ignores while this folder exists). tool/check_ci.dart wants
+# this run green before a release goes out.
+name: Gitea CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: famio-linux
+    timeout-minutes: 75
+    steps:
+      - name: Checkout (the whole history, the privacy check reads it)
+        env:
+          # The job's own token: the repository is private on Gitea.
+          TOKEN: ${{ gitea.token }}
+        run: |
+          git init -q .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          auth="Authorization: Basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraHeader="$auth" fetch -q --tags origin '+refs/heads/*:refs/remotes/origin/*'
+          git checkout -q --detach "$GITHUB_SHA"
+          git log -1 --format='%h %s' | cut -c1-120
+      - name: Flutter as in the GitHub workflows
+        run: |
+          v=$(sed -n 's/^ *FLUTTER_VERSION: "\(.*\)"$/\1/p' .github/workflows/app-release.yml)
+          dir="$HOME/flutter/$v"
+          [ -x "$dir/bin/flutter" ] ||
+            git clone -q --depth 1 --branch "$v" https://github.com/flutter/flutter.git "$dir"
+          echo "$dir/bin" >> "$GITHUB_PATH"
+          "$dir/bin/flutter" --version | head -1
+      - name: Privacy check masking test
+        run: bash tool/repo_privacy_check_test.sh
+      - name: Privacy check (identities, messages, secrets)
+        run: bash tool/repo_privacy_check.sh
+      - name: Release upload only takes listed files
+        run: bash tool/publish_gitea_release_test.sh
+      - name: Check release version
+        run: dart tool/check_versions.dart
+      - name: Shared package
+        working-directory: packages/famio_shared
+        run: dart pub get && dart analyze && dart test
+      - name: Client package
+        working-directory: packages/famio_client
+        run: dart pub get && dart analyze && dart test
+      - name: Server
+        working-directory: server
+        run: dart pub get && dart analyze && dart test
+      - name: App
+        working-directory: app
+        run: flutter pub get && flutter analyze && flutter test

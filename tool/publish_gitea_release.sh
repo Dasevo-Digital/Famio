@@ -2,7 +2,7 @@
 # Creates (or reuses) a Gitea release and uploads verified release artifacts:
 # exactly the files listed in SHA256SUMS.txt, the list and its signature.
 # Usage: GITEA_TOKEN=... GITHUB_TOKEN=... tool/publish_gitea_release.sh VERSION /path/to/release
-# (GITHUB_TOKEN reads the Actions runs of the tag, see tool/check_ci.dart.)
+# (both tokens also read the CI runs of the tag, see tool/check_ci.dart).
 set -eu
 
 VERSION=${1:?Usage: GITEA_TOKEN=... $0 VERSION RELEASE_DIR}
@@ -43,13 +43,13 @@ for NAME in $NAMES; do
   esac
   [ -f "$RELEASE_DIR/$NAME" ] || { echo "Missing $RELEASE_DIR/$NAME" >&2; exit 66; }
 done
-# Gitea has no runner: GitHub (the mirror) is the only CI. Publish only a
-# tag whose tests and build checks passed there; an exception needs a
-# stated reason (a GitHub outage, say).
+# Publish only a tag whose tests and build checks passed on Gitea's runner
+# and on GitHub (the mirror, with the native builds); an exception needs a
+# stated reason (an outage, say).
 if [ -n "${FAMIO_CI_OVERRIDE:-}" ]; then
   echo "CI check skipped: $FAMIO_CI_OVERRIDE"
 else
-  dart "$(dirname "$0")/check_ci.dart" "v$VERSION" || {
+  GITEA_API="$API_BASE" dart "$(dirname "$0")/check_ci.dart" "v$VERSION" || {
     echo "Not published. Wait for or rerun the runs, or set FAMIO_CI_OVERRIDE=<reason>." >&2
     exit 1
   }
