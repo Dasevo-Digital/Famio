@@ -42,6 +42,13 @@ class MemberAbsence {
     return !date.isBefore(from) && !date.isAfter(to);
   }
 
+  /// Whether [other] is another absence of the same member sharing a day.
+  bool overlaps(MemberAbsence other) =>
+      other.id != id &&
+      other.memberId == memberId &&
+      !other.to.isBefore(from) &&
+      !to.isBefore(other.from);
+
   Map<String, Object?> toData() => {
     'memberId': memberId,
     'from': _day(from),
@@ -56,13 +63,27 @@ String _day(DateTime date) =>
     '${date.month.toString().padLeft(2, '0')}-'
     '${date.day.toString().padLeft(2, '0')}';
 
+/// The absence of [memberId] on [day]. Absences of one member should not
+/// overlap, but two devices can save them offline: then the one that began
+/// last counts (a weekend inside a long stay is the more specific), then
+/// the shorter, then the smaller id. App and server both choose with this,
+/// so the substitute the app shows is the only one the server lets see the
+/// member's private tasks.
 MemberAbsence? absenceFor(
   Iterable<MemberAbsence> absences,
   String memberId,
   DateTime day,
 ) {
+  MemberAbsence? best;
   for (final absence in absences) {
-    if (absence.memberId == memberId && absence.covers(day)) return absence;
+    if (absence.memberId != memberId || !absence.covers(day)) continue;
+    if (best == null || _morePrecise(absence, best)) best = absence;
   }
-  return null;
+  return best;
+}
+
+bool _morePrecise(MemberAbsence a, MemberAbsence b) {
+  if (a.from != b.from) return a.from.isAfter(b.from);
+  if (a.to != b.to) return a.to.isBefore(b.to);
+  return a.id.compareTo(b.id) < 0;
 }

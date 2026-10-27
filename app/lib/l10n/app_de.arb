@@ -6832,6 +6832,7 @@
   "absenceDates": "Zeitraum wählen",
   "absencePerson": "Abwesende Person",
   "absenceSubstitute": "Vertretung (optional)",
+  "absenceOverlap": "Für diese Person ist in diesem Zeitraum schon eine Abwesenheit eingetragen. Bitte die vorhandene ändern.",
   "absenceReason": "Grund oder Hinweis (optional)",
   "absenceUnknownMember": "Unbekanntes Mitglied",
   "absenceSubstituteName": "Vertretung: {name}",

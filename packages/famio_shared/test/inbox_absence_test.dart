@@ -58,4 +58,34 @@ void main() {
     expect(absenceFor([back], 'adult-1', DateTime(2026, 10, 26)), isNull);
     expect(Collections.adultOnly, contains(Collections.absences));
   });
+
+  test('overlapping absences: the most precise one counts everywhere', () {
+    MemberAbsence away(String id, int from, int to, [String member = 'm']) =>
+        MemberAbsence(
+          id: id,
+          memberId: member,
+          from: DateTime(2026, 11, from),
+          to: DateTime(2026, 11, to),
+          substituteId: 'sub-$id',
+        );
+    final long = away('lang', 1, 20);
+    final weekend = away('wochenende', 7, 8);
+    final sameStart = away('kurz', 7, 7);
+    final twin = away('a-zwilling', 7, 7);
+    final other = away('anders', 7, 8, 'x');
+    for (final order in [
+      [long, weekend, sameStart, twin, other],
+      [other, twin, sameStart, weekend, long],
+    ]) {
+      expect(absenceFor(order, 'm', DateTime(2026, 11, 3)), long);
+      expect(absenceFor(order, 'm', DateTime(2026, 11, 8)), weekend);
+      expect(absenceFor(order, 'm', DateTime(2026, 11, 7)), twin);
+    }
+    expect(long.overlaps(weekend), isTrue);
+    expect(weekend.overlaps(long), isTrue);
+    expect(long.overlaps(long), isFalse);
+    expect(weekend.overlaps(other), isFalse);
+    expect(away('vorher', 1, 6).overlaps(weekend), isFalse);
+    expect(away('angrenzend', 8, 9).overlaps(weekend), isTrue);
+  });
 }

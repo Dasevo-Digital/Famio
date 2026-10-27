@@ -123,6 +123,14 @@ class _AbsencesScreen extends StatelessWidget {
           if (!substitutes.any((m) => m.id == substituteId)) {
             substituteId = null;
           }
+          // One absence per person and day: the substitute must be clear.
+          final planned = MemberAbsence(
+            id: existing?.id ?? '',
+            memberId: memberId,
+            from: DateUtils.dateOnly(range.start),
+            to: DateUtils.dateOnly(range.end),
+          );
+          final overlap = engine.absences.any(planned.overlaps);
           return AlertDialog(
             title: Text(tr.absenceTitle),
             content: Column(
@@ -165,6 +173,15 @@ class _AbsencesScreen extends StatelessWidget {
                   controller: title,
                   decoration: InputDecoration(labelText: tr.absenceReason),
                 ),
+                if (overlap) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    tr.absenceOverlap,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
             actions: [
@@ -173,7 +190,7 @@ class _AbsencesScreen extends StatelessWidget {
                 child: Text(tr.commonCancel),
               ),
               FilledButton(
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: overlap ? null : () => Navigator.pop(context, true),
                 child: Text(tr.commonSave),
               ),
             ],

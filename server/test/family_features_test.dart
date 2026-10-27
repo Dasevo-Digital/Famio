@@ -323,6 +323,60 @@ void main() {
     expect(app.records.get(Collections.tasks, 'arzt')!.visibleTo, [mama.id]);
   });
 
+  test('overlapping absences: only the substitute the apps show', () async {
+    final papa = await addMember('papa', MemberRole.adult);
+    final oma = await addMember('omama', MemberRole.adult);
+    var clock = DateTime.now().millisecondsSinceEpoch;
+    await mama.sync([
+      SyncRecord(
+        collection: Collections.tasks,
+        id: 'arzt',
+        data: Task(
+          id: 'arzt',
+          title: 'Arzttermin verschieben',
+          assigneeIds: [mama.id],
+          visibleTo: [mama.id],
+        ).toData(),
+        updatedAt: ++clock,
+      ),
+    ]);
+    // Two devices planned the same days offline: a long stay with Papa,
+    // a weekend inside it with Oma.
+    final today = DateTime.now();
+    final long = MemberAbsence(
+      id: 'lang',
+      memberId: mama.id,
+      from: today.subtract(const Duration(days: 5)),
+      to: today.add(const Duration(days: 5)),
+      substituteId: papa.id,
+    );
+    final weekend = MemberAbsence(
+      id: 'wochenende',
+      memberId: mama.id,
+      from: today.subtract(const Duration(days: 1)),
+      to: today.add(const Duration(days: 1)),
+      substituteId: oma.id,
+    );
+    await mama.sync([
+      for (final a in [long, weekend])
+        SyncRecord(
+          collection: Collections.absences,
+          id: a.id,
+          data: a.toData(),
+          updatedAt: ++clock,
+        ),
+    ]);
+    await papa.sync();
+    await oma.sync();
+    expect(absenceFor([long, weekend], mama.id, today), weekend);
+    expect(oma.seen.containsKey('${Collections.tasks}/arzt'), isTrue);
+    expect(papa.seen.containsKey('${Collections.tasks}/arzt'), isFalse);
+    expect(
+      app.records.get(Collections.tasks, 'arzt')!.visibleTo,
+      unorderedEquals([mama.id, oma.id]),
+    );
+  });
+
   group('shopping lists', () {
     var clock = DateTime.now().millisecondsSinceEpoch;
     SyncRecord list(ShoppingList l, {bool knowsAudience = true}) => SyncRecord(

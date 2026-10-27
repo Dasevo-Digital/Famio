@@ -2636,6 +2636,7 @@
   "absenceDates": "Elegir el periodo",
   "absencePerson": "Persona ausente",
   "absenceSubstitute": "Sustitución (opcional)",
+  "absenceOverlap": "Esta persona ya tiene una ausencia en este periodo. Modifica la existente.",
   "absenceReason": "Motivo o nota (opcional)",
   "absenceUnknownMember": "Miembro desconocido",
   "absenceSubstituteName": "Sustitución: {name}",

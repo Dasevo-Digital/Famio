@@ -1334,4 +1334,63 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
   });
+
+  group('absences', () {
+    testWidgets('a second absence on the same days cannot be saved', (
+      tester,
+    ) async {
+      await open(tester);
+      final today = DateUtils.dateOnly(DateTime.now());
+      // Saved on two devices offline: both cover today.
+      engine
+        ..saveAbsence(
+          MemberAbsence(
+            id: 'lang',
+            memberId: 'm2',
+            from: today,
+            to: today.add(const Duration(days: 6)),
+            substituteId: 'm1',
+            title: 'Dienstreise',
+          ),
+        )
+        ..saveAbsence(
+          MemberAbsence(
+            id: 'kurz',
+            memberId: 'm2',
+            from: today.add(const Duration(days: 1)),
+            to: today.add(const Duration(days: 2)),
+            title: 'Messe',
+          ),
+        );
+      await push(tester, const ChoresScreen());
+      await tester.tap(find.byTooltip('Abwesenheiten'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Messe'));
+      await tester.pumpAndSettle();
+      // The picker keeps the dates.
+      await tester.tap(find.text('Speichern').last);
+      await tester.pumpAndSettle();
+
+      const hint =
+          'Für diese Person ist in diesem Zeitraum schon eine '
+          'Abwesenheit eingetragen. Bitte die vorhandene ändern.';
+      expect(find.text(hint), findsOneWidget);
+      Finder save() => find.widgetWithText(FilledButton, 'Speichern');
+      expect(tester.widget<FilledButton>(save()).onPressed, isNull);
+
+      // For someone else the days are free.
+      await tester.tap(find.text('Papa').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mia').last);
+      await tester.pumpAndSettle();
+      expect(find.text(hint), findsNothing);
+      await tester.tap(save());
+      await tester.pumpAndSettle();
+      await _pumpData(tester);
+      expect(
+        engine.absenceOf('k1', today.add(const Duration(days: 1)))?.id,
+        'kurz',
+      );
+    });
+  });
 }

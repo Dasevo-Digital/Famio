@@ -2636,6 +2636,7 @@
   "absenceDates": "Choose the period",
   "absencePerson": "Person away",
   "absenceSubstitute": "Substitute (optional)",
+  "absenceOverlap": "This person already has an absence in this period. Please change the existing one.",
   "absenceReason": "Reason or note (optional)",
   "absenceUnknownMember": "Unknown member",
   "absenceSubstituteName": "Substitute: {name}",

@@ -771,15 +771,16 @@ class RecordStore {
   /// absence is over.
   static const substitutesKey = 'substitutes';
 
-  /// The substitutes of [assignees] absent on [day].
-  List<String> _standingIn(List<String> assignees, DateTime day) => {
-    for (final r in all(Collections.absences))
-      if (MemberAbsence.fromRecord(r) case final a
-          when assignees.contains(a.memberId) &&
-              a.covers(day) &&
-              a.substituteId != null)
-        a.substituteId!,
-  }.toList();
+  /// The substitutes of [assignees] absent on [day]: for overlapping
+  /// absences only the one the apps show too (see [absenceFor]).
+  List<String> _standingIn(List<String> assignees, DateTime day) {
+    final absences = [
+      for (final r in all(Collections.absences)) MemberAbsence.fromRecord(r),
+    ];
+    return {
+      for (final id in assignees) ?absenceFor(absences, id, day)?.substituteId,
+    }.toList();
+  }
 
   /// A task only some see is also seen by whoever stands in for one of its
   /// assignees today; who was added for an absence is noted, so they lose
