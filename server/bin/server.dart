@@ -9,7 +9,19 @@ import 'package:shelf/shelf_io.dart' as io;
 import 'package:sqlite3/sqlite3.dart';
 import 'package:timezone/timezone.dart' as tz;
 
-Future<void> main(List<String> args) async {
+void main(List<String> args) => runGuarded(
+  () => _start(args),
+  log: (error, stack) => stderr.writeln(
+    '${DateTime.now().toIso8601String()} Unbehandelter Fehler, Famio läuft '
+    'weiter: $error\n$stack',
+  ),
+  fail: (error, stack) {
+    stderr.writeln('FEHLER beim Start: $error\n$stack');
+    exit(70); // EX_SOFTWARE
+  },
+);
+
+Future<void> _start(List<String> args) async {
   final config = ServerConfig.load(args);
   if (config.healthcheck) exit(await _healthcheck(config.port));
   _privateFiles();
