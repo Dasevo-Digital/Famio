@@ -4,6 +4,13 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.19 – Stabiler im Hintergrund
+
+- Ein übersehener Fehler in einem Hintergrundauftrag beendet den Server
+  nicht mehr; er wird protokolliert, Famio läuft weiter.
+- iPhone und iPad erscheinen in der Geräteliste mit ihrem Modell statt als
+  „localhost“.
+
 ## 2.0.18 – Geschenkideen, Leihgaben und Schulranzen
 
 - Geschenkideen: Auf der Wunschliste eines anderen notiert ihr Ideen für

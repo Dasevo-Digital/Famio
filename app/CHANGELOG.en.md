@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.19 – Steadier in the background
+
+- An error a background job misses no longer stops the server; it is
+  logged and Famio keeps running.
+- iPhone and iPad show up in the device list with their model instead of
+  “localhost”.
+
 ## 2.0.18 – Gift ideas, loans and the school bag
 
 - Gift ideas: on someone else's wish list you note ideas for a birthday or

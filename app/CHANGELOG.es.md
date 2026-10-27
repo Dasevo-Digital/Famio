@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.19 – Más estable en segundo plano
+
+- Un error que se le escapa a una tarea en segundo plano ya no detiene el
+  servidor; se registra y Famio sigue funcionando.
+- El iPhone y el iPad aparecen en la lista de dispositivos con su modelo
+  en lugar de «localhost».
+
 ## 2.0.18 – Ideas de regalo, préstamos y la mochila
 
 - Ideas de regalo: en la lista de deseos de otra persona anotáis ideas para
