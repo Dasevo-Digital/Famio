@@ -1,4 +1,6 @@
 {
+  "healthFeverUnderTwoDay": "Bei Kindern bis zwei Jahre: Fieber länger als einen Tag bitte beim Kinderarzt abklären lassen. {warnings}",
+  "@healthFeverUnderTwoDay": {"placeholders": {"warnings": {"type": "String"}}},
   "@@locale": "de",
   "sectionHome": "Start",
   "sectionTasks": "Aufgaben",
@@ -4698,7 +4700,7 @@
       }
     }
   },
-  "healthFeverLetChildDrink": "Fieber. Viel trinken lassen und beobachten. Zum Kinderarzt, wenn es länger als 3 Tage anhält oder das Kind schlecht trinkt. {warnings}",
+  "healthFeverLetChildDrink": "Fieber. Trinken anbieten und beobachten. Ärztlichen Rat einholen, wenn es bei Kindern bis zwei Jahre länger als einen Tag, bei älteren länger als drei Tage anhält oder das Kind schlecht trinkt. {warnings}",
   "@healthFeverLetChildDrink": {
     "placeholders": {
       "warnings": {

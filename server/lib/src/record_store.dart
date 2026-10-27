@@ -20,6 +20,13 @@ class RecordStore {
 
   final Database _db;
 
+  /// A new process may have opened a restored database, even if revisions
+  /// have already caught up. Clients reconcile once per server instance.
+  final String _generation = newId();
+
+  /// Installed by FileStore: new attachments must already be accessible.
+  bool Function(String fileId, String memberId)? mayReferenceFile;
+
   /// The family's day (its time zone), for absences.
   final DateTime Function() _today;
 
@@ -327,11 +334,13 @@ class RecordStore {
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
     // older ones would ask again and again).
+    final scope = '$_generation:${role.name}:${access.name}';
     final reset =
         request.resettable &&
-        !request.full &&
         request.since > 0 &&
-        request.since < purgedRev;
+        ((request.scope != null && request.scope != scope) ||
+            (!request.full &&
+                (request.since < purgedRev || request.since > currentRev)));
     final since = request.since > currentRev || reset ? 0 : request.since;
     // Newer clients may know collections this server does not; skip those
     // instead of failing the whole sync.
@@ -492,6 +501,21 @@ class RecordStore {
         if (change.collection == Collections.wishes && !incoming.deleted) {
           incoming = _ideaAudience(incoming, existing);
         }
+        final previousFiles =
+            existing != null && !existing.deleted && recordDataIsValid(existing)
+            ? recordFileIds(existing).toSet()
+            : const <String>{};
+        if (!incoming.deleted &&
+            recordFileIds(incoming).any(
+              (id) =>
+                  !previousFiles.contains(id) &&
+                  !(mayReferenceFile?.call(id, userId) ?? false),
+            )) {
+          throw ApiException.badRequest(
+            'invalid_file_reference',
+            t('Kein Zugriff auf die angehängte Datei.'),
+          );
+        }
         _put(incoming, previous: existing);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
@@ -511,7 +535,16 @@ class RecordStore {
       refreshSubstitutes();
     }
     if (stored.isNotEmpty) onStored?.call(userId, stored);
-    return _pull(userId, since, now, rejected, unsupported, role, reset: reset);
+    return _pull(
+      userId,
+      since,
+      now,
+      rejected,
+      unsupported,
+      role,
+      reset: reset,
+      scope: scope,
+    );
   }
 
   SyncResponse _pull(
@@ -522,6 +555,7 @@ class RecordStore {
     Set<String> unsupported,
     MemberRole role, {
     bool reset = false,
+    required String scope,
   }) {
     // Guests only get their collections (names are constants, no input).
     final only = role == MemberRole.guest
@@ -555,6 +589,7 @@ class RecordStore {
       unsupported: unsupported,
       hasMore: hasMore,
       reset: reset,
+      scope: scope,
     );
   }
 
@@ -915,6 +950,11 @@ class RecordStore {
     if (utf8.encode(jsonEncode(r.data)).length > _maxDataBytes) {
       throw ApiException(413, 'too_large', t('Eintrag ist zu groß'));
     }
+    try {
+      validateRecordData(r);
+    } on FormatException {
+      throw ApiException.badRequest('invalid_record', t('Ungültiger Eintrag.'));
+    }
   }
 
   /// Live (non-deleted) records of [collection], optionally only those
@@ -937,8 +977,7 @@ class RecordStore {
     ];
   }
 
-  /// Whether a live record visible to [memberId] mentions [text] (e.g. a
-  /// file id) in its data. Used to authorise file downloads.
+  /// Whether a visible record has an actual attachment with this file id.
   bool referencedFor(String text, String memberId) {
     final role = _role(memberId);
     final guest = role == MemberRole.guest;
@@ -947,22 +986,30 @@ class RecordStore {
                   '$_guestTasksSql' : ''} ${_adultsOnlySql(role)}';
     final rows = _db.select(
       '''
-      SELECT 1 FROM records
+      SELECT * FROM records
        WHERE deleted = 0 AND instr(data, ?1) > 0 $only
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
-       LIMIT 1
       ''',
       [text, memberId],
     );
-    return rows.isNotEmpty;
+    return rows.any((row) {
+      final record = _record(row);
+      return recordDataIsValid(record) && recordFileIds(record).contains(text);
+    });
   }
 
-  /// Whether any live record mentions [text].
-  bool referenced(String text) => _db.select(
-    'SELECT 1 FROM records WHERE deleted = 0 AND instr(data, ?) > 0 LIMIT 1',
-    [text],
-  ).isNotEmpty;
+  /// Whether any live record actually attaches this file.
+  bool referenced(String text) => _db
+      .select(
+        'SELECT * FROM records WHERE deleted = 0 AND instr(data, ?) > 0',
+        [text],
+      )
+      .any((row) {
+        final record = _record(row);
+        return recordDataIsValid(record) &&
+            recordFileIds(record).contains(text);
+      });
 
   /// The stored version of a record (also tombstones), or null.
   SyncRecord? get(String collection, String id) => _get(collection, id);

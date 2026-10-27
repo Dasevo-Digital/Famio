@@ -48,7 +48,7 @@ Map<String, String> collectSharedTexts() {
       c.title;
       c.window;
     }
-    for (final v in vaccinations) {
+    for (final v in vaccinations.followedBy(historicVaccinations)) {
       v.title;
       v.dose;
       v.note;

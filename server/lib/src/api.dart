@@ -153,7 +153,16 @@ class FamioApi {
   /// second device. Only the SHA-256 digest is kept in memory; restarting the
   /// server invalidates every open pairing.
   final _devicePairings =
-      <String, ({String userId, DateTime expires, bool verified})>{};
+      <
+        String,
+        ({
+          String userId,
+          DateTime expires,
+          bool verified,
+          String sessionHash,
+          String authorization,
+        })
+      >{};
 
   final Accounts accounts;
   final RecordStore records;

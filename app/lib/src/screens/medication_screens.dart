@@ -440,7 +440,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     if (!_times.contains(text)) setState(() => _times.add(text));
   }
 
-  Future<DateTime?> _pickDay(DateTime initial) => showDatePicker(
+  Future<DateTime?> _pickDay(DateTime initial) => showFamioDatePicker(
     context: context,
     initialDate: initial,
     firstDate: DateTime(initial.year - 2),

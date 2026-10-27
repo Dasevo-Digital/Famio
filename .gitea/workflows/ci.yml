@@ -56,3 +56,14 @@ jobs:
       - name: App
         working-directory: app
         run: flutter pub get && flutter analyze && flutter test
+      - name: Screen labels and tap targets
+        working-directory: app
+        env:
+          FAMIO_A11Y: "1"
+        run: flutter test tool/render_screens_test.dart
+      - name: Screen labels and tap targets with high contrast
+        working-directory: app
+        env:
+          FAMIO_A11Y: "1"
+          FAMIO_HC: "1"
+        run: flutter test tool/render_screens_test.dart

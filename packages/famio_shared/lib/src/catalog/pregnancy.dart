@@ -211,6 +211,8 @@ class PregnancyTask {
   String get info => sharedText('PregnancyTask|$_info', _info);
 }
 
+// Ultrasound windows: Mutterschafts-Richtlinie, § 2 (9), valid August 2026.
+// https://www.g-ba.de/richtlinien/19/
 const pregnancyTasks = <PregnancyTask>[
   PregnancyTask(
     'midwife',
@@ -222,9 +224,9 @@ const pregnancyTasks = <PregnancyTask>[
   PregnancyTask(
     'us1',
     '1. Ultraschall-Screening',
-    9,
-    12,
-    'Mutterpass: 9+0 bis 12+6.',
+    8,
+    11,
+    'Mutterpass: 8+0 bis 11+6.',
   ),
   PregnancyTask(
     'course',
@@ -236,9 +238,9 @@ const pregnancyTasks = <PregnancyTask>[
   PregnancyTask(
     'us2',
     '2. Ultraschall-Screening',
-    19,
-    22,
-    'Mutterpass: 19+0 bis 22+6.',
+    18,
+    21,
+    'Mutterpass: 18+0 bis 21+6.',
   ),
   PregnancyTask(
     'ogtt',
@@ -257,9 +259,9 @@ const pregnancyTasks = <PregnancyTask>[
   PregnancyTask(
     'us3',
     '3. Ultraschall-Screening',
-    29,
-    32,
-    'Mutterpass: 29+0 bis 32+6.',
+    28,
+    31,
+    'Mutterpass: 28+0 bis 31+6.',
   ),
   PregnancyTask(
     'clinic',

@@ -557,7 +557,7 @@ class _TaskEditorState extends State<_TaskEditor> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showFamioDatePicker(
       context: context,
       initialDate: _due ?? now,
       firstDate: DateTime(now.year - 1),
@@ -569,7 +569,7 @@ class _TaskEditorState extends State<_TaskEditor> {
   Future<void> _pickReminder() async {
     final now = DateTime.now();
     final initial = _remindAt ?? _due ?? now;
-    final day = await showDatePicker(
+    final day = await showFamioDatePicker(
       context: context,
       initialDate: initial.isBefore(now) ? now : initial,
       firstDate: DateUtils.dateOnly(now),

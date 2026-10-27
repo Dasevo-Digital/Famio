@@ -605,7 +605,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
               ),
               onPressed: () async {
                 final now = DateTime.now();
-                final picked = await showDatePicker(
+                final picked = await showFamioDatePicker(
                   context: context,
                   initialDate: _expires ?? DateUtils.addDaysToDate(now, 365),
                   firstDate: DateTime(now.year - 10),

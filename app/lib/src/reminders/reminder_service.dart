@@ -31,7 +31,7 @@ import '../weather/weather.dart';
 
 /// Turns calendar and task reminders into local notifications on this device.
 ///
-/// Android, macOS and Windows get real scheduled notifications that also fire
+/// Android, iOS, macOS and Windows get scheduled notifications that also fire
 /// while the app is closed. Linux cannot schedule, so there a timer shows the
 /// next reminder while the app is running.
 class ReminderService {
@@ -45,6 +45,7 @@ class ReminderService {
       final ok = await plugin.initialize(
         settings: InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          iOS: DarwinInitializationSettings(),
           macOS: DarwinInitializationSettings(),
           linux: LinuxInitializationSettings(defaultActionName: tr.commonOpen),
           windows: WindowsInitializationSettings(
@@ -88,6 +89,7 @@ class ReminderService {
       // Lock screen shows only "Famio", not e.g. a child's check-up.
       visibility: NotificationVisibility.private,
     ),
+    iOS: DarwinNotificationDetails(),
     macOS: DarwinNotificationDetails(),
     linux: LinuxNotificationDetails(),
     windows: WindowsNotificationDetails(),
@@ -450,6 +452,7 @@ class ReminderService {
       channelDescription: tr.remindersWhoArrivedWhereLeft,
       visibility: NotificationVisibility.private,
     ),
+    iOS: DarwinNotificationDetails(),
     macOS: DarwinNotificationDetails(),
     linux: LinuxNotificationDetails(),
     windows: WindowsNotificationDetails(),
@@ -465,6 +468,7 @@ class ReminderService {
       // Lock screen shows only "Famio", not e.g. a child's check-up.
       visibility: NotificationVisibility.private,
     ),
+    iOS: DarwinNotificationDetails(),
     macOS: DarwinNotificationDetails(),
     linux: LinuxNotificationDetails(),
     windows: WindowsNotificationDetails(),
@@ -482,6 +486,9 @@ class ReminderService {
       fullScreenIntent: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       visibility: NotificationVisibility.public,
+    ),
+    iOS: DarwinNotificationDetails(
+      interruptionLevel: InterruptionLevel.timeSensitive,
     ),
     macOS: DarwinNotificationDetails(
       interruptionLevel: InterruptionLevel.timeSensitive,
@@ -503,6 +510,11 @@ class ReminderService {
       playSound: false,
       enableVibration: false,
       visibility: NotificationVisibility.private,
+    ),
+    iOS: const DarwinNotificationDetails(
+      presentAlert: false,
+      presentSound: false,
+      presentBanner: false,
     ),
     macOS: const DarwinNotificationDetails(
       presentSound: false,

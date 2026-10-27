@@ -142,7 +142,7 @@ class FamioColors extends ThemeExtension<FamioColors> {
 
   /// Destructive actions and errors, in a friendly red.
   Color get danger =>
-      readable(dark ? const Color(0xFFFF8F8F) : const Color(0xFFD64545));
+      text(dark ? const Color(0xFFFF8F8F) : const Color(0xFFD64545));
 
   /// Contrast of text in [highContrast] mode (WCAG AAA; AA would be 4.5).
   static const contrastTarget = 7.0;

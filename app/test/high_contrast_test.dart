@@ -1,8 +1,29 @@
 import 'package:famio/src/design/palette.dart';
+import 'package:famio/src/design/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('error text reaches AA on every input and card surface', () {
+    for (final brightness in Brightness.values) {
+      for (final high in [false, true]) {
+        final theme = famioTheme(brightness, highContrast: high);
+        final colors = theme.extension<FamioColors>()!;
+        for (final foreground in [colors.danger, theme.colorScheme.error]) {
+          for (final background in [
+            colors.background,
+            colors.surface,
+            colors.surfaceSoft,
+          ]) {
+            expect(
+              FamioColors.contrast(foreground, background),
+              greaterThanOrEqualTo(4.5),
+            );
+          }
+        }
+      }
+    }
+  });
   for (final base in [FamioColors.light, FamioColors.darkColors]) {
     final mode = base.dark ? 'dark' : 'light';
 

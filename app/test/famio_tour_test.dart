@@ -103,9 +103,13 @@ void main() {
   testWidgets('a child on a phone: duties instead of children, "Mehr"', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     await open(tester, size: const Size(390, 844), child: true);
     await tester.tap(find.text('Neu bei Famio? Eine Minute Rundgang'));
     await tester.pumpAndSettle();
+    final labels = await labeledTapTargetGuideline.evaluate(tester);
+    semantics.dispose();
+    expect(labels.passed, isTrue, reason: labels.reason);
     final titles = await walk(tester);
     expect(titles, [
       'Start',

@@ -88,7 +88,12 @@ markierte Famio-Termine werden nicht in Kalenderabos veröffentlicht.
 **Versionsprüfung.** Nur wenn ein Administrator in der Server-Verwaltung „Nach
 neuer Version suchen“ antippt, fragt seine App die öffentliche Release-Liste
 des Projekts bei GitHub ab. Dabei werden keine Famio-Daten übertragen; GitHub
-sieht die IP-Adresse des Geräts. Der Server selbst fragt nie nach Updates.
+sieht die IP-Adresse des Geräts. Wird zusätzlich die Updateverteilung über den
+Famio-Server ausdrücklich aktiviert, ruft der Server die Release-Liste und die
+zugehörigen Installationsdateien bei GitHub ab. Unvollständige Downloads werden
+im Hintergrund erneut versucht. Dabei sehen GitHub und seine Downloadserver die
+IP-Adresse des Famio-Servers; Famio-Inhalte werden nicht übertragen. Ohne diese
+Aktivierung führt der Server diese Abfragen nicht durch.
 
 **Bring! und Microsoft To Do.** Nur wenn ein Mitglied sein Konto verbindet
 und Listen zuordnet. Dann überträgt der Famio-Server die Einträge der

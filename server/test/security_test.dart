@@ -108,8 +108,9 @@ void main() {
     String id,
     Map<String, Object?> data, {
     bool deleted = false,
+    String collection = Collections.tasks,
   }) => SyncRecord(
-    collection: Collections.tasks,
+    collection: collection,
     id: id,
     data: data,
     updatedAt: clock += 10,
@@ -363,9 +364,14 @@ void main() {
         changes: [
           doc('ausweis', {
             'title': 'Reisepass',
-            'fileId': id,
+            'file': {
+              'id': id,
+              'name': 'pass.pdf',
+              'mime': 'application/pdf',
+              'size': 13,
+            },
             'visibleTo': [mamaId, papaId],
-          }),
+          }, collection: Collections.documents),
         ],
       );
       expect((await send('GET', 'api/files/$id', token: papa)).statusCode, 200);

@@ -104,6 +104,7 @@ BackupCheck checkBackup(
   var users = 0, records = 0, files = 0;
   var filesChecked = false;
   final fileIds = <String>{};
+  final fileSizes = <String, int>{};
 
   Database? open(String path) {
     final file = File(path);
@@ -141,10 +142,10 @@ BackupCheck checkBackup(
         users = count('SELECT count(*) FROM users');
         records = count('SELECT count(*) FROM records WHERE deleted = 0');
         files = count('SELECT count(*) FROM files');
-        fileIds.addAll([
-          for (final r in main.select('SELECT id FROM files'))
-            r['id'] as String,
-        ]);
+        for (final r in main.select('SELECT id, size FROM files')) {
+          fileIds.add(r['id'] as String);
+          fileSizes[r['id'] as String] = r['size'] as int;
+        }
       } finally {
         main.close();
       }
@@ -176,6 +177,25 @@ BackupCheck checkBackup(
             r['id'] as String,
         };
         final missing = fileIds.difference(stored).length;
+        final incomplete = blobs
+            .select(
+              'SELECT id, COUNT(*) AS n, MIN(seq) AS first, MAX(seq) AS last,'
+              ' SUM(length(data)) AS bytes FROM blobs WHERE kind = ? GROUP BY id',
+              [FileStore.originalKind],
+            )
+            .where(
+              (r) =>
+                  fileSizes.containsKey(r['id']) &&
+                  (r['first'] != 0 ||
+                      r['last'] != (r['n'] as int) - 1 ||
+                      r['bytes'] != fileSizes[r['id']]),
+            )
+            .length;
+        if (incomplete > 0) {
+          problems.add(
+            t('Unvollständige Dateiinhalte: {count}', {'count': incomplete}),
+          );
+        }
         if (missing > 0) {
           problems.add(
             missing == 1

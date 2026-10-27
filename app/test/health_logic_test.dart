@@ -4,6 +4,32 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'fever age boundaries use calendar months instead of fixed day counts',
+    () {
+      final infant = Child(
+        id: 'c1',
+        name: 'Child',
+        birthDate: DateTime(2026, 5, 1),
+      );
+      expect(
+        feverAdvice(infant, 38, at: DateTime(2026, 7, 31)).level,
+        FeverLevel.urgent,
+      );
+      expect(
+        feverAdvice(infant, 38, at: DateTime(2026, 8, 1)).level,
+        FeverLevel.raised,
+      );
+      expect(
+        feverAdvice(infant, 39, at: DateTime(2026, 10, 31)).level,
+        FeverLevel.doctor,
+      );
+      expect(
+        feverAdvice(infant, 39, at: DateTime(2026, 11, 1)).level,
+        FeverLevel.fever,
+      );
+    },
+  );
   final child = Child(id: 'c1', name: 'Mia', birthDate: DateTime(2026, 8, 1));
   var n = 0;
   ChildLog log(
@@ -104,7 +130,7 @@ void main() {
     final at = DateTime(2026, 9, 27);
     // 8 weeks old: 38.0 is urgent.
     expect(feverAdvice(child, 38.0, at: at).level, FeverLevel.urgent);
-    final older = Child(id: 'c2', name: 'Ben', birthDate: DateTime(2023, 1, 1));
+    final older = Child(id: 'c1', name: 'Ben', birthDate: DateTime(2023, 1, 1));
     expect(feverAdvice(older, 37.2, at: at).level, FeverLevel.normal);
     expect(feverAdvice(older, 37.8, at: at).level, FeverLevel.raised);
     expect(feverAdvice(older, 38.7, at: at).level, FeverLevel.fever);
@@ -119,6 +145,63 @@ void main() {
       FeverLevel.doctor,
     );
   });
+
+  test(
+    'young children: elapsed fever time, separate children and episodes',
+    () {
+      final at = DateTime(2026, 10, 27, 12);
+      final young = Child(
+        id: 'c1',
+        name: 'Child',
+        birthDate: DateTime(2025, 10, 27),
+      );
+      final first = log(
+        LogKind.temperature,
+        at.subtract(const Duration(hours: 48)),
+        temp: 38.6,
+      );
+      expect(
+        feverAdvice(young, 38.6, at: at, logs: [first]).level,
+        FeverLevel.doctor,
+      );
+      final recent = log(
+        LogKind.temperature,
+        at.subtract(const Duration(hours: 23)),
+        temp: 38.6,
+      );
+      expect(
+        feverAdvice(young, 38.6, at: at, logs: [recent]).level,
+        FeverLevel.fever,
+      );
+      final normal = log(
+        LogKind.temperature,
+        at.subtract(const Duration(hours: 12)),
+        temp: 37.2,
+      );
+      expect(
+        feverAdvice(young, 38.6, at: at, logs: [first, normal]).level,
+        FeverLevel.fever,
+      );
+      final other = Child(
+        id: 'other',
+        name: 'Other',
+        birthDate: young.birthDate,
+      );
+      expect(
+        feverAdvice(other, 38.6, at: at, logs: [first]).level,
+        FeverLevel.fever,
+      );
+      final future = log(
+        LogKind.temperature,
+        at.add(const Duration(hours: 1)),
+        temp: 38.6,
+      );
+      expect(
+        feverAdvice(young, 38.6, at: at, logs: [future]).level,
+        FeverLevel.fever,
+      );
+    },
+  );
 
   test('logs share the guardians-only audience of the child', () {
     final engine = SyncEngine(

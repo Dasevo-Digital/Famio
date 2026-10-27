@@ -197,6 +197,7 @@ class _TourOverlayState extends State<_TourOverlay> {
                   // Taps beside the card do nothing: the tour is no menu.
                   Positioned.fill(
                     child: GestureDetector(
+                      excludeFromSemantics: true,
                       behavior: HitTestBehavior.opaque,
                       onTap: () {},
                       child: TweenAnimationBuilder<Rect?>(

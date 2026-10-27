@@ -6,6 +6,7 @@ import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/inbox_screen.dart';
@@ -389,6 +390,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Wandanzeige'), findsOneWidget);
   });
+
+  testWidgets(
+    'inbox shopping conversion preserves text by limiting eligible targets',
+    (tester) async {
+      final engine = await open(tester, memberId: 'm1');
+      engine.saveShoppingList(
+        const ShoppingList(id: 'list', name: 'Wocheneinkauf'),
+      );
+      engine.saveInboxItem(
+        const InboxItem(
+          id: 'in',
+          title: 'Milch',
+          text: 'https://example.test/product',
+        ),
+      );
+      final context = tester.element(find.byType(Scaffold).first);
+      unawaited(
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen())),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(tr.inboxFileAs));
+      await tester.pumpAndSettle();
+      expect(find.text(tr.inboxShoppingItem), findsNothing);
+      expect(engine.inboxItems.single.text, 'https://example.test/product');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      engine.saveInboxItem(const InboxItem(id: 'in', title: 'Milch'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(tr.inboxFileAs));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(tr.inboxShoppingItem));
+      await tester.pumpAndSettle();
+      expect(engine.inboxItems, isEmpty);
+      expect(engine.shoppingItems('list').single.name, 'Milch');
+    },
+  );
 
   testWidgets('a tip leaves the bottom of the page free', (tester) async {
     await open(tester, memberId: 'm1');

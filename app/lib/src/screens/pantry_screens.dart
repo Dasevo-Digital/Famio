@@ -535,7 +535,7 @@ class _PantryEditorState extends State<_PantryEditor> {
                 ),
                 onPressed: () async {
                   final now = DateTime.now();
-                  final picked = await showDatePicker(
+                  final picked = await showFamioDatePicker(
                     context: context,
                     initialDate: _bestBefore ?? now,
                     firstDate: DateTime(now.year - 1),

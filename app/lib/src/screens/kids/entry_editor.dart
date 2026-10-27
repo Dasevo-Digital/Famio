@@ -298,7 +298,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                         ),
                       ),
                       onPressed: () async {
-                        final picked = await showDatePicker(
+                        final picked = await showFamioDatePicker(
                           context: context,
                           initialDate: _clamp(_date),
                           firstDate: _firstDate,

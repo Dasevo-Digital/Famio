@@ -153,7 +153,7 @@ class _ChoreEditorState extends State<_ChoreEditor> {
                   avatar: const Icon(AppIcons.calendarCheck, size: 18),
                   label: Text(DateFormat.MMMMEEEEd(appLanguage).format(_date)),
                   onPressed: () async {
-                    final picked = await showDatePicker(
+                    final picked = await showFamioDatePicker(
                       context: context,
                       initialDate: _date,
                       firstDate: DateTime(_date.year - 1),

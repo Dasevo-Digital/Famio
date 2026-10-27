@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../design/app_icons.dart';
+import '../design/components.dart';
 import '../l10n.dart';
 
 /// "12. Juni 1985" or "12. Juni".
@@ -26,7 +27,7 @@ class BirthdayField extends StatelessWidget {
 
   Future<void> _pick(BuildContext context) async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showFamioDatePicker(
       context: context,
       initialDate:
           value?.inYear(value!.year ?? now.year - 30) ??

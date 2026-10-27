@@ -165,7 +165,7 @@ class _ChildEditorState extends State<_ChildEditor> {
               ),
               onPressed: () async {
                 final now = DateTime.now();
-                final picked = await showDatePicker(
+                final picked = await showFamioDatePicker(
                   context: context,
                   initialDate: _birth ?? now,
                   firstDate: DateTime(now.year - 25),

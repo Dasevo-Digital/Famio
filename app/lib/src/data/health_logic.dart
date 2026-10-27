@@ -221,7 +221,17 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
   List<ChildLog> logs = const [],
 }) {
   final now = at ?? DateTime.now();
-  final ageDays = now.difference(child.birthDate).inDays;
+  bool youngerThanMonths(int months) {
+    final month = DateTime(
+      child.birthDate.year,
+      child.birthDate.month + months,
+    );
+    final days = DateTime(month.year, month.month + 1, 0).day;
+    return now.isBefore(
+      DateTime(month.year, month.month, child.birthDate.day.clamp(1, days)),
+    );
+  }
+
   final warnings = tr.healthCall112RightAway;
   if (celsius >= 41) {
     return (
@@ -229,25 +239,44 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
       text: tr.healthVeryHighFeverGet(warnings),
     );
   }
-  if (celsius >= 38 && ageDays < 91) {
+  if (celsius >= 38 && youngerThanMonths(3)) {
     return (
       level: FeverLevel.urgent,
       text: tr.healthBabiesUnder3Months(warnings),
     );
   }
-  if ((celsius >= 39 && ageDays < 183) || celsius >= 40) {
+  if ((celsius >= 39 && youngerThanMonths(6)) || celsius >= 40) {
     return (
       level: FeverLevel.doctor,
       text: tr.healthHighFeverContactPediatrician(warnings),
     );
   }
   if (celsius >= 38.5) {
-    final feverDays = {
+    final temperatures = [
       for (final l in logs)
-        if (l.kind == LogKind.temperature &&
-            (l.temperatureC ?? 0) >= 38.5 &&
-            now.difference(l.start).inDays < 4)
-          _dayOf(l.start),
+        if (l.childId == child.id &&
+            l.kind == LogKind.temperature &&
+            l.temperatureC != null &&
+            !l.start.isAfter(now))
+          l,
+    ]..sort((a, b) => b.start.compareTo(a.start));
+    final episode = <ChildLog>[];
+    for (final l in temperatures) {
+      if (l.temperatureC! < 38.5) break;
+      episode.add(l);
+    }
+    // https://www.kindergesundheit-info.de/themen/krankes-kind/krankheitszeichen/fieber/
+    final underTwo = youngerThanMonths(24);
+    if (underTwo &&
+        episode.any((l) => now.difference(l.start) > const Duration(days: 1))) {
+      return (
+        level: FeverLevel.doctor,
+        text: tr.healthFeverUnderTwoDay(warnings),
+      );
+    }
+    final feverDays = {
+      for (final l in episode)
+        if (now.difference(l.start).inDays < 4) _dayOf(l.start),
       _dayOf(now),
     };
     return (

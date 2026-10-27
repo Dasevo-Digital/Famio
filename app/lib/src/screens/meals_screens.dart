@@ -781,7 +781,7 @@ class _MealEditorState extends State<_MealEditor> {
                   avatar: const Icon(AppIcons.calendarBlank, size: 18),
                   label: Text(DateFormat.MMMMEEEEd(appLanguage).format(_day)),
                   onPressed: () async {
-                    final picked = await showDatePicker(
+                    final picked = await showFamioDatePicker(
                       context: context,
                       initialDate: _day,
                       firstDate: DateTime(2020),

@@ -11,6 +11,7 @@ import 'package:famio/src/screens/chores_screens.dart';
 import 'package:famio/src/screens/event_editor.dart';
 import 'package:famio/src/screens/event_import_screen.dart';
 import 'package:famio/src/screens/notes_screen.dart';
+import 'package:famio/src/screens/kids_log_screens.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
@@ -98,6 +99,34 @@ void main() {
 
   Finder field(String label) =>
       find.widgetWithText(TextField, label, skipOffstage: false);
+
+  for (final brightness in Brightness.values) {
+    testWidgets('baby quick actions have readable text in ${brightness.name}', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      tester.platformDispatcher.platformBrightnessTestValue = brightness;
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      await open(tester);
+      await push(
+        tester,
+        Scaffold(
+          body: ChildLogView(
+            child: Child(
+              id: 'baby',
+              name: 'Baby',
+              birthDate: DateTime.now().subtract(const Duration(days: 60)),
+            ),
+            logs: const [],
+          ),
+        ),
+      );
+      expect(find.text('Stillen'), findsOneWidget);
+      final result = await textContrastGuideline.evaluate(tester);
+      semantics.dispose();
+      expect(result.passed, isTrue, reason: result.reason);
+    });
+  }
 
   group('quiet hours', () {
     testWidgets('shows the saved time; offline a change is undone', (

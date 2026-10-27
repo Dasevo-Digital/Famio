@@ -49,6 +49,8 @@ Future<void> _loadFonts() async {
   ]);
   // The app's own icon font (see AppIcons).
   await load('Lucide', ['assets/fonts/Lucide.ttf']);
+  // Framework dialogs use these icons even though most screens use Lucide.
+  await load('MaterialIcons', ['fonts/MaterialIcons-Regular.otf']);
 }
 
 String _weatherCache() {
@@ -917,13 +919,19 @@ final _a11y = Platform.environment.containsKey('FAMIO_A11Y');
 Future<void> _audit(WidgetTester tester, String name) async {
   final handle = tester.ensureSemantics();
   final findings = <String>[];
+  final failures = <String>[];
   for (final (label, guideline) in [
     ('Tippfläche', androidTapTargetGuideline),
     ('Beschriftung', labeledTapTargetGuideline),
     ('Kontrast', textContrastGuideline),
   ]) {
     final result = await guideline.evaluate(tester);
-    if (!result.passed) findings.add('[$label] ${result.reason}');
+    if (!result.passed) {
+      findings.add('[$label] ${result.reason}');
+      // Pixel contrast can sample icons or scrolled content instead of text.
+      // Exact text contrasts also have focused tests in test/.
+      if (label != 'Kontrast') failures.add('[$label] ${result.reason}');
+    }
   }
   handle.dispose();
   final dir = Platform.environment['FAMIO_SHOTS'] ?? 'build/screens';
@@ -931,6 +939,7 @@ Future<void> _audit(WidgetTester tester, String name) async {
     '== $name\n${findings.isEmpty ? 'ok\n' : findings.join('\n')}\n',
     mode: FileMode.append,
   );
+  expect(failures, isEmpty, reason: '$name: ${failures.join('\n')}');
 }
 
 Future<void> _shot(WidgetTester tester, GlobalKey key, String name) async {

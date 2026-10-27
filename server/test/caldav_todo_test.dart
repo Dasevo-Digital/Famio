@@ -142,21 +142,23 @@ void main() {
   });
 
   test('a reminder app ticking a task off keeps its photos', () async {
-    const photo = FileRef(
-      id: 'f1',
+    final stored = await app.files.save(
+      owner: app.accounts.members().single.id,
       name: 'regal.jpg',
       mime: 'image/jpeg',
-      size: 1200,
+      body: Stream.value(List.filled(1200, 1)),
+    );
+    final photo = FileRef(
+      id: stored.id,
+      name: stored.name,
+      mime: stored.mime,
+      size: stored.size,
     );
     await sync([
       record(
         Collections.tasks,
         'regal',
-        const Task(
-          id: 'regal',
-          title: 'Regal aufbauen',
-          photos: [photo],
-        ).toData(),
+        Task(id: 'regal', title: 'Regal aufbauen', photos: [photo]).toData(),
       ),
     ]);
     final put = await dav(
@@ -167,7 +169,7 @@ void main() {
     expect(put.statusCode, anyOf(201, 204));
     final task = Task.fromRecord(app.records.get(Collections.tasks, 'regal')!);
     expect(task.done, isTrue);
-    expect(task.photos.single.id, 'f1');
+    expect(task.photos.single.id, stored.id);
   });
 
   test('a famio task is served as VTODO', () async {

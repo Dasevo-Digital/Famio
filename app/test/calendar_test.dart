@@ -77,6 +77,23 @@ void main() {
     await tester.pump(const Duration(seconds: 1)); // Sync debounce.
   });
 
+  testWidgets('date picker day targets fit on a 390 dp phone', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await openCalendar(tester);
+    tester.view.physicalSize = const Size(390, 844);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Neuer Termin'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(DateFormat.yMMMEd('de').format(DateTime.now())).first,
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(DatePickerDialog), findsOneWidget);
+    final result = await androidTapTargetGuideline.evaluate(tester);
+    semantics.dispose();
+    expect(result.passed, isTrue, reason: result.reason);
+  });
+
   testWidgets('deleting one occurrence of a series keeps the rest', (
     tester,
   ) async {

@@ -533,6 +533,12 @@ void main() {
     });
 
     test('guests only see tasks assigned or shown to them', () async {
+      final stored = await app.files.save(
+        owner: mama.id,
+        name: 'r.jpg',
+        mime: 'image/jpeg',
+        body: Stream.value([1]),
+      );
       await mama.sync([
         task(Task(id: 'muell', title: 'Müll')),
         task(Task(id: 'kuchen', title: 'Kuchen', assigneeIds: [oma.id])),
@@ -543,9 +549,9 @@ void main() {
           Task(
             id: 'foto',
             title: 'Rahmen',
-            photos: const [
+            photos: [
               FileRef(
-                id: 'rahmen.jpg',
+                id: stored.id,
                 name: 'r.jpg',
                 mime: 'image/jpeg',
                 size: 1,
@@ -565,8 +571,8 @@ void main() {
           '${Collections.tasks}/abholen',
         ]),
       );
-      expect(app.records.referencedFor('rahmen.jpg', oma.id), isFalse);
-      expect(app.records.referencedFor('rahmen.jpg', kind.id), isTrue);
+      expect(app.records.referencedFor(stored.id, oma.id), isFalse);
+      expect(app.records.referencedFor(stored.id, kind.id), isTrue);
 
       // No longer hers: the task leaves her device, the family keeps it.
       await mama.sync([task(Task(id: 'kuchen', title: 'Kuchen'))]);

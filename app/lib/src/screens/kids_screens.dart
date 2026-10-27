@@ -301,7 +301,7 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final tint = Color.alphaBlend(color.withValues(alpha: 0.13), c.surface);
-    final ink = c.readable(color, on: tint);
+    final ink = c.text(color, on: tint);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

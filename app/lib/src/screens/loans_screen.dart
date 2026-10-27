@@ -217,7 +217,7 @@ Future<void> showLoanEditor(
                     ),
               onTap: () async {
                 final now = DateTime.now();
-                final picked = await showDatePicker(
+                final picked = await showFamioDatePicker(
                   context: dialogContext,
                   initialDate:
                       due ?? DateTime(now.year, now.month, now.day + 14),

@@ -6,6 +6,32 @@ import 'app_icons.dart';
 import 'palette.dart';
 import '../l10n.dart';
 
+/// Leaves enough width for seven 48 dp day targets on phones from 360 dp.
+Future<DateTime?> showFamioDatePicker({
+  required BuildContext context,
+  required DateTime initialDate,
+  required DateTime firstDate,
+  required DateTime lastDate,
+  String? helpText,
+  DatePickerMode initialDatePickerMode = DatePickerMode.day,
+}) => showDialog<DateTime>(
+  context: context,
+  builder: (_) => DatePickerDialog(
+    initialDate: initialDate,
+    firstDate: firstDate,
+    lastDate: lastDate,
+    helpText: helpText,
+    initialCalendarMode: initialDatePickerMode,
+    insetPadding: EdgeInsets.symmetric(
+      horizontal: min(
+        12.0,
+        max(0.0, (MediaQuery.sizeOf(context).width - 360) / 2),
+      ),
+      vertical: 24,
+    ),
+  ),
+);
+
 /// Page layout used by every section: a large friendly title on a soft
 /// colored blob instead of a Material app bar.
 class SectionPage extends StatelessWidget {

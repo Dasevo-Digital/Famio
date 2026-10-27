@@ -435,7 +435,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                 title: Text(contract ? tr.contractEnd : tr.deadlinesDue),
                 trailing: Text(_date.format(_due)),
                 onTap: () async {
-                  final picked = await showDatePicker(
+                  final picked = await showFamioDatePicker(
                     context: context,
                     initialDate: _due,
                     firstDate: DateTime(2000),

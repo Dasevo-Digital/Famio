@@ -141,7 +141,7 @@ denen man teilnimmt, und eigene bzw. nicht zugewiesene Aufgaben):
 
 | Plattform | Verhalten |
 |---|---|
-| Android, macOS, Windows | System-Benachrichtigung, auch bei geschlossener App |
+| Android, iOS, macOS, Windows | System-Benachrichtigung nach erteilter Berechtigung, auch bei geschlossener App |
 | Linux | nur solange die App läuft (kein geplantes Anzeigen unter Linux) |
 
 ### Google Kalender, Apple Kalender & Co.

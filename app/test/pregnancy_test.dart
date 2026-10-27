@@ -16,13 +16,28 @@ void main() {
 
   test('task states follow the weeks and the done list', () {
     final us2 = pregnancyTasks.firstWhere((t) => t.id == 'us2');
-    expect(taskState(p, us2, p.dayOf(18)), DueState.upcoming);
+    expect(taskState(p, us2, p.dayOf(17, 6)), DueState.upcoming);
+    expect(taskState(p, us2, p.dayOf(18)), DueState.due);
     expect(taskState(p, us2, p.dayOf(20, 2)), DueState.due);
     expect(taskState(p, us2, p.dayOf(24)), DueState.late);
     expect(
       taskState(p.copyWith(done: {'us2'}), us2, p.dayOf(24)),
       DueState.done,
     );
+  });
+
+  test('all ultrasound windows include their official first and last days', () {
+    for (final (id, start, end) in [
+      ('us1', 8, 11),
+      ('us2', 18, 21),
+      ('us3', 28, 31),
+    ]) {
+      final task = pregnancyTasks.singleWhere((t) => t.id == id);
+      expect(taskState(p, task, p.dayOf(start - 1, 6)), DueState.upcoming);
+      expect(taskState(p, task, p.dayOf(start)), DueState.due);
+      expect(taskState(p, task, p.dayOf(end, 6)), DueState.due);
+      expect(taskState(p, task, p.dayOf(end + 1)), DueState.late);
+    }
   });
 
   test('contraction stats and the 5-1-1 rule', () {

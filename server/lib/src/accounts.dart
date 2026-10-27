@@ -544,6 +544,20 @@ class Accounts {
           ]).firstOrNull?['method']
           as String?;
 
+  /// A pairing is valid only while its approving session and password
+  /// remain current. Only digests leave this method.
+  String? pairingAuthorization(String sessionHash) {
+    final rows = _db.select(
+      'SELECT u.password_hash FROM sessions s JOIN users u ON u.id = s.user_id'
+      ' WHERE s.token_hash = ? AND s.scope IS NULL AND s.last_seen > ?',
+      [sessionHash, _idleCutoff],
+    );
+    if (rows.isEmpty) return null;
+    return sha256
+        .convert(utf8.encode('${rows.first['password_hash']}'))
+        .toString();
+  }
+
   /// The session proved a second factor (e.g. after setting it up).
   void setSessionMethod(String token, String method) => _db.execute(
     'UPDATE sessions SET method = ? WHERE token_hash = ?',

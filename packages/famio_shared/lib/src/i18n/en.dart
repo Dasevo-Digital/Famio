@@ -1,6 +1,12 @@
 /// English texts of the shared enums, catalogs and messages (key → text),
 /// see [sharedTexts]. German is in the code itself.
 const sharedEn = <String, String>{
+  "Vaccination|Meningokokken A, C, W, Y": "Meningococcus A, C, W, Y",
+  "Server|Ungültiger Eintrag.": "Invalid record.",
+  "Server|Kein Zugriff auf die angehängte Datei.":
+      "No access to the attached file.",
+  "Server|Unvollständige Dateiinhalte: {count}":
+      "Incomplete file contents: {count}",
   "MemberRole.adult": "Adult",
   "MemberRole.child": "Child",
   "MemberRole.guest": "Guest",
@@ -572,13 +578,13 @@ const sharedEn = <String, String>{
   "PregnancyTask|Hebammen sind oft früh ausgebucht – für Vorsorge und Wochenbett am besten gleich nach dem positiven Test anfragen.":
       "Midwives are often booked up early – best ask right after the positive test, for prenatal care and the time after the birth.",
   "PregnancyTask|1. Ultraschall-Screening": "1st ultrasound screening",
-  "PregnancyTask|Mutterpass: 9+0 bis 12+6.": "Maternity record: 9+0 to 12+6.",
+  "PregnancyTask|Mutterpass: 8+0 bis 11+6.": "Maternity record: 8+0 to 11+6.",
   "PregnancyTask|Geburtsvorbereitungskurs anmelden":
       "Sign up for a birth preparation class",
   "PregnancyTask|Der Kurs selbst liegt meist zwischen SSW 25 und 35.":
       "The class itself is usually between week 25 and 35.",
   "PregnancyTask|2. Ultraschall-Screening": "2nd ultrasound screening",
-  "PregnancyTask|Mutterpass: 19+0 bis 22+6.": "Maternity record: 19+0 to 22+6.",
+  "PregnancyTask|Mutterpass: 18+0 bis 21+6.": "Maternity record: 18+0 to 21+6.",
   "PregnancyTask|Zuckertest (Glukose)": "Glucose test",
   "PregnancyTask|Test auf Schwangerschaftsdiabetes: 24+0 bis 27+6.":
       "Test for gestational diabetes: 24+0 to 27+6.",
@@ -586,7 +592,7 @@ const sharedEn = <String, String>{
   "PregnancyTask|STIKO: zu Beginn des letzten Drittels – schützt das Baby in den ersten Monaten.":
       "STIKO: at the start of the last trimester – protects the baby in the first months.",
   "PregnancyTask|3. Ultraschall-Screening": "3rd ultrasound screening",
-  "PregnancyTask|Mutterpass: 29+0 bis 32+6.": "Maternity record: 29+0 to 32+6.",
+  "PregnancyTask|Mutterpass: 28+0 bis 31+6.": "Maternity record: 28+0 to 31+6.",
   "PregnancyTask|In der Geburtsklinik anmelden":
       "Register at the maternity clinic",
   "PregnancyTask|Oft mit Vorgespräch und Kreißsaalführung.":

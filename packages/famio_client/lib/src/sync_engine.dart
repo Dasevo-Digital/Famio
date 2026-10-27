@@ -62,6 +62,7 @@ class SyncEngine {
   /// Collections the server does not know yet; their edits stay local until
   /// the server is updated (retried on the next app start).
   final _unsupported = <String>{};
+  final _readable = Expando<bool>();
   var _clockOffset = 0;
   var _members = <FamilyMember>[];
   Future<void>? _running;
@@ -101,12 +102,16 @@ class SyncEngine {
   // --- data access ----------------------------------------------------------
 
   /// Live (non-deleted) records of [collection].
-  Iterable<SyncRecord> records(String collection) =>
-      store.all(collection).map((r) => r.record).where((r) => !r.deleted);
+  Iterable<SyncRecord> records(String collection) => store
+      .all(collection)
+      .map((r) => r.record)
+      .where((r) => !r.deleted && _valid(r));
+
+  bool _valid(SyncRecord r) => _readable[r] ??= recordDataIsValid(r);
 
   SyncRecord? record(String collection, String id) {
     final r = store.get(collection, id)?.record;
-    return r == null || r.deleted ? null : r;
+    return r == null || r.deleted || !_valid(r) ? null : r;
   }
 
   void put(String collection, String id, Map<String, Object?> data) =>
@@ -228,9 +233,11 @@ class SyncEngine {
       bool more;
       // Downloading everything (first sync or after a reset): an old
       // revision on the next pages is no reason for another reset.
+      final resumeReset = store.getMeta('syncReset') == '1';
+      if (resumeReset) store.setMeta('lastRev', '0');
       var full = lastRev == 0;
       // After a reset: what the server still has, to drop the rest.
-      Set<(String, String)>? received;
+      Set<(String, String)>? received = resumeReset ? {} : null;
       do {
         final pushed = _pushable.take(_pushBatch).toList();
         final sentAt = DateTime.now().millisecondsSinceEpoch;
@@ -240,11 +247,13 @@ class SyncEngine {
             changes: pushed,
             resettable: true,
             full: full,
+            scope: store.getMeta('syncScope') ?? '',
           ),
         );
         final receivedAt = DateTime.now().millisecondsSinceEpoch;
         _clockOffset = response.serverTime - (sentAt + receivedAt) ~/ 2;
         if (response.reset) {
+          store.setMeta('syncReset', '1');
           full = true;
           received = {};
         }
@@ -258,6 +267,7 @@ class SyncEngine {
         more = response.hasMore || _pushable.isNotEmpty;
         if (!response.hasMore && received != null) {
           _dropMissing(received);
+          store.setMeta('syncReset', '0');
           received = null;
         }
       } while (more);
@@ -277,7 +287,7 @@ class SyncEngine {
 
   Iterable<SyncRecord> get _pushable => store.dirty
       .map((r) => r.record)
-      .where((r) => !_unsupported.contains(r.collection));
+      .where((r) => !_unsupported.contains(r.collection) && _valid(r));
 
   void _apply(List<SyncRecord> pushed, SyncResponse response) {
     final changed = <String>{};
@@ -303,6 +313,7 @@ class SyncEngine {
         changed.add(remote.collection);
       }
       store.setMeta('lastRev', '${response.rev}');
+      if (response.scope != null) store.setMeta('syncScope', response.scope!);
       store.setMeta('clockOffset', '$_clockOffset');
     });
     if (changed.isNotEmpty) _changes.add(changed);

@@ -1,6 +1,12 @@
 /// Spanish texts of the shared enums, catalogs and messages (key → text),
 /// see [sharedTexts]. German is in the code itself.
 const sharedEs = <String, String>{
+  "Vaccination|Meningokokken A, C, W, Y": "Meningococo A, C, W, Y",
+  "Server|Ungültiger Eintrag.": "Entrada no válida.",
+  "Server|Kein Zugriff auf die angehängte Datei.":
+      "Sin acceso al archivo adjunto.",
+  "Server|Unvollständige Dateiinhalte: {count}":
+      "Contenido de archivos incompleto: {count}",
   "MemberRole.adult": "Adulto",
   "MemberRole.child": "Niño",
   "MemberRole.guest": "Invitado",
@@ -589,15 +595,15 @@ const sharedEs = <String, String>{
   "PregnancyTask|Hebammen sind oft früh ausgebucht – für Vorsorge und Wochenbett am besten gleich nach dem positiven Test anfragen.":
       "Las matronas suelen tener la agenda llena pronto: lo mejor es preguntar justo después del test positivo, para el control prenatal y el posparto.",
   "PregnancyTask|1. Ultraschall-Screening": "1.ª ecografía de control",
-  "PregnancyTask|Mutterpass: 9+0 bis 12+6.":
-      "Cartilla de embarazo: 9+0 a 12+6.",
+  "PregnancyTask|Mutterpass: 8+0 bis 11+6.":
+      "Cartilla de embarazo: 8+0 a 11+6.",
   "PregnancyTask|Geburtsvorbereitungskurs anmelden":
       "Apuntarse a un curso de preparación al parto",
   "PregnancyTask|Der Kurs selbst liegt meist zwischen SSW 25 und 35.":
       "El curso suele ser entre la semana 25 y la 35.",
   "PregnancyTask|2. Ultraschall-Screening": "2.ª ecografía de control",
-  "PregnancyTask|Mutterpass: 19+0 bis 22+6.":
-      "Cartilla de embarazo: 19+0 a 22+6.",
+  "PregnancyTask|Mutterpass: 18+0 bis 21+6.":
+      "Cartilla de embarazo: 18+0 a 21+6.",
   "PregnancyTask|Zuckertest (Glukose)": "Prueba de glucosa",
   "PregnancyTask|Test auf Schwangerschaftsdiabetes: 24+0 bis 27+6.":
       "Prueba de diabetes gestacional: 24+0 a 27+6.",
@@ -605,8 +611,8 @@ const sharedEs = <String, String>{
   "PregnancyTask|STIKO: zu Beginn des letzten Drittels – schützt das Baby in den ersten Monaten.":
       "STIKO: al principio del último trimestre; protege al bebé en los primeros meses.",
   "PregnancyTask|3. Ultraschall-Screening": "3.ª ecografía de control",
-  "PregnancyTask|Mutterpass: 29+0 bis 32+6.":
-      "Cartilla de embarazo: 29+0 a 32+6.",
+  "PregnancyTask|Mutterpass: 28+0 bis 31+6.":
+      "Cartilla de embarazo: 28+0 a 31+6.",
   "PregnancyTask|In der Geburtsklinik anmelden":
       "Inscribirse en el hospital para el parto",
   "PregnancyTask|Oft mit Vorgespräch und Kreißsaalführung.":

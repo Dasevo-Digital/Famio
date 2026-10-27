@@ -267,7 +267,7 @@ class _EventEditorState extends State<_EventEditor> {
     }
   }
 
-  Future<DateTime?> _pickDate(DateTime initial) => showDatePicker(
+  Future<DateTime?> _pickDate(DateTime initial) => showFamioDatePicker(
     context: context,
     initialDate: initial,
     firstDate: DateTime(1900),
@@ -530,6 +530,7 @@ class _EventEditorState extends State<_EventEditor> {
               ],
               const SizedBox(height: 16),
               DropdownButtonFormField<int?>(
+                isExpanded: true,
                 // Keep a stored value visible even if it is not a preset.
                 initialValue: _reminder,
                 key: ValueKey(_allDay),
@@ -576,6 +577,7 @@ class _EventEditorState extends State<_EventEditor> {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: DropdownButtonFormField<String?>(
+                      isExpanded: true,
                       initialValue: engine.members.any((m) => m.id == value)
                           ? value
                           : null,

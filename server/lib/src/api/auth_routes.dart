@@ -142,12 +142,15 @@ extension _AuthRoutes on FamioApi {
           pairing.expires.isBefore(now) || pairing.userId == member.id,
     );
     final secret = _randomToken();
+    final sessionHash = sha256.convert(utf8.encode(token!)).toString();
     final digest = sha256.convert(utf8.encode(secret)).toString();
     final expires = now.add(_pairingLifetime);
     _devicePairings[digest] = (
       userId: member.id,
       expires: expires,
       verified: verified,
+      sessionHash: sessionHash,
+      authorization: accounts.pairingAuthorization(sessionHash)!,
     );
     _audit(member, 'hat eine Gerätekopplung freigegeben');
     return _json({
@@ -171,7 +174,9 @@ extension _AuthRoutes on FamioApi {
     final pairing = _devicePairings.remove(digest);
     if (secret.isEmpty ||
         pairing == null ||
-        pairing.expires.isBefore(DateTime.now())) {
+        pairing.expires.isBefore(DateTime.now()) ||
+        accounts.pairingAuthorization(pairing.sessionHash) !=
+            pairing.authorization) {
       throttle.failed(address, throttleKey);
       throw ApiException(
         401,

@@ -1,4 +1,5 @@
 {
+  "healthFeverUnderTwoDay": "For children up to two years: have fever lasting longer than one day checked by the pediatrician. {warnings}",
   "@@locale": "en",
   "sectionHome": "Home",
   "sectionTasks": "Tasks",
@@ -1962,7 +1963,7 @@
   "healthBabiesUnder3Months": "Babies under 3 months with 38 °C or more: call the pediatrician or the out-of-hours medical service (116 117 in Germany) right away. {warnings}",
   "healthHighFeverContactPediatrician": "High fever: contact the pediatrician today or call 116 117 (Germany). {warnings}",
   "healthFeverDaysDaysPlease": "Fever for {days} days: please have it checked by the pediatrician. {warnings}",
-  "healthFeverLetChildDrink": "Fever. Let the child drink a lot and keep an eye on it. See the pediatrician if it lasts longer than 3 days or the child drinks poorly. {warnings}",
+  "healthFeverLetChildDrink": "Fever. Offer fluids and observe. Seek medical advice if it lasts longer than one day up to age two, longer than three days in older children, or the child drinks poorly. {warnings}",
   "healthRaisedTemperatureMeasureAgain": "Raised temperature – measure again later.",
   "healthNormalTemperature": "Normal temperature.",
   "exportZipFileAllFamily": "A ZIP file with all of the family's data: areas as JSON, uploaded files, members (without passwords) and settings. Location histories are not included. Keep it safe, it is not encrypted.",

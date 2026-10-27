@@ -457,7 +457,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                     '${_monthly ? tr.budgetFrom : ''}${DateFormat.yMd(appLanguage).format(_date)}',
                   ),
                   onPressed: () async {
-                    final picked = await showDatePicker(
+                    final picked = await showFamioDatePicker(
                       context: context,
                       initialDate: _date,
                       firstDate: DateTime(now.year - 5),

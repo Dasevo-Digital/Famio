@@ -80,6 +80,10 @@ class FileStore {
       ' seq INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (id, kind, seq))',
     );
     _importPlainFiles(dataDir);
+    records.mayReferenceFile = (id, member) {
+      final file = get(id);
+      return file != null && mayRead(file, member);
+    };
   }
 
   final Database _db;
@@ -117,6 +121,10 @@ class FileStore {
   /// Isolates prevent decoding from blocking the event loop, but each decoder
   /// needs a large RGBA buffer. A one-at-a-time queue bounds the process RSS.
   Future<void> _thumbnailTail = Future.value();
+  int _uploadBytes = 0;
+  // Monotonic: include completed concurrent uploads without scanning all
+  // stored files again for every incoming network chunk.
+  int _completedBytes = 0;
 
   Future<T> _serializeThumbnail<T>(Future<T> Function() task) {
     final previous = _thumbnailTail;
@@ -135,6 +143,8 @@ class FileStore {
   }) async {
     final id = newId();
     final existingBytes = usage().$2;
+    final completedAtStart = _completedBytes;
+    var reserved = 0;
     var size = 0;
     var seq = 0;
     final buffer = BytesBuilder(copy: false);
@@ -155,37 +165,53 @@ class FileStore {
             }),
           );
         }
-        if (existingBytes + size > maxTotalBytes) {
+        if (existingBytes +
+                (_completedBytes - completedAtStart) +
+                _uploadBytes +
+                chunk.length >
+            maxTotalBytes) {
           throw ApiException(
             413,
             'storage_quota_exceeded',
             t('Der Speicherplatz der Familie ist ausgeschöpft.'),
           );
         }
+        _uploadBytes += chunk.length;
+        reserved += chunk.length;
         buffer.add(chunk);
         if (buffer.length >= _chunk) flush();
       }
       flush();
+      if (size == 0) {
+        throw ApiException.badRequest('empty', t('Leere Datei'));
+      }
+      final safeName = _safeName(name);
+      _db.execute(
+        'INSERT INTO files (id, owner, name, mime, size, created_at)'
+        ' VALUES (?, ?, ?, ?, ?, ?)',
+        [
+          id,
+          owner,
+          safeName,
+          mime,
+          size,
+          DateTime.now().millisecondsSinceEpoch,
+        ],
+      );
+      _completedBytes += size;
+      return StoredFile(
+        id: id,
+        owner: owner,
+        name: safeName,
+        mime: mime,
+        size: size,
+      );
     } catch (_) {
       _deleteBlocks(id);
       rethrow;
+    } finally {
+      _uploadBytes -= reserved;
     }
-    if (size == 0) {
-      throw ApiException.badRequest('empty', t('Leere Datei'));
-    }
-    final safeName = _safeName(name);
-    _db.execute(
-      'INSERT INTO files (id, owner, name, mime, size, created_at)'
-      ' VALUES (?, ?, ?, ?, ?, ?)',
-      [id, owner, safeName, mime, size, DateTime.now().millisecondsSinceEpoch],
-    );
-    return StoredFile(
-      id: id,
-      owner: owner,
-      name: safeName,
-      mime: mime,
-      size: size,
-    );
   }
 
   StoredFile? get(String id) {

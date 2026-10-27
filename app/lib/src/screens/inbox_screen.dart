@@ -95,7 +95,7 @@ class InboxScreen extends StatelessWidget {
                               value: _InboxAction.document,
                               child: Text(tr.commonDocument),
                             ),
-                          if (item.files.isEmpty)
+                          if (item.files.isEmpty && item.text.trim().isEmpty)
                             PopupMenuItem(
                               value: _InboxAction.shopping,
                               child: Text(tr.inboxShoppingItem),
@@ -211,7 +211,7 @@ class InboxScreen extends StatelessWidget {
           ),
         );
       case _InboxAction.event:
-        final day = await showDatePicker(
+        final day = await showFamioDatePicker(
           context: context,
           initialDate: DateTime.now(),
           firstDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -248,6 +248,7 @@ class InboxScreen extends StatelessWidget {
           );
         }
       case _InboxAction.shopping:
+        if (item.text.trim().isNotEmpty || item.files.isNotEmpty) return;
         final list = await _pickShoppingList(context, engine);
         if (list == null) return;
         // Ticked off already: comes back instead of a second entry.

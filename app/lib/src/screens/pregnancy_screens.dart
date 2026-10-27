@@ -607,7 +607,7 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
               avatar: const Icon(AppIcons.cake, size: 18),
               label: Text(tr.pregnancyBornDate(_date.format(born))),
               onPressed: () async {
-                final picked = await showDatePicker(
+                final picked = await showFamioDatePicker(
                   context: context,
                   initialDate: born,
                   firstDate: p.dayOf(20),
@@ -770,7 +770,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
                   _due == null ? tr.commonPickDate : _date.format(_due!),
                 ),
                 onPressed: () async {
-                  final picked = await showDatePicker(
+                  final picked = await showFamioDatePicker(
                     context: context,
                     initialDate: _due ?? DateUtils.addDaysToDate(now, 200),
                     firstDate: DateUtils.addDaysToDate(now, -60),
@@ -783,7 +783,7 @@ class _PregnancyEditorState extends State<_PregnancyEditor> {
                 avatar: const Icon(AppIcons.calendarDot, size: 18),
                 label: Text(tr.pregnancyCalculateLastPeriod),
                 onPressed: () async {
-                  final picked = await showDatePicker(
+                  final picked = await showFamioDatePicker(
                     context: context,
                     helpText: tr.pregnancyFirstDayLastPeriod,
                     initialDate: DateUtils.addDaysToDate(now, -56),

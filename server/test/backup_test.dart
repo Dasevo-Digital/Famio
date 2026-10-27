@@ -112,8 +112,8 @@ void main() {
       final main = openEncrypted(p.join(folder.path, 'famio.db'), hexKey: key)
         ..execute('CREATE TABLE users (id TEXT)')
         ..execute('CREATE TABLE records (deleted INTEGER)')
-        ..execute('CREATE TABLE files (id TEXT)')
-        ..execute("INSERT INTO files VALUES ('f1')")
+        ..execute('CREATE TABLE files (id TEXT, size INTEGER)')
+        ..execute("INSERT INTO files VALUES ('f1', 1)")
         ..execute('INSERT INTO records VALUES (0), (0), (1)');
       for (var i = 0; i < users; i++) {
         main.execute("INSERT INTO users VALUES ('u$i')");
@@ -147,7 +147,7 @@ void main() {
         ..execute('PRAGMA journal_mode = WAL')
         ..execute('CREATE TABLE users (id TEXT)')
         ..execute('CREATE TABLE records (deleted INTEGER)')
-        ..execute('CREATE TABLE files (id TEXT)')
+        ..execute('CREATE TABLE files (id TEXT, size INTEGER)')
         ..execute("INSERT INTO users VALUES ('u')");
       final folder = Directory(p.join(dir.path, 'famio-20261009-040000'))
         ..createSync();

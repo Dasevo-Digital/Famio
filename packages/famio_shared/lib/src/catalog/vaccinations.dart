@@ -1,8 +1,9 @@
 import '../texts.dart';
 
 /// Standard childhood vaccinations after the STIKO schedule (Germany, as of
-/// 2025), simplified to the recommended age of each dose. Orientation only:
+/// 2026), simplified to the recommended age of each dose. Orientation only:
 /// the paediatrician and the vaccination record decide.
+/// Source: https://www.rki.de/meningokokken-impfung-faq
 class Vaccination {
   const Vaccination(
     this.id,
@@ -68,7 +69,7 @@ const vaccinations = <Vaccination>[
   Vaccination('menb_2', 'Meningokokken B', '2. Dosis', 4),
   Vaccination('menb_3', 'Meningokokken B', '3. Dosis', 12),
   Vaccination('mmrv_1', 'Masern, Mumps, Röteln, Windpocken', '1. Dosis', 11),
-  Vaccination('menc', 'Meningokokken C', 'einmalig', 12),
+  Vaccination('menacwy', 'Meningokokken A, C, W, Y', 'einmalig', 144),
   Vaccination(
     'mmrv_2',
     'Masern, Mumps, Röteln, Windpocken',
@@ -106,5 +107,12 @@ const vaccinations = <Vaccination>[
   ),
 ];
 
-Vaccination? vaccinationById(String? id) =>
-    vaccinations.where((v) => v.id == id).firstOrNull;
+/// Labels for previously documented doses, outside today's recommendations.
+const historicVaccinations = [
+  Vaccination('menc', 'Meningokokken C', 'einmalig', 12),
+];
+
+Vaccination? vaccinationById(String? id) => vaccinations
+    .followedBy(historicVaccinations)
+    .where((v) => v.id == id)
+    .firstOrNull;

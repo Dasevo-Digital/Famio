@@ -156,7 +156,10 @@ class _RewardsTab extends StatelessWidget {
                   const SizedBox(width: 8),
                   if (!engine.iAmGuest)
                     FilledButton(
-                      style: FilledButton.styleFrom(backgroundColor: color),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: c.fill(color),
+                        foregroundColor: c.onStrong,
+                      ),
                       onPressed: () => _redeem(context, r),
                       child: Text(tr.rewardsRedeem),
                     ),

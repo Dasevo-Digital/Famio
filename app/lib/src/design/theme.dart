@@ -37,7 +37,7 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
     onSecondaryContainer: c.ink,
     tertiary: tertiary,
     onTertiary: highContrast ? c.onStrong : on(tertiary),
-    error: c.readable(const Color(0xFFE0485B), on: const Color(0xFFFBE7EA)),
+    error: c.text(const Color(0xFFE0485B)),
     onError: Colors.white,
     errorContainer: const Color(0xFFFFDDE1),
     onErrorContainer: const Color(0xFF7A1422),

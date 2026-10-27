@@ -8,6 +8,7 @@ class SyncRequest {
     this.changes = const [],
     this.resettable = false,
     this.full = false,
+    this.scope,
   });
 
   factory SyncRequest.fromJson(Map<String, Object?> json) => SyncRequest(
@@ -18,6 +19,7 @@ class SyncRequest {
     ],
     resettable: json['resettable'] as bool? ?? false,
     full: json['full'] as bool? ?? false,
+    scope: json['scope'] as String?,
   );
 
   /// Highest server revision the client has already applied.
@@ -31,11 +33,15 @@ class SyncRequest {
   /// an old [since] is no reason for another reset.
   final bool full;
 
+  /// Server instance and access scope of the previous completed page.
+  final String? scope;
+
   Map<String, Object?> toJson() => {
     'since': since,
     'changes': [for (final c in changes) c.toJson()],
     if (resettable) 'resettable': true,
     if (full) 'full': true,
+    if (scope != null) 'scope': scope,
   };
 }
 
@@ -48,6 +54,7 @@ class SyncResponse {
     this.unsupported = const {},
     this.hasMore = false,
     this.reset = false,
+    this.scope,
   });
 
   factory SyncResponse.fromJson(Map<String, Object?> json) => SyncResponse(
@@ -66,6 +73,7 @@ class SyncResponse {
     },
     hasMore: json['hasMore'] as bool? ?? false,
     reset: json['reset'] as bool? ?? false,
+    scope: json['scope'] as String?,
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -91,6 +99,7 @@ class SyncResponse {
   /// (they were cleaned up): it sends everything from revision 0, and the
   /// client drops what it has but does not receive in this pass.
   final bool reset;
+  final String? scope;
 
   Map<String, Object?> toJson() => {
     'rev': rev,
@@ -100,5 +109,6 @@ class SyncResponse {
     'unsupported': unsupported.toList(),
     'hasMore': hasMore,
     if (reset) 'reset': true,
+    if (scope != null) 'scope': scope,
   };
 }

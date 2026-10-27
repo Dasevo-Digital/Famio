@@ -661,8 +661,7 @@ class _QuickButtons extends StatelessWidget {
           ),
         ];
     final c = FamioColors.of(context);
-    // Readable on the tile's own tint with "Hoher Kontrast".
-    Color ink(Color color) => c.readable(
+    Color ink(Color color) => c.text(
       color,
       on: Color.alphaBlend(color.withValues(alpha: 0.13), c.background),
     );
@@ -1305,7 +1304,7 @@ class _LogEditorState extends State<_LogEditor> {
       double.tryParse(c.text.trim().replaceAll(',', '.'));
 
   Future<DateTime?> _pick(DateTime initial) async {
-    final date = await showDatePicker(
+    final date = await showFamioDatePicker(
       context: context,
       initialDate: initial,
       firstDate: DateUtils.addDaysToDate(widget.child.birthDate, -1),

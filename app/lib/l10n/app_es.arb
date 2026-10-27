@@ -1,4 +1,5 @@
 {
+  "healthFeverUnderTwoDay": "En menores de dos años: consulta al pediatra si la fiebre dura más de un día. {warnings}",
   "@@locale": "es",
   "sectionHome": "Inicio",
   "sectionTasks": "Tareas",
@@ -1962,7 +1963,7 @@
   "healthBabiesUnder3Months": "Bebés menores de 3 meses con 38 °C o más: llama de inmediato al pediatra o al servicio médico de guardia. {warnings}",
   "healthHighFeverContactPediatrician": "Fiebre alta: contacta hoy mismo con el pediatra o con el servicio médico de guardia. {warnings}",
   "healthFeverDaysDaysPlease": "Fiebre desde hace {days} días: que lo revise el pediatra. {warnings}",
-  "healthFeverLetChildDrink": "Fiebre. Que beba mucho y vigílalo. Ve al pediatra si dura más de 3 días o si el niño bebe poco. {warnings}",
+  "healthFeverLetChildDrink": "Fiebre. Ofrece líquidos y observa. Consulta si dura más de un día hasta los dos años, más de tres días en mayores o si el niño bebe poco. {warnings}",
   "healthRaisedTemperatureMeasureAgain": "Temperatura elevada: vuelve a medirla más tarde.",
   "healthNormalTemperature": "Temperatura normal.",
   "exportZipFileAllFamily": "Un archivo ZIP con todos los datos de la familia: áreas en JSON, archivos subidos, miembros (sin contraseñas) y ajustes. No incluye el historial de ubicaciones. Guárdalo en un lugar seguro: no está cifrado.",
