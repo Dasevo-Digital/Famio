@@ -1,6 +1,8 @@
 #!/bin/sh
-# Creates (or reuses) a Gitea release and uploads verified release artifacts.
-# Usage: GITEA_TOKEN=... tool/publish_gitea_release.sh VERSION /path/to/release
+# Creates (or reuses) a Gitea release and uploads verified release artifacts:
+# exactly the files listed in SHA256SUMS.txt, the list and its signature.
+# Usage: GITEA_TOKEN=... GITHUB_TOKEN=... tool/publish_gitea_release.sh VERSION /path/to/release
+# (GITHUB_TOKEN reads the Actions runs of the tag, see tool/check_ci.dart.)
 set -eu
 
 VERSION=${1:?Usage: GITEA_TOKEN=... $0 VERSION RELEASE_DIR}
@@ -28,6 +30,30 @@ case "$ORIGIN" in
 esac
 
 (cd "$RELEASE_DIR" && shasum -a 256 -c SHA256SUMS.txt)
+# Only the files SHA256SUMS.txt lists, the list and its signature: the
+# release folder also holds the unpacked Famio.app (whose every inner file
+# a recursive upload would publish) and the release text.
+NAMES="$(awk '{ sub(/^\*/, "", $2); print $2 }' "$RELEASE_DIR/SHA256SUMS.txt" | tr '\n' ' ')SHA256SUMS.txt SHA256SUMS.txt.sig"
+for NAME in $NAMES; do
+  case "$NAME" in
+    */* | .*)
+      echo "Unexpected file name in SHA256SUMS.txt: $NAME" >&2
+      exit 65
+      ;;
+  esac
+  [ -f "$RELEASE_DIR/$NAME" ] || { echo "Missing $RELEASE_DIR/$NAME" >&2; exit 66; }
+done
+# Gitea has no runner: GitHub (the mirror) is the only CI. Publish only a
+# tag whose tests and build checks passed there; an exception needs a
+# stated reason (a GitHub outage, say).
+if [ -n "${FAMIO_CI_OVERRIDE:-}" ]; then
+  echo "CI check skipped: $FAMIO_CI_OVERRIDE"
+else
+  dart "$(dirname "$0")/check_ci.dart" "v$VERSION" || {
+    echo "Not published. Wait for or rerun the runs, or set FAMIO_CI_OVERRIDE=<reason>." >&2
+    exit 1
+  }
+fi
 TAG="v$VERSION"
 AUTH="Authorization: token $GITEA_TOKEN"
 RELEASE=$(curl -fsS -H "$AUTH" "$API_BASE/releases/tags/$TAG" 2>/dev/null || true)
@@ -42,9 +68,14 @@ fi
 RELEASE_ID=$(printf '%s' "$RELEASE" | sed -nE 's/^[[:space:]]*\{[[:space:]]*"id"[[:space:]]*:[[:space:]]*([0-9]+).*/\1/p')
 [ -n "$RELEASE_ID" ] || { echo "Could not read Gitea release id." >&2; exit 1; }
 
-find "$RELEASE_DIR" -type f ! -name '.DS_Store' -print | while IFS= read -r FILE; do
-  NAME=$(basename "$FILE")
-  curl -fsS -X POST -H "$AUTH" --upload-file "$FILE" \
+for NAME in $NAMES; do
+  curl -fsS -X POST -H "$AUTH" --upload-file "$RELEASE_DIR/$NAME" \
     "$API_BASE/releases/$RELEASE_ID/assets?name=$NAME" >/dev/null
   echo "Uploaded $NAME"
+done
+for FILE in "$RELEASE_DIR"/*; do
+  case " $NAMES " in
+    *" $(basename "$FILE") "*) ;;
+    *) echo "Not uploaded (not in SHA256SUMS.txt): $(basename "$FILE")" ;;
+  esac
 done

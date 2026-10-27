@@ -53,6 +53,11 @@ step "Stand prüfen"
   fail "Arbeitskopie hat Änderungen"
 [ "$(cat VERSION)" = "$V" ] || fail "VERSION ist $(cat VERSION), nicht $V"
 dart tool/check_versions.dart
+# The same Flutter as the workflows that test and check the release.
+FLUTTER=$(dart tool/check_versions.dart --flutter)
+flutter_now=$(flutter --version 2>&1 || true)
+[[ "$flutter_now" == "Flutter $FLUTTER "* ]] ||
+  fail "Flutter hier ist nicht $FLUTTER wie in den Workflows"
 mkdir -p "$R" "$WORK"
 LOGS="$WORK/logs-$V"
 mkdir -p "$LOGS"
@@ -66,7 +71,7 @@ WINDOWS_PID=""
 if [ -n "$LINUX" ]; then
   scp -q "$SRC" "$LINUX:famio-src.tgz"
   scp -q tool/release/build_linux.sh "$LINUX:famio-build-linux.sh"
-  ssh "$LINUX" "sh famio-build-linux.sh $V" > "$LOGS/linux.log" 2>&1 &
+  ssh "$LINUX" "sh famio-build-linux.sh $V $FLUTTER" > "$LOGS/linux.log" 2>&1 &
   LINUX_PID=$!
 else
   echo "FAMIO_LINUX_BUILD_HOST nicht gesetzt: kein Linux-Paket"
@@ -74,7 +79,7 @@ fi
 if [ -n "$WINDOWS" ]; then
   scp -q "$SRC" "$WINDOWS:famio-src.tgz"
   scp -q tool/release/build_windows.ps1 "$WINDOWS:famio-build-windows.ps1"
-  ssh "$WINDOWS" "powershell -NoProfile -ExecutionPolicy Bypass -File famio-build-windows.ps1 -V $V" \
+  ssh "$WINDOWS" "powershell -NoProfile -ExecutionPolicy Bypass -File famio-build-windows.ps1 -V $V -Flutter $FLUTTER" \
     > "$LOGS/windows.log" 2>&1 &
   WINDOWS_PID=$!
 else
@@ -280,4 +285,4 @@ rm -rf "$SCAN"
 step "Fertig: $R"
 ls -la "$R" | awk 'NR > 1 {print $5, $9}'
 [ -f "$R/RELEASE-TEXT-v$V.md" ] || echo "Es fehlt noch RELEASE-TEXT-v$V.md."
-echo "Weiter: GITEA_TOKEN=… sh tool/publish_gitea_release.sh $V <Ordner nur mit den Dateien aus SHA256SUMS.txt und der .sig>"
+echo "Weiter, wenn die GitHub-Läufe des Tags grün sind: GITEA_TOKEN=… GITHUB_TOKEN=… sh tool/publish_gitea_release.sh $V \"$R\" (lädt nur die Dateien aus SHA256SUMS.txt, die Liste und die .sig hoch)"

@@ -1,10 +1,17 @@
 #!/bin/sh
 # Builds the Linux package on a Linux machine with Flutter in ~/flutter:
-#   sh build_linux.sh <version>   (famio-src.tgz from tool/release.sh in ~)
-# Leaves ~/Famio-<version>-linux-x86_64.tar.gz.
+#   sh build_linux.sh <version> [<flutter>]
+# (famio-src.tgz from tool/release.sh in ~). Stops if Flutter is not
+# <flutter>. Leaves ~/Famio-<version>-linux-x86_64.tar.gz.
 set -eu
 V="$1"
 cd ~
+if [ -n "${2:-}" ]; then
+  case "$(~/flutter/bin/flutter --version 2>&1)" in
+    "Flutter $2 "*) ;;
+    *) echo "Flutter in ~/flutter ist nicht $2" >&2; exit 1 ;;
+  esac
+fi
 rm -rf famio-build && mkdir famio-build && tar -xzf famio-src.tgz -C famio-build
 cd famio-build/app
 ~/flutter/bin/flutter pub get >/dev/null

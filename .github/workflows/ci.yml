@@ -20,6 +20,8 @@ jobs:
       - uses: dart-lang/setup-dart@6afc89df92d6eb3834022f73cd65adc8cdfcb92d # v1.8.1
       - name: Privacy check masking test
         run: bash tool/repo_privacy_check_test.sh
+      - name: Release upload only takes listed files
+        run: bash tool/publish_gitea_release_test.sh
       - name: Privacy check (identities, messages, secrets)
         run: bash tool/repo_privacy_check.sh
       - name: Check release version

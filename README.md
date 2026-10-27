@@ -853,8 +853,16 @@ Repositories). Für die produktive Gitea-Veröffentlichung liegen die Artefakte
 einschließlich `SHA256SUMS.txt` im Release-Ordner; `tool/sign_release.sh` signiert diese Liste mit dem
 Release-Schlüssel (`SHA256SUMS.txt.sig`, Ed25519, privater Teil nur im
 Schlüsselbund des Maintainers), `tool/publish_gitea_release.sh` prüft beides
-vor dem Upload und legt es am Tag `v*` ab. Das Token bleibt ausschließlich in
-`GITEA_TOKEN` außerhalb des Repositories.
+vor dem Upload und legt am Tag `v*` genau die in `SHA256SUMS.txt` genannten
+Dateien, die Liste und ihre Signatur ab; die entpackte App und der
+Release-Text im selben Ordner bleiben lokal. Vorher prüft
+`tool/check_ci.dart`, dass Tests und Build-Checks des Tags auf GitHub
+bestanden haben (Gitea hat keinen eigenen Runner); ausgelassen wird das nur
+mit einer Begründung in `FAMIO_CI_OVERRIDE`. Die Tokens bleiben
+ausschließlich in `GITEA_TOKEN` und `GITHUB_TOKEN` (nur Lesezugriff auf
+Actions) außerhalb des Repositories. Release-Builds, CI und der
+Release-Check nutzen dieselbe Flutter-Version (`dart tool/check_versions.dart`
+prüft die Workflows, `tool/release.sh` den Mac und die Build-Rechner).
 
 **Sprachen:** Famio spricht Deutsch, Englisch und Spanisch. Ohne Auswahl
 folgt die App der Sprache des Geräts (andere Sprachen: Englisch); unter
