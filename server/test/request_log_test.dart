@@ -87,5 +87,37 @@ void main() {
     await get(quiet, 'a');
     expect(lines.single.$1, contains('Anfragen seit'));
     expect(lines.single.$1, contains(': 3 (2xx 2, 4xx 1)'));
+    expect(lines.single.$1, endsWith('; häufigste 401/404: 401 /b ×1'));
   });
+
+  test(
+    'the summary says where the 401 and 404 went, without secrets',
+    () async {
+      final h = logged(
+        (r) => Response(r.url.path.startsWith('api/sync') ? 401 : 404),
+      );
+      for (var i = 0; i < 3; i++) {
+        await get(h, 'wp-login.php');
+      }
+      await get(h, 'api/sync');
+      await get(h, 'api/sync');
+      await get(h, 'api/files/0f3a9c2e-geheim/Befund.pdf');
+      await get(h, 'ical/geheimesToken123/kalender.ics');
+      await get(h, 'dav/mama/calendars/familie');
+      expect(lines, isEmpty);
+      now = now.add(const Duration(hours: 25));
+      await get(h, 'api/sync');
+      final summary = lines.single.$1;
+      expect(
+        summary,
+        endsWith(
+          '; häufigste 401/404: 404 /wp-login.php ×3, 401 /api/sync ×2, '
+          '404 /api/files ×1',
+        ),
+      );
+      expect(summary, isNot(contains('geheim')));
+      expect(summary, isNot(contains('Befund')));
+      expect(summary, isNot(contains('mama')));
+    },
+  );
 }

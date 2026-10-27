@@ -4,7 +4,8 @@ import 'package:shelf/shelf.dart';
 /// day (health checks, syncs, calendar apps), with the calendar user name
 /// in many paths. By default it now names only what needs attention:
 /// server errors, refused requests (except the usual 401 of calendar apps
-/// and 404 of probes) and slow ones, plus a summary once a day.
+/// and 404 of probes) and slow ones, plus a summary once a day that names
+/// where most of those 401 and 404 went (a spike stays explainable).
 /// `FAMIO_ACCESS_LOG=full` writes every request again, for debugging.
 class RequestLog {
   RequestLog({
@@ -29,6 +30,11 @@ class RequestLog {
   late DateTime _since;
   final _counts = <String, int>{};
   var _slowCount = 0;
+
+  /// 401 and 404 answers by path ("404 /wp-login.php"), not logged one by
+  /// one; at most [_maxQuietPaths] paths, scanners try thousands.
+  final _quiet = <String, int>{};
+  static const _maxQuietPaths = 200;
 
   /// Kept open on purpose: waiting for notifications, the WebSocket.
   static const _longLived = {'api/notifications', 'api/ws'};
@@ -56,6 +62,7 @@ class RequestLog {
         if (isSlow) _slowCount++;
         final problem =
             status >= 500 || (status >= 400 && status != 401 && status != 404);
+        if (status == 401 || status == 404) _countQuiet(status, request);
         if (full || problem || isSlow) {
           write(
             '${_line(request, elapsed, '[$status]')}${isSlow && !full ? ' (langsam)' : ''}',
@@ -67,6 +74,18 @@ class RequestLog {
 
   void _count(String kind) => _counts[kind] = (_counts[kind] ?? 0) + 1;
 
+  void _countQuiet(int status, Request request) {
+    // "api/sync"; elsewhere only the first part: calendar paths carry user
+    // names and feed tokens, ids and file names follow further on.
+    final segments = request.url.pathSegments;
+    final parts = segments.take(segments.firstOrNull == 'api' ? 2 : 1);
+    var key = '$status /${parts.map((p) => p.length > 40 ? '…' : p).join('/')}';
+    if (!_quiet.containsKey(key) && _quiet.length >= _maxQuietPaths) {
+      key = '$status (weitere)';
+    }
+    _quiet[key] = (_quiet[key] ?? 0) + 1;
+  }
+
   void _summaryIfDue() {
     final now = _now();
     if (now.difference(_since) < const Duration(hours: 24)) return;
@@ -76,13 +95,24 @@ class RequestLog {
         for (final k in ['2xx', '3xx', '4xx', '5xx'])
           if (_counts[k] case final n?) '$k $n',
       ].join(', ');
+      final top =
+          (_quiet.entries.toList()..sort(
+                (a, b) => b.value != a.value
+                    ? b.value.compareTo(a.value)
+                    : a.key.compareTo(b.key),
+              ))
+              .take(3)
+              .map((e) => '${e.key} ×${e.value}')
+              .join(', ');
       write(
         'Anfragen seit ${_since.toIso8601String()}: $total ($kinds)'
-        '${_slowCount > 0 ? ', langsam: $_slowCount' : ''}',
+        '${_slowCount > 0 ? ', langsam: $_slowCount' : ''}'
+        '${top.isEmpty ? '' : '; häufigste 401/404: $top'}',
         false,
       );
     }
     _counts.clear();
+    _quiet.clear();
     _slowCount = 0;
     _since = now;
   }
