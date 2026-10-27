@@ -50,11 +50,16 @@ import VisionKit
       let profile = FlutterMethodChannel(
         name: "famio/profile", binaryMessenger: registrar.messenger())
       profile.setMethodCallHandler { call, result in
-        guard call.method == "expires" else {
+        switch call.method {
+        case "expires":
+          result(ProvisioningProfile.expires().map { ISO8601DateFormatter().string(from: $0) })
+        case "model":
+          // "iPhone", "iPad": iOS 16 and later answer every host name
+          // question with "localhost" and keep the device's own name.
+          result(UIDevice.current.model)
+        default:
           result(FlutterMethodNotImplemented)
-          return
         }
-        result(ProvisioningProfile.expires().map { ISO8601DateFormatter().string(from: $0) })
       }
     }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioOcr") {

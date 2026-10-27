@@ -306,6 +306,7 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // Tests and unusual platforms: the server just does not know.
     }
+    _appleModel = await appleDeviceModel();
     // iPhones installed from the Mac: the admins hear ahead of time.
     final end = await appProfileExpires();
     FamioApiClient.profileExpires = end?.toUtc().toIso8601String();
@@ -981,11 +982,18 @@ class AppState extends ChangeNotifier {
     return dir.path;
   }
 
+  static String? _appleModel;
+
   /// Name of this device as shown in the device lists.
   static String get deviceName {
     if (kIsWeb) return 'Web';
     try {
-      return '${Platform.operatingSystem} (${Platform.localHostname})';
+      final host = Platform.localHostname;
+      // Newer iOS versions name every device "localhost".
+      final name = host.isEmpty || host == 'localhost'
+          ? (_appleModel ?? host)
+          : host;
+      return '${Platform.operatingSystem} ($name)';
     } catch (_) {
       return Platform.operatingSystem;
     }

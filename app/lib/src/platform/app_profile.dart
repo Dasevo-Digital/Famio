@@ -20,3 +20,16 @@ Future<DateTime?> appProfileExpires() async {
 
 /// Warn this long before [appProfileExpires].
 const profileWarning = Duration(days: 3);
+
+/// "iPhone" or "iPad"; null elsewhere. Newer iOS versions call every
+/// device "localhost", so the device lists show the model instead.
+Future<String?> appleDeviceModel() async {
+  if (kIsWeb || !Platform.isIOS) return null;
+  try {
+    return await const MethodChannel(
+      'famio/profile',
+    ).invokeMethod<String>('model');
+  } catch (_) {
+    return null;
+  }
+}
