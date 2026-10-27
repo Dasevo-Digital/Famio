@@ -385,6 +385,9 @@ class FamioServerApp {
 
   Handler get handler => api.handler;
 
+  /// The route templates, for the request log.
+  List<String> get routes => api.routes;
+
   int _dbSize() {
     final pages = db.select('PRAGMA page_count').first.columnAt(0) as int;
     final size = db.select('PRAGMA page_size').first.columnAt(0) as int;

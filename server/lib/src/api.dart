@@ -255,8 +255,16 @@ class FamioApi {
   tz.Location get location => settings.location;
   String? get publicUrl => settings.publicUrl;
 
-  Handler get handler {
-    final router = Router()
+  /// The route templates (`/api/members/<id>`), CalDAV's included: the
+  /// request log names these instead of paths with user names, ids and
+  /// file names in them.
+  List<String> get routes => [
+    ..._routeTable().templates,
+    ...CalDavServer.routes,
+  ];
+
+  _Routes _routeTable() {
+    final routes = _Routes(Router())
       ..get('/', _landing)
       ..get('/delete-account', _deleteAccountPage)
       ..get('/.well-known/security.txt', _securityTxt)
@@ -406,7 +414,11 @@ class FamioApi {
       ..post('/api/ws/ticket', _wsTicket)
       ..post('/api/files', _upload)
       ..get('/api/files/<id>', _download);
+    return routes;
+  }
 
+  Handler get handler {
+    final router = _routeTable().router;
     final dav = CalDavServer(
       accounts: accounts,
       records: records,
@@ -866,3 +878,23 @@ Handler _errors(Handler inner) => (request) async {
     }, status: 400);
   }
 };
+
+/// A [Router] that remembers its route templates (it is sealed, hence a
+/// wrapper).
+class _Routes {
+  _Routes(this.router);
+
+  final Router router;
+  final templates = <String>[];
+
+  void _add(String verb, String route, Function handler) {
+    templates.add(route);
+    router.add(verb, route, handler);
+  }
+
+  void get(String route, Function handler) => _add('GET', route, handler);
+  void post(String route, Function handler) => _add('POST', route, handler);
+  void put(String route, Function handler) => _add('PUT', route, handler);
+  void patch(String route, Function handler) => _add('PATCH', route, handler);
+  void delete(String route, Function handler) => _add('DELETE', route, handler);
+}

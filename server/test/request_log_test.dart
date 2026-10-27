@@ -6,15 +6,20 @@ void main() {
   late List<(String, bool)> lines;
   late DateTime now;
 
-  Handler logged(Handler inner, {bool full = false}) => RequestLog(
+  Handler logged(
+    Handler inner, {
+    bool full = false,
+    List<String> routes = const [],
+  }) => RequestLog(
     write: (line, isError) => lines.add((line, isError)),
     full: full,
     slow: const Duration(milliseconds: 50),
+    routes: routes,
     now: () => now,
   ).middleware(inner);
 
-  Future<void> get(Handler h, String path) =>
-      Future.sync(() => h(Request('GET', Uri.parse('http://famio/$path'))));
+  Future<void> get(Handler h, String path, {String method = 'GET'}) =>
+      Future.sync(() => h(Request(method, Uri.parse('http://famio/$path'))));
 
   setUp(() {
     lines = [];
@@ -65,11 +70,47 @@ void main() {
   });
 
   test('a feed token never reaches the log', () async {
-    final h = logged((r) => Response(500));
+    final h = logged((r) => Response(500), routes: ['/ical/<file>']);
     await get(h, 'ical/geheimesToken123?file=Befund.pdf');
-    expect(lines.single.$1, contains('/ical/***'));
+    expect(lines.single.$1, endsWith('/ical/<file>'));
     expect(lines.single.$1, isNot(contains('geheim')));
     expect(lines.single.$1, isNot(contains('Befund')));
+  });
+
+  test('paths appear as their route, never as requested', () async {
+    final app = FamioServerApp.inMemory();
+    addTearDown(app.close);
+    final h = logged(
+      (r) => Response(r.method == 'PUT' ? 412 : 500),
+      routes: app.routes,
+      full: true,
+    );
+    await get(h, 'dav/calendars/mama/famio/0f3a9c2e-geheim.ics', method: 'PUT');
+    await get(h, 'dav/principals/mama/');
+    await get(h, 'api/files/0f3a9c2e-geheim');
+    await get(h, 'api/admin/users/u-geheim/sessions/s-geheim', method: 'PUT');
+    await get(h, 'api/me/passkeys/options');
+    await get(h, 'api/me/passkeys/pk-geheim');
+    await get(h, 'app/assets/fonts/Nunito.ttf');
+    await get(h, 'api/unbekannt/geheim/x');
+    await get(h, 'wp-admin/geheim.php');
+    await get(h, '');
+    expect(lines.map((l) => l.$1.split(' ').last).toList(), [
+      '/dav/calendars/<user>/<calendar>/<item>',
+      '/dav/principals/<user>',
+      '/api/files/<id>',
+      '/api/admin/users/<id>/sessions/<sid>',
+      '/api/me/passkeys/options',
+      '/api/me/passkeys/<id>',
+      '/app/<path>',
+      '/api/unbekannt/…',
+      '/wp-admin/…',
+      '/',
+    ]);
+    expect(lines.first.$1, contains('[412]'));
+    final text = lines.map((l) => l.$1).join('\n');
+    expect(text, isNot(contains('geheim')));
+    expect(text, isNot(contains('mama')));
   });
 
   test('full mode logs everything; a summary once a day', () async {
@@ -112,7 +153,7 @@ void main() {
         summary,
         endsWith(
           '; häufigste 401/404: 404 /wp-login.php ×3, 401 /api/sync ×2, '
-          '404 /api/files ×1',
+          '404 /api/files/… ×1',
         ),
       );
       expect(summary, isNot(contains('geheim')));

@@ -7,13 +7,19 @@ import 'package:shelf/shelf.dart';
 /// and 404 of probes) and slow ones, plus a summary once a day that names
 /// where most of those 401 and 404 went (a spike stays explainable).
 /// `FAMIO_ACCESS_LOG=full` writes every request again, for debugging.
+///
+/// Paths appear as their route (`/dav/calendars/<user>/<calendar>`), never
+/// as requested: they carry user names, record ids, feed tokens and file
+/// names (of medical documents, say).
 class RequestLog {
   RequestLog({
     required this.write,
     this.full = false,
     this.slow = const Duration(seconds: 2),
+    Iterable<String> routes = const [],
     DateTime Function()? now,
-  }) : _now = now ?? DateTime.now {
+  }) : _routes = [for (final r in routes) _Route(r)],
+       _now = now ?? DateTime.now {
     _since = _now();
   }
 
@@ -26,6 +32,7 @@ class RequestLog {
   /// Requests taking longer are logged.
   final Duration slow;
 
+  final List<_Route> _routes;
   final DateTime Function() _now;
   late DateTime _since;
   final _counts = <String, int>{};
@@ -75,11 +82,7 @@ class RequestLog {
   void _count(String kind) => _counts[kind] = (_counts[kind] ?? 0) + 1;
 
   void _countQuiet(int status, Request request) {
-    // "api/sync"; elsewhere only the first part: calendar paths carry user
-    // names and feed tokens, ids and file names follow further on.
-    final segments = request.url.pathSegments;
-    final parts = segments.take(segments.firstOrNull == 'api' ? 2 : 1);
-    var key = '$status /${parts.map((p) => p.length > 40 ? '…' : p).join('/')}';
+    var key = '$status ${_shape(request)}';
     if (!_quiet.containsKey(key) && _quiet.length >= _maxQuietPaths) {
       key = '$status (weitere)';
     }
@@ -117,15 +120,59 @@ class RequestLog {
     _since = now;
   }
 
-  /// Like shelf's log line, without secrets: calendar feed tokens are
-  /// credentials, and query strings carry file names (e.g. of medical
-  /// documents).
-  String _line(Request request, Duration elapsed, String status) {
-    final path = '/${request.url.path}'.replaceAll(
-      RegExp(r'/ical/[A-Za-z0-9_-]+'),
-      '/ical/***',
-    );
-    return '${_now().toIso8601String()} $elapsed '
-        '${request.method.padRight(7)} $status $path';
+  /// Like shelf's log line, with the route instead of the path and
+  /// without the query (it carries file names).
+  String _line(Request request, Duration elapsed, String status) =>
+      '${_now().toIso8601String()} $elapsed '
+      '${request.method.padRight(7)} $status ${_shape(request)}';
+
+  /// The route [request] went to, the most specific if several fit
+  /// (`/api/me/passkeys/options` before `/api/me/passkeys/<id>`). Paths no
+  /// route knows (probes, a typo) keep only their first part, `api/<area>`
+  /// for the API: "/wp-admin/…".
+  String _shape(Request request) {
+    final segments = [
+      for (final s in request.url.pathSegments)
+        if (s.isNotEmpty) s,
+    ];
+    _Route? best;
+    for (final route in _routes) {
+      if (route.matches(segments) &&
+          (best == null || route.literals > best.literals)) {
+        best = route;
+      }
+    }
+    if (best != null) return best.shape;
+    final kept = segments.take(segments.firstOrNull == 'api' ? 2 : 1);
+    return '/${kept.map((p) => p.length > 40 ? '…' : p).join('/')}'
+        '${segments.length > kept.length ? '/…' : ''}';
+  }
+}
+
+/// A route template like `/api/members/<id>/ring` or `/app/<path|.*>`
+/// (the rest of the path).
+class _Route {
+  _Route(String template)
+    : _parts = [
+        for (final s in template.split('/'))
+          if (s.isNotEmpty) s,
+      ];
+
+  final List<String> _parts;
+
+  /// The template with `<path>` for `<path|.*>`.
+  late final shape =
+      '/${_parts.map((p) => p.startsWith('<') ? '${p.split('|').first.replaceFirst('>', '')}>' : p).join('/')}';
+
+  late final literals = _parts.where((p) => !p.startsWith('<')).length;
+
+  bool matches(List<String> segments) {
+    for (var i = 0; i < _parts.length; i++) {
+      final part = _parts[i];
+      if (part.endsWith('|.*>')) return true;
+      if (i >= segments.length) return false;
+      if (!part.startsWith('<') && part != segments[i]) return false;
+    }
+    return segments.length == _parts.length;
   }
 }

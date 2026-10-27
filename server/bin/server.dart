@@ -108,7 +108,11 @@ Future<void> _start(List<String> args) async {
 
   final handler = const Pipeline()
       .addMiddleware(
-        RequestLog(write: _log, full: config.fullAccessLog).middleware,
+        RequestLog(
+          write: _log,
+          full: config.fullAccessLog,
+          routes: app.routes,
+        ).middleware,
       )
       .addHandler(app.handler);
   // No "X-Powered-By" header: it only tells attackers what runs here.

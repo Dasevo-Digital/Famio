@@ -78,6 +78,18 @@ class CalDavServer {
   static const tasksSlug = 'aufgaben';
   static const shoppingPrefix = 'einkauf-';
   static const _maxBody = 1024 * 1024;
+
+  /// The paths it answers, as templates for the request log (see
+  /// [_Target.parse]).
+  static const routes = [
+    '/.well-known/caldav',
+    '/dav',
+    '/dav/principals',
+    '/dav/principals/<user>',
+    '/dav/calendars/<user>',
+    '/dav/calendars/<user>/<calendar>',
+    '/dav/calendars/<user>/<calendar>/<item>',
+  ];
   static const _syncTokenPrefix = 'http://famio.app/ns/sync/';
 
   /// Whether [request] is for this server (well-known discovery included;
