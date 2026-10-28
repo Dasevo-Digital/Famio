@@ -4,7 +4,7 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
-## 2.0.20 – Erinnerungen auf iPhone und iPad, sicherer Abgleich
+## 2.0.21 – Erinnerungen auf iPhone und iPad, sicherer Abgleich
 
 - Erinnerungen kommen jetzt auch auf iPhone und iPad an; Famio fragt dafür
   einmal nach der Erlaubnis für Mitteilungen.

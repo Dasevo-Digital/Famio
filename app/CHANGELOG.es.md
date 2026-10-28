@@ -4,7 +4,7 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
-## 2.0.20 – Recordatorios en iPhone y iPad, sincronización más segura
+## 2.0.21 – Recordatorios en iPhone y iPad, sincronización más segura
 
 - Los recordatorios ahora también llegan al iPhone y al iPad; Famio pide
   una vez permiso para enviar notificaciones.

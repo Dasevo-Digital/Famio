@@ -4,7 +4,7 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
-## 2.0.20 – Reminders on iPhone and iPad, safer sync
+## 2.0.21 – Reminders on iPhone and iPad, safer sync
 
 - Reminders now reach iPhone and iPad too; Famio asks once for permission
   to send notifications.
