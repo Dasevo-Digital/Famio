@@ -1,6 +1,17 @@
 /// English texts of the shared enums, catalogs and messages (key → text),
 /// see [sharedTexts]. German is in the code itself.
 const sharedEn = <String, String>{
+  "Server|Eintrag nicht gefunden": "Entry not found",
+  "Server|Keine Berechtigung": "Not permitted",
+  "Server|Rückmeldung zur Zuständigkeit": "Assignment response",
+  "Server|{name} übernimmt: {title}": "{name} will take care of: {title}",
+  "Server|{name} kann nicht: {title}": "{name} cannot take care of: {title}",
+  "Server|Neue Rückmeldung": "New response",
+  "Server|Zusage noch offen": "Confirmation still pending",
+  "Server|Bitte die Zuständigkeit bestätigen: {title}":
+      "Please confirm your responsibility: {title}",
+  "Server|Eine Zuständigkeit wartet auf deine Rückmeldung":
+      "A responsibility awaits your response",
   "Vaccination|Meningokokken A, C, W, Y": "Meningococcus A, C, W, Y",
   "Server|Ungültiger Eintrag.": "Invalid record.",
   "Server|Kein Zugriff auf die angehängte Datei.":

@@ -50,6 +50,7 @@ records/*.json  Daten je Bereich: id, updatedAt (ms seit 1970), data
 files/          hochgeladene Dateien (Fotos, Dokumente), Name: <id>-<name>
 location.json   eigener Standortverlauf (nur im persönlichen Export)
 settings.json   Servereinstellungen ohne Geheimnisse (nur Familien-Export)
+trash.json      noch aufbewahrte Löschstände einschließlich Ablaufzeit
 
 Alle Zeiten in UTC, Texte in UTF-8.
 ''';
@@ -91,6 +92,10 @@ Alle Zeiten in UTC, Texte in UTF-8.
               'accuracy': row['accuracy'],
             },
         ],
+        'trash.json': [
+          for (final e in records.trashForExport(memberId: member.id))
+            e.toJson(),
+        ],
       },
     ),
   );
@@ -104,6 +109,7 @@ Alle Zeiten in UTC, Texte in UTF-8.
       files: files.all(),
       extra: {
         'settings.json': {...settings.effective.toJson()},
+        'trash.json': [for (final e in records.trashForExport()) e.toJson()],
       },
     ),
   );

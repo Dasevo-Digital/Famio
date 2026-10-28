@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import 'assignment.dart';
 
 enum RecurrenceFrequency { daily, weekly, monthly, yearly }
 
@@ -111,6 +112,7 @@ class CalendarEvent {
     this.bringerId,
     this.pickerId,
     this.countdown = false,
+    this.assignmentConfirmation = const AssignmentSettings(),
   });
 
   factory CalendarEvent.fromRecord(SyncRecord r) {
@@ -121,6 +123,7 @@ class CalendarEvent {
     return CalendarEvent(
       id: r.id,
       title: r.data['title'] as String? ?? '',
+      assignmentConfirmation: AssignmentSettings.fromData(r.data),
       start: start,
       end: end,
       allDay: allDay,
@@ -152,6 +155,7 @@ class CalendarEvent {
   /// they get their own reminders.
   final String? bringerId;
   final String? pickerId;
+  final AssignmentSettings assignmentConfirmation;
 
   /// Reminder for the one who brings: this long before the start.
   static const bringLead = Duration(minutes: 30);
@@ -348,6 +352,7 @@ class CalendarEvent {
     Object? bringerId = _keep,
     Object? pickerId = _keep,
     bool? countdown,
+    AssignmentSettings? assignmentConfirmation,
   }) => CalendarEvent(
     id: id,
     title: title ?? this.title,
@@ -370,11 +375,14 @@ class CalendarEvent {
     bringerId: bringerId == _keep ? this.bringerId : bringerId as String?,
     pickerId: pickerId == _keep ? this.pickerId : pickerId as String?,
     countdown: countdown ?? this.countdown,
+    assignmentConfirmation:
+        assignmentConfirmation ?? this.assignmentConfirmation,
   );
 
   /// A copy with a new [id], e.g. to detach one occurrence from a series.
   CalendarEvent withId(String id) => CalendarEvent(
     id: id,
+    assignmentConfirmation: assignmentConfirmation,
     title: title,
     start: start,
     end: end,
@@ -392,6 +400,7 @@ class CalendarEvent {
 
   Map<String, Object?> toData() => {
     'title': title,
+    'assignmentConfirmation': assignmentConfirmation.toJson(),
     'start': allDay ? _formatDate(start) : start.toUtc().toIso8601String(),
     'end': allDay ? _formatDate(end) : end.toUtc().toIso8601String(),
     'allDay': allDay,

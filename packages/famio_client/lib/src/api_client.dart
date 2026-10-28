@@ -1325,6 +1325,26 @@ class FamioApiClient {
   Future<SyncResponse> sync(SyncRequest request) async =>
       SyncResponse.fromJson(await _send('POST', 'api/sync', request.toJson()));
 
+  Future<({List<TrashEntry> items, int? next})> trash({int? before}) async {
+    final result = await _send(
+      'GET',
+      Uri(
+        path: 'api/trash',
+        queryParameters: {if (before != null) 'before': '$before'},
+      ).toString(),
+    );
+    return (
+      items: [
+        for (final item in result['items'] as List)
+          TrashEntry.fromJson((item as Map).cast()),
+      ],
+      next: result['next'] as int?,
+    );
+  }
+
+  Future<void> restoreTrash(String id) =>
+      _send('POST', 'api/trash/$id/restore');
+
   /// Uploads a file; reference the returned [FileRef] from a record so other
   /// members may download it.
   Future<FileRef> uploadFile({

@@ -18,6 +18,7 @@ import '../widgets/sync_status_icon.dart';
 import 'calendar_connect_screen.dart';
 import 'deferred_sections.dart';
 import 'event_editor.dart';
+import '../widgets/assignment_confirmation.dart';
 import 'event_import_screen.dart';
 import '../l10n.dart';
 import 'free_time_screen.dart';
@@ -729,6 +730,11 @@ class _OccurrenceTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall,
+                    ),
+                  if (e.sourceId == null && e.assignmentConfirmation.required)
+                    AssignmentPanel(
+                      target: engine.record(Collections.events, e.id)!,
+                      occurrence: occurrence.start,
                     ),
                 ],
               ),

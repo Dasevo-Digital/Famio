@@ -18,6 +18,8 @@ export 'src/list_sync.dart';
 export 'src/member.dart';
 export 'src/models/birthday.dart';
 export 'src/models/absence.dart';
+export 'src/models/assignment.dart';
+export 'src/models/trash.dart';
 export 'src/models/budget.dart';
 export 'src/models/calendar_sync.dart';
 export 'src/models/chat.dart';

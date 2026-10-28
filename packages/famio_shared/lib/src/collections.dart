@@ -18,6 +18,9 @@ abstract final class Collections {
   static const shoppingHistory = 'shopping_history';
   static const events = 'events';
 
+  /// Individual, version-bound replies to task and lift assignments.
+  static const assignmentResponses = 'assignment_responses';
+
   /// External calendars (ICS URLs) the server imports; edited by members.
   static const calendarSubscriptions = 'calendar_subscriptions';
 
@@ -195,6 +198,7 @@ abstract final class Collections {
   };
 
   static const all = {
+    assignmentResponses,
     conflicts,
     loans,
     externalPhotos,
@@ -256,6 +260,7 @@ abstract final class Collections {
 
   /// What guests (grandparents, babysitters …) receive at all.
   static const guestReadable = {
+    assignmentResponses,
     // Grandparents read wish lists and say what they get.
     wishes,
     wishClaims,
@@ -284,6 +289,7 @@ abstract final class Collections {
 
   /// What guests may change: chatting, ticking off and commenting.
   static const guestWritable = {
+    assignmentResponses,
     wishClaims,
     tasks,
     shoppingItems,

@@ -1,6 +1,17 @@
 /// Spanish texts of the shared enums, catalogs and messages (key → text),
 /// see [sharedTexts]. German is in the code itself.
 const sharedEs = <String, String>{
+  "Server|Eintrag nicht gefunden": "Entrada no encontrada",
+  "Server|Keine Berechtigung": "Sin permiso",
+  "Server|Rückmeldung zur Zuständigkeit": "Respuesta a una responsabilidad",
+  "Server|{name} übernimmt: {title}": "{name} se encarga de: {title}",
+  "Server|{name} kann nicht: {title}": "{name} no puede encargarse de: {title}",
+  "Server|Neue Rückmeldung": "Nueva respuesta",
+  "Server|Zusage noch offen": "Confirmación aún pendiente",
+  "Server|Bitte die Zuständigkeit bestätigen: {title}":
+      "Confirma tu responsabilidad: {title}",
+  "Server|Eine Zuständigkeit wartet auf deine Rückmeldung":
+      "Una responsabilidad espera tu respuesta",
   "Vaccination|Meningokokken A, C, W, Y": "Meningococo A, C, W, Y",
   "Server|Ungültiger Eintrag.": "Entrada no válida.",
   "Server|Kein Zugriff auf die angehängte Datei.":

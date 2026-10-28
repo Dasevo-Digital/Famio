@@ -1,6 +1,7 @@
 import '../sync_record.dart';
 import '../texts.dart';
 import 'chat.dart' show FileRef;
+import 'assignment.dart';
 
 /// A family task (Aufgabe), stored in `Collections.tasks`.
 class Task {
@@ -19,11 +20,13 @@ class Task {
     this.repeatEvery = 1,
     this.checklist = const [],
     this.photos = const [],
+    this.assignmentConfirmation = const AssignmentSettings(),
   });
 
   factory Task.fromRecord(SyncRecord r) => Task(
     id: r.id,
     title: r.data['title'] as String? ?? '',
+    assignmentConfirmation: AssignmentSettings.fromData(r.data),
     notes: r.data['notes'] as String? ?? '',
     done: r.data['done'] as bool? ?? false,
     due: _date(r.data['due']),
@@ -46,6 +49,7 @@ class Task {
 
   final String id;
   final String title;
+  final AssignmentSettings assignmentConfirmation;
   final String notes;
   final bool done;
   final DateTime? due;
@@ -116,6 +120,7 @@ class Task {
     int? repeatEvery,
     List<TaskStep>? checklist,
     List<FileRef>? photos,
+    AssignmentSettings? assignmentConfirmation,
   }) => Task(
     id: id,
     title: title ?? this.title,
@@ -133,6 +138,8 @@ class Task {
     repeatEvery: repeatEvery ?? this.repeatEvery,
     checklist: checklist ?? this.checklist,
     photos: photos ?? this.photos,
+    assignmentConfirmation:
+        assignmentConfirmation ?? this.assignmentConfirmation,
   );
 
   /// Ticked off: a repeating task comes back open with its next due date
@@ -163,6 +170,7 @@ class Task {
   }
 
   Map<String, Object?> toData() => {
+    'assignmentConfirmation': assignmentConfirmation.toJson(),
     'title': title,
     'notes': notes,
     'done': done,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'collections.dart';
 import 'sync_record.dart';
 import 'models/absence.dart';
+import 'models/assignment.dart';
 import 'models/budget.dart';
 import 'models/calendar_sync.dart';
 import 'models/chat.dart';
@@ -39,6 +40,10 @@ import 'models/wish.dart';
 void validateRecordData(SyncRecord record) {
   if (record.deleted) return;
   try {
+    if (record.collection == Collections.tasks ||
+        record.collection == Collections.events) {
+      AssignmentSettings.fromData(record.data).toJson();
+    }
     for (final field in [
       SyncRecord.visibilityKey,
       if (record.collection == Collections.tasks) 'assigneeIds',
@@ -52,6 +57,9 @@ void validateRecordData(SyncRecord record) {
     record.visibleTo?.toList();
     recordFileIds(record).toList();
     final data = switch (record.collection) {
+      Collections.assignmentResponses => AssignmentResponse.fromRecord(
+        record,
+      ).toData(),
       Collections.tasks => Task.fromRecord(record).toData(),
       Collections.shoppingLists => ShoppingList.fromRecord(record).toData(),
       Collections.shoppingItems => ShoppingItem.fromRecord(record).toData(),

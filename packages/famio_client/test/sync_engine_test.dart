@@ -201,9 +201,16 @@ void main() {
     expect(data['ext:ical'], [
       {'n': 'PRIORITY', 'v': '1'},
     ]);
-    // A deletion does not carry anything over.
+    // Only the trash snapshot carries the old fields; the tombstone sent
+    // back to devices stays empty.
     b.delete(Collections.tasks, 't');
-    expect(b.store.get(Collections.tasks, 't')!.record.data, isEmpty);
+    final deletion = b.store.get(Collections.tasks, 't')!.record;
+    expect(deletion.data.keys, ['deletionSnapshot']);
+    await b.sync();
+    expect(app.records.get(Collections.tasks, 't')!.data, isEmpty);
+    expect(app.records.trashFor(memberId).$1.single.record.data['ext:ical'], [
+      {'n': 'PRIORITY', 'v': '1'},
+    ]);
   });
 
   test('offline edits merge with last writer wins', () async {

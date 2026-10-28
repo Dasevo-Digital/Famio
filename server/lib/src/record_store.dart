@@ -3,9 +3,13 @@ import 'dart:math';
 
 import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import 'api_exception.dart';
 import 'i18n.dart';
+
+part 'record_store_trash.dart';
+part 'record_store_assignments.dart';
 
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
@@ -15,10 +19,12 @@ class RecordStore {
     required this.memberIds,
     this.roleOf,
     this.accessOf,
+    this.assignmentLocation,
     DateTime Function()? today,
   }) : _today = today ?? _localToday;
 
   final Database _db;
+  final tz.Location Function()? assignmentLocation;
 
   /// A new process may have opened a restored database, even if revisions
   /// have already caught up. Clients reconcile once per server instance.
@@ -54,6 +60,12 @@ class RecordStore {
 
   /// Whether [userId] may receive [r]: its audience and the member's role.
   bool canAccess(SyncRecord r, String userId) {
+    if (r.collection == Collections.assignmentResponses && !r.deleted) {
+      final parent = _assignmentTarget(r);
+      if (parent == null || parent.deleted || !canAccess(parent, userId)) {
+        return false;
+      }
+    }
     final role = _role(userId);
     if (role != MemberRole.adult &&
         Collections.adultReadable.contains(r.collection)) {
@@ -110,6 +122,12 @@ class RecordStore {
     ServiceAccess access = ServiceAccess.full,
   }) {
     final collection = incoming.collection;
+    if (collection == Collections.assignmentResponses) {
+      return access != ServiceAccess.readOnly &&
+          (incoming.deleted
+              ? existing?.data['memberId'] == userId
+              : incoming.data['memberId'] == userId);
+    }
     // Conflicts come from the server; the apps only remove decided ones.
     if (collection == Collections.conflicts) {
       return incoming.deleted &&
@@ -314,6 +332,8 @@ class RecordStore {
         [_resetKey, '$now'],
       );
       count = rows.length;
+      _db.execute('DELETE FROM trash');
+      _db.execute('DELETE FROM assignment_reminders');
     });
     resetAt = now;
     return count;
@@ -368,6 +388,33 @@ class RecordStore {
           updatedAt: min(change.updatedAt, now + _maxClockSkew.inMilliseconds),
         );
         final existing = _get(change.collection, change.id);
+        if (change.collection == Collections.assignmentResponses &&
+            !_validAssignmentReply(incoming, userId)) {
+          rejected.add(
+            SyncRecord(
+              collection: change.collection,
+              id: change.id,
+              data: const {},
+              deleted: true,
+              updatedAt: revokedAt,
+              updatedBy: serverMemberId,
+            ),
+          );
+          continue;
+        }
+        if (!incoming.deleted &&
+            (incoming.collection == Collections.tasks ||
+                incoming.collection == Collections.events) &&
+            !incoming.data.containsKey('assignmentConfirmation') &&
+            existing?.data['assignmentConfirmation'] != null) {
+          incoming = incoming.copyWith(
+            data: {
+              ...incoming.data,
+              'assignmentConfirmation':
+                  existing!.data['assignmentConfirmation'],
+            },
+          );
+        }
         if (existing != null && !canAccess(existing, userId)) {
           // Not theirs to change. Stay silent so nothing leaks; if they lost
           // access recently, their revocation tombstone removes the copy.
@@ -530,7 +577,39 @@ class RecordStore {
         if (change.collection == Collections.wishes && !incoming.deleted) {
           incoming = _ideaAudience(incoming, existing);
         }
-        _put(incoming, previous: existing);
+        SyncRecord? localDeletion;
+        if (incoming.deleted &&
+            (existing == null ||
+                (!existing.deleted && change.rev == existing.rev)) &&
+            _trashCollections.contains(incoming.collection) &&
+            change.data['deletionSnapshot'] is Map) {
+          final snapshot = incoming.copyWith(
+            deleted: false,
+            data: (change.data['deletionSnapshot'] as Map)
+                .cast<String, Object?>(),
+          );
+          _validate(snapshot);
+          if (recordDataIsValid(snapshot) &&
+              canAccess(snapshot, userId) &&
+              mayWrite(role, userId, snapshot, existing, access: access) &&
+              recordFileIds(
+                snapshot,
+              ).every((id) => mayReferenceFile?.call(id, userId) ?? false)) {
+            localDeletion = snapshot;
+          }
+        }
+        if (incoming.collection == Collections.assignmentResponses &&
+            !incoming.deleted) {
+          incoming = incoming.copyWith(
+            data: {
+              ...incoming.data,
+              SyncRecord.visibilityKey: _assignmentAudience(
+                _assignmentTarget(incoming)!,
+              ),
+            },
+          );
+        }
+        _put(incoming, previous: existing, deletionSnapshot: localDeletion);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
         if (existing != null) {
@@ -596,9 +675,16 @@ class RecordStore {
       [since, userId, pageSize + 1],
     );
     final hasMore = rows.length > pageSize;
-    final changes = [for (final r in rows.take(pageSize)) _record(r)];
+    final page = [for (final r in rows.take(pageSize)) _record(r)];
+    final changes = [
+      for (final r in page)
+        if (r.deleted ||
+            r.collection != Collections.assignmentResponses ||
+            canAccess(r, userId))
+          r,
+    ];
     return SyncResponse(
-      rev: hasMore ? changes.last.rev : currentRev,
+      rev: hasMore ? page.last.rev : currentRev,
       serverTime: now,
       changes: changes,
       rejected: rejected,
@@ -716,7 +802,12 @@ class RecordStore {
     SyncRecord r, {
     required SyncRecord? previous,
     List<String>? before,
+    SyncRecord? deletionSnapshot,
   }) {
+    if (r.deleted && previous != null) {
+      final audience = _audience(previous);
+      r = r.copyWith(data: {SyncRecord.visibilityKey: ?audience});
+    }
     final rev = currentRev + 1;
     final stored = r.visibleTo;
     _db.execute(
@@ -734,6 +825,9 @@ class RecordStore {
         stored == null ? null : jsonEncode(stored),
       ],
     );
+
+    _rememberDeletion(r, deletionSnapshot ?? previous, rev);
+    _assignmentsFollow(r);
 
     final audience = _audience(r);
     if (audience == null) {
@@ -964,7 +1058,10 @@ class RecordStore {
         t('Ungültige ID: {id}', {'id': r.id}),
       );
     }
-    if (utf8.encode(jsonEncode(r.data)).length > _maxDataBytes) {
+    final snapshotEnvelope =
+        r.deleted && r.data.length == 1 && r.data['deletionSnapshot'] is Map;
+    if (utf8.encode(jsonEncode(r.data)).length >
+        _maxDataBytes + (snapshotEnvelope ? 32 : 0)) {
       throw ApiException(413, 'too_large', t('Eintrag ist zu groß'));
     }
     try {
@@ -996,6 +1093,7 @@ class RecordStore {
 
   /// Whether a visible record has an actual attachment with this file id.
   bool referencedFor(String text, String memberId) {
+    if (_trashReferences(text, memberId: memberId)) return true;
     final role = _role(memberId);
     final guest = role == MemberRole.guest;
     final only =
@@ -1017,18 +1115,20 @@ class RecordStore {
   }
 
   /// Whether any live record actually attaches this file.
-  bool referenced(String text) => _db
-      .select(
-        'SELECT * FROM records WHERE deleted = 0 AND instr(data, ?) > 0',
-        [text],
-      )
-      .any((row) {
-        final record = _record(row);
-        // A damaged model is quarantined, not discarded. Keep its uploads
-        // until it can be repaired; retention never confers download access.
-        return !recordDataIsValid(record) ||
-            recordFileIds(record).contains(text);
-      });
+  bool referenced(String text) =>
+      _trashReferences(text) ||
+      _db
+          .select(
+            'SELECT * FROM records WHERE deleted = 0 AND instr(data, ?) > 0',
+            [text],
+          )
+          .any((row) {
+            final record = _record(row);
+            // A damaged model is quarantined, not discarded. Keep its uploads
+            // until it can be repaired; retention never confers download access.
+            return !recordDataIsValid(record) ||
+                recordFileIds(record).contains(text);
+          });
 
   /// The stored version of a record (also tombstones), or null.
   SyncRecord? get(String collection, String id) => _get(collection, id);

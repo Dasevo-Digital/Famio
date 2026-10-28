@@ -133,6 +133,34 @@ void main() {
         : const [];
   }
 
+  test(
+    'trash exports include only deletion snapshots the member may still see',
+    () async {
+      for (final id in ['fuer-alle', 'geheim']) {
+        final stored = app.records.get(Collections.tasks, id)!;
+        app.records.writeAs(mama, [
+          stored.copyWith(
+            deleted: true,
+            data: const {},
+            updatedAt: stored.updatedAt + 1,
+          ),
+        ]);
+      }
+      final response = await call(
+        'POST',
+        'api/me/export',
+        token: kindToken,
+        body: {'password': 'kindpass123'},
+      );
+      expect(response.statusCode, 200);
+      final zip = await unzip(response);
+      final trash = text(zip, 'trash.json');
+      expect(trash, contains('Müll'));
+      expect(trash, isNot(contains('Geschenk')));
+      expect(jsonDecode(trash), hasLength(1));
+    },
+  );
+
   test('a member exports what they see, after the password', () async {
     final wrong = await call(
       'POST',

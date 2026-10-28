@@ -86,6 +86,8 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps in den Familien-Eingang, auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat; am Computer Dateien ins Fenster ziehen | ✅ Android, macOS, Windows, Linux (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 | Datenexport als ZIP (eigene Daten bzw. ganze Familie) | ✅ |
+| Papierkorb für Aufgaben, Termine, Notizen und Dokumente mit 30 Tagen Aufbewahrung; Wiederherstellung auf allen Geräten nach aktueller Rechteprüfung | ✅ |
+| Bestätigte Zuständigkeiten für Aufgaben und Bring-/Abholfahrten: Zusage, Absage, offene Rückmeldung und optionale Erinnerung; Terminserien je einzelne Fahrt | ✅ |
 
 ## Aufbau
 
@@ -129,6 +131,32 @@ Einkaufs-Artikel sind eigene Datensätze, damit zwei Personen gleichzeitig
 verschiedene Artikel abhaken können, ohne sich zu überschreiben.
 
 ### Kalender und Erinnerungen
+
+Aufgaben und Bring-/Abholfahrten können eine ausdrückliche Zusage verlangen.
+Jede zugewiesene Person antwortet für sich; lokal gespeicherte Antworten sind
+bis zum erfolgreichen Abgleich als noch nicht synchronisiert gekennzeichnet.
+Wesentliche Änderungen an Inhalt, Zeit oder Zuständigkeit erfordern eine neue
+Rückmeldung. Bei Terminserien gilt eine Zusage nur für die jeweilige Fahrt.
+Optional erinnert der Server einmal pro Zuständigkeit und Inhalt an eine noch
+offene Zusage. Die normale Ruhezeit und die Einstellungen zu Mitteilungsdetails
+gelten auch dafür. Aufgaben benötigen für diese Erinnerung ein Fälligkeitsdatum;
+es zählt das Tagesende in der Familienzeitzone. Abwesenheiten erzeugen keine
+automatische Zusage einer Vertretung.
+
+Unter Einstellungen → Papierkorb lassen sich gelöschte Aufgaben, Termine,
+Notizen und Dokumente während 30 Tagen wiederherstellen. Der Server bewahrt
+die Löschstände samt vorhandenen Anhängen auf; sie belegen weiterhin Speicher.
+Die Liste und die Wiederherstellung benötigen eine Serververbindung. Offline
+erfolgte Löschungen erscheinen dort nach dem Abgleich. Auch ein vor seinem
+ersten Upload gelöschter Eintrag wird nach Modell- und Dateirechteprüfung
+aufbewahrt. Noch nicht übertragene Bearbeitungen vor dem Löschen bleiben
+erhalten, solange der Server dieselbe Ausgangsrevision hat. Bei zwischenzeitlich
+neuerem Serverstand ist dessen Inhalt maßgeblich. Rollenänderungen und
+abgelaufene Vertretungsrechte gelten auch im
+Papierkorb; eine Wiederherstellung überschreibt keinen inzwischen neu angelegten
+Stand. Nach Ablauf werden die Löschstände bei der regelmäßigen Bereinigung
+entfernt; nicht mehr benötigte Uploads kann die Dateibereinigung anschließend
+freigeben. Konfliktkopien und Sicherungen haben ihre eigenen Aufbewahrungsfristen.
 
 Serien werden nicht als Einzeltermine gespeichert, sondern als Regel
 (`Recurrence`) plus Ausnahmen und erst beim Anzeigen in lokaler Zeit

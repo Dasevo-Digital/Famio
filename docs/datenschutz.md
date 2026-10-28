@@ -36,6 +36,19 @@ Audit-Log.
   gelöscht.
 - Administratoren können die Familiendaten serverseitig löschen. Diese
   Löschung wird beim nächsten Abgleich auf die Geräte übertragen.
+- Einzelne gelöschte Aufgaben, Termine, Notizen und Dokumente werden mit ihren
+  Anhängen bis zu 30 Tage im serverseitigen Papierkorb aufbewahrt. Mitglieder
+  sehen nur Löschstände, die sie nach ihren aktuellen Rechten noch sehen dürfen;
+  die Wiederherstellung benötigt außerdem Schreibrechte. Nach Ablauf sind sie
+  nicht mehr abrufbar und werden bei der regelmäßigen Bereinigung entfernt.
+  Ein vollständiges administratives Löschen der Familiendaten leert auch den
+  Papierkorb. Löschmarkierungen für den Geräteabgleich, Konfliktkopien und
+  Sicherungen sind davon getrennt.
+- Bei ausdrücklich angeforderter Bestätigung einer Zuständigkeit werden die
+  Rückmeldung, die zuständige Person und der Bezug zur konkreten Aufgabe oder
+  Fahrt gespeichert. Sie sind nur für die berechtigten Betrachter des
+  zugehörigen Eintrags sichtbar. Erinnerungen an offene Zusagen sind optional
+  und folgen den vorhandenen Push- und Ruhezeiteinstellungen.
 - Sicherungen und Kopien in externen Kalender-, Cloud- oder Push-Diensten
   müssen beim jeweiligen Betreiber gesondert gelöscht werden.
 

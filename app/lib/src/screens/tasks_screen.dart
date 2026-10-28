@@ -15,6 +15,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/undo_delete.dart';
+import '../widgets/assignment_confirmation.dart';
 import '../l10n.dart';
 
 enum _Filter {
@@ -352,6 +353,10 @@ class _TaskTile extends StatelessWidget {
                           color: overdue ? theme.colorScheme.error : null,
                         ),
                       ),
+                    if (task.assignmentConfirmation.required)
+                      AssignmentPanel(
+                        target: engine.record(Collections.tasks, task.id)!,
+                      ),
                   ],
                 ),
               ),
@@ -470,6 +475,8 @@ class _TaskEditorState extends State<_TaskEditor> {
       ? _Audience.me
       : _Audience.selected;
   late DateTime? _remindAt = _initial?.remindAt;
+  late AssignmentSettings _confirmation =
+      _initial?.assignmentConfirmation ?? const AssignmentSettings();
   late TaskRepeat? _repeat = _initial?.repeat;
   late int _repeatEvery = _initial?.repeatEvery ?? 1;
   late final _steps = [...?_initial?.checklist];
@@ -530,6 +537,7 @@ class _TaskEditorState extends State<_TaskEditor> {
             ? DateUtils.dateOnly(DateTime.now())
             : _due,
         assigneeIds: [..._assignees],
+        assignmentConfirmation: _confirmation,
         // Whoever takes care of it always sees it (the server adds them too).
         visibleTo: switch (_audience) {
           _Audience.family => null,
@@ -713,6 +721,12 @@ class _TaskEditorState extends State<_TaskEditor> {
                   ),
               ],
             ),
+            if (_assignees.isNotEmpty)
+              AssignmentSettingsEditor(
+                value: _confirmation,
+                canRemind: _due != null || _repeat != null,
+                onChanged: (v) => setState(() => _confirmation = v),
+              ),
             // Rarely needed: folded away, unless the task already uses it.
             if (!_more)
               Align(

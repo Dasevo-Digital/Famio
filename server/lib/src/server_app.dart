@@ -96,6 +96,7 @@ class FamioServerApp {
       memberIds: () => [for (final m in accounts.members()) m.id],
       roleOf: accounts.roleOf,
       accessOf: accounts.accessOf,
+      assignmentLocation: () => settings.location,
       today: () {
         final now = tz.TZDateTime.now(settings.location);
         return DateTime(now.year, now.month, now.day);
@@ -378,6 +379,7 @@ class FamioServerApp {
   late final String? setupCode;
   Timer? _gc;
   Timer? _silent;
+  Timer? _assignmentTimer;
   late final FamioApi api;
 
   /// The family's time zone (may be changed by admins at runtime).
@@ -421,9 +423,15 @@ class FamioServerApp {
     locations.collectGarbage();
     notices.collectGarbage();
     records.purgeDeleted();
+    records.expireTrash();
     records.expireConflicts();
     invites.collectGarbage();
     backups?.start();
+    push.remindAssignments();
+    _assignmentTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => push.remindAssignments(),
+    );
     // Hourly, the first time an hour after the start: after the server was
     // down, devices report again before anybody counts as silent.
     final profiles = ProfileNotices(
@@ -443,6 +451,7 @@ class FamioServerApp {
     _gc = Timer.periodic(const Duration(hours: 6), (_) {
       notices.collectGarbage();
       records.purgeDeleted();
+      records.expireTrash();
       if (records.expireConflicts() > 0) hub.notifyRev(records.currentRev);
       invites.collectGarbage();
       files.collectGarbage();
@@ -452,6 +461,7 @@ class FamioServerApp {
   }
 
   Future<void> close() async {
+    _assignmentTimer?.cancel();
     _gc?.cancel();
     _silent?.cancel();
     backups?.stop();

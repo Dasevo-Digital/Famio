@@ -158,6 +158,35 @@ class SyncEngine {
     return r == null || r.deleted || !_valid(r) ? null : r;
   }
 
+  AssignmentDecision? assignmentDecision(AssignmentRequest request) {
+    final reply = record(Collections.assignmentResponses, request.id);
+    if (reply == null) return null;
+    final response = AssignmentResponse.fromRecord(reply);
+    return response.fingerprint == request.fingerprint
+        ? response.decision
+        : null;
+  }
+
+  void respondToAssignment(
+    AssignmentRequest request,
+    AssignmentDecision decision,
+  ) {
+    if (request.memberId != memberId) throw StateError('Not your assignment');
+    put(
+      Collections.assignmentResponses,
+      request.id,
+      AssignmentResponse(
+        targetCollection: request.target.collection,
+        targetId: request.target.id,
+        memberId: memberId,
+        kind: request.kind,
+        fingerprint: request.fingerprint,
+        decision: decision,
+        occurrence: request.occurrence,
+      ).toData(),
+    );
+  }
+
   void put(String collection, String id, Map<String, Object?> data) =>
       _write(collection, id, data, deleted: false);
 
@@ -177,7 +206,19 @@ class SyncEngine {
       SyncRecord(
         collection: collection,
         id: id,
-        data: deleted ? data : SyncRecord.keepExternal(data, existing),
+        data: deleted
+            ? {
+                if (existing != null &&
+                    !existing.deleted &&
+                    {
+                      Collections.tasks,
+                      Collections.notes,
+                      Collections.events,
+                      Collections.documents,
+                    }.contains(collection))
+                  'deletionSnapshot': existing.data,
+              }
+            : SyncRecord.keepExternal(data, existing),
         deleted: deleted,
         updatedAt: updatedAt,
         updatedBy: memberId,

@@ -333,6 +333,24 @@ const _migrations = [
   ALTER TABLE sessions ADD COLUMN profile_expires INTEGER;
   ALTER TABLE sessions ADD COLUMN profile_noticed INTEGER;
   ''',
+  '''
+  CREATE TABLE trash (
+    id TEXT PRIMARY KEY,
+    collection TEXT NOT NULL,
+    record_id TEXT NOT NULL,
+    snapshot TEXT NOT NULL,
+    deleted_rev INTEGER NOT NULL UNIQUE,
+    deleted_at INTEGER NOT NULL,
+    deleted_by TEXT,
+    expires_at INTEGER NOT NULL
+  );
+  CREATE INDEX trash_expiry ON trash(expires_at);
+  CREATE INDEX trash_target ON trash(collection, record_id);
+  CREATE TABLE assignment_reminders (
+    id TEXT PRIMARY KEY,
+    sent_at INTEGER NOT NULL
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

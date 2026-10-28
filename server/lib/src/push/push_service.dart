@@ -248,6 +248,44 @@ class PushService {
     String name(String? id) => names[id] ?? t('Jemand');
     for (final (r, before) in changes) {
       if (r.deleted) continue;
+      if (r.collection == Collections.assignmentResponses) {
+        final parent = records.get(
+          r.data['targetCollection'] as String,
+          r.data['targetId'] as String,
+        );
+        if (parent == null ||
+            parent.deleted ||
+            (before?.data['decision'] == r.data['decision'] &&
+                before?.data['fingerprint'] == r.data['fingerprint'])) {
+          continue;
+        }
+        final author = parent.updatedBy;
+        if (author != null &&
+            author != userId &&
+            accounts.byId(author) != null) {
+          final accepted =
+              r.data['decision'] == AssignmentDecision.accepted.name;
+          deliver(
+            () => PushNotice(
+              to: {author},
+              title: t('Rückmeldung zur Zuständigkeit'),
+              body: accepted
+                  ? t('{name} übernimmt: {title}', {
+                      'name': name(userId),
+                      'title': parent.data['title'] ?? '',
+                    })
+                  : t('{name} kann nicht: {title}', {
+                      'name': name(userId),
+                      'title': parent.data['title'] ?? '',
+                    }),
+              brief: t('Neue Rückmeldung'),
+              tag: 'clipboard',
+            ),
+            parent,
+          );
+        }
+        continue;
+      }
       final fresh = before == null || before.deleted;
       PushNotice? build() => switch (r.collection) {
         Collections.chatMessages when fresh => _chat(r, userId, name),
@@ -259,6 +297,65 @@ class PushService {
         _ => null,
       };
       if (build() != null) deliver(() => build()!, r);
+    }
+  }
+
+  /// Optional reminders for missing replies. Persisted keys prevent a
+  /// restart or a quiet-hours delivery from producing duplicate reminders.
+  void remindAssignments({DateTime? now}) {
+    final at = now ?? DateTime.now();
+    _db.execute('DELETE FROM assignment_reminders WHERE sent_at < ?', [
+      at.subtract(const Duration(days: 32)).millisecondsSinceEpoch,
+    ]);
+    for (final collection in [Collections.tasks, Collections.events]) {
+      for (final record in records.all(collection)) {
+        if (!recordDataIsValid(record)) continue;
+        final settings = AssignmentSettings.fromData(record.data);
+        final minutes = settings.required ? settings.remindMinutes : null;
+        if (minutes == null) continue;
+        final requests = records.assignmentRequestsDue(
+          record,
+          at,
+          at.add(Duration(minutes: minutes + 1)),
+        );
+        for (final request in requests) {
+          final due = request.deadline;
+          if (due == null ||
+              !due.isAfter(at) ||
+              at.isBefore(due.subtract(Duration(minutes: minutes))) ||
+              accounts.byId(request.memberId) == null ||
+              !records.canAccess(record, request.memberId)) {
+            continue;
+          }
+          final reply = records.get(
+            Collections.assignmentResponses,
+            request.id,
+          );
+          if (reply != null &&
+              !reply.deleted &&
+              reply.data['fingerprint'] == request.fingerprint) {
+            continue;
+          }
+          final key = '${request.id}:${request.fingerprint}';
+          _db.execute(
+            'INSERT OR IGNORE INTO assignment_reminders (id, sent_at) VALUES (?, ?)',
+            [key, at.millisecondsSinceEpoch],
+          );
+          if (_db.updatedRows == 0) continue;
+          deliver(
+            () => PushNotice(
+              to: {request.memberId},
+              title: t('Zusage noch offen'),
+              body: t('Bitte die Zuständigkeit bestätigen: {title}', {
+                'title': record.data['title'] ?? '',
+              }),
+              brief: t('Eine Zuständigkeit wartet auf deine Rückmeldung'),
+              tag: 'clipboard',
+            ),
+            record,
+          );
+        }
+      }
     }
   }
 

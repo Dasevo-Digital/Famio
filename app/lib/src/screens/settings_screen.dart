@@ -41,6 +41,7 @@ import '../l10n.dart';
 import '../widgets/section_tips.dart';
 import 'member_emergency_screen.dart';
 import 'device_pairing_screen.dart';
+import 'trash_screen.dart';
 import '../widgets/famio_tour.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -196,6 +197,14 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           // Guests (grandparents, babysitters) see neither.
+          ListTile(
+            leading: const Icon(AppIcons.trash),
+            title: Text(tr.trashTitle),
+            subtitle: Text(tr.trashHint),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const TrashScreen()),
+            ),
+          ),
           if (!me.isGuest) ...[
             ListTile(
               leading: const Icon(AppIcons.wrench),

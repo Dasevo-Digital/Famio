@@ -63,6 +63,7 @@ part 'api/auth_routes.dart';
 part 'api/calendar_routes.dart';
 part 'api/export_routes.dart';
 part 'api/file_routes.dart';
+part 'api/trash_routes.dart';
 part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
@@ -380,6 +381,8 @@ class FamioApi {
       ..put('/api/admin/sso', _adminSaveSso)
       ..delete('/api/admin/sso', _adminDeleteSso)
       ..post('/api/sync', _sync)
+      ..get('/api/trash', _trashList)
+      ..post('/api/trash/<id>/restore', _trashRestore)
       ..post('/api/location/report', _locationReport)
       ..post('/api/location/device-token', _locationDeviceToken)
       ..post('/api/location/pause', _locationPause)

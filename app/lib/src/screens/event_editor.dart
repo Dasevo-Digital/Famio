@@ -11,6 +11,7 @@ import '../format.dart';
 import '../widgets/event_comments.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
+import '../widgets/assignment_confirmation.dart';
 import 'list_templates.dart';
 import '../l10n.dart';
 
@@ -134,6 +135,7 @@ class _EventEditorState extends State<_EventEditor> {
   String? _bringerId;
   String? _pickerId;
   var _countdown = false;
+  var _confirmation = const AssignmentSettings();
 
   bool get _isSeries => _original?.recurrence != null;
 
@@ -154,6 +156,7 @@ class _EventEditorState extends State<_EventEditor> {
       _bringerId = o.event.bringerId;
       _pickerId = o.event.pickerId;
       _countdown = o.event.countdown;
+      _confirmation = o.event.assignmentConfirmation;
     } else {
       final day = widget.day ?? DateUtils.dateOnly(DateTime.now());
       final now = DateTime.now();
@@ -298,6 +301,7 @@ class _EventEditorState extends State<_EventEditor> {
     bringerId: _allDay ? null : _bringerId,
     pickerId: _allDay ? null : _pickerId,
     countdown: _countdown,
+    assignmentConfirmation: _confirmation,
     // Other calendar apps (CalDAV) know the event by its UID.
     icalUid: id == _original?.id ? _original?.icalUid : null,
   );
@@ -604,6 +608,11 @@ class _EventEditorState extends State<_EventEditor> {
                 const SizedBox(height: 8),
               ],
               Text(tr.eventWhoTakingPart, style: theme.textTheme.labelLarge),
+              if (!_allDay && (_bringerId != null || _pickerId != null))
+                AssignmentSettingsEditor(
+                  value: _confirmation,
+                  onChanged: (v) => setState(() => _confirmation = v),
+                ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
