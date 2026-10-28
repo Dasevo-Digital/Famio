@@ -4,6 +4,21 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.20 – Recordatorios en iPhone y iPad, sincronización más segura
+
+- Los recordatorios ahora también llegan al iPhone y al iPad; Famio pide
+  una vez permiso para enviar notificaciones.
+- Si el servidor no puede aceptar un cambio porque un adjunto ya no está
+  compartido, se queda en el dispositivo: el icono de sincronización
+  muestra «Revisar cambios» y todo lo demás se sigue sincronizando.
+- Los archivos solo son accesibles a través de adjuntos reales, y un
+  código QR para vincular caduca cuando el dispositivo que lo autorizó
+  cierra la sesión.
+- El calendario de vacunas, las ecografías y los consejos sobre la fiebre
+  en niños de hasta dos años siguen las recomendaciones actuales.
+- Mejor contraste y un selector de fecha que también cabe en móviles
+  estrechos.
+
 ## 2.0.19 – Más estable en segundo plano
 
 - Un error que se le escapa a una tarea en segundo plano ya no detiene el

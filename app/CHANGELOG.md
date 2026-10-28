@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.20 – Erinnerungen auf iPhone und iPad, sicherer Abgleich
+
+- Erinnerungen kommen jetzt auch auf iPhone und iPad an; Famio fragt dafür
+  einmal nach der Erlaubnis für Mitteilungen.
+- Kann der Server eine Änderung nicht annehmen, weil ein Anhang nicht mehr
+  freigegeben ist, bleibt sie auf dem Gerät: Das Abgleichsymbol zeigt
+  „Änderungen prüfen“, alles andere gleicht weiter ab.
+- Dateien sind nur noch über echte Anhänge erreichbar, und ein QR-Code zum
+  Koppeln verfällt, wenn sich das freigebende Gerät abmeldet.
+- Impfkalender, Ultraschall-Termine und Fieberhinweise für Kinder bis zwei
+  Jahre folgen den aktuellen Empfehlungen.
+- Bessere Kontraste und ein Datumsdialog, der auch auf schmale Handys passt.
+
 ## 2.0.19 – Stabiler im Hintergrund
 
 - Ein übersehener Fehler in einem Hintergrundauftrag beendet den Server

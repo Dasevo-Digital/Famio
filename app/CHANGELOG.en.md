@@ -4,6 +4,19 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.20 – Reminders on iPhone and iPad, safer sync
+
+- Reminders now reach iPhone and iPad too; Famio asks once for permission
+  to send notifications.
+- If the server cannot accept a change because an attachment is no longer
+  shared, it stays on the device: the sync icon shows “Review changes”,
+  everything else keeps syncing.
+- Files can only be reached through real attachments, and a QR code for
+  pairing expires when the approving device signs out.
+- Vaccination schedule, ultrasound appointments and fever advice for
+  children up to two years follow the current recommendations.
+- Better contrast and a date picker that also fits narrow phones.
+
 ## 2.0.19 – Steadier in the background
 
 - An error a background job misses no longer stops the server; it is
