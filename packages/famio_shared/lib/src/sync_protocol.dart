@@ -9,6 +9,7 @@ class SyncRequest {
     this.resettable = false,
     this.full = false,
     this.scope,
+    this.deferInvalidFiles = false,
   });
 
   factory SyncRequest.fromJson(Map<String, Object?> json) => SyncRequest(
@@ -20,6 +21,7 @@ class SyncRequest {
     resettable: json['resettable'] as bool? ?? false,
     full: json['full'] as bool? ?? false,
     scope: json['scope'] as String?,
+    deferInvalidFiles: json['deferInvalidFiles'] as bool? ?? false,
   );
 
   /// Highest server revision the client has already applied.
@@ -36,12 +38,16 @@ class SyncRequest {
   /// Server instance and access scope of the previous completed page.
   final String? scope;
 
+  /// Understands per-record attachment failures without aborting the pull.
+  final bool deferInvalidFiles;
+
   Map<String, Object?> toJson() => {
     'since': since,
     'changes': [for (final c in changes) c.toJson()],
     if (resettable) 'resettable': true,
     if (full) 'full': true,
     if (scope != null) 'scope': scope,
+    if (deferInvalidFiles) 'deferInvalidFiles': true,
   };
 }
 
@@ -55,6 +61,7 @@ class SyncResponse {
     this.hasMore = false,
     this.reset = false,
     this.scope,
+    this.blocked = const [],
   });
 
   factory SyncResponse.fromJson(Map<String, Object?> json) => SyncResponse(
@@ -74,6 +81,10 @@ class SyncResponse {
     hasMore: json['hasMore'] as bool? ?? false,
     reset: json['reset'] as bool? ?? false,
     scope: json['scope'] as String?,
+    blocked: [
+      for (final issue in json['blocked'] as List? ?? const [])
+        SyncWriteIssue.fromJson((issue as Map).cast()),
+    ],
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -101,6 +112,9 @@ class SyncResponse {
   final bool reset;
   final String? scope;
 
+  /// Pending edits that need repair; their contents were not stored.
+  final List<SyncWriteIssue> blocked;
+
   Map<String, Object?> toJson() => {
     'rev': rev,
     'serverTime': serverTime,
@@ -110,5 +124,33 @@ class SyncResponse {
     'hasMore': hasMore,
     if (reset) 'reset': true,
     if (scope != null) 'scope': scope,
+    if (blocked.isNotEmpty)
+      'blocked': [for (final issue in blocked) issue.toJson()],
+  };
+}
+
+/// Identifies an exact local edit, without echoing its contents.
+class SyncWriteIssue {
+  const SyncWriteIssue({
+    required this.collection,
+    required this.id,
+    required this.updatedAt,
+    required this.code,
+  });
+  factory SyncWriteIssue.fromJson(Map<String, Object?> json) => SyncWriteIssue(
+    collection: json['collection'] as String,
+    id: json['id'] as String,
+    updatedAt: json['updatedAt'] as int,
+    code: json['code'] as String,
+  );
+  final String collection;
+  final String id;
+  final int updatedAt;
+  final String code;
+  Map<String, Object?> toJson() => {
+    'collection': collection,
+    'id': id,
+    'updatedAt': updatedAt,
+    'code': code,
   };
 }

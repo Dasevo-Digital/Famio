@@ -159,7 +159,7 @@ class FamioApi {
           String userId,
           DateTime expires,
           bool verified,
-          String sessionHash,
+          String? sessionHash,
           String authorization,
         })
       >{};

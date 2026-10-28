@@ -1,4 +1,8 @@
 {
+  "syncBlockedTitle": "{count} change(s) need attention",
+  "syncBlockedFileBody": "An attachment is missing or no longer shared. Other changes continue to sync. Open the listed entries and remove or replace the attachment. You can also retry after it has been shared again.",
+  "syncReviewChanges": "Review changes",
+  "conflictsInvalidVersion": "This saved version is damaged and cannot be restored. The current version and the conflict copy are kept. You can keep the current version.",
   "healthFeverUnderTwoDay": "For children up to two years: have fever lasting longer than one day checked by the pediatrician. {warnings}",
   "@@locale": "en",
   "sectionHome": "Home",

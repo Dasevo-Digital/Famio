@@ -882,7 +882,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
     // After the first sync, move older child records to guardian-only.
     engine.statusChanges
-        .firstWhere((s) => s.state == SyncState.idle && s.lastSync != null)
+        .firstWhere(
+          (s) =>
+              (s.state == SyncState.idle || s.state == SyncState.attention) &&
+              s.lastSync != null,
+        )
         .then((_) {
           if (this.engine == engine) engine.applyChildVisibility();
         })

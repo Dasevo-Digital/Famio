@@ -9,7 +9,7 @@ import 'api_client.dart';
 import 'local_store.dart';
 import 'platform/net.dart';
 
-enum SyncState { idle, syncing, offline, unauthorized }
+enum SyncState { idle, syncing, offline, unauthorized, attention }
 
 class SyncStatus {
   const SyncStatus(this.state, {this.lastSync, this.message});
@@ -31,6 +31,19 @@ class SyncEngine {
     this.connectedPollInterval = const Duration(minutes: 10),
   }) {
     _clockOffset = int.tryParse(store.getMeta('clockOffset') ?? '') ?? 0;
+    try {
+      final saved = jsonDecode(store.getMeta('blockedChanges') ?? '[]') as List;
+      for (final value in saved) {
+        final issue = SyncWriteIssue.fromJson((value as Map).cast());
+        _blocked[(issue.collection, issue.id)] = issue;
+      }
+    } on FormatException {
+      _blocked.clear();
+      store.setMeta('blockedChanges', null);
+    } on TypeError {
+      _blocked.clear();
+      store.setMeta('blockedChanges', null);
+    }
     final cached = store.getMeta('members');
     if (cached != null) {
       _members = [
@@ -62,6 +75,7 @@ class SyncEngine {
   /// Collections the server does not know yet; their edits stay local until
   /// the server is updated (retried on the next app start).
   final _unsupported = <String>{};
+  final _blocked = <(String, String), SyncWriteIssue>{};
   final _readable = Expando<bool>();
   var _clockOffset = 0;
   var _members = <FamilyMember>[];
@@ -109,6 +123,36 @@ class SyncEngine {
 
   bool _valid(SyncRecord r) => _readable[r] ??= recordDataIsValid(r);
 
+  /// Editable local contents that the server could not accept yet.
+  List<SyncRecord> get blockedChanges => [
+    for (final local in store.dirty)
+      if (_isBlocked(local.record)) local.record,
+  ];
+
+  bool _isBlocked(SyncRecord r) =>
+      _blocked[(r.collection, r.id)]?.updatedAt == r.updatedAt;
+
+  void _saveBlocked() {
+    _blocked.removeWhere((key, issue) {
+      final local = store.get(key.$1, key.$2);
+      return local == null ||
+          !local.dirty ||
+          local.record.updatedAt != issue.updatedAt;
+    });
+    store.setMeta(
+      'blockedChanges',
+      jsonEncode([for (final issue in _blocked.values) issue.toJson()]),
+    );
+  }
+
+  /// Explicit retry, e.g. after a file was shared again. Polling keeps
+  /// receiving other changes without resending an unchanged blocked edit.
+  Future<void> retryBlockedChanges() {
+    _blocked.clear();
+    _saveBlocked();
+    return sync();
+  }
+
   SyncRecord? record(String collection, String id) {
     final r = store.get(collection, id)?.record;
     return r == null || r.deleted || !_valid(r) ? null : r;
@@ -141,6 +185,7 @@ class SyncEngine {
       ),
       dirty: true,
     );
+    if (_blocked.remove((collection, id)) != null) _saveBlocked();
     _changes.add({collection});
     // Batch quick successive edits (typing, ticking off items) into one push.
     _debounce?.cancel();
@@ -223,7 +268,9 @@ class SyncEngine {
     do {
       _again = false;
       await _syncOnce();
-    } while (_again && _currentStatus.state == SyncState.idle);
+    } while (_again &&
+        (_currentStatus.state == SyncState.idle ||
+            _currentStatus.state == SyncState.attention));
   }
 
   Future<void> _syncOnce() async {
@@ -248,6 +295,7 @@ class SyncEngine {
             resettable: true,
             full: full,
             scope: store.getMeta('syncScope') ?? '',
+            deferInvalidFiles: true,
           ),
         );
         final receivedAt = DateTime.now().millisecondsSinceEpoch;
@@ -272,7 +320,11 @@ class SyncEngine {
         }
       } while (more);
       lastError = null;
-      _setStatus(SyncState.idle, null, DateTime.now());
+      _setStatus(
+        blockedChanges.isEmpty ? SyncState.idle : SyncState.attention,
+        null,
+        DateTime.now(),
+      );
     } on ApiError catch (e) {
       lastError = e;
       _setStatus(
@@ -287,13 +339,32 @@ class SyncEngine {
 
   Iterable<SyncRecord> get _pushable => store.dirty
       .map((r) => r.record)
-      .where((r) => !_unsupported.contains(r.collection) && _valid(r));
+      .where(
+        (r) =>
+            !_unsupported.contains(r.collection) && _valid(r) && !_isBlocked(r),
+      );
 
   void _apply(List<SyncRecord> pushed, SyncResponse response) {
     final changed = <String>{};
     store.transaction(() {
+      final previousBlocked =
+          response.scope != null && response.scope != store.getMeta('syncScope')
+          ? Map.of(_blocked)
+          : const <(String, String), SyncWriteIssue>{};
+      for (final issue in response.blocked) {
+        if (pushed.any(
+          (r) =>
+              r.collection == issue.collection &&
+              r.id == issue.id &&
+              r.updatedAt == issue.updatedAt,
+        )) {
+          _blocked[(issue.collection, issue.id)] = issue;
+        }
+      }
       for (final p in pushed) {
-        if (response.unsupported.contains(p.collection)) continue;
+        if (response.unsupported.contains(p.collection) || _isBlocked(p)) {
+          continue;
+        }
         // Only if not edited again while the request was in flight.
         if (store.get(p.collection, p.id)?.record.updatedAt == p.updatedAt) {
           store.markClean(p.collection, p.id);
@@ -301,6 +372,12 @@ class SyncEngine {
       }
       for (final remote in [...response.rejected, ...response.changes]) {
         final local = store.get(remote.collection, remote.id);
+        if (local != null &&
+            local.dirty &&
+            !remote.deleted &&
+            _isBlocked(local.record)) {
+          continue; // Keep the repairable edit; revocations still take priority.
+        }
         if (local != null && local.dirty && _newer(local.record, remote)) {
           continue; // Our pending edit will win on the next push.
         }
@@ -312,9 +389,15 @@ class SyncEngine {
         }
         changed.add(remote.collection);
       }
+      // Revalidate after a scope change, but preserve the repair candidate
+      // while merging this response. A fresh rejection stays blocked.
+      _blocked.removeWhere(
+        (key, issue) => identical(previousBlocked[key], issue),
+      );
       store.setMeta('lastRev', '${response.rev}');
       if (response.scope != null) store.setMeta('syncScope', response.scope!);
       store.setMeta('clockOffset', '$_clockOffset');
+      _saveBlocked();
     });
     if (changed.isNotEmpty) _changes.add(changed);
   }

@@ -144,6 +144,21 @@ bool recordDataIsValid(SyncRecord record) {
   }
 }
 
+/// Historical conflict payloads remain inspectable even when not restorable.
+bool conflictIsRestorable(SyncConflict conflict) =>
+    Collections.conflictTracked.contains(conflict.collection) &&
+    conflict.recordId.isNotEmpty &&
+    conflict.recordId.length <= 64 &&
+    (conflict.lostDeleted ||
+        recordDataIsValid(
+          SyncRecord(
+            collection: conflict.collection,
+            id: conflict.recordId,
+            data: conflict.lost,
+            updatedAt: conflict.lostAt.millisecondsSinceEpoch,
+          ),
+        ));
+
 /// Only attachment fields confer access; arbitrary text never does.
 Iterable<String> recordFileIds(SyncRecord record) sync* {
   if (record.deleted) return;

@@ -1,4 +1,9 @@
 {
+  "syncBlockedTitle": "{count} Änderung(en) benötigen Aufmerksamkeit",
+  "syncBlockedFileBody": "Ein Dateianhang fehlt oder ist nicht mehr freigegeben. Andere Änderungen werden weiter abgeglichen. Öffne die genannten Einträge und entferne oder ersetze den Anhang. Nach einer erneuten Freigabe kannst du es auch noch einmal versuchen.",
+  "syncReviewChanges": "Änderungen prüfen",
+  "conflictsInvalidVersion": "Diese gespeicherte Fassung ist beschädigt und kann nicht wiederhergestellt werden. Die aktuelle Fassung und die Konfliktkopie bleiben erhalten. Du kannst die aktuelle Fassung beibehalten.",
+  "@syncBlockedTitle": {"placeholders": {"count": {"type": "int"}}},
   "healthFeverUnderTwoDay": "Bei Kindern bis zwei Jahre: Fieber länger als einen Tag bitte beim Kinderarzt abklären lassen. {warnings}",
   "@healthFeverUnderTwoDay": {"placeholders": {"warnings": {"type": "String"}}},
   "@@locale": "de",

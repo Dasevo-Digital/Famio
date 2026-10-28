@@ -13,6 +13,12 @@ import 'i18n.dart';
 
 /// User accounts and login sessions.
 class Accounts {
+  final _ingressPairingEpochs = <String, int>{};
+
+  /// Ingress has no bearer session. Family administrators can still revoke
+  /// its pending pairing approvals by signing the account out everywhere.
+  void invalidateIngressPairings(String userId) =>
+      _ingressPairingEpochs[userId] = (_ingressPairingEpochs[userId] ?? 0) + 1;
   Accounts(this._db);
 
   final Database _db;
@@ -417,6 +423,7 @@ class Accounts {
   /// Signs a member out on one device ([sessionId]) or on all devices,
   /// optionally keeping the session of [exceptToken]. Returns the count.
   int deleteSessions(String userId, {String? sessionId, String? exceptToken}) {
+    if (sessionId == null) invalidateIngressPairings(userId);
     _db.execute(
       'DELETE FROM sessions WHERE user_id = ?'
       ' AND (? IS NULL OR substr(token_hash, 1, 16) = ?)'
@@ -555,6 +562,20 @@ class Accounts {
     if (rows.isEmpty) return null;
     return sha256
         .convert(utf8.encode('${rows.first['password_hash']}'))
+        .toString();
+  }
+
+  String? ingressPairingAuthorization(String userId) {
+    final rows = _db.select('SELECT password_hash FROM users WHERE id = ?', [
+      userId,
+    ]);
+    if (rows.isEmpty) return null;
+    return sha256
+        .convert(
+          utf8.encode(
+            '${rows.first['password_hash']}:${_ingressPairingEpochs[userId] ?? 0}',
+          ),
+        )
         .toString();
   }
 

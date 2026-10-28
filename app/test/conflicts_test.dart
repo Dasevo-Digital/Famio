@@ -13,6 +13,54 @@ const _members =
     '{"id":"m2","username":"papa","displayName":"Papa"}]';
 
 void main() {
+  test(
+    'damaged historical versions never replace the note or close its conflict',
+    () async {
+      final engine = SyncEngine(
+        store: LocalStore.open(':memory:'),
+        api: FamioApiClient('localhost:1'),
+        memberId: 'm1',
+      );
+      final current = SyncRecord(
+        collection: Collections.notes,
+        id: 'note',
+        data: {'title': 'Keep this'},
+        updatedAt: 2,
+      );
+      final conflict = SyncConflict(
+        id: 'bad',
+        collection: Collections.notes,
+        recordId: 'note',
+        lost: {'title': 42},
+        lostDeleted: false,
+        lostBy: 'm2',
+        lostAt: DateTime(2026),
+        keptBy: 'm1',
+        keptAt: DateTime(2026, 2),
+      );
+      engine.store
+        ..put(current, dirty: false)
+        ..put(
+          SyncRecord(
+            collection: Collections.conflicts,
+            id: conflict.id,
+            data: conflict.toData(),
+            updatedAt: 2,
+          ),
+          dirty: false,
+        );
+      expect(engine.restoreLost(conflict), isFalse);
+      expect(
+        engine.record(Collections.notes, 'note')!.data['title'],
+        'Keep this',
+      );
+      expect(engine.conflicts.single.id, 'bad');
+      expect(engine.store.dirty, isEmpty);
+      await engine.dispose();
+      engine.api.close();
+      engine.store.close();
+    },
+  );
   setUpAll(() => initializeDateFormatting('de'));
 
   test('the fields that differ, with readable names', () {

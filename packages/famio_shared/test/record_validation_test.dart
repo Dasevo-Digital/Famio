@@ -5,6 +5,47 @@ SyncRecord record(String collection, Map<String, Object?> data) =>
     SyncRecord(collection: collection, id: 'fixture', data: data, updatedAt: 1);
 
 void main() {
+  test(
+    'conflict restoration checks the embedded model while preserving inspectability',
+    () {
+      SyncConflict conflict(
+        String collection,
+        Map<String, Object?> lost, {
+        bool deleted = false,
+      }) => SyncConflict(
+        id: 'c',
+        collection: collection,
+        recordId: 'r',
+        lost: lost,
+        lostDeleted: deleted,
+        lostBy: 'a',
+        lostAt: DateTime(2026),
+        keptBy: 'b',
+        keptAt: DateTime(2026),
+      );
+      final invalid = conflict(Collections.notes, {'title': 42});
+      expect(
+        recordDataIsValid(record(Collections.conflicts, invalid.toData())),
+        isTrue,
+      );
+      expect(conflictIsRestorable(invalid), isFalse);
+      expect(
+        conflictIsRestorable(
+          conflict(Collections.notes, {'title': 'Valid', 'future': true}),
+        ),
+        isTrue,
+      );
+      expect(
+        conflictIsRestorable(conflict(Collections.notes, {}, deleted: true)),
+        isTrue,
+      );
+      expect(
+        conflictIsRestorable(conflict(Collections.conflicts, {})),
+        isFalse,
+      );
+      expect(conflictIsRestorable(conflict('unknown', {})), isFalse);
+    },
+  );
   test('malformed known fields and nested lists are rejected', () {
     for (final r in [
       record(Collections.notes, {'title': 42}),

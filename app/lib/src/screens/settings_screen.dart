@@ -26,6 +26,7 @@ import '../widgets/dispose_with.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/birthday_field.dart';
 import '../widgets/form_dialog.dart';
+import '../widgets/sync_issues_dialog.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/trust_certificate.dart';
 import '../widgets/password_reveal.dart';
@@ -339,18 +340,25 @@ class SettingsScreen extends StatelessWidget {
               final last = status.lastSync;
               return ListTile(
                 leading: const Icon(AppIcons.arrowsClockwise),
-                title: Text(context.l10n.settingsSyncNow),
+                title: Text(
+                  status.state == SyncState.attention
+                      ? tr.syncReviewChanges
+                      : context.l10n.settingsSyncNow,
+                ),
                 subtitle: Text(switch (status.state) {
                   SyncState.syncing => tr.settingsSyncRunning,
                   SyncState.offline => tr.settingsOfflineMessage(
                     status.message ?? tr.commonServerUnreachable,
+                  ),
+                  SyncState.attention => tr.syncBlockedTitle(
+                    engine.blockedChanges.length,
                   ),
                   _ when last != null => tr.settingsLastTime(
                     DateFormat.MMMd(appLanguage).add_jm().format(last),
                   ),
                   _ => tr.settingsNotSynced,
                 }),
-                onTap: engine.sync,
+                onTap: () => showSyncIssues(context, engine),
               );
             },
           ),

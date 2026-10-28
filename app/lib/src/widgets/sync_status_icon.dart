@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
+import 'sync_issues_dialog.dart';
 
 /// Cloud bubble showing the sync state; tapping it syncs immediately.
 class SyncStatusIcon extends StatelessWidget {
@@ -33,6 +34,11 @@ class SyncStatusIcon extends StatelessWidget {
             Theme.of(context).colorScheme.error,
             tr.syncOfflinePendingChangeS(pending, status.message ?? ''),
           ),
+          SyncState.attention => (
+            AppIcons.warningCircle,
+            c.danger,
+            tr.syncBlockedTitle(engine.blockedChanges.length),
+          ),
           _ when pending > 0 => (
             AppIcons.cloudArrowUp,
             c.inkSoft,
@@ -52,7 +58,7 @@ class SyncStatusIcon extends StatelessWidget {
           icon: icon,
           color: color,
           tooltip: text.trim(),
-          onPressed: engine.sync,
+          onPressed: () => showSyncIssues(context, engine),
         );
       },
     );

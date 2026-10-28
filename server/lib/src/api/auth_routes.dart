@@ -132,7 +132,13 @@ extension _AuthRoutes on FamioApi {
   /// plain secret is returned exactly once and is never persisted.
   Response _createDevicePairing(Request request) {
     final member = _auth(request);
-    final token = _bearer(request);
+    final bearer = _bearer(request);
+    // Ingress authenticates independently of any bearer header. Only bind
+    // a real session when it belongs to this authenticated account.
+    final token =
+        bearer != null && accounts.userForToken(bearer)?.id == member.id
+        ? bearer
+        : null;
     final verified = FamioApi._strongMethods.contains(
       token == null ? null : accounts.sessionMethod(token),
     );
@@ -142,7 +148,15 @@ extension _AuthRoutes on FamioApi {
           pairing.expires.isBefore(now) || pairing.userId == member.id,
     );
     final secret = _randomToken();
-    final sessionHash = sha256.convert(utf8.encode(token!)).toString();
+    final sessionHash = token == null
+        ? null
+        : sha256.convert(utf8.encode(token)).toString();
+    final authorization = sessionHash == null
+        ? accounts.ingressPairingAuthorization(member.id)
+        : accounts.pairingAuthorization(sessionHash);
+    if (authorization == null) {
+      throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
+    }
     final digest = sha256.convert(utf8.encode(secret)).toString();
     final expires = now.add(_pairingLifetime);
     _devicePairings[digest] = (
@@ -150,7 +164,7 @@ extension _AuthRoutes on FamioApi {
       expires: expires,
       verified: verified,
       sessionHash: sessionHash,
-      authorization: accounts.pairingAuthorization(sessionHash)!,
+      authorization: authorization,
     );
     _audit(member, 'hat eine Gerätekopplung freigegeben');
     return _json({
@@ -175,7 +189,9 @@ extension _AuthRoutes on FamioApi {
     if (secret.isEmpty ||
         pairing == null ||
         pairing.expires.isBefore(DateTime.now()) ||
-        accounts.pairingAuthorization(pairing.sessionHash) !=
+        (pairing.sessionHash == null
+                ? accounts.ingressPairingAuthorization(pairing.userId)
+                : accounts.pairingAuthorization(pairing.sessionHash!)) !=
             pairing.authorization) {
       throttle.failed(address, throttleKey);
       throw ApiException(
@@ -582,6 +598,9 @@ extension _AuthRoutes on FamioApi {
   }
 
   Response _logout(Request request) {
+    if (_ingressMember(request) case final member?) {
+      accounts.invalidateIngressPairings(member.id);
+    }
     final token = _bearer(request);
     if (token != null) accounts.deleteSession(token);
     return _json({'ok': true});

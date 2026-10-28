@@ -22,13 +22,15 @@ extension ConflictData on SyncEngine {
 
   /// Brings the other version back (it becomes the newest) and closes the
   /// conflict.
-  void restoreLost(SyncConflict c) {
+  bool restoreLost(SyncConflict c) {
+    if (!conflictIsRestorable(c)) return false;
     if (c.lostDeleted) {
       delete(c.collection, c.recordId);
     } else {
       put(c.collection, c.recordId, c.lost);
     }
     delete(Collections.conflicts, c.id);
+    return true;
   }
 }
 
@@ -242,6 +244,13 @@ class _ConflictCard extends StatelessWidget {
                 ),
               ),
           ],
+          if (!conflictIsRestorable(c)) ...[
+            const SizedBox(height: 8),
+            Text(
+              tr.conflictsInvalidVersion,
+              style: TextStyle(color: colors.danger),
+            ),
+          ],
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -263,7 +272,13 @@ class _ConflictCard extends StatelessWidget {
                       ? tr.conflictsDeleteAfterAll
                       : tr.conflictsBringBackVersionWho(who(c.lostBy)),
                 ),
-                onPressed: () => engine.restoreLost(c),
+                onPressed: () {
+                  if (!engine.restoreLost(c)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(tr.conflictsInvalidVersion)),
+                    );
+                  }
+                },
               ),
             ],
           ),

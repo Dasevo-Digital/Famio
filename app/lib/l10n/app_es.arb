@@ -1,4 +1,8 @@
 {
+  "syncBlockedTitle": "{count} cambio(s) necesitan atención",
+  "syncBlockedFileBody": "Falta un archivo adjunto o ya no está compartido. Los demás cambios siguen sincronizándose. Abre las entradas indicadas y elimina o sustituye el archivo adjunto. También puedes reintentarlo cuando vuelva a estar compartido.",
+  "syncReviewChanges": "Revisar cambios",
+  "conflictsInvalidVersion": "Esta versión guardada está dañada y no se puede restaurar. Se conservan la versión actual y la copia del conflicto. Puedes mantener la versión actual.",
   "healthFeverUnderTwoDay": "En menores de dos años: consulta al pediatra si la fiebre dura más de un día. {warnings}",
   "@@locale": "es",
   "sectionHome": "Inicio",

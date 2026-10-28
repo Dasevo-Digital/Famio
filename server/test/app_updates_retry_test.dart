@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -67,6 +68,10 @@ void main() {
       onError: log.add,
     );
     addTearDown(updates.stop);
+    final ready = Completer<void>();
+    updates.onReady = (_) {
+      if (!ready.isCompleted) ready.complete();
+    };
 
     final info = await updates.configure(enabled: true);
     expect(info['error'], contains('Verbindung abgebrochen'));
@@ -77,7 +82,7 @@ void main() {
       isEmpty,
     );
 
-    await Future<void>.delayed(const Duration(milliseconds: 200));
+    await ready.future.timeout(const Duration(seconds: 10));
     for (final p in AppPlatform.values) {
       expect(updates.package(p), isNotNull, reason: p.name);
     }

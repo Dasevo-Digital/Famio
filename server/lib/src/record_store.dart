@@ -330,6 +330,7 @@ class RecordStore {
     final stored = <(SyncRecord, SyncRecord?)>[];
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
+    final blocked = <SyncWriteIssue>[];
     // A client ahead of the server means the server database was reset:
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
@@ -424,6 +425,34 @@ class RecordStore {
             );
           }
         }
+        // Even a losing edit can be retained as a readable conflict. Check
+        // new attachments before either version can reach persistent data.
+        final previousFiles =
+            existing != null && !existing.deleted && recordDataIsValid(existing)
+            ? recordFileIds(existing).toSet()
+            : const <String>{};
+        if (!incoming.deleted &&
+            recordFileIds(incoming).any(
+              (id) =>
+                  !previousFiles.contains(id) &&
+                  !(mayReferenceFile?.call(id, userId) ?? false),
+            )) {
+          if (!request.deferInvalidFiles) {
+            throw ApiException.badRequest(
+              'invalid_file_reference',
+              t('Kein Zugriff auf die angehängte Datei.'),
+            );
+          }
+          blocked.add(
+            SyncWriteIssue(
+              collection: change.collection,
+              id: change.id,
+              updatedAt: change.updatedAt,
+              code: 'invalid_file_reference',
+            ),
+          );
+          continue;
+        }
         if (existing != null && !incoming.winsOver(existing)) {
           _keepConflict(
             lost: incoming,
@@ -501,21 +530,6 @@ class RecordStore {
         if (change.collection == Collections.wishes && !incoming.deleted) {
           incoming = _ideaAudience(incoming, existing);
         }
-        final previousFiles =
-            existing != null && !existing.deleted && recordDataIsValid(existing)
-            ? recordFileIds(existing).toSet()
-            : const <String>{};
-        if (!incoming.deleted &&
-            recordFileIds(incoming).any(
-              (id) =>
-                  !previousFiles.contains(id) &&
-                  !(mayReferenceFile?.call(id, userId) ?? false),
-            )) {
-          throw ApiException.badRequest(
-            'invalid_file_reference',
-            t('Kein Zugriff auf die angehängte Datei.'),
-          );
-        }
         _put(incoming, previous: existing);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
@@ -544,6 +558,7 @@ class RecordStore {
       role,
       reset: reset,
       scope: scope,
+      blocked: blocked,
     );
   }
 
@@ -556,6 +571,7 @@ class RecordStore {
     MemberRole role, {
     bool reset = false,
     required String scope,
+    List<SyncWriteIssue> blocked = const [],
   }) {
     // Guests only get their collections (names are constants, no input).
     final only = role == MemberRole.guest
@@ -590,6 +606,7 @@ class RecordStore {
       hasMore: hasMore,
       reset: reset,
       scope: scope,
+      blocked: blocked,
     );
   }
 
@@ -1007,7 +1024,9 @@ class RecordStore {
       )
       .any((row) {
         final record = _record(row);
-        return recordDataIsValid(record) &&
+        // A damaged model is quarantined, not discarded. Keep its uploads
+        // until it can be repaired; retention never confers download access.
+        return !recordDataIsValid(record) ||
             recordFileIds(record).contains(text);
       });
 
