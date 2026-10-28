@@ -138,6 +138,13 @@ void main() {
     // Papa changes it; Mama's phone is offline and changes it too.
     papaDevice.put(Collections.tasks, 't', {'title': 'Einkaufen gehen'});
     await papaDevice.sync();
+    // Later on the server's clock: each device only estimates it to within
+    // half a round trip, and under load Mama's estimate could lag behind
+    // Papa's by more than the time between the two edits.
+    final papaEdit = papaDevice.record(Collections.tasks, 't')!.updatedAt;
+    while (mamaDevice.now <= papaEdit) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
     mamaDevice.put(Collections.tasks, 't', {'title': 'Einkaufen (Aldi)'});
     await mamaDevice.sync();
     await papaDevice.sync();
