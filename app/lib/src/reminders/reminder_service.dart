@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:famio_client/famio_client.dart';
@@ -170,7 +169,9 @@ class ReminderService {
   final _shown = <String>{};
   Future<void> _pending = Future.value();
 
-  bool get _canSchedule => !Platform.isLinux;
+  // The target platform, not the host's: the same in the app, but tests of
+  // another platform then behave like it on a Linux CI machine too.
+  bool get _canSchedule => defaultTargetPlatform != TargetPlatform.linux;
 
   void attach(SyncEngine engine) {
     detach();
