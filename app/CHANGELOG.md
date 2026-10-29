@@ -4,6 +4,18 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.23 – Große Dateien, Zeitzonen und Export
+
+- Große Dateien lassen sich bis zur Grenze des Servers öffnen und
+  hochladen; Famio lädt sie stückweise statt am Stück in den Speicher. Im
+  Browser gilt eine Grenze von 128 MB.
+- Der Datenexport wird direkt in eine Datei geschrieben, zeigt den
+  Fortschritt und lässt sich abbrechen.
+- Kalender, Startseite, Wandanzeige und Tagesüberblick rechnen mit der
+  Zeitzone der Familie, auch wenn ein Gerät anders eingestellt ist.
+- Ein hängendes Kalender-Abo hält die übrigen nicht mehr auf, und nach
+  dem Abmelden bleibt im Browser keine Kopie der Daten zurück.
+
 ## 2.0.22 – Papierkorb und bestätigte Zuständigkeiten
 
 - Papierkorb (Einstellungen): Gelöschte Aufgaben, Termine, Notizen und

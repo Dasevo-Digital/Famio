@@ -4,6 +4,18 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.23 – Large files, time zones and export
+
+- Large files can be opened and uploaded up to the server's limit; Famio
+  loads them piece by piece instead of all at once into memory. In the
+  browser the limit is 128 MB.
+- The data export is written straight to a file, shows its progress and
+  can be cancelled.
+- Calendar, home screen, wall display and daily overview use the family's
+  time zone, even when a device is set to another one.
+- A calendar subscription that hangs no longer holds up the others, and
+  no copy of the data stays in the browser after signing out.
+
 ## 2.0.22 – Trash and confirmed responsibilities
 
 - Trash (Settings): deleted tasks, events, notes and documents can be

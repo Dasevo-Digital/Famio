@@ -4,6 +4,19 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.23 – Archivos grandes, zonas horarias y exportación
+
+- Los archivos grandes se pueden abrir y subir hasta el límite del
+  servidor; Famio los carga por partes en lugar de entero en memoria. En
+  el navegador el límite es de 128 MB.
+- La exportación de datos se escribe directamente en un archivo, muestra
+  el progreso y se puede cancelar.
+- El calendario, la pantalla de inicio, la pantalla de pared y el resumen
+  del día usan la zona horaria de la familia, aunque un dispositivo tenga
+  otra.
+- Una suscripción de calendario que no responde ya no retiene a las demás,
+  y al cerrar sesión no queda ninguna copia de los datos en el navegador.
+
 ## 2.0.22 – Papelera y responsabilidades confirmadas
 
 - Papelera (Ajustes): las tareas, citas, notas y documentos eliminados se
