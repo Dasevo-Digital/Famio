@@ -389,6 +389,12 @@ void main() {
     expect(osmConfig['mapProvider'], 'osm');
     expect(osmConfig['mapTileUrl'], isNull);
     var overview = ServerOverview.fromJson(body);
+    // The admin's zone picker offers what the server knows, links included.
+    expect(
+      overview.timeZones,
+      containsAll(['Africa/Accra', 'Europe/Berlin', 'Europe/Vienna']),
+    );
+    expect(overview.timeZones, isNot(contains('Etc/UTC')));
     expect(overview.effective.publicUrl, 'https://famio.example.org/');
     expect(overview.effective.maxUploadMb, 5);
     expect(app.location.name, 'Europe/Vienna');

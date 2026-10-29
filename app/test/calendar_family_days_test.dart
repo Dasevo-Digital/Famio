@@ -9,9 +9,13 @@ import 'package:famio/src/widgets/files.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/data/latest_all.dart' as zones;
 
 void main() {
   setUpAll(() => initializeDateFormatting('de'));
+  // The rules the server sends with the sync (calendar_zone_test in the
+  // client package covers that path).
+  setUpAll(zones.initializeTimeZones);
   for (final zone in [
     'Europe/Berlin',
     'America/New_York',

@@ -38,15 +38,23 @@ extension RecordFiles on RecordStore {
     }
   }
 
+  /// Forgets the index. A rolled-back transaction can have indexed rows that
+  /// never got committed, and the next commit reuses their revisions, so a
+  /// revision comparison alone would not notice.
+  void _resetFileReferences() {
+    _fileIndexEpoch++;
+    _fileIndexRev = -1;
+    _filesByRecord.clear();
+    _recordsByFile.clear();
+    _damagedFileRecords.clear();
+    _trashByFile.clear();
+    _damagedFileTrash.clear();
+  }
+
   void _refreshFileReferences() {
     final through = currentRev;
     if (_fileIndexRev == through) return;
-    if (_fileIndexRev > through) {
-      _fileIndexRev = -1;
-      _filesByRecord.clear();
-      _recordsByFile.clear();
-      _damagedFileRecords.clear();
-    }
+    if (_fileIndexRev > through) _resetFileReferences();
     for (final row in _db.select(
       'SELECT * FROM records WHERE rev > ? AND rev <= ? ORDER BY rev',
       [_fileIndexRev, through],
@@ -61,9 +69,12 @@ extension RecordFiles on RecordStore {
   /// that arrived during those yields before deciding whether to delete a file.
   Future<void> prepareFileReferences() async {
     final through = currentRev;
+    final epoch = _fileIndexEpoch;
     var cursor = _fileIndexRev;
     while (cursor < through) {
-      if (_fileIndexRev > through) return;
+      // A reset while this yielded leaves the rows before the cursor out of
+      // the index; the next check rebuilds it from scratch instead.
+      if (_fileIndexEpoch != epoch || _fileIndexRev > through) return;
       final rows = _db.select(
         'SELECT * FROM records WHERE rev > ? AND rev <= ? ORDER BY rev LIMIT 100',
         [cursor, through],
@@ -78,7 +89,7 @@ extension RecordFiles on RecordStore {
     }
     // Another request can have refreshed the index while maintenance yielded.
     // Never move its revision backwards.
-    if (_fileIndexRev <= through) {
+    if (_fileIndexEpoch == epoch && _fileIndexRev <= through) {
       _indexFileTrash();
       _fileIndexRev = through;
     }

@@ -317,6 +317,7 @@ class ServerOverview {
     this.keySeparate = false,
     this.locationCodeSet = false,
     this.outdatedApps = const [],
+    this.timeZones = const [],
   });
 
   factory ServerOverview.fromJson(Map<String, Object?> json) => ServerOverview(
@@ -348,6 +349,10 @@ class ServerOverview {
             device: '${a['device']}',
             version: '${a['version']}',
           ),
+    ],
+    timeZones: [
+      for (final zone in json['timeZones'] as List? ?? const [])
+        if (zone is String) zone,
     ],
   );
 
@@ -398,6 +403,10 @@ class ServerOverview {
   /// Whether the parents' code for pausing location sharing is set.
   final bool locationCodeSet;
 
+  /// Zones the server knows, for picking the family's zone (empty on older
+  /// servers). The apps bundle no zone database.
+  final List<String> timeZones;
+
   Map<String, Object?> toJson() => {
     'version': version,
     'startedAt': startedAt.millisecondsSinceEpoch,
@@ -423,6 +432,7 @@ class ServerOverview {
       for (final a in outdatedApps)
         {'member': a.member, 'device': a.device, 'version': a.version},
     ],
+    'timeZones': timeZones,
   };
 }
 

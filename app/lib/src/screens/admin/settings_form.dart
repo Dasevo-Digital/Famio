@@ -43,20 +43,6 @@ class _SettingsFormState extends State<_SettingsForm> {
   var _busy = false;
   String? _error;
 
-  static List<String>? _zones;
-
-  static List<String> get zones {
-    if (_zones == null) {
-      tzdata.initializeTimeZones();
-      _zones =
-          tz.timeZoneDatabase.locations.keys
-              .where((z) => z.contains('/') && !z.startsWith('Etc/'))
-              .toList()
-            ..sort();
-    }
-    return _zones!;
-  }
-
   @override
   void dispose() {
     _publicUrl.dispose();
@@ -426,7 +412,9 @@ class _SettingsFormState extends State<_SettingsForm> {
               optionsBuilder: (value) {
                 final q = value.text.toLowerCase();
                 if (q.isEmpty) return const [];
-                return zones.where((z) => z.toLowerCase().contains(q)).take(20);
+                return widget.overview.timeZones
+                    .where((z) => z.toLowerCase().contains(q))
+                    .take(20);
               },
               onSelected: (z) => _zone = z,
               fieldViewBuilder: (context, controller, focus, onSubmit) =>

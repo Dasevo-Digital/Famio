@@ -31,8 +31,14 @@ extension _AdminRoutes on FamioApi {
       keySeparate: keySeparate,
       locationCodeSet: locations?.codeSet ?? false,
       outdatedApps: _outdatedApps(),
+      timeZones: _timeZones ??= [
+        for (final zone in tz.timeZoneDatabase.locations.keys)
+          if (zone.contains('/') && !zone.startsWith('Etc/')) zone,
+      ]..sort(),
     );
   }
+
+  static List<String>? _timeZones;
 
   /// Devices used in the last three months whose app is older than this
   /// server, for "Apps älter als der Server" in the status.

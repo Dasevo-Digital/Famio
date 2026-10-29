@@ -44,6 +44,14 @@ class SyncEngine {
       _blocked.clear();
       store.setMeta('blockedChanges', null);
     }
+    try {
+      final rules = store.getMeta('familyTimeZoneRules');
+      if (rules != null) _useZoneRules((jsonDecode(rules) as Map).cast());
+    } on FormatException {
+      store.setMeta('familyTimeZoneRules', null);
+    } on TypeError {
+      store.setMeta('familyTimeZoneRules', null);
+    }
     final cached = store.getMeta('members');
     if (cached != null) {
       _members = [
@@ -78,6 +86,16 @@ class SyncEngine {
   final _blocked = <(String, String), SyncWriteIssue>{};
   final _readable = Expando<bool>();
   var _clockOffset = 0;
+  String? _zoneKey;
+
+  /// The app bundles no zone database; it calculates with the rules the
+  /// server sent for the family's zone.
+  bool _useZoneRules(Map<String, Object?> rules) {
+    if (!registerCalendarZone(rules)) return false;
+    _zoneKey = rules['key'] as String?;
+    return true;
+  }
+
   var _members = <FamilyMember>[];
   Future<void>? _running;
   var _again = false;
@@ -347,6 +365,7 @@ class SyncEngine {
             full: full,
             scope: store.getMeta('syncScope') ?? '',
             deferInvalidFiles: true,
+            timeZoneKey: _zoneKey,
           ),
         );
         final receivedAt = DateTime.now().millisecondsSinceEpoch;
@@ -447,6 +466,10 @@ class SyncEngine {
       );
       if (response.timeZone != null && response.timeZone != familyTimeZone) {
         store.setMeta('familyTimeZone', response.timeZone);
+        changed.addAll([Collections.events, Collections.externalEvents]);
+      }
+      if (response.timeZoneRules case final rules? when _useZoneRules(rules)) {
+        store.setMeta('familyTimeZoneRules', jsonEncode(rules));
         changed.addAll([Collections.events, Collections.externalEvents]);
       }
       if (response.maxUploadBytes case final limit? when limit > 0) {

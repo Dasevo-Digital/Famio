@@ -4,8 +4,6 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:timezone/data/latest_all.dart' as tzdata;
-import 'package:timezone/timezone.dart' as tz;
 
 import '../data/usernames.dart';
 import '../app_state.dart';

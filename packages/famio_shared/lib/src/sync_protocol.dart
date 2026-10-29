@@ -10,6 +10,7 @@ class SyncRequest {
     this.full = false,
     this.scope,
     this.deferInvalidFiles = false,
+    this.timeZoneKey,
   });
 
   factory SyncRequest.fromJson(Map<String, Object?> json) => SyncRequest(
@@ -22,6 +23,7 @@ class SyncRequest {
     full: json['full'] as bool? ?? false,
     scope: json['scope'] as String?,
     deferInvalidFiles: json['deferInvalidFiles'] as bool? ?? false,
+    timeZoneKey: json['timeZoneKey'] as String?,
   );
 
   /// Highest server revision the client has already applied.
@@ -41,6 +43,10 @@ class SyncRequest {
   /// Understands per-record attachment failures without aborting the pull.
   final bool deferInvalidFiles;
 
+  /// `key` of the family zone rules the client holds; the server sends
+  /// [SyncResponse.timeZoneRules] only when its own differ.
+  final String? timeZoneKey;
+
   Map<String, Object?> toJson() => {
     'since': since,
     'changes': [for (final c in changes) c.toJson()],
@@ -48,6 +54,7 @@ class SyncRequest {
     if (full) 'full': true,
     if (scope != null) 'scope': scope,
     if (deferInvalidFiles) 'deferInvalidFiles': true,
+    if (timeZoneKey != null) 'timeZoneKey': timeZoneKey,
   };
 }
 
@@ -63,6 +70,7 @@ class SyncResponse {
     this.scope,
     this.blocked = const [],
     this.timeZone,
+    this.timeZoneRules,
     this.maxUploadBytes,
   });
 
@@ -88,6 +96,7 @@ class SyncResponse {
         SyncWriteIssue.fromJson((issue as Map).cast()),
     ],
     timeZone: json['timeZone'] as String?,
+    timeZoneRules: (json['timeZoneRules'] as Map?)?.cast(),
     maxUploadBytes: json['maxUploadBytes'] as int?,
   );
 
@@ -118,6 +127,9 @@ class SyncResponse {
 
   /// Family calendar zone; absent on older servers.
   final String? timeZone;
+
+  /// Its rules ([calendarZoneRules]), unless the client already has them.
+  final Map<String, Object?>? timeZoneRules;
   final int? maxUploadBytes;
 
   /// Pending edits that need repair; their contents were not stored.
@@ -135,6 +147,7 @@ class SyncResponse {
     if (blocked.isNotEmpty)
       'blocked': [for (final issue in blocked) issue.toJson()],
     if (timeZone != null) 'timeZone': timeZone,
+    if (timeZoneRules != null) 'timeZoneRules': timeZoneRules,
     if (maxUploadBytes != null) 'maxUploadBytes': maxUploadBytes,
   };
 }

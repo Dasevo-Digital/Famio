@@ -1,7 +1,13 @@
+import 'dart:convert';
+
 import 'package:famio_shared/famio_shared.dart';
 import 'package:test/test.dart';
+import 'package:timezone/data/latest_all.dart' as zones;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
+  // Like the server; apps only get the family's zone (see the last test).
+  setUpAll(zones.initializeTimeZones);
   for (final (start, expected) in [
     (DateTime.utc(2027, 3, 27, 9), DateTime.utc(2027, 3, 28, 8)),
     (DateTime.utc(2026, 10, 24, 8), DateTime.utc(2026, 10, 25, 9)),
@@ -82,4 +88,47 @@ void main() {
       expect(midnight.nthStart(2), isNull);
     },
   );
+  test('apps calculate with the zone rules the server sent', () {
+    final berlin = calendarZoneRules(tz.getLocation('Europe/Berlin'));
+    // A link the smaller bundled database used to lack.
+    final accra = calendarZoneRules(tz.getLocation('Africa/Accra'));
+    expect(berlin['key'], isNot(accra['key']));
+    expect(
+      calendarZoneRules(tz.getLocation('Europe/Berlin'))['key'],
+      berlin['key'],
+    );
+    final sent = (jsonDecode(jsonEncode(berlin)) as Map)
+        .cast<String, Object?>();
+    tz.timeZoneDatabase.clear();
+    addTearDown(zones.initializeTimeZones);
+    expect(calendarLocation('Europe/Berlin'), isNull);
+    expect(
+      registerCalendarZone({
+        ...sent,
+        'zone': [99],
+      }),
+      isFalse,
+    );
+    expect(registerCalendarZone({...sent, 'zones': 'CET'}), isFalse);
+    expect(calendarLocation('Europe/Berlin'), isNull);
+    expect(registerCalendarZone(sent), isTrue);
+    expect(
+      calendarZoneRules(calendarLocation('Europe/Berlin')!)['key'],
+      berlin['key'],
+    );
+    final event = CalendarEvent(
+      id: 'event',
+      title: 'Event',
+      start: DateTime.utc(2027, 3, 27, 9),
+      end: DateTime.utc(2027, 3, 27, 10),
+      recurrence: const Recurrence(RecurrenceFrequency.daily),
+    ).inTimeZone('Europe/Berlin');
+    expect(event.nthStart(2)!.toUtc(), DateTime.utc(2027, 3, 28, 8));
+    expect(
+      const FamilyCalendar(
+        'Europe/Berlin',
+      ).today(DateTime.utc(2026, 10, 28, 23, 30)).toUtc(),
+      DateTime.utc(2026, 10, 28, 23),
+    );
+  });
 }

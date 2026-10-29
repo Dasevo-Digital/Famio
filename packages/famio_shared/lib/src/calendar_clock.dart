@@ -1,4 +1,6 @@
-import 'package:timezone/data/latest.dart' as data;
+import 'dart:convert';
+
+import 'package:cryptography/dart.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Civil dates and instants in one family calendar, independent of the device.
@@ -28,13 +30,59 @@ class FamilyCalendar {
       date(civilDate.year, civilDate.month, civilDate.day + days);
 }
 
+/// The zone [name], if this process knows its rules. Servers load the whole
+/// zone database; apps only know the family's zone, whose rules the server
+/// sends with the sync ([calendarZoneRules]), so they need not bundle it.
 tz.Location? calendarLocation(String? name) {
   if (name == null || name.isEmpty) return null;
-  if (tz.timeZoneDatabase.locations.isEmpty) data.initializeTimeZones();
   try {
     return tz.getLocation(name);
   } on Exception {
     return null;
+  }
+}
+
+/// [zone]'s transitions as JSON. The `key` changes with the rules: another
+/// zone, or a server with newer zone data.
+Map<String, Object?> calendarZoneRules(tz.Location zone) {
+  final rules = <String, Object?>{
+    'name': zone.name,
+    'at': zone.transitionAt,
+    'zone': zone.transitionZone,
+    'zones': [
+      for (final z in zone.zones)
+        [z.offset.inMilliseconds, z.isDst, z.abbreviation],
+    ],
+  };
+  final digest = const DartSha256().hashSync(utf8.encode(jsonEncode(rules)));
+  return {...rules, 'key': base64UrlEncode(digest.bytes.sublist(0, 12))};
+}
+
+/// Makes rules from [calendarZoneRules] known to [calendarLocation]. Returns
+/// false and changes nothing if they are malformed.
+bool registerCalendarZone(Map<String, Object?> rules) {
+  try {
+    final zones = [
+      for (final z in rules['zones'] as List)
+        tz.TimeZone(
+          Duration(milliseconds: (z as List)[0] as int),
+          isDst: z[1] as bool,
+          abbreviation: z[2] as String,
+        ),
+    ];
+    final at = [for (final t in rules['at'] as List) t as int];
+    final index = [for (final i in rules['zone'] as List) i as int];
+    if (zones.isEmpty ||
+        at.length != index.length ||
+        index.any((i) => i < 0 || i >= zones.length)) {
+      return false;
+    }
+    tz.timeZoneDatabase.add(
+      tz.Location(rules['name'] as String, at, index, zones),
+    );
+    return true;
+  } on TypeError {
+    return false;
   }
 }
 

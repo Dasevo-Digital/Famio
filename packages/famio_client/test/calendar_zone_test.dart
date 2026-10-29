@@ -5,6 +5,8 @@ import 'package:famio_server/famio_server.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:test/test.dart';
+import 'package:timezone/data/latest_all.dart' as zones;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   test(
@@ -16,13 +18,15 @@ void main() {
         displayName: 'Member',
       );
       final store = LocalStore.open(':memory:');
+      final exchanges = <(String?, bool)>[];
       final api = FamioApiClient(
         'http://localhost',
         httpClient: MockClient((request) async {
-          final response = app.records.sync(
-            SyncRequest.fromJson((jsonDecode(request.body) as Map).cast()),
-            member.id,
+          final sync = SyncRequest.fromJson(
+            (jsonDecode(request.body) as Map).cast(),
           );
+          final response = app.records.sync(sync, member.id);
+          exchanges.add((sync.timeZoneKey, response.timeZoneRules != null));
           return http.Response(
             jsonEncode(response.toJson()),
             200,
@@ -56,7 +60,11 @@ void main() {
       ]);
       await engine.sync();
       expect(engine.familyTimeZone, 'Europe/Berlin');
+      expect(exchanges, [(null, true)]);
       await engine.dispose();
+      // The app has no zone database of its own: only the rules it stored.
+      tz.timeZoneDatabase.clear();
+      addTearDown(zones.initializeTimeZones);
       engine = SyncEngine(store: store, api: api, memberId: member.id);
       final record = engine.record(Collections.events, 'event')!;
       final occurrence = CalendarEvent.fromRecord(record)
@@ -74,6 +82,8 @@ void main() {
       ).single;
       engine.respondToAssignment(request, AssignmentDecision.accepted);
       await engine.sync();
+      final key = calendarZoneRules(app.settings.location)['key'] as String;
+      expect(exchanges.skip(1), everyElement((key, false)));
       expect(engine.assignmentDecision(request), AssignmentDecision.accepted);
       expect(
         app.records.get(Collections.assignmentResponses, request.id)!.deleted,

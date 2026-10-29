@@ -62,6 +62,140 @@ void main() {
       expect(app.records.referenced(file.id), isFalse);
     },
   );
+  Future<FileRef> upload(String who) async {
+    final file = await app.files.save(
+      owner: who,
+      name: 'fixture',
+      mime: 'text/plain',
+      body: Stream.value([1]),
+    );
+    return FileRef(
+      id: file.id,
+      name: file.name,
+      mime: file.mime,
+      size: file.size,
+    );
+  }
+
+  Matcher rejectedFile() =>
+      throwsA(predicate((Object e) => '$e'.contains('invalid_file_reference')));
+
+  test(
+    'a rejected sync does not leave the index behind when its revisions are reused',
+    () async {
+      final kept = await upload(owner.id);
+      final foreign = await upload(other.id);
+      app.records.writeAsServer([
+        SyncRecord(
+          collection: Collections.documents,
+          id: 'document',
+          updatedAt: 1,
+          data: {'title': 'Contract', 'file': kept.toJson()},
+        ),
+      ]);
+      final document = app.records.get(Collections.documents, 'document')!;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      // The first change drops the attachment and gets indexed inside the
+      // transaction; the second one makes the server roll everything back.
+      expect(
+        () => app.records.sync(
+          SyncRequest(
+            since: 0,
+            changes: [
+              SyncRecord(
+                collection: Collections.documents,
+                id: 'document',
+                rev: document.rev,
+                updatedAt: now,
+                data: {'title': 'Contract (renamed)'},
+              ),
+              SyncRecord(
+                collection: Collections.tasks,
+                id: 'task',
+                updatedAt: now,
+                data: {
+                  'title': 'Foreign photo',
+                  'photos': [foreign.toJson()],
+                },
+              ),
+            ],
+          ),
+          owner.id,
+        ),
+        rejectedFile(),
+      );
+      // The next commit gets the revision of the rolled-back change.
+      app.records.writeAsServer([
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'note',
+          updatedAt: 2,
+          data: {'title': 'Note', 'text': ''},
+        ),
+      ]);
+      expect(
+        recordFileIds(app.records.get(Collections.documents, 'document')!),
+        contains(kept.id),
+      );
+      expect(app.records.referenced(kept.id), isTrue);
+      expect(app.records.referencedFor(kept.id, other.id), isTrue);
+      app.db.execute('UPDATE files SET created_at = 0');
+      await app.files.collectGarbageAsync();
+      expect(app.files.get(kept.id), isNotNull);
+    },
+  );
+  test(
+    'maintenance does not finish an index that a rollback reset while it yielded',
+    () async {
+      final kept = await upload(owner.id);
+      final foreign = await upload(other.id);
+      app.records.writeAsServer([
+        SyncRecord(
+          collection: Collections.documents,
+          id: 'document',
+          updatedAt: 1,
+          data: {'title': 'Contract', 'file': kept.toJson()},
+        ),
+        // More than one batch, so maintenance yields after the document.
+        for (var i = 0; i < 150; i++)
+          SyncRecord(
+            collection: Collections.notes,
+            id: 'note$i',
+            updatedAt: 1,
+            data: {'title': 'Note $i', 'text': ''},
+          ),
+      ]);
+      app.db.execute('UPDATE files SET created_at = 0');
+      var yielded = false;
+      Timer.run(() {
+        yielded = true;
+        expect(
+          () => app.records.sync(
+            SyncRequest(
+              since: 0,
+              changes: [
+                SyncRecord(
+                  collection: Collections.tasks,
+                  id: 'task',
+                  updatedAt: DateTime.now().millisecondsSinceEpoch,
+                  data: {
+                    'title': 'Foreign photo',
+                    'photos': [foreign.toJson()],
+                  },
+                ),
+              ],
+            ),
+            owner.id,
+          ),
+          rejectedFile(),
+        );
+      });
+      await app.files.collectGarbageAsync();
+      expect(yielded, isTrue);
+      expect(app.files.get(kept.id), isNotNull);
+      expect(app.records.referencedFor(kept.id, other.id), isTrue);
+    },
+  );
   test(
     'batched garbage collection yields and retains a new reference during maintenance',
     () async {

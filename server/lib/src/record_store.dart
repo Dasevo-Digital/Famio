@@ -26,12 +26,22 @@ class RecordStore {
 
   final Database _db;
   int _fileIndexRev = -1;
+  int _fileIndexEpoch = 0;
   final _filesByRecord = <(String, String), Set<String>>{};
   final _recordsByFile = <String, Set<(String, String)>>{};
   final _damagedFileRecords = <(String, String), String>{};
   final _trashByFile = <String, Set<String>>{};
   final _damagedFileTrash = <String, String>{};
   final tz.Location Function()? assignmentLocation;
+  (tz.Location, Map<String, Object?>)? _zoneRules;
+
+  /// The family zone's rules for apps that do not have them yet.
+  Map<String, Object?>? _zoneRulesFor(tz.Location? zone, String? clientKey) {
+    if (zone == null) return null;
+    if (_zoneRules?.$1 != zone) _zoneRules = (zone, calendarZoneRules(zone));
+    final rules = _zoneRules!.$2;
+    return rules['key'] == clientKey ? null : rules;
+  }
 
   /// A new process may have opened a restored database, even if revisions
   /// have already caught up. Clients reconcile once per server instance.
@@ -656,6 +666,7 @@ class RecordStore {
       reset: reset,
       scope: scope,
       blocked: blocked,
+      zoneKey: request.timeZoneKey,
     );
   }
 
@@ -669,6 +680,7 @@ class RecordStore {
     bool reset = false,
     required String scope,
     List<SyncWriteIssue> blocked = const [],
+    String? zoneKey,
   }) {
     // Guests only get their collections (names are constants, no input).
     final only = role == MemberRole.guest
@@ -701,6 +713,7 @@ class RecordStore {
             canAccess(r, userId))
           r,
     ];
+    final zone = assignmentLocation?.call();
     return SyncResponse(
       rev: hasMore ? page.last.rev : currentRev,
       serverTime: now,
@@ -711,7 +724,8 @@ class RecordStore {
       reset: reset,
       scope: scope,
       blocked: blocked,
-      timeZone: assignmentLocation?.call().name,
+      timeZone: zone?.name,
+      timeZoneRules: _zoneRulesFor(zone, zoneKey),
       maxUploadBytes: maxUploadBytes?.call(),
     );
   }
@@ -1217,12 +1231,15 @@ class RecordStore {
   }
 
   void _transaction(void Function() action) {
+    final indexed = _fileIndexRev;
     _db.execute('BEGIN IMMEDIATE');
     try {
       action();
       _db.execute('COMMIT');
     } catch (_) {
       _db.execute('ROLLBACK');
+      // Only if the index has read rows of this transaction.
+      if (_fileIndexRev != indexed) _resetFileReferences();
       rethrow;
     }
   }
