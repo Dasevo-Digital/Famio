@@ -39,6 +39,7 @@ class RecordStore {
 
   /// Installed by FileStore: new attachments must already be accessible.
   bool Function(String fileId, String memberId)? mayReferenceFile;
+  int Function()? maxUploadBytes;
 
   /// The family's day (its time zone), for absences.
   final DateTime Function() _today;
@@ -711,6 +712,7 @@ class RecordStore {
       scope: scope,
       blocked: blocked,
       timeZone: assignmentLocation?.call().name,
+      maxUploadBytes: maxUploadBytes?.call(),
     );
   }
 

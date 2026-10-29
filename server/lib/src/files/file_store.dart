@@ -80,6 +80,7 @@ class FileStore {
       ' seq INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (id, kind, seq))',
     );
     _importPlainFiles(dataDir);
+    records.maxUploadBytes = () => this.maxBytes;
     records.mayReferenceFile = (id, member) {
       final file = get(id);
       return file != null && mayRead(file, member);

@@ -33,8 +33,20 @@ List<FreeSlot> freeSlots({
   final slots = <FreeSlot>[];
   for (var d = 0; d < days && slots.length < max; d++) {
     // Calendar days: the clock change must not shift the window.
-    var cursor = DateTime(from.year, from.month, from.day + d, startHour);
-    final close = DateTime(from.year, from.month, from.day + d, endHour);
+    var cursor = calendarDate(
+      from,
+      from.year,
+      from.month,
+      from.day + d,
+      startHour,
+    );
+    final close = calendarDate(
+      from,
+      from.year,
+      from.month,
+      from.day + d,
+      endHour,
+    );
     if (cursor.isBefore(from)) cursor = _quarter(from);
     for (final b in busy) {
       if (!b.end.isAfter(cursor) || !b.start.isBefore(close)) continue;
@@ -56,6 +68,6 @@ DateTime _quarter(DateTime t) {
   final rest = t.minute % 15;
   final whole = rest == 0 && t.second == 0 && t.millisecond == 0;
   if (whole) return t;
-  final base = DateTime(t.year, t.month, t.day, t.hour, t.minute - rest);
+  final base = calendarDate(t, t.year, t.month, t.day, t.hour, t.minute - rest);
   return base.add(const Duration(minutes: 15));
 }

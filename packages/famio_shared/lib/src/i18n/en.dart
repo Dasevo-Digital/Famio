@@ -1320,4 +1320,6 @@ const sharedEn = <String, String>{
   'Client|Die Datei überschreitet die Größenbegrenzung für diese Übertragung.':
       'The file exceeds the size limit for this transfer.',
   'Client|Übertragung abgebrochen': 'Transfer cancelled',
+  "Client|Die Datei konnte nicht gespeichert oder geöffnet werden. Bitte Speicherplatz und Zugriffsrechte prüfen.":
+      "The file could not be saved or opened. Please check free space and access permissions.",
 };

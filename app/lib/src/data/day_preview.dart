@@ -33,8 +33,8 @@ DayPreview? buildDayPreview(
   final me = engine.memberId;
   final time = DateFormat.jm(appLanguage);
   final events = [
-    for (final o in engine.occurrences(day, end))
-      if (!o.start.isBefore(day) &&
+    for (final o in engine.occurrencesForDays(day, end))
+      if (!o.start.isBefore(engine.calendar.day(day)) &&
           (o.event.involves(me) ||
               o.event.bringerId == me ||
               o.event.pickerId == me))
@@ -137,11 +137,12 @@ Iterable<(DateTime at, DateTime day)> dayPreviewTimes(
   int minutes,
 ) sync* {
   for (
-    var day = DateTime(from.year, from.month, from.day);
+    var day = calendarDate(from, from.year, from.month, from.day);
     day.isBefore(to);
-    day = DateTime(day.year, day.month, day.day + 1)
+    day = calendarDate(from, day.year, day.month, day.day + 1)
   ) {
-    final at = DateTime(
+    final at = calendarDate(
+      from,
       day.year,
       day.month,
       day.day,

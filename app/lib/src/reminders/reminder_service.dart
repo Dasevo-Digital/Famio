@@ -252,7 +252,11 @@ class ReminderService {
         to: now.add(_window),
       ),
       if (dayPreview?.call() case final minutes?)
-        for (final (at, day) in dayPreviewTimes(now, now.add(_window), minutes))
+        for (final (at, day) in dayPreviewTimes(
+          engine.calendar.local(now),
+          engine.calendar.local(now.add(_window)),
+          minutes,
+        ))
           if (buildDayPreview(engine, day, weather: dayWeather?.call())
               case final p?)
             DueReminder(
@@ -273,7 +277,10 @@ class ReminderService {
             ),
           ),
       if (weekPreview?.call() ?? true)
-        for (final (at, monday) in weekPreviewTimes(now, now.add(_window)))
+        for (final (at, monday) in weekPreviewTimes(
+          engine.calendar.local(now),
+          engine.calendar.local(now.add(_window)),
+        ))
           if (buildWeekPreview(engine, monday) case final p?)
             DueReminder(
               key: 'week:${dayKey(monday)}',

@@ -27,8 +27,8 @@ WeekPreview? buildWeekPreview(SyncEngine engine, DateTime monday) {
   final day = DateFormat.E(appLanguage);
   final time = DateFormat.jm(appLanguage);
   final items = [
-    for (final o in engine.occurrences(monday, end))
-      if (!o.start.isBefore(monday) &&
+    for (final o in engine.occurrencesForDays(monday, end))
+      if (!o.start.isBefore(engine.calendar.day(monday)) &&
           (o.event.involves(me) ||
               o.event.bringerId == me ||
               o.event.pickerId == me))
@@ -71,7 +71,8 @@ Iterable<(DateTime at, DateTime monday)> weekPreviewTimes(
   DateTime from,
   DateTime to,
 ) sync* {
-  var sunday = DateTime(
+  var sunday = calendarDate(
+    from,
     from.year,
     from.month,
     from.day + (DateTime.sunday - from.weekday) % 7,
@@ -80,9 +81,12 @@ Iterable<(DateTime at, DateTime monday)> weekPreviewTimes(
   for (
     ;
     sunday.isBefore(to);
-    sunday = DateTime(sunday.year, sunday.month, sunday.day + 7, 18)
+    sunday = calendarDate(from, sunday.year, sunday.month, sunday.day + 7, 18)
   ) {
     if (sunday.isBefore(from)) continue;
-    yield (sunday, DateTime(sunday.year, sunday.month, sunday.day + 1));
+    yield (
+      sunday,
+      calendarDate(from, sunday.year, sunday.month, sunday.day + 1),
+    );
   }
 }

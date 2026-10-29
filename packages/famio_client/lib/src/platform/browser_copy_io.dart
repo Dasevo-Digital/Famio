@@ -5,6 +5,12 @@ import 'dart:typed_data';
 
 Future<Uint8List?> readBrowserCopy(String name) async => null;
 
-Future<void> writeBrowserCopy(String name, Uint8List plain) async {}
+Future<void> enableBrowserCopy(String name, String lease) async {}
+
+Future<void> writeBrowserCopy(
+  String name,
+  Uint8List plain,
+  String lease,
+) async {}
 
 Future<void> deleteBrowserCopy(String name) async {}

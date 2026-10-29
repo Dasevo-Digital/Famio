@@ -140,6 +140,7 @@ typedef PasskeyEntry = ({
 
 /// Thin typed wrapper around the Famio HTTP API.
 class FamioApiClient {
+  static const maxBufferedFileBytes = 128 * 1024 * 1024;
   FamioApiClient(
     String baseUrl, {
     this.token,
@@ -1356,6 +1357,36 @@ class FamioApiClient {
 
   Future<List<int>> downloadFile(String id, {int? thumb}) =>
       _downloadFile(id, thumb: thumb);
+
+  /// Bounded streaming path for native files; [downloadFile] is the memory
+  /// path for previews and browser downloads.
+  Future<void> downloadFileToSink(
+    StreamSink<List<int>> sink,
+    String id, {
+    required int expectedBytes,
+    TransferCancellation? cancellation,
+  }) => _downloadFileToSink(
+    sink,
+    id,
+    expectedBytes: expectedBytes,
+    cancellation: cancellation,
+  );
+
+  Future<FileRef> uploadFileStream({
+    required Stream<List<int>> stream,
+    required String name,
+    required String mime,
+    required int maxBytes,
+    int? length,
+    TransferCancellation? cancellation,
+  }) => _uploadFileStream(
+    stream: stream,
+    name: name,
+    mime: mime,
+    maxBytes: maxBytes,
+    length: length,
+    cancellation: cancellation,
+  );
 
   Future<List<int>> exportData({
     required String password,

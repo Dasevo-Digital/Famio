@@ -17,14 +17,18 @@ const _copies = 'copies';
 
 Future<web.IDBDatabase> _open() {
   final done = Completer<web.IDBDatabase>();
-  final request = web.window.indexedDB.open(_database, 1);
+  // Version 1 writers do not know about leases. Upgrading preserves their
+  // copies, but prevents old tabs from reopening and recreating deleted data.
+  final request = web.window.indexedDB.open(_database, 2);
   request.onupgradeneeded = ((web.Event _) {
     final db = request.result as web.IDBDatabase;
     if (!db.objectStoreNames.contains(_keys)) db.createObjectStore(_keys);
     if (!db.objectStoreNames.contains(_copies)) db.createObjectStore(_copies);
   }).toJS;
   request.onsuccess = ((web.Event _) {
-    done.complete(request.result as web.IDBDatabase);
+    final db = request.result as web.IDBDatabase;
+    db.onversionchange = ((web.Event _) => db.close()).toJS;
+    done.complete(db);
   }).toJS;
   request.onerror = ((web.Event _) {
     done.completeError(StateError('IndexedDB nicht verfügbar'));
@@ -49,34 +53,15 @@ JSObject _gcm(Uint8List iv) => JSObject()
 web.IDBObjectStore _store(web.IDBDatabase db, String name, String mode) =>
     db.transaction(name.toJS, mode).objectStore(name);
 
-Future<web.CryptoKey?> _key(
-  web.IDBDatabase db,
-  String name, {
-  required bool create,
-}) async {
-  final stored = await _run(_store(db, _keys, 'readonly').get(name.toJS));
-  if (stored != null) return stored as web.CryptoKey;
-  if (!create) return null;
-  final key =
-      await web.window.crypto.subtle
-              .generateKey(
-                JSObject()
-                  ..setProperty('name'.toJS, 'AES-GCM'.toJS)
-                  ..setProperty('length'.toJS, 256.toJS),
-                false,
-                ['encrypt'.toJS, 'decrypt'.toJS].toJS,
-              )
-              .toDart
-          as web.CryptoKey;
-  await _run(_store(db, _keys, 'readwrite').put(key, name.toJS));
-  return key;
-}
+Future<web.CryptoKey?> _key(web.IDBDatabase db, String name) async =>
+    (await _run(_store(db, _keys, 'readonly').get(name.toJS)))
+        as web.CryptoKey?;
 
 /// The decrypted copy [name], or null (none, or not readable any more).
 Future<Uint8List?> readBrowserCopy(String name) async {
   final db = await _open();
   try {
-    final key = await _key(db, name, create: false);
+    final key = await _key(db, name);
     final stored = await _run(_store(db, _copies, 'readonly').get(name.toJS));
     if (key == null || stored == null) return null;
     final bytes = (stored as JSUint8Array).toDart;
@@ -97,11 +82,76 @@ Future<Uint8List?> readBrowserCopy(String name) async {
   }
 }
 
-/// Encrypts [plain] and keeps it as copy [name] (a new IV each time).
-Future<void> writeBrowserCopy(String name, Uint8List plain) async {
+String _leaseKey(String name) => 'lease:$name';
+
+Future<void> _committed(web.IDBTransaction transaction) {
+  final done = Completer<void>();
+  transaction.oncomplete = ((web.Event _) {
+    if (!done.isCompleted) done.complete();
+  }).toJS;
+  transaction.onabort = transaction.onerror = ((web.Event _) {
+    if (!done.isCompleted) {
+      done.completeError(StateError('IndexedDB transaction failed'));
+    }
+  }).toJS;
+  return done.future;
+}
+
+web.IDBTransaction _copyTransaction(web.IDBDatabase db) =>
+    db.transaction([_keys.toJS, _copies.toJS].toJS, 'readwrite');
+
+/// Reserves a new generation before asynchronous key creation. A deletion
+/// during key creation invalidates the reservation as well as any old writer.
+Future<void> enableBrowserCopy(String name, String lease) async {
   final db = await _open();
   try {
-    final key = (await _key(db, name, create: true))!;
+    final reserve = _copyTransaction(db);
+    final reserved = _committed(reserve);
+    reserve.objectStore(_keys)
+      ..put(lease.toJS, _leaseKey(name).toJS)
+      ..delete(name.toJS);
+    reserve.objectStore(_copies).delete(name.toJS);
+    await reserved;
+    final key = await web.window.crypto.subtle
+        .generateKey(
+          JSObject()
+            ..setProperty('name'.toJS, 'AES-GCM'.toJS)
+            ..setProperty('length'.toJS, 256.toJS),
+          false,
+          ['encrypt'.toJS, 'decrypt'.toJS].toJS,
+        )
+        .toDart;
+    final transaction = _copyTransaction(db);
+    final committed = _committed(transaction);
+    final keys = transaction.objectStore(_keys);
+    final check = keys.get(_leaseKey(name).toJS);
+    check.onsuccess = ((web.Event _) {
+      if ((check.result as JSString?)?.toDart == lease) {
+        keys.put(key, name.toJS);
+      }
+    }).toJS;
+    await committed;
+  } finally {
+    db.close();
+  }
+}
+
+/// Only an explicitly enabled, still-current generation may commit. The
+/// generation check and put share a transaction, also across browser tabs.
+Future<void> writeBrowserCopy(
+  String name,
+  Uint8List plain,
+  String lease,
+) async {
+  final db = await _open();
+  try {
+    final keys = _store(db, _keys, 'readonly');
+    final current = _run(keys.get(_leaseKey(name).toJS));
+    final keyRequest = _run(keys.get(name.toJS));
+    final values = await Future.wait([current, keyRequest]);
+    if ((values[0] as JSString?)?.toDart != lease) return;
+    final key = values[1] as web.CryptoKey?;
+    if (key == null) return;
     final random = Random.secure();
     final iv = Uint8List.fromList([
       for (var i = 0; i < 12; i++) random.nextInt(256),
@@ -112,18 +162,32 @@ Future<void> writeBrowserCopy(String name, Uint8List plain) async {
     final stored = Uint8List(12 + cipher.toDart.lengthInBytes)
       ..setAll(0, iv)
       ..setAll(12, cipher.toDart.asUint8List());
-    await _run(_store(db, _copies, 'readwrite').put(stored.toJS, name.toJS));
+    final transaction = _copyTransaction(db);
+    final committed = _committed(transaction);
+    final check = transaction.objectStore(_keys).get(_leaseKey(name).toJS);
+    check.onsuccess = ((web.Event _) {
+      if ((check.result as JSString?)?.toDart == lease) {
+        transaction.objectStore(_copies).put(stored.toJS, name.toJS);
+      }
+    }).toJS;
+    await committed;
   } finally {
     db.close();
   }
 }
 
-/// Removes copy [name] and its key.
+/// Removes the copy, key and write permission atomically. Old encryptions
+/// cannot recreate a key or commit after this transaction.
 Future<void> deleteBrowserCopy(String name) async {
   final db = await _open();
   try {
-    await _run(_store(db, _copies, 'readwrite').delete(name.toJS));
-    await _run(_store(db, _keys, 'readwrite').delete(name.toJS));
+    final transaction = _copyTransaction(db);
+    final committed = _committed(transaction);
+    transaction.objectStore(_copies).delete(name.toJS);
+    transaction.objectStore(_keys)
+      ..delete(name.toJS)
+      ..delete(_leaseKey(name).toJS);
+    await committed;
   } finally {
     db.close();
   }

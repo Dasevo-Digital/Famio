@@ -90,7 +90,7 @@ WeekPlan buildWeekPlan(SyncEngine engine, DateTime monday) {
   // `WasteSettings.pickups`).
   final waste = engine.wasteConfigured ? engine.wasteSettings : null;
   final events = <DateTime, List<(Occurrence, bool)>>{};
-  for (final o in engine.occurrences(monday, end)) {
+  for (final o in engine.occurrencesForDays(monday, end)) {
     if (waste != null &&
         (waste.sourceId != null
             ? o.event.sourceId == waste.sourceId

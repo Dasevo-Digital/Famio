@@ -1,6 +1,33 @@
 import 'package:timezone/data/latest.dart' as data;
 import 'package:timezone/timezone.dart' as tz;
 
+/// Civil dates and instants in one family calendar, independent of the device.
+class FamilyCalendar {
+  const FamilyCalendar(this.timeZone);
+  final String? timeZone;
+
+  DateTime local(DateTime instant) =>
+      timeZone == null ? instant.toLocal() : inCalendarZone(instant, timeZone);
+  DateTime date(
+    int year, [
+    int month = 1,
+    int day = 1,
+    int hour = 0,
+    int minute = 0,
+  ]) {
+    final zone = calendarLocation(timeZone);
+    return zone == null
+        ? DateTime(year, month, day, hour, minute)
+        : tz.TZDateTime(zone, year, month, day, hour, minute);
+  }
+
+  DateTime day(DateTime civilDate) =>
+      date(civilDate.year, civilDate.month, civilDate.day);
+  DateTime today([DateTime? instant]) => day(local(instant ?? DateTime.now()));
+  DateTime addDays(DateTime civilDate, int days) =>
+      date(civilDate.year, civilDate.month, civilDate.day + days);
+}
+
 tz.Location? calendarLocation(String? name) {
   if (name == null || name.isEmpty) return null;
   if (tz.timeZoneDatabase.locations.isEmpty) data.initializeTimeZones();

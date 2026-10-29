@@ -69,7 +69,10 @@ YearReview yearReview(SyncEngine engine, int year) {
   var events = 0;
   final trips = <ReviewTrip>[];
   for (final e in engine.events) {
-    for (final o in e.occurrencesBetween(from, to)) {
+    for (final o in e.occurrencesBetween(
+      engine.calendar.day(from),
+      engine.calendar.day(to),
+    )) {
       events++;
       // All-day events end the day after: three days are two nights.
       final days = DateTime.utc(o.end.year, o.end.month, o.end.day)

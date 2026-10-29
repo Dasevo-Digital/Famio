@@ -1,5 +1,4 @@
 import 'dart:io';
-import '../platform/upload_bytes.dart';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -188,16 +187,19 @@ Future<void> showShareTarget(
         go(FamioSection.documents);
         await WidgetsBinding.instance.endOfFrame;
         for (final f in files) {
-          final bytes = await readUploadBytes(
+          final picked = await pickedFromSource(
+            name: f.name,
+            path: f.path,
+            mime: f.mime,
             length: File(f.path).length,
             openRead: File(f.path).openRead,
+            maxBytes: uploadLimit(engine),
           );
           final navigator = navigatorOf(FamioSection.documents);
           if (navigator == null) break;
           await navigator.push(
             MaterialPageRoute<void>(
-              builder: (_) =>
-                  DocumentEditor(picked: PickedFile(bytes, f.name, f.mime)),
+              builder: (_) => DocumentEditor(picked: picked),
             ),
           );
         }
@@ -319,17 +321,16 @@ Future<List<FileRef>?> _upload(
 
 /// Like uploadPicked, keeping a local copy so it opens instantly.
 Future<FileRef> _uploadOne(AppState state, SharedFile f) async {
-  final bytes = await readUploadBytes(
-    length: File(f.path).length,
-    openRead: File(f.path).openRead,
-  );
-  final ref = await state.engine!.api.uploadFile(
-    bytes: bytes,
+  final file = File(f.path);
+  final picked = await pickedFromSource(
     name: f.name,
     mime: f.mime,
+    path: f.path,
+    openRead: file.openRead,
+    length: file.length,
+    maxBytes: uploadLimit(state.engine!),
   );
-  state.files?.put(ref, bytes);
-  return ref;
+  return uploadPickedState(state, picked);
 }
 
 void _cleanUp(List<SharedFile> files) {

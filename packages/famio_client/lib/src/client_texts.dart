@@ -38,6 +38,9 @@ abstract final class ClientTexts {
   static String get transferTooLarge =>
       _t('Die Datei überschreitet die Größenbegrenzung für diese Übertragung.');
   static String get transferCancelled => _t('Übertragung abgebrochen');
+  static String get fileStorageFailed => _t(
+    'Die Datei konnte nicht gespeichert oder geöffnet werden. Bitte Speicherplatz und Zugriffsrechte prüfen.',
+  );
 
   static String uploadFailed(Object? error) =>
       _t('Upload fehlgeschlagen ({error})', {'error': error});
@@ -64,6 +67,7 @@ abstract final class ClientTexts {
     notFamio,
     transferTooLarge,
     transferCancelled,
+    fileStorageFailed,
     uploadFailed(''),
     unreachable(''),
     unexpectedAnswer(0),

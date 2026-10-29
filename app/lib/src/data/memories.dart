@@ -53,9 +53,9 @@ const _memoryCollections = {
 /// until one of its collections changes (see [EngineMemo]).
 Memories memoriesToday(SyncEngine engine, DateTime now) =>
     EngineMemo.of(engine).get(
-      'memories ${dayKey(now)} $appLanguage',
+      'memories ${dayKey(engine.calendar.today(now))} $appLanguage',
       _memoryCollections,
-      () => memoriesOn(engine, DateTime(now.year, now.month, now.day)),
+      () => memoriesOn(engine, engine.calendar.today(now)),
     );
 
 /// The memories of [today] in the last [years] years: only what the device
@@ -88,7 +88,10 @@ Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
     final next = DateTime(day.year, day.month, day.day + 1);
     final seen = <String>{};
     for (final e in engine.events) {
-      for (final o in e.occurrencesBetween(day, next)) {
+      for (final o in e.occurrencesBetween(
+        engine.calendar.day(day),
+        engine.calendar.day(next),
+      )) {
         final days = DateTime.utc(o.end.year, o.end.month, o.end.day)
             .difference(DateTime.utc(o.start.year, o.start.month, o.start.day))
             .inDays;

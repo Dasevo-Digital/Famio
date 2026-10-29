@@ -92,6 +92,14 @@ class SyncEngine {
   bool get live => _socketUp;
 
   String? get familyTimeZone => store.getMeta('familyTimeZone');
+  FamilyCalendar get calendar => FamilyCalendar(familyTimeZone);
+
+  /// Unknown on older servers: use the absolute supported bound; the server
+  /// still enforces its configured limit on streamed uploads.
+  int get maxUploadBytes =>
+      (int.tryParse(store.getMeta('maxUploadBytes') ?? '') ??
+              4096 * 1024 * 1024)
+          .clamp(1, 4096 * 1024 * 1024);
   var _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
   var _reconnectDelay = const Duration(seconds: 2);
 
@@ -440,6 +448,9 @@ class SyncEngine {
       if (response.timeZone != null && response.timeZone != familyTimeZone) {
         store.setMeta('familyTimeZone', response.timeZone);
         changed.addAll([Collections.events, Collections.externalEvents]);
+      }
+      if (response.maxUploadBytes case final limit? when limit > 0) {
+        store.setMeta('maxUploadBytes', '$limit');
       }
       store.setMeta('lastRev', '${response.rev}');
       if (response.scope != null) store.setMeta('syncScope', response.scope!);

@@ -210,9 +210,9 @@ extension FamilyData on SyncEngine {
           ...events,
           ...externalEvents,
           ...birthdayEvents(this),
-          ...holidayEvents(from, to),
+          ...holidayEvents(calendar.local(from), calendar.local(to)),
         ])
-          ...e.occurrencesBetween(from, to),
+          ...e.inTimeZone(familyTimeZone).occurrencesBetween(from, to),
       ]..sort((a, b) {
         final byStart = a.start.compareTo(b.start);
         if (byStart != 0) return byStart;
@@ -220,19 +220,24 @@ extension FamilyData on SyncEngine {
         return a.event.title.compareTo(b.event.title);
       });
 
+  /// Calendar-date ranges use family midnights; instant ranges above retain
+  /// their exact meaning (e.g. a departure in the next thirty minutes).
+  List<Occurrence> occurrencesForDays(DateTime from, DateTime to) =>
+      occurrences(calendar.day(from), calendar.day(to));
+
+  List<Occurrence> occurrencesOn(DateTime day) =>
+      occurrences(calendar.day(day), calendar.addDays(day, 1));
+
   /// Events marked for a countdown with their next occurrence within a
   /// year, soonest first; one that is running (the holiday week) counts
   /// as 0 days.
   List<({Occurrence occurrence, int days})> countdowns(DateTime now) {
-    final today = DateTime(now.year, now.month, now.day);
+    final today = calendar.today(now);
     final result = <({Occurrence occurrence, int days})>[];
     for (final e in events) {
       if (!e.countdown) continue;
       final next = e
-          .occurrencesBetween(
-            now,
-            DateTime(today.year, today.month, today.day + 366),
-          )
+          .occurrencesBetween(now, calendar.addDays(today, 366))
           .firstOrNull;
       if (next == null) continue;
       final day = DateTime.utc(

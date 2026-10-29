@@ -1,7 +1,8 @@
 import '../snapshot_codec.dart';
-import 'browser_copy.dart';
+import 'browser_copy_web.dart' as raw;
 import 'storage.dart';
 import 'memory_records.dart';
+import 'package:famio_shared/famio_shared.dart';
 
 // By default the web app keeps nothing in the browser: records and files
 // live in memory for the visit and are loaded from the server again next
@@ -19,15 +20,23 @@ RecordBackend openRecordBackend(String path, {String? hexKey}) =>
     MemoryRecordBackend(
       path,
       _restored.remove(path),
-      writeCopy: (name, snapshot) =>
-          writeBrowserCopy(name, encodeSnapshot(snapshot)),
-      deleteCopy: deleteBrowserCopy,
+      enableCopy: raw.enableBrowserCopy,
+      writeCopy: (name, snapshot, lease) =>
+          raw.writeBrowserCopy(name, encodeSnapshot(snapshot), lease),
+      deleteCopy: raw.deleteBrowserCopy,
     );
 
 BlobBackend openBlobBackend(String path, {String? hexKey}) => _MemoryBlobs();
 
 Future<String> writeTempFile(String dir, String name, List<int> data) =>
     throw UnsupportedError('No files in the browser – download instead.');
+
+Future<String> writeTempStream(
+  String dir,
+  String name,
+  Stream<List<int>> data,
+  int expectedBytes,
+) => throw UnsupportedError('No files in the browser – download instead.');
 
 void clearTempFiles(String dir) {}
 
@@ -36,6 +45,25 @@ class _MemoryBlobs implements BlobBackend {
   static const limit = 64 * 1024 * 1024;
 
   final _blobs = <String, List<int>>{};
+  @override
+  Stream<List<int>>? readStream(String key) {
+    final value = read(key);
+    return value == null ? null : Stream.value(value);
+  }
+
+  @override
+  Future<void> writeStream(
+    String key,
+    Stream<List<int>> input, {
+    required int expectedBytes,
+  }) async {
+    final bytes = await readTransferBytes(input, maxBytes: limit ~/ 4);
+    if (bytes.length != expectedBytes) {
+      throw const FormatException('File length mismatch');
+    }
+    write(key, bytes);
+  }
+
   var _bytes = 0;
 
   @override

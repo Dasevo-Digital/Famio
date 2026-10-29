@@ -63,6 +63,7 @@ class SyncResponse {
     this.scope,
     this.blocked = const [],
     this.timeZone,
+    this.maxUploadBytes,
   });
 
   factory SyncResponse.fromJson(Map<String, Object?> json) => SyncResponse(
@@ -87,6 +88,7 @@ class SyncResponse {
         SyncWriteIssue.fromJson((issue as Map).cast()),
     ],
     timeZone: json['timeZone'] as String?,
+    maxUploadBytes: json['maxUploadBytes'] as int?,
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -116,6 +118,7 @@ class SyncResponse {
 
   /// Family calendar zone; absent on older servers.
   final String? timeZone;
+  final int? maxUploadBytes;
 
   /// Pending edits that need repair; their contents were not stored.
   final List<SyncWriteIssue> blocked;
@@ -132,6 +135,7 @@ class SyncResponse {
     if (blocked.isNotEmpty)
       'blocked': [for (final issue in blocked) issue.toJson()],
     if (timeZone != null) 'timeZone': timeZone,
+    if (maxUploadBytes != null) 'maxUploadBytes': maxUploadBytes,
   };
 }
 

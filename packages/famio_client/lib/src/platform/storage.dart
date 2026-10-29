@@ -35,6 +35,12 @@ abstract class RecordBackend {
 
 /// Where [FileCache] keeps downloaded files.
 abstract class BlobBackend {
+  Stream<List<int>>? readStream(String key);
+  Future<void> writeStream(
+    String key,
+    Stream<List<int>> input, {
+    required int expectedBytes,
+  });
   List<int>? read(String key);
 
   void write(String key, List<int> data);

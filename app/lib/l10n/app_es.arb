@@ -2668,5 +2668,8 @@
   "absenceAway": "Ausente",
   "absenceRepresentedBy": "Ausente · Sustitución: {name}",
   "exportSaveFailed": "No se pudo guardar la exportación. Comprueba el espacio disponible y los permisos de acceso.",
-  "exportBrowserLimit": "Las exportaciones en el navegador se limitan a 64 MiB. Usa una aplicación instalada para archivos mayores."
+  "exportBrowserLimit": "Las exportaciones en el navegador se limitan a 64 MiB. Usa una aplicación instalada para archivos mayores.",
+  "filesUploadLimit": "Hasta {size} por archivo",
+  "@filesUploadLimit": {"placeholders": {"size": {"type": "String"}}},
+  "filesBrowserLimit": "Los archivos en el navegador se limitan a 128 MiB. Abre los archivos mayores en una aplicación instalada."
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -32,10 +33,37 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  late DateTime _selected = DateUtils.dateOnly(DateTime.now());
+  late DateTime _selected;
   late DateTime _month = DateTime(_selected.year, _selected.month);
+  StreamSubscription<Set<String>>? _zoneChanges;
+  var _followsToday = true;
+
+  void _today() {
+    _selected = DateUtils.dateOnly(AppScope.engineOf(context).calendar.today());
+    _month = DateTime(_selected.year, _selected.month);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final engine = AppScope.read(context).engine!;
+    _selected = DateUtils.dateOnly(engine.calendar.today());
+    var zone = engine.familyTimeZone;
+    _zoneChanges = engine.changes.listen((_) {
+      if (zone == engine.familyTimeZone) return;
+      zone = engine.familyTimeZone;
+      if (mounted && _followsToday) setState(_today);
+    });
+  }
+
+  @override
+  void dispose() {
+    _zoneChanges?.cancel();
+    super.dispose();
+  }
 
   void _changeMonth(int delta) => setState(() {
+    _followsToday = false;
     _month = DateTime(_month.year, _month.month + delta);
     final lastDay = DateUtils.getDaysInMonth(_month.year, _month.month);
     _selected = DateTime(
@@ -46,6 +74,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   });
 
   void _select(DateTime day) => setState(() {
+    _followsToday = false;
     _selected = day;
     _month = DateTime(day.year, day.month);
   });
@@ -57,7 +86,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Future<void> _printWeekPlan() async {
     final engine = AppScope.engineOf(context);
     final messenger = ScaffoldMessenger.of(context);
-    final thisWeek = weekPlanMonday(DateUtils.dateOnly(DateTime.now()));
+    final thisWeek = weekPlanMonday(engine.calendar.today());
     final nextWeek = DateTime(thisWeek.year, thisWeek.month, thisWeek.day + 7);
     final selectedWeek = weekPlanMonday(_selected);
     String range(DateTime monday) =>
@@ -150,7 +179,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
         BubbleButton(
           icon: AppIcons.calendarDot,
           tooltip: tr.commonToday,
-          onPressed: () => _select(DateUtils.dateOnly(DateTime.now())),
+          onPressed: () => setState(() {
+            _followsToday = true;
+            _today();
+          }),
         ),
         const SyncStatusIcon(),
       ],
@@ -173,7 +205,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
           builder: (context, constraints) {
             final wide = constraints.maxWidth >= 840;
             final gridStart = _gridStart(_month);
-            final occurrences = engine.occurrences(
+            final occurrences = engine.occurrencesForDays(
               gridStart,
               DateTime(gridStart.year, gridStart.month, gridStart.day + 42),
             );

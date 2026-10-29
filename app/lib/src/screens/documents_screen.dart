@@ -410,9 +410,15 @@ class _DocumentEditorState extends State<DocumentEditor> {
   void initState() {
     super.initState();
     final picked = widget.picked;
-    if (picked != null && Ocr.readable(picked.mime)) {
+    if (picked != null &&
+        (picked.bytes != null || picked.path != null) &&
+        Ocr.readable(picked.mime)) {
       _reading = true;
-      _read(() => Ocr.textOf(picked.bytes, picked.mime));
+      _read(
+        () => picked.bytes != null
+            ? Ocr.textOf(picked.bytes!, picked.mime)
+            : Ocr.textOfFile(picked.path!, picked.mime),
+      );
     }
   }
 

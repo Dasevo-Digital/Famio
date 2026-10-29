@@ -489,11 +489,11 @@ class _TodayTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final today = DateUtils.dateOnly(DateTime.now());
-    final todays = engine.occurrences(today, DateUtils.addDaysToDate(today, 1));
+    final today = engine.calendar.today();
+    final todays = engine.occurrencesOn(today);
     final upcoming = todays.isEmpty
         ? engine
-              .occurrences(
+              .occurrencesForDays(
                 DateUtils.addDaysToDate(today, 1),
                 DateUtils.addDaysToDate(today, 8),
               )

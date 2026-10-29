@@ -97,6 +97,12 @@ größere Archive eine installierte App verwenden. Abgebrochene Downloads werden
 aufgeräumt. Auf dem Telefon bleiben zum Teilen übergebene temporäre Archive
 bis zum nächsten App-Start oder Abmelden erhalten.
 
+Native Datei-Uploads beachten die vom Server übermittelte Größenbegrenzung
+(bis 4 GiB). Größere Dateien werden beim Auswählen, Übertragen, verschlüsselten
+Zwischenspeichern und Öffnen blockweise verarbeitet. Die Browserauswahl nennt
+ihr zusätzliches Limit von 128 MiB vor der Auswahl. Dateivorschauen im Speicher
+bleiben ebenfalls begrenzt; größere Bilder öffnen installierte Apps extern.
+
 ## Aufbau
 
 ```

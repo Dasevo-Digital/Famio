@@ -1,8 +1,10 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:famio_shared/famio_shared.dart';
 
 import 'api_client.dart';
+import 'client_texts.dart';
 import 'platform/platform.dart';
 
 /// Keeps downloaded files on the device, so photos and documents opened once
@@ -45,6 +47,8 @@ class FileCache {
   /// Folder where decrypted copies for other apps are written.
   final String tempDir;
   final _pending = <String, Future<Uint8List>>{};
+  final _streaming = <String, Future<void>>{};
+  final _cancellations = <TransferCancellation>{};
 
   /// Recently shown previews, most recent last. Handing out the same bytes
   /// again spares the database read and lets Flutter's image cache reuse
@@ -57,6 +61,11 @@ class FileCache {
 
   /// The contents of [ref] (or its [thumb] preview), downloading them once.
   Future<Uint8List> bytes(FileRef ref, {int? thumb}) {
+    if (thumb == null && ref.size > FamioApiClient.maxBufferedFileBytes) {
+      return Future.error(
+        ApiError(413, 'too_large', ClientTexts.transferTooLarge),
+      );
+    }
     final key = thumb == null ? ref.id : '${ref.id}_t$thumb';
     if (_recent.remove(key) case final data?) {
       _recent[key] = data;
@@ -92,8 +101,114 @@ class FileCache {
 
   /// A plain copy of [ref] for opening it with another app; returns its
   /// path (not in the browser).
-  Future<String> openable(FileRef ref) async =>
-      writeTempFile(tempDir, '${ref.id}_${_safe(ref.name)}', await bytes(ref));
+  Future<String> openable(FileRef ref) async {
+    try {
+      return await _openable(ref);
+    } on ApiError {
+      rethrow;
+    } catch (_) {
+      throw ApiError(0, 'file_storage', ClientTexts.fileStorageFailed);
+    }
+  }
+
+  Future<String> _openable(FileRef ref) async {
+    if (ref.size > maxBytes) {
+      // A file that cannot remain offline needs only one temporary disk copy.
+      return _receive(
+        ref,
+        (input) => writeTempStream(
+          tempDir,
+          '${newId()}_${_safe(ref.name)}',
+          input,
+          ref.size,
+        ),
+      );
+    }
+    var stream = _blobs.readStream(ref.id);
+    if (stream == null) {
+      await (_streaming[ref.id] ??= _download(ref).whenComplete(() {
+        _streaming.remove(ref.id);
+      }));
+      stream = _blobs.readStream(ref.id);
+    }
+    if (stream == null) {
+      throw ApiError(0, 'invalid_response', ClientTexts.unexpectedAnswer(200));
+    }
+    // Trim after the stream has pinned its source; this also permits opening
+    // a single file larger than the normal offline cache budget.
+    final iterator = StreamIterator(stream);
+    Stream<List<int>> chunks() async* {
+      while (await iterator.moveNext()) {
+        yield iterator.current;
+      }
+    }
+
+    try {
+      return await writeTempStream(
+        tempDir,
+        '${newId()}_${_safe(ref.name)}',
+        chunks(),
+        ref.size,
+      );
+    } finally {
+      await iterator.cancel();
+      _blobs.trim(maxBytes);
+    }
+  }
+
+  Future<void> _download(FileRef ref) => _receive(
+    ref,
+    (input) => _blobs.writeStream(ref.id, input, expectedBytes: ref.size),
+  );
+
+  Future<T> _receive<T>(
+    FileRef ref,
+    Future<T> Function(Stream<List<int>>) store,
+  ) async {
+    final cancellation = TransferCancellation();
+    _cancellations.add(cancellation);
+    var listened = false;
+    final body = StreamController<List<int>>(
+      onListen: () {
+        listened = true;
+      },
+    );
+    final stored = store(body.stream);
+    final transfer = api.downloadFileToSink(
+      body.sink,
+      ref.id,
+      expectedBytes: ref.size,
+      cancellation: cancellation,
+    );
+    try {
+      // Observe both failures from the start; a disk error aborts a request
+      // even while it is waiting indefinitely for the next body chunk.
+      await Future.any<void>([transfer, stored.then<void>((_) {})]);
+      await body.close();
+      return await stored;
+    } catch (error, stack) {
+      cancellation.cancel();
+      // A target can fail before listening (e.g. an unwritable temp folder).
+      // Cancel that target stream as well, so its paused addStream can finish.
+      if (!listened) {
+        await body.stream.listen((_) {}, onError: (Object _) {}).cancel();
+      }
+      try {
+        await transfer;
+      } catch (_) {}
+      if (!body.isClosed) {
+        body.addError(error, stack);
+        await body.close();
+      }
+      try {
+        await stored;
+      } catch (_) {}
+      rethrow;
+    } finally {
+      cancellation.cancel();
+      _cancellations.remove(cancellation);
+    }
+  }
 
   /// Deletes plain copies made by [openable].
   void clearTemp() => clearTempFiles(tempDir);
@@ -102,17 +217,31 @@ class FileCache {
   /// downloads their own file again.
   void put(FileRef ref, List<int> data) => _write(ref.id, data);
 
+  Future<void> putStream(FileRef ref, Stream<List<int>> data) async {
+    if (ref.size > maxBytes) return;
+    await _blobs.writeStream(ref.id, data, expectedBytes: ref.size);
+    _blobs.trim(maxBytes);
+  }
+
   /// Bytes the cache takes on this device.
   int get size => _blobs.size;
 
   /// Forgets all files; they are downloaded again when shown.
   void clear() {
+    for (final cancellation in _cancellations.toList()) {
+      cancellation.cancel();
+    }
     _recent.clear();
     _recentBytes = 0;
     _blobs.clear();
   }
 
-  void close() => _blobs.close();
+  void close() {
+    for (final cancellation in _cancellations.toList()) {
+      cancellation.cancel();
+    }
+    _blobs.close();
+  }
 
   Uint8List? _read(String key) => switch (_blobs.read(key)) {
     null => null,

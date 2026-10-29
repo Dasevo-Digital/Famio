@@ -6882,5 +6882,8 @@
     }
   },
   "exportSaveFailed": "Der Export konnte nicht gespeichert werden. Bitte Speicherplatz und Zugriffsrechte prüfen.",
-  "exportBrowserLimit": "Im Browser sind Exporte bis 64 MiB möglich. Für größere Archive bitte eine installierte App verwenden."
+  "exportBrowserLimit": "Im Browser sind Exporte bis 64 MiB möglich. Für größere Archive bitte eine installierte App verwenden.",
+  "filesUploadLimit": "Maximal {size} pro Datei",
+  "@filesUploadLimit": {"placeholders": {"size": {"type": "String"}}},
+  "filesBrowserLimit": "Im Browser sind Dateien bis 128 MiB möglich. Größere Dateien bitte in einer installierten App öffnen."
 }

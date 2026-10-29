@@ -21,13 +21,13 @@ extension WasteData on SyncEngine {
 
   /// Pickup days within `[from, to)`.
   List<WastePickup> wastePickups(DateTime from, DateTime to) =>
-      wasteSettings.pickups(occurrences(from, to));
+      wasteSettings.pickups(occurrencesForDays(from, to));
 
   /// The next pickup from [now]'s day on (today's included), within
   /// [days] days.
   WastePickup? nextWastePickup(DateTime now, {int days = 2}) {
     if (!wasteConfigured) return null;
-    final today = DateTime(now.year, now.month, now.day);
+    final today = calendar.today(now);
     return wastePickups(
       today,
       DateTime(today.year, today.month, today.day + days),

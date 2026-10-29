@@ -49,9 +49,9 @@ SchoolBag? schoolBag(SyncEngine engine, Child child, DateTime day) {
     subjects: subjects,
     bring: t.bringOn(day.weekday),
     events: [
-      for (final o in engine.occurrences(day, end))
+      for (final o in engine.occurrencesForDays(day, end))
         if (name.isNotEmpty &&
-            !o.start.isBefore(day) &&
+            !o.start.isBefore(engine.calendar.day(day)) &&
             named.hasMatch(o.event.title))
           o.event.title,
     ],

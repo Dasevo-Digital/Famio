@@ -15,7 +15,7 @@ void main() {
         final backend = MemoryRecordBackend(
           'test',
           null,
-          writeCopy: (_, _) async {},
+          writeCopy: (_, _, _) async {},
           deleteCopy: (_) async {},
         );
         final store = browser

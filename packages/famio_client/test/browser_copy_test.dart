@@ -4,9 +4,13 @@
 library;
 
 import 'dart:typed_data';
+import 'dart:async';
+import 'dart:js_interop';
+import 'package:web/web.dart' as web;
 
 import 'package:famio_client/famio_client.dart';
 import 'package:famio_client/src/platform/browser_copy.dart';
+import 'package:famio_client/src/platform/browser_copy_web.dart' as raw;
 import 'package:test/test.dart';
 
 SyncRecord _task(String id, String title) => SyncRecord(
@@ -17,6 +21,42 @@ SyncRecord _task(String id, String title) => SyncRecord(
 );
 
 void main() {
+  test(
+    'an old uncoordinated writer cannot reopen the upgraded database',
+    () async {
+      final name = 'upgrade-${newId()}.db';
+      await raw.enableBrowserCopy(name, 'upgraded-session');
+      final refused = Completer<String?>();
+      final request = web.window.indexedDB.open('famio-browser-copy', 1);
+      request.onerror = ((web.Event _) {
+        refused.complete(request.error?.name);
+      }).toJS;
+      request.onsuccess = ((web.Event _) {
+        (request.result as web.IDBDatabase).close();
+        refused.complete(null);
+      }).toJS;
+      expect(await refused.future, 'VersionError');
+      await raw.deleteBrowserCopy(name);
+    },
+  );
+  test(
+    'a revoked persistent lease cannot recreate a copy or overwrite a new session',
+    () async {
+      final name = 'lease-${newId()}.db';
+      final old = Uint8List.fromList([1, 2, 3]);
+      final fresh = Uint8List.fromList([4, 5, 6]);
+      await raw.enableBrowserCopy(name, 'old-session');
+      await raw.writeBrowserCopy(name, old, 'old-session');
+      await raw.deleteBrowserCopy(name);
+      await raw.writeBrowserCopy(name, old, 'old-session');
+      expect(await raw.readBrowserCopy(name), isNull);
+      await raw.enableBrowserCopy(name, 'new-session');
+      await raw.writeBrowserCopy(name, fresh, 'new-session');
+      await raw.writeBrowserCopy(name, old, 'old-session');
+      expect(await raw.readBrowserCopy(name), fresh);
+      await raw.deleteBrowserCopy(name);
+    },
+  );
   test('encrypted copy: written, read, deleted with its key', () async {
     const name = 'test-copy.db';
     await deleteBrowserCopy(name);

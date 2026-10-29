@@ -415,7 +415,14 @@ void main() {
     );
     expect(await cache.bytes(photo), [1, 2, 3, 4]);
     // Offline copy is encrypted on disk.
-    cache.put(photo, 'Arztbrief-Klartext'.codeUnits);
+    final privateBytes = 'Arztbrief-Klartext'.codeUnits;
+    final privateFile = FileRef(
+      id: newId(),
+      name: 'private.txt',
+      mime: 'text/plain',
+      size: privateBytes.length,
+    );
+    cache.put(privateFile, privateBytes);
     cache.close();
     final raw = [
       for (final f in dir.listSync().whereType<File>()) ...f.readAsBytesSync(),
@@ -427,7 +434,7 @@ void main() {
       hexKey: key,
       tempDir: '${dir.path}/tmp',
     );
-    final copy = File(await reopened.openable(photo));
+    final copy = File(await reopened.openable(privateFile));
     expect(await copy.readAsString(), 'Arztbrief-Klartext');
     reopened.clearTemp();
     expect(copy.existsSync(), isFalse);

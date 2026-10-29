@@ -15,7 +15,89 @@ class StreamingExportClient extends http.BaseClient {
       http.StreamedResponse(body.stream, 200);
 }
 
+class RouteLog extends NavigatorObserver {
+  final popped = <String?>[];
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      popped.add(route.settings.name);
+}
+
 void main() {
+  for (final barrier in [false, true]) {
+    for (final fails in [false, true]) {
+      testWidgets(
+        'late ${fails ? 'error' : 'success'} during ${barrier ? 'barrier' : 'button'} closing preserves the page',
+        (tester) async {
+          final routes = RouteLog();
+          final completed = Completer<void>();
+          var cancellations = 0;
+          await tester.pumpWidget(
+            MaterialApp(
+              navigatorObservers: [routes],
+              home: Builder(
+                builder: (context) => Scaffold(
+                  body: TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        settings: const RouteSettings(name: 'details'),
+                        builder: (context) => Scaffold(
+                          body: TextButton(
+                            onPressed: () => showDialog<void>(
+                              context: context,
+                              routeSettings: const RouteSettings(
+                                name: 'dialog',
+                              ),
+                              builder: (_) => FormDialog(
+                                title: 'Fixture',
+                                fields: const [],
+                                submitLabel: 'Submit',
+                                onCancel: () {
+                                  cancellations++;
+                                },
+                                onSubmit: () => completed.future,
+                              ),
+                            ),
+                            child: const Text('Open dialog'),
+                          ),
+                        ),
+                      ),
+                    ),
+                    child: const Text('Open page'),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.tap(find.text('Open page'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Open dialog'));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Submit'));
+          await tester.pump();
+          if (barrier) {
+            await tester.tapAt(const Offset(3, 3));
+          } else {
+            tester
+                .widget<TextButton>(find.byType(TextButton).last)
+                .onPressed!();
+          }
+          if (fails) {
+            completed.completeError(
+              const ApiError(503, 'fixture', 'Late error'),
+            );
+          } else {
+            completed.complete();
+          }
+          await tester.pumpAndSettle();
+          expect(routes.popped, ['dialog']);
+          expect(find.text('Open dialog'), findsOneWidget);
+          expect(cancellations, 1);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
   testWidgets(
     'busy form prevents barrier dismissal until the request finishes',
     (tester) async {

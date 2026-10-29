@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../l10n.dart';
 import '../platform/opened_files.dart';
+import '../app_state.dart';
 import '../platform/upload_bytes.dart';
 import 'package:famio_client/famio_client.dart';
 
@@ -35,6 +36,7 @@ class _FileDropZoneState extends State<FileDropZone> {
   static const _maxFiles = 10;
 
   Future<void> _take(List<DropItem> items) async {
+    final limit = AppScope.read(context).engine!.maxUploadBytes;
     final dir = Directory(
       p.join((await getTemporaryDirectory()).path, 'famio-drop'),
     )..createSync(recursive: true);
@@ -50,20 +52,14 @@ class _FileDropZoneState extends State<FileDropZone> {
             bookmark: bookmark,
           );
       try {
-        final bytes = await readUploadBytes(
-          length: item.length,
-          openRead: item.openRead,
-        );
+        if (await item.length() > limit) continue;
         final name = item.name.isEmpty ? p.basename(item.path) : item.name;
-        final copy = File(
-          p.join(dir.path, '${DateTime.now().microsecondsSinceEpoch}-$name'),
-        )..writeAsBytesSync(bytes);
+        final copy = File(p.join(dir.path, '${newId()}-$name'));
+        await copyUploadFile(copy, item.openRead(), maxBytes: limit);
         files.add((
           path: copy.path,
           name: name,
-          mime:
-              lookupMimeType(name, headerBytes: bytes.take(64).toList()) ??
-              'application/octet-stream',
+          mime: lookupMimeType(name) ?? 'application/octet-stream',
         ));
       } on ApiError {
         // Oversized files never enter the shared-file pipeline.

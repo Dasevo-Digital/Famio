@@ -24,6 +24,37 @@ Future<String> writeTempFile(String dir, String name, List<int> data) async {
   return file.path;
 }
 
+Future<String> writeTempStream(
+  String dir,
+  String name,
+  Stream<List<int>> data,
+  int expectedBytes,
+) async {
+  await Directory(dir).create(recursive: true);
+  final file = File('$dir/$name');
+  await file.create(exclusive: true);
+  final output = await file.open(mode: FileMode.writeOnly);
+  var complete = false, count = 0;
+  try {
+    await for (final chunk in data) {
+      if (chunk.length > expectedBytes - count) {
+        throw const FormatException('File length mismatch');
+      }
+      await output.writeFrom(chunk);
+      count += chunk.length;
+    }
+    if (count != expectedBytes) {
+      throw const FormatException('File length mismatch');
+    }
+    await output.flush();
+    complete = true;
+    return file.path;
+  } finally {
+    await output.close();
+    if (!complete && await file.exists()) await file.delete();
+  }
+}
+
 /// Only the browser restores a copy before opening (storage_web.dart).
 void restoreCopy(String path, StoreSnapshot snapshot) {}
 
@@ -143,15 +174,19 @@ class _SqliteBlobs implements BlobBackend {
       ' NOT NULL, used INTEGER NOT NULL)',
     );
     // Caches from before 1.0.10 have no entries yet: count as never used.
+    _db.execute("DELETE FROM blobs WHERE key LIKE '%:pending:%'");
     if (_db.select('SELECT 1 FROM entries LIMIT 1').isEmpty) {
       _db.execute(
         'INSERT INTO entries (key, size, used) SELECT key, SUM(length(data)),'
         ' 0 FROM blobs GROUP BY key',
       );
     }
+    _db.execute('DELETE FROM blobs WHERE key NOT IN (SELECT key FROM entries)');
   }
 
   final Database _db;
+  var _closed = false;
+  final _readers = <String, int>{};
 
   /// Strictly increasing, so files touched in the same millisecond still
   /// have an order.
@@ -163,6 +198,89 @@ class _SqliteBlobs implements BlobBackend {
   }
 
   static const _chunk = 1024 * 1024;
+
+  @override
+  Stream<List<int>>? readStream(String key) {
+    if (_db.select('SELECT 1 FROM entries WHERE key = ?', [key]).isEmpty) {
+      return null;
+    }
+    _db.execute('UPDATE entries SET used = ? WHERE key = ?', [_tick(), key]);
+    return () async* {
+      _readers[key] = (_readers[key] ?? 0) + 1;
+      try {
+        for (var seq = 0; ; seq++) {
+          if (_closed) throw StateError('Cache closed');
+          final row = _db.select(
+            'SELECT data FROM blobs WHERE key = ? AND seq = ?',
+            [key, seq],
+          ).firstOrNull;
+          if (row == null) break;
+          yield row['data'] as List<int>;
+        }
+      } finally {
+        final remaining = _readers[key]! - 1;
+        if (remaining == 0) {
+          _readers.remove(key);
+        } else {
+          _readers[key] = remaining;
+        }
+      }
+    }();
+  }
+
+  @override
+  Future<void> writeStream(
+    String key,
+    Stream<List<int>> input, {
+    required int expectedBytes,
+  }) async {
+    final staging = '$key:pending:${newId()}';
+    var count = 0, seq = 0;
+    try {
+      await for (final chunk in input) {
+        if (_closed) throw StateError('Cache closed');
+        if (chunk.length > expectedBytes - count) {
+          throw const FormatException('File length mismatch');
+        }
+        for (var offset = 0; offset < chunk.length; offset += _chunk) {
+          final end = offset + _chunk < chunk.length
+              ? offset + _chunk
+              : chunk.length;
+          _db.execute('INSERT INTO blobs (key, seq, data) VALUES (?, ?, ?)', [
+            staging,
+            seq++,
+            chunk.sublist(offset, end),
+          ]);
+        }
+        count += chunk.length;
+      }
+      if (_closed) throw StateError('Cache closed');
+      if (count != expectedBytes) {
+        throw const FormatException('File length mismatch');
+      }
+      if (seq == 0) {
+        _db.execute('INSERT INTO blobs (key, seq, data) VALUES (?, 0, ?)', [
+          staging,
+          Uint8List(0),
+        ]);
+      }
+      _db.execute('BEGIN');
+      try {
+        _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
+        _db.execute('UPDATE blobs SET key = ? WHERE key = ?', [key, staging]);
+        _db.execute(
+          'INSERT OR REPLACE INTO entries (key, size, used) VALUES (?, ?, ?)',
+          [key, count, _tick()],
+        );
+        _db.execute('COMMIT');
+      } catch (_) {
+        _db.execute('ROLLBACK');
+        rethrow;
+      }
+    } finally {
+      if (!_closed) _db.execute('DELETE FROM blobs WHERE key = ?', [staging]);
+    }
+  }
 
   @override
   List<int>? read(String key) {
@@ -218,6 +336,7 @@ class _SqliteBlobs implements BlobBackend {
       for (final r in oldest) {
         if (total <= maxBytes) break;
         final key = r.columnAt(0) as String;
+        if (_readers.containsKey(key)) continue;
         _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
         _db.execute('DELETE FROM entries WHERE key = ?', [key]);
         total -= r.columnAt(1) as int;
@@ -238,5 +357,8 @@ class _SqliteBlobs implements BlobBackend {
   }
 
   @override
-  void close() => _db.close();
+  void close() {
+    _closed = true;
+    _db.close();
+  }
 }

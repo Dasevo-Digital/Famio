@@ -29,11 +29,20 @@ class FormDialog extends StatefulWidget {
 
 class _FormDialogState extends State<FormDialog> {
   var _busy = false;
+  var _closed = false;
   String? _error;
+
+  void _close() {
+    if (_closed) return;
+    _closed = true;
+    if (_busy) widget.onCancel?.call();
+    Navigator.pop(context);
+  }
 
   @override
   void dispose() {
-    if (_busy) widget.onCancel?.call();
+    if (_busy && !_closed) widget.onCancel?.call();
+    _closed = true;
     for (final c in widget.controllers) {
       c.dispose();
     }
@@ -47,9 +56,12 @@ class _FormDialogState extends State<FormDialog> {
     });
     try {
       await widget.onSubmit();
-      if (mounted) Navigator.pop(context);
+      if (mounted && !_closed && ModalRoute.of(context)?.isCurrent == true) {
+        _closed = true;
+        Navigator.pop(context);
+      }
     } on ApiError catch (e) {
-      if (mounted) setState(() => _error = e.message);
+      if (mounted && !_closed) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -60,7 +72,10 @@ class _FormDialogState extends State<FormDialog> {
     return PopScope(
       canPop: !_busy || widget.onCancel != null,
       onPopInvokedWithResult: (didPop, _) {
-        if (didPop && _busy) widget.onCancel?.call();
+        if (didPop && !_closed) {
+          _closed = true;
+          if (_busy) widget.onCancel?.call();
+        }
       },
       child: AlertDialog(
         // Fits small phones with the keyboard open.
@@ -85,12 +100,7 @@ class _FormDialogState extends State<FormDialog> {
         ),
         actions: [
           TextButton(
-            onPressed: _busy && widget.onCancel == null
-                ? null
-                : () {
-                    if (_busy) widget.onCancel?.call();
-                    Navigator.pop(context);
-                  },
+            onPressed: _busy && widget.onCancel == null ? null : _close,
             child: Text(tr.commonCancel),
           ),
           FilledButton(

@@ -8,6 +8,7 @@ extension _OverviewRoutes on FamioApi {
     final member = _auth(request);
     final now = tz.TZDateTime.now(location);
     final today = DateTime(now.year, now.month, now.day);
+    final calendar = FamilyCalendar(location.name);
     String day(DateTime d) => dayKey(d);
     Iterable<SyncRecord> visible(String collection) =>
         records.all(collection, visibleToMember: member.id);
@@ -56,8 +57,8 @@ extension _OverviewRoutes on FamioApi {
                     ...CalendarEvent.fromRecord(r)
                         .inTimeZone(location.name)
                         .occurrencesBetween(
-                          today,
-                          today.add(const Duration(days: 60)),
+                          calendar.day(today),
+                          calendar.addDays(today, 60),
                         ),
               ])
               .take(5)
@@ -69,7 +70,7 @@ extension _OverviewRoutes on FamioApi {
       final event = CalendarEvent.fromRecord(r).inTimeZone(location.name);
       if (!event.countdown) continue;
       final next = event
-          .occurrencesBetween(now, today.add(const Duration(days: 366)))
+          .occurrencesBetween(now, calendar.addDays(today, 366))
           .firstOrNull;
       if (next == null) continue;
       final days = daysBetween(today, next.start);
@@ -85,7 +86,7 @@ extension _OverviewRoutes on FamioApi {
               : next.start.toUtc().toIso8601String(),
           'days': days < 0 ? 0 : days,
           // A several-day event that has begun (the holiday week).
-          'running': next.start.isBefore(today),
+          'running': next.start.isBefore(calendar.day(today)),
         },
       ));
     }

@@ -63,11 +63,11 @@ class _FreeTimeScreenState extends State<FreeTimeScreen> {
               for (final m in people)
                 if (m.isAdult) m.id,
             };
-        final now = DateTime.now();
+        final now = engine.calendar.local(DateTime.now());
         final slots = who.isEmpty
             ? const <FreeSlot>[]
             : freeSlots(
-                occurrences: engine.occurrences(
+                occurrences: engine.occurrencesForDays(
                   DateTime(now.year, now.month, now.day),
                   DateTime(now.year, now.month, now.day + 15),
                 ),

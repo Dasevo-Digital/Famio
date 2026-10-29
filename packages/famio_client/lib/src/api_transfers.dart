@@ -9,6 +9,8 @@ extension _Transfers on FamioApiClient {
     Map<String, String>? headers,
     String? body,
     List<int>? bodyBytes,
+    Stream<List<int>>? bodyStream,
+    int? bodyLength,
     required Duration timeout,
     TransferCancellation? cancellation,
   }) async {
@@ -20,6 +22,8 @@ extension _Transfers on FamioApiClient {
         headers: headers ?? authHeaders,
         body: body,
         bodyBytes: bodyBytes,
+        bodyStream: bodyStream,
+        bodyLength: bodyLength,
         timeout: timeout,
         cancellation: cancellation,
         consume: consume,
@@ -74,6 +78,54 @@ extension _Transfers on FamioApiClient {
 }
 
 extension _FileTransfers on FamioApiClient {
+  Future<FileRef> _uploadFileStream({
+    required Stream<List<int>> stream,
+    required String name,
+    required String mime,
+    required int maxBytes,
+    int? length,
+    TransferCancellation? cancellation,
+  }) async {
+    if ((length ?? 0) > maxBytes) {
+      throw ApiError(413, 'too_large', ClientTexts.transferTooLarge);
+    }
+    final result = await _transfer<http.Response>(
+      'POST',
+      baseUrl.resolve('api/files').replace(queryParameters: {'name': name}),
+      headers: {...authHeaders, 'content-type': mime},
+      timeout: const Duration(minutes: 10),
+      bodyStream: limitedTransferStream(stream, maxBytes: maxBytes),
+      bodyLength: length,
+      cancellation: cancellation,
+      consume: (response, body) async => http.Response.bytes(
+        await readTransferBytes(body, maxBytes: 1024 * 1024),
+        response.statusCode,
+      ),
+    );
+    return FileRef.fromJson(FamioApiClient._decode(result))!;
+  }
+
+  Future<void> _downloadFileToSink(
+    StreamSink<List<int>> sink,
+    String id, {
+    required int expectedBytes,
+    TransferCancellation? cancellation,
+  }) {
+    if (expectedBytes < 0 || expectedBytes > 4096 * 1024 * 1024) {
+      return Future.error(
+        ApiError(413, 'too_large', ClientTexts.transferTooLarge),
+      );
+    }
+    return _fileToSink(
+      'GET',
+      fileUrl(id),
+      sink,
+      maxBytes: expectedBytes,
+      expectedBytes: expectedBytes,
+      cancellation: cancellation,
+    );
+  }
+
   Future<FileRef> _uploadFile({
     required List<int> bytes,
     required String name,
@@ -95,7 +147,7 @@ extension _FileTransfers on FamioApiClient {
       'GET',
       fileUrl(id, thumb: thumb),
       timeout: const Duration(minutes: 5),
-      maxBytes: 128 * 1024 * 1024,
+      maxBytes: FamioApiClient.maxBufferedFileBytes,
     );
     if (response.statusCode != 200) FamioApiClient._decode(response);
     return response.bodyBytes;
@@ -131,14 +183,36 @@ extension _FileTransfers on FamioApiClient {
     TransferCancellation? cancellation,
     void Function(int, int?)? onProgress,
     int maxBytes = 16 * 1024 * 1024 * 1024,
+  }) => _fileToSink(
+    'POST',
+    baseUrl.resolve(family ? 'api/admin/export' : 'api/me/export'),
+    sink,
+    body: jsonEncode({'password': password}),
+    maxBytes: maxBytes,
+    cancellation: cancellation,
+    onProgress: onProgress,
+  );
+
+  Future<void> _fileToSink(
+    String method,
+    Uri url,
+    StreamSink<List<int>> sink, {
+    String? body,
+    required int maxBytes,
+    int? expectedBytes,
+    TransferCancellation? cancellation,
+    void Function(int, int?)? onProgress,
   }) async {
     Future<void>? writing;
     try {
       await _transfer<void>(
-        'POST',
-        baseUrl.resolve(family ? 'api/admin/export' : 'api/me/export'),
-        headers: {...authHeaders, 'content-type': 'application/json'},
-        body: jsonEncode({'password': password}),
+        method,
+        url,
+        headers: {
+          ...authHeaders,
+          if (body != null) 'content-type': 'application/json',
+        },
+        body: body,
         timeout: const Duration(minutes: 10),
         cancellation: cancellation,
         consume: (response, stream) async {
@@ -160,6 +234,13 @@ extension _FileTransfers on FamioApiClient {
               received += chunk.length;
               onProgress?.call(received, response.contentLength);
               yield chunk;
+            }
+            if (expectedBytes != null && received != expectedBytes) {
+              throw ApiError(
+                0,
+                'invalid_response',
+                ClientTexts.unexpectedAnswer(response.statusCode),
+              );
             }
           }
 

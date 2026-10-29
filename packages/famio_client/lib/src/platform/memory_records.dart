@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:famio_shared/famio_shared.dart';
 import '../snapshot_codec.dart';
 import 'storage.dart';
+import 'copy_queue.dart';
 
 class MemoryRecordBackend implements RecordBackend {
   MemoryRecordBackend(
@@ -9,6 +10,7 @@ class MemoryRecordBackend implements RecordBackend {
     StoreSnapshot? restored, {
     required this.writeCopy,
     required this.deleteCopy,
+    this.enableCopy,
   }) {
     if (restored == null) return;
     for (final (record, dirty) in restored.records) {
@@ -18,8 +20,13 @@ class MemoryRecordBackend implements RecordBackend {
   }
 
   final String _name;
-  final Future<void> Function(String name, StoreSnapshot snapshot) writeCopy;
+  final Future<void> Function(String name, StoreSnapshot snapshot, String lease)
+  writeCopy;
   final Future<void> Function(String name) deleteCopy;
+  final Future<void> Function(String name, String lease)? enableCopy;
+  late final _copyQueue = CopyQueue.named(_name);
+  String? _lease;
+  Future<void> get copyIdle => _copyQueue.idle;
   Map<(String, String), (SyncRecord, bool)?>? _undoRecords;
   Map<String, String?>? _undoMeta;
   bool _transactionChanged = false;
@@ -30,7 +37,6 @@ class MemoryRecordBackend implements RecordBackend {
   ), () => _records[(collection, id)]);
   final _records = <(String, String), (SyncRecord, bool)>{};
   final _meta = <String, String>{};
-  var _keep = false;
   Timer? _save;
 
   @override
@@ -117,12 +123,23 @@ class MemoryRecordBackend implements RecordBackend {
 
   @override
   void keepCopy(bool keep) {
-    _keep = keep;
     _save?.cancel();
     if (keep) {
+      final lease = _lease = _copyQueue.enable();
+      unawaited(
+        _copyQueue
+            .run(() async {
+              if (!_copyQueue.owns(lease)) return;
+              await enableCopy?.call(_name, lease);
+            })
+            .catchError((Object _) {}),
+      );
       unawaited(_write());
     } else {
-      unawaited(deleteCopy(_name).catchError((Object _) {}));
+      _lease = null;
+      unawaited(
+        _copyQueue.clear(() => deleteCopy(_name)).catchError((Object _) {}),
+      );
     }
   }
 
@@ -132,17 +149,19 @@ class MemoryRecordBackend implements RecordBackend {
       _transactionChanged = true;
       return;
     }
-    if (!_keep) return;
+    if (!_copyQueue.owns(_lease)) return;
     _save?.cancel();
     _save = Timer(const Duration(seconds: 2), _write);
   }
 
   Future<void> _write() async {
+    final lease = _lease;
+    if (!_copyQueue.owns(lease)) return;
+    final snapshot = (records: _records.values.toList(), meta: Map.of(_meta));
     try {
-      await writeCopy(_name, (
-        records: _records.values.toList(),
-        meta: Map.of(_meta),
-      ));
+      await _copyQueue.run(() async {
+        if (_copyQueue.owns(lease)) await writeCopy(_name, snapshot, lease!);
+      });
     } on Object {
       // Private window or full storage: the copy waits for the next change.
     }
@@ -151,6 +170,6 @@ class MemoryRecordBackend implements RecordBackend {
   @override
   void close() {
     _save?.cancel();
-    if (_keep) unawaited(_write());
+    if (_copyQueue.owns(_lease)) unawaited(_write());
   }
 }

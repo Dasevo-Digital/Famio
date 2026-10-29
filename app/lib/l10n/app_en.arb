@@ -2668,5 +2668,8 @@
   "absenceAway": "Away",
   "absenceRepresentedBy": "Away · Substitute: {name}",
   "exportSaveFailed": "The export could not be saved. Please check free space and access permissions.",
-  "exportBrowserLimit": "Browser exports are limited to 64 MiB. Please use an installed app for larger archives."
+  "exportBrowserLimit": "Browser exports are limited to 64 MiB. Please use an installed app for larger archives.",
+  "filesUploadLimit": "Up to {size} per file",
+  "@filesUploadLimit": {"placeholders": {"size": {"type": "String"}}},
+  "filesBrowserLimit": "Browser files are limited to 128 MiB. Please open larger files in an installed app."
 }

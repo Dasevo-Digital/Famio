@@ -6,6 +6,18 @@ class TransferCancelled implements Exception {}
 
 class TransferTooLarge implements Exception {}
 
+class _StreamRequest extends http.BaseRequest with http.Abortable {
+  _StreamRequest(super.method, super.url, this._body, this.abortTrigger);
+  final Stream<List<int>> _body;
+  @override
+  final Future<void>? abortTrigger;
+  @override
+  http.ByteStream finalize() {
+    super.finalize();
+    return http.ByteStream(_body);
+  }
+}
+
 /// Cancellation has removable listeners, so completed transfers do not retain
 /// their clients or response buffers until the next user action.
 class TransferCancellation {
@@ -41,6 +53,8 @@ Future<T> httpTransfer<T>({
   Map<String, String> headers = const {},
   String? body,
   List<int>? bodyBytes,
+  Stream<List<int>>? bodyStream,
+  int? bodyLength,
   bool followRedirects = true,
   Duration timeout = const Duration(seconds: 30),
   TransferCancellation? cancellation,
@@ -48,6 +62,7 @@ Future<T> httpTransfer<T>({
   final abort = Completer<void>();
   final interrupted = Completer<T>();
   StreamSubscription<List<int>>? subscription;
+  StreamSubscription<List<int>>? uploadSubscription;
   StreamController<List<int>>? guarded;
   Object? reason;
   void stop(Object error) {
@@ -57,13 +72,46 @@ Future<T> httpTransfer<T>({
     if (!interrupted.isCompleted) interrupted.completeError(error);
     final active = subscription;
     if (active != null) unawaited(active.cancel().catchError((Object _) {}));
+    final upload = uploadSubscription;
+    if (upload != null) unawaited(upload.cancel().catchError((Object _) {}));
   }
 
-  final request = http.AbortableRequest(method, url, abortTrigger: abort.future)
-    ..headers.addAll(headers)
-    ..followRedirects = followRedirects;
-  if (body != null) request.body = body;
-  if (bodyBytes != null) request.bodyBytes = bodyBytes;
+  StreamController<List<int>>? upload;
+  if (bodyStream != null) {
+    upload = StreamController<List<int>>(
+      onListen: () {
+        uploadSubscription = bodyStream.listen(
+          (bytes) {
+            if (reason == null && !upload!.isClosed) upload.add(bytes);
+          },
+          onError: (Object e, StackTrace s) {
+            if (reason == null && !upload!.isClosed) upload.addError(e, s);
+          },
+          onDone: () => upload!.close(),
+        );
+      },
+      onPause: () => uploadSubscription?.pause(),
+      onResume: () => uploadSubscription?.resume(),
+      onCancel: () {
+        final active = uploadSubscription;
+        if (active != null) {
+          unawaited(active.cancel().catchError((Object _) {}));
+        }
+      },
+    );
+  }
+  final http.BaseRequest request =
+      (upload == null
+            ? http.AbortableRequest(method, url, abortTrigger: abort.future)
+            : _StreamRequest(method, url, upload.stream, abort.future))
+        ..headers.addAll(headers)
+        ..followRedirects = followRedirects;
+  if (request is http.Request) {
+    if (body != null) request.body = body;
+    if (bodyBytes != null) request.bodyBytes = bodyBytes;
+  } else {
+    request.contentLength = bodyLength;
+  }
   final timer = Timer(
     timeout,
     () => stop(TimeoutException('Transfer deadline', timeout)),
@@ -97,7 +145,16 @@ Future<T> httpTransfer<T>({
         }
       },
     );
-    return consume(response, stream.stream);
+    try {
+      return await consume(response, stream.stream);
+    } finally {
+      if (subscription == null) {
+        // An early header rejection never listens to the guarded stream.
+        // Attach and cancel before signalling abort: the native HTTP adapter
+        // otherwise leaves an unconsumed response occupying its connection.
+        await response.stream.listen((_) {}, onError: (Object _) {}).cancel();
+      }
+    }
   }();
   try {
     return await Future.any([work, interrupted.future]);
@@ -108,6 +165,11 @@ Future<T> httpTransfer<T>({
     final active = subscription;
     if (active != null) unawaited(active.cancel().catchError((Object _) {}));
     if (guarded != null && !guarded!.isClosed) unawaited(guarded!.close());
+    final activeUpload = uploadSubscription;
+    if (activeUpload != null) {
+      unawaited(activeUpload.cancel().catchError((Object _) {}));
+    }
+    if (upload != null && !upload.isClosed) unawaited(upload.close());
   }
 }
 
@@ -123,4 +185,16 @@ Future<Uint8List> readTransferBytes(
     onProgress?.call(bytes.length);
   }
   return bytes.takeBytes();
+}
+
+Stream<List<int>> limitedTransferStream(
+  Stream<List<int>> input, {
+  required int maxBytes,
+}) async* {
+  var count = 0;
+  await for (final chunk in input) {
+    if (chunk.length > maxBytes - count) throw TransferTooLarge();
+    count += chunk.length;
+    yield chunk;
+  }
 }
