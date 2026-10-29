@@ -186,7 +186,41 @@ class _SqliteBlobs implements BlobBackend {
 
   final Database _db;
   var _closed = false;
+  var _generation = 0;
   final _readers = <String, int>{};
+
+  void _check(int generation) {
+    if (_closed || generation != _generation) {
+      throw StateError('Cache no longer current');
+    }
+  }
+
+  /// Check block continuity and length before returning an offline copy.
+  /// Broken entries are misses, so a download can repair them.
+  bool _validEntry(String key) {
+    final row = _db
+        .select(
+          '''
+      SELECT e.size, COUNT(b.seq) AS blocks, MIN(b.seq) AS first,
+             MAX(b.seq) AS last, COALESCE(SUM(length(b.data)), 0) AS actual
+      FROM entries e LEFT JOIN blobs b ON b.key = e.key
+      WHERE e.key = ? GROUP BY e.key
+    ''',
+          [key],
+        )
+        .firstOrNull;
+    if (row == null) return false;
+    final blocks = row['blocks'] as int;
+    if (blocks > 0 &&
+        row['first'] == 0 &&
+        row['last'] == blocks - 1 &&
+        row['actual'] == row['size']) {
+      return true;
+    }
+    _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
+    _db.execute('DELETE FROM entries WHERE key = ?', [key]);
+    return false;
+  }
 
   /// Strictly increasing, so files touched in the same millisecond still
   /// have an order.
@@ -201,15 +235,15 @@ class _SqliteBlobs implements BlobBackend {
 
   @override
   Stream<List<int>>? readStream(String key) {
-    if (_db.select('SELECT 1 FROM entries WHERE key = ?', [key]).isEmpty) {
-      return null;
-    }
+    final generation = _generation;
+    _check(generation);
+    if (!_validEntry(key)) return null;
     _db.execute('UPDATE entries SET used = ? WHERE key = ?', [_tick(), key]);
     return () async* {
       _readers[key] = (_readers[key] ?? 0) + 1;
       try {
         for (var seq = 0; ; seq++) {
-          if (_closed) throw StateError('Cache closed');
+          _check(generation);
           final row = _db.select(
             'SELECT data FROM blobs WHERE key = ? AND seq = ?',
             [key, seq],
@@ -234,11 +268,13 @@ class _SqliteBlobs implements BlobBackend {
     Stream<List<int>> input, {
     required int expectedBytes,
   }) async {
+    final generation = _generation;
+    _check(generation);
     final staging = '$key:pending:${newId()}';
     var count = 0, seq = 0;
     try {
       await for (final chunk in input) {
-        if (_closed) throw StateError('Cache closed');
+        _check(generation);
         if (chunk.length > expectedBytes - count) {
           throw const FormatException('File length mismatch');
         }
@@ -254,7 +290,7 @@ class _SqliteBlobs implements BlobBackend {
         }
         count += chunk.length;
       }
-      if (_closed) throw StateError('Cache closed');
+      _check(generation);
       if (count != expectedBytes) {
         throw const FormatException('File length mismatch');
       }
@@ -284,6 +320,8 @@ class _SqliteBlobs implements BlobBackend {
 
   @override
   List<int>? read(String key) {
+    _check(_generation);
+    if (!_validEntry(key)) return null;
     final rows = _db.select(
       'SELECT data FROM blobs WHERE key = ? ORDER BY seq',
       [key],
@@ -299,6 +337,7 @@ class _SqliteBlobs implements BlobBackend {
 
   @override
   void write(String key, List<int> data) {
+    _check(_generation);
     _db.execute('BEGIN');
     try {
       _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
@@ -350,6 +389,7 @@ class _SqliteBlobs implements BlobBackend {
 
   @override
   void clear() {
+    _generation++;
     _db.execute('DELETE FROM blobs');
     _db.execute('DELETE FROM entries');
     // Gives the space back to the device.
@@ -358,7 +398,9 @@ class _SqliteBlobs implements BlobBackend {
 
   @override
   void close() {
+    if (_closed) return;
     _closed = true;
+    _generation++;
     _db.close();
   }
 }

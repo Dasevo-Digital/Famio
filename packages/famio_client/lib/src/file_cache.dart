@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:async';
 
+import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
 
 import 'api_client.dart';
@@ -49,6 +50,15 @@ class FileCache {
   final _pending = <String, Future<Uint8List>>{};
   final _streaming = <String, Future<void>>{};
   final _cancellations = <TransferCancellation>{};
+  var _generation = 0;
+  var _closed = false;
+
+  bool _current(int generation) => !_closed && generation == _generation;
+  ApiError _cancelled() =>
+      ApiError(499, 'cancelled', ClientTexts.transferCancelled);
+  void _check(int generation) {
+    if (!_current(generation)) throw _cancelled();
+  }
 
   /// Recently shown previews, most recent last. Handing out the same bytes
   /// again spares the database read and lets Flutter's image cache reuse
@@ -61,6 +71,8 @@ class FileCache {
 
   /// The contents of [ref] (or its [thumb] preview), downloading them once.
   Future<Uint8List> bytes(FileRef ref, {int? thumb}) {
+    if (_closed) return Future.error(_cancelled());
+    final generation = _generation;
     if (thumb == null && ref.size > FamioApiClient.maxBufferedFileBytes) {
       return Future.error(
         ApiError(413, 'too_large', ClientTexts.transferTooLarge),
@@ -79,10 +91,11 @@ class FileCache {
         final data = downloaded is Uint8List
             ? downloaded
             : Uint8List.fromList(downloaded);
+        _check(generation);
         _write(key, data);
         return _remember(key, data, thumb);
       } finally {
-        _pending.remove(key);
+        if (_current(generation)) _pending.remove(key);
       }
     }();
   }
@@ -112,6 +125,8 @@ class FileCache {
   }
 
   Future<String> _openable(FileRef ref) async {
+    final generation = _generation;
+    _check(generation);
     if (ref.size > maxBytes) {
       // A file that cannot remain offline needs only one temporary disk copy.
       return _receive(
@@ -127,8 +142,9 @@ class FileCache {
     var stream = _blobs.readStream(ref.id);
     if (stream == null) {
       await (_streaming[ref.id] ??= _download(ref).whenComplete(() {
-        _streaming.remove(ref.id);
+        if (_current(generation)) _streaming.remove(ref.id);
       }));
+      _check(generation);
       stream = _blobs.readStream(ref.id);
     }
     if (stream == null) {
@@ -152,7 +168,7 @@ class FileCache {
       );
     } finally {
       await iterator.cancel();
-      _blobs.trim(maxBytes);
+      if (_current(generation)) _blobs.trim(maxBytes);
     }
   }
 
@@ -165,6 +181,8 @@ class FileCache {
     FileRef ref,
     Future<T> Function(Stream<List<int>>) store,
   ) async {
+    final generation = _generation;
+    _check(generation);
     final cancellation = TransferCancellation();
     _cancellations.add(cancellation);
     var listened = false;
@@ -185,7 +203,9 @@ class FileCache {
       // even while it is waiting indefinitely for the next body chunk.
       await Future.any<void>([transfer, stored.then<void>((_) {})]);
       await body.close();
-      return await stored;
+      final result = await stored;
+      _check(generation);
+      return result;
     } catch (error, stack) {
       cancellation.cancel();
       // A target can fail before listening (e.g. an unwritable temp folder).
@@ -215,11 +235,77 @@ class FileCache {
 
   /// Puts freshly uploaded bytes into the cache, so the uploader never
   /// downloads their own file again.
-  void put(FileRef ref, List<int> data) => _write(ref.id, data);
+  void put(FileRef ref, List<int> data) {
+    _check(_generation);
+    _write(ref.id, data);
+  }
+
+  Future<FileRef> uploadBytes({
+    required List<int> bytes,
+    required String name,
+    required String mime,
+  }) async {
+    final generation = _generation;
+    final ref = await api.uploadFile(bytes: bytes, name: name, mime: mime);
+    if (_current(generation)) {
+      try {
+        put(ref, bytes);
+      } catch (_) {
+        // A cache failure must not discard a successful upload.
+      }
+    }
+    return ref;
+  }
+
+  /// Keeps a second read only if it contains exactly the uploaded bytes.
+  /// Both hashing passes are streamed; no full-file buffer is retained.
+  Future<FileRef> uploadStream({
+    required Stream<List<int>> Function() openRead,
+    required String name,
+    required String mime,
+    required int maxBytes,
+    int? length,
+  }) async {
+    final generation = _generation;
+    final keep =
+        _current(generation) && (length == null || length <= this.maxBytes);
+    Digest? uploaded;
+    final input = openRead();
+    final ref = await api.uploadFileStream(
+      stream: keep ? _digesting(input, (digest) => uploaded = digest) : input,
+      name: name,
+      mime: mime,
+      maxBytes: maxBytes,
+      length: length,
+    );
+    if (!keep ||
+        !_current(generation) ||
+        uploaded == null ||
+        ref.size > this.maxBytes) {
+      return ref;
+    }
+    Stream<List<int>> verified() async* {
+      Digest? copied;
+      yield* _digesting(openRead(), (digest) => copied = digest);
+      if (copied != uploaded) {
+        throw const FormatException('Upload source changed');
+      }
+    }
+
+    try {
+      await putStream(ref, verified());
+    } catch (_) {
+      // The server already has the file; an optional offline copy may fail.
+    }
+    return ref;
+  }
 
   Future<void> putStream(FileRef ref, Stream<List<int>> data) async {
+    final generation = _generation;
+    _check(generation);
     if (ref.size > maxBytes) return;
     await _blobs.writeStream(ref.id, data, expectedBytes: ref.size);
+    _check(generation);
     _blobs.trim(maxBytes);
   }
 
@@ -228,18 +314,29 @@ class FileCache {
 
   /// Forgets all files; they are downloaded again when shown.
   void clear() {
+    if (_closed) return;
+    _generation++;
     for (final cancellation in _cancellations.toList()) {
       cancellation.cancel();
     }
     _recent.clear();
     _recentBytes = 0;
+    _pending.clear();
+    _streaming.clear();
     _blobs.clear();
   }
 
   void close() {
+    if (_closed) return;
+    _closed = true;
+    _generation++;
     for (final cancellation in _cancellations.toList()) {
       cancellation.cancel();
     }
+    _pending.clear();
+    _streaming.clear();
+    _recent.clear();
+    _recentBytes = 0;
     _blobs.close();
   }
 
@@ -255,4 +352,29 @@ class FileCache {
   }
 
   static String _safe(String name) => name.replaceAll(RegExp(r'[^\w.\-]'), '_');
+}
+
+Stream<List<int>> _digesting(
+  Stream<List<int>> input,
+  void Function(Digest) completed,
+) async* {
+  final result = _DigestSink();
+  final hash = sha256.startChunkedConversion(result);
+  try {
+    await for (final chunk in input) {
+      hash.add(chunk);
+      yield chunk;
+    }
+  } finally {
+    hash.close();
+  }
+  completed(result.value!);
+}
+
+class _DigestSink implements Sink<Digest> {
+  Digest? value;
+  @override
+  void add(Digest digest) => value = digest;
+  @override
+  void close() {}
 }

@@ -45,6 +45,14 @@ class _MemoryBlobs implements BlobBackend {
   static const limit = 64 * 1024 * 1024;
 
   final _blobs = <String, List<int>>{};
+  var _generation = 0;
+  var _closed = false;
+  void _check(int generation) {
+    if (_closed || generation != _generation) {
+      throw StateError('Cache no longer current');
+    }
+  }
+
   @override
   Stream<List<int>>? readStream(String key) {
     final value = read(key);
@@ -57,7 +65,18 @@ class _MemoryBlobs implements BlobBackend {
     Stream<List<int>> input, {
     required int expectedBytes,
   }) async {
-    final bytes = await readTransferBytes(input, maxBytes: limit ~/ 4);
+    final generation = _generation;
+    _check(generation);
+    Stream<List<int>> current() async* {
+      await for (final chunk in input) {
+        _check(generation);
+        yield chunk;
+      }
+      _check(generation);
+    }
+
+    final bytes = await readTransferBytes(current(), maxBytes: limit ~/ 4);
+    _check(generation);
     if (bytes.length != expectedBytes) {
       throw const FormatException('File length mismatch');
     }
@@ -68,6 +87,7 @@ class _MemoryBlobs implements BlobBackend {
 
   @override
   List<int>? read(String key) {
+    _check(_generation);
     // Most recently used last.
     final data = _blobs.remove(key);
     if (data != null) _blobs[key] = data;
@@ -76,6 +96,7 @@ class _MemoryBlobs implements BlobBackend {
 
   @override
   void write(String key, List<int> data) {
+    _check(_generation);
     _bytes -= _blobs.remove(key)?.length ?? 0;
     if (data.length > limit ~/ 4) return;
     _blobs[key] = data;
@@ -97,10 +118,15 @@ class _MemoryBlobs implements BlobBackend {
 
   @override
   void clear() {
+    _generation++;
     _blobs.clear();
     _bytes = 0;
   }
 
   @override
-  void close() => _blobs.clear();
+  void close() {
+    if (_closed) return;
+    clear();
+    _closed = true;
+  }
 }

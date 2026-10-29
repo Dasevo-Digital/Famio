@@ -221,28 +221,27 @@ Future<FileRef> uploadPickedState(AppState state, PickedFile file) async {
   final cache = state.files;
   final limit = uploadLimit(engine);
   final bytes = file.bytes;
-  final ref = bytes == null
-      ? await engine.api.uploadFileStream(
-          stream: file.openRead(),
-          name: file.name,
-          mime: file.mime,
-          length: file.length,
-          maxBytes: limit,
-        )
-      : await engine.api.uploadFile(
-          bytes: bytes,
-          name: file.name,
-          mime: file.mime,
-        );
-  if (bytes != null) {
-    cache?.put(ref, bytes);
-  } else if (cache != null) {
-    // A failed optional offline copy must not discard a successful upload.
-    try {
-      await cache.putStream(ref, file.openRead());
-    } catch (_) {}
+  if (bytes == null) {
+    if (cache != null) {
+      return cache.uploadStream(
+        openRead: file.openRead,
+        name: file.name,
+        mime: file.mime,
+        length: file.length,
+        maxBytes: limit,
+      );
+    }
+    return engine.api.uploadFileStream(
+      stream: file.openRead(),
+      name: file.name,
+      mime: file.mime,
+      length: file.length,
+      maxBytes: limit,
+    );
   }
-  return ref;
+  return cache == null
+      ? engine.api.uploadFile(bytes: bytes, name: file.name, mime: file.mime)
+      : cache.uploadBytes(bytes: bytes, name: file.name, mime: file.mime);
 }
 
 /// Opens a file: pictures in Famio's own viewer, together with the other
