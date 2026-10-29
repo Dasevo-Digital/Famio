@@ -162,19 +162,4 @@ extension RecordTrash on RecordStore {
           when memberId == null || _trashVisible(e, memberId))
         e,
   ];
-
-  bool _trashReferences(String fileId, {String? memberId}) {
-    final rows = _db.select(
-      'SELECT * FROM trash WHERE expires_at > ? AND instr(snapshot, ?) > 0',
-      [DateTime.now().millisecondsSinceEpoch, fileId],
-    );
-    return rows.any((row) {
-      final entry = _trashEntry(row);
-      final valid = recordDataIsValid(entry.record);
-      if (memberId == null && !valid) return true;
-      return valid &&
-          (memberId == null || _trashVisible(entry, memberId)) &&
-          recordFileIds(entry.record).contains(fileId);
-    });
-  }
 }

@@ -1,4 +1,5 @@
 import '../sync_record.dart';
+import '../calendar_clock.dart';
 import 'assignment.dart';
 
 enum RecurrenceFrequency { daily, weekly, monthly, yearly }
@@ -207,6 +208,34 @@ class CalendarEvent {
   bool involves(String memberId) =>
       memberIds.isEmpty || memberIds.contains(memberId);
 
+  CalendarEvent inTimeZone(String? name) => name == null
+      ? this
+      : copyWith(
+          start: inCalendarZone(start, name, dateOnly: allDay),
+          end: inCalendarZone(end, name, dateOnly: allDay),
+        );
+
+  DateTime _date(
+    int year,
+    int month,
+    int day, [
+    int hour = 0,
+    int minute = 0,
+    int second = 0,
+    int millisecond = 0,
+    int microsecond = 0,
+  ]) => calendarDate(
+    start,
+    year,
+    month,
+    day,
+    hour,
+    minute,
+    second,
+    millisecond,
+    microsecond,
+  );
+
   /// Occurrences overlapping `[from, to)`, in chronological order.
   List<Occurrence> occurrencesBetween(DateTime from, DateTime to) {
     final rule = recurrence;
@@ -214,10 +243,11 @@ class CalendarEvent {
       return _overlaps(start, from, to) ? [Occurrence(this, start, end)] : [];
     }
 
+    if (rule.interval < 1) return [];
     final result = <Occurrence>[];
     final until = rule.until == null
         ? null
-        : DateTime(rule.until!.year, rule.until!.month, rule.until!.day + 1);
+        : _date(rule.until!.year, rule.until!.month, rule.until!.day + 1);
     // Skip ahead to shortly before the window instead of walking the whole
     // history of a long-running series.
     var guard = 0;
@@ -225,7 +255,11 @@ class CalendarEvent {
       if (++guard > 5000) break;
       if (s == null) continue; // e.g. the 31st in a 30-day month
       if (!s.isBefore(to) || (until != null && !s.isBefore(until))) break;
-      if (exceptions.contains(DateTime(s.year, s.month, s.day))) continue;
+      if (exceptions.any(
+        (e) => e.year == s.year && e.month == s.month && e.day == s.day,
+      )) {
+        continue;
+      }
       if (_overlaps(s, from, to)) result.add(Occurrence(this, s, _endFor(s)));
     }
     return result;
@@ -242,17 +276,19 @@ class CalendarEvent {
     }
     final s = start;
     // Weeks run Monday to Sunday.
-    final monday = DateTime(s.year, s.month, s.day - (s.weekday - 1));
+    final monday = _date(s.year, s.month, s.day - (s.weekday - 1));
     for (; ; n++) {
       final week = 7 * n * rule.interval;
       for (final d in days) {
-        final t = DateTime(
+        final t = _date(
           monday.year,
           monday.month,
           monday.day + week + d - 1,
           s.hour,
           s.minute,
           s.second,
+          s.millisecond,
+          s.microsecond,
         );
         if (!t.isBefore(s)) yield t;
       }
@@ -265,14 +301,15 @@ class CalendarEvent {
   DateTime? nthStart(int count) {
     final rule = recurrence;
     if (rule == null || count < 1) return count == 1 ? start : null;
+    if (rule.interval < 1) return null;
     var seen = 0;
     var guard = 0;
     for (final s in _starts(rule, 0)) {
       if (++guard > 100000) return null;
       if (s == null) continue;
       if (rule.until != null &&
-          s.isAfter(
-            DateTime(rule.until!.year, rule.until!.month, rule.until!.day + 1),
+          !s.isBefore(
+            _date(rule.until!.year, rule.until!.month, rule.until!.day + 1),
           )) {
         return null;
       }
@@ -296,14 +333,22 @@ class CalendarEvent {
       end.month,
       end.day,
     ).difference(DateTime.utc(start.year, start.month, start.day)).inDays;
-    return DateTime(s.year, s.month, s.day + days);
+    return _date(s.year, s.month, s.day + days);
   }
 
   DateTime? _nth(Recurrence rule, int n) {
     final k = n * rule.interval;
     final s = start;
-    DateTime at(int y, int m, int d) =>
-        DateTime(y, m, d, s.hour, s.minute, s.second);
+    DateTime at(int y, int m, int d) => _date(
+      y,
+      m,
+      d,
+      s.hour,
+      s.minute,
+      s.second,
+      s.millisecond,
+      s.microsecond,
+    );
     switch (rule.frequency) {
       case RecurrenceFrequency.daily:
         return at(s.year, s.month, s.day + k);
@@ -319,7 +364,10 @@ class CalendarEvent {
   }
 
   int _firstCandidate(Recurrence rule, DateTime from) {
-    final lookBack = from.subtract(duration).subtract(const Duration(days: 1));
+    final lookBack = inCalendarZone(
+      from,
+      calendarZoneName(start),
+    ).subtract(duration).subtract(const Duration(days: 1));
     if (!lookBack.isAfter(start)) return 0;
     final int periods = switch (rule.frequency) {
       RecurrenceFrequency.daily => _days(start, lookBack),

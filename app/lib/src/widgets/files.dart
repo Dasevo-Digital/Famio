@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../platform/browser.dart';
+import '../platform/upload_bytes.dart';
 import '../platform/document_scanner.dart';
 import 'photo_viewer.dart';
 import '../design/palette.dart';
@@ -91,7 +92,11 @@ Future<PickedFile?> pickFile(
       maxWidth: 2560,
     );
     if (photo == null) return null;
-    return PickedFile(await photo.readAsBytes(), photo.name, 'image/jpeg');
+    return PickedFile(
+      await readUploadBytes(length: photo.length, openRead: photo.openRead),
+      photo.name,
+      'image/jpeg',
+    );
   }
 
   final picked = await FilePicker.pickFiles(
@@ -99,7 +104,10 @@ Future<PickedFile?> pickFile(
   );
   if (picked.isEmpty) return null;
   final file = picked.first;
-  final bytes = await file.readAsBytes();
+  final bytes = await readUploadBytes(
+    length: file.length,
+    openRead: file.readAsByteStream,
+  );
   return PickedFile(
     bytes,
     file.name,
@@ -113,6 +121,9 @@ Future<PickedFile?> _scan(BuildContext context) async {
   try {
     final pdf = await scanDocument();
     if (pdf == null || pdf.isEmpty) return null;
+    if (pdf.length > maxLocalUploadBytes) {
+      throw ApiError(413, 'too_large', ClientTexts.transferTooLarge);
+    }
     final stamp = DateFormat('yyyy-MM-dd HH.mm').format(DateTime.now());
     return PickedFile(pdf, '${tr.filesScanName} $stamp.pdf', 'application/pdf');
   } on PlatformException {

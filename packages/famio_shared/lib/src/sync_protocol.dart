@@ -62,6 +62,7 @@ class SyncResponse {
     this.reset = false,
     this.scope,
     this.blocked = const [],
+    this.timeZone,
   });
 
   factory SyncResponse.fromJson(Map<String, Object?> json) => SyncResponse(
@@ -85,6 +86,7 @@ class SyncResponse {
       for (final issue in json['blocked'] as List? ?? const [])
         SyncWriteIssue.fromJson((issue as Map).cast()),
     ],
+    timeZone: json['timeZone'] as String?,
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -112,6 +114,9 @@ class SyncResponse {
   final bool reset;
   final String? scope;
 
+  /// Family calendar zone; absent on older servers.
+  final String? timeZone;
+
   /// Pending edits that need repair; their contents were not stored.
   final List<SyncWriteIssue> blocked;
 
@@ -126,6 +131,7 @@ class SyncResponse {
     if (scope != null) 'scope': scope,
     if (blocked.isNotEmpty)
       'blocked': [for (final issue in blocked) issue.toJson()],
+    if (timeZone != null) 'timeZone': timeZone,
   };
 }
 

@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 
 import '../l10n.dart';
 import '../platform/opened_files.dart';
+import '../platform/upload_bytes.dart';
+import 'package:famio_client/famio_client.dart';
 
 /// Desktop: files dragged onto the window are shared to Famio. They are
 /// read right away (the macOS sandbox allows it only during the drop) into
@@ -31,7 +33,6 @@ class _FileDropZoneState extends State<FileDropZone> {
   var _over = false;
 
   static const _maxFiles = 10;
-  static const _maxBytes = 100 * 1024 * 1024;
 
   Future<void> _take(List<DropItem> items) async {
     final dir = Directory(
@@ -49,8 +50,10 @@ class _FileDropZoneState extends State<FileDropZone> {
             bookmark: bookmark,
           );
       try {
-        if (await item.length() > _maxBytes) continue;
-        final bytes = await item.readAsBytes();
+        final bytes = await readUploadBytes(
+          length: item.length,
+          openRead: item.openRead,
+        );
         final name = item.name.isEmpty ? p.basename(item.path) : item.name;
         final copy = File(
           p.join(dir.path, '${DateTime.now().microsecondsSinceEpoch}-$name'),
@@ -62,6 +65,8 @@ class _FileDropZoneState extends State<FileDropZone> {
               lookupMimeType(name, headerBytes: bytes.take(64).toList()) ??
               'application/octet-stream',
         ));
+      } on ApiError {
+        // Oversized files never enter the shared-file pipeline.
       } on FileSystemException {
         // Not readable (e.g. a folder or a vanished file): left out.
       } finally {

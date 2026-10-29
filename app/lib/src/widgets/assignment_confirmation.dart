@@ -85,7 +85,11 @@ class AssignmentPanel extends StatelessWidget {
     builder: (context, engine) {
       final current = engine.record(target.collection, target.id);
       if (current == null) return const SizedBox.shrink();
-      final requests = assignmentRequests(current, occurrence: occurrence);
+      final requests = assignmentRequests(
+        current,
+        occurrence: occurrence,
+        timeZone: engine.familyTimeZone,
+      );
       return Wrap(
         spacing: 8,
         runSpacing: 4,

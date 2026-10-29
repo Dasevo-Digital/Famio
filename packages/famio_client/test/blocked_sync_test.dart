@@ -283,6 +283,44 @@ void main() {
     },
   );
 
+  test(
+    'role downgrade removes a blocked edit of an existing document',
+    () async {
+      share(true);
+      app.records.writeAs(member.id, [
+        SyncRecord(
+          collection: Collections.documents,
+          id: 'existing',
+          updatedAt: 1,
+          data: {'title': 'Original'},
+        ),
+      ]);
+      await engine.sync();
+      engine.put(
+        Collections.documents,
+        'existing',
+        FamilyDocument(
+          id: 'existing',
+          title: 'Pending',
+          category: DocumentCategory.other,
+          file: file,
+        ).toData(),
+      );
+      share(false);
+      await engine.sync();
+      expect(engine.blockedChanges.single.id, 'existing');
+      app.accounts.update(member.id, role: MemberRole.guest);
+      await engine.sync();
+      expect(local.get(Collections.documents, 'existing'), isNull);
+      expect(engine.blockedChanges, isEmpty);
+      expect(engine.status.state, SyncState.idle);
+      expect(
+        app.records.get(Collections.documents, 'existing')!.data['title'],
+        'Original',
+      );
+    },
+  );
+
   test('revoking a task still removes its blocked local edit', () async {
     share(true);
     app.records.writeAs(owner.id, [

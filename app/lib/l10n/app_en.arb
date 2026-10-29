@@ -2666,5 +2666,7 @@
   "absenceUnknownMember": "Unknown member",
   "absenceSubstituteName": "Substitute: {name}",
   "absenceAway": "Away",
-  "absenceRepresentedBy": "Away · Substitute: {name}"
+  "absenceRepresentedBy": "Away · Substitute: {name}",
+  "exportSaveFailed": "The export could not be saved. Please check free space and access permissions.",
+  "exportBrowserLimit": "Browser exports are limited to 64 MiB. Please use an installed app for larger archives."
 }

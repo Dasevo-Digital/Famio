@@ -10,6 +10,7 @@ import 'i18n.dart';
 
 part 'record_store_trash.dart';
 part 'record_store_assignments.dart';
+part 'record_store_files.dart';
 
 /// Persists [SyncRecord]s, hands out monotonically increasing revisions and
 /// enforces per-record visibility ([SyncRecord.visibleTo]).
@@ -24,6 +25,12 @@ class RecordStore {
   }) : _today = today ?? _localToday;
 
   final Database _db;
+  int _fileIndexRev = -1;
+  final _filesByRecord = <(String, String), Set<String>>{};
+  final _recordsByFile = <String, Set<(String, String)>>{};
+  final _damagedFileRecords = <(String, String), String>{};
+  final _trashByFile = <String, Set<String>>{};
+  final _damagedFileTrash = <String, String>{};
   final tz.Location Function()? assignmentLocation;
 
   /// A new process may have opened a restored database, even if revisions
@@ -416,8 +423,18 @@ class RecordStore {
           );
         }
         if (existing != null && !canAccess(existing, userId)) {
-          // Not theirs to change. Stay silent so nothing leaks; if they lost
-          // access recently, their revocation tombstone removes the copy.
+          // Echo only the supplied key, never the inaccessible contents.
+          // Role changes can revoke access without a per-record revocation.
+          rejected.add(
+            SyncRecord(
+              collection: change.collection,
+              id: change.id,
+              data: const {},
+              deleted: true,
+              updatedAt: revokedAt,
+              updatedBy: serverMemberId,
+            ),
+          );
           continue;
         }
         if (!mayWrite(role, userId, incoming, existing, access: access)) {
@@ -693,6 +710,7 @@ class RecordStore {
       reset: reset,
       scope: scope,
       blocked: blocked,
+      timeZone: assignmentLocation?.call().name,
     );
   }
 
@@ -1092,43 +1110,25 @@ class RecordStore {
   }
 
   /// Whether a visible record has an actual attachment with this file id.
-  bool referencedFor(String text, String memberId) {
-    if (_trashReferences(text, memberId: memberId)) return true;
-    final role = _role(memberId);
-    final guest = role == MemberRole.guest;
-    final only =
-        '${guest ? 'AND collection IN (${Collections.guestReadable.map((c) => "'$c'").join(', ')})'
-                  '$_guestTasksSql' : ''} ${_adultsOnlySql(role)}';
-    final rows = _db.select(
-      '''
-      SELECT * FROM records
-       WHERE deleted = 0 AND instr(data, ?1) > 0 $only
-         AND (visible_to IS NULL
-              OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
-      ''',
-      [text, memberId],
-    );
-    return rows.any((row) {
-      final record = _record(row);
-      return recordDataIsValid(record) && recordFileIds(record).contains(text);
-    });
+  bool referencedFor(String fileId, String memberId) {
+    _refreshFileReferences();
+    if (_indexedTrashReference(fileId, memberId: memberId)) return true;
+    for (final key in _recordsByFile[fileId] ?? const <(String, String)>{}) {
+      final record = _get(key.$1, key.$2);
+      if (record != null && !record.deleted && canAccess(record, memberId)) {
+        return true;
+      }
+    }
+    return false;
   }
 
-  /// Whether any live record actually attaches this file.
-  bool referenced(String text) =>
-      _trashReferences(text) ||
-      _db
-          .select(
-            'SELECT * FROM records WHERE deleted = 0 AND instr(data, ?) > 0',
-            [text],
-          )
-          .any((row) {
-            final record = _record(row);
-            // A damaged model is quarantined, not discarded. Keep its uploads
-            // until it can be repaired; retention never confers download access.
-            return !recordDataIsValid(record) ||
-                recordFileIds(record).contains(text);
-          });
+  /// Retention includes quarantined data without granting read permission.
+  bool referenced(String fileId) {
+    _refreshFileReferences();
+    return (_recordsByFile[fileId]?.isNotEmpty ?? false) ||
+        _indexedTrashReference(fileId) ||
+        _damagedFileRecords.values.any((data) => data.contains(fileId));
+  }
 
   /// The stored version of a record (also tombstones), or null.
   SyncRecord? get(String collection, String id) => _get(collection, id);

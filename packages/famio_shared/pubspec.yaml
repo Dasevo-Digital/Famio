@@ -10,6 +10,8 @@ dependencies:
   # Ed25519 and SHA-256 in pure Dart (release signatures, see
   # lib/src/release_signature.dart).
   cryptography: ^2.9.0
+  http: ^1.6.0
+  timezone: ^0.11.1
 
 dev_dependencies:
   lints: ^6.0.0

@@ -135,12 +135,15 @@ extension FamilyData on SyncEngine {
 
   // --- calendar -------------------------------------------------------------
 
-  List<CalendarEvent> get events =>
-      records(Collections.events).map(CalendarEvent.fromRecord).toList();
+  List<CalendarEvent> get events => records(
+    Collections.events,
+  ).map((r) => CalendarEvent.fromRecord(r).inTimeZone(familyTimeZone)).toList();
 
   CalendarEvent? event(String id) {
     final r = record(Collections.events, id);
-    return r == null ? null : CalendarEvent.fromRecord(r);
+    return r == null
+        ? null
+        : CalendarEvent.fromRecord(r).inTimeZone(familyTimeZone);
   }
 
   void saveEvent(CalendarEvent event) =>
@@ -157,7 +160,7 @@ extension FamilyData on SyncEngine {
       for (final r in records(Collections.externalEvents))
         if (subscriptions.contains(r.data['sourceId']) ||
             isCalDavSource(r.data['sourceId'] as String?))
-          CalendarEvent.fromRecord(r),
+          CalendarEvent.fromRecord(r).inTimeZone(familyTimeZone),
     ];
   }
 

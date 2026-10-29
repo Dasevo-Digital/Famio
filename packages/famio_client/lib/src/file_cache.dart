@@ -66,9 +66,10 @@ class FileCache {
     if (cached != null) return Future.value(_remember(key, cached, thumb));
     return _pending[key] ??= () async {
       try {
-        final data = Uint8List.fromList(
-          await api.downloadFile(ref.id, thumb: thumb),
-        );
+        final downloaded = await api.downloadFile(ref.id, thumb: thumb);
+        final data = downloaded is Uint8List
+            ? downloaded
+            : Uint8List.fromList(downloaded);
         _write(key, data);
         return _remember(key, data, thumb);
       } finally {

@@ -89,6 +89,14 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Papierkorb für Aufgaben, Termine, Notizen und Dokumente mit 30 Tagen Aufbewahrung; Wiederherstellung auf allen Geräten nach aktueller Rechteprüfung | ✅ |
 | Bestätigte Zuständigkeiten für Aufgaben und Bring-/Abholfahrten: Zusage, Absage, offene Rückmeldung und optionale Erinnerung; Terminserien je einzelne Fahrt | ✅ |
 
+Exporte werden in den installierten Apps direkt in eine neue Datei geschrieben.
+Am Computer wählt man dafür einen Zielordner; auf dem Telefon öffnet sich nach
+dem Download die Teilen-/Speichern-Auswahl. Fortschritt und Abbruch sind im
+Exportdialog verfügbar. Im Browser ist die ZIP-Datei auf 64 MiB begrenzt; für
+größere Archive eine installierte App verwenden. Abgebrochene Downloads werden
+aufgeräumt. Auf dem Telefon bleiben zum Teilen übergebene temporäre Archive
+bis zum nächsten App-Start oder Abmelden erhalten.
+
 ## Aufbau
 
 ```

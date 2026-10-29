@@ -6880,5 +6880,7 @@
         "type": "String"
       }
     }
-  }
+  },
+  "exportSaveFailed": "Der Export konnte nicht gespeichert werden. Bitte Speicherplatz und Zugriffsrechte prüfen.",
+  "exportBrowserLimit": "Im Browser sind Exporte bis 64 MiB möglich. Für größere Archive bitte eine installierte App verwenden."
 }

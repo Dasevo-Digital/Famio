@@ -1359,4 +1359,7 @@ const sharedEs = <String, String>{
       "Para confirmar necesitas tu contraseña y, si está activada, tu código de dos pasos. Si eres el último administrador, primero tienes que traspasar la administración a otro miembro.",
   "Server|Der Kopplungscode ist ungültig oder abgelaufen.":
       "El código de vinculación no es válido o ha caducado.",
+  'Client|Die Datei überschreitet die Größenbegrenzung für diese Übertragung.':
+      'El archivo supera el límite de tamaño de esta transferencia.',
+  'Client|Übertragung abgebrochen': 'Transferencia cancelada',
 };

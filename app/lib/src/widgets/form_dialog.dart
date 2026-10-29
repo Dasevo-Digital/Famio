@@ -11,12 +11,14 @@ class FormDialog extends StatefulWidget {
     required this.onSubmit,
     this.controllers = const [],
     this.submitLabel,
+    this.onCancel,
   });
 
   final String title;
   final List<Widget> fields;
   final Future<void> Function() onSubmit;
   final String? submitLabel;
+  final VoidCallback? onCancel;
 
   /// Disposed with the dialog, after its closing animation.
   final List<TextEditingController> controllers;
@@ -31,6 +33,7 @@ class _FormDialogState extends State<FormDialog> {
 
   @override
   void dispose() {
+    if (_busy) widget.onCancel?.call();
     for (final c in widget.controllers) {
       c.dispose();
     }
@@ -46,7 +49,7 @@ class _FormDialogState extends State<FormDialog> {
       await widget.onSubmit();
       if (mounted) Navigator.pop(context);
     } on ApiError catch (e) {
-      setState(() => _error = e.message);
+      if (mounted) setState(() => _error = e.message);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -54,37 +57,48 @@ class _FormDialogState extends State<FormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      // Fits small phones with the keyboard open.
-      scrollable: true,
-      title: Text(widget.title),
-      content: SizedBox(
-        width: 360,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final field in widget.fields) ...[
-              field,
-              const SizedBox(height: 12),
+    return PopScope(
+      canPop: !_busy || widget.onCancel != null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop && _busy) widget.onCancel?.call();
+      },
+      child: AlertDialog(
+        // Fits small phones with the keyboard open.
+        scrollable: true,
+        title: Text(widget.title),
+        content: SizedBox(
+          width: 360,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final field in widget.fields) ...[
+                field,
+                const SizedBox(height: 12),
+              ],
+              if (_error != null)
+                Text(
+                  _error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
             ],
-            if (_error != null)
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-          ],
+          ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _busy && widget.onCancel == null
+                ? null
+                : () {
+                    if (_busy) widget.onCancel?.call();
+                    Navigator.pop(context);
+                  },
+            child: Text(tr.commonCancel),
+          ),
+          FilledButton(
+            onPressed: _busy ? null : _submit,
+            child: Text(widget.submitLabel ?? tr.commonSave),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.pop(context),
-          child: Text(tr.commonCancel),
-        ),
-        FilledButton(
-          onPressed: _busy ? null : _submit,
-          child: Text(widget.submitLabel ?? tr.commonSave),
-        ),
-      ],
     );
   }
 }

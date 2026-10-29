@@ -53,10 +53,12 @@ extension _OverviewRoutes on FamioApi {
                   Collections.externalEvents,
                 ])
                   for (final r in visible(collection))
-                    ...CalendarEvent.fromRecord(r).occurrencesBetween(
-                      today,
-                      today.add(const Duration(days: 60)),
-                    ),
+                    ...CalendarEvent.fromRecord(r)
+                        .inTimeZone(location.name)
+                        .occurrencesBetween(
+                          today,
+                          today.add(const Duration(days: 60)),
+                        ),
               ])
               .take(5)
               .toList();
@@ -64,7 +66,7 @@ extension _OverviewRoutes on FamioApi {
     // --- countdowns -----------------------------------------------------
     final countdowns = <(int, DateTime, Map<String, Object?>)>[];
     for (final r in visible(Collections.events)) {
-      final event = CalendarEvent.fromRecord(r);
+      final event = CalendarEvent.fromRecord(r).inTimeZone(location.name);
       if (!event.countdown) continue;
       final next = event
           .occurrencesBetween(now, today.add(const Duration(days: 366)))

@@ -263,7 +263,7 @@ extension _CalendarRoutes on FamioApi {
     final result = <(DateTime, Map<String, Object?>)>[];
     for (final collection in [Collections.events, Collections.externalEvents]) {
       for (final r in records.all(collection, visibleToMember: member.id)) {
-        final event = CalendarEvent.fromRecord(r);
+        final event = CalendarEvent.fromRecord(r).inTimeZone(location.name);
         for (final o in event.occurrencesBetween(from, to)) {
           final source = event.sourceId;
           result.add((
@@ -322,7 +322,7 @@ extension _CalendarRoutes on FamioApi {
     final (feed, userId) = found;
     final events = [
       for (final r in records.all(Collections.events, visibleToMember: userId))
-        (CalendarEvent.fromRecord(r), r),
+        (CalendarEvent.fromRecord(r).inTimeZone(location.name), r),
     ].where((e) => feed.scope == FeedScope.all || e.$1.involves(userId));
     return Response.ok(
       exportIcs(

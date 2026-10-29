@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:cryptography/dart.dart';
 
 import '../collections.dart';
+import '../calendar_clock.dart';
 import '../sync_record.dart';
 import 'event.dart';
 import 'task.dart';
@@ -66,7 +67,7 @@ class AssignmentRequest {
   final DateTime? occurrence;
   final DateTime? deadline;
 
-  String get id => _digest([
+  late final String id = _digest([
     target.collection,
     target.id,
     memberId,
@@ -74,7 +75,9 @@ class AssignmentRequest {
     occurrence?.millisecondsSinceEpoch,
   ]);
 
-  String get fingerprint {
+  late final String fingerprint = _fingerprint();
+
+  String _fingerprint() {
     final keys = target.collection == Collections.tasks
         ? const ['title', 'notes', 'due', 'repeat', 'repeatEvery', 'photos']
         : const [
@@ -143,6 +146,7 @@ class AssignmentResponse {
 List<AssignmentRequest> assignmentRequests(
   SyncRecord target, {
   DateTime? occurrence,
+  String? timeZone,
 }) {
   if (target.deleted || !AssignmentSettings.fromData(target.data).required) {
     return [];
@@ -159,12 +163,19 @@ List<AssignmentRequest> assignmentRequests(
           kind: AssignmentKind.task,
           deadline: due == null
               ? null
-              : DateTime(due.year, due.month, due.day, 23, 59),
+              : calendarDate(
+                  inCalendarZone(due, timeZone, dateOnly: true),
+                  due.year,
+                  due.month,
+                  due.day,
+                  23,
+                  59,
+                ),
         ),
     ];
   }
   if (target.collection != Collections.events) return [];
-  final event = CalendarEvent.fromRecord(target);
+  final event = CalendarEvent.fromRecord(target).inTimeZone(timeZone);
   if (event.recurrence != null && event.recurrence!.interval < 1) return [];
   final at = occurrence ?? event.start;
   final actual = event
@@ -172,22 +183,48 @@ List<AssignmentRequest> assignmentRequests(
       .where((o) => o.start.isAtSameMomentAs(at))
       .firstOrNull;
   if (actual == null) return [];
+  return _eventRequests(target, event, actual);
+}
+
+List<AssignmentRequest> assignmentRequestsBetween(
+  SyncRecord target,
+  DateTime from,
+  DateTime to, {
+  String? timeZone,
+}) {
+  if (target.deleted || !AssignmentSettings.fromData(target.data).required) {
+    return [];
+  }
+  if (target.collection == Collections.tasks) {
+    return assignmentRequests(target, timeZone: timeZone);
+  }
+  if (target.collection != Collections.events) return [];
+  final event = CalendarEvent.fromRecord(target).inTimeZone(timeZone);
   return [
-    if (event.bringerId case final id?)
-      AssignmentRequest(
-        target: target,
-        memberId: id,
-        kind: AssignmentKind.bring,
-        occurrence: actual.start,
-        deadline: actual.start,
-      ),
-    if (event.pickerId case final id?)
-      AssignmentRequest(
-        target: target,
-        memberId: id,
-        kind: AssignmentKind.pick,
-        occurrence: actual.start,
-        deadline: actual.end,
-      ),
+    for (final occurrence in event.occurrencesBetween(from, to))
+      ..._eventRequests(target, event, occurrence),
   ];
 }
+
+List<AssignmentRequest> _eventRequests(
+  SyncRecord target,
+  CalendarEvent event,
+  Occurrence actual,
+) => [
+  if (event.bringerId case final id?)
+    AssignmentRequest(
+      target: target,
+      memberId: id,
+      kind: AssignmentKind.bring,
+      occurrence: actual.start,
+      deadline: actual.start,
+    ),
+  if (event.pickerId case final id?)
+    AssignmentRequest(
+      target: target,
+      memberId: id,
+      kind: AssignmentKind.pick,
+      occurrence: actual.start,
+      deadline: actual.end,
+    ),
+];

@@ -28,6 +28,10 @@ class LocalStore {
     }
   }
 
+  /// Uses an adapter with the same transaction contract on every platform.
+  factory LocalStore.fromBackend(RecordBackend backend) =>
+      LocalStore._(backend);
+
   /// Opens the store at [path], encrypted with [hexKey]; pass `:memory:`
   /// for tests. In the browser everything stays in memory.
   factory LocalStore.open(String path, {String? hexKey}) =>
@@ -58,6 +62,10 @@ class LocalStore {
 
   final RecordBackend _backend;
   final _cache = <String, Map<String, LocalRecord>>{};
+  Map<(String, String), LocalRecord?>? _undo;
+
+  void _remember(String collection, String id) =>
+      _undo?.putIfAbsent((collection, id), () => get(collection, id));
 
   LocalRecord? get(String collection, String id) => _cache[collection]?[id];
 
@@ -68,6 +76,7 @@ class LocalStore {
       _cache.values.expand((c) => c.values).where((r) => r.dirty);
 
   void put(SyncRecord record, {required bool dirty}) {
+    _remember(record.collection, record.id);
     _backend.put(record, dirty: dirty);
     _cache.putIfAbsent(record.collection, () => {})[record.id] = LocalRecord(
       record,
@@ -78,6 +87,7 @@ class LocalStore {
   void markClean(String collection, String id) {
     final local = get(collection, id);
     if (local == null || !local.dirty) return;
+    _remember(collection, id);
     if (local.record.deleted) {
       // The server has the deletion; the device needs no copy.
       remove(collection, id);
@@ -88,6 +98,7 @@ class LocalStore {
   }
 
   void remove(String collection, String id) {
+    _remember(collection, id);
     _backend.remove(collection, id);
     _cache[collection]?.remove(id);
   }
@@ -100,14 +111,30 @@ class LocalStore {
 
   /// Runs [action] in one SQLite transaction.
   T transaction<T>(T Function() action) {
+    if (_undo != null) throw StateError('Nested transaction');
     _backend.begin();
+    final undo = _undo = <(String, String), LocalRecord?>{};
     try {
       final result = action();
       _backend.commit();
       return result;
     } catch (_) {
-      _backend.rollback();
+      try {
+        _backend.rollback();
+      } finally {
+        for (final entry in undo.entries) {
+          final (collection, id) = entry.key;
+          final previous = entry.value;
+          if (previous == null) {
+            _cache[collection]?.remove(id);
+          } else {
+            _cache.putIfAbsent(collection, () => {})[id] = previous;
+          }
+        }
+      }
       rethrow;
+    } finally {
+      _undo = null;
     }
   }
 

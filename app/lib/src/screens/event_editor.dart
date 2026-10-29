@@ -158,14 +158,18 @@ class _EventEditorState extends State<_EventEditor> {
       _countdown = o.event.countdown;
       _confirmation = o.event.assignmentConfirmation;
     } else {
-      final day = widget.day ?? DateUtils.dateOnly(DateTime.now());
-      final now = DateTime.now();
+      final now = inCalendarZone(
+        DateTime.now(),
+        AppScope.read(context).engine!.familyTimeZone,
+      );
+      final day = widget.day ?? now;
       // Next full hour today, 9:00 on other days.
       final hour = DateUtils.isSameDay(day, now)
           ? (now.hour + 1).clamp(0, 23)
           : 9;
       _allDay = false;
-      _start = widget.start ?? DateTime(day.year, day.month, day.day, hour);
+      _start =
+          widget.start ?? calendarDate(now, day.year, day.month, day.day, hour);
       _end = widget.end ?? _start.add(const Duration(hours: 1));
       _repeat = _Repeat.none;
       _memberIds = {...?widget.memberIds};
@@ -183,20 +187,31 @@ class _EventEditorState extends State<_EventEditor> {
 
   /// Last day shown to the user; all-day ends are stored exclusive.
   DateTime get _endDay => _allDay
-      ? DateTime(_end.year, _end.month, _end.day - 1)
-      : DateUtils.dateOnly(_end);
+      ? calendarDate(_end, _end.year, _end.month, _end.day - 1)
+      : calendarDate(_end, _end.year, _end.month, _end.day);
 
   void _setAllDay(bool allDay) => setState(() {
     if (allDay == _allDay) return;
     _allDay = allDay;
-    final startDay = DateUtils.dateOnly(_start);
-    final endDay = DateUtils.dateOnly(_end);
+    final startDay = calendarDate(
+      _start,
+      _start.year,
+      _start.month,
+      _start.day,
+    );
+    final endDay = calendarDate(_end, _end.year, _end.month, _end.day);
     if (allDay) {
       _start = startDay;
-      _end = DateTime(endDay.year, endDay.month, endDay.day + 1);
+      _end = calendarDate(_end, endDay.year, endDay.month, endDay.day + 1);
       _reminder = _reminder == null ? null : 360;
     } else {
-      _start = DateTime(startDay.year, startDay.month, startDay.day, 9);
+      _start = calendarDate(
+        _start,
+        startDay.year,
+        startDay.month,
+        startDay.day,
+        9,
+      );
       _end = _start.add(const Duration(hours: 1));
       _reminder = _reminder == null ? null : 15;
     }
@@ -207,7 +222,8 @@ class _EventEditorState extends State<_EventEditor> {
     if (picked == null) return;
     setState(() {
       final length = _end.difference(_start);
-      _start = DateTime(
+      _start = calendarDate(
+        _start,
         picked.year,
         picked.month,
         picked.day,
@@ -223,8 +239,9 @@ class _EventEditorState extends State<_EventEditor> {
     if (picked == null) return;
     setState(() {
       _end = _allDay
-          ? DateTime(picked.year, picked.month, picked.day + 1)
-          : DateTime(
+          ? calendarDate(_end, picked.year, picked.month, picked.day + 1)
+          : calendarDate(
+              _end,
               picked.year,
               picked.month,
               picked.day,
@@ -243,7 +260,8 @@ class _EventEditorState extends State<_EventEditor> {
     );
     if (picked == null) return;
     setState(() {
-      final updated = DateTime(
+      final updated = calendarDate(
+        value,
         value.year,
         value.month,
         value.day,
@@ -264,7 +282,7 @@ class _EventEditorState extends State<_EventEditor> {
   void _fixOrder() {
     if (!_end.isBefore(_start)) return;
     if (_allDay) {
-      _end = DateTime(_start.year, _start.month, _start.day + 1);
+      _end = calendarDate(_start, _start.year, _start.month, _start.day + 1);
     } else {
       _end = _start.add(const Duration(hours: 1));
     }

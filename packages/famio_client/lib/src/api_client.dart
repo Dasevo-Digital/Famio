@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:famio_shared/famio_shared.dart';
 
@@ -6,6 +7,8 @@ import 'google_login_result.dart';
 import 'platform/net.dart';
 import 'package:http/http.dart' as http;
 import 'client_texts.dart';
+
+part 'api_transfers.dart';
 
 /// Error returned by the server, or a connection problem ([status] 0).
 class ApiError implements Exception {
@@ -1345,69 +1348,44 @@ class FamioApiClient {
   Future<void> restoreTrash(String id) =>
       _send('POST', 'api/trash/$id/restore');
 
-  /// Uploads a file; reference the returned [FileRef] from a record so other
-  /// members may download it.
   Future<FileRef> uploadFile({
     required List<int> bytes,
     required String name,
     required String mime,
-  }) async {
-    final request =
-        http.Request(
-            'POST',
-            baseUrl
-                .resolve('api/files')
-                .replace(queryParameters: {'name': name}),
-          )
-          ..headers['content-type'] = mime
-          ..bodyBytes = bytes;
-    request.headers.addAll(authHeaders);
-    final http.Response response;
-    try {
-      response = await http.Response.fromStream(
-        await _http.send(request).timeout(const Duration(minutes: 5)),
-      );
-    } catch (e) {
-      throw ApiError(0, 'network', ClientTexts.uploadFailed(e));
-    }
-    final json = _decode(response);
-    return FileRef.fromJson(json)!;
-  }
+  }) => _uploadFile(bytes: bytes, name: name, mime: mime);
 
-  /// Downloads a file or, with [thumb] (160, 480 or 1280), a JPEG preview.
-  Future<List<int>> downloadFile(String id, {int? thumb}) async {
-    final response = await _http
-        .get(fileUrl(id, thumb: thumb), headers: authHeaders)
-        .timeout(const Duration(minutes: 5));
-    if (response.statusCode != 200) _decode(response);
-    return response.bodyBytes;
-  }
+  Future<List<int>> downloadFile(String id, {int? thumb}) =>
+      _downloadFile(id, thumb: thumb);
 
-  /// A ZIP of the member's own data or, with [family] (admins), of the
-  /// whole family; [password] confirms it.
   Future<List<int>> exportData({
     required String password,
     bool family = false,
-  }) async {
-    final request =
-        http.Request(
-            'POST',
-            baseUrl.resolve(family ? 'api/admin/export' : 'api/me/export'),
-          )
-          ..headers.addAll(authHeaders)
-          ..headers['content-type'] = 'application/json'
-          ..body = jsonEncode({'password': password});
-    final http.Response response;
-    try {
-      response = await http.Response.fromStream(
-        await _http.send(request).timeout(const Duration(minutes: 10)),
-      );
-    } catch (e) {
-      throw ApiError(0, 'network', ClientTexts.unreachable(e));
-    }
-    if (response.statusCode != 200) _decode(response);
-    return response.bodyBytes;
-  }
+    TransferCancellation? cancellation,
+    void Function(int, int?)? onProgress,
+    int maxBytes = 64 * 1024 * 1024,
+  }) => _exportData(
+    password: password,
+    family: family,
+    cancellation: cancellation,
+    onProgress: onProgress,
+    maxBytes: maxBytes,
+  );
+
+  Future<void> exportDataToSink(
+    StreamSink<List<int>> sink, {
+    required String password,
+    bool family = false,
+    TransferCancellation? cancellation,
+    void Function(int, int?)? onProgress,
+    int maxBytes = 16 * 1024 * 1024 * 1024,
+  }) => _exportDataToSink(
+    sink,
+    password: password,
+    family: family,
+    cancellation: cancellation,
+    onProgress: onProgress,
+    maxBytes: maxBytes,
+  );
 
   Uri fileUrl(String id, {int? thumb}) => baseUrl
       .resolve('api/files/$id')
@@ -1512,23 +1490,14 @@ class FamioApiClient {
       request.body = jsonEncode(body);
     }
 
-    final http.Response response;
-    try {
-      response = await http.Response.fromStream(
-        await _http.send(request).timeout(timeout),
-      );
-    } on http.ClientException catch (e) {
-      throw ApiError(
-        0,
-        'network',
-        e.message.contains('CERTIFICATE_VERIFY_FAILED')
-            ? tlsRejected
-            : ClientTexts.unreachable(e.message),
-      );
-    } catch (e) {
-      if (isTlsFailure(e)) throw ApiError(0, 'network', tlsRejected);
-      throw ApiError(0, 'network', ClientTexts.unreachable(e));
-    }
+    final response = await _bufferedTransfer(
+      method,
+      request.url,
+      headers: request.headers,
+      body: body == null ? null : request.body,
+      timeout: timeout,
+      maxBytes: 160 * 1024 * 1024,
+    );
 
     return _decode(response);
   }

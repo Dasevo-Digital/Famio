@@ -351,6 +351,13 @@ const _migrations = [
     sent_at INTEGER NOT NULL
   );
   ''',
+  r'''
+  CREATE INDEX records_collection_rev ON records(collection, rev);
+  CREATE INDEX assignment_reminders_age ON assignment_reminders(sent_at);
+  CREATE INDEX assignment_response_target ON records(
+    json_extract(data, '$.targetCollection'), json_extract(data, '$.targetId')
+  ) WHERE collection = 'assignment_responses' AND deleted = 0;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

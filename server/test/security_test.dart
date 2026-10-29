@@ -227,7 +227,11 @@ void main() {
           ],
         );
         // … and must not reveal the record either.
-        expect(answer.rejected, isEmpty);
+        expect(answer.rejected, hasLength(2));
+        expect(
+          answer.rejected.every((r) => r.deleted && r.data.isEmpty),
+          isTrue,
+        );
         expect(answer.changes.where((c) => c.id == 'privat'), isEmpty);
 
         final still = (await sync(

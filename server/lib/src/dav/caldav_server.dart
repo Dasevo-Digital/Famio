@@ -478,7 +478,11 @@ class CalDavServer {
         final filter = _QueryFilter.parse(root);
         if (filter.component == 'VEVENT' && !collection.todos) {
           for (final r in _exposed(context, collection)) {
-            if (!filter.matches(CalendarEvent.fromRecord(r.record))) continue;
+            if (!filter.matches(
+              CalendarEvent.fromRecord(r.record).inTimeZone(location().name),
+            )) {
+              continue;
+            }
             responses.write(
               _response(
                 _resourceHref(user, collection, r.id),

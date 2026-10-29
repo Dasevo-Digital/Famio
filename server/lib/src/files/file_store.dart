@@ -23,7 +23,7 @@ Uint8List? _renderThumbnail((Uint8List bytes, int size) input) {
   final decoder = img.findDecoderForData(bytes);
   final info = decoder?.startDecode(bytes);
   if (info == null || info.width * info.height > _maxThumbPixels) return null;
-  final decoded = decoder!.decode(bytes);
+  final decoded = decoder!.decode(bytes, frame: 0);
   if (decoded == null) return null;
   final image = img.bakeOrientation(decoded);
   final landscape = image.width >= image.height;
@@ -310,6 +310,37 @@ class FileStore {
       removed++;
     }
     return removed;
+  }
+
+  Future<int>? _garbageRun;
+  Future<void> get maintenanceIdle async {
+    await _garbageRun;
+  }
+
+  Future<int> collectGarbageAsync() => _garbageRun ??= _collectGarbageBatches()
+      .whenComplete(() => _garbageRun = null);
+
+  Future<int> _collectGarbageBatches() async {
+    await records.prepareFileReferences();
+    final cutoff = DateTime.now().subtract(orphanGrace).millisecondsSinceEpoch;
+    var cursor = '';
+    var removed = 0;
+    while (true) {
+      final rows = _db.select(
+        'SELECT id FROM files WHERE created_at < ? AND id > ? ORDER BY id LIMIT 50',
+        [cutoff, cursor],
+      );
+      if (rows.isEmpty) return removed;
+      for (final row in rows) {
+        final id = row['id'] as String;
+        cursor = id;
+        if (records.referenced(id)) continue;
+        _db.execute('DELETE FROM files WHERE id = ?', [id]);
+        _deleteBlocks(id);
+        removed++;
+      }
+      await Future<void>.delayed(Duration.zero);
+    }
   }
 
   /// Deletes every upload and gives the space back. Returns their number.

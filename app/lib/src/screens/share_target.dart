@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../platform/upload_bytes.dart';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -187,7 +188,10 @@ Future<void> showShareTarget(
         go(FamioSection.documents);
         await WidgetsBinding.instance.endOfFrame;
         for (final f in files) {
-          final bytes = await File(f.path).readAsBytes();
+          final bytes = await readUploadBytes(
+            length: File(f.path).length,
+            openRead: File(f.path).openRead,
+          );
           final navigator = navigatorOf(FamioSection.documents);
           if (navigator == null) break;
           await navigator.push(
@@ -315,7 +319,10 @@ Future<List<FileRef>?> _upload(
 
 /// Like uploadPicked, keeping a local copy so it opens instantly.
 Future<FileRef> _uploadOne(AppState state, SharedFile f) async {
-  final bytes = await File(f.path).readAsBytes();
+  final bytes = await readUploadBytes(
+    length: File(f.path).length,
+    openRead: File(f.path).openRead,
+  );
   final ref = await state.engine!.api.uploadFile(
     bytes: bytes,
     name: f.name,

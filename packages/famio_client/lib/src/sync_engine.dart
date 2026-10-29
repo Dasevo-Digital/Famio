@@ -90,6 +90,8 @@ class SyncEngine {
 
   /// Change hints arrive over the WebSocket right now (polling is rare).
   bool get live => _socketUp;
+
+  String? get familyTimeZone => store.getMeta('familyTimeZone');
   var _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
   var _reconnectDelay = const Duration(seconds: 2);
 
@@ -354,7 +356,7 @@ class SyncEngine {
         _apply(pushed, response);
         _unsupported.addAll(response.unsupported);
         more = response.hasMore || _pushable.isNotEmpty;
-        if (!response.hasMore && received != null) {
+        if (!more && received != null) {
           _dropMissing(received);
           store.setMeta('syncReset', '0');
           received = null;
@@ -435,6 +437,10 @@ class SyncEngine {
       _blocked.removeWhere(
         (key, issue) => identical(previousBlocked[key], issue),
       );
+      if (response.timeZone != null && response.timeZone != familyTimeZone) {
+        store.setMeta('familyTimeZone', response.timeZone);
+        changed.addAll([Collections.events, Collections.externalEvents]);
+      }
       store.setMeta('lastRev', '${response.rev}');
       if (response.scope != null) store.setMeta('syncScope', response.scope!);
       store.setMeta('clockOffset', '$_clockOffset');

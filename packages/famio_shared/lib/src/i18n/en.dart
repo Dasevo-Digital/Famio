@@ -1317,4 +1317,7 @@ const sharedEn = <String, String>{
       "To confirm, you need your password and, if enabled, your two-factor code. As the last administrator, you must first hand over the administration to another member.",
   "Server|Der Kopplungscode ist ungültig oder abgelaufen.":
       "The pairing code is invalid or has expired.",
+  'Client|Die Datei überschreitet die Größenbegrenzung für diese Übertragung.':
+      'The file exceeds the size limit for this transfer.',
+  'Client|Übertragung abgebrochen': 'Transfer cancelled',
 };

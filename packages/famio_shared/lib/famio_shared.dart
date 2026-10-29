@@ -1,6 +1,9 @@
 /// Shared models and sync protocol used by the Famio server and app.
 library;
 
+export 'src/http_transfer.dart';
+export 'src/calendar_clock.dart';
+
 export 'src/admin.dart';
 export 'src/caldav.dart';
 export 'src/catalog/checkups.dart';

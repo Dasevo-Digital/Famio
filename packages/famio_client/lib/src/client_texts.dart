@@ -35,6 +35,9 @@ abstract final class ClientTexts {
   static String get tlsFailed => _t('Verschlüsselte Verbindung fehlgeschlagen');
 
   static String get notFamio => _t('Das ist kein Famio-Server');
+  static String get transferTooLarge =>
+      _t('Die Datei überschreitet die Größenbegrenzung für diese Übertragung.');
+  static String get transferCancelled => _t('Übertragung abgebrochen');
 
   static String uploadFailed(Object? error) =>
       _t('Upload fehlgeschlagen ({error})', {'error': error});
@@ -59,6 +62,8 @@ abstract final class ClientTexts {
     tlsRejected,
     tlsFailed,
     notFamio,
+    transferTooLarge,
+    transferCancelled,
     uploadFailed(''),
     unreachable(''),
     unexpectedAnswer(0),

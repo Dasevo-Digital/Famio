@@ -454,7 +454,7 @@ class FamioServerApp {
       records.expireTrash();
       if (records.expireConflicts() > 0) hub.notifyRev(records.currentRev);
       invites.collectGarbage();
-      files.collectGarbage();
+      unawaited(files.collectGarbageAsync());
       accounts.deleteExpiredSessions();
       locations.collectGarbage();
     });
@@ -472,6 +472,8 @@ class FamioServerApp {
     caldav.stop();
     lists.stop();
     allowances.stop();
+    await files.maintenanceIdle;
+    await push.idle;
     notices.close();
     push.close();
     await hub.close();

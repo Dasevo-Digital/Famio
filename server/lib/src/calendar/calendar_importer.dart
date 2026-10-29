@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
@@ -23,6 +22,7 @@ class CalendarImporter {
     this.access,
     http.Client? client,
     this.interval = const Duration(minutes: 30),
+    this.fetchTimeout = const Duration(seconds: 30),
     RemoteUrlPolicy? urlPolicy,
   }) : _http = client ?? http.Client(),
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
@@ -38,6 +38,7 @@ class CalendarImporter {
   /// Called after imported data changed, e.g. to notify connected clients.
   final void Function() onChanged;
   final Duration interval;
+  final Duration fetchTimeout;
   final http.Client _http;
   final RemoteUrlPolicy _urlPolicy;
 
@@ -121,9 +122,7 @@ class CalendarImporter {
         etag: !full && cached?.$1 == sub.url ? cached?.$2 : null,
       );
       if (response.statusCode == 304) {
-        await response.stream.drain<void>();
       } else if (response.statusCode != 200) {
-        await response.stream.drain<void>();
         throw _ImportError(switch (response.statusCode) {
           401 || 403 => t(
             'Zugriff verweigert (HTTP {status}). Ist es die geheime/öffentliche ICS-Adresse?',
@@ -133,7 +132,7 @@ class CalendarImporter {
           final code => t('Abruf fehlgeschlagen (HTTP {code})', {'code': code}),
         });
       } else {
-        final text = await _readLimited(response.stream);
+        final text = utf8.decode(response.bodyBytes, allowMalformed: true);
         if (!text.contains('BEGIN:VCALENDAR')) {
           throw _ImportError(
             t('Unter dieser Adresse liegt keine Kalenderdatei (ICS)'),
@@ -260,42 +259,64 @@ class CalendarImporter {
     return uri;
   }
 
-  static Future<String> _readLimited(Stream<List<int>> stream) async {
-    final bytes = BytesBuilder(copy: false);
-    await for (final chunk in stream) {
-      bytes.add(chunk);
-      if (bytes.length > _maxBytes) {
-        throw _ImportError(t('Kalenderdatei ist größer als 10 MB'));
-      }
-    }
-    return utf8.decode(bytes.takeBytes(), allowMalformed: true);
-  }
-
-  /// `package:http` follows redirects by default. Keep control here so a
-  /// public feed cannot redirect the server to its own private network.
-  Future<http.StreamedResponse> _get(Uri start, {String? etag}) async {
+  /// One budget includes DNS validation, redirects and every response body.
+  Future<http.Response> _get(Uri start, {String? etag}) async {
+    final cancellation = TransferCancellation();
+    final expired = Completer<void>();
+    final budget = Timer(fetchTimeout, () {
+      cancellation.cancel();
+      if (!expired.isCompleted) expired.complete();
+    });
     var target = start;
-    for (var hop = 0; hop < 6; hop++) {
-      await _urlPolicy.check(target);
-      final request = http.Request('GET', target)
-        ..followRedirects = false
-        ..headers['accept'] = 'text/calendar, */*'
-        ..headers['user-agent'] = 'Famio calendar import';
-      if (etag != null) request.headers['if-none-match'] = etag;
-      final response = await _http
-          .send(request)
-          .timeout(const Duration(seconds: 30));
-      final location = response.headers['location'];
-      if (response.statusCode >= 300 &&
-          response.statusCode < 400 &&
-          location != null) {
-        await response.stream.drain<void>();
-        target = target.resolve(location);
-        continue;
+    try {
+      for (var hop = 0; hop < 6; hop++) {
+        await Future.any<void>([
+          _urlPolicy.check(target),
+          expired.future.then(
+            (_) => throw TimeoutException('Calendar deadline'),
+          ),
+        ]);
+        if (cancellation.cancelled) throw TimeoutException('Calendar deadline');
+        final response = await httpTransfer(
+          client: _http,
+          method: 'GET',
+          url: target,
+          followRedirects: false,
+          timeout: fetchTimeout,
+          cancellation: cancellation,
+          headers: {
+            'accept': 'text/calendar, */*',
+            'user-agent': 'Famio calendar import',
+            'if-none-match': ?etag,
+          },
+          consume: (response, stream) async {
+            final limit = response.statusCode == 200 ? _maxBytes : 64 * 1024;
+            if ((response.contentLength ?? 0) > limit) throw TransferTooLarge();
+            return http.Response.bytes(
+              await readTransferBytes(stream, maxBytes: limit),
+              response.statusCode,
+              headers: response.headers,
+            );
+          },
+        );
+        final next = response.headers['location'];
+        if (response.statusCode >= 300 &&
+            response.statusCode < 400 &&
+            next != null) {
+          target = target.resolve(next);
+          continue;
+        }
+        return response;
       }
-      return response;
+      throw _ImportError(t('Zu viele Weiterleitungen beim Kalenderabruf'));
+    } on TransferCancelled {
+      throw TimeoutException('Calendar deadline');
+    } on TransferTooLarge {
+      throw _ImportError(t('Kalenderdatei ist größer als 10 MB'));
+    } finally {
+      budget.cancel();
+      cancellation.cancel();
     }
-    throw _ImportError(t('Zu viele Weiterleitungen beim Kalenderabruf'));
   }
 }
 

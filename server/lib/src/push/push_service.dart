@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 
 import 'package:famio_shared/famio_shared.dart';
@@ -86,7 +87,10 @@ class PushService {
   /// Sends still running (tests wait for them).
   final _pending = <Future<void>>{};
 
-  Future<void> get idle => Future.wait(_pending.toList());
+  Future<void> get idle async {
+    await _assignmentRun;
+    await Future.wait(_pending.toList());
+  }
 
   // --- targets -------------------------------------------------------------
 
@@ -300,62 +304,140 @@ class PushService {
     }
   }
 
-  /// Optional reminders for missing replies. Persisted keys prevent a
-  /// restart or a quiet-hours delivery from producing duplicate reminders.
-  void remindAssignments({DateTime? now}) {
-    final at = now ?? DateTime.now();
-    _db.execute('DELETE FROM assignment_reminders WHERE sent_at < ?', [
-      at.subtract(const Duration(days: 32)).millisecondsSinceEpoch,
-    ]);
+  Future<void>? _assignmentRun;
+  int _assignmentRev = -1;
+  String? _assignmentDay;
+  final _assignmentQueue =
+      Queue<({AssignmentRequest request, DateTime remindAt})>();
+  final _responseTargets = <String, (String, String)>{};
+
+  /// Plans follow revisions and the family's day. Quiet minute ticks only
+  /// inspect the next due item; persistent keys still deduplicate restarts.
+  Future<void> remindAssignments({DateTime? now}) =>
+      _assignmentRun ??= _remindAssignments(
+        now ?? DateTime.now(),
+      ).whenComplete(() => _assignmentRun = null);
+
+  Future<void> _remindAssignments(DateTime at) async {
+    final local = tz.TZDateTime.from(at, location());
+    final day = '${location().name}:${local.year}-${local.month}-${local.day}';
+    final rebuild = day != _assignmentDay;
+    final since = rebuild ? -1 : _assignmentRev;
+    final through = records.currentRev;
+    if (rebuild) {
+      _assignmentQueue.clear();
+      _responseTargets.clear();
+      _db.execute('DELETE FROM assignment_reminders WHERE sent_at < ?', [
+        at.subtract(const Duration(days: 32)).millisecondsSinceEpoch,
+      ]);
+    }
+    final changed = <(String, String), SyncRecord>{};
     for (final collection in [Collections.tasks, Collections.events]) {
-      for (final record in records.all(collection)) {
-        if (!recordDataIsValid(record)) continue;
+      for (final record in records.changesSince(collection, since, '').$1) {
+        if (record.rev <= through) changed[(collection, record.id)] = record;
+      }
+    }
+    for (final reply
+        in records
+            .changesSince(Collections.assignmentResponses, since, '')
+            .$1) {
+      if (reply.rev > through) continue;
+      final key = !reply.deleted && recordDataIsValid(reply)
+          ? (
+              reply.data['targetCollection'] as String,
+              reply.data['targetId'] as String,
+            )
+          : _responseTargets[reply.id];
+      if (reply.deleted) {
+        _responseTargets.remove(reply.id);
+      } else if (key != null) {
+        _responseTargets[reply.id] = key;
+      }
+      if (!rebuild && key != null) {
+        final parent = records.get(key.$1, key.$2);
+        if (parent != null) changed[key] = parent;
+      }
+    }
+    if (changed.isNotEmpty) {
+      _assignmentQueue.removeWhere(
+        (entry) => changed.containsKey((
+          entry.request.target.collection,
+          entry.request.target.id,
+        )),
+      );
+    }
+    var batch = 0;
+    for (final record in changed.values) {
+      if (!record.deleted && recordDataIsValid(record)) {
         final settings = AssignmentSettings.fromData(record.data);
         final minutes = settings.required ? settings.remindMinutes : null;
-        if (minutes == null) continue;
-        final requests = records.assignmentRequestsDue(
-          record,
-          at,
-          at.add(Duration(minutes: minutes + 1)),
-        );
-        for (final request in requests) {
-          final due = request.deadline;
-          if (due == null ||
-              !due.isAfter(at) ||
-              at.isBefore(due.subtract(Duration(minutes: minutes))) ||
-              accounts.byId(request.memberId) == null ||
-              !records.canAccess(record, request.memberId)) {
-            continue;
-          }
-          final reply = records.get(
-            Collections.assignmentResponses,
-            request.id,
-          );
-          if (reply != null &&
-              !reply.deleted &&
-              reply.data['fingerprint'] == request.fingerprint) {
-            continue;
-          }
-          final key = '${request.id}:${request.fingerprint}';
-          _db.execute(
-            'INSERT OR IGNORE INTO assignment_reminders (id, sent_at) VALUES (?, ?)',
-            [key, at.millisecondsSinceEpoch],
-          );
-          if (_db.updatedRows == 0) continue;
-          deliver(
-            () => PushNotice(
-              to: {request.memberId},
-              title: t('Zusage noch offen'),
-              body: t('Bitte die Zuständigkeit bestätigen: {title}', {
-                'title': record.data['title'] ?? '',
-              }),
-              brief: t('Eine Zuständigkeit wartet auf deine Rückmeldung'),
-              tag: 'clipboard',
-            ),
+        if (minutes != null) {
+          // Rebuild at the next family day; include a DST-safe extra day.
+          final requests = records.assignmentRequestsDue(
             record,
+            at,
+            at.add(Duration(minutes: minutes + 26 * 60)),
           );
+          for (final request in requests) {
+            if (request.deadline case final due? when due.isAfter(at)) {
+              _assignmentQueue.add((
+                request: request,
+                remindAt: due.subtract(Duration(minutes: minutes)),
+              ));
+            }
+          }
         }
       }
+      if (++batch % 16 == 0) await Future<void>.delayed(Duration.zero);
+    }
+    if (changed.isNotEmpty) {
+      final ordered = _assignmentQueue.toList()
+        ..sort((a, b) => a.remindAt.compareTo(b.remindAt));
+      _assignmentQueue
+        ..clear()
+        ..addAll(ordered);
+    }
+    _assignmentRev = through;
+    _assignmentDay = day;
+    var count = 0;
+    while (_assignmentQueue.isNotEmpty &&
+        !_assignmentQueue.first.remindAt.isAfter(at)) {
+      final request = _assignmentQueue.removeFirst().request;
+      final record = request.target;
+      final current = records.get(record.collection, record.id);
+      if (current == null ||
+          current.deleted ||
+          current.rev != record.rev ||
+          !request.deadline!.isAfter(at) ||
+          accounts.byId(request.memberId) == null ||
+          !records.canAccess(current, request.memberId)) {
+        continue;
+      }
+      final reply = records.get(Collections.assignmentResponses, request.id);
+      if (reply != null &&
+          !reply.deleted &&
+          reply.data['fingerprint'] == request.fingerprint) {
+        continue;
+      }
+      final key = '${request.id}:${request.fingerprint}';
+      _db.execute(
+        'INSERT OR IGNORE INTO assignment_reminders (id, sent_at) VALUES (?, ?)',
+        [key, at.millisecondsSinceEpoch],
+      );
+      if (_db.updatedRows == 0) continue;
+      deliver(
+        () => PushNotice(
+          to: {request.memberId},
+          title: t('Zusage noch offen'),
+          body: t('Bitte die Zuständigkeit bestätigen: {title}', {
+            'title': record.data['title'] ?? '',
+          }),
+          brief: t('Eine Zuständigkeit wartet auf deine Rückmeldung'),
+          tag: 'clipboard',
+        ),
+        record,
+      );
+      if (++count % 32 == 0) await Future<void>.delayed(Duration.zero);
     }
   }
 

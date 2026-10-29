@@ -412,6 +412,57 @@ void main() {
   );
 
   test(
+    'cached plans follow new assignments, edits, deletion and withdrawn replies',
+    () async {
+      final due = DateTime(2027, 5, 4);
+      final record = task(due: due, reminder: 1440);
+      final requests = app.records.assignmentRequestsFor(record);
+      app.records.writeAs(first.id, [response(requests[0])]);
+      app.records.writeAs(second.id, [response(requests[1])]);
+      await app.push.idle;
+      final notices = <PushNotice>[];
+      app.push.onNotice = (_, notice, _) {
+        if (notice.tag == 'clipboard') notices.add(notice);
+      };
+      final at = requests.first.deadline!.subtract(const Duration(hours: 1));
+      await app.push.remindAssignments(now: at);
+      expect(notices, isEmpty);
+      final reply = app.records.get(
+        Collections.assignmentResponses,
+        requests.first.id,
+      )!;
+      app.records.writeAs(first.id, [
+        reply.copyWith(
+          deleted: true,
+          updatedAt: reply.updatedAt + 1,
+          data: const {},
+        ),
+      ]);
+      await app.push.remindAssignments(now: at.add(const Duration(minutes: 1)));
+      expect(notices, hasLength(1));
+      final changed = task(
+        title: 'Changed after planning',
+        due: due,
+        reminder: 1440,
+      );
+      await app.push.remindAssignments(now: at.add(const Duration(minutes: 2)));
+      expect(notices, hasLength(3));
+      app.records.writeAs(owner.id, [
+        changed.copyWith(
+          deleted: true,
+          updatedAt: changed.updatedAt + 1,
+          data: const {},
+        ),
+      ]);
+      await app.push.remindAssignments(now: at.add(const Duration(minutes: 3)));
+      expect(notices, hasLength(3));
+      task(title: 'New assignment', due: due, reminder: 1440);
+      await app.push.remindAssignments(now: at.add(const Duration(minutes: 4)));
+      expect(notices, hasLength(5));
+    },
+  );
+
+  test(
     'lift confirmations and reminders follow the family zone over DST',
     () async {
       final start = DateTime.utc(2027, 3, 27, 9);
