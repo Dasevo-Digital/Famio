@@ -1,6 +1,88 @@
 part of 'record_store.dart';
 
 extension RecordFiles on RecordStore {
+  SyncRecord _canonicalFiles(SyncRecord record) {
+    final resolve = canonicalFile;
+    if (resolve == null) return record;
+    try {
+      return mapRecordFiles(record, resolve);
+    } on FormatException {
+      return record; // Damaged records retain their existing quarantine.
+    } on TypeError {
+      return record;
+    }
+  }
+
+  /// Once after upgrading, repair legacy metadata without changing authors
+  /// or edit times. Batches bound memory; new revisions reach existing clients.
+  int repairFileMetadata() {
+    const key = 'canonicalFileMetadata1';
+    if (canonicalFile == null ||
+        _db.select('SELECT 1 FROM settings WHERE key = ?', [key]).isNotEmpty) {
+      return 0;
+    }
+    var repaired = 0, cursor = 0;
+    SyncRecord? readable(Row row, {bool trash = false}) {
+      try {
+        return trash ? _trashEntry(row).record : RecordStore._record(row);
+      } on FormatException {
+        return null;
+      } on TypeError {
+        return null;
+      }
+    }
+
+    // Replacements get new rowids, so fix the scan's original upper bound.
+    final last =
+        _db
+                .select('SELECT COALESCE(MAX(rowid), 0) FROM records')
+                .first
+                .columnAt(0)
+            as int;
+    while (cursor < last) {
+      final rows = _db.select(
+        'SELECT rowid AS scan_id, * FROM records WHERE rowid > ? AND rowid <= ? ORDER BY rowid LIMIT 100',
+        [cursor, last],
+      );
+      if (rows.isEmpty) break;
+      _transaction(() {
+        for (final row in rows) {
+          cursor = row['scan_id'] as int;
+          final old = readable(row);
+          if (old == null) continue;
+          final next = _canonicalFiles(old);
+          if (identical(old, next)) continue;
+          _put(next, previous: old);
+          repaired++;
+        }
+      });
+    }
+    cursor = 0;
+    while (true) {
+      final rows = _db.select(
+        'SELECT rowid AS scan_id, * FROM trash WHERE rowid > ? ORDER BY rowid LIMIT 100',
+        [cursor],
+      );
+      if (rows.isEmpty) break;
+      _transaction(() {
+        for (final row in rows) {
+          cursor = row['scan_id'] as int;
+          final old = readable(row, trash: true);
+          if (old == null) continue;
+          final next = _canonicalFiles(old);
+          if (identical(old, next)) continue;
+          _db.execute('UPDATE trash SET snapshot = ? WHERE rowid = ?', [
+            jsonEncode(next.toJson()),
+            cursor,
+          ]);
+          repaired++;
+        }
+      });
+    }
+    _db.execute('INSERT INTO settings (key, value) VALUES (?, ?)', [key, '1']);
+    return repaired;
+  }
+
   void _indexFileRecord(SyncRecord record) {
     final key = (record.collection, record.id);
     for (final file in _filesByRecord.remove(key) ?? const <String>{}) {

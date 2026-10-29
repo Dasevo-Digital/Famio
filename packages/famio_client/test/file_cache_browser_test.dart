@@ -8,6 +8,30 @@ import 'package:http/testing.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test(
+    'buffered browser reads use actual bytes rather than an old large reference size',
+    () async {
+      final api = FamioApiClient(
+        'http://localhost',
+        httpClient: MockClient(
+          (_) async => http.Response.bytes([1, 2, 3, 4], 200),
+        ),
+      );
+      final cache = FileCache.open('fixture', api, tempDir: 'unused');
+      addTearDown(() {
+        cache.close();
+        api.close();
+      });
+      final ref = FileRef(
+        id: newId(),
+        name: 'fixture',
+        mime: 'text/plain',
+        size: 129 * 1024 * 1024,
+      );
+      expect(await cache.bytes(ref), [1, 2, 3, 4]);
+      expect(await cache.bytes(ref), [1, 2, 3, 4]);
+    },
+  );
   for (final close in [false, true]) {
     test(
       '${close ? 'close' : 'clear'} invalidates an unfinished browser file copy',

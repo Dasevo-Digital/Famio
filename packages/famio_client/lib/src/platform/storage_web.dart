@@ -54,9 +54,11 @@ class _MemoryBlobs implements BlobBackend {
   }
 
   @override
-  Stream<List<int>>? readStream(String key) {
+  ({int size, Stream<List<int>> stream})? readStream(String key) {
     final value = read(key);
-    return value == null ? null : Stream.value(value);
+    return value == null
+        ? null
+        : (size: value.length, stream: Stream.value(value));
   }
 
   @override
@@ -64,19 +66,27 @@ class _MemoryBlobs implements BlobBackend {
     String key,
     Stream<List<int>> input, {
     required int expectedBytes,
+    TransferCancellation? cancellation,
   }) async {
     final generation = _generation;
     _check(generation);
+    void active() {
+      _check(generation);
+      if (cancellation?.cancelled ?? false) {
+        throw StateError('Cache copy cancelled');
+      }
+    }
+
     Stream<List<int>> current() async* {
       await for (final chunk in input) {
-        _check(generation);
+        active();
         yield chunk;
       }
-      _check(generation);
+      active();
     }
 
     final bytes = await readTransferBytes(current(), maxBytes: limit ~/ 4);
-    _check(generation);
+    active();
     if (bytes.length != expectedBytes) {
       throw const FormatException('File length mismatch');
     }
@@ -86,11 +96,14 @@ class _MemoryBlobs implements BlobBackend {
   var _bytes = 0;
 
   @override
-  List<int>? read(String key) {
+  List<int>? read(String key, {int? maxBytes}) {
     _check(_generation);
     // Most recently used last.
     final data = _blobs.remove(key);
     if (data != null) _blobs[key] = data;
+    if (data != null && maxBytes != null && data.length > maxBytes) {
+      throw TransferTooLarge();
+    }
     return data;
   }
 

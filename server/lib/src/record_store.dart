@@ -49,6 +49,7 @@ class RecordStore {
 
   /// Installed by FileStore: new attachments must already be accessible.
   bool Function(String fileId, String memberId)? mayReferenceFile;
+  FileRef Function(FileRef)? canonicalFile;
   int Function()? maxUploadBytes;
 
   /// The family's day (its time zone), for absences.
@@ -528,6 +529,11 @@ class RecordStore {
           );
           continue;
         }
+        final canonical = _canonicalFiles(incoming);
+        if (!identical(canonical, incoming)) {
+          _validate(canonical);
+          incoming = canonical;
+        }
         if (existing != null && !incoming.winsOver(existing)) {
           _keepConflict(
             lost: incoming,
@@ -838,6 +844,11 @@ class RecordStore {
     List<String>? before,
     SyncRecord? deletionSnapshot,
   }) {
+    r = _canonicalFiles(r);
+    if (deletionSnapshot != null) {
+      deletionSnapshot = _canonicalFiles(deletionSnapshot);
+    }
+    if (previous != null) previous = _canonicalFiles(previous);
     if (r.deleted && previous != null) {
       final audience = _audience(previous);
       r = r.copyWith(data: {SyncRecord.visibilityKey: ?audience});

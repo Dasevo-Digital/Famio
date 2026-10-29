@@ -184,15 +184,7 @@ Iterable<String> recordFileIds(SyncRecord record) sync* {
     }
     return;
   }
-  final fields = switch (record.collection) {
-    Collections.tasks || Collections.childEntries => ['photos'],
-    Collections.children || Collections.recipes => ['photo'],
-    Collections.chatMessages => ['attachment'],
-    Collections.documents => ['file'],
-    Collections.inbox => ['files'],
-    _ => const <String>[],
-  };
-  for (final field in fields) {
+  for (final field in _fileFields(record.collection)) {
     final value = record.data[field];
     if (value == null) continue;
     final values = field == 'photos' || field == 'files'
@@ -206,4 +198,59 @@ Iterable<String> recordFileIds(SyncRecord record) sync* {
       yield ref.id;
     }
   }
+}
+
+List<String> _fileFields(String collection) => switch (collection) {
+  Collections.tasks || Collections.childEntries => ['photos'],
+  Collections.children || Collections.recipes => ['photo'],
+  Collections.chatMessages => ['attachment'],
+  Collections.documents => ['file'],
+  Collections.inbox => ['files'],
+  _ => const <String>[],
+};
+
+/// Replaces known attachment metadata, preserving unknown fields and text.
+/// The callback must only resolve files whose identity has been checked.
+SyncRecord mapRecordFiles(SyncRecord record, FileRef Function(FileRef) map) {
+  if (record.deleted) return record;
+  if (record.collection == Collections.conflicts) {
+    final conflict = SyncConflict.fromRecord(record);
+    if (conflict.lostDeleted || conflict.collection == Collections.conflicts) {
+      return record;
+    }
+    final lost = SyncRecord(
+      collection: conflict.collection,
+      id: conflict.recordId,
+      data: conflict.lost,
+      updatedAt: 0,
+    );
+    final next = mapRecordFiles(lost, map);
+    return identical(next, lost)
+        ? record
+        : record.copyWith(data: {...record.data, 'lost': next.data});
+  }
+  var changed = false;
+  Object? replace(Object? value) {
+    final ref = FileRef.fromJson(value);
+    if (ref == null || ref.id.isEmpty) {
+      throw const FormatException('Invalid file reference');
+    }
+    final next = map(ref);
+    if (identical(next, ref)) return value;
+    final raw = (value as Map).cast<String, Object?>();
+    final canonical = next.toJson();
+    if (canonical.entries.every((e) => raw[e.key] == e.value)) return value;
+    changed = true;
+    return {...raw, ...canonical};
+  }
+
+  final data = {...record.data};
+  for (final field in _fileFields(record.collection)) {
+    final value = data[field];
+    if (value == null) continue;
+    data[field] = field == 'photos' || field == 'files'
+        ? [for (final entry in value as List) replace(entry)]
+        : replace(value);
+  }
+  return changed ? record.copyWith(data: data) : record;
 }

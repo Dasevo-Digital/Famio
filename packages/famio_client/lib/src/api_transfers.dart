@@ -109,9 +109,13 @@ extension _FileTransfers on FamioApiClient {
     StreamSink<List<int>> sink,
     String id, {
     required int expectedBytes,
+    int? maxBytes,
+    void Function(int)? onLength,
     TransferCancellation? cancellation,
   }) {
-    if (expectedBytes < 0 || expectedBytes > 4096 * 1024 * 1024) {
+    if (expectedBytes < 0 ||
+        expectedBytes > 4096 * 1024 * 1024 ||
+        (maxBytes != null && (maxBytes < 0 || maxBytes > 4096 * 1024 * 1024))) {
       return Future.error(
         ApiError(413, 'too_large', ClientTexts.transferTooLarge),
       );
@@ -120,8 +124,10 @@ extension _FileTransfers on FamioApiClient {
       'GET',
       fileUrl(id),
       sink,
-      maxBytes: expectedBytes,
+      maxBytes: maxBytes ?? expectedBytes,
       expectedBytes: expectedBytes,
+      responseLength: maxBytes != null,
+      onLength: onLength,
       cancellation: cancellation,
     );
   }
@@ -200,6 +206,8 @@ extension _FileTransfers on FamioApiClient {
     String? body,
     required int maxBytes,
     int? expectedBytes,
+    bool responseLength = false,
+    void Function(int)? onLength,
     TransferCancellation? cancellation,
     void Function(int, int?)? onProgress,
   }) async {
@@ -227,6 +235,10 @@ extension _FileTransfers on FamioApiClient {
           if ((response.contentLength ?? 0) > maxBytes) {
             throw TransferTooLarge();
           }
+          final length = responseLength
+              ? response.contentLength ?? expectedBytes
+              : expectedBytes;
+          if (length != null) onLength?.call(length);
           var received = 0;
           Stream<List<int>> bounded() async* {
             await for (final chunk in stream) {
@@ -235,7 +247,7 @@ extension _FileTransfers on FamioApiClient {
               onProgress?.call(received, response.contentLength);
               yield chunk;
             }
-            if (expectedBytes != null && received != expectedBytes) {
+            if (length != null && received != length) {
               throw ApiError(
                 0,
                 'invalid_response',

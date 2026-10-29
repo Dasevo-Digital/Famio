@@ -19,7 +19,13 @@ import 'platform/platform.dart';
 /// It keeps at most [maxBytes]; beyond that the files not shown for the
 /// longest time go first (they are downloaded again when needed).
 class FileCache {
-  FileCache._(this._blobs, this.api, this.tempDir, this.maxBytes);
+  FileCache._(
+    this._blobs,
+    this.api,
+    this.tempDir,
+    this.maxBytes,
+    this.copyTimeout,
+  );
 
   /// Opens the cache database at [path] (`:memory:` for tests; in the
   /// browser the cache stays in memory).
@@ -29,11 +35,13 @@ class FileCache {
     String? hexKey,
     required String tempDir,
     int maxBytes = defaultMaxBytes,
+    Duration copyTimeout = const Duration(minutes: 2),
   }) => FileCache._(
     openBlobBackend(path, hexKey: hexKey),
     api,
     tempDir,
     maxBytes,
+    copyTimeout,
   );
 
   /// Enough for thousands of previews and plenty of documents, little next
@@ -41,6 +49,7 @@ class FileCache {
   static const defaultMaxBytes = 500 * 1024 * 1024;
 
   final int maxBytes;
+  final Duration copyTimeout;
 
   final BlobBackend _blobs;
   final FamioApiClient api;
@@ -48,7 +57,7 @@ class FileCache {
   /// Folder where decrypted copies for other apps are written.
   final String tempDir;
   final _pending = <String, Future<Uint8List>>{};
-  final _streaming = <String, Future<void>>{};
+  final _streaming = <String, Future<String?>>{};
   final _cancellations = <TransferCancellation>{};
   var _generation = 0;
   var _closed = false;
@@ -73,17 +82,19 @@ class FileCache {
   Future<Uint8List> bytes(FileRef ref, {int? thumb}) {
     if (_closed) return Future.error(_cancelled());
     final generation = _generation;
-    if (thumb == null && ref.size > FamioApiClient.maxBufferedFileBytes) {
-      return Future.error(
-        ApiError(413, 'too_large', ClientTexts.transferTooLarge),
-      );
-    }
     final key = thumb == null ? ref.id : '${ref.id}_t$thumb';
     if (_recent.remove(key) case final data?) {
       _recent[key] = data;
       return Future.value(data);
     }
-    final cached = _read(key);
+    Uint8List? cached;
+    try {
+      cached = _read(key);
+    } on TransferTooLarge {
+      return Future.error(
+        ApiError(413, 'too_large', ClientTexts.transferTooLarge),
+      );
+    }
     if (cached != null) return Future.value(_remember(key, cached, thumb));
     return _pending[key] ??= () async {
       try {
@@ -127,24 +138,15 @@ class FileCache {
   Future<String> _openable(FileRef ref) async {
     final generation = _generation;
     _check(generation);
-    if (ref.size > maxBytes) {
-      // A file that cannot remain offline needs only one temporary disk copy.
-      return _receive(
-        ref,
-        (input) => writeTempStream(
-          tempDir,
-          '${newId()}_${_safe(ref.name)}',
-          input,
-          ref.size,
-        ),
-      );
-    }
     var stream = _blobs.readStream(ref.id);
     if (stream == null) {
-      await (_streaming[ref.id] ??= _download(ref).whenComplete(() {
-        if (_current(generation)) _streaming.remove(ref.id);
-      }));
+      final path = await (_streaming[ref.id] ??= _download(ref).whenComplete(
+        () {
+          if (_current(generation)) _streaming.remove(ref.id);
+        },
+      ));
       _check(generation);
+      if (path != null) return path;
       stream = _blobs.readStream(ref.id);
     }
     if (stream == null) {
@@ -152,7 +154,7 @@ class FileCache {
     }
     // Trim after the stream has pinned its source; this also permits opening
     // a single file larger than the normal offline cache budget.
-    final iterator = StreamIterator(stream);
+    final iterator = StreamIterator(stream.stream);
     Stream<List<int>> chunks() async* {
       while (await iterator.moveNext()) {
         yield iterator.current;
@@ -164,7 +166,7 @@ class FileCache {
         tempDir,
         '${newId()}_${_safe(ref.name)}',
         chunks(),
-        ref.size,
+        stream.size,
       );
     } finally {
       await iterator.cancel();
@@ -172,14 +174,25 @@ class FileCache {
     }
   }
 
-  Future<void> _download(FileRef ref) => _receive(
-    ref,
-    (input) => _blobs.writeStream(ref.id, input, expectedBytes: ref.size),
-  );
+  Future<String?> _download(FileRef ref) =>
+      _receive(ref, (input, length) async {
+        // The server's length decides whether this file fits offline, even
+        // when an old reference still carries different metadata.
+        if (length > maxBytes) {
+          return writeTempStream(
+            tempDir,
+            '${newId()}_${_safe(ref.name)}',
+            input,
+            length,
+          );
+        }
+        await _blobs.writeStream(ref.id, input, expectedBytes: length);
+        return null;
+      });
 
   Future<T> _receive<T>(
     FileRef ref,
-    Future<T> Function(Stream<List<int>>) store,
+    Future<T> Function(Stream<List<int>>, int) store,
   ) async {
     final generation = _generation;
     _check(generation);
@@ -191,19 +204,30 @@ class FileCache {
         listened = true;
       },
     );
-    final stored = store(body.stream);
+    Future<T>? stored;
+    final failed = Completer<void>();
     final transfer = api.downloadFileToSink(
       body.sink,
       ref.id,
-      expectedBytes: ref.size,
+      expectedBytes: ref.size.clamp(0, 4096 * 1024 * 1024),
+      maxBytes: 4096 * 1024 * 1024,
+      onLength: (length) {
+        stored = store(body.stream, length);
+        stored!.then<void>(
+          (_) {},
+          onError: (Object error, StackTrace stack) {
+            if (!failed.isCompleted) failed.completeError(error, stack);
+          },
+        );
+      },
       cancellation: cancellation,
     );
     try {
       // Observe both failures from the start; a disk error aborts a request
       // even while it is waiting indefinitely for the next body chunk.
-      await Future.any<void>([transfer, stored.then<void>((_) {})]);
+      await Future.any<void>([transfer, failed.future]);
       await body.close();
-      final result = await stored;
+      final result = await stored!;
       _check(generation);
       return result;
     } catch (error, stack) {
@@ -284,16 +308,15 @@ class FileCache {
         ref.size > this.maxBytes) {
       return ref;
     }
-    Stream<List<int>> verified() async* {
-      Digest? copied;
-      yield* _digesting(openRead(), (digest) => copied = digest);
-      if (copied != uploaded) {
-        throw const FormatException('Upload source changed');
-      }
-    }
-
     try {
-      await putStream(ref, verified());
+      await putStream(
+        ref,
+        _digesting(openRead(), (copied) {
+          if (copied != uploaded) {
+            throw const FormatException('Upload source changed');
+          }
+        }),
+      );
     } catch (_) {
       // The server already has the file; an optional offline copy may fail.
     }
@@ -304,9 +327,79 @@ class FileCache {
     final generation = _generation;
     _check(generation);
     if (ref.size > maxBytes) return;
-    await _blobs.writeStream(ref.id, data, expectedBytes: ref.size);
-    _check(generation);
-    _blobs.trim(maxBytes);
+    final cancellation = TransferCancellation();
+    _cancellations.add(cancellation);
+    final interrupted = Completer<void>();
+    StreamSubscription<List<int>>? source;
+    Object? failure;
+    void cancelSource() {
+      final active = source;
+      if (active != null) unawaited(active.cancel().catchError((Object _) {}));
+    }
+
+    late final StreamController<List<int>> body;
+    void stop(Object error) {
+      if (failure != null) return;
+      failure = error;
+      cancellation.cancel();
+      if (!interrupted.isCompleted) interrupted.completeError(error);
+      cancelSource();
+      if (!body.isClosed) {
+        body.addError(error);
+        unawaited(body.close());
+      }
+    }
+
+    body = StreamController<List<int>>(
+      onListen: () {
+        try {
+          source = data.listen(
+            (chunk) {
+              if (failure == null && !body.isClosed) body.add(chunk);
+            },
+            onError: (Object error, StackTrace stack) {
+              if (failure == null && !body.isClosed) {
+                body.addError(error, stack);
+              }
+            },
+            onDone: () {
+              if (!body.isClosed) unawaited(body.close());
+            },
+          );
+        } catch (error) {
+          stop(error);
+        }
+        if (failure != null) cancelSource();
+      },
+      onPause: () => source?.pause(),
+      onResume: () => source?.resume(),
+      onCancel: cancelSource,
+    );
+    final detach = cancellation.listen(
+      () => stop(StateError('Cache copy cancelled')),
+    );
+    final timer = Timer(
+      copyTimeout,
+      () => stop(TimeoutException('Offline copy deadline', copyTimeout)),
+    );
+    try {
+      final stored = _blobs.writeStream(
+        ref.id,
+        body.stream,
+        expectedBytes: ref.size,
+        cancellation: cancellation,
+      );
+      await Future.any<void>([stored, interrupted.future]);
+      _check(generation);
+      _blobs.trim(maxBytes);
+    } finally {
+      timer.cancel();
+      detach();
+      cancellation.cancel();
+      cancelSource();
+      if (!body.isClosed) unawaited(body.close());
+      _cancellations.remove(cancellation);
+    }
   }
 
   /// Bytes the cache takes on this device.
@@ -340,11 +433,12 @@ class FileCache {
     _blobs.close();
   }
 
-  Uint8List? _read(String key) => switch (_blobs.read(key)) {
-    null => null,
-    final Uint8List data => data,
-    final data => Uint8List.fromList(data),
-  };
+  Uint8List? _read(String key) =>
+      switch (_blobs.read(key, maxBytes: FamioApiClient.maxBufferedFileBytes)) {
+        null => null,
+        final Uint8List data => data,
+        final data => Uint8List.fromList(data),
+      };
 
   void _write(String key, List<int> data) {
     _blobs.write(key, data);
@@ -357,18 +451,28 @@ class FileCache {
 Stream<List<int>> _digesting(
   Stream<List<int>> input,
   void Function(Digest) completed,
-) async* {
+) {
   final result = _DigestSink();
   final hash = sha256.startChunkedConversion(result);
-  try {
-    await for (final chunk in input) {
-      hash.add(chunk);
-      yield chunk;
-    }
-  } finally {
-    hash.close();
-  }
-  completed(result.value!);
+  // A transformer forwards cancellation directly to the source. An async
+  // generator waiting for the next event can defer that cancellation.
+  return input.transform(
+    StreamTransformer<List<int>, List<int>>.fromHandlers(
+      handleData: (chunk, output) {
+        hash.add(chunk);
+        output.add(chunk);
+      },
+      handleDone: (output) {
+        try {
+          hash.close();
+          completed(result.value!);
+        } catch (error, stack) {
+          output.addError(error, stack);
+        }
+        output.close();
+      },
+    ),
+  );
 }
 
 class _DigestSink implements Sink<Digest> {

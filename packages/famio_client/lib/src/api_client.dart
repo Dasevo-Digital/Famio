@@ -1364,11 +1364,15 @@ class FamioApiClient {
     StreamSink<List<int>> sink,
     String id, {
     required int expectedBytes,
+    int? maxBytes,
+    void Function(int)? onLength,
     TransferCancellation? cancellation,
   }) => _downloadFileToSink(
     sink,
     id,
     expectedBytes: expectedBytes,
+    maxBytes: maxBytes,
+    onLength: onLength,
     cancellation: cancellation,
   );
 

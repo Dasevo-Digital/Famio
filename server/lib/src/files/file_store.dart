@@ -85,6 +85,18 @@ class FileStore {
       final file = get(id);
       return file != null && mayRead(file, member);
     };
+    records.canonicalFile = (ref) {
+      final file = get(ref.id);
+      return file == null
+          ? ref
+          : FileRef(
+              id: file.id,
+              name: file.name,
+              mime: file.mime,
+              size: file.size,
+            );
+    };
+    records.repairFileMetadata();
   }
 
   final Database _db;

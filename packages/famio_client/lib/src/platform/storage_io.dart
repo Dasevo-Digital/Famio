@@ -197,7 +197,7 @@ class _SqliteBlobs implements BlobBackend {
 
   /// Check block continuity and length before returning an offline copy.
   /// Broken entries are misses, so a download can repair them.
-  bool _validEntry(String key) {
+  int? _entrySize(String key) {
     final row = _db
         .select(
           '''
@@ -209,17 +209,17 @@ class _SqliteBlobs implements BlobBackend {
           [key],
         )
         .firstOrNull;
-    if (row == null) return false;
+    if (row == null) return null;
     final blocks = row['blocks'] as int;
     if (blocks > 0 &&
         row['first'] == 0 &&
         row['last'] == blocks - 1 &&
         row['actual'] == row['size']) {
-      return true;
+      return row['actual'] as int;
     }
     _db.execute('DELETE FROM blobs WHERE key = ?', [key]);
     _db.execute('DELETE FROM entries WHERE key = ?', [key]);
-    return false;
+    return null;
   }
 
   /// Strictly increasing, so files touched in the same millisecond still
@@ -234,12 +234,13 @@ class _SqliteBlobs implements BlobBackend {
   static const _chunk = 1024 * 1024;
 
   @override
-  Stream<List<int>>? readStream(String key) {
+  ({int size, Stream<List<int>> stream})? readStream(String key) {
     final generation = _generation;
     _check(generation);
-    if (!_validEntry(key)) return null;
+    final size = _entrySize(key);
+    if (size == null) return null;
     _db.execute('UPDATE entries SET used = ? WHERE key = ?', [_tick(), key]);
-    return () async* {
+    final stream = () async* {
       _readers[key] = (_readers[key] ?? 0) + 1;
       try {
         for (var seq = 0; ; seq++) {
@@ -260,6 +261,7 @@ class _SqliteBlobs implements BlobBackend {
         }
       }
     }();
+    return (size: size, stream: stream);
   }
 
   @override
@@ -267,14 +269,22 @@ class _SqliteBlobs implements BlobBackend {
     String key,
     Stream<List<int>> input, {
     required int expectedBytes,
+    TransferCancellation? cancellation,
   }) async {
     final generation = _generation;
     _check(generation);
+    void active() {
+      _check(generation);
+      if (cancellation?.cancelled ?? false) {
+        throw StateError('Cache copy cancelled');
+      }
+    }
+
     final staging = '$key:pending:${newId()}';
     var count = 0, seq = 0;
     try {
       await for (final chunk in input) {
-        _check(generation);
+        active();
         if (chunk.length > expectedBytes - count) {
           throw const FormatException('File length mismatch');
         }
@@ -290,7 +300,7 @@ class _SqliteBlobs implements BlobBackend {
         }
         count += chunk.length;
       }
-      _check(generation);
+      active();
       if (count != expectedBytes) {
         throw const FormatException('File length mismatch');
       }
@@ -319,9 +329,11 @@ class _SqliteBlobs implements BlobBackend {
   }
 
   @override
-  List<int>? read(String key) {
+  List<int>? read(String key, {int? maxBytes}) {
     _check(_generation);
-    if (!_validEntry(key)) return null;
+    final size = _entrySize(key);
+    if (size == null) return null;
+    if (maxBytes != null && size > maxBytes) throw TransferTooLarge();
     final rows = _db.select(
       'SELECT data FROM blobs WHERE key = ? ORDER BY seq',
       [key],
