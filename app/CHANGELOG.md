@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.22 – Papierkorb und bestätigte Zuständigkeiten
+
+- Papierkorb (Einstellungen): Gelöschte Aufgaben, Termine, Notizen und
+  Dokumente lassen sich 30 Tage lang wiederherstellen, auch von einem
+  anderen Gerät aus. Dafür ist eine Verbindung zum Server nötig.
+- Bei Aufgaben und Bring- oder Abholfahrten könnt ihr verlangen, dass die
+  zuständige Person ausdrücklich zusagt („Übernehme ich“ / „Kann ich
+  nicht“). Bei Terminserien gilt die Zusage je Fahrt; auf Wunsch erinnert
+  Famio an eine offene Zusage.
+
 ## 2.0.21 – Erinnerungen auf iPhone und iPad, sicherer Abgleich
 
 - Erinnerungen kommen jetzt auch auf iPhone und iPad an; Famio fragt dafür

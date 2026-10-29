@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.22 – Papelera y responsabilidades confirmadas
+
+- Papelera (Ajustes): las tareas, citas, notas y documentos eliminados se
+  pueden restaurar durante 30 días, también desde otro dispositivo. Para
+  ello hace falta conexión con el servidor.
+- En tareas y en llevar o recoger a alguien podéis pedir que la persona
+  responsable lo confirme expresamente («Me encargo» / «No puedo»). En una
+  serie de citas cada trayecto se confirma por separado; si queréis, Famio
+  recuerda una confirmación pendiente.
+
 ## 2.0.21 – Recordatorios en iPhone y iPad, sincronización más segura
 
 - Los recordatorios ahora también llegan al iPhone y al iPad; Famio pide

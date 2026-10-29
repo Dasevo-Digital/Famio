@@ -4,6 +4,16 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.22 – Trash and confirmed responsibilities
+
+- Trash (Settings): deleted tasks, events, notes and documents can be
+  restored for 30 days, from another device too. This needs a connection
+  to the server.
+- For tasks and drop-offs or pick-ups you can ask the person in charge to
+  confirm explicitly (“I will do it” / “I cannot do it”). In a series of
+  events each trip is confirmed on its own; if you like, Famio reminds
+  about an open confirmation.
+
 ## 2.0.21 – Reminders on iPhone and iPad, safer sync
 
 - Reminders now reach iPhone and iPad too; Famio asks once for permission
