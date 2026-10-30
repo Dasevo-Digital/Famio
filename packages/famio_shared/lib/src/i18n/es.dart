@@ -1196,6 +1196,8 @@ const sharedEs = <String, String>{
       "Bring! solo conoce listas de la compra.",
   "Server|Diese Einkaufsliste gibt es nicht.":
       "Esta lista de la compra no existe.",
+  "Server|{provider} hat eine zu große Antwort geliefert.":
+      "{provider} envió una respuesta demasiado grande.",
   "Server|Keine Verbindung zu {provider}.": "Sin conexión con {provider}.",
   "Server|{provider} antwortet nicht rechtzeitig.":
       "{provider} no responde a tiempo.",

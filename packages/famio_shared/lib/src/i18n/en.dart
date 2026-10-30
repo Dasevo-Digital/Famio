@@ -1162,6 +1162,8 @@ const sharedEn = <String, String>{
       "Bring! only knows shopping lists.",
   "Server|Diese Einkaufsliste gibt es nicht.":
       "This shopping list does not exist.",
+  "Server|{provider} hat eine zu große Antwort geliefert.":
+      "{provider} sent a response that is too large.",
   "Server|Keine Verbindung zu {provider}.": "No connection to {provider}.",
   "Server|{provider} antwortet nicht rechtzeitig.":
       "{provider} did not respond in time.",

@@ -105,10 +105,13 @@ abstract class ListProvider {
 /// A call to the other app failed. [signedOut]: the login is no longer
 /// valid and the member has to connect again.
 class ListProviderException implements Exception {
-  ListProviderException(this.message, {this.signedOut = false});
+  ListProviderException(this.message, {this.signedOut = false, this.detail});
 
   final String message;
   final bool signedOut;
+
+  /// For the server log only (e.g. the operating system's network error).
+  final String? detail;
 
   @override
   String toString() => message;

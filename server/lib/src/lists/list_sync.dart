@@ -13,6 +13,7 @@ import '../record_store.dart';
 import 'bring.dart';
 import 'list_provider.dart';
 import 'ms_todo.dart';
+import 'provider_http.dart';
 import '../i18n.dart';
 
 /// Keeps Famio's tasks and shopping lists in sync with lists in other apps
@@ -35,12 +36,18 @@ class ListSync {
     http.Client? client,
     this.interval = const Duration(minutes: 5),
     this.requestTimeout = const Duration(seconds: 20),
+    Duration connectTimeout = const Duration(seconds: 10),
+    Duration retryDelay = const Duration(seconds: 2),
     this.providerFor,
     this.bringBase,
     this.graphBase,
     this.loginBase,
     this.log,
-  }) : _client = client ?? http.Client();
+  }) : _client = ProviderHttpClient(
+         client ?? ProviderHttpClient.connecting(connectTimeout),
+         timeout: requestTimeout,
+         retryDelay: retryDelay,
+       );
 
   final Database db;
   final RecordStore records;
@@ -57,6 +64,9 @@ class ListSync {
   /// The family's zone, for advancing repeating tasks ticked off there.
   final tz.Location Function()? location;
   final Duration interval;
+
+  /// How long one request to the other app may take, connecting included;
+  /// then it is aborted.
   final Duration requestTimeout;
 
   /// Tests replace the providers; otherwise Bring! or Microsoft To Do.
@@ -116,12 +126,28 @@ class ListSync {
     }
   }
 
+  /// The client aborts each request after [requestTimeout]. A call can
+  /// renew the token, make a request and repeat it, so this bound is larger;
+  /// it only matters for providers that hang without HTTP.
   Future<T> _providerCall<T>(String provider, Future<T> Function() call) async {
     try {
-      return await call().timeout(requestTimeout);
+      return await call().timeout(requestTimeout * 4);
     } on TimeoutException {
       throw ListProviderException(
         t('{provider} antwortet nicht rechtzeitig.', {'provider': provider}),
+      );
+    } on TransferTooLarge {
+      throw ListProviderException(
+        t('{provider} hat eine zu große Antwort geliefert.', {
+          'provider': provider,
+        }),
+      );
+    } on http.ClientException catch (e) {
+      // Not reachable at all (also after the repeat): a different message
+      // than an answer that does not come.
+      throw ListProviderException(
+        t('Keine Verbindung zu {provider}.', {'provider': provider}),
+        detail: e.message,
       );
     }
   }
@@ -301,7 +327,9 @@ class ListSync {
         'account': _store(memberId, 'mstodo', 'Microsoft To Do', credentials),
       };
     } on ListProviderException catch (e) {
-      _deviceLogins.remove(flow);
+      // Microsoft refused or the code expired; after a network problem the
+      // member's next poll may still succeed.
+      if (e.signedOut) _deviceLogins.remove(flow);
       throw ApiException(400, 'provider_error', e.message);
     }
   }
@@ -460,7 +488,9 @@ class ListSync {
         if (report || stats.changes > 0) log?.call('[listen] $name: $stats');
       } on ListProviderException catch (e) {
         error = e.message;
-        log?.call('[listen] $name: $error');
+        log?.call(
+          '[listen] $name: $error${e.detail == null ? '' : ' (${e.detail})'}',
+        );
         if (e.signedOut) break;
       } on http.ClientException catch (e) {
         error = t('Keine Verbindung zu {provider}.', {
