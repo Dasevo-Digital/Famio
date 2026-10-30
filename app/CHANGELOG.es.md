@@ -4,6 +4,20 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.24 – Copias sin conexión más fiables
+
+- Tras una subida, Famio solo guarda un archivo sin conexión si la copia
+  coincide exactamente con el contenido subido. Si el archivo cambia
+  mientras tanto, se carga desde el servidor al abrirlo.
+- Vaciar el almacenamiento de archivos mientras se hace una copia ya no
+  deja una entrada a medias; las copias sin conexión incompletas se
+  detectan y se cargan de nuevo.
+- Una copia sin conexión que no responde ya no retiene la subida.
+- El servidor mantiene coherentes el nombre, el tipo y el tamaño de los
+  archivos adjuntos y corrige una vez los datos erróneos de versiones
+  anteriores. Los archivos con un tamaño incorrecto se pueden volver a
+  abrir.
+
 ## 2.0.23 – Archivos grandes, zonas horarias y exportación
 
 - Los archivos grandes se pueden abrir y subir hasta el límite del

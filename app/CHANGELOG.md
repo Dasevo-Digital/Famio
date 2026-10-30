@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.24 – Zuverlässigere Offline-Kopien
+
+- Nach dem Hochladen behält Famio eine Datei nur offline, wenn die Kopie
+  genau dem hochgeladenen Inhalt entspricht. Ändert sich die Datei
+  währenddessen, wird sie beim Öffnen vom Server geladen.
+- Wird der Dateispeicher geleert, während eine Kopie entsteht, bleibt kein
+  halber Eintrag zurück; unvollständige Offline-Kopien werden erkannt und
+  neu geladen.
+- Eine hängende Offline-Kopie hält den Upload nicht mehr auf.
+- Der Server hält Name, Typ und Größe angehängter Dateien einheitlich und
+  berichtigt falsche Angaben aus älteren Versionen einmalig. Dateien mit
+  falscher Größenangabe lassen sich wieder öffnen.
+
 ## 2.0.23 – Große Dateien, Zeitzonen und Export
 
 - Große Dateien lassen sich bis zur Grenze des Servers öffnen und
