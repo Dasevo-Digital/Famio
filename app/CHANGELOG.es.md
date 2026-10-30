@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.25 – Sincronización de listas más estable
+
+- Bring! y Microsoft To Do: una conexión que no responde se cancela a los
+  20 segundos en lugar de seguir en segundo plano. Tras un error de
+  conexión, Famio lo intenta una vez más.
+- Si el servicio no está disponible en absoluto, la cuenta muestra «Sin
+  conexión» en lugar de «no responde a tiempo».
+- Un breve fallo de red ya no interrumpe el inicio de sesión en
+  Microsoft.
+
 ## 2.0.24 – Copias sin conexión más fiables
 
 - Tras una subida, Famio solo guarda un archivo sin conexión si la copia

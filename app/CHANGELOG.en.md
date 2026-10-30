@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.25 – More robust list sync
+
+- Bring! and Microsoft To Do: a hanging connection is aborted after
+  20 seconds instead of running on in the background. After a connection
+  error Famio asks once more.
+- If the service cannot be reached at all, the account shows "No
+  connection" instead of "did not respond in time".
+- A short network problem no longer cancels signing in to Microsoft.
+
 ## 2.0.24 – More reliable offline copies
 
 - After an upload Famio only keeps a file offline if the copy matches the

@@ -4,6 +4,15 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.25 – Stabilerer Listen-Abgleich
+
+- Bring! und Microsoft To Do: Eine hängende Verbindung wird nach
+  20 Sekunden abgebrochen, statt im Hintergrund weiterzulaufen. Nach einem
+  Verbindungsfehler fragt Famio einmal nach.
+- Ist der Dienst gar nicht erreichbar, steht beim Konto „Keine Verbindung“
+  statt „antwortet nicht rechtzeitig“.
+- Eine kurze Netzstörung bricht die Anmeldung bei Microsoft nicht mehr ab.
+
 ## 2.0.24 – Zuverlässigere Offline-Kopien
 
 - Nach dem Hochladen behält Famio eine Datei nur offline, wenn die Kopie
