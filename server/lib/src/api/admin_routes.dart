@@ -316,7 +316,7 @@ extension _AdminRoutes on FamioApi {
   Future<bool> _pointsToItself(String url) async {
     try {
       final host = Uri.parse(url).host;
-      final addresses = await InternetAddress.lookup(
+      final addresses = await hostLookup(
         host,
       ).timeout(const Duration(seconds: 3));
       final own = {

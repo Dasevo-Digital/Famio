@@ -4,15 +4,25 @@ import 'api_exception.dart';
 import 'security.dart';
 import 'i18n.dart';
 
+/// Resolves a host name; [InternetAddress.lookup] outside of tests.
+typedef HostLookup = Future<List<InternetAddress>> Function(String host);
+
 /// Validates destinations fetched by the server on a member's behalf.
 ///
 /// Calendar URLs otherwise let an authenticated member probe services in the
 /// server's home or container network. Private targets are an explicit
 /// deployment opt-in for installations that really host a calendar locally.
 class RemoteUrlPolicy {
-  const RemoteUrlPolicy({this.allowPrivateNetwork = false});
+  const RemoteUrlPolicy({
+    this.allowPrivateNetwork = false,
+    this.lookup = InternetAddress.lookup,
+  });
 
   final bool allowPrivateNetwork;
+
+  /// Tests answer without the network, so a disturbed resolver cannot make
+  /// them hang.
+  final HostLookup lookup;
 
   Future<void> check(Uri uri) async {
     if ((!(uri.isScheme('https') ||
@@ -31,7 +41,7 @@ class RemoteUrlPolicy {
     if (literal != null && ClientAddress.isPrivate(literal)) _blocked(uri);
     if (uri.host.toLowerCase() == 'localhost') _blocked(uri);
     try {
-      final addresses = await InternetAddress.lookup(uri.host);
+      final addresses = await lookup(uri.host);
       if (addresses.any(ClientAddress.isPrivate)) _blocked(uri);
     } on SocketException {
       // The caller reports unreachable hosts without disclosing resolver data.

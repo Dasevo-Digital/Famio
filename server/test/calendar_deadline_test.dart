@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:famio_server/famio_server.dart';
 import 'package:famio_shared/famio_shared.dart';
-import 'package:famio_server/src/remote_url_policy.dart';
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
 

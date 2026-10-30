@@ -15,7 +15,7 @@ extension _WebRoutes on FamioApi {
     }
     final client = selfCheckClient ?? http.Client();
     for (var hop = 0; hop < 5; hop++) {
-      await const RemoteUrlPolicy().check(uri!);
+      await RemoteUrlPolicy(lookup: hostLookup).check(uri!);
       final response = await client
           .send(
             http.Request('GET', uri)

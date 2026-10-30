@@ -124,6 +124,7 @@ class FamioApi {
     this.metrics,
     this.metricsToken,
     this.selfCheckClient,
+    this.hostLookup = InternetAddress.lookup,
     required this.mfa,
     required this.passkeys,
     this.sso,
@@ -216,6 +217,9 @@ class FamioApi {
   /// For the setup checklist: can the server reach itself under its
   /// public address?
   final http.Client? selfCheckClient;
+
+  /// Name resolution for the recipe page and the setup checklist.
+  final HostLookup hostLookup;
 
   /// Location sharing of the members' phones.
   final LocationService? locations;

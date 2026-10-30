@@ -65,6 +65,7 @@ class FamioServerApp {
     bool allowPrivateCalendarHosts = false,
     bool allowPrivatePushHosts = false,
     http.Client? httpClient,
+    HostLookup? hostLookup,
     void Function(String line)? auditLog,
     Database? blobs,
     String? dataKey,
@@ -108,8 +109,10 @@ class FamioServerApp {
       records: records,
       memberIds: () => [for (final m in accounts.members()) m.id],
     );
+    final lookup = hostLookup ?? InternetAddress.lookup;
     final remoteUrlPolicy = RemoteUrlPolicy(
       allowPrivateNetwork: allowPrivateCalendarHosts,
+      lookup: lookup,
     );
     importer = CalendarImporter(
       records: records,
@@ -184,7 +187,10 @@ class FamioServerApp {
       accounts: accounts,
       location: () => settings.location,
       client: httpClient,
-      urlPolicy: RemoteUrlPolicy(allowPrivateNetwork: allowPrivatePushHosts),
+      urlPolicy: RemoteUrlPolicy(
+        allowPrivateNetwork: allowPrivatePushHosts,
+        lookup: lookup,
+      ),
       onOperationalError: auditLog,
       onSent: metrics.pushResult,
     );
@@ -208,7 +214,10 @@ class FamioServerApp {
       db,
       client: httpClient,
       publicUrl: () => settings.publicUrl,
-      urlPolicy: RemoteUrlPolicy(allowPrivateNetwork: allowPrivatePushHosts),
+      urlPolicy: RemoteUrlPolicy(
+        allowPrivateNetwork: allowPrivatePushHosts,
+        lookup: lookup,
+      ),
       onSent: metrics.pushResult,
     );
     locations.onShopArrival = push.shopArrival;
@@ -279,6 +288,7 @@ class FamioServerApp {
       metrics: metrics,
       metricsToken: metricsToken,
       selfCheckClient: httpClient ?? http.Client(),
+      hostLookup: lookup,
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
       davProperties: DavProperties(db),
@@ -309,9 +319,12 @@ class FamioServerApp {
     );
   }
 
-  /// In-memory server in the Europe/Berlin zone, for tests.
+  /// In-memory server in the Europe/Berlin zone, for tests. Host names
+  /// resolve to nothing unless [hostLookup] says otherwise: tests must not
+  /// depend on (or hang in) a real resolver.
   factory FamioServerApp.inMemory({
     http.Client? httpClient,
+    HostLookup hostLookup = _noHosts,
     Uri? googleBase,
     WebApp? webApp,
     String? metricsToken,
@@ -326,12 +339,16 @@ class FamioServerApp {
       location: tz.getLocation('Europe/Berlin'),
       dataDir: Directory.systemTemp.createTempSync('famio_test_').path,
       httpClient: httpClient,
+      hostLookup: hostLookup,
       allowPrivateCalendarHosts: true,
       googleBase: googleBase,
       webApp: webApp,
       throttle: throttle,
     );
   }
+
+  static Future<List<InternetAddress>> _noHosts(String host) =>
+      throw SocketException('No name resolution in tests', address: null);
 
   /// Loads the embedded time zone database (idempotent).
   static void initTimeZones() {
