@@ -155,6 +155,13 @@ ditto "$APP" "$R/Famio.app"
 rm -rf "$APP"
 
 step "Android"
+# app/tool/mac_install.sh leaves app/build as a link to build.noindex. With
+# it, a test build on 30.10. wrote the compiled Dart code (libapp.so) next to
+# the package instead of into it. The Android build gets a real folder.
+if [ -L app/build ]; then
+  rm app/build
+  mv app/build.noindex app/build
+fi
 # Gradle keeps the build of each plugin: after a plugin update (2.0.11:
 # shared_preferences_android 2.5.1) javac found an old class list and the
 # build failed. A clean build each release.
@@ -178,6 +185,10 @@ A2="$R/Famio-$V-android-arm64.apk"
 [ "$(cert "$A1")" = "$(cert "$A2")" ] || fail "Android-Pakete mit verschiedenen Schlüsseln signiert"
 [ "$(code "$A1")" = "$(code "$A2")" ] || fail "Android-Pakete mit verschiedener Versionsnummer"
 [[ "$(code "$A1")" == *"versionName='$V'"* ]] || fail "Android-Paket hat nicht Version $V"
+for f in "$A1" "$A2"; do
+  [[ "$(unzip -l "$f")" == *lib/arm64-v8a/libapp.so* ]] ||
+    fail "$(basename "$f") ohne den Dart-Code (lib/arm64-v8a/libapp.so)"
+done
 [[ "$(unzip -l "$A1")" == *libmlkit_google_ocr_pipeline* ]] ||
   fail "Paket für alle Handys ohne eingebaute Erkennung"
 [[ "$(unzip -l "$A2")" != *libmlkit_google_ocr_pipeline* ]] ||
