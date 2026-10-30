@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.26 – Actualización de seguridad para las conexiones
+
+- Famio ya no confía en certificados intermedios comprometidos de la
+  autoridad de certificación eMudhra; en Android 14 y posteriores usa para
+  ello los certificados actualizables del sistema. Afecta a la app y al
+  servidor.
+- Pequeñas actualizaciones, entre otras en la selección de archivos.
+
 ## 2.0.25 – Sincronización de listas más estable
 
 - Bring! y Microsoft To Do: una conexión que no responde se cancela a los

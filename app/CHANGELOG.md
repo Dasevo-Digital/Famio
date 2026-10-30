@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.26 – Sicherheitsupdate für Verbindungen
+
+- Famio vertraut kompromittierten Zwischenzertifikaten der
+  Zertifizierungsstelle eMudhra nicht mehr; Android ab Version 14 nutzt
+  dafür die aktualisierbaren Zertifikate des Systems. Das gilt für App und
+  Server.
+- Kleine Aktualisierungen, unter anderem bei der Dateiauswahl.
+
 ## 2.0.25 – Stabilerer Listen-Abgleich
 
 - Bring! und Microsoft To Do: Eine hängende Verbindung wird nach

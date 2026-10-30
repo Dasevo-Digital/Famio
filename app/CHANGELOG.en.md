@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.26 – Security update for connections
+
+- Famio no longer trusts compromised intermediate certificates of the
+  eMudhra certificate authority; on Android 14 and later it uses the
+  system's updatable certificates for this. This applies to the app and
+  the server.
+- Small updates, among others for picking files.
+
 ## 2.0.25 – More robust list sync
 
 - Bring! and Microsoft To Do: a hanging connection is aborted after
