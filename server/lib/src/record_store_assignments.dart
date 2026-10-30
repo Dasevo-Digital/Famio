@@ -54,6 +54,43 @@ extension RecordAssignments on RecordStore {
         canAccess(request.target, memberId);
   }
 
+  /// A correction by the server that changes no content (the metadata of a
+  /// task's photos, say) keeps the answers given to [before]: they move to
+  /// the fingerprint of [after] instead of being withdrawn.
+  void _keepAssignmentReplies(SyncRecord before, SyncRecord after) {
+    if (before.collection != Collections.tasks ||
+        !recordDataIsValid(before) ||
+        !recordDataIsValid(after)) {
+      return;
+    }
+    for (final row in _db.select(
+      'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
+      "AND json_extract(data, '\$.targetCollection') = ? AND json_extract(data, '\$.targetId') = ?",
+      [Collections.assignmentResponses, before.collection, before.id],
+    )) {
+      final reply = RecordStore._record(row);
+      final AssignmentResponse answer;
+      try {
+        answer = AssignmentResponse.fromRecord(reply);
+      } on FormatException {
+        continue;
+      } on TypeError {
+        continue;
+      }
+      AssignmentRequest? request(SyncRecord target) => assignmentRequestsFor(
+        target,
+        occurrence: answer.occurrence,
+      ).where((a) => a.id == reply.id).firstOrNull;
+      if (request(before)?.fingerprint != answer.fingerprint) continue;
+      final next = request(after);
+      if (next == null || next.fingerprint == answer.fingerprint) continue;
+      _put(
+        reply.copyWith(data: {...reply.data, 'fingerprint': next.fingerprint}),
+        previous: reply,
+      );
+    }
+  }
+
   List<String> _assignmentAudience(SyncRecord target) => [
     for (final id in memberIds())
       if (canAccess(target, id)) id,

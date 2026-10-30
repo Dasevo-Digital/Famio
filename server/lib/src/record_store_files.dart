@@ -52,6 +52,7 @@ extension RecordFiles on RecordStore {
           if (old == null) continue;
           final next = _canonicalFiles(old);
           if (identical(old, next)) continue;
+          _keepAssignmentReplies(old, next);
           _put(next, previous: old);
           repaired++;
         }

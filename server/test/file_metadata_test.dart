@@ -325,4 +325,81 @@ void main() {
       everyElement(4),
     );
   });
+  test('the repair keeps answers given to a task whose photo it corrects', () {
+    final task = Task(
+      id: 'task',
+      title: 'Fixture',
+      assigneeIds: [other.id],
+      due: DateTime(2030, 1, 1),
+      photos: [file],
+      assignmentConfirmation: const AssignmentSettings(required: true),
+    );
+    app.records.writeAs(owner.id, [
+      SyncRecord(
+        collection: Collections.tasks,
+        id: 'task',
+        updatedAt: 10,
+        data: task.toData(),
+      ),
+    ]);
+    // A task stored before the server kept attachment metadata canonical.
+    app.db.execute(
+      'UPDATE records SET data = ? WHERE collection = ? AND id = ?',
+      [
+        jsonEncode({
+          ...task.toData(),
+          'photos': [
+            {...file.toJson(), 'size': 1, 'name': 'old-name'},
+          ],
+        }),
+        Collections.tasks,
+        'task',
+      ],
+    );
+    final legacy = app.records.assignmentRequestsFor(
+      app.records.get(Collections.tasks, 'task')!,
+    );
+    expect(legacy, hasLength(1));
+    final request = legacy.single;
+    expect(
+      app.records.writeAs(other.id, [
+        SyncRecord(
+          collection: Collections.assignmentResponses,
+          id: request.id,
+          updatedAt: 20,
+          data: AssignmentResponse(
+            targetCollection: Collections.tasks,
+            targetId: 'task',
+            memberId: other.id,
+            kind: request.kind,
+            fingerprint: request.fingerprint,
+            decision: AssignmentDecision.accepted,
+          ).toData(),
+        ),
+      ]),
+      isEmpty,
+    );
+    app.db.execute('DELETE FROM settings WHERE key = ?', [
+      'canonicalFileMetadata1',
+    ]);
+    final revision = app.records.currentRev;
+    expect(app.records.repairFileMetadata(), 1);
+    final repaired = app.records.get(Collections.tasks, 'task')!;
+    expect(repaired.data['photos'], [file.toJson()]);
+    final current = app.records.assignmentRequestsFor(repaired).single;
+    expect(current.fingerprint, isNot(request.fingerprint));
+    final answer = app.records.get(
+      Collections.assignmentResponses,
+      request.id,
+    )!;
+    expect(answer.deleted, isFalse);
+    expect(answer.updatedAt, 20);
+    expect(answer.data['decision'], 'accepted');
+    expect(answer.data['fingerprint'], current.fingerprint);
+    // The assignee's device receives the moved answer with the task.
+    final changes = app.records
+        .sync(SyncRequest(since: revision, changes: []), other.id)
+        .changes;
+    expect(changes.map((r) => r.id), containsAll(['task', request.id]));
+  });
 }
