@@ -797,6 +797,13 @@ Home-Assistant-Seitenleiste meldet das Add-on an: als Server über den
 Home-Assistant-Benutzer, als Client (`mode: client`) mit dem Famio-Konto,
 dessen Sitzung das Add-on je Home-Assistant-Benutzer aufbewahrt.
 
+**SQLite-Bibliothek ohne github.com:** Der Build-Hook des Pakets `sqlite3`
+lädt seine Bibliothek von github.com. Der Docker-Build bewahrt sie in einem
+BuildKit-Cache auf (BuildKit ist ab Docker 23 Standard), der Gitea-Runner und
+die Build-Rechner mit `tool/hook_cache.sh` bzw. `tool/release/build_windows.ps1`
+in ihrem Benutzerordner. Der Hook prüft die Prüfsumme jeder aufbewahrten Datei
+und lädt sie sonst neu.
+
 **Docker-Image ohne root:** Seit 1.0.11 läuft der Server im Image als
 Benutzer 65532. Unter Linux deshalb vor dem ersten Start – und einmalig beim
 Update von einem älteren Image, das `./data` und `./keys` als root angelegt

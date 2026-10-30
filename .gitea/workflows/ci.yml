@@ -37,7 +37,7 @@ jobs:
           echo "$dir/bin" >> "$GITHUB_PATH"
           "$dir/bin/flutter" --version | head -1
       - name: SQLite libraries kept from earlier runs (no github.com needed)
-        run: bash tool/ci_hook_cache.sh restore
+        run: bash tool/hook_cache.sh restore
       - name: Privacy check masking test
         run: bash tool/repo_privacy_check_test.sh
       - name: Privacy check (identities, messages, secrets)
@@ -71,4 +71,4 @@ jobs:
         run: flutter test tool/render_screens_test.dart
       - name: Keep the SQLite libraries for later runs
         if: always()
-        run: bash tool/ci_hook_cache.sh save
+        run: bash tool/hook_cache.sh save

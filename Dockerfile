@@ -14,7 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends brotli \
 COPY server .
 # server/web is not in the repository: a web app left over from an older
 # build must not end up in the package (1.0.6 to 1.0.14 shipped 1.0.5).
-RUN dart build cli -t bin/server.dart -o /out \
+# The sqlite3 build hook downloads its library from github.com; a BuildKit
+# cache keeps it between builds (the hook checks its SHA-256).
+RUN --mount=type=cache,id=famio-sqlite3-hook,sharing=locked,target=/src/server/.dart_tool/hooks_runner/shared/sqlite3/build \
+    dart build cli -t bin/server.dart -o /out \
     && mkdir -p /out/data \
     && if [ -f web/index.html ]; then \
          v=$(sed -n 's/^version: *//p' pubspec.yaml); \

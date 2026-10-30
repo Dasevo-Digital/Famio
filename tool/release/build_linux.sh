@@ -13,9 +13,13 @@ if [ -n "${2:-}" ]; then
   esac
 fi
 rm -rf famio-build && mkdir famio-build && tar -xzf famio-src.tgz -C famio-build
-cd famio-build/app
+cd famio-build
+# The SQLite library of earlier builds instead of a download from github.com.
+bash tool/hook_cache.sh restore
+cd app
 ~/flutter/bin/flutter pub get >/dev/null
 ~/flutter/bin/flutter build linux --release 2>&1 | tail -2
+(cd .. && bash tool/hook_cache.sh save)
 pkg=~/Famio-$V-linux
 rm -rf "$pkg" && mkdir -p "$pkg"
 cp -r build/linux/x64/release/bundle "$pkg/bundle"
