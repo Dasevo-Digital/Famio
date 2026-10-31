@@ -43,7 +43,7 @@ import 'crypto/encrypted_db.dart';
 import 'remote_url_policy.dart';
 import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
-import 'documents/paperbuddy.dart';
+import 'documents/paperless.dart';
 import 'photos/photovault.dart';
 import 'updates/app_updates.dart';
 import 'updates/profile_notices.dart';
@@ -238,13 +238,13 @@ class FamioServerApp {
     );
     // A fresh server over the internet may only be claimed with this code.
     setupCode = accounts.hasUsers ? null : newSetupCode();
-    paperBuddy = PaperBuddyLink(
+    paperless = PaperlessLink(
       db: db,
       records: records,
       accounts: accounts,
       onChanged: () => hub.notifyRev(records.currentRev),
       client: httpClient,
-    );
+    )..adoptPaperBuddy();
     photoVault = PhotoVaultLink(
       db: db,
       records: records,
@@ -292,7 +292,7 @@ class FamioServerApp {
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
       davProperties: DavProperties(db),
-      paperBuddy: paperBuddy,
+      paperless: paperless,
       photoVault: photoVault,
       appUpdates: appUpdates,
       auditLog: auditLog,
@@ -368,7 +368,7 @@ class FamioServerApp {
   late final RecordStore records;
   late final CalendarAccess calendarAccess;
   late final CalendarImporter importer;
-  late final PaperBuddyLink paperBuddy;
+  late final PaperlessLink paperless;
   late final PhotoVaultLink photoVault;
   late final AppUpdates appUpdates;
   late final CalDavSync caldav;
@@ -422,7 +422,7 @@ class FamioServerApp {
   /// Periodic jobs (calendar import); not started in tests.
   void startBackgroundJobs() {
     importer.start();
-    paperBuddy.start();
+    paperless.start();
     photoVault.start();
     appUpdates
       ..onReady = UpdateNotices(
@@ -483,7 +483,7 @@ class FamioServerApp {
     _silent?.cancel();
     backups?.stop();
     importer.stop();
-    paperBuddy.stop();
+    paperless.stop();
     photoVault.stop();
     appUpdates.stop();
     caldav.stop();

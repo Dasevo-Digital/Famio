@@ -1532,7 +1532,7 @@ void main() {
     await tester.drag(find.byType(ListView).last, const Offset(0, -500));
     await tester.pumpAndSettle();
     await _shot(tester, key, 'desktop_32_anmeldung');
-    // The first "Einrichten" is single sign-on (PaperBuddy follows).
+    // The first "Einrichten" is single sign-on (Paperless-ngx follows).
     await tester.tap(find.widgetWithText(TextButton, 'Einrichten').first);
     await tester.pumpAndSettle();
     await _shot(tester, key, 'desktop_33_sso');

@@ -585,14 +585,14 @@ class _SettingsFormState extends State<_SettingsForm> {
             ),
             _IntegrationTile(
               icon: AppIcons.folderSimpleStar,
-              title: tr.adminPaperBuddy,
-              subtitle: tr.adminPaperBuddySubtitle,
+              title: tr.adminPaperless,
+              subtitle: tr.adminPaperlessSubtitle,
               enabled: !_busy,
-              load: (api) => api.paperBuddy(),
+              load: (api) => api.paperless(),
               state: (info) => info['connected'] == true
-                  ? tr.adminPaperBuddyActive(_host('${info['url'] ?? ''}'))
+                  ? tr.adminPaperlessActive(_host('${info['url'] ?? ''}'))
                   : null,
-              open: showPaperBuddyDialog,
+              open: showPaperlessDialog,
             ),
             _IntegrationTile(
               icon: AppIcons.images,
@@ -716,7 +716,7 @@ class _SettingsFormState extends State<_SettingsForm> {
 
 // --- status -----------------------------------------------------------------
 
-/// "paperbuddy.example" of an address.
+/// "paperless.example" of an address.
 String _host(String url) {
   final host = Uri.tryParse(url)?.host ?? '';
   return host.isNotEmpty ? host : url;

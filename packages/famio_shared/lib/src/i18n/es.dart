@@ -772,12 +772,12 @@ const sharedEs = <String, String>{
   "Server|Die Prüfsumme von {file} passt nicht.":
       "La suma de comprobación de {file} no coincide.",
   "Server|Kein App-Update verfügbar": "No hay ninguna actualización de la app",
-  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
-      "Introduce el token de un usuario de PaperBuddy.",
-  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":
-      "La dirección de PaperBuddy empieza por http:// o https://.",
-  "Server|Keine Verbindung zu PaperBuddy ({error}).":
-      "No hay conexión con PaperBuddy ({error}).",
+  "Server|Bitte das Token eines Paperless-ngx-Benutzers eintragen.":
+      "Introduce el token de un usuario de Paperless-ngx.",
+  "Server|Die Adresse von Paperless-ngx beginnt mit http:// oder https://.":
+      "La dirección de Paperless-ngx empieza por http:// o https://.",
+  "Server|Keine Verbindung zu Paperless-ngx ({error}).":
+      "No hay conexión con Paperless-ngx ({error}).",
   "Server|Das PhotoVault-Konto muss erst in PhotoVault die Zwei-Faktor-Anmeldung einrichten.":
       "La cuenta de PhotoVault debe configurar primero el inicio de sesión en dos pasos en PhotoVault.",
   "Server|Unter dieser Adresse antwortet kein PhotoVault.":
@@ -813,13 +813,15 @@ const sharedEs = <String, String>{
       "PhotoVault rechaza el inicio de sesión.",
   "Server|PhotoVault: zu viele Versuche, bitte später noch einmal.":
       "PhotoVault: demasiados intentos, vuelve a intentarlo más tarde.",
-  "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rechaza el token.",
-  "Server|PaperBuddy antwortet mit Fehler {status}.":
-      "PaperBuddy responde con el error {status}.",
-  "Server|Unter dieser Adresse antwortet kein PaperBuddy.":
-      "En esta dirección no responde ningún PaperBuddy.",
-  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.":
-      "En PaperBuddy no existe la etiqueta «{tag}».",
+  "Server|Paperless-ngx lehnt das Token ab.": "Paperless-ngx rechaza el token.",
+  "Server|Paperless-ngx antwortet mit Fehler {status}.":
+      "Paperless-ngx responde con el error {status}.",
+  "Server|Unter dieser Adresse antwortet kein Paperless-ngx.":
+      "En esta dirección no responde ningún Paperless-ngx.",
+  "Server|In Paperless-ngx gibt es den Tag „{tag}“ nicht.":
+      "En Paperless-ngx no existe la etiqueta «{tag}».",
+  "Server|In Paperless-ngx gibt es kein Datumsfeld „{field}“.":
+      "En Paperless-ngx no existe el campo de fecha «{field}».",
   "Server|Belegt": "Ocupado",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Confírmalo con el código de la app de autenticación.",

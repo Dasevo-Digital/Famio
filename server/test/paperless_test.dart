@@ -13,9 +13,11 @@ void main() {
   late List<Map<String, Object?>> documents;
   final asked = <String>[];
 
-  /// PaperBuddy as it answers (Paperless API plus deadlines).
-  final paperBuddy = MockClient((request) async {
+  /// Paperless-ngx as it answers (API version 10).
+  final paperless = MockClient((request) async {
     asked.add('${request.method} ${request.url.path}');
+    // No pinned API version, which Paperless-ngx refuses once it drops it.
+    expect(request.headers['accept'], 'application/json');
     http.Response json(Object body, [int status = 200]) => http.Response.bytes(
       utf8.encode(jsonEncode(body)),
       status,
@@ -52,17 +54,11 @@ void main() {
             {'id': 4, 'name': 'Versicherungspolice'},
           ]),
         );
-      case '/api/reminders/':
+      case '/api/custom_fields/':
         return json(
           page([
-            {
-              'id': 1,
-              'document': 11,
-              'due': '2027-01-31',
-              'note': 'Kündigungsfrist',
-              'done': false,
-            },
-            {'id': 2, 'document': 11, 'due': '2027-06-30', 'done': false},
+            {'id': 1, 'name': 'Notiz', 'data_type': 'string'},
+            {'id': 2, 'name': 'Ablaufdatum', 'data_type': 'date'},
           ]),
         );
       case '/api/documents/11/download/':
@@ -83,23 +79,28 @@ void main() {
         'title': 'Kfz-Versicherung',
         'correspondent': 3,
         'document_type': 4,
-        'created_date': '2026-01-15',
+        'created': '2026-01-15',
         'modified': '2026-02-01T10:00:00Z',
         'original_file_name': 'scan.jpg',
         'archived_file_name': 'scan.pdf',
         'tags': [7],
+        'custom_fields': [
+          {'field': 1, 'value': 'Kündigungsfrist 3 Monate'},
+          {'field': 2, 'value': '2027-01-31'},
+        ],
       },
       {
         'id': 12,
         'title': 'Zeugnis Mia',
-        'created_date': '2026-07-20',
+        // Before API version 9 `created` was a date and time.
+        'created': '2026-07-20T09:30:00+02:00',
         'modified': '2026-07-20T10:00:00Z',
         'original_file_name': 'zeugnis.pdf',
         'mime_type': 'application/pdf',
         'tags': [7],
       },
     ];
-    app = FamioServerApp.inMemory(httpClient: paperBuddy);
+    app = FamioServerApp.inMemory(httpClient: paperless);
     final setup = await app.handler(
       Request(
         'POST',
@@ -147,7 +148,7 @@ void main() {
   }
 
   test(
-    'an admin connects PaperBuddy; tagged documents appear for adults',
+    'an admin connects Paperless-ngx; tagged documents appear for adults',
     () async {
       final papa = await call(
         'POST',
@@ -173,7 +174,7 @@ void main() {
 
       final wrong = await call(
         'PUT',
-        'api/admin/paperbuddy',
+        'api/admin/paperless',
         body: {'url': 'http://192.168.1.20:8000/', 'token': 'falsch'},
       );
       expect(wrong.statusCode, 400);
@@ -181,8 +182,12 @@ void main() {
 
       final saved = await call(
         'PUT',
-        'api/admin/paperbuddy',
-        body: {'url': 'http://192.168.1.20:8000/', 'token': 'lesen'},
+        'api/admin/paperless',
+        body: {
+          'url': 'http://192.168.1.20:8000/',
+          'token': 'lesen',
+          'dueField': 'ablaufdatum',
+        },
       );
       expect(saved.statusCode, 200);
       final info = jsonDecode(await saved.readAsString()) as Map;
@@ -190,18 +195,22 @@ void main() {
         (info['connected'], info['url'], info['tag'], info['count']),
         (true, 'http://192.168.1.20:8000', 'Familie', 2),
       );
+      expect(info['dueField'], 'ablaufdatum');
       expect(info.containsKey('token'), isFalse);
 
       final police = FamilyDocument.fromRecord(
-        app.records.get(Collections.externalDocuments, 'pb-11')!,
+        app.records.get(Collections.externalDocuments, 'pl-11')!,
       );
       expect(police.title, 'Kfz-Versicherung');
       expect(police.category, DocumentCategory.insurance);
       expect(police.expiresAt, DateTime(2027, 1, 31));
-      expect(
-        police.notes,
-        'HUK-Coburg · Versicherungspolice · Kündigungsfrist',
+      expect(police.notes, 'HUK-Coburg · Versicherungspolice');
+      expect(police.source, 'paperless');
+      final zeugnis = FamilyDocument.fromRecord(
+        app.records.get(Collections.externalDocuments, 'pl-12')!,
       );
+      expect(zeugnis.expiresAt, isNull);
+      expect(zeugnis.createdAt!.toUtc(), DateTime.utc(2026, 7, 20, 7, 30));
       expect(
         (police.file!.name, police.file!.mime),
         ('scan.pdf', 'application/pdf'),
@@ -212,7 +221,7 @@ void main() {
       ];
       expect(police.visibleTo, unorderedEquals(adults));
 
-      // The file comes from PaperBuddy, only for those who see the document.
+      // The file comes from Paperless-ngx, only for those who see it.
       final file = await call('GET', 'api/files/${police.file!.id}');
       expect(file.statusCode, 200);
       expect(await file.readAsString(), '%PDF-1.7 Police');
@@ -223,7 +232,7 @@ void main() {
         404,
       );
       expect(
-        (await call('GET', 'api/files/pb-11.1', as: token)).statusCode,
+        (await call('GET', 'api/files/pl-11.1', as: token)).statusCode,
         404,
       );
 
@@ -236,7 +245,7 @@ void main() {
           changes: [
             SyncRecord(
               collection: Collections.externalDocuments,
-              id: 'pb-11',
+              id: 'pl-11',
               data: const {'title': 'geändert'},
               updatedAt: DateTime.now().millisecondsSinceEpoch + 100000,
             ),
@@ -248,22 +257,22 @@ void main() {
         isNotEmpty,
       );
 
-      // Untagged in PaperBuddy: gone from Famio at the next sync.
+      // Untagged in Paperless-ngx: gone from Famio at the next sync.
       documents.removeLast();
-      await call('POST', 'api/admin/paperbuddy/sync');
+      await call('POST', 'api/admin/paperless/sync');
       expect(
-        app.records.get(Collections.externalDocuments, 'pb-12')!.deleted,
+        app.records.get(Collections.externalDocuments, 'pl-12')!.deleted,
         isTrue,
       );
 
-      await call('DELETE', 'api/admin/paperbuddy');
+      await call('DELETE', 'api/admin/paperless');
       expect(
-        app.records.get(Collections.externalDocuments, 'pb-11')!.deleted,
+        app.records.get(Collections.externalDocuments, 'pl-11')!.deleted,
         isTrue,
       );
       expect(
         (jsonDecode(
-              await (await call('GET', 'api/admin/paperbuddy')).readAsString(),
+              await (await call('GET', 'api/admin/paperless')).readAsString(),
             )
             as Map)['connected'],
         isFalse,
@@ -274,10 +283,86 @@ void main() {
   test('a missing tag is named', () async {
     final r = await call(
       'PUT',
-      'api/admin/paperbuddy',
+      'api/admin/paperless',
       body: {'url': 'http://pb.local', 'token': 'lesen', 'tag': 'Haushalt'},
     );
     expect(r.statusCode, 400);
     expect(await r.readAsString(), contains('Haushalt'));
+  });
+
+  test('a date field that is missing or no date is named', () async {
+    for (final field in ['Frist', 'Notiz']) {
+      final r = await call(
+        'PUT',
+        'api/admin/paperless',
+        body: {'url': 'http://pl.local', 'token': 'lesen', 'dueField': field},
+      );
+      expect(r.statusCode, 400);
+      expect(await r.readAsString(), contains('Datumsfeld „$field“'));
+    }
+    expect(asked, isNot(contains('GET /api/documents/')));
+  });
+
+  test(
+    'a PaperBuddy connection of 2.0.26 becomes the Paperless-ngx one',
+    () async {
+      app.db.execute(
+        'INSERT INTO settings (key, value) VALUES (?, ?), (?, ?)',
+        [
+          'paperbuddy',
+          jsonEncode({
+            'url': 'http://192.168.1.20:8000',
+            'token': 'lesen',
+            'tag': 'Familie',
+            'memberIds': <String>[],
+          }),
+          'paperbuddy.status',
+          jsonEncode({'count': 1, 'lastError': 'PaperBuddy antwortet nicht.'}),
+        ],
+      );
+      app.records.writeAsServer([
+        SyncRecord(
+          collection: Collections.externalDocuments,
+          id: 'pb-11',
+          data: const {'title': 'Kfz-Versicherung', 'category': 'insurance'},
+          updatedAt: 0,
+        ),
+      ]);
+
+      app.paperless.adoptPaperBuddy();
+      final info = app.paperless.info();
+      expect(
+        (info['connected'], info['url'], info['dueField'], info['lastError']),
+        (true, 'http://192.168.1.20:8000', '', null),
+      );
+      expect(
+        app.db.select("SELECT key FROM settings WHERE key LIKE 'paperbuddy%'"),
+        isEmpty,
+      );
+      // The old record goes; the next sync brings the documents back.
+      expect(
+        app.records.get(Collections.externalDocuments, 'pb-11')!.deleted,
+        isTrue,
+      );
+      await app.paperless.sync();
+      expect(
+        app.records.get(Collections.externalDocuments, 'pl-11')!.deleted,
+        isFalse,
+      );
+    },
+  );
+
+  test('without a connection nothing of PaperBuddy stays', () async {
+    app.records.writeAsServer([
+      SyncRecord(
+        collection: Collections.externalDocuments,
+        id: 'pb-12',
+        data: const {'title': 'Zeugnis Mia', 'category': 'school'},
+        updatedAt: 0,
+      ),
+    ]);
+    app.paperless.adoptPaperBuddy();
+    expect(app.paperless.info()['connected'], isFalse);
+    expect(app.records.all(Collections.externalDocuments), isEmpty);
   });
 }

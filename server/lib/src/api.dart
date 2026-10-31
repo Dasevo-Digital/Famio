@@ -29,7 +29,7 @@ import 'calendar/calendar_access.dart';
 import 'dav/caldav_server.dart';
 import 'dav/dav_properties.dart';
 import 'dav/step_marks.dart';
-import 'documents/paperbuddy.dart';
+import 'documents/paperless.dart';
 import 'photos/photovault.dart';
 import 'updates/app_updates.dart';
 import 'dav/caldav_sync.dart';
@@ -68,7 +68,7 @@ part 'api/list_routes.dart';
 part 'api/location_routes.dart';
 part 'api/notification_routes.dart';
 part 'api/overview_routes.dart';
-part 'api/paperbuddy_routes.dart';
+part 'api/paperless_routes.dart';
 part 'api/photovault_routes.dart';
 part 'api/invite_routes.dart';
 part 'api/sos_routes.dart';
@@ -101,7 +101,7 @@ class FamioApi {
     this.compactDatabase,
     this.davSteps,
     this.davProperties,
-    this.paperBuddy,
+    this.paperless,
     this.photoVault,
     this.appUpdates,
     this.auditLog,
@@ -255,8 +255,8 @@ class FamioApi {
   /// Colour, order and name members' calendar apps set.
   final DavProperties? davProperties;
 
-  /// The family's PaperBuddy documents, if an admin connected it.
-  final PaperBuddyLink? paperBuddy;
+  /// The family's Paperless-ngx documents, if an admin connected it.
+  final PaperlessLink? paperless;
 
   /// The family's PhotoVault, if an admin connected it.
   final PhotoVaultLink? photoVault;
@@ -367,10 +367,10 @@ class FamioApi {
       ..delete('/api/admin/users/<id>/two-factor', _adminResetTwoFactor)
       ..delete('/api/admin/users/<id>/sso', _adminUnlinkSso)
       ..get('/api/admin/sso', _adminSso)
-      ..get('/api/admin/paperbuddy', _adminPaperBuddy)
-      ..put('/api/admin/paperbuddy', _adminSavePaperBuddy)
-      ..delete('/api/admin/paperbuddy', _adminDeletePaperBuddy)
-      ..post('/api/admin/paperbuddy/sync', _adminSyncPaperBuddy)
+      ..get('/api/admin/paperless', _adminPaperless)
+      ..put('/api/admin/paperless', _adminSavePaperless)
+      ..delete('/api/admin/paperless', _adminDeletePaperless)
+      ..post('/api/admin/paperless/sync', _adminSyncPaperless)
       ..get('/api/admin/photovault', _adminPhotoVault)
       ..post('/api/admin/photovault/connect', _adminConnectPhotoVault)
       ..put('/api/admin/photovault', _adminSavePhotoVault)

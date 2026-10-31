@@ -327,7 +327,7 @@ extension FamilyData on SyncEngine {
 
   // --- documents ------------------------------------------------------------
 
-  /// The family's documents, with those of a connected PaperBuddy archive
+  /// The family's documents, with those of a connected Paperless-ngx
   /// (read-only, see [FamilyDocument.fromArchive]).
   List<FamilyDocument> get documents => [
     for (final c in [Collections.documents, Collections.externalDocuments])

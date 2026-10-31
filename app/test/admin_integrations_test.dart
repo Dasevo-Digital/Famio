@@ -34,9 +34,9 @@ void main() {
       '/api/admin/users': {'users': <Object>[]},
       '/api/admin/overview': overview.toJson(),
       '/api/admin/sso': {'configured': false},
-      '/api/admin/paperbuddy': {
+      '/api/admin/paperless': {
         'connected': true,
-        'url': 'https://paperbuddy.example/',
+        'url': 'https://paperless.example/',
       },
       '/api/admin/photovault': {'connected': false},
       '/api/admin/app-updates': {
@@ -89,7 +89,7 @@ void main() {
     );
     expect(
       find.textContaining(
-        'Verbunden mit paperbuddy.example',
+        'Verbunden mit paperless.example',
         findRichText: true,
       ),
       findsOneWidget,
@@ -98,7 +98,7 @@ void main() {
       of: find.widgetWithText(ListTile, tile),
       matching: find.text(label),
     );
-    expect(button('PaperBuddy', 'Ändern'), findsOneWidget);
+    expect(button('Paperless-ngx', 'Ändern'), findsOneWidget);
     expect(button('App-Updates über den Server', 'Ändern'), findsOneWidget);
     expect(
       button('Single Sign-On (OpenID Connect)', 'Einrichten'),
@@ -148,7 +148,7 @@ void main() {
           ('GET', '/api/admin/users') => {'users': <Object>[]},
           ('GET', '/api/admin/overview') => overview.toJson(),
           ('GET', '/api/admin/sso') => {'configured': false},
-          ('GET', '/api/admin/paperbuddy') => {'connected': false},
+          ('GET', '/api/admin/paperless') => {'connected': false},
           ('GET', '/api/admin/app-updates') => {'enabled': false},
           ('GET', '/api/admin/photovault') => info,
           ('GET', '/api/admin/photovault/albums') => {
@@ -263,6 +263,119 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect((sent.last['albumId'], sent.last['timeline']), ('', true));
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Paperless-ngx: tag, date field and who sees the documents', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({'tour.offered': true});
+    FlutterSecureStorage.setMockInitialValues({});
+    final overview = ServerOverview(
+      version: '2.0.27',
+      startedAt: DateTime(2026, 10, 31),
+      settings: const ServerSettings(),
+      defaults: const ServerSettings(),
+      effective: const ServerSettings(),
+    );
+    var info = <String, Object?>{'connected': false};
+    final sent = <Map<String, Object?>>[];
+    final api = FamioApiClient(
+      'https://famio.test',
+      token: 't',
+      httpClient: MockClient((request) async {
+        final body = request.body.isEmpty
+            ? const <String, Object?>{}
+            : (jsonDecode(request.body) as Map).cast<String, Object?>();
+        Object? answer = switch ((request.method, request.url.path)) {
+          ('GET', '/api/admin/users') => {'users': <Object>[]},
+          ('GET', '/api/admin/overview') => overview.toJson(),
+          ('GET', '/api/admin/sso') => {'configured': false},
+          ('GET', '/api/admin/app-updates') => {'enabled': false},
+          ('GET', '/api/admin/photovault') => {'connected': false},
+          ('GET', '/api/admin/paperless') => info,
+          ('PUT', '/api/admin/paperless') => () {
+            sent.add(body);
+            return info = {
+              'connected': true,
+              'url': body['url'],
+              'tag': body['tag'],
+              'memberIds': body['memberIds'],
+              'dueField': body['dueField'],
+              'count': 3,
+              'lastSync': '2026-10-31T08:00:00Z',
+            };
+          }(),
+          _ => null,
+        };
+        return answer == null
+            ? http.Response('{}', 404)
+            : http.Response.bytes(utf8.encode(jsonEncode(answer)), 200);
+      }),
+    );
+    const me = FamilyMember(
+      id: 'm1',
+      username: 'mama',
+      displayName: 'Mama',
+      isAdmin: true,
+    );
+    final state = AppState();
+    await state.init();
+    state
+      ..me = me
+      ..engine = SyncEngine(
+        store: LocalStore.open(':memory:'),
+        api: api,
+        memberId: me.id,
+      );
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pumpAndSettle();
+    final context = tester.element(find.byType(Scaffold).first);
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AdminScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Einstellungen').last);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.widgetWithText(ListTile, 'Paperless-ngx'),
+        matching: find.text('Einrichten'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    Finder field(String label) => find.widgetWithText(TextField, label);
+    await tester.enterText(
+      field('Adresse (z. B. http://192.168.1.20:8000)'),
+      'http://192.168.1.20:8000',
+    );
+    await tester.enterText(field('Token eines Paperless-ngx-Benutzers'), 'abc');
+    await tester.enterText(
+      field('Datumsfeld für die Ablauf-Erinnerung (optional)'),
+      ' Ablaufdatum ',
+    );
+    await tester.tap(find.text('Verbinden'));
+    await tester.pumpAndSettle();
+    expect(
+      (
+        sent.single['url'],
+        sent.single['token'],
+        sent.single['tag'],
+        sent.single['dueField'],
+      ),
+      ('http://192.168.1.20:8000', 'abc', 'Familie', 'Ablaufdatum'),
+    );
+    expect(find.text('Paperless-ngx verbunden'), findsOneWidget);
+    expect(find.textContaining('3 Dokumente, abgeglichen'), findsOneWidget);
+    // Saved: the token stays unless a new one is typed.
+    expect(
+      find.text('Token gespeichert – leer lassen, um es zu behalten'),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(seconds: 5));
   });
 }

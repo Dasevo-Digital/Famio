@@ -79,7 +79,7 @@ class FamilyDocument {
   final List<String>? visibleTo;
   final DateTime? createdAt;
 
-  /// Where it comes from if not from Famio (`paperbuddy`): filed and
+  /// Where it comes from if not from Famio (`paperless`): filed and
   /// edited there, read-only here.
   final String? source;
 

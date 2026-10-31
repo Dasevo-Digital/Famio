@@ -20,7 +20,7 @@ void main() {
     addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({'tour.offered': true});
     FlutterSecureStorage.setMockInitialValues({});
-    // The server's list: PaperBuddy is not wanted in this family.
+    // The server's list: Paperless-ngx is not wanted in this family.
     final ignored = <String>{};
     List<SetupStep> steps() => [
       const SetupStep(
@@ -30,11 +30,11 @@ void main() {
         detail: '3 Mitglieder.',
       ),
       SetupStep(
-        id: 'paperbuddy',
-        title: 'PaperBuddy verbinden',
+        id: 'paperless',
+        title: 'Paperless-ngx verbinden',
         done: false,
-        detail: 'Dokumente aus PaperBuddy anzeigen.',
-        ignored: ignored.contains('paperbuddy'),
+        detail: 'Dokumente aus Paperless-ngx anzeigen.',
+        ignored: ignored.contains('paperless'),
       ),
     ];
     final api = FamioApiClient(
@@ -88,9 +88,9 @@ void main() {
 
     await tester.tap(find.text('Ignorieren'));
     await settle();
-    expect(ignored, {'paperbuddy'});
+    expect(ignored, {'paperless'});
     expect(find.text('Alles eingerichtet'), findsOneWidget);
-    expect(find.text('PaperBuddy verbinden · Ignoriert'), findsOneWidget);
+    expect(find.text('Paperless-ngx verbinden · Ignoriert'), findsOneWidget);
 
     // Back on the start page the card is gone; "Wieder anzeigen" undoes it.
     await tester.tap(find.text('Wieder anzeigen'));

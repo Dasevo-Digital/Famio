@@ -10,25 +10,27 @@ import '../api_exception.dart';
 import '../i18n.dart';
 import '../record_store.dart';
 
-/// The connection to a PaperBuddy (or Paperless-ngx) server, set by an
-/// admin. The token belongs to a PaperBuddy user who may read the family's
-/// documents; it never leaves the Famio server.
-class PaperBuddyConfig {
-  const PaperBuddyConfig({
+/// The connection to the family's Paperless-ngx, set by an admin. The token
+/// belongs to a Paperless-ngx user who may read the family's documents; it
+/// never leaves the Famio server.
+class PaperlessConfig {
+  const PaperlessConfig({
     required this.url,
     required this.token,
     this.tag = 'Familie',
     this.memberIds = const [],
+    this.dueField = '',
   });
 
-  factory PaperBuddyConfig.fromJson(Map<String, Object?> json) =>
-      PaperBuddyConfig(
+  factory PaperlessConfig.fromJson(Map<String, Object?> json) =>
+      PaperlessConfig(
         url: json['url'] as String? ?? '',
         token: json['token'] as String? ?? '',
         tag: json['tag'] as String? ?? 'Familie',
         memberIds: [
           for (final m in json['memberIds'] as List? ?? const []) '$m',
         ],
+        dueField: json['dueField'] as String? ?? '',
       );
 
   /// E.g. `http://192.168.1.20:8000`.
@@ -41,21 +43,26 @@ class PaperBuddyConfig {
   /// Who sees them in Famio; empty: every adult.
   final List<String> memberIds;
 
+  /// A custom field of type date (e.g. "Ablaufdatum") whose value becomes
+  /// the document's expiry reminder; empty: none.
+  final String dueField;
+
   Map<String, Object?> toJson() => {
     'url': url,
     'token': token,
     'tag': tag,
     'memberIds': memberIds,
+    'dueField': dueField,
   };
 }
 
-/// Documents of a PaperBuddy server with the family's tag, shown in
-/// Famio's documents (collection `external_documents`, read-only) with
-/// their deadlines. Filing and full text stay in PaperBuddy; Famio keeps
-/// title, dates and the next deadline, and fetches a file only when a
-/// member opens it.
-class PaperBuddyLink {
-  PaperBuddyLink({
+/// Documents of a Paperless-ngx server with the family's tag, shown in
+/// Famio's documents (collection `external_documents`, read-only), with
+/// the date of an optional custom field as expiry. Filing and full text
+/// stay in Paperless-ngx; Famio keeps title and dates and fetches a file
+/// only when a member opens it.
+class PaperlessLink {
+  PaperlessLink({
     required this.db,
     required this.records,
     required this.accounts,
@@ -75,9 +82,38 @@ class PaperBuddyLink {
   Timer? _timer;
   Future<void>? _running;
 
-  static const _key = 'paperbuddy';
-  static const _statusKey = 'paperbuddy.status';
-  static const idPrefix = 'pb-';
+  static const _key = 'paperless';
+  static const _statusKey = 'paperless.status';
+  static const idPrefix = 'pl-';
+
+  /// Up to 2.0.26 the same connection was called PaperBuddy (a server with
+  /// the Paperless-ngx API). Its setting moves over; its documents (ids
+  /// `pb-…`) come back with the next sync under [idPrefix]. Without a
+  /// connection nothing of it stays behind.
+  void adoptPaperBuddy() {
+    final old = _setting('paperbuddy');
+    if (old is Map && _setting(_key) == null) _put(_key, old);
+    db.execute('DELETE FROM settings WHERE key IN (?, ?)', [
+      'paperbuddy',
+      'paperbuddy.status',
+    ]);
+    final connected = config != null;
+    final stale = [
+      for (final r in records.all(Collections.externalDocuments))
+        if (!connected || !r.id.startsWith(idPrefix)) r,
+    ];
+    if (stale.isEmpty) return;
+    records.writeAsServer([
+      for (final r in stale)
+        SyncRecord(
+          collection: r.collection,
+          id: r.id,
+          data: const {},
+          updatedAt: 0,
+          deleted: true,
+        ),
+    ]);
+  }
 
   void start() {
     _timer ??= Timer.periodic(interval, (_) => sync());
@@ -89,11 +125,11 @@ class PaperBuddyLink {
     _timer = null;
   }
 
-  PaperBuddyConfig? get config {
+  PaperlessConfig? get config {
     final raw = _setting(_key);
     return raw == null
         ? null
-        : PaperBuddyConfig.fromJson((raw as Map).cast<String, Object?>());
+        : PaperlessConfig.fromJson((raw as Map).cast<String, Object?>());
   }
 
   /// What the admin screen shows; never the token.
@@ -101,7 +137,12 @@ class PaperBuddyLink {
     final c = config;
     return {
       'connected': c != null,
-      if (c != null) ...{'url': c.url, 'tag': c.tag, 'memberIds': c.memberIds},
+      if (c != null) ...{
+        'url': c.url,
+        'tag': c.tag,
+        'memberIds': c.memberIds,
+        'dueField': c.dueField,
+      },
       ...?(_setting(_statusKey) as Map?)?.cast<String, Object?>(),
     };
   }
@@ -124,10 +165,10 @@ class PaperBuddyLink {
     if (token == null || token.isEmpty) {
       throw ApiException.badRequest(
         'token_required',
-        t('Bitte das Token eines PaperBuddy-Benutzers eintragen.'),
+        t('Bitte das Token eines Paperless-ngx-Benutzers eintragen.'),
       );
     }
-    final c = PaperBuddyConfig(
+    final c = PaperlessConfig(
       url: _url('${body['url'] ?? ''}'),
       token: token,
       tag: switch ('${body['tag'] ?? ''}'.trim()) {
@@ -138,6 +179,7 @@ class PaperBuddyLink {
         for (final m in body['memberIds'] as List? ?? const [])
           if (accounts.byId('$m') != null) '$m',
       ],
+      dueField: '${body['dueField'] ?? ''}'.trim(),
     );
     // Only working connections are kept.
     try {
@@ -146,8 +188,8 @@ class PaperBuddyLink {
       rethrow;
     } on Exception catch (e) {
       throw ApiException.badRequest(
-        'paperbuddy_unreachable',
-        t('Keine Verbindung zu PaperBuddy ({error}).', {'error': '$e'}),
+        'paperless_unreachable',
+        t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
       );
     }
     _put(_key, c.toJson());
@@ -155,7 +197,7 @@ class PaperBuddyLink {
     return info();
   }
 
-  /// `http(s)://host[:port][/path]` without a trailing slash. PaperBuddy
+  /// `http(s)://host[:port][/path]` without a trailing slash. Paperless-ngx
   /// usually runs in the home network: only admins set it.
   static String _url(String input) {
     final uri = Uri.tryParse(input.trim());
@@ -165,7 +207,7 @@ class PaperBuddyLink {
         uri.userInfo.isNotEmpty) {
       throw ApiException.badRequest(
         'invalid_url',
-        t('Die Adresse von PaperBuddy beginnt mit http:// oder https://.'),
+        t('Die Adresse von Paperless-ngx beginnt mit http:// oder https://.'),
       );
     }
     final text = uri.replace(query: '', fragment: '').toString();
@@ -174,7 +216,7 @@ class PaperBuddyLink {
         .replaceAll(RegExp(r'/+$'), '');
   }
 
-  /// Fetches the tagged documents and their deadlines; runs never overlap.
+  /// Fetches the tagged documents and their dates; runs never overlap.
   Future<void> sync() =>
       _running ??= _sync().whenComplete(() => _running = null);
 
@@ -192,7 +234,9 @@ class PaperBuddyLink {
     } on ApiException catch (e) {
       _status(e.message);
     } on Exception catch (e) {
-      _status(t('Keine Verbindung zu PaperBuddy ({error}).', {'error': '$e'}));
+      _status(
+        t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
+      );
     }
   }
 
@@ -201,27 +245,29 @@ class PaperBuddyLink {
     'lastError': error,
   });
 
-  // --- PaperBuddy API ------------------------------------------------------
+  // --- Paperless-ngx API -----------------------------------------------------
 
-  Map<String, String> _headers(PaperBuddyConfig c) => {
+  /// No API version: the fields used here are the same in all of them, and
+  /// a pinned one is refused (406) once Paperless-ngx drops it.
+  Map<String, String> _headers(PaperlessConfig c) => {
     'authorization': 'Token ${c.token}',
-    'accept': 'application/json; version=9',
+    'accept': 'application/json',
   };
 
-  Future<Map<String, Object?>> _get(PaperBuddyConfig c, Uri url) async {
+  Future<Map<String, Object?>> _get(PaperlessConfig c, Uri url) async {
     final response = await _http
         .get(url, headers: _headers(c))
         .timeout(const Duration(seconds: 30));
     if (response.statusCode == 401 || response.statusCode == 403) {
       throw ApiException.badRequest(
-        'paperbuddy_denied',
-        t('PaperBuddy lehnt das Token ab.'),
+        'paperless_denied',
+        t('Paperless-ngx lehnt das Token ab.'),
       );
     }
     if (response.statusCode != 200) {
       throw ApiException.badRequest(
-        'paperbuddy_error',
-        t('PaperBuddy antwortet mit Fehler {status}.', {
+        'paperless_error',
+        t('Paperless-ngx antwortet mit Fehler {status}.', {
           'status': response.statusCode,
         }),
       );
@@ -233,14 +279,14 @@ class PaperBuddyLink {
       // Below.
     }
     throw ApiException.badRequest(
-      'paperbuddy_error',
-      t('Unter dieser Adresse antwortet kein PaperBuddy.'),
+      'paperless_error',
+      t('Unter dieser Adresse antwortet kein Paperless-ngx.'),
     );
   }
 
   /// All pages of a list.
   Future<List<Map<String, Object?>>> _all(
-    PaperBuddyConfig c,
+    PaperlessConfig c,
     String path,
     Map<String, String> query,
   ) async {
@@ -255,7 +301,7 @@ class PaperBuddyLink {
       }
       final link = json['next'];
       next = link is String && link.isNotEmpty ? Uri.parse(link) : null;
-      // Some servers answer with their internal address: keep ours.
+      // Behind a proxy Paperless-ngx may link its internal address: keep ours.
       if (next != null) {
         next = Uri.parse(c.url).replace(path: next.path, query: next.query);
       }
@@ -263,16 +309,36 @@ class PaperBuddyLink {
     return out;
   }
 
-  Future<List<_Document>> _documents(PaperBuddyConfig c) async {
+  Future<List<_Document>> _documents(PaperlessConfig c) async {
     final tags = await _all(c, '/api/tags/', {'name__iexact': c.tag});
     final tag = tags
         .where((t) => '${t['name']}'.toLowerCase() == c.tag.toLowerCase())
         .firstOrNull;
     if (tag == null) {
       throw ApiException.badRequest(
-        'paperbuddy_tag',
-        t('In PaperBuddy gibt es den Tag „{tag}“ nicht.', {'tag': c.tag}),
+        'paperless_tag',
+        t('In Paperless-ngx gibt es den Tag „{tag}“ nicht.', {'tag': c.tag}),
       );
+    }
+    // The expiry's custom field, checked before the documents are fetched.
+    Object? dueField;
+    if (c.dueField.isNotEmpty) {
+      final field = (await _all(c, '/api/custom_fields/', const {}))
+          .where(
+            (f) =>
+                '${f['name']}'.toLowerCase() == c.dueField.toLowerCase() &&
+                f['data_type'] == 'date',
+          )
+          .firstOrNull;
+      if (field == null) {
+        throw ApiException.badRequest(
+          'paperless_field',
+          t('In Paperless-ngx gibt es kein Datumsfeld „{field}“.', {
+            'field': c.dueField,
+          }),
+        );
+      }
+      dueField = field['id'];
     }
     final docs = await _all(c, '/api/documents/', {
       'tags__id__all': '${tag['id']}',
@@ -285,28 +351,25 @@ class PaperBuddyLink {
     };
     final correspondents = await names('/api/correspondents/');
     final types = await names('/api/document_types/');
-    // Deadlines are PaperBuddy's own extension; Paperless-ngx has none.
-    final due = <int, (String, String)>{};
-    try {
-      for (final r in await _all(c, '/api/reminders/', {'done': 'false'})) {
-        final doc = r['document'];
-        final day = '${r['due'] ?? ''}';
-        if (doc is! int || day.length < 10) continue;
-        final before = due[doc];
-        if (before == null || day.compareTo(before.$1) < 0) {
-          due[doc] = (day.substring(0, 10), '${r['note'] ?? ''}'.trim());
+    String? due(Map<String, Object?> d) {
+      if (dueField == null) return null;
+      for (final f in d['custom_fields'] as List? ?? const []) {
+        if (f is Map && f['field'] == dueField) {
+          final day = '${f['value'] ?? ''}';
+          return day.length >= 10 ? day.substring(0, 10) : null;
         }
       }
-    } on ApiException {
-      // No deadlines then.
+      return null;
     }
+
     return [
       for (final d in docs)
         if (d['id'] is int)
           _Document(
             id: d['id'] as int,
             title: '${d['title'] ?? ''}',
-            created: '${d['created_date'] ?? d['created'] ?? ''}',
+            // A date since API version 9, a date and time before.
+            created: '${d['created'] ?? d['created_date'] ?? ''}',
             modified: '${d['modified'] ?? ''}',
             fileName:
                 (d['archived_file_name'] ?? d['original_file_name'] ?? '')
@@ -316,7 +379,7 @@ class PaperBuddyLink {
                 : '${d['mime_type'] ?? 'application/pdf'}',
             correspondent: correspondents[d['correspondent']] ?? '',
             type: types[d['document_type']] ?? '',
-            due: due[d['id']],
+            due: due(d),
           ),
     ];
   }
@@ -325,7 +388,7 @@ class PaperBuddyLink {
 
   /// Writes [documents] (and removes the ones no longer tagged); true if
   /// anything changed.
-  bool _store(List<_Document> documents, {PaperBuddyConfig? config}) {
+  bool _store(List<_Document> documents, {PaperlessConfig? config}) {
     final audience = switch (config?.memberIds ?? const <String>[]) {
       final ids when ids.isNotEmpty => ids,
       _ => [
@@ -361,7 +424,7 @@ class PaperBuddyLink {
     String memberId,
   ) async {
     final c = config;
-    final match = RegExp(r'^pb-(\d+)\.').firstMatch(fileId);
+    final match = RegExp(r'^pl-(\d+)\.').firstMatch(fileId);
     if (c == null || match == null) return null;
     final record = records.get(
       Collections.externalDocuments,
@@ -382,8 +445,8 @@ class PaperBuddyLink {
       await response.stream.drain<void>();
       throw ApiException(
         502,
-        'paperbuddy_error',
-        t('PaperBuddy antwortet mit Fehler {status}.', {
+        'paperless_error',
+        t('Paperless-ngx antwortet mit Fehler {status}.', {
           'status': response.statusCode,
         }),
       );
@@ -429,10 +492,10 @@ class _Document {
   final String correspondent;
   final String type;
 
-  /// The next open deadline: day and note.
-  final (String, String)? due;
+  /// The day of the expiry field (`YYYY-MM-DD`).
+  final String? due;
 
-  /// Famio's category from PaperBuddy's document type.
+  /// Famio's category from the Paperless-ngx document type.
   DocumentCategory get category {
     final t = type.toLowerCase();
     bool has(List<String> words) => words.any(t.contains);
@@ -475,12 +538,11 @@ class _Document {
       'notes': [
         if (correspondent.isNotEmpty) correspondent,
         if (type.isNotEmpty) type,
-        if (due?.$2 case final note? when note.isNotEmpty) note,
       ].join(' · '),
       'memberIds': const <String>[],
-      'expiresAt': due?.$1,
+      'expiresAt': due,
       'createdAt': created.isEmpty ? null : created,
-      'source': 'paperbuddy',
+      'source': 'paperless',
     };
   }
 }

@@ -203,7 +203,7 @@ class _DocumentCard extends StatelessWidget {
                 Text(
                   [
                     document.category.label,
-                    if (document.fromArchive) 'PaperBuddy',
+                    if (document.fromArchive) 'Paperless-ngx',
                     if (document.file != null && document.file!.size > 0)
                       fileSizeLabel(document.file!.size),
                   ].join(' · '),
@@ -298,7 +298,7 @@ class _DocumentCard extends StatelessWidget {
               ),
               if (document.fromArchive)
                 Text(
-                  tr.docsFromPaperBuddy,
+                  tr.docsFromPaperless,
                   style: Theme.of(sheet).textTheme.bodySmall,
                 ),
               const SizedBox(height: 20),

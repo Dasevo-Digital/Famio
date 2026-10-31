@@ -5672,21 +5672,23 @@
     }
   },
   "nutritionStop": "Open Food Facts nicht mehr fragen",
-  "docsFromPaperBuddy": "Aus PaperBuddy: Ablage und Änderungen dort.",
-  "adminPaperBuddy": "PaperBuddy",
-  "adminPaperBuddyIntro": "Dokumente aus PaperBuddy mit einem bestimmten Tag erscheinen in Famio unter Dokumente, mit Ablauf-Erinnerung aus den Fristen. Ablage und Volltext bleiben in PaperBuddy; die Datei holt der Famio-Server erst beim Öffnen.",
-  "adminPaperBuddyUrl": "Adresse (z. B. http://192.168.1.20:8000)",
-  "adminPaperBuddyToken": "Token eines PaperBuddy-Benutzers",
-  "adminPaperBuddyTokenKept": "Token gespeichert – leer lassen, um es zu behalten",
-  "adminPaperBuddyTokenHint": "In PaperBuddy unter Profil → Token erzeugen; am besten ein eigener Benutzer, der nur lesen darf.",
-  "adminPaperBuddyTag": "Tag",
-  "adminPaperBuddyWho": "Wer sieht die Dokumente? (keine Auswahl: alle Erwachsenen)",
-  "adminPaperBuddyConnect": "Verbinden",
-  "adminPaperBuddySyncNow": "Jetzt abgleichen",
-  "adminPaperBuddyRemove": "Verbindung entfernen",
-  "adminPaperBuddyRemoveText": "Die PaperBuddy-Dokumente verschwinden aus Famio. In PaperBuddy bleibt alles erhalten.",
-  "adminPaperBuddyStatus": "{count} Dokumente, abgeglichen {when}",
-  "@adminPaperBuddyStatus": {
+  "docsFromPaperless": "Aus Paperless-ngx: Ablage und Änderungen dort.",
+  "adminPaperless": "Paperless-ngx",
+  "adminPaperlessIntro": "Dokumente aus Paperless-ngx mit einem bestimmten Tag erscheinen in Famio unter Dokumente. Ablage und Volltext bleiben in Paperless-ngx; die Datei holt der Famio-Server erst beim Öffnen.",
+  "adminPaperlessUrl": "Adresse (z. B. http://192.168.1.20:8000)",
+  "adminPaperlessToken": "Token eines Paperless-ngx-Benutzers",
+  "adminTokenKept": "Token gespeichert – leer lassen, um es zu behalten",
+  "adminPaperlessTokenHint": "In Paperless-ngx im Benutzermenü unter „Mein Profil“ erzeugen; am besten ein eigener Benutzer, der nur lesen darf.",
+  "adminPaperlessTag": "Tag",
+  "adminPaperlessDueField": "Datumsfeld für die Ablauf-Erinnerung (optional)",
+  "adminPaperlessDueFieldHint": "Name eines benutzerdefinierten Felds vom Typ Datum, z. B. „Ablaufdatum“",
+  "adminPaperlessWho": "Wer sieht die Dokumente? (keine Auswahl: alle Erwachsenen)",
+  "adminPaperlessConnect": "Verbinden",
+  "adminPaperlessSyncNow": "Jetzt abgleichen",
+  "adminPaperlessRemove": "Verbindung entfernen",
+  "adminPaperlessRemoveText": "Die Dokumente aus Paperless-ngx verschwinden aus Famio. In Paperless-ngx bleibt alles erhalten.",
+  "adminPaperlessStatus": "{count} Dokumente, abgeglichen {when}",
+  "@adminPaperlessStatus": {
     "placeholders": {
       "count": {
         "type": "Object?"
@@ -5696,8 +5698,8 @@
       }
     }
   },
-  "adminPaperBuddySubtitle": "Familiendokumente mit Fristen aus PaperBuddy anzeigen",
-  "adminPaperBuddySaved": "PaperBuddy verbunden",
+  "adminPaperlessSubtitle": "Familiendokumente aus Paperless-ngx anzeigen",
+  "adminPaperlessSaved": "Paperless-ngx verbunden",
   "yearReviewMenu": "Jahresrückblick",
   "yearReviewMenuSubtitle": "Meilensteine, Reisen, Fotos und Zahlen eines Jahres",
   "yearReviewTitle": "Unser Jahr {year}",
@@ -5973,8 +5975,8 @@
       }
     }
   },
-  "adminPaperBuddyActive": "Verbunden mit {address}",
-  "@adminPaperBuddyActive": {
+  "adminPaperlessActive": "Verbunden mit {address}",
+  "@adminPaperlessActive": {
     "placeholders": {
       "address": {
         "type": "String"

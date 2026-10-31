@@ -59,7 +59,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | CalDAV: Kalender-Apps bearbeiten Famio-Termine, Erinnerungs-Apps Aufgaben und Einkaufslisten; Abgleich mit Google, iCloud & Co. | ✅ |
 | Standort: Familienkarte, Orte mit Benachrichtigung, Geschäfte (wer ankommt, bekommt die offene Einkaufsliste), „Bin unterwegs“ mit geschätzter Ankunft (ohne fremden Routing-Dienst), einstellbarer Verlauf | ✅ (Teilen: Android, iOS) |
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
-| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus PaperBuddy; Briefe und Formulare mit der Kamera als PDF scannen (Ränder werden erkannt) | ✅ (Scannen: Android, iOS) |
+| Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus Paperless-ngx; Briefe und Formulare mit der Kamera als PDF scannen (Ränder werden erkannt) | ✅ (Scannen: Android, iOS) |
 | Kinder: Meilensteine von der Geburt bis ins Erwachsenenalter (Sinne, Bewegung, Sprache, Denken, Miteinander, Selbstständigkeit, Körper mit Fontanellen und Zähnen, Pubertät nach Geschlecht), Entwicklungsphasen mit Erklärung, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
 | Baby-Protokoll: Stillen, Fläschchen, Schlaf, Windeln, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |
@@ -284,20 +284,23 @@ importiert wurde (überlappende Auszüge) oder wohl schon von Hand
 eingetragen ist (gleicher Betrag binnen drei Tagen, oder eine monatliche
 Buchung in diesem Monat), ist nicht angehakt.
 
-### PaperBuddy
+### Paperless-ngx
 
-Ein Admin verbindet unter Server-Verwaltung → Einstellungen → PaperBuddy
-das Dokumentenarchiv der Familie (PaperBuddy oder Paperless-ngx): Adresse,
-das Token eines PaperBuddy-Benutzers (am besten eines eigenen, der nur
-lesen darf) und ein Tag (Standard „Familie“). Der Server holt alle
-30 Minuten die Dokumente mit diesem Tag ab; sie erscheinen unter
-Dokumente schreibgeschützt mit dem Hinweis „PaperBuddy“, die Kategorie
-folgt dem Dokumenttyp, die nächste offene Frist aus PaperBuddy wird zur
-Ablauf-Erinnerung. Ablage, Volltext und Änderungen bleiben in PaperBuddy;
-die Datei holt der Famio-Server erst, wenn ein Mitglied sie öffnet, und nur
-für Mitglieder, die das Dokument sehen (Auswahl in der Einstellung, sonst
-alle Erwachsenen). Das Token bleibt auf dem Famio-Server. Wird ein Tag in
-PaperBuddy entfernt, verschwindet das Dokument beim nächsten Abgleich.
+Ein Admin verbindet unter Server-Verwaltung → Einstellungen → Paperless-ngx
+das Dokumentenarchiv der Familie: Adresse, das Token eines
+Paperless-ngx-Benutzers (im Benutzermenü unter „Mein Profil“; am besten ein
+eigener Benutzer, der nur lesen darf) und ein Tag (Standard „Familie“). Der
+Server holt alle 30 Minuten die Dokumente mit diesem Tag ab; sie erscheinen
+unter Dokumente schreibgeschützt mit dem Hinweis „Paperless-ngx“, die
+Kategorie folgt dem Dokumenttyp. Optional nennt der Admin ein
+benutzerdefiniertes Feld vom Typ Datum (z. B. „Ablaufdatum“); dessen Wert
+wird zur Ablauf-Erinnerung. Ablage, Volltext und Änderungen bleiben in
+Paperless-ngx; die Datei holt der Famio-Server erst, wenn ein Mitglied sie
+öffnet, und nur für Mitglieder, die das Dokument sehen (Auswahl in der
+Einstellung, sonst alle Erwachsenen). Das Token bleibt auf dem Famio-Server.
+Wird ein Tag in Paperless-ngx entfernt, verschwindet das Dokument beim
+nächsten Abgleich. Eine Verbindung zu PaperBuddy aus Version 2.0.26 und
+früher übernimmt der Server beim Update.
 
 ### PhotoVault
 

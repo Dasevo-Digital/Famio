@@ -281,9 +281,7 @@ class _PhotoVaultDialogState extends State<_PhotoVaultDialog> {
         enableSuggestions: false,
         decoration: InputDecoration(
           labelText: tr.adminPhotoVaultSharePassword,
-          helperText: _info['sharePassword'] == true
-              ? tr.adminPaperBuddyTokenKept
-              : null,
+          helperText: _info['sharePassword'] == true ? tr.adminTokenKept : null,
         ),
       ),
       const SizedBox(height: 8),

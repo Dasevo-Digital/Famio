@@ -747,12 +747,12 @@ const sharedEn = <String, String>{
   "Server|Die Prüfsumme von {file} passt nicht.":
       "The checksum of {file} does not match.",
   "Server|Kein App-Update verfügbar": "No app update available",
-  "Server|Bitte das Token eines PaperBuddy-Benutzers eintragen.":
-      "Please enter the token of a PaperBuddy user.",
-  "Server|Die Adresse von PaperBuddy beginnt mit http:// oder https://.":
-      "The PaperBuddy address starts with http:// or https://.",
-  "Server|Keine Verbindung zu PaperBuddy ({error}).":
-      "No connection to PaperBuddy ({error}).",
+  "Server|Bitte das Token eines Paperless-ngx-Benutzers eintragen.":
+      "Please enter the token of a Paperless-ngx user.",
+  "Server|Die Adresse von Paperless-ngx beginnt mit http:// oder https://.":
+      "The Paperless-ngx address starts with http:// or https://.",
+  "Server|Keine Verbindung zu Paperless-ngx ({error}).":
+      "No connection to Paperless-ngx ({error}).",
   "Server|Das PhotoVault-Konto muss erst in PhotoVault die Zwei-Faktor-Anmeldung einrichten.":
       "The PhotoVault account must first set up two-factor sign-in in PhotoVault.",
   "Server|Unter dieser Adresse antwortet kein PhotoVault.":
@@ -787,13 +787,16 @@ const sharedEn = <String, String>{
       "PhotoVault rejects the sign-in.",
   "Server|PhotoVault: zu viele Versuche, bitte später noch einmal.":
       "PhotoVault: too many attempts, please try again later.",
-  "Server|PaperBuddy lehnt das Token ab.": "PaperBuddy rejects the token.",
-  "Server|PaperBuddy antwortet mit Fehler {status}.":
-      "PaperBuddy answers with error {status}.",
-  "Server|Unter dieser Adresse antwortet kein PaperBuddy.":
-      "No PaperBuddy answers at this address.",
-  "Server|In PaperBuddy gibt es den Tag „{tag}“ nicht.":
-      "PaperBuddy has no tag “{tag}”.",
+  "Server|Paperless-ngx lehnt das Token ab.":
+      "Paperless-ngx rejects the token.",
+  "Server|Paperless-ngx antwortet mit Fehler {status}.":
+      "Paperless-ngx answers with error {status}.",
+  "Server|Unter dieser Adresse antwortet kein Paperless-ngx.":
+      "No Paperless-ngx answers at this address.",
+  "Server|In Paperless-ngx gibt es den Tag „{tag}“ nicht.":
+      "Paperless-ngx has no tag “{tag}”.",
+  "Server|In Paperless-ngx gibt es kein Datumsfeld „{field}“.":
+      "Paperless-ngx has no date field “{field}”.",
   "Server|Belegt": "Busy",
   "Server|Bitte mit dem Code aus der Authenticator-App bestätigen.":
       "Please confirm with the code from the authenticator app.",

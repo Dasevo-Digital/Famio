@@ -19,24 +19,24 @@ void main() {
       api: FamioApiClient('localhost:1'),
       memberId: 'm1',
     );
-    // As the server writes it from PaperBuddy.
+    // As the server writes it from Paperless-ngx.
     engine.store.put(
       SyncRecord(
         collection: Collections.externalDocuments,
-        id: 'pb-11',
+        id: 'pl-11',
         data: FamilyDocument(
-          id: 'pb-11',
+          id: 'pl-11',
           title: 'Kfz-Versicherung',
           category: DocumentCategory.insurance,
           file: const FileRef(
-            id: 'pb-11.20260201',
+            id: 'pl-11.20260201',
             name: 'scan.pdf',
             mime: 'application/pdf',
             size: 0,
           ),
           notes: 'HUK-Coburg · Kündigungsfrist',
           expiresAt: DateTime.now().add(const Duration(days: 30)),
-          source: 'paperbuddy',
+          source: 'paperless',
         ).toData(),
         updatedAt: 1,
       ),
@@ -63,7 +63,7 @@ void main() {
         engine,
         from: now,
         to: now.add(const Duration(days: 40)),
-      ).where((r) => r.key.startsWith('doc:pb-11')),
+      ).where((r) => r.key.startsWith('doc:pl-11')),
       isNotEmpty,
     );
   });
@@ -84,11 +84,11 @@ void main() {
       ),
     );
     await tester.pump();
-    expect(find.text('Versicherungen · PaperBuddy'), findsOneWidget);
+    expect(find.text('Versicherungen · Paperless-ngx'), findsOneWidget);
     await tester.tap(find.text('Kfz-Versicherung'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Aus PaperBuddy: Ablage und Änderungen dort.'),
+      find.text('Aus Paperless-ngx: Ablage und Änderungen dort.'),
       findsOneWidget,
     );
     expect(find.text('Öffnen'), findsOneWidget);

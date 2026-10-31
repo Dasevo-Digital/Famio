@@ -37,8 +37,8 @@ abstract final class Collections {
   /// Unsorted texts, links and uploads the family files later.
   static const inbox = 'inbox';
 
-  /// Documents of a connected PaperBuddy archive; written by the server
-  /// only (see the PaperBuddy connection in the server administration).
+  /// Documents of a connected Paperless-ngx; written by the server
+  /// only (see the Paperless-ngx connection in the server administration).
   static const externalDocuments = 'external_documents';
 
   /// Photos of the family's PhotoVault (memories of the day, the wall

@@ -655,28 +655,31 @@ class FamioApiClient {
 
   Future<void> deleteSsoConfig() => _send('DELETE', 'api/admin/sso');
 
-  /// The PaperBuddy connection (without its token) and the last sync.
-  Future<Map<String, Object?>> paperBuddy() =>
-      _send('GET', 'api/admin/paperbuddy');
+  /// The Paperless-ngx connection (without its token) and the last sync.
+  Future<Map<String, Object?>> paperless() =>
+      _send('GET', 'api/admin/paperless');
 
-  /// Connects and syncs; an empty [token] keeps the stored one.
-  Future<Map<String, Object?>> savePaperBuddy({
+  /// Connects and syncs; an empty [token] keeps the stored one. [dueField]
+  /// names a date field whose value becomes the expiry (empty: none).
+  Future<Map<String, Object?>> savePaperless({
     required String url,
     required String token,
     required String tag,
     required List<String> memberIds,
-  }) => _send('PUT', 'api/admin/paperbuddy', {
+    String dueField = '',
+  }) => _send('PUT', 'api/admin/paperless', {
     'url': url,
     'token': token,
     'tag': tag,
     'memberIds': memberIds,
+    'dueField': dueField,
   });
 
-  Future<Map<String, Object?>> deletePaperBuddy() =>
-      _send('DELETE', 'api/admin/paperbuddy');
+  Future<Map<String, Object?>> deletePaperless() =>
+      _send('DELETE', 'api/admin/paperless');
 
-  Future<Map<String, Object?>> syncPaperBuddy() =>
-      _send('POST', 'api/admin/paperbuddy/sync');
+  Future<Map<String, Object?>> syncPaperless() =>
+      _send('POST', 'api/admin/paperless/sync');
 
   /// The PhotoVault connection (without token or passwords), its options
   /// and the last sync.

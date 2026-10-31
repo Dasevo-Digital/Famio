@@ -463,7 +463,7 @@ class SetupStep {
   final String title;
   final bool done;
 
-  /// An admin chose to leave it as it is (no PaperBuddy, no public
+  /// An admin chose to leave it as it is (no Paperless-ngx, no public
   /// address …): it no longer counts as open.
   final bool ignored;
 

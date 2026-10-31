@@ -1,23 +1,24 @@
 part of '../admin_screens.dart';
 
-/// Admins connect the family's PaperBuddy: documents with a tag appear
-/// under Documents, read-only, with their deadlines.
-Future<void> showPaperBuddyDialog(BuildContext context) => showDialog<void>(
+/// Admins connect the family's Paperless-ngx: documents with a tag appear
+/// under Documents, read-only, with the date of a chosen field as expiry.
+Future<void> showPaperlessDialog(BuildContext context) => showDialog<void>(
   context: context,
-  builder: (_) => const _PaperBuddyDialog(),
+  builder: (_) => const _PaperlessDialog(),
 );
 
-class _PaperBuddyDialog extends StatefulWidget {
-  const _PaperBuddyDialog();
+class _PaperlessDialog extends StatefulWidget {
+  const _PaperlessDialog();
 
   @override
-  State<_PaperBuddyDialog> createState() => _PaperBuddyDialogState();
+  State<_PaperlessDialog> createState() => _PaperlessDialogState();
 }
 
-class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
+class _PaperlessDialogState extends State<_PaperlessDialog> {
   final _url = TextEditingController();
   final _token = TextEditingController();
   final _tag = TextEditingController(text: 'Familie');
+  final _dueField = TextEditingController();
   final _members = <String>{};
   Map<String, Object?> _info = const {};
   String? _error;
@@ -30,12 +31,12 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
   @override
   void initState() {
     super.initState();
-    _run(_api.paperBuddy, loading: true);
+    _run(_api.paperless, loading: true);
   }
 
   @override
   void dispose() {
-    for (final c in [_url, _token, _tag]) {
+    for (final c in [_url, _token, _tag, _dueField]) {
       c.dispose();
     }
     super.dispose();
@@ -46,6 +47,7 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
     if (json['connected'] != true) return;
     _url.text = json['url'] as String? ?? '';
     _tag.text = json['tag'] as String? ?? 'Familie';
+    _dueField.text = json['dueField'] as String? ?? '';
     _members
       ..clear()
       ..addAll([for (final m in json['memberIds'] as List? ?? const []) '$m']);
@@ -79,17 +81,18 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
 
   Future<void> _save() async {
     final ok = await _run(
-      () => _api.savePaperBuddy(
+      () => _api.savePaperless(
         url: _url.text.trim(),
         token: _token.text.trim(),
         tag: _tag.text.trim(),
         memberIds: _members.toList(),
+        dueField: _dueField.text.trim(),
       ),
     );
     if (ok && mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(tr.adminPaperBuddySaved)));
+      ).showSnackBar(SnackBar(content: Text(tr.adminPaperlessSaved)));
     }
   }
 
@@ -97,8 +100,8 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: Text(tr.adminPaperBuddyRemove),
-        content: Text(tr.adminPaperBuddyRemoveText),
+        title: Text(tr.adminPaperlessRemove),
+        content: Text(tr.adminPaperlessRemoveText),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d, false),
@@ -111,13 +114,13 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
         ],
       ),
     );
-    if (ok == true && mounted) await _run(_api.deletePaperBuddy);
+    if (ok == true && mounted) await _run(_api.deletePaperless);
   }
 
   String? get _status {
     final sync = DateTime.tryParse('${_info['lastSync'] ?? ''}');
     if (!_connected || sync == null) return null;
-    return tr.adminPaperBuddyStatus(
+    return tr.adminPaperlessStatus(
       _info['count'] ?? 0,
       DateFormat.yMd(appLanguage).add_jm().format(sync.toLocal()),
     );
@@ -129,7 +132,7 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
     final engine = AppScope.read(context).engine!;
     final lastError = _info['lastError'] as String?;
     return AlertDialog(
-      title: Text(tr.adminPaperBuddy),
+      title: Text(tr.adminPaperless),
       content: SizedBox(
         width: 480,
         child: _loading
@@ -143,7 +146,7 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      tr.adminPaperBuddyIntro,
+                      tr.adminPaperlessIntro,
                       style: TextStyle(color: c.inkSoft),
                     ),
                     if (_status case final status?) ...[
@@ -166,7 +169,7 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
                       keyboardType: TextInputType.url,
                       autocorrect: false,
                       decoration: InputDecoration(
-                        labelText: tr.adminPaperBuddyUrl,
+                        labelText: tr.adminPaperlessUrl,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -176,10 +179,10 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
                       autocorrect: false,
                       enableSuggestions: false,
                       decoration: InputDecoration(
-                        labelText: tr.adminPaperBuddyToken,
+                        labelText: tr.adminPaperlessToken,
                         helperText: _connected
-                            ? tr.adminPaperBuddyTokenKept
-                            : tr.adminPaperBuddyTokenHint,
+                            ? tr.adminTokenKept
+                            : tr.adminPaperlessTokenHint,
                         helperMaxLines: 3,
                       ),
                     ),
@@ -187,11 +190,20 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
                     TextField(
                       controller: _tag,
                       decoration: InputDecoration(
-                        labelText: tr.adminPaperBuddyTag,
+                        labelText: tr.adminPaperlessTag,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _dueField,
+                      decoration: InputDecoration(
+                        labelText: tr.adminPaperlessDueField,
+                        helperText: tr.adminPaperlessDueFieldHint,
+                        helperMaxLines: 2,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Text(tr.adminPaperBuddyWho),
+                    Text(tr.adminPaperlessWho),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 6,
@@ -221,11 +233,11 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
         if (_connected) ...[
           TextButton(
             onPressed: _busy ? null : _remove,
-            child: Text(tr.adminPaperBuddyRemove),
+            child: Text(tr.adminPaperlessRemove),
           ),
           TextButton(
-            onPressed: _busy ? null : () => _run(_api.syncPaperBuddy),
-            child: Text(tr.adminPaperBuddySyncNow),
+            onPressed: _busy ? null : () => _run(_api.syncPaperless),
+            child: Text(tr.adminPaperlessSyncNow),
           ),
         ],
         TextButton(
@@ -234,7 +246,7 @@ class _PaperBuddyDialogState extends State<_PaperBuddyDialog> {
         ),
         FilledButton(
           onPressed: _busy ? null : _save,
-          child: Text(_connected ? tr.commonSave : tr.adminPaperBuddyConnect),
+          child: Text(_connected ? tr.commonSave : tr.adminPaperlessConnect),
         ),
       ],
     );

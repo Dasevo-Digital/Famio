@@ -30,8 +30,8 @@ extension _FileRoutes on FamioApi {
 
   Future<Response> _download(Request request, String id) async {
     final member = _auth(request);
-    if (id.startsWith(PaperBuddyLink.idPrefix)) {
-      return _paperBuddyFile(request, id, member);
+    if (id.startsWith(PaperlessLink.idPrefix)) {
+      return _paperlessFile(request, id, member);
     }
     if (id.startsWith(PhotoVaultLink.idPrefix)) {
       return _photoVaultFile(request, id, member);
