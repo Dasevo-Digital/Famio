@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.27 – Documentos de Paperless-ngx
+
+- Un administrador puede conectar su propio Paperless-ngx (Administración
+  del servidor → Ajustes → Paperless-ngx). Los documentos con la etiqueta
+  elegida aparecen en Documentos, solo para leer.
+- El aviso de vencimiento sale de un campo de fecha que indica el
+  administrador, por ejemplo «Fecha de vencimiento».
+- Se conserva una conexión existente con PaperBuddy.
+
 ## 2.0.26 – Actualización de seguridad para las conexiones
 
 - Famio ya no confía en certificados intermedios comprometidos de la

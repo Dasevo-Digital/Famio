@@ -4,6 +4,15 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.27 – Dokumente aus Paperless-ngx
+
+- Ein Admin kann das eigene Paperless-ngx anbinden (Server-Verwaltung →
+  Einstellungen → Paperless-ngx). Dokumente mit dem gewählten Tag
+  erscheinen schreibgeschützt unter Dokumente.
+- Die Ablauf-Erinnerung kommt aus einem Datumsfeld, das der Admin nennt,
+  zum Beispiel „Ablaufdatum“.
+- Eine bestehende Verbindung zu PaperBuddy wird übernommen.
+
 ## 2.0.26 – Sicherheitsupdate für Verbindungen
 
 - Famio vertraut kompromittierten Zwischenzertifikaten der

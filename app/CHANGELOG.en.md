@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.27 – Documents from Paperless-ngx
+
+- An admin can connect their own Paperless-ngx (Server administration →
+  Settings → Paperless-ngx). Documents with the chosen tag appear
+  read-only under Documents.
+- The expiry reminder comes from a date field the admin names, for
+  example “Expiry date”.
+- An existing connection to PaperBuddy is kept.
+
 ## 2.0.26 – Security update for connections
 
 - Famio no longer trusts compromised intermediate certificates of the
