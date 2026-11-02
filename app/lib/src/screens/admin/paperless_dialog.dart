@@ -156,6 +156,13 @@ class _PaperlessDialogState extends State<_PaperlessDialog> {
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
+                    if (_connected && _info['limited'] == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        tr.adminPaperlessLimited(_info['count'] ?? 0),
+                        style: TextStyle(color: c.inkSoft),
+                      ),
+                    ],
                     if (lastError != null && lastError.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(

@@ -2223,6 +2223,7 @@
   "adminPaperlessSyncNow": "Sync now",
   "adminPaperlessRemove": "Remove connection",
   "adminPaperlessRemoveText": "The Paperless-ngx documents disappear from Famio. Everything stays in Paperless-ngx.",
+  "adminPaperlessLimited": "Paperless-ngx has more documents with this tag; Famio shows the newest {count}.",
   "adminPaperlessStatus": "{count} documents, synced {when}",
   "adminPaperlessSubtitle": "Show family documents from Paperless-ngx",
   "adminPaperlessSaved": "Paperless-ngx connected",

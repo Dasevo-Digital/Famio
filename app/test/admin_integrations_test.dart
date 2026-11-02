@@ -307,6 +307,8 @@ void main() {
               'dueField': body['dueField'],
               'count': 3,
               'lastSync': '2026-10-31T08:00:00Z',
+              // More documents than Famio reads have the tag.
+              'limited': true,
             };
           }(),
           _ => null,
@@ -371,6 +373,13 @@ void main() {
     );
     expect(find.text('Paperless-ngx verbunden'), findsOneWidget);
     expect(find.textContaining('3 Dokumente, abgeglichen'), findsOneWidget);
+    expect(
+      find.text(
+        'Paperless-ngx hat mehr Dokumente mit diesem Tag; '
+        'Famio zeigt die neuesten 3.',
+      ),
+      findsOneWidget,
+    );
     // Saved: the token stays unless a new one is typed.
     expect(
       find.text('Token gespeichert – leer lassen, um es zu behalten'),

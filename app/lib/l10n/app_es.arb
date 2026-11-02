@@ -2223,6 +2223,7 @@
   "adminPaperlessSyncNow": "Sincronizar ahora",
   "adminPaperlessRemove": "Quitar conexión",
   "adminPaperlessRemoveText": "Los documentos de Paperless-ngx desaparecen de Famio. En Paperless-ngx no se borra nada.",
+  "adminPaperlessLimited": "Paperless-ngx tiene más documentos con esta etiqueta; Famio muestra los {count} más recientes.",
   "adminPaperlessStatus": "{count} documentos, sincronizado {when}",
   "adminPaperlessSubtitle": "Mostrar documentos familiares de Paperless-ngx",
   "adminPaperlessSaved": "Paperless-ngx conectado",

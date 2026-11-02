@@ -270,7 +270,8 @@ class WebPush {
       final response = await _client
           .send(request)
           .timeout(const Duration(seconds: 15));
-      await response.stream.drain<void>();
+      // The answer says nothing; it may not hold up the next notice.
+      await response.stream.timeout(const Duration(seconds: 15)).drain<void>();
       final status = response.statusCode;
       if (status == 404 || status == 410) {
         _db.execute('DELETE FROM web_push_subscriptions WHERE id = ?', [

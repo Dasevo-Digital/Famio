@@ -795,7 +795,8 @@ class PushService {
       final response = await _client
           .send(request)
           .timeout(const Duration(seconds: 15));
-      await response.stream.drain<void>();
+      // The answer says nothing; it may not hold up the next notice.
+      await response.stream.timeout(const Duration(seconds: 15)).drain<void>();
       if (response.statusCode >= 300) {
         error = t('Push-Server antwortet {status}', {
           'status': response.statusCode,

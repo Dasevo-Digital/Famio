@@ -9,6 +9,7 @@ import '../accounts.dart';
 import '../api_exception.dart';
 import '../i18n.dart';
 import '../record_store.dart';
+import '../remote_stream.dart';
 
 /// The connection to the family's Paperless-ngx, set by an admin. The token
 /// belongs to a Paperless-ngx user who may read the family's documents; it
@@ -69,6 +70,8 @@ class PaperlessLink {
     required this.onChanged,
     http.Client? client,
     this.interval = const Duration(minutes: 30),
+    this.answerTimeout = const Duration(seconds: 30),
+    this.pauseTimeout = const Duration(minutes: 2),
   }) : _http = client ?? http.Client();
 
   final Database db;
@@ -78,6 +81,11 @@ class PaperlessLink {
   /// Called after the documents changed, to notify connected apps.
   final void Function() onChanged;
   final Duration interval;
+
+  /// For each request of the lists the whole answer, for a file until it
+  /// begins; then at most [pauseTimeout] between two parts of the file.
+  final Duration answerTimeout;
+  final Duration pauseTimeout;
   final http.Client _http;
   Timer? _timer;
   Future<void>? _running;
@@ -189,7 +197,7 @@ class PaperlessLink {
     // Only working connections are kept, and what the check fetched is
     // what Famio shows: a sync still running for the old connection keeps
     // nothing.
-    final List<_Document> documents;
+    final _Fetched documents;
     try {
       documents = await _documents(c);
     } on ApiException {
@@ -249,11 +257,13 @@ class PaperlessLink {
     }
   }
 
-  void _show(List<_Document> documents, PaperlessConfig c) {
-    if (_store(documents, config: c)) onChanged();
+  void _show(_Fetched fetched, PaperlessConfig c) {
+    if (_store(fetched.documents, config: c)) onChanged();
     _put(_statusKey, {
       'lastSync': DateTime.now().toUtc().toIso8601String(),
-      'count': documents.length,
+      'count': fetched.documents.length,
+      // More than the newest 5,000 have the tag.
+      if (fetched.limited) 'limited': true,
       'lastError': null,
     });
   }
@@ -273,25 +283,42 @@ class PaperlessLink {
   };
 
   Future<Map<String, Object?>> _get(PaperlessConfig c, Uri url) async {
-    final response = await _http
-        .get(url, headers: _headers(c))
-        .timeout(const Duration(seconds: 30));
-    if (response.statusCode == 401 || response.statusCode == 403) {
+    final int status;
+    final List<int> body;
+    try {
+      (status, body) = await httpTransfer(
+        client: _http,
+        method: 'GET',
+        url: url,
+        headers: _headers(c),
+        timeout: answerTimeout,
+        consume: (response, stream) async => (
+          response.statusCode,
+          await readTransferBytes(stream, maxBytes: _maxPage),
+        ),
+      );
+    } on TransferTooLarge {
+      throw ApiException.badRequest(
+        'paperless_error',
+        t('{provider} hat eine zu große Antwort geliefert.', {
+          'provider': 'Paperless-ngx',
+        }),
+      );
+    }
+    if (status == 401 || status == 403) {
       throw ApiException.badRequest(
         'paperless_denied',
         t('Paperless-ngx lehnt das Token ab.'),
       );
     }
-    if (response.statusCode != 200) {
+    if (status != 200) {
       throw ApiException.badRequest(
         'paperless_error',
-        t('Paperless-ngx antwortet mit Fehler {status}.', {
-          'status': response.statusCode,
-        }),
+        t('Paperless-ngx antwortet mit Fehler {status}.', {'status': status}),
       );
     }
     try {
-      final json = jsonDecode(utf8.decode(response.bodyBytes));
+      final json = jsonDecode(utf8.decode(body));
       if (json is Map) return json.cast();
     } on FormatException {
       // Below.
@@ -302,17 +329,29 @@ class PaperlessLink {
     );
   }
 
-  /// All pages of a list.
+  /// One page of a list: 100 entries, even with long texts far below this.
+  static const _maxPage = 16 * 1024 * 1024;
+
+  /// The most pages of a list read: the newest 5,000 documents.
+  static const _maxPages = 50;
+
+  /// All pages of a list, at most [_maxPages]; [more] is called when there
+  /// would have been more.
   Future<List<Map<String, Object?>>> _all(
     PaperlessConfig c,
     String path,
-    Map<String, String> query,
-  ) async {
+    Map<String, String> query, {
+    void Function()? more,
+  }) async {
     final out = <Map<String, Object?>>[];
     Uri? next = Uri.parse(
       '${c.url}$path',
     ).replace(queryParameters: {...query, 'page_size': '100'});
-    for (var page = 0; next != null && page < 50; page++) {
+    for (var page = 0; next != null; page++) {
+      if (page == _maxPages) {
+        more?.call();
+        break;
+      }
       final json = await _get(c, next);
       for (final r in json['results'] as List? ?? const []) {
         if (r is Map) out.add(r.cast());
@@ -327,7 +366,7 @@ class PaperlessLink {
     return out;
   }
 
-  Future<List<_Document>> _documents(PaperlessConfig c) async {
+  Future<_Fetched> _documents(PaperlessConfig c) async {
     final tags = await _all(c, '/api/tags/', {'name__iexact': c.tag});
     final tag = tags
         .where((t) => '${t['name']}'.toLowerCase() == c.tag.toLowerCase())
@@ -358,11 +397,12 @@ class PaperlessLink {
       }
       dueField = field['id'];
     }
+    var limited = false;
     final docs = await _all(c, '/api/documents/', {
       'tags__id__all': '${tag['id']}',
       'ordering': '-created',
       'truncate_content': 'true',
-    });
+    }, more: () => limited = true);
     Future<Map<int, String>> names(String path) async => {
       for (final r in await _all(c, path, const {}))
         if (r['id'] is int) r['id'] as int: '${r['name'] ?? ''}',
@@ -380,26 +420,29 @@ class PaperlessLink {
       return null;
     }
 
-    return [
-      for (final d in docs)
-        if (d['id'] is int)
-          _Document(
-            id: d['id'] as int,
-            title: '${d['title'] ?? ''}',
-            // A date since API version 9, a date and time before.
-            created: '${d['created'] ?? d['created_date'] ?? ''}',
-            modified: '${d['modified'] ?? ''}',
-            fileName:
-                (d['archived_file_name'] ?? d['original_file_name'] ?? '')
-                    as String,
-            mime: d['archived_file_name'] != null
-                ? 'application/pdf'
-                : '${d['mime_type'] ?? 'application/pdf'}',
-            correspondent: correspondents[d['correspondent']] ?? '',
-            type: types[d['document_type']] ?? '',
-            due: due(d),
-          ),
-    ];
+    return (
+      limited: limited,
+      documents: [
+        for (final d in docs)
+          if (d['id'] is int)
+            _Document(
+              id: d['id'] as int,
+              title: '${d['title'] ?? ''}',
+              // A date since API version 9, a date and time before.
+              created: '${d['created'] ?? d['created_date'] ?? ''}',
+              modified: '${d['modified'] ?? ''}',
+              fileName:
+                  (d['archived_file_name'] ?? d['original_file_name'] ?? '')
+                      as String,
+              mime: d['archived_file_name'] != null
+                  ? 'application/pdf'
+                  : '${d['mime_type'] ?? 'application/pdf'}',
+              correspondent: correspondents[d['correspondent']] ?? '',
+              type: types[d['document_type']] ?? '',
+              due: due(d),
+            ),
+      ],
+    );
   }
 
   // --- Famio records ---------------------------------------------------------
@@ -454,13 +497,24 @@ class PaperlessLink {
         FileRef.fromJson(record.data['file'])?.id != fileId) {
       return null;
     }
-    final request = http.Request(
-      'GET',
-      Uri.parse('${c.url}/api/documents/${match[1]}/download/'),
-    )..headers.addAll(_headers(c));
-    final response = await _http.send(request);
+    final http.StreamedResponse response;
+    try {
+      response = await getStreamed(
+        _http,
+        Uri.parse('${c.url}/api/documents/${match[1]}/download/'),
+        headers: _headers(c),
+        answer: answerTimeout,
+        pause: pauseTimeout,
+      );
+    } on Exception catch (e) {
+      throw ApiException(
+        502,
+        'paperless_unreachable',
+        t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
+      );
+    }
     if (response.statusCode != 200) {
-      await response.stream.drain<void>();
+      await response.stream.listen((_) {}, onError: (Object _) {}).cancel();
       throw ApiException(
         502,
         'paperless_error',
@@ -487,6 +541,9 @@ class PaperlessLink {
     [key, jsonEncode(value)],
   );
 }
+
+/// What a sync fetched; [limited]: more documents have the tag.
+typedef _Fetched = ({List<_Document> documents, bool limited});
 
 class _Document {
   const _Document({

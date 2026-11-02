@@ -5687,6 +5687,14 @@
   "adminPaperlessSyncNow": "Jetzt abgleichen",
   "adminPaperlessRemove": "Verbindung entfernen",
   "adminPaperlessRemoveText": "Die Dokumente aus Paperless-ngx verschwinden aus Famio. In Paperless-ngx bleibt alles erhalten.",
+  "adminPaperlessLimited": "Paperless-ngx hat mehr Dokumente mit diesem Tag; Famio zeigt die neuesten {count}.",
+  "@adminPaperlessLimited": {
+    "placeholders": {
+      "count": {
+        "type": "Object?"
+      }
+    }
+  },
   "adminPaperlessStatus": "{count} Dokumente, abgeglichen {when}",
   "@adminPaperlessStatus": {
     "placeholders": {

@@ -8,6 +8,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
 import '../i18n.dart';
+import '../remote_stream.dart';
 
 /// An app package the server hands out, checked against the signed
 /// release.
@@ -52,6 +53,8 @@ class AppUpdates {
     Uri? releases,
     this.retry = const Duration(hours: 6),
     this.retrySoon = const Duration(minutes: 10),
+    this.answerTimeout = const Duration(seconds: 30),
+    this.pauseTimeout = const Duration(minutes: 2),
     this.onError,
   }) : _http = client ?? http.Client(),
        releases =
@@ -77,6 +80,13 @@ class AppUpdates {
   /// tried again this soon, up to [_quickRetries] times, before only
   /// [retry] is left.
   final Duration retrySoon;
+
+  /// Until GitHub answers (for the release list and the checksums also the
+  /// whole answer); then at most [pauseTimeout] between two parts of a
+  /// package. A connection that hangs is aborted, so it cannot hold up
+  /// every later attempt: they wait for the one running.
+  final Duration answerTimeout;
+  final Duration pauseTimeout;
 
   /// For the server log; failures are also shown in the admin screen.
   final void Function(String line)? onError;
@@ -223,9 +233,8 @@ class AppUpdates {
       }
       // Written last: a package counts only together with its signed list.
       File(p.join(folder.path, 'SHA256SUMS.txt')).writeAsStringSync(sums);
-      File(
-        p.join(folder.path, 'SHA256SUMS.txt.sig'),
-      ).writeAsStringSync(signature);
+      File(p.join(folder.path, 'SHA256SUMS.txt.sig'))
+          .writeAsStringSync(signature);
       for (final other in Directory(dir).listSync()) {
         if (p.basename(other.path) != version) {
           other.deleteSync(recursive: true);
@@ -249,20 +258,18 @@ class AppUpdates {
 
   /// File name → download address of this version's release.
   Future<Map<String, Uri>> _assets() async {
-    final response = await _http
-        .get(releases.resolve('v$version'), headers: _headers)
-        .timeout(const Duration(seconds: 30));
-    if (response.statusCode == 404) {
+    final (status, body) = await _small(releases.resolve('v$version'));
+    if (status == 404) {
       throw _Failure(
         t('Für Version {version} gibt es kein Release.', {'version': version}),
       );
     }
-    if (response.statusCode != 200) {
+    if (status != 200) {
       throw _Failure(
-        t('Release-Liste antwortet mit {code}.', {'code': response.statusCode}),
+        t('Release-Liste antwortet mit {code}.', {'code': status}),
       );
     }
-    final release = jsonDecode(response.body) as Map;
+    final release = jsonDecode(utf8.decode(body)) as Map;
     return {
       for (final a in release['assets'] as List? ?? const [])
         if (a is Map && a['browser_download_url'] is String)
@@ -271,25 +278,38 @@ class AppUpdates {
   }
 
   Future<String> _text(Uri url) async {
-    final response = await _http
-        .get(url, headers: _headers)
-        .timeout(const Duration(seconds: 30));
-    if (response.statusCode != 200) {
-      throw _Failure(
-        t('Download antwortet mit {code}.', {'code': response.statusCode}),
-      );
+    final (status, body) = await _small(url);
+    if (status != 200) {
+      throw _Failure(t('Download antwortet mit {code}.', {'code': status}));
     }
-    return utf8.decode(response.bodyBytes);
+    return utf8.decode(body);
   }
+
+  /// The release list and the checksums: small, one deadline for all.
+  Future<(int, List<int>)> _small(Uri url) => httpTransfer(
+    client: _http,
+    method: 'GET',
+    url: url,
+    headers: _headers,
+    timeout: answerTimeout,
+    consume: (response, stream) async => (
+      response.statusCode,
+      await readTransferBytes(stream, maxBytes: 4 * 1024 * 1024),
+    ),
+  );
 
   /// Into a `.part` file first; renamed only when the checksum fits.
   Future<void> _download(Uri url, File file, String sha256) async {
     final part = File('${file.path}.part');
-    final response = await _http.send(
-      http.Request('GET', url)..headers.addAll(_headers),
+    final response = await getStreamed(
+      _http,
+      url,
+      headers: _headers,
+      answer: answerTimeout,
+      pause: pauseTimeout,
     );
     if (response.statusCode != 200) {
-      await response.stream.drain<void>();
+      await response.stream.listen((_) {}, onError: (Object _) {}).cancel();
       throw _Failure(
         t('Download antwortet mit {code}.', {'code': response.statusCode}),
       );
@@ -297,9 +317,7 @@ class AppUpdates {
     final sink = part.openWrite();
     var bytes = 0;
     try {
-      await for (final chunk in response.stream.timeout(
-        const Duration(minutes: 2),
-      )) {
+      await for (final chunk in response.stream) {
         bytes += chunk.length;
         if (bytes > maxBytes) {
           throw _Failure(t('Das Paket ist zu groß.'));

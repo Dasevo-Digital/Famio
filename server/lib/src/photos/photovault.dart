@@ -12,6 +12,7 @@ import '../api_exception.dart';
 import '../files/file_store.dart';
 import '../i18n.dart';
 import '../record_store.dart';
+import '../remote_stream.dart';
 
 /// The connection to the family's PhotoVault server, set by an admin. Famio
 /// signs in once as a PhotoVault account (a device "Famio" there) and keeps
@@ -156,6 +157,8 @@ class PhotoVaultLink {
     required this.onChanged,
     http.Client? client,
     this.interval = const Duration(minutes: 15),
+    this.answerTimeout = const Duration(seconds: 30),
+    this.pauseTimeout = const Duration(minutes: 2),
     DateTime Function()? now,
   }) : _http = client ?? http.Client(),
        _now = now ?? DateTime.now;
@@ -169,6 +172,11 @@ class PhotoVaultLink {
   final tz.Location Function() location;
   final void Function() onChanged;
   final Duration interval;
+
+  /// For a picture until it begins, then at most [pauseTimeout] between
+  /// two of its parts (also for the answer to a sent chat photo).
+  final Duration answerTimeout;
+  final Duration pauseTimeout;
   final http.Client _http;
   final DateTime Function() _now;
   Timer? _timer;
@@ -806,7 +814,13 @@ class PhotoVaultLink {
       final response = await _http
           .send(request)
           .timeout(const Duration(minutes: 5));
-      final body = await response.stream.bytesToString();
+      final body = utf8.decode(
+        await readTransferBytes(
+          response.stream.timeout(pauseTimeout),
+          maxBytes: 1024 * 1024,
+        ),
+        allowMalformed: true,
+      );
       if (response.statusCode == 202 || response.statusCode == 200) return;
       if (response.statusCode == 401 &&
           attempt == 0 &&
@@ -933,16 +947,27 @@ class PhotoVaultLink {
       return null;
     }
     final asset = recordId.substring(idPrefix.length);
-    final request = http.Request(
-      'GET',
-      Uri.parse(
-        '${c.url}/api/v1/aufnahmen/${Uri.encodeComponent(asset)}/'
-        '${thumbnail ? 'miniatur' : 'ansicht'}',
-      ),
-    )..headers['authorization'] = 'Bearer ${c.token}';
-    final response = await _http.send(request);
+    final http.StreamedResponse response;
+    try {
+      response = await getStreamed(
+        _http,
+        Uri.parse(
+          '${c.url}/api/v1/aufnahmen/${Uri.encodeComponent(asset)}/'
+          '${thumbnail ? 'miniatur' : 'ansicht'}',
+        ),
+        headers: {'authorization': 'Bearer ${c.token}'},
+        answer: answerTimeout,
+        pause: pauseTimeout,
+      );
+    } on Exception catch (e) {
+      throw ApiException(
+        502,
+        'photovault_unreachable',
+        t('Keine Verbindung zu PhotoVault ({error}).', {'error': '$e'}),
+      );
+    }
     if (response.statusCode != 200) {
-      await response.stream.drain<void>();
+      await response.stream.listen((_) {}, onError: (Object _) {}).cancel();
       throw ApiException(
         502,
         'photovault_error',
