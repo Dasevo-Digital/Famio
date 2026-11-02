@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.28 – Paperless-ngx und PhotoVault zuverlässiger
+
+- Wird Paperless-ngx oder PhotoVault getrennt, während gerade ein Abgleich
+  läuft, bleiben deren Dokumente bzw. Fotos nicht mehr zurück.
+- Geänderte Einstellungen gelten sofort, auch wenn noch ein Abgleich lief.
+- Dokumente aus Paperless-ngx öffnen sich auch, wenn Paperless-ngx keine
+  Dateigröße mitschickt.
+
 ## 2.0.27 – Dokumente aus Paperless-ngx
 
 - Ein Admin kann das eigene Paperless-ngx anbinden (Server-Verwaltung →

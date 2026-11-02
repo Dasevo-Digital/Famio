@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.28 – Paperless-ngx and PhotoVault more reliable
+
+- If Paperless-ngx or PhotoVault is disconnected while a sync is running,
+  its documents or photos no longer stay behind.
+- Changed settings apply right away, even while a sync was running.
+- Documents from Paperless-ngx open even when Paperless-ngx sends no file
+  size.
+
 ## 2.0.27 – Documents from Paperless-ngx
 
 - An admin can connect their own Paperless-ngx (Server administration →

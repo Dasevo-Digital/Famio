@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.28 – Paperless-ngx y PhotoVault más fiables
+
+- Si se desconecta Paperless-ngx o PhotoVault mientras se sincroniza, sus
+  documentos o fotos ya no se quedan.
+- Los ajustes cambiados se aplican enseguida, aunque hubiera una
+  sincronización en curso.
+- Los documentos de Paperless-ngx se abren aunque Paperless-ngx no envíe el
+  tamaño del archivo.
+
 ## 2.0.27 – Documentos de Paperless-ngx
 
 - Un administrador puede conectar su propio Paperless-ngx (Administración
