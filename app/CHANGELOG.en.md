@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.29 – Limited waiting times
+
+- The server fetches the app packages of a new version even when the
+  connection to GitHub hangs in between.
+- Documents from Paperless-ngx and pictures from PhotoVault report an error
+  instead of loading forever when the service does not answer.
+- If Paperless-ngx has more than 5,000 documents with the tag, Famio says
+  so.
+
 ## 2.0.28 – Paperless-ngx and PhotoVault more reliable
 
 - If Paperless-ngx or PhotoVault is disconnected while a sync is running,

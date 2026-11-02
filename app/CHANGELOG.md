@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.29 – Begrenzte Wartezeiten
+
+- Der Server lädt die App-Pakete einer neuen Version auch dann, wenn die
+  Verbindung zu GitHub zwischendurch hängen bleibt.
+- Dokumente aus Paperless-ngx und Bilder aus PhotoVault melden einen
+  Fehler, statt endlos zu laden, wenn der Dienst nicht antwortet.
+- Hat Paperless-ngx mehr als 5.000 Dokumente mit dem Tag, sagt Famio das.
+
 ## 2.0.28 – Paperless-ngx und PhotoVault zuverlässiger
 
 - Wird Paperless-ngx oder PhotoVault getrennt, während gerade ein Abgleich

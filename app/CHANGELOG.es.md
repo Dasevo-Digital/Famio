@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.29 – Esperas limitadas
+
+- El servidor descarga los paquetes de una nueva versión aunque la conexión
+  con GitHub se quede colgada entre medias.
+- Los documentos de Paperless-ngx y las imágenes de PhotoVault muestran un
+  error en lugar de cargar sin fin cuando el servicio no responde.
+- Si Paperless-ngx tiene más de 5.000 documentos con la etiqueta, Famio lo
+  indica.
+
 ## 2.0.28 – Paperless-ngx y PhotoVault más fiables
 
 - Si se desconecta Paperless-ngx o PhotoVault mientras se sincroniza, sus
