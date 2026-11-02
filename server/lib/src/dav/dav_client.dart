@@ -6,6 +6,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:xml/xml.dart';
 import '../i18n.dart';
+import '../remote_stream.dart';
 
 const _dav = 'DAV:';
 const _caldav = 'urn:ietf:params:xml:ns:caldav';
@@ -106,21 +107,31 @@ class DavClient {
       await verifyUrl?.call(target);
       final token = bearer == null ? null : await bearer!(force: forceToken);
       forceToken = false;
-      final request = http.Request(method, target)
-        ..followRedirects = false
-        ..headers['authorization'] = bearer == null
+      final requestHeaders = {
+        'authorization': bearer == null
             ? 'Basic ${base64.encode(utf8.encode('$username:$password'))}'
-            : 'Bearer $token'
-        ..headers['user-agent'] = 'Famio CalDAV'
-        ..headers.addAll(headers);
-      if (depth != null) request.headers['depth'] = depth;
+            : 'Bearer $token',
+        'user-agent': 'Famio CalDAV',
+        ...headers,
+        'depth': ?depth,
+      };
       if (body != null) {
-        request.headers['content-type'] ??= 'application/xml; charset=utf-8';
-        request.bodyBytes = utf8.encode(body);
+        requestHeaders['content-type'] ??= 'application/xml; charset=utf-8';
       }
       final http.StreamedResponse response;
       try {
-        response = await _http.send(request).timeout(timeout);
+        // [timeout] until the answer and between two of its parts; a server
+        // that stops sending would otherwise hold up every later sync.
+        response = await sendStreamed(
+          _http,
+          method,
+          target,
+          headers: requestHeaders,
+          body: body == null ? null : utf8.encode(body),
+          followRedirects: false,
+          answer: timeout,
+          pause: timeout,
+        );
       } on TimeoutException {
         throw DavException(
           t('Zeitüberschreitung bei {host}', {'host': target.host}),
@@ -150,18 +161,24 @@ class DavClient {
       if (response.statusCode >= 300 &&
           response.statusCode < 400 &&
           location != null) {
-        await response.stream.drain<void>();
+        await response.stream.listen((_) {}, onError: (Object _) {}).cancel();
         target = target.resolve(location);
         continue;
       }
       final bytes = <int>[];
-      await for (final chunk in response.stream) {
-        bytes.addAll(chunk);
-        if (bytes.length > _maxBytes) {
-          throw DavException(
-            t('Antwort von {host} ist zu groß', {'host': target.host}),
-          );
+      try {
+        await for (final chunk in response.stream) {
+          bytes.addAll(chunk);
+          if (bytes.length > _maxBytes) {
+            throw DavException(
+              t('Antwort von {host} ist zu groß', {'host': target.host}),
+            );
+          }
         }
+      } on TimeoutException {
+        throw DavException(
+          t('Zeitüberschreitung bei {host}', {'host': target.host}),
+        );
       }
       if (response.statusCode == 401 && bearer != null && !renewed) {
         renewed = true; // The access token expired early: once more.

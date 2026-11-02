@@ -36,6 +36,7 @@ import 'dav/caldav_sync.dart';
 import 'dav/dav_client.dart';
 import 'dav/google_oauth.dart';
 import 'files/file_store.dart';
+import 'remote_stream.dart';
 import 'remote_url_policy.dart';
 import 'security.dart';
 import 'settings.dart';

@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cryptography/cryptography.dart';
 import 'package:famio_server/famio_server.dart';
 import 'package:famio_server/src/api_exception.dart';
+import 'package:famio_server/src/dav/dav_client.dart';
 import 'package:famio_server/src/documents/paperless.dart';
 import 'package:famio_server/src/remote_stream.dart';
 import 'package:famio_server/src/updates/app_updates.dart';
@@ -48,6 +49,38 @@ void main() {
         throwsA(isA<TimeoutException>()),
       );
     });
+  });
+
+  test('a calendar server that stops sending: a timeout, not a hang', () async {
+    final body = StreamController<List<int>>();
+    addTearDown(body.close);
+    String? method;
+    String? sent;
+    final client = MockClient.streaming((request, bytes) async {
+      method = request.method;
+      sent = await bytes.bytesToString();
+      body.add(utf8.encode('<?xml version="1.0"?><d:multistatus'));
+      return http.StreamedResponse(body.stream, 207);
+    });
+    final dav = DavClient(client, username: 'u', password: 'p', timeout: short);
+    await expectLater(
+      dav
+          .send(
+            'PROPFIND',
+            Uri.parse('https://cal.test/'),
+            body: '<propfind/>',
+            depth: '0',
+          )
+          .timeout(const Duration(seconds: 10)),
+      throwsA(
+        isA<DavException>().having(
+          (e) => e.message,
+          'message',
+          contains('Zeitüberschreitung bei cal.test'),
+        ),
+      ),
+    );
+    expect((method, sent), ('PROPFIND', '<propfind/>'));
   });
 
   test('a package download that hangs does not block later attempts', () async {

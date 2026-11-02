@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 
@@ -67,18 +68,22 @@ class FallbackFonts {
 
   Future<File?> _fetch(String path, File target) async {
     try {
-      final response = await _http
-          .get(source.resolve(path))
-          .timeout(const Duration(seconds: 20));
-      if (response.statusCode != 200 ||
-          response.bodyBytes.isEmpty ||
-          response.bodyBytes.length > _maxBytes) {
-        return null;
-      }
+      // 20 seconds in all, aborted after; at most [_maxBytes].
+      final (status, bytes) = await httpTransfer(
+        client: _http,
+        method: 'GET',
+        url: source.resolve(path),
+        timeout: const Duration(seconds: 20),
+        consume: (response, stream) async => (
+          response.statusCode,
+          await readTransferBytes(stream, maxBytes: _maxBytes),
+        ),
+      );
+      if (status != 200 || bytes.isEmpty) return null;
       target.parent.createSync(recursive: true);
       // Under its own name only when complete.
       final part = File('${target.path}.part')
-        ..writeAsBytesSync(response.bodyBytes, flush: true);
+        ..writeAsBytesSync(bytes, flush: true);
       part.renameSync(target.path);
       return target;
     } catch (_) {

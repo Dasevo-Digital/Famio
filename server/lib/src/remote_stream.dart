@@ -2,15 +2,19 @@ import 'dart:async';
 
 import 'package:http/http.dart' as http;
 
-/// A GET to another service (GitHub, Paperless-ngx, PhotoVault) whose body
-/// is passed on or saved as it arrives, so it has no deadline as a whole:
-/// at most [answer] until the headers, then at most [pause] between two
-/// parts of the body. After either the request is aborted, not merely
-/// abandoned, and the body ends with a [TimeoutException].
-Future<http.StreamedResponse> getStreamed(
+/// A request to another service (GitHub, Paperless-ngx, PhotoVault, a
+/// calendar server, a recipe page) whose body may be large, so it has no
+/// deadline as a whole: at most [answer] until the headers, then at most
+/// [pause] between two parts of the body. After either the request is
+/// aborted, not merely abandoned, and the body ends with a
+/// [TimeoutException].
+Future<http.StreamedResponse> sendStreamed(
   http.Client client,
+  String method,
   Uri url, {
   Map<String, String> headers = const {},
+  List<int>? body,
+  bool followRedirects = true,
   Duration answer = const Duration(seconds: 30),
   Duration pause = const Duration(minutes: 2),
 }) async {
@@ -19,10 +23,11 @@ Future<http.StreamedResponse> getStreamed(
     if (!abort.isCompleted) abort.complete();
   }
 
-  final sent = client.send(
-    http.AbortableRequest('GET', url, abortTrigger: abort.future)
-      ..headers.addAll(headers),
-  );
+  final request = http.AbortableRequest(method, url, abortTrigger: abort.future)
+    ..followRedirects = followRedirects
+    ..headers.addAll(headers);
+  if (body != null) request.bodyBytes = body;
+  final sent = client.send(request);
   final http.StreamedResponse response;
   try {
     response = await sent.timeout(answer);
@@ -37,7 +42,7 @@ Future<http.StreamedResponse> getStreamed(
     );
     rethrow;
   }
-  final body = response.stream.timeout(
+  final stream = response.stream.timeout(
     pause,
     onTimeout: (sink) {
       stop();
@@ -47,7 +52,7 @@ Future<http.StreamedResponse> getStreamed(
     },
   );
   return http.StreamedResponse(
-    body,
+    stream,
     response.statusCode,
     contentLength: response.contentLength,
     request: response.request,
@@ -57,3 +62,19 @@ Future<http.StreamedResponse> getStreamed(
     reasonPhrase: response.reasonPhrase,
   );
 }
+
+/// [sendStreamed] for a GET.
+Future<http.StreamedResponse> getStreamed(
+  http.Client client,
+  Uri url, {
+  Map<String, String> headers = const {},
+  Duration answer = const Duration(seconds: 30),
+  Duration pause = const Duration(minutes: 2),
+}) => sendStreamed(
+  client,
+  'GET',
+  url,
+  headers: headers,
+  answer: answer,
+  pause: pause,
+);

@@ -16,13 +16,25 @@ extension _WebRoutes on FamioApi {
     final client = selfCheckClient ?? http.Client();
     for (var hop = 0; hop < 5; hop++) {
       await RemoteUrlPolicy(lookup: hostLookup).check(uri!);
-      final response = await client
-          .send(
-            http.Request('GET', uri)
-              ..followRedirects = false
-              ..headers['user-agent'] = 'Mozilla/5.0 (Famio Rezept-Import)',
-          )
-          .timeout(const Duration(seconds: 20));
+      final http.StreamedResponse response;
+      try {
+        // 20 seconds until the page answers and between two of its parts.
+        response = await sendStreamed(
+          client,
+          'GET',
+          uri,
+          headers: {'user-agent': 'Mozilla/5.0 (Famio Rezept-Import)'},
+          followRedirects: false,
+          answer: const Duration(seconds: 20),
+          pause: const Duration(seconds: 20),
+        );
+      } on TimeoutException {
+        throw ApiException(
+          504,
+          'page_unavailable',
+          t('Die Seite antwortet nicht.'),
+        );
+      }
       final location = response.headers['location'];
       if (response.statusCode >= 300 &&
           response.statusCode < 400 &&
@@ -44,11 +56,19 @@ extension _WebRoutes on FamioApi {
         throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
       }
       final bytes = <int>[];
-      await for (final chunk in response.stream) {
-        bytes.addAll(chunk);
-        if (bytes.length > _maxPage) {
-          throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
+      try {
+        await for (final chunk in response.stream) {
+          bytes.addAll(chunk);
+          if (bytes.length > _maxPage) {
+            throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
+          }
         }
+      } on TimeoutException {
+        throw ApiException(
+          504,
+          'page_unavailable',
+          t('Die Seite antwortet nicht.'),
+        );
       }
       return _json({
         'url': uri.toString(),

@@ -1120,6 +1120,7 @@ const sharedEn = <String, String>{
   "Server|Die Seite antwortet mit {code}.": "The page answers with {code}.",
   "Server|Das ist keine Webseite.": "That is not a web page.",
   "Server|Die Seite ist zu groß.": "The page is too large.",
+  "Server|Die Seite antwortet nicht.": "The page does not answer.",
   "Server|Zu viele Weiterleitungen.": "Too many redirects.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
