@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.30 – Sincronización del calendario sin bloqueos
+
+- Si un servidor de calendario CalDAV se queda colgado al responder, Famio
+  vuelve a sincronizar la próxima vez en lugar de detenerse hasta un
+  reinicio.
+- Importar una receta de una página web se rinde tras 20 segundos sin
+  respuesta.
+
 ## 2.0.29 – Esperas limitadas
 
 - El servidor descarga los paquetes de una nueva versión aunque la conexión

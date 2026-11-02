@@ -4,6 +4,13 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.30 – Kalender-Abgleich ohne Hänger
+
+- Bleibt ein CalDAV-Kalender-Server beim Antworten stecken, gleicht Famio
+  beim nächsten Mal wieder ab, statt bis zu einem Neustart stehen zu
+  bleiben.
+- Der Rezept-Import von Webseiten gibt nach 20 Sekunden ohne Antwort auf.
+
 ## 2.0.29 – Begrenzte Wartezeiten
 
 - Der Server lädt die App-Pakete einer neuen Version auch dann, wenn die

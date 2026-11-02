@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.30 – Calendar sync without hangs
+
+- If a CalDAV calendar server gets stuck while answering, Famio syncs again
+  next time instead of stopping until a restart.
+- Importing a recipe from a web page gives up after 20 seconds without an
+  answer.
+
 ## 2.0.29 – Limited waiting times
 
 - The server fetches the app packages of a new version even when the
