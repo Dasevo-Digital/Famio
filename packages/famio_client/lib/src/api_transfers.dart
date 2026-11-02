@@ -108,14 +108,18 @@ extension _FileTransfers on FamioApiClient {
   Future<void> _downloadFileToSink(
     StreamSink<List<int>> sink,
     String id, {
-    required int expectedBytes,
+    required int? expectedBytes,
     int? maxBytes,
-    void Function(int)? onLength,
+    void Function(int?)? onLength,
     TransferCancellation? cancellation,
   }) {
-    if (expectedBytes < 0 ||
-        expectedBytes > 4096 * 1024 * 1024 ||
-        (maxBytes != null && (maxBytes < 0 || maxBytes > 4096 * 1024 * 1024))) {
+    const limit = 4096 * 1024 * 1024;
+    final bound = maxBytes ?? expectedBytes;
+    if ((expectedBytes != null &&
+            (expectedBytes < 0 || expectedBytes > limit)) ||
+        bound == null ||
+        bound < 0 ||
+        bound > limit) {
       return Future.error(
         ApiError(413, 'too_large', ClientTexts.transferTooLarge),
       );
@@ -124,7 +128,7 @@ extension _FileTransfers on FamioApiClient {
       'GET',
       fileUrl(id),
       sink,
-      maxBytes: maxBytes ?? expectedBytes,
+      maxBytes: bound,
       expectedBytes: expectedBytes,
       responseLength: maxBytes != null,
       onLength: onLength,
@@ -207,7 +211,7 @@ extension _FileTransfers on FamioApiClient {
     required int maxBytes,
     int? expectedBytes,
     bool responseLength = false,
-    void Function(int)? onLength,
+    void Function(int?)? onLength,
     TransferCancellation? cancellation,
     void Function(int, int?)? onProgress,
   }) async {
@@ -235,10 +239,12 @@ extension _FileTransfers on FamioApiClient {
           if ((response.contentLength ?? 0) > maxBytes) {
             throw TransferTooLarge();
           }
+          // Null: neither the answer nor the caller knows the length (an
+          // external document behind a server that sends it in chunks).
           final length = responseLength
               ? response.contentLength ?? expectedBytes
               : expectedBytes;
-          if (length != null) onLength?.call(length);
+          onLength?.call(length);
           var received = 0;
           Stream<List<int>> bounded() async* {
             await for (final chunk in stream) {

@@ -24,11 +24,13 @@ Future<String> writeTempFile(String dir, String name, List<int> data) async {
   return file.path;
 }
 
+/// Writes [data] to a new file in [dir]; it must have exactly
+/// [expectedBytes], unless that is null (a length the server did not tell).
 Future<String> writeTempStream(
   String dir,
   String name,
   Stream<List<int>> data,
-  int expectedBytes,
+  int? expectedBytes,
 ) async {
   await Directory(dir).create(recursive: true);
   final file = File('$dir/$name');
@@ -37,13 +39,13 @@ Future<String> writeTempStream(
   var complete = false, count = 0;
   try {
     await for (final chunk in data) {
-      if (chunk.length > expectedBytes - count) {
+      if (expectedBytes != null && chunk.length > expectedBytes - count) {
         throw const FormatException('File length mismatch');
       }
       await output.writeFrom(chunk);
       count += chunk.length;
     }
-    if (count != expectedBytes) {
+    if (expectedBytes != null && count != expectedBytes) {
       throw const FormatException('File length mismatch');
     }
     await output.flush();

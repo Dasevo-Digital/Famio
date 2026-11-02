@@ -1362,13 +1362,14 @@ class FamioApiClient {
       _downloadFile(id, thumb: thumb);
 
   /// Bounded streaming path for native files; [downloadFile] is the memory
-  /// path for previews and browser downloads.
+  /// path for previews and browser downloads. [expectedBytes] null: the
+  /// length is not known beforehand (then [maxBytes] bounds the transfer).
   Future<void> downloadFileToSink(
     StreamSink<List<int>> sink,
     String id, {
-    required int expectedBytes,
+    required int? expectedBytes,
     int? maxBytes,
-    void Function(int)? onLength,
+    void Function(int?)? onLength,
     TransferCancellation? cancellation,
   }) => _downloadFileToSink(
     sink,

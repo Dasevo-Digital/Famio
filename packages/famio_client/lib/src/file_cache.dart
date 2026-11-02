@@ -177,8 +177,9 @@ class FileCache {
   Future<String?> _download(FileRef ref) =>
       _receive(ref, (input, length) async {
         // The server's length decides whether this file fits offline, even
-        // when an old reference still carries different metadata.
-        if (length > maxBytes) {
+        // when an old reference still carries different metadata. Without
+        // one (an external document sent in chunks) it is only opened.
+        if (length == null || length > maxBytes) {
           return writeTempStream(
             tempDir,
             '${newId()}_${_safe(ref.name)}',
@@ -192,7 +193,7 @@ class FileCache {
 
   Future<T> _receive<T>(
     FileRef ref,
-    Future<T> Function(Stream<List<int>>, int) store,
+    Future<T> Function(Stream<List<int>>, int?) store,
   ) async {
     final generation = _generation;
     _check(generation);
@@ -209,7 +210,11 @@ class FileCache {
     final transfer = api.downloadFileToSink(
       body.sink,
       ref.id,
-      expectedBytes: ref.size.clamp(0, 4096 * 1024 * 1024),
+      // Documents of Paperless-ngx and photos of PhotoVault carry size 0:
+      // their length comes with the answer, if at all.
+      expectedBytes: ref.size > 0
+          ? ref.size.clamp(1, 4096 * 1024 * 1024)
+          : null,
       maxBytes: 4096 * 1024 * 1024,
       onLength: (length) {
         stored = store(body.stream, length);

@@ -35,7 +35,7 @@ Future<String> writeTempStream(
   String dir,
   String name,
   Stream<List<int>> data,
-  int expectedBytes,
+  int? expectedBytes,
 ) => throw UnsupportedError('No files in the browser – download instead.');
 
 void clearTempFiles(String dir) {}
