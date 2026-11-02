@@ -174,6 +174,10 @@ class PhotoVaultLink {
   Timer? _timer;
   Future<void>? _running;
 
+  /// Counts changes of the connection and its settings: a sync that began
+  /// before one keeps nothing of what it fetched and sends nothing.
+  int _generation = 0;
+
   /// The share link's session (password), while it lasts.
   String? _shareCookie;
 
@@ -287,7 +291,7 @@ class PhotoVaultLink {
       unawaited(_signOut(before));
     }
     _put(_key, c.toJson());
-    await sync();
+    await _resync();
     return info();
   }
 
@@ -357,13 +361,14 @@ class PhotoVaultLink {
       }
     }
     _put(_key, next.toJson());
-    await sync();
+    await _resync();
     return info();
   }
 
   /// Removes the connection, signs Famio's device out of PhotoVault and
   /// deletes the photos and birthdays it brought.
   Future<Map<String, Object?>> disconnect() async {
+    _generation++;
     final c = config;
     db.execute('DELETE FROM settings WHERE key IN (?, ?, ?, ?)', [
       _key,
@@ -409,9 +414,18 @@ class PhotoVaultLink {
   Future<void> sync() =>
       _running ??= _sync().whenComplete(() => _running = null);
 
+  /// After a change of the connection or its settings: a sync still
+  /// running for the old ones ends without a trace, then one for the new.
+  Future<void> _resync() async {
+    _generation++;
+    await _running;
+    await sync();
+  }
+
   Future<void> _sync() async {
     final c = config;
     if (c == null) return;
+    final generation = _generation;
     final status = <String, Object?>{
       ...?(_setting(_statusKey) as Map?)?.cast<String, Object?>(),
     };
@@ -456,9 +470,11 @@ class PhotoVaultLink {
       if (c.birthdays) {
         (birthdays, skipped) = await _birthdays(c);
       }
+      // Disconnected or changed meanwhile.
+      if (generation != _generation) return;
       final changed = _storePhotos(photos, c) | _storeBirthdays(birthdays, c);
       if (changed) onChanged();
-      final sent = c.shareUrl == null ? 0 : await _contribute(c);
+      final sent = c.shareUrl == null ? 0 : await _contribute(c, generation);
       status
         ..['lastSync'] = _now().toUtc().toIso8601String()
         ..['libraryCount'] = libraryCount
@@ -480,7 +496,7 @@ class PhotoVaultLink {
         'error': '$e',
       });
     }
-    _put(_statusKey, status);
+    if (generation == _generation) _put(_statusKey, status);
   }
 
   /// [timelineCount] random photos of PhotoVault's whole timeline, the
@@ -711,8 +727,8 @@ class PhotoVaultLink {
   // --- B: chat photos as contributions --------------------------------------
 
   /// Sends the family chat's new photos to the share link; returns how
-  /// many went.
-  Future<int> _contribute(PhotoVaultConfig c) async {
+  /// many went. Stops as soon as the connection changes ([generation]).
+  Future<int> _contribute(PhotoVaultConfig c, int generation) async {
     final since = c.contributeSince;
     final share = _share(c.shareUrl!);
     if (since == null || share == null) return 0;
@@ -732,6 +748,7 @@ class PhotoVaultLink {
     var count = 0;
     try {
       for (final m in candidates.take(contributeLimit)) {
+        if (generation != _generation) break;
         final file = files.get(m.attachment!.id);
         if (file != null) {
           await _upload(c, share, file, m, names[m.authorId]);
@@ -741,11 +758,14 @@ class PhotoVaultLink {
       }
     } finally {
       // The newest ids only: older messages are before [since] anyway.
+      // After a disconnect the list is gone and stays gone.
       final list = sent.toList();
-      _put(
-        _sentKey,
-        list.length > 5000 ? list.sublist(list.length - 5000) : list,
-      );
+      if (config != null) {
+        _put(
+          _sentKey,
+          list.length > 5000 ? list.sublist(list.length - 5000) : list,
+        );
+      }
     }
     return count;
   }

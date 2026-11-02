@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio_server/famio_server.dart';
@@ -13,6 +14,10 @@ void main() {
   final asked = <String>[];
   final uploads = <Map<String, Object?>>[];
   var shareOpen = true;
+
+  /// Set: the next request for the memories waits for it.
+  Completer<void>? hold;
+  Completer<void>? held;
 
   /// PhotoVault as its server answers (packages/server of PhotoVault).
   final photoVault = MockClient((request) async {
@@ -82,6 +87,11 @@ void main() {
       case '/api/v1/abmelden':
         return json({'abgemeldet': true});
       case '/api/v1/rueckblick':
+        if (hold case final wait?) {
+          hold = null;
+          held?.complete();
+          await wait.future;
+        }
         final today = request.url.queryParameters['heute']!;
         return json({
           'letzte': [
@@ -193,7 +203,10 @@ void main() {
     token = (jsonDecode(await setup.readAsString()) as Map)['token'] as String;
   });
 
-  tearDown(() => app.close());
+  tearDown(() {
+    hold = held = null;
+    return app.close();
+  });
 
   Future<Response> call(
     String method,
@@ -653,5 +666,26 @@ void main() {
     expect(noteOf('Erna Müller', erna, known('Paul', person: true)), isNull);
     expect(noteOf('Erna Müller', erna, known('Zahnarzt')), isNull);
     expect(noteOf('Erna Müller', const Birthday(3, 15), known('Erna')), isNull);
+  });
+
+  test('disconnecting during a sync leaves no photo behind', () async {
+    await connect();
+    bool shown(String id) =>
+        app.records.get(Collections.externalPhotos, id)?.deleted == false;
+    expect(shown('pv-a1'), isTrue);
+
+    hold = Completer<void>();
+    held = Completer<void>();
+    final release = hold!;
+    final running = app.photoVault.sync();
+    await held!.future;
+    await ok(await call('DELETE', 'api/admin/photovault'));
+    expect(shown('pv-a1'), isFalse);
+
+    release.complete();
+    await running;
+    // What the old sync fetched is dropped, its status too.
+    expect(shown('pv-a1'), isFalse);
+    expect(app.photoVault.info(), {'connected': false});
   });
 }

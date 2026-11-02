@@ -82,6 +82,10 @@ class PaperlessLink {
   Timer? _timer;
   Future<void>? _running;
 
+  /// Counts changes of the connection: a sync that began before one keeps
+  /// nothing of what it fetched.
+  int _generation = 0;
+
   static const _key = 'paperless';
   static const _statusKey = 'paperless.status';
   static const idPrefix = 'pl-';
@@ -151,6 +155,7 @@ class PaperlessLink {
   /// syncs right away; null removes it and its documents.
   Future<Map<String, Object?>> configure(Map<String, Object?>? body) async {
     if (body == null) {
+      _generation++;
       db.execute('DELETE FROM settings WHERE key IN (?, ?)', [
         _key,
         _statusKey,
@@ -181,9 +186,12 @@ class PaperlessLink {
       ],
       dueField: '${body['dueField'] ?? ''}'.trim(),
     );
-    // Only working connections are kept.
+    // Only working connections are kept, and what the check fetched is
+    // what Famio shows: a sync still running for the old connection keeps
+    // nothing.
+    final List<_Document> documents;
     try {
-      await _documents(c);
+      documents = await _documents(c);
     } on ApiException {
       rethrow;
     } on Exception catch (e) {
@@ -192,8 +200,9 @@ class PaperlessLink {
         t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
       );
     }
+    _generation++;
     _put(_key, c.toJson());
-    await sync();
+    _show(documents, c);
     return info();
   }
 
@@ -223,21 +232,30 @@ class PaperlessLink {
   Future<void> _sync() async {
     final c = config;
     if (c == null) return;
+    final generation = _generation;
     try {
       final documents = await _documents(c);
-      if (_store(documents, config: c)) onChanged();
-      _put(_statusKey, {
-        'lastSync': DateTime.now().toUtc().toIso8601String(),
-        'count': documents.length,
-        'lastError': null,
-      });
+      // Disconnected or changed meanwhile.
+      if (generation != _generation) return;
+      _show(documents, c);
     } on ApiException catch (e) {
-      _status(e.message);
+      if (generation == _generation) _status(e.message);
     } on Exception catch (e) {
-      _status(
-        t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
-      );
+      if (generation == _generation) {
+        _status(
+          t('Keine Verbindung zu Paperless-ngx ({error}).', {'error': '$e'}),
+        );
+      }
     }
+  }
+
+  void _show(List<_Document> documents, PaperlessConfig c) {
+    if (_store(documents, config: c)) onChanged();
+    _put(_statusKey, {
+      'lastSync': DateTime.now().toUtc().toIso8601String(),
+      'count': documents.length,
+      'lastError': null,
+    });
   }
 
   void _status(String error) => _put(_statusKey, {

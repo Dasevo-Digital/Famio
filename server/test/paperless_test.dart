@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio_server/famio_server.dart';
@@ -12,6 +13,10 @@ void main() {
   late String token;
   late List<Map<String, Object?>> documents;
   final asked = <String>[];
+
+  /// Set: the next request for the document list waits for it.
+  Completer<void>? hold;
+  Completer<void>? held;
 
   /// Paperless-ngx as it answers (API version 10).
   final paperless = MockClient((request) async {
@@ -41,7 +46,13 @@ void main() {
         );
       case '/api/documents/':
         expect(request.url.queryParameters['tags__id__all'], '7');
-        return json(page(documents));
+        final list = page(documents);
+        if (hold case final wait?) {
+          hold = null;
+          held?.complete();
+          await wait.future;
+        }
+        return json(list);
       case '/api/correspondents/':
         return json(
           page([
@@ -116,7 +127,10 @@ void main() {
     token = (jsonDecode(await setup.readAsString()) as Map)['token'] as String;
   });
 
-  tearDown(() => app.close());
+  tearDown(() {
+    hold = held = null;
+    return app.close();
+  });
 
   Future<Response> call(
     String method,
@@ -364,5 +378,95 @@ void main() {
     app.paperless.adoptPaperBuddy();
     expect(app.paperless.info()['connected'], isFalse);
     expect(app.records.all(Collections.externalDocuments), isEmpty);
+  });
+
+  List<String> shown() => [
+    for (final r in app.records.all(Collections.externalDocuments))
+      if (!r.deleted) r.id,
+  ];
+
+  test('disconnecting during a sync leaves no document behind', () async {
+    final saved = await call(
+      'PUT',
+      'api/admin/paperless',
+      body: {'url': 'http://192.168.1.20:8000', 'token': 'lesen'},
+    );
+    expect(saved.statusCode, 200);
+    expect(shown(), unorderedEquals(['pl-11', 'pl-12']));
+
+    hold = Completer<void>();
+    held = Completer<void>();
+    final release = hold!;
+    final running = app.paperless.sync();
+    await held!.future;
+    final removed = await call('DELETE', 'api/admin/paperless');
+    expect(removed.statusCode, 200);
+    expect(shown(), isEmpty);
+
+    release.complete();
+    await running;
+    // What the old sync fetched is dropped, its status too.
+    expect(shown(), isEmpty);
+    expect(app.paperless.info(), {'connected': false});
+    await app.paperless.sync();
+    expect(shown(), isEmpty);
+  });
+
+  test('a sync of the old settings does not overwrite new ones', () async {
+    final papa = await call(
+      'POST',
+      'api/admin/users',
+      body: {
+        'username': 'papa',
+        'displayName': 'Papa',
+        'password': 'tulpe-regal-7',
+      },
+    );
+    expect(papa.statusCode, anyOf(200, 201));
+    final saved = await call(
+      'PUT',
+      'api/admin/paperless',
+      body: {'url': 'http://192.168.1.20:8000', 'token': 'lesen'},
+    );
+    expect(saved.statusCode, 200);
+    final mama = app.accounts
+        .members()
+        .firstWhere((m) => m.username == 'mama')
+        .id;
+
+    documents.removeLast();
+    hold = Completer<void>();
+    held = Completer<void>();
+    final release = hold!;
+    final running = app.paperless.sync();
+    await held!.future;
+    // Meanwhile: only Mama sees them, and the second document is back.
+    documents.add({
+      'id': 13,
+      'title': 'Mietvertrag',
+      'created': '2025-03-01',
+      'modified': '2025-03-01T08:00:00Z',
+      'original_file_name': 'miete.pdf',
+      'mime_type': 'application/pdf',
+      'tags': [7],
+    });
+    final changed = await call(
+      'PUT',
+      'api/admin/paperless',
+      body: {
+        'url': 'http://192.168.1.20:8000',
+        'memberIds': [mama],
+      },
+    );
+    expect(changed.statusCode, 200);
+
+    release.complete();
+    await running;
+    expect(shown(), unorderedEquals(['pl-11', 'pl-13']));
+    for (final id in shown()) {
+      final record = app.records.get(Collections.externalDocuments, id)!;
+      expect(record.data[SyncRecord.visibilityKey], [mama]);
+    }
+    expect((app.paperless.info())['count'], 2);
   });
 }
