@@ -91,13 +91,21 @@ step "Web-App"
 sh app/tool/build_web.sh > "$LOGS/web.log" 2>&1 || { tail -20 "$LOGS/web.log"; fail "Web-Build"; }
 grep -q "\"version\":\"$V\"" server/web/version.json || fail "Web-App hat nicht Version $V"
 
+# The SQLite libraries of the sqlite3 build hook kept on this machine
+# (tool/hook_cache.sh): the Docker build takes them instead of downloading
+# them from github.com, and the ones it used are kept for the next release.
+HOOK_CACHE="${FAMIO_HOOK_CACHE:-$HOME/.cache/famio/sqlite3-hook}"
+mkdir -p "$HOOK_CACHE"
+
 step "Server-Paket (Docker)"
-docker build --platform linux/amd64 --target build -t "famio-build:$V" . > "$LOGS/docker.log" 2>&1 ||
+docker build --platform linux/amd64 --target build --build-context sqlite3-hook="$HOOK_CACHE" \
+  -t "famio-build:$V" . > "$LOGS/docker.log" 2>&1 ||
   { tail -20 "$LOGS/docker.log"; fail "Docker-Build"; }
 SRV="$WORK/server-$V"
 rm -rf "$SRV" && mkdir -p "$SRV"
 cid=$(docker create --platform linux/amd64 "famio-build:$V")
 docker cp -q "$cid:/out/bundle" "$SRV/bundle"
+docker cp -q "$cid:/out/sqlite3-hook/." "$HOOK_CACHE/"
 docker container rm "$cid" > /dev/null
 grep -q "\"version\":\"$V\"" "$SRV/bundle/web/version.json" || fail "Server-Paket hat nicht Version $V"
 out=$(file "$SRV/bundle/bin/server")
@@ -107,12 +115,14 @@ out=$(file "$SRV/bundle/bin/server")
 # Raspberry Pi, Home Assistant Green/Yellow: the add-on builds itself from
 # this package (homeassistant-addon/famio/Dockerfile).
 step "Server-Paket arm64 (Docker)"
-docker build --platform linux/arm64 --target build -t "famio-build:$V-arm64" . > "$LOGS/docker-arm64.log" 2>&1 ||
+docker build --platform linux/arm64 --target build --build-context sqlite3-hook="$HOOK_CACHE" \
+  -t "famio-build:$V-arm64" . > "$LOGS/docker-arm64.log" 2>&1 ||
   { tail -20 "$LOGS/docker-arm64.log"; fail "Docker-Build arm64"; }
 SRV_ARM="$WORK/server-$V-arm64"
 rm -rf "$SRV_ARM" && mkdir -p "$SRV_ARM"
 cid=$(docker create --platform linux/arm64 "famio-build:$V-arm64")
 docker cp -q "$cid:/out/bundle" "$SRV_ARM/bundle"
+docker cp -q "$cid:/out/sqlite3-hook/." "$HOOK_CACHE/"
 docker container rm "$cid" > /dev/null
 grep -q "\"version\":\"$V\"" "$SRV_ARM/bundle/web/version.json" || fail "arm64-Paket hat nicht Version $V"
 out=$(file "$SRV_ARM/bundle/bin/server")

@@ -2,6 +2,13 @@
 # Build from the repository root: docker build -t famio-server .
 # The web app comes from server/web (app/tool/build_web.sh), if built.
 # Pinned multi-architecture image digests make release builds reproducible.
+
+# SQLite libraries of the sqlite3 build hook kept on the build machine
+# (tool/hook_cache.sh). tool/release.sh passes them with
+# --build-context sqlite3-hook=~/.cache/famio/sqlite3-hook; without that
+# this stage is empty and the hook downloads from github.com.
+FROM scratch AS sqlite3-hook
+
 FROM dart:3.13.7@sha256:ca3ef5fe9194012074a24b03515b2c5b58dd7d4ae8c87bf463d61b5d0647f426 AS build
 WORKDIR /src
 COPY packages/famio_shared packages/famio_shared
@@ -15,10 +22,18 @@ COPY server .
 # server/web is not in the repository: a web app left over from an older
 # build must not end up in the package (1.0.6 to 1.0.14 shipped 1.0.5).
 # The sqlite3 build hook downloads its library from github.com; a BuildKit
-# cache keeps it between builds (the hook checks its SHA-256).
+# cache keeps it between builds (the hook checks its SHA-256). Docker may
+# empty that cache (it was on 03.11.2026), so the kept copies of the
+# sqlite3-hook stage fill it first. The libraries used end up in
+# /out/sqlite3-hook, from where tool/release.sh keeps them.
 RUN --mount=type=cache,id=famio-sqlite3-hook,sharing=locked,target=/src/server/.dart_tool/hooks_runner/shared/sqlite3/build \
-    dart build cli -t bin/server.dart -o /out \
-    && mkdir -p /out/data \
+    --mount=type=bind,from=sqlite3-hook,target=/kept-sqlite3 \
+    cp -R /kept-sqlite3/. .dart_tool/hooks_runner/shared/sqlite3/build/ \
+    && dart build cli -t bin/server.dart -o /out \
+    && mkdir -p /out/data /out/sqlite3-hook \
+    && (cd .dart_tool/hooks_runner/shared/sqlite3/build \
+        && find . -path './download-*' -type f ! -name '*.tmp' \
+             -exec cp --parents {} /out/sqlite3-hook/ \;) \
     && if [ -f web/index.html ]; then \
          v=$(sed -n 's/^version: *//p' pubspec.yaml); \
          grep -q "\"version\":\"$v\"" web/version.json \

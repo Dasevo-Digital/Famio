@@ -45,8 +45,12 @@ json.dump(keep, open(manifest, 'w'))
 # instead of Google's font service, which would learn the address of every
 # browser: shipped under fonts/, the large Chinese, Japanese and Korean sets
 # fetched by the server on demand (server/lib/src/fallback_fonts.dart).
-# Downloaded once into build/fallback-fonts.
-import urllib.request
+# Downloaded once into ~/.cache/famio/fallback-fonts (FAMIO_FONT_CACHE):
+# outside build/, which `flutter clean` and the Android step of
+# tool/release.sh delete, so a release does not depend on reaching
+# fonts.gstatic.com. Copies left in the old build/fallback-fonts are taken
+# over.
+import http.client, time, urllib.request
 main_js = open(os.path.join(web, 'main.dart.js')).read()
 paths = sorted(set(re.findall(
     r'"([a-z0-9]+/v[0-9]+/[A-Za-z0-9_-]+(?:[.][0-9]+)?[.](?:woff2|ttf|otf))"',
@@ -54,17 +58,32 @@ paths = sorted(set(re.findall(
 if len(paths) < 100:
     sys.exit(f'only {len(paths)} fallback fonts found in main.dart.js')
 cjk = re.compile(r'^notosans(sc|tc|hk|jp|kr)/')
-cache = os.path.join('build', 'fallback-fonts')
+cache = os.environ.get('FAMIO_FONT_CACHE') or os.path.expanduser(
+    os.path.join('~', '.cache', 'famio', 'fallback-fonts'))
+old_cache = os.path.join('build', 'fallback-fonts')
 fonts = os.path.join(web, 'fonts')
+
+def download(url):
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                return response.read()
+        except (OSError, http.client.HTTPException):
+            if attempt == 3:
+                raise
+            time.sleep(2 * (attempt + 1))
+
 for path in paths:
     if cjk.match(path):
         continue
     cached = os.path.join(cache, path)
     if not os.path.exists(cached):
         os.makedirs(os.path.dirname(cached), exist_ok=True)
-        url = 'https://fonts.gstatic.com/s/' + path
-        with urllib.request.urlopen(url, timeout=60) as response:
-            data = response.read()
+        old = os.path.join(old_cache, path)
+        if os.path.exists(old):
+            data = open(old, 'rb').read()
+        else:
+            data = download('https://fonts.gstatic.com/s/' + path)
         open(cached + '.part', 'wb').write(data)
         os.replace(cached + '.part', cached)
     target = os.path.join(fonts, path)
