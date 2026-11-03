@@ -13,19 +13,35 @@ import 'profile_banner.dart';
 // Shared by the settings and the server administration, which the web app
 // loads only when opened (see DeferredPage).
 
-/// A signed-in device with an optional "sign out" button.
+/// A signed-in device with an optional "sign out" button; a sign-in of the
+/// last days offers "Das war ich nicht" ([onNotMe]).
 class DeviceTile extends StatelessWidget {
-  const DeviceTile({super.key, required this.session, this.onSignOut});
+  const DeviceTile({
+    super.key,
+    required this.session,
+    this.onSignOut,
+    this.onNotMe,
+  });
 
   final DeviceSession session;
   final VoidCallback? onSignOut;
+  final VoidCallback? onNotMe;
+
+  /// How long another device counts as a new sign-in: the notice about it
+  /// may be read days later.
+  static const newSignIn = Duration(days: 7);
+
+  bool get isNewSignIn =>
+      !session.current &&
+      DateTime.now().difference(session.createdAt) < newSignIn;
 
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final device = session.device ?? tr.adminUnknownDevice;
     final mobile = RegExp('android|ios', caseSensitive: false).hasMatch(device);
-    return ListTile(
+    final notMe = onNotMe != null && isNewSignIn;
+    final tile = ListTile(
       leading: Icon(mobile ? AppIcons.smartphone : AppIcons.laptop),
       title: Text(deviceLabel(device)),
       subtitle: Text.rich(
@@ -39,6 +55,11 @@ class DeviceTile extends StatelessWidget {
                       DateFormat.yMd(appLanguage).format(session.createdAt),
                     ),
             ),
+            if (notMe)
+              TextSpan(
+                text: ' · ${tr.devicesNewSignIn}',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             if (session.profileExpires case final end?)
               TextSpan(
                 text:
@@ -69,9 +90,26 @@ class DeviceTile extends StatelessWidget {
               onPressed: onSignOut,
             ),
     );
+    if (!notMe) return tile;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        tile,
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 48, bottom: 8),
+          child: TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: c.danger),
+            icon: const Icon(AppIcons.shield, size: 18),
+            label: Text(tr.devicesNotMe),
+            onPressed: onNotMe,
+          ),
+        ),
+      ],
+    );
   }
 
-  /// `macos (Marcos-MacBook)` → `macOS · Marcos-MacBook`.
+  /// `macos (Familien-MacBook)` → `macOS · Familien-MacBook`.
   static String deviceLabel(String device) {
     final match = RegExp(r'^(\w+) \((.*)\)$').firstMatch(device);
     if (match == null) return device;

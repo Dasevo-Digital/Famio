@@ -1123,8 +1123,8 @@ const sharedEn = <String, String>{
   "Server|Die Seite antwortet nicht.": "The page does not answer.",
   "Server|Zu viele Weiterleitungen.": "Too many redirects.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
-  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
-      "Signed in on: {device}. Not you? Sign it out under Settings → My devices and change your password.",
+  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":
+      "Signed in on: {device}. Not you? Choose “That wasn't me” under Settings → My devices.",
   "Server|unbekanntes Gerät": "unknown device",
   "Server|Neue Aufgabe für dich": "New task for you",
   "Server|Kommentar zu „{title}“": "Comment on “{title}”",

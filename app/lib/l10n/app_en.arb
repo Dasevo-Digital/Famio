@@ -2674,5 +2674,13 @@
   "exportBrowserLimit": "Browser exports are limited to 64 MiB. Please use an installed app for larger archives.",
   "filesUploadLimit": "Up to {size} per file",
   "@filesUploadLimit": {"placeholders": {"size": {"type": "String"}}},
-  "filesBrowserLimit": "Browser files are limited to 128 MiB. Please open larger files in an installed app."
+  "filesBrowserLimit": "Browser files are limited to 128 MiB. Please open larger files in an installed app.",
+  "devicesNewSignIn": "new sign-in",
+  "devicesNotMe": "That wasn't me",
+  "devicesNotMeTitle": "Unknown sign-in",
+  "devicesNotMeBody": "{device} will be signed out. Then change your password: that signs out all other devices too, and nobody gets in with the old password any more.",
+  "@devicesNotMeBody": {"placeholders": {"device": {"type": "String"}}},
+  "devicesNotMeConfirm": "Sign out",
+  "devicesNotMeSignedOut": "{device} is signed out.",
+  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}}
 }

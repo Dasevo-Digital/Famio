@@ -1155,8 +1155,8 @@ const sharedEs = <String, String>{
   "Server|Die Seite antwortet nicht.": "La página no responde.",
   "Server|Zu viele Weiterleitungen.": "Demasiadas redirecciones.",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
-  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.":
-      "Sesión iniciada en: {device}. ¿No fuiste tú? Ciérrala en Ajustes → Mis dispositivos y cambia la contraseña.",
+  "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":
+      "Sesión iniciada en: {device}. ¿No fuiste tú? Elige «No fui yo» en Ajustes → Mis dispositivos.",
   "Server|unbekanntes Gerät": "dispositivo desconocido",
   "Server|Neue Aufgabe für dich": "Nueva tarea para ti",
   "Server|Kommentar zu „{title}“": "Comentario en «{title}»",

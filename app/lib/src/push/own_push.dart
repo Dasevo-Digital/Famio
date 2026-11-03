@@ -174,8 +174,12 @@ class OwnPush {
         if (last != null) {
           for (final notice in batch.notices.take(5)) {
             // The test message always shows: it is asked for in the app;
-            // alarms and rings too.
-            if (!inFront || notice.tag == 'tada' || notice.alarm) {
+            // alarms and rings too, and a sign-in on another device ("key"),
+            // which nothing in the app points out.
+            if (!inFront ||
+                notice.tag == 'tada' ||
+                notice.tag == 'key' ||
+                notice.alarm) {
               await show(notice, details: _details);
             }
           }

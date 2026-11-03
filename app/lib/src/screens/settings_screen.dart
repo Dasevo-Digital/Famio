@@ -144,7 +144,7 @@ class SettingsScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(AppIcons.password),
               title: Text(context.l10n.settingsChangePassword),
-              onTap: () => _changePassword(context),
+              onTap: () => showChangePasswordDialog(context),
             ),
           ListTile(
             leading: const Icon(AppIcons.cloudArrowDown),
@@ -473,47 +473,6 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _changePassword(BuildContext context) async {
-    final current = TextEditingController();
-    final next = TextEditingController();
-    final api = AppScope.engineOf(context).api;
-    await showDialog<void>(
-      context: context,
-      builder: (context) => FormDialog(
-        title: tr.settingsChangePassword,
-        controllers: [current, next],
-        fields: [
-          PasswordReveal(
-            builder: (_, obscure, toggle) => TextField(
-              controller: current,
-              obscureText: obscure,
-              contextMenuBuilder: PasswordReveal.contextMenu,
-              decoration: InputDecoration(
-                suffixIcon: toggle,
-                labelText: context.l10n.settingsCurrentPassword,
-              ),
-            ),
-          ),
-          PasswordReveal(
-            builder: (_, obscure, toggle) => TextField(
-              controller: next,
-              obscureText: obscure,
-              contextMenuBuilder: PasswordReveal.contextMenu,
-              decoration: InputDecoration(
-                suffixIcon: toggle,
-                labelText: context.l10n.settingsNewPassword,
-              ),
-            ),
-          ),
-        ],
-        onSubmit: () => api.changePassword(
-          currentPassword: current.text,
-          newPassword: next.text,
-        ),
-      ),
-    );
-  }
-
   Future<void> _deleteAccount(BuildContext context) async {
     final state = AppScope.read(context);
     final me = state.me!;
@@ -563,6 +522,48 @@ class SettingsScreen extends StatelessWidget {
       );
     }
   }
+}
+
+/// Changing the password also signs out every other device.
+Future<void> showChangePasswordDialog(BuildContext context) async {
+  final current = TextEditingController();
+  final next = TextEditingController();
+  final api = AppScope.engineOf(context).api;
+  await showDialog<void>(
+    context: context,
+    builder: (context) => FormDialog(
+      title: tr.settingsChangePassword,
+      controllers: [current, next],
+      fields: [
+        PasswordReveal(
+          builder: (_, obscure, toggle) => TextField(
+            controller: current,
+            obscureText: obscure,
+            contextMenuBuilder: PasswordReveal.contextMenu,
+            decoration: InputDecoration(
+              suffixIcon: toggle,
+              labelText: context.l10n.settingsCurrentPassword,
+            ),
+          ),
+        ),
+        PasswordReveal(
+          builder: (_, obscure, toggle) => TextField(
+            controller: next,
+            obscureText: obscure,
+            contextMenuBuilder: PasswordReveal.contextMenu,
+            decoration: InputDecoration(
+              suffixIcon: toggle,
+              labelText: context.l10n.settingsNewPassword,
+            ),
+          ),
+        ),
+      ],
+      onSubmit: () => api.changePassword(
+        currentPassword: current.text,
+        newPassword: next.text,
+      ),
+    ),
+  );
 }
 
 /// Lets members change their own name and avatar color.
@@ -633,6 +634,48 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
     _sessions = AppScope.read(context).engine!.api.mySessions();
   }
 
+  /// Someone else signed in with this account: sign that device out, then
+  /// change the password, which signs out every other device too and keeps
+  /// whoever knows the old one from coming back.
+  Future<void> _notMe(DeviceSession session) async {
+    final api = AppScope.read(context).engine!.api;
+    final device = DeviceTile.deviceLabel(
+      session.device ?? tr.adminUnknownDevice,
+    );
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr.devicesNotMeTitle),
+        content: Text(tr.devicesNotMeBody(device)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(context.l10n.commonCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(tr.devicesNotMeConfirm),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await api.deleteMySession(session.id);
+    } on ApiError catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    }
+    if (!mounted) return;
+    setState(_load);
+    messenger.showSnackBar(
+      SnackBar(content: Text(tr.devicesNotMeSignedOut(device))),
+    );
+    await showChangePasswordDialog(context);
+    if (mounted) setState(_load);
+  }
+
   @override
   Widget build(BuildContext context) {
     final api = AppScope.engineOf(context).api;
@@ -669,6 +712,7 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
                           await api.deleteMySession(s.id);
                           setState(_load);
                         },
+                  onNotMe: () => _notMe(s),
                 ),
             ],
           ),

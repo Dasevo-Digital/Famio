@@ -555,7 +555,7 @@ class FamioApi {
         to: {member.id},
         title: t('Neue Anmeldung bei Famio'),
         body: t(
-          'Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte abmelden und das Passwort ändern.',
+          'Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.',
           {'device': name ?? t('unbekanntes Gerät')},
         ),
         brief: t('Neue Anmeldung bei Famio'),

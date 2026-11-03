@@ -2674,5 +2674,13 @@
   "exportBrowserLimit": "Las exportaciones en el navegador se limitan a 64 MiB. Usa una aplicación instalada para archivos mayores.",
   "filesUploadLimit": "Hasta {size} por archivo",
   "@filesUploadLimit": {"placeholders": {"size": {"type": "String"}}},
-  "filesBrowserLimit": "Los archivos en el navegador se limitan a 128 MiB. Abre los archivos mayores en una aplicación instalada."
+  "filesBrowserLimit": "Los archivos en el navegador se limitan a 128 MiB. Abre los archivos mayores en una aplicación instalada.",
+  "devicesNewSignIn": "inicio de sesión nuevo",
+  "devicesNotMe": "No fui yo",
+  "devicesNotMeTitle": "Inicio de sesión desconocido",
+  "devicesNotMeBody": "Se cerrará la sesión en {device}. Después cambia tu contraseña: así se cierra también la sesión en todos los demás dispositivos y nadie podrá volver a entrar con la contraseña antigua.",
+  "@devicesNotMeBody": {"placeholders": {"device": {"type": "String"}}},
+  "devicesNotMeConfirm": "Cerrar sesión",
+  "devicesNotMeSignedOut": "Sesión cerrada en {device}.",
+  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}}
 }
