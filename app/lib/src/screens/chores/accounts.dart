@@ -235,35 +235,38 @@ class MemberAccountScreen extends StatelessWidget {
     var points = 5;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(tr.choresGiveTakePoints),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: reason,
-                decoration: InputDecoration(labelText: tr.choresWhat),
+      builder: (context) => DisposeWith(
+        controllers: [reason],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(tr.choresGiveTakePoints),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: reason,
+                  decoration: InputDecoration(labelText: tr.choresWhat),
+                ),
+                const SizedBox(height: 12),
+                _Stepper(
+                  value: points,
+                  min: -100,
+                  max: 100,
+                  onChanged: (v) => setState(() => points = v),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
               ),
-              const SizedBox(height: 12),
-              _Stepper(
-                value: points,
-                min: -100,
-                max: 100,
-                onChanged: (v) => setState(() => points = v),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.choresBook),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.choresBook),
-            ),
-          ],
         ),
       ),
     );
@@ -282,7 +285,6 @@ class MemberAccountScreen extends StatelessWidget {
         ),
       );
     }
-    reason.dispose();
   }
 
   Future<void> _booking(BuildContext context, SyncEngine engine) async {
@@ -291,63 +293,66 @@ class MemberAccountScreen extends StatelessWidget {
     var kind = MoneyKind.spent;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          scrollable: true,
-          title: Text(tr.conflictsBooking),
-          content: SizedBox(
-            width: 340,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final k in [
-                      MoneyKind.spent,
-                      MoneyKind.gift,
-                      MoneyKind.other,
-                    ])
-                      ChoiceChip(
-                        label: Text(k.label),
-                        selected: kind == k,
-                        onSelected: (_) => setState(() => kind = k),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: amount,
-                  autofocus: true,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+      builder: (context) => DisposeWith(
+        controllers: [amount, note],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            scrollable: true,
+            title: Text(tr.conflictsBooking),
+            content: SizedBox(
+              width: 340,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      for (final k in [
+                        MoneyKind.spent,
+                        MoneyKind.gift,
+                        MoneyKind.other,
+                      ])
+                        ChoiceChip(
+                          label: Text(k.label),
+                          selected: kind == k,
+                          onSelected: (_) => setState(() => kind = k),
+                        ),
+                    ],
                   ),
-                  decoration: InputDecoration(
-                    labelText: tr.commonAmount,
-                    suffixText: '€',
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: amount,
+                    autofocus: true,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.commonAmount,
+                      suffixText: '€',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: note,
-                  decoration: InputDecoration(
-                    labelText: tr.commonNote,
-                    hintText: tr.choresEGComicGrandma,
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: note,
+                    decoration: InputDecoration(
+                      labelText: tr.commonNote,
+                      hintText: tr.choresEGComicGrandma,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.choresBook),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.choresBook),
-            ),
-          ],
         ),
       ),
     );
@@ -364,8 +369,6 @@ class MemberAccountScreen extends StatelessWidget {
         ),
       );
     }
-    amount.dispose();
-    note.dispose();
   }
 
   Future<void> _settings(
@@ -386,67 +389,70 @@ class MemberAccountScreen extends StatelessWidget {
     var payday = current?.payday ?? DateTime.saturday;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          scrollable: true,
-          title: Text(tr.choresPocketMoney),
-          content: SizedBox(
-            width: 360,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: weekly,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+      builder: (context) => DisposeWith(
+        controllers: [weekly, rate],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            scrollable: true,
+            title: Text(tr.choresPocketMoney),
+            content: SizedBox(
+              width: 360,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: weekly,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.choresPerWeek,
+                      suffixText: '€',
+                      helperText: tr.choresLeaveEmptyNoPocket,
+                    ),
                   ),
-                  decoration: InputDecoration(
-                    labelText: tr.choresPerWeek,
-                    suffixText: '€',
-                    helperText: tr.choresLeaveEmptyNoPocket,
+                  const SizedBox(height: 12),
+                  Text(tr.choresPaid),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (var d = 1; d <= 7; d++)
+                        ChoiceChip(
+                          label: Text(_weekdayShort[d - 1]),
+                          selected: payday == d,
+                          onSelected: (_) => setState(() => payday = d),
+                        ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(tr.choresPaid),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (var d = 1; d <= 7; d++)
-                      ChoiceChip(
-                        label: Text(_weekdayShort[d - 1]),
-                        selected: payday == d,
-                        onSelected: (_) => setState(() => payday = d),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: rate,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: rate,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.choresValueOnePoint,
+                      suffixText: '€',
+                      helperText: tr.choresEG010,
+                    ),
                   ),
-                  decoration: InputDecoration(
-                    labelText: tr.choresValueOnePoint,
-                    suffixText: '€',
-                    helperText: tr.choresEG010,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.commonSave),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.commonSave),
-            ),
-          ],
         ),
       ),
     );
@@ -462,8 +468,6 @@ class MemberAccountScreen extends StatelessWidget {
         ),
       );
     }
-    weekly.dispose();
-    rate.dispose();
   }
 
   Future<void> _convert(

@@ -12,6 +12,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import 'contacts_screens.dart';
 import 'kids_screens.dart';
@@ -588,61 +589,64 @@ Future<void> _babyArrived(BuildContext context, Pregnancy p) async {
   ChildSex? sex;
   final ok = await showDialog<bool>(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        scrollable: true,
-        title: Text(tr.pregnancyCongratulations),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: name,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(labelText: tr.commonName),
+    builder: (context) => DisposeWith(
+      controllers: [name],
+      child: StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          scrollable: true,
+          title: Text(tr.pregnancyCongratulations),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: name,
+                autofocus: true,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(labelText: tr.commonName),
+              ),
+              const SizedBox(height: 12),
+              InputChip(
+                avatar: const Icon(AppIcons.cake, size: 18),
+                label: Text(tr.pregnancyBornDate(_date.format(born))),
+                onPressed: () async {
+                  final picked = await showFamioDatePicker(
+                    context: context,
+                    initialDate: born,
+                    firstDate: p.dayOf(20),
+                    lastDate: DateTime.now(),
+                  );
+                  if (picked != null) setState(() => born = picked);
+                },
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final (v, l) in [
+                    (ChildSex.female, tr.pregnancyGirl),
+                    (ChildSex.male, tr.pregnancyBoy),
+                  ])
+                    ChoiceChip(
+                      label: Text(l),
+                      selected: sex == v,
+                      onSelected: (on) => setState(() => sex = on ? v : null),
+                    ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr.commonCancel),
             ),
-            const SizedBox(height: 12),
-            InputChip(
-              avatar: const Icon(AppIcons.cake, size: 18),
-              label: Text(tr.pregnancyBornDate(_date.format(born))),
-              onPressed: () async {
-                final picked = await showFamioDatePicker(
-                  context: context,
-                  initialDate: born,
-                  firstDate: p.dayOf(20),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) setState(() => born = picked);
-              },
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              children: [
-                for (final (v, l) in [
-                  (ChildSex.female, tr.pregnancyGirl),
-                  (ChildSex.male, tr.pregnancyBoy),
-                ])
-                  ChoiceChip(
-                    label: Text(l),
-                    selected: sex == v,
-                    onSelected: (on) => setState(() => sex = on ? v : null),
-                  ),
-              ],
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr.pregnancyAddChild),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(tr.pregnancyAddChild),
-          ),
-        ],
       ),
     ),
   );

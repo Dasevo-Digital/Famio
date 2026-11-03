@@ -11,6 +11,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../platform/passkey.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/password_reveal.dart';
 import '../l10n.dart';
 
@@ -462,55 +463,56 @@ class _SecurityScreenState extends State<SecurityScreen> {
     final code = TextEditingController();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr.securityTurnOffTwoFactor),
-        content: SizedBox(
-          width: 380,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(tr.securityAfterThatPasswordAlone),
-              const SizedBox(height: 12),
-              PasswordReveal(
-                builder: (_, obscure, toggle) => TextField(
-                  controller: password,
-                  obscureText: obscure,
-                  contextMenuBuilder: PasswordReveal.contextMenu,
-                  decoration: InputDecoration(
-                    labelText: tr.commonPassword,
-                    suffixIcon: toggle,
+      builder: (context) => DisposeWith(
+        controllers: [password, code],
+        child: AlertDialog(
+          title: Text(tr.securityTurnOffTwoFactor),
+          content: SizedBox(
+            width: 380,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(tr.securityAfterThatPasswordAlone),
+                const SizedBox(height: 12),
+                PasswordReveal(
+                  builder: (_, obscure, toggle) => TextField(
+                    controller: password,
+                    obscureText: obscure,
+                    contextMenuBuilder: PasswordReveal.contextMenu,
+                    decoration: InputDecoration(
+                      labelText: tr.commonPassword,
+                      suffixIcon: toggle,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: code,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: tr.securityCodeOrRecoveryCode,
+                const SizedBox(height: 8),
+                TextField(
+                  controller: code,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: tr.securityCodeOrRecoveryCode,
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: FamioColors.of(context).danger,
+              ],
             ),
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(tr.commonTurnOff),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr.commonCancel),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: FamioColors.of(context).danger,
+              ),
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr.commonTurnOff),
+            ),
+          ],
+        ),
       ),
     );
     final input = (password: password.text, code: code.text.trim());
-    password.dispose();
-    code.dispose();
     if (ok != true) return;
     try {
       await _api.disableTotp(password: input.password, code: input.code);

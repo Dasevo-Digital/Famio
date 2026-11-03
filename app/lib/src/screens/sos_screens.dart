@@ -15,6 +15,7 @@ import '../design/palette.dart';
 import '../sos/sos_controller.dart';
 import '../sos/sos_device.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import 'deferred_sections.dart';
 import '../l10n.dart';
 
@@ -152,46 +153,49 @@ Future<void> showCheckIn(BuildContext context) async {
     context: context,
     useSafeArea: true,
     isScrollControlled: true,
-    builder: (context) => Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        16 + MediaQuery.viewInsetsOf(context).bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(tr.sosCheckIn, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 4),
-          Text(tr.sosParentsGetMessageLocation),
-          const SizedBox(height: 12),
-          for (final text in LocationAlert.checkInTexts)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context, text),
-                child: Text(text),
+    builder: (context) => DisposeWith(
+      controllers: [own],
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          16,
+          20,
+          16 + MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(tr.sosCheckIn, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 4),
+            Text(tr.sosParentsGetMessageLocation),
+            const SizedBox(height: 12),
+            for (final text in LocationAlert.checkInTexts)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, text),
+                  child: Text(text),
+                ),
               ),
-            ),
-          TextField(
-            controller: own,
-            maxLength: 80,
-            decoration: InputDecoration(
-              hintText: tr.sosOwnText,
-              suffixIcon: IconButton(
-                tooltip: tr.commonSend,
-                icon: const Icon(AppIcons.paperPlaneRight),
-                onPressed: () => Navigator.pop(context, own.text.trim()),
+            TextField(
+              controller: own,
+              maxLength: 80,
+              decoration: InputDecoration(
+                hintText: tr.sosOwnText,
+                suffixIcon: IconButton(
+                  tooltip: tr.commonSend,
+                  icon: const Icon(AppIcons.paperPlaneRight),
+                  onPressed: () => Navigator.pop(context, own.text.trim()),
+                ),
               ),
+              onSubmitted: (v) => Navigator.pop(context, v.trim()),
             ),
-            onSubmitted: (v) => Navigator.pop(context, v.trim()),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
-  ).whenComplete(own.dispose);
+  );
   if (note == null || note.isEmpty) return;
   final fix = await SosDevice.currentFix(timeout: const Duration(seconds: 10));
   try {
@@ -858,25 +862,28 @@ class SosSettingsScreen extends StatelessWidget {
     final controller = TextEditingController(text: current);
     return showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(tr.sosNumberName(name)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.phone,
-          decoration: InputDecoration(hintText: tr.sosEG01701234567),
+      builder: (context) => DisposeWith(
+        controllers: [controller],
+        child: AlertDialog(
+          title: Text(tr.sosNumberName(name)),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(hintText: tr.sosEG01701234567),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: Text(tr.commonSave),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: Text(tr.commonSave),
-          ),
-        ],
       ),
-    ).whenComplete(controller.dispose);
+    );
   }
 }

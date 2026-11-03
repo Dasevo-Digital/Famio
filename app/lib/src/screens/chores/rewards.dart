@@ -179,79 +179,79 @@ Future<void> showRewardEditor(BuildContext context, {Reward? reward}) {
   final engine = AppScope.engineOf(context);
   return showDialog<void>(
     context: context,
-    builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        scrollable: true,
-        title: Text(
-          reward == null ? tr.rewardsNewReward : tr.rewardsEditReward,
-        ),
-        content: SizedBox(
-          width: 360,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: title,
-                autofocus: reward == null,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: tr.commonReward),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: emoji,
-                decoration: InputDecoration(labelText: tr.rewardsEmoji),
-              ),
-              const SizedBox(height: 12),
-              _Stepper(
-                value: cost,
-                min: 1,
-                max: 1000,
-                step: cost >= 50 ? 5 : 1,
-                onChanged: (v) => setState(() => cost = v),
-              ),
-            ],
+    builder: (context) => DisposeWith(
+      controllers: [title, emoji],
+      child: StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          scrollable: true,
+          title: Text(
+            reward == null ? tr.rewardsNewReward : tr.rewardsEditReward,
           ),
-        ),
-        actions: [
-          if (reward != null)
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: title,
+                  autofocus: reward == null,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: tr.commonReward),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: emoji,
+                  decoration: InputDecoration(labelText: tr.rewardsEmoji),
+                ),
+                const SizedBox(height: 12),
+                _Stepper(
+                  value: cost,
+                  min: 1,
+                  max: 1000,
+                  step: cost >= 50 ? 5 : 1,
+                  onChanged: (v) => setState(() => cost = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            if (reward != null)
+              TextButton(
+                onPressed: () {
+                  deleteWithUndo(
+                    context,
+                    what: reward.title,
+                    collections: const {Collections.rewards},
+                    delete: () => engine.deleteReward(reward.id),
+                  );
+                  Navigator.pop(context);
+                },
+                child: Text(tr.commonDelete),
+              ),
             TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.commonCancel),
+            ),
+            FilledButton(
               onPressed: () {
-                deleteWithUndo(
-                  context,
-                  what: reward.title,
-                  collections: const {Collections.rewards},
-                  delete: () => engine.deleteReward(reward.id),
+                if (title.text.trim().isEmpty) return;
+                engine.saveReward(
+                  Reward(
+                    id: reward?.id ?? newId(),
+                    title: title.text.trim(),
+                    emoji: emoji.text.trim().isEmpty ? '🎁' : emoji.text.trim(),
+                    cost: cost,
+                  ),
                 );
                 Navigator.pop(context);
               },
-              child: Text(tr.commonDelete),
+              child: Text(tr.commonSave),
             ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (title.text.trim().isEmpty) return;
-              engine.saveReward(
-                Reward(
-                  id: reward?.id ?? newId(),
-                  title: title.text.trim(),
-                  emoji: emoji.text.trim().isEmpty ? '🎁' : emoji.text.trim(),
-                  cost: cost,
-                ),
-              );
-              Navigator.pop(context);
-            },
-            child: Text(tr.commonSave),
-          ),
-        ],
+          ],
+        ),
       ),
     ),
-  ).whenComplete(() {
-    title.dispose();
-    emoji.dispose();
-  });
+  );
 }
 
 // --- accounts ---------------------------------------------------------------------

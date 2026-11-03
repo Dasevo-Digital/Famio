@@ -17,6 +17,7 @@ import '../design/palette.dart';
 import '../location/location_sharing.dart';
 import '../platform/browser.dart' show mapTileClient;
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/password_reveal.dart';
 import 'location/labels.dart';

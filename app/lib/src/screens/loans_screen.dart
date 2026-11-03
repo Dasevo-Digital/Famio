@@ -8,6 +8,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
@@ -161,101 +162,106 @@ Future<void> showLoanEditor(
   ];
   final save = await showDialog<bool>(
     context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (dialogContext, setState) => AlertDialog(
-        scrollable: true,
-        title: Text(existing == null ? tr.loansNew : tr.loansEdit),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SegmentedButton<bool>(
-              segments: [
-                ButtonSegment(value: true, label: Text(tr.loansLentOut)),
-                ButtonSegment(value: false, label: Text(tr.loansBorrowed)),
-              ],
-              selected: {lentOut},
-              onSelectionChanged: (v) => setState(() => lentOut = v.first),
-            ),
-            TextField(
-              controller: title,
-              autofocus: existing == null,
-              textCapitalization: TextCapitalization.sentences,
-              decoration: InputDecoration(labelText: tr.loansWhat),
-            ),
-            TextField(
-              controller: person,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: lentOut ? tr.loansToWhom : tr.loansFromWhom,
+    builder: (dialogContext) => DisposeWith(
+      controllers: [title, person, note],
+      child: StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          scrollable: true,
+          title: Text(existing == null ? tr.loansNew : tr.loansEdit),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment(value: true, label: Text(tr.loansLentOut)),
+                  ButtonSegment(value: false, label: Text(tr.loansBorrowed)),
+                ],
+                selected: {lentOut},
+                onSelectionChanged: (v) => setState(() => lentOut = v.first),
               ),
+              TextField(
+                controller: title,
+                autofocus: existing == null,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(labelText: tr.loansWhat),
+              ),
+              TextField(
+                controller: person,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: lentOut ? tr.loansToWhom : tr.loansFromWhom,
+                ),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String?>(
+                initialValue: people.any((m) => m.id == memberId)
+                    ? memberId
+                    : null,
+                decoration: InputDecoration(labelText: tr.loansWhoOfUs),
+                items: [
+                  DropdownMenuItem(value: null, child: Text(tr.loansAllAdults)),
+                  for (final m in people)
+                    DropdownMenuItem(value: m.id, child: Text(m.displayName)),
+                ],
+                onChanged: (v) => setState(() => memberId = v),
+              ),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(AppIcons.calendarBlank),
+                title: Text(tr.loansDueBack),
+                subtitle: Text(
+                  due == null ? tr.loansNoDate : _date.format(due!),
+                ),
+                trailing: due == null
+                    ? null
+                    : IconButton(
+                        tooltip: tr.loansNoDate,
+                        icon: const Icon(AppIcons.x),
+                        onPressed: () => setState(() => due = null),
+                      ),
+                onTap: () async {
+                  final now = DateTime.now();
+                  final picked = await showFamioDatePicker(
+                    context: dialogContext,
+                    initialDate:
+                        due ?? DateTime(now.year, now.month, now.day + 14),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) setState(() => due = picked);
+                },
+              ),
+              TextField(
+                controller: note,
+                decoration: InputDecoration(labelText: tr.commonNote),
+              ),
+            ],
+          ),
+          actions: [
+            if (existing != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext, false);
+                  deleteWithUndo(
+                    context,
+                    what: existing.title,
+                    collections: const {Collections.loans},
+                    delete: () => engine.deleteLoan(existing.id),
+                  );
+                },
+                child: Text(tr.commonDelete),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(tr.commonCancel),
             ),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String?>(
-              initialValue: people.any((m) => m.id == memberId)
-                  ? memberId
-                  : null,
-              decoration: InputDecoration(labelText: tr.loansWhoOfUs),
-              items: [
-                DropdownMenuItem(value: null, child: Text(tr.loansAllAdults)),
-                for (final m in people)
-                  DropdownMenuItem(value: m.id, child: Text(m.displayName)),
-              ],
-              onChanged: (v) => setState(() => memberId = v),
-            ),
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(AppIcons.calendarBlank),
-              title: Text(tr.loansDueBack),
-              subtitle: Text(due == null ? tr.loansNoDate : _date.format(due!)),
-              trailing: due == null
-                  ? null
-                  : IconButton(
-                      tooltip: tr.loansNoDate,
-                      icon: const Icon(AppIcons.x),
-                      onPressed: () => setState(() => due = null),
-                    ),
-              onTap: () async {
-                final now = DateTime.now();
-                final picked = await showFamioDatePicker(
-                  context: dialogContext,
-                  initialDate:
-                      due ?? DateTime(now.year, now.month, now.day + 14),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (picked != null) setState(() => due = picked);
-              },
-            ),
-            TextField(
-              controller: note,
-              decoration: InputDecoration(labelText: tr.commonNote),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: Text(tr.commonSave),
             ),
           ],
         ),
-        actions: [
-          if (existing != null)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext, false);
-                deleteWithUndo(
-                  context,
-                  what: existing.title,
-                  collections: const {Collections.loans},
-                  delete: () => engine.deleteLoan(existing.id),
-                );
-              },
-              child: Text(tr.commonDelete),
-            ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(tr.commonSave),
-          ),
-        ],
       ),
     ),
   );
@@ -275,5 +281,4 @@ Future<void> showLoanEditor(
       ),
     );
   }
-  // Not disposed: the dialog still shows them while it closes.
 }

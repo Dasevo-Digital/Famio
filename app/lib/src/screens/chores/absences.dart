@@ -117,85 +117,92 @@ class _AbsencesScreen extends StatelessWidget {
     final title = TextEditingController(text: existing?.title);
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          final substitutes = people.where((m) => m.id != memberId).toList();
-          if (!substitutes.any((m) => m.id == substituteId)) {
-            substituteId = null;
-          }
-          // One absence per person and day: the substitute must be clear.
-          final planned = MemberAbsence(
-            id: existing?.id ?? '',
-            memberId: memberId,
-            from: DateUtils.dateOnly(range.start),
-            to: DateUtils.dateOnly(range.end),
-          );
-          final overlap = engine.absences.any(planned.overlaps);
-          return AlertDialog(
-            title: Text(tr.absenceTitle),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(_range(range.start, range.end)),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: memberId,
-                  decoration: InputDecoration(labelText: tr.absencePerson),
-                  items: [
-                    for (final member in people)
-                      DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
-                      ),
-                  ],
-                  onChanged: (value) => setState(() => memberId = value!),
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: substituteId ?? '',
-                  decoration: InputDecoration(labelText: tr.absenceSubstitute),
-                  items: [
-                    DropdownMenuItem(value: '', child: Text(tr.commonNone)),
-                    for (final member in substitutes)
-                      DropdownMenuItem(
-                        value: member.id,
-                        child: Text(member.displayName),
-                      ),
-                  ],
-                  onChanged: (value) => setState(
-                    () => substituteId = value == null || value.isEmpty
-                        ? null
-                        : value,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: title,
-                  decoration: InputDecoration(labelText: tr.absenceReason),
-                ),
-                if (overlap) ...[
+      builder: (context) => DisposeWith(
+        controllers: [title],
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            final substitutes = people.where((m) => m.id != memberId).toList();
+            if (!substitutes.any((m) => m.id == substituteId)) {
+              substituteId = null;
+            }
+            // One absence per person and day: the substitute must be clear.
+            final planned = MemberAbsence(
+              id: existing?.id ?? '',
+              memberId: memberId,
+              from: DateUtils.dateOnly(range.start),
+              to: DateUtils.dateOnly(range.end),
+            );
+            final overlap = engine.absences.any(planned.overlaps);
+            return AlertDialog(
+              title: Text(tr.absenceTitle),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_range(range.start, range.end)),
                   const SizedBox(height: 12),
-                  Text(
-                    tr.absenceOverlap,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
+                  DropdownButtonFormField<String>(
+                    initialValue: memberId,
+                    decoration: InputDecoration(labelText: tr.absencePerson),
+                    items: [
+                      for (final member in people)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(() => memberId = value!),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    initialValue: substituteId ?? '',
+                    decoration: InputDecoration(
+                      labelText: tr.absenceSubstitute,
+                    ),
+                    items: [
+                      DropdownMenuItem(value: '', child: Text(tr.commonNone)),
+                      for (final member in substitutes)
+                        DropdownMenuItem(
+                          value: member.id,
+                          child: Text(member.displayName),
+                        ),
+                    ],
+                    onChanged: (value) => setState(
+                      () => substituteId = value == null || value.isEmpty
+                          ? null
+                          : value,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: title,
+                    decoration: InputDecoration(labelText: tr.absenceReason),
+                  ),
+                  if (overlap) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      tr.absenceOverlap,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ],
                 ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text(tr.commonCancel),
+                ),
+                FilledButton(
+                  onPressed: overlap
+                      ? null
+                      : () => Navigator.pop(context, true),
+                  child: Text(tr.commonSave),
+                ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(tr.commonCancel),
-              ),
-              FilledButton(
-                onPressed: overlap ? null : () => Navigator.pop(context, true),
-                child: Text(tr.commonSave),
-              ),
-            ],
-          );
-        },
+            );
+          },
+        ),
       ),
     );
     if (ok == true) {
@@ -210,6 +217,5 @@ class _AbsencesScreen extends StatelessWidget {
         ),
       );
     }
-    title.dispose();
   }
 }

@@ -35,7 +35,7 @@ class ProfileNotices {
     for (final p in soon) {
       accounts.markProfileNoticed(p.session, p.expires);
       final name = accounts.byId(p.member)?.displayName ?? '';
-      // "ios (Marlys-iPhone)" as the apps name it: the phone's name.
+      // "ios (Lenas-iPhone)" as the apps name it: the phone's name.
       final device =
           RegExp(r'^\w+ \((.*)\)$').firstMatch(p.device)?[1] ?? p.device;
       push?.deliver(

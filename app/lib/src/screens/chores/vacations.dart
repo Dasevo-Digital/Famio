@@ -106,39 +106,42 @@ class _VacationsScreen extends StatelessWidget {
     var allowance = existing?.allowance ?? false;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(tr.vacationTitle),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_range(range.start, range.end)),
-              const SizedBox(height: 12),
-              TextField(
-                controller: title,
-                decoration: InputDecoration(labelText: tr.vacationName),
+      builder: (context) => DisposeWith(
+        controllers: [title],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(tr.vacationTitle),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(_range(range.start, range.end)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: title,
+                  decoration: InputDecoration(labelText: tr.vacationName),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(tr.vacationPauseAllowance),
+                  subtitle: Text(tr.vacationPauseAllowanceHint),
+                  value: allowance,
+                  onChanged: (v) => setState(() => allowance = v),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
               ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(tr.vacationPauseAllowance),
-                subtitle: Text(tr.vacationPauseAllowanceHint),
-                value: allowance,
-                onChanged: (v) => setState(() => allowance = v),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.commonSave),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.commonSave),
-            ),
-          ],
         ),
       ),
     );
@@ -153,7 +156,6 @@ class _VacationsScreen extends StatelessWidget {
         ),
       );
     }
-    title.dispose();
   }
 }
 

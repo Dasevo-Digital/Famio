@@ -8,6 +8,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
@@ -204,66 +205,73 @@ class _WishesScreenState extends State<WishesScreen> {
     final note = TextEditingController(text: w?.note);
     final save = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          idea
-              ? (w == null
-                    ? tr.wishesNewIdea(engine.member(owner)?.displayName ?? '')
-                    : tr.wishesEditIdea)
-              : (w == null ? tr.wishesNewWish : tr.wishesEditWish),
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: title,
-                autofocus: true,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: InputDecoration(labelText: tr.wishesWhat),
-              ),
-              TextField(
-                controller: link,
-                keyboardType: TextInputType.url,
-                decoration: InputDecoration(labelText: tr.wishesLinkOptional),
-              ),
-              TextField(
-                controller: price,
-                decoration: InputDecoration(
-                  labelText: tr.wishesPriceOptional,
-                  hintText: tr.wishesEGAbout25,
+      builder: (context) => DisposeWith(
+        controllers: [title, link, price, note],
+        child: AlertDialog(
+          title: Text(
+            idea
+                ? (w == null
+                      ? tr.wishesNewIdea(
+                          engine.member(owner)?.displayName ?? '',
+                        )
+                      : tr.wishesEditIdea)
+                : (w == null ? tr.wishesNewWish : tr.wishesEditWish),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: title,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: InputDecoration(labelText: tr.wishesWhat),
                 ),
-              ),
-              TextField(
-                controller: note,
-                decoration: InputDecoration(labelText: tr.wishesNoteSizeColor),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          if (w != null)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context, false);
-                deleteWithUndo(
-                  this.context,
-                  what: w.title,
-                  collections: const {Collections.wishes},
-                  delete: () => engine.deleteWish(w.id),
-                );
-              },
-              child: Text(tr.commonDelete),
+                TextField(
+                  controller: link,
+                  keyboardType: TextInputType.url,
+                  decoration: InputDecoration(labelText: tr.wishesLinkOptional),
+                ),
+                TextField(
+                  controller: price,
+                  decoration: InputDecoration(
+                    labelText: tr.wishesPriceOptional,
+                    hintText: tr.wishesEGAbout25,
+                  ),
+                ),
+                TextField(
+                  controller: note,
+                  decoration: InputDecoration(
+                    labelText: tr.wishesNoteSizeColor,
+                  ),
+                ),
+              ],
             ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(tr.commonCancel),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(tr.commonSave),
-          ),
-        ],
+          actions: [
+            if (w != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, false);
+                  deleteWithUndo(
+                    this.context,
+                    what: w.title,
+                    collections: const {Collections.wishes},
+                    delete: () => engine.deleteWish(w.id),
+                  );
+                },
+                child: Text(tr.commonDelete),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr.commonSave),
+            ),
+          ],
+        ),
       ),
     );
     if (save == true && title.text.trim().isNotEmpty) {
@@ -281,7 +289,6 @@ class _WishesScreenState extends State<WishesScreen> {
         ),
       );
     }
-    // Not disposed: the dialog still shows them while it closes.
   }
 }
 

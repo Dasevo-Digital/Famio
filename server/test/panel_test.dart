@@ -209,7 +209,7 @@ void main() {
       if (haUser != null) {
         request.headers
           ..set('x-remote-user-id', haUser)
-          ..set('x-remote-user-display-name', 'Marco');
+          ..set('x-remote-user-display-name', 'Papa');
       }
       if (body != null) {
         request.headers.contentType = ContentType.json;
@@ -233,7 +233,7 @@ void main() {
       expect((login as Map)['token'], 'panel');
       // Named after the Home Assistant user in the member's devices.
       final devices = family.db.select('SELECT device FROM sessions');
-      expect(devices.single['device'], 'Home Assistant (Marco)');
+      expect(devices.single['device'], 'Home Assistant (Papa)');
 
       final (_, me) = await call('GET', 'api/me');
       expect((me as Map)['username'], 'mama');

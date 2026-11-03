@@ -10,6 +10,7 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/files.dart';
 import 'shopping_screens.dart' show newShoppingItem;
 
@@ -130,45 +131,48 @@ class InboxScreen extends StatelessWidget {
     PickedFile? picked;
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(tr.inboxAdd),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: title,
-                autofocus: true,
-                decoration: InputDecoration(labelText: tr.commonTitle),
+      builder: (context) => DisposeWith(
+        controllers: [title, text],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text(tr.inboxAdd),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: title,
+                  autofocus: true,
+                  decoration: InputDecoration(labelText: tr.commonTitle),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: text,
+                  minLines: 2,
+                  maxLines: 5,
+                  decoration: InputDecoration(labelText: tr.commonNotes),
+                ),
+                const SizedBox(height: 8),
+                TextButton.icon(
+                  icon: const Icon(AppIcons.paperclip),
+                  label: Text(picked?.name ?? tr.filesChooseFilePhoto),
+                  onPressed: () async {
+                    final file = await pickFile(context);
+                    if (file != null) setState(() => picked = file);
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
               ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: text,
-                minLines: 2,
-                maxLines: 5,
-                decoration: InputDecoration(labelText: tr.commonNotes),
-              ),
-              const SizedBox(height: 8),
-              TextButton.icon(
-                icon: const Icon(AppIcons.paperclip),
-                label: Text(picked?.name ?? tr.filesChooseFilePhoto),
-                onPressed: () async {
-                  final file = await pickFile(context);
-                  if (file != null) setState(() => picked = file);
-                },
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.commonSave),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.commonSave),
-            ),
-          ],
         ),
       ),
     );
@@ -189,8 +193,6 @@ class InboxScreen extends StatelessWidget {
         ),
       );
     }
-    title.dispose();
-    text.dispose();
   }
 
   static Future<void> _apply(

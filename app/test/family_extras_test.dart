@@ -429,6 +429,31 @@ void main() {
     },
   );
 
+  testWidgets('a dialog keeps its fields until it has faded out', (
+    tester,
+  ) async {
+    final engine = await open(tester, memberId: 'm1');
+    final context = tester.element(find.byType(Scaffold).first);
+    unawaited(
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen())),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip(tr.inboxAdd));
+    await tester.pumpAndSettle();
+    final title = find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.byType(TextField),
+    );
+    // The focused field still loses its focus while the dialog closes.
+    await tester.enterText(title.first, 'Elternbrief');
+    await tester.tap(find.text(tr.commonSave));
+    await tester.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsNothing);
+    expect(engine.inboxItems.single.title, 'Elternbrief');
+  });
+
   testWidgets('a tip leaves the bottom of the page free', (tester) async {
     await open(tester, memberId: 'm1');
     await tester.pumpAndSettle();
@@ -546,7 +571,7 @@ void main() {
             body: DeviceTile(
               session: DeviceSession(
                 id: 's',
-                device: 'ios (Marlys-iPhone)',
+                device: 'ios (Lenas-iPhone)',
                 createdAt: DateTime(2026, 10, 25),
                 lastSeen: DateTime(2026, 10, 26),
                 profileExpires: DateTime(2026, 11, 1, 18, 29),

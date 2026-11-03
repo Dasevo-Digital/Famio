@@ -12,6 +12,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../widgets/files.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
@@ -936,28 +937,31 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     final url = TextEditingController(text: _source.text);
     final address = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        scrollable: true,
-        title: Text(tr.mealsRecipeWebsite),
-        content: TextField(
-          controller: url,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          decoration: InputDecoration(
-            labelText: tr.commonAddress,
-            hintText: 'https://www.chefkoch.de/rezepte/…',
+      builder: (context) => DisposeWith(
+        controllers: [url],
+        child: AlertDialog(
+          scrollable: true,
+          title: Text(tr.mealsRecipeWebsite),
+          content: TextField(
+            controller: url,
+            autofocus: true,
+            keyboardType: TextInputType.url,
+            decoration: InputDecoration(
+              labelText: tr.commonAddress,
+              hintText: 'https://www.chefkoch.de/rezepte/…',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.commonCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, url.text.trim()),
+              child: Text(tr.commonApply),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(tr.commonCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, url.text.trim()),
-            child: Text(tr.commonApply),
-          ),
-        ],
       ),
     );
     final uri = Uri.tryParse(address ?? '');

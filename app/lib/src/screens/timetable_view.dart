@@ -9,6 +9,8 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
+import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 
 List<String> get _days => weekdaysShort(5);
 
@@ -116,23 +118,36 @@ class TimetableView extends StatelessWidget {
         const SizedBox(height: 12),
         Text(tr.timetableTapSubjectEnterTap, style: theme.textTheme.bodySmall),
         const SizedBox(height: 16),
-        if (schoolBag(engine, child, tomorrow) case final bag?)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: SoftCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tr.timetableForTomorrow,
-                    style: theme.textTheme.titleSmall,
+        // The family's holidays and appointments change the bag as well,
+        // not only the timetable this page listens to.
+        DataBuilder(
+          collections: const {
+            Collections.timetables,
+            Collections.vacations,
+            Collections.events,
+            Collections.externalEvents,
+          },
+          builder: (context, engine) =>
+              switch (schoolBag(engine, child, tomorrow)) {
+                final bag? => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: SoftCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tr.timetableForTomorrow,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(bag.summary),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(bag.summary),
-                ],
-              ),
-            ),
-          ),
+                ),
+                null => const SizedBox.shrink(),
+              },
+        ),
         SoftCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,70 +213,73 @@ class TimetableView extends StatelessWidget {
     final subjects = {for (final l in t.lessons) l.subject}.toList()..sort();
     final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          scrollable: true,
-          title: Text(tr.timetableLesson(_days[weekday - 1], period + 1)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: subject,
-                autofocus: true,
-                textCapitalization: TextCapitalization.words,
-                decoration: InputDecoration(labelText: tr.timetableSubject),
-              ),
-              if (subjects.isNotEmpty) ...[
+      builder: (context) => DisposeWith(
+        controllers: [subject, room, bring],
+        child: StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            scrollable: true,
+            title: Text(tr.timetableLesson(_days[weekday - 1], period + 1)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: subject,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(labelText: tr.timetableSubject),
+                ),
+                if (subjects.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final s in subjects)
+                        ActionChip(
+                          label: Text(s),
+                          onPressed: () => setState(() {
+                            subject.text = s;
+                            bring.text = t.bring[s] ?? '';
+                          }),
+                        ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    for (final s in subjects)
-                      ActionChip(
-                        label: Text(s),
-                        onPressed: () => setState(() {
-                          subject.text = s;
-                          bring.text = t.bring[s] ?? '';
-                        }),
-                      ),
-                  ],
+                TextField(
+                  controller: room,
+                  decoration: InputDecoration(
+                    labelText: tr.timetableRoomOptional,
+                  ),
+                ),
+                TextField(
+                  controller: bring,
+                  decoration: InputDecoration(
+                    labelText: tr.timetableBring,
+                    hintText: tr.timetableBringHint,
+                  ),
                 ),
               ],
-              const SizedBox(height: 8),
-              TextField(
-                controller: room,
-                decoration: InputDecoration(
-                  labelText: tr.timetableRoomOptional,
+            ),
+            actions: [
+              if (existing != null)
+                TextButton(
+                  onPressed: () {
+                    subject.clear();
+                    Navigator.pop(context, true);
+                  },
+                  child: Text(tr.settingsStorageClear),
                 ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(tr.commonCancel),
               ),
-              TextField(
-                controller: bring,
-                decoration: InputDecoration(
-                  labelText: tr.timetableBring,
-                  hintText: tr.timetableBringHint,
-                ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(tr.commonSave),
               ),
             ],
           ),
-          actions: [
-            if (existing != null)
-              TextButton(
-                onPressed: () {
-                  subject.clear();
-                  Navigator.pop(context, true);
-                },
-                child: Text(tr.settingsStorageClear),
-              ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(tr.commonSave),
-            ),
-          ],
         ),
       ),
     );

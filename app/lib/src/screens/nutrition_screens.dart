@@ -8,6 +8,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/data_builder.dart';
+import '../widgets/dispose_with.dart';
 import '../l10n.dart';
 import 'pantry_screens.dart';
 
@@ -296,29 +297,33 @@ class NutritionLinkScreen extends StatelessWidget {
           context,
           double.tryParse(input.text.trim().replaceAll(',', '.')),
         );
-        return AlertDialog(
-          title: Text(tr.nutritionWeightTitle),
-          content: TextField(
-            controller: input,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: InputDecoration(
-              labelText: tr.nutritionWeightOf(what),
-              suffixText: 'g',
+        return DisposeWith(
+          controllers: [input],
+          child: AlertDialog(
+            title: Text(tr.nutritionWeightTitle),
+            content: TextField(
+              controller: input,
+              autofocus: true,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: InputDecoration(
+                labelText: tr.nutritionWeightOf(what),
+                suffixText: 'g',
+              ),
+              onSubmitted: (_) => done(),
             ),
-            onSubmitted: (_) => done(),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(tr.commonCancel),
+              ),
+              FilledButton(onPressed: done, child: Text(tr.commonOk)),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(tr.commonCancel),
-            ),
-            FilledButton(onPressed: done, child: Text(tr.commonOk)),
-          ],
         );
       },
     );
-    input.dispose();
     return grams != null && grams > 0 ? grams : null;
   }
 }

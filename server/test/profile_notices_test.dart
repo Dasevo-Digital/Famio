@@ -28,26 +28,26 @@ void main() {
       displayName: 'Papa',
       isAdmin: true,
     );
-    final marly = app.accounts.create(username: 'marly', displayName: 'Marly');
+    final lena = app.accounts.create(username: 'lena', displayName: 'Lena');
     final now = DateTime.now();
     final phone = app.accounts.createSession(
-      marly.id,
-      device: 'ios (Marlys-iPhone)',
+      lena.id,
+      device: 'ios (Lenas-iPhone)',
     );
-    final later = app.accounts.createSession(marly.id, device: 'ios (iPad)');
+    final later = app.accounts.createSession(lena.id, device: 'ios (iPad)');
     final soon = now.add(const Duration(hours: 30));
     app.accounts
       ..noteProfileExpiry(phone, soon)
       ..noteProfileExpiry(later, now.add(const Duration(days: 6)));
 
-    expect(notices().check(), [marly.id]);
+    expect(notices().check(), [lena.id]);
     expect(told.single.$1, [papa.id]);
     expect(told.single.$2.title, 'Famio läuft bald ab');
-    expect(told.single.$2.body, contains('„Marlys-iPhone“ von Marly'));
+    expect(told.single.$2.body, contains('„Lenas-iPhone“ von Lena'));
     expect(
       app.accounts
           .adminUsers()
-          .firstWhere((u) => u.member.id == marly.id)
+          .firstWhere((u) => u.member.id == lena.id)
           .sessions
           .map((s) => s.profileExpires?.millisecondsSinceEpoch)
           .toSet(),
