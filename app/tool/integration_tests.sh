@@ -4,7 +4,10 @@
 #
 #   tool/integration_tests.sh <linux|macos> [integration_test/<file>]…
 #
-# Without files it runs all of them. The app runs as "Famio E2E"
+# Without files it runs the five flows listed below. The acceptance tests of
+# reviewed features (integration_test/review_*_test.dart, one test per
+# board card, about 20 minutes on macOS) run only when named.
+# The app runs as "Famio E2E"
 # (FAMIO_ENV=e2e; on macOS de.status403.famio.e2e) with its own data and
 # keychain entry and starts signed out; the family's Famio and "Famio Dev"
 # stay untouched.
