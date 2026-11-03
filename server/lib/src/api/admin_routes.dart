@@ -345,9 +345,21 @@ extension _AdminRoutes on FamioApi {
     }
   }
 
+  /// What connected apps only learn with their next sync: the family's
+  /// time zone and the upload limit, which come with every sync, and the
+  /// two-factor policy, which the next request enforces. The settings form
+  /// sends all its fields, so only a real change makes the apps sync at
+  /// once.
+  (String, int, Object?) _syncedSettings() => (
+    location.name,
+    settings.maxUploadBytes,
+    settings.effective.twoFactorRequired,
+  );
+
   Future<Response> _adminSettings(Request request) async {
     final admin = _admin(request);
     final zone = location.name;
+    final before = _syncedSettings();
     final changes = await _body(request);
     settings.update(changes);
     _audit(
@@ -360,6 +372,7 @@ extension _AdminRoutes on FamioApi {
         changes.containsKey('holidayRegion')) {
       hub.notifyMembersChanged();
     }
+    if (_syncedSettings() != before) hub.notifySettingsChanged();
     // Retention is a privacy boundary. Do not wait for the six-hour
     // housekeeping job when an administrator shortens it.
     if (changes.containsKey('locationHistoryDays')) {
@@ -375,11 +388,13 @@ extension _AdminRoutes on FamioApi {
   Response _adminResetSettings(Request request) {
     final admin = _admin(request);
     final zone = location.name;
+    final before = _syncedSettings();
     settings.reset();
     // Resetting may also shorten the effective retention.
     locations?.collectGarbage();
     _audit(admin, 'hat die Servereinstellungen auf Standard zurückgesetzt');
     hub.notifyMembersChanged();
+    if (_syncedSettings() != before) hub.notifySettingsChanged();
     if (location.name != zone) importer?.subscriptionsChanged();
     return _json(_overview().toJson());
   }

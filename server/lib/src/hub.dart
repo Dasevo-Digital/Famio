@@ -26,6 +26,11 @@ class ChangeHub {
 
   void notifyMembersChanged() => _broadcast({'type': 'members'});
 
+  /// A setting the apps only notice when they sync changed (the family's
+  /// time zone, the upload limit, the two-factor policy): they sync now
+  /// instead of at their next poll.
+  void notifySettingsChanged() => _broadcast({'type': 'settings'});
+
   void _broadcast(Map<String, Object?> message) {
     final text = jsonEncode(message);
     for (final client in _clients.toList()) {

@@ -554,6 +554,10 @@ class SyncEngine {
             sync();
           case 'members':
             refreshMembers();
+          // The family's time zone, the upload limit or the two-factor
+          // policy changed; the apps notice them when they sync.
+          case 'settings':
+            sync();
         }
       },
       onDone: _scheduleReconnect,

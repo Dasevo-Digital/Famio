@@ -258,6 +258,48 @@ void main() {
     expect(b.record(Collections.tasks, 'live')?.data['title'], 'Live');
   });
 
+  test('a new family time zone reaches a connected device by itself', () async {
+    final b = device();
+    b.start();
+    await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+    for (var i = 0; i < 200 && !b.live; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(b.live, isTrue);
+    expect(b.familyTimeZone, isNot('Africa/Accra'));
+
+    final arrived = b.changes.firstWhere((c) => c.contains(Collections.events));
+    await FamioApiClient(
+      url,
+      token: token,
+    ).updateServerSettings({'timeZone': 'Africa/Accra'});
+    await arrived.timeout(const Duration(seconds: 5));
+    expect(b.familyTimeZone, 'Africa/Accra');
+  });
+
+  test('saving unchanged settings does not make devices sync', () async {
+    final b = device();
+    b.start();
+    await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+    for (var i = 0; i < 200 && !b.live; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(b.live, isTrue);
+    var syncs = 0;
+    final counting = b.statusChanges
+        .where((s) => s.state == SyncState.syncing)
+        .listen((_) => syncs++);
+    addTearDown(counting.cancel);
+
+    // The settings form sends all its fields, the time zone included.
+    await FamioApiClient(
+      url,
+      token: token,
+    ).updateServerSettings({'timeZone': b.familyTimeZone});
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    expect(syncs, 0);
+  });
+
   test(
     'polls rarely while the websocket is up, catches up on resume',
     () async {
