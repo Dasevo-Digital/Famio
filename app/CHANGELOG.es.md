@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.31 – Ubicación en Home Assistant sin saltos
+
+- La ubicación de Famio en Home Assistant solo cambia con una posición
+  nueva. Hasta ahora, un nuevo aviso de batería volvía a convertir una
+  posición antigua de Famio en la más reciente, y una persona saltaba de
+  una zona a otra.
+- La batería y el uso compartido de la ubicación son ahora sensores
+  propios de cada miembro.
+
 ## 2.0.30 – Sincronización del calendario sin bloqueos
 
 - Si un servidor de calendario CalDAV se queda colgado al responder, Famio

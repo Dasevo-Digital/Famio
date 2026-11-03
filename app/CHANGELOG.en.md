@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.31 – Location in Home Assistant without jumps
+
+- The Famio location in Home Assistant now changes only with a new
+  position. Until now a new battery report made an old Famio position the
+  newest again, and a person jumped back and forth between zones.
+- Battery and location sharing are separate sensors per member instead.
+
 ## 2.0.30 – Calendar sync without hangs
 
 - If a CalDAV calendar server gets stuck while answering, Famio syncs again

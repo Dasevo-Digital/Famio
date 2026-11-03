@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.31 – Standort in Home Assistant ohne Springen
+
+- Der Famio-Standort in Home Assistant ändert sich nur noch mit einer
+  neuen Position. Bisher machte schon eine neue Akku-Meldung eine alte
+  Famio-Position wieder zur neuesten, und eine Person sprang zwischen den
+  Zonen hin und her.
+- Akku und Standortfreigabe sind dafür eigene Sensoren je Mitglied.
+
 ## 2.0.30 – Kalender-Abgleich ohne Hänger
 
 - Bleibt ein CalDAV-Kalender-Server beim Antworten stecken, gleicht Famio
