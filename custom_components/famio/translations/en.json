@@ -87,6 +87,19 @@
       },
       "countdown": {
         "name": "Countdown"
+      },
+      "battery": {
+        "name": "Battery"
+      },
+      "location_sharing": {
+        "name": "Location sharing",
+        "state": {
+          "active": "Active",
+          "paused": "Paused",
+          "denied": "Location access missing on the phone",
+          "off": "Location turned off on the phone",
+          "scheduled": "Off by schedule"
+        }
       }
     },
     "notify": {

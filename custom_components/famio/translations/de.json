@@ -87,6 +87,19 @@
       },
       "countdown": {
         "name": "Countdown"
+      },
+      "battery": {
+        "name": "Akku"
+      },
+      "location_sharing": {
+        "name": "Standortfreigabe",
+        "state": {
+          "active": "Aktiv",
+          "paused": "Pausiert",
+          "denied": "Standortzugriff auf dem Handy fehlt",
+          "off": "Standort am Handy ausgeschaltet",
+          "scheduled": "Nach Zeitplan aus"
+        }
       }
     },
     "notify": {

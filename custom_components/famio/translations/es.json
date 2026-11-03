@@ -87,6 +87,19 @@
       },
       "countdown": {
         "name": "Cuenta atrás"
+      },
+      "battery": {
+        "name": "Batería"
+      },
+      "location_sharing": {
+        "name": "Uso compartido de la ubicación",
+        "state": {
+          "active": "Activo",
+          "paused": "En pausa",
+          "denied": "Falta el acceso a la ubicación en el móvil",
+          "off": "Ubicación desactivada en el móvil",
+          "scheduled": "Desactivado por horario"
+        }
       }
     },
     "notify": {

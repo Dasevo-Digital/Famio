@@ -14,9 +14,9 @@ Famio-Mitglied sieht:
 | Sensor „Ämter heute“ (ab 1.0.13) | Anzahl der offenen Ämter von heute; Attribut `aemter` mit Titel, Emoji, wer dran ist (`dran`) und ob erledigt |
 | Sensor „Nächste Abfuhr“ (ab 1.0.13) | Datum der nächsten Abholung aus dem Abfallkalender; Attribute `tonnen`, `in_tagen`, `zustaendig`, `weitere` |
 | Sensor „Countdown“ (ab 1.0.13) | Tage bis zum nächsten Countdown-Termin; Attribute `titel`, `datum`, `laeuft`, `alle` |
-| Tracker je Mitglied | Standort der Mitglieder, die ihn in Famio teilen (Akku, Famio-Ort, Pause) |
+| Tracker je Mitglied | Standort der Mitglieder, die ihn in Famio teilen (Famio-Ort). Ab 2.0.31 ändert er sich nur mit einer neuen Position: Eine Person in Home Assistant folgt dem zuletzt geänderten GPS-Tracker, und eine alte Famio-Position soll eine frischere aus der Home-Assistant-App nicht überstimmen. `akku`, `freigabe` und `pausiert_bis` zeigen deshalb den Stand dieser Position |
 | Benachrichtigung „Familien-Chat“ (ab 2.0.11) | Nachricht von Home Assistant in den Familien-Chat, mit Push an alle |
-| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“, „Ämter“ (heute für diese Person offen); ab 2.0.11 die Benachrichtigung „Nachricht“ (Direktnachricht nur an diese Person) |
+| **Gerät je Mitglied** („Famio Lena“, ab 0.20.0) | To-do „Aufgaben“ (die dem Mitglied zugewiesenen; neue werden ihm zugewiesen), Kalender (seine Termine), Sensoren „Offene Aufgaben“ (mit Überfälligen), „Nächster Termin“, „Punkte“, „Ämter“ (heute für diese Person offen); ab 2.0.11 die Benachrichtigung „Nachricht“ (Direktnachricht nur an diese Person); ab 2.0.31 bei geteiltem Standort die Sensoren „Akku“ und „Standortfreigabe“ (Attribute `pausiert_bis`, `letzter_kontakt`) mit den aktuellen Werten |
 
 Änderungen kommen live über die WebSocket-Verbindung des Servers an (ohne
 Verbindung alle 5 Minuten).

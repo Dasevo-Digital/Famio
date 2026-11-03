@@ -1,5 +1,6 @@
 """Famio sensors: open tasks, shopping, the next event, chore points, today's
-chores, the next bin pickup and countdowns."""
+chores, the next bin pickup, countdowns and, per member who shares their
+location, battery and sharing state."""
 
 from __future__ import annotations
 
@@ -12,12 +13,18 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
 )
-from homeassistant.const import UnitOfTime
+from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import POINT_ENTRIES, SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
+from .const import (
+    MEMBER_LOCATIONS,
+    POINT_ENTRIES,
+    SHOPPING_ITEMS,
+    SHOPPING_LISTS,
+    TASKS,
+)
 from .coordinator import FamioConfigEntry, FamioCoordinator, assignees, parse_start
 from .entity import FamioEntity, FamioMemberEntity
 
@@ -198,6 +205,48 @@ MEMBER_SENSORS = (
 )
 
 
+_SHARING = ["active", "paused", "denied", "off", "scheduled"]
+
+
+def _location(c: FamioCoordinator, member_id: str) -> dict[str, Any]:
+    return c.data.collection(MEMBER_LOCATIONS).get(member_id, {})
+
+
+def _sharing(c: FamioCoordinator, member_id: str) -> str | None:
+    location = _location(c, member_id)
+    if not location:
+        return None
+    # A state of a newer server is unknown here rather than an error.
+    state = location.get("state", "active")
+    return state if state in _SHARING else None
+
+
+# Per member who shares their location, next to the tracker: values that
+# change while the position stays the same and therefore not with the
+# tracker (see device_tracker.py).
+LOCATION_SENSORS = (
+    FamioMemberSensorDescription(
+        key="battery",
+        translation_key="battery",
+        device_class=SensorDeviceClass.BATTERY,
+        native_unit_of_measurement=PERCENTAGE,
+        state_class="measurement",
+        value=lambda c, m: _location(c, m).get("battery"),
+    ),
+    FamioMemberSensorDescription(
+        key="location_sharing",
+        translation_key="location_sharing",
+        device_class=SensorDeviceClass.ENUM,
+        options=_SHARING,
+        value=_sharing,
+        attributes=lambda c, m: {
+            "pausiert_bis": _location(c, m).get("pausedUntil"),
+            "letzter_kontakt": _location(c, m).get("lastContact"),
+        },
+    ),
+)
+
+
 @dataclass(frozen=True, kw_only=True)
 class FamioSensorDescription(SensorEntityDescription):
     value: Callable[[FamioCoordinator], Any]
@@ -302,6 +351,7 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities(FamioSensor(coordinator, d) for d in SENSORS)
     known: set[str] = set()
+    sharing: set[str] = set()
 
     @callback
     def add_members() -> None:
@@ -312,6 +362,13 @@ async def async_setup_entry(
                 new.extend(
                     FamioMemberSensor(coordinator, member["id"], d)
                     for d in MEMBER_SENSORS
+                )
+        for member_id in coordinator.data.collection(MEMBER_LOCATIONS):
+            if member_id not in sharing and member_id in coordinator.data.members:
+                sharing.add(member_id)
+                new.extend(
+                    FamioMemberSensor(coordinator, member_id, d)
+                    for d in LOCATION_SENSORS
                 )
         if new:
             async_add_entities(new)

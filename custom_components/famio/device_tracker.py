@@ -37,20 +37,48 @@ async def async_setup_entry(
     entry.async_on_unload(coordinator.async_add_listener(add_members))
 
 
+# What makes a new position. Battery, last contact and the sharing state
+# change while the position stays the same (a paused device keeps
+# reporting its battery, for example).
+_POSITION = ("latitude", "longitude", "accuracy", "at", "placeId")
+
+
+def _position(location: dict[str, Any]) -> tuple[Any, ...]:
+    return tuple(location.get(key) for key in _POSITION)
+
+
 class FamioMemberTracker(FamioEntity, TrackerEntity):
-    """Where a family member is, as far as they share it in Famio."""
+    """Where a family member is, as far as they share it in Famio.
+
+    The tracker changes only with a new position. Home Assistant's person
+    entity follows the GPS tracker that was updated last; a battery update
+    alone made an old Famio position newer than a fresh one from the Home
+    Assistant app, and the person jumped between zones several times a day.
+    The attributes therefore keep the state of the last position; the
+    current battery and sharing state are sensors of the member.
+    """
 
     _attr_source_type = SourceType.GPS
 
     def __init__(self, coordinator: FamioCoordinator, member_id: str) -> None:
         super().__init__(coordinator, f"location_{member_id}")
         self._member_id = member_id
+        self._location = self._latest()
 
-    @property
-    def _location(self) -> dict[str, Any]:
+    def _latest(self) -> dict[str, Any]:
         return self.coordinator.data.collection(MEMBER_LOCATIONS).get(
             self._member_id, {}
         )
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        latest = self._latest()
+        if _position(latest) == _position(self._location) and bool(latest) == bool(
+            self._location
+        ):
+            return
+        self._location = latest
+        self.async_write_ha_state()
 
     @property
     def name(self) -> str:
@@ -58,7 +86,9 @@ class FamioMemberTracker(FamioEntity, TrackerEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and bool(self._location)
+        # Not tied to the connection: unavailable and back again would write
+        # the old position anew and make it the newest for the person.
+        return bool(self._location)
 
     @property
     def latitude(self) -> float | None:
