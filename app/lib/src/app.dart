@@ -28,6 +28,7 @@ class FamioApp extends StatelessWidget {
           // A new language rebuilds everything, also the texts of widgets
           // that would otherwise stay as they are.
           key: ValueKey(appLanguage),
+          navigatorObservers: [state.openRoutes],
           title: AppEnv.appName,
           debugShowCheckedModeBanner: false,
           theme: famioTheme(

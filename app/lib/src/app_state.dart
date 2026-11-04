@@ -168,6 +168,12 @@ class AppState extends ChangeNotifier {
   /// Light, dark or as the system says, on this device.
   final themeMode = ValueNotifier(ThemeMode.system);
 
+  /// The dialogs and sheets open on the app's root navigator. A new
+  /// language builds a new navigator (see `FamioApp`), so each has its own.
+  OpenRoutes get openRoutes =>
+      _openRoutes.putIfAbsent(appLanguage, OpenRoutes.new);
+  final _openRoutes = <String, OpenRoutes>{};
+
   Future<void> setThemeMode(ThemeMode? value) async {
     themeMode.value = value ?? ThemeMode.system;
     await _prefs.setString('themeMode', themeMode.value.name);
@@ -784,6 +790,10 @@ class AppState extends ChangeNotifier {
   Future<void> _stopSession() async {
     final engine = this.engine;
     if (engine == null) return;
+    // Dialogs and sheets above the home shell need the session (a sign-out
+    // from another device can come while one is open): they go first, at
+    // once, as a closing animation would build them again without it.
+    openRoutes.closeAll();
     this.engine = null;
     notifyListeners();
     await engine.dispose();
@@ -1019,4 +1029,36 @@ class AppScope extends InheritedNotifier<AppState> {
   /// The sync engine of the signed-in session. Only valid below the home
   /// shell, which is only shown while signed in.
   static SyncEngine engineOf(BuildContext context) => of(context).engine!;
+}
+
+/// Keeps track of the routes of a navigator, to close them all at once.
+class OpenRoutes extends NavigatorObserver {
+  final _routes = <Route<dynamic>>[];
+
+  /// Removes every route above the first, without their animations.
+  void closeAll() {
+    final navigator = this.navigator;
+    if (navigator == null) return;
+    for (final route in _routes.reversed.toList()) {
+      if (!route.isFirst && route.isActive) navigator.removeRoute(route);
+    }
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _routes.add(route);
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _routes.remove(route);
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) =>
+      _routes.remove(route);
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    _routes.remove(oldRoute);
+    if (newRoute != null) _routes.add(newRoute);
+  }
 }
