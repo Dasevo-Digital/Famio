@@ -119,6 +119,9 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   var _section = FamioSection.home;
 
+  /// Sections whose own navigator shows a page above their start page.
+  final _deeper = <FamioSection>{};
+
   /// The area whose tip is shown (first visit), or null.
   FamioSection? _tip;
 
@@ -328,10 +331,22 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         for (final s in FamioSection.values)
           if (_visited.contains(s))
             HeroControllerScope.none(
-              child: Navigator(
-                key: _navigators[s],
-                onGenerateRoute: (_) =>
-                    MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+              // Which sections Android's back button leads back within;
+              // the shell decides (below), not each section on its own.
+              child: NotificationListener<NavigationNotification>(
+                onNotification: (n) {
+                  if (n.canHandlePop != _deeper.contains(s)) {
+                    setState(
+                      () => n.canHandlePop ? _deeper.add(s) : _deeper.remove(s),
+                    );
+                  }
+                  return true;
+                },
+                child: Navigator(
+                  key: _navigators[s],
+                  onGenerateRoute: (_) =>
+                      MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+                ),
               ),
             )
           else
@@ -398,57 +413,71 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       ),
     );
 
-    return FamioNav(
-      go: _go,
-      current: _section,
-      child: DataBuilder(
-        collections: const {
-          Collections.chatMessages,
-          Collections.chatReads,
-          'members',
-        },
-        builder: (context, engine) {
-          final unread = engine.totalUnread;
-          _sections = sectionsFor(
-            engine.myRole,
-            hidden: AppScope.of(context).hiddenModules,
-          );
-          if (!_sections.contains(_section)) {
-            // Switched off while open: back to the start page.
-            WidgetsBinding.instance.addPostFrameCallback(
-              (_) => mounted ? _go(FamioSection.home) : null,
+    // Android's back button: first the open page of the current section,
+    // then from another section to the start page; only there it leaves.
+    return PopScope(
+      canPop: _section == FamioSection.home && !_deeper.contains(_section),
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        final navigator = _navigators[_section]?.currentState;
+        if (navigator != null && navigator.canPop()) {
+          navigator.maybePop();
+        } else if (_section != FamioSection.home) {
+          _go(FamioSection.home);
+        }
+      },
+      child: FamioNav(
+        go: _go,
+        current: _section,
+        child: DataBuilder(
+          collections: const {
+            Collections.chatMessages,
+            Collections.chatReads,
+            'members',
+          },
+          builder: (context, engine) {
+            final unread = engine.totalUnread;
+            _sections = sectionsFor(
+              engine.myRole,
+              hidden: AppScope.of(context).hiddenModules,
             );
-          }
-          final shell = wide
-              ? Scaffold(
-                  backgroundColor: c.background,
-                  body: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _SideRail(
-                        sections: _sections,
-                        current: _section,
-                        onSelect: _go,
-                        unread: unread,
-                      ),
-                      Expanded(child: body),
-                    ],
-                  ),
-                )
-              : Scaffold(
-                  backgroundColor: c.background,
-                  extendBody: true,
-                  body: body,
-                  bottomNavigationBar: _FloatingBar(
-                    bar: _bar,
-                    current: _section,
-                    onSelect: _go,
-                    onMore: _showMore,
-                    unread: unread,
-                  ),
-                );
-          return FamioTourScope(sections: _sections, go: _go, child: shell);
-        },
+            if (!_sections.contains(_section)) {
+              // Switched off while open: back to the start page.
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => mounted ? _go(FamioSection.home) : null,
+              );
+            }
+            final shell = wide
+                ? Scaffold(
+                    backgroundColor: c.background,
+                    body: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _SideRail(
+                          sections: _sections,
+                          current: _section,
+                          onSelect: _go,
+                          unread: unread,
+                        ),
+                        Expanded(child: body),
+                      ],
+                    ),
+                  )
+                : Scaffold(
+                    backgroundColor: c.background,
+                    extendBody: true,
+                    body: body,
+                    bottomNavigationBar: _FloatingBar(
+                      bar: _bar,
+                      current: _section,
+                      onSelect: _go,
+                      onMore: _showMore,
+                      unread: unread,
+                    ),
+                  );
+            return FamioTourScope(sections: _sections, go: _go, child: shell);
+          },
+        ),
       ),
     );
   }
