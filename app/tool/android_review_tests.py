@@ -313,6 +313,9 @@ def main():
                     device.grant()
                 elif what == "geo":
                     device.geo(*rest)
+                elif what == "back":
+                    # The back button, as a person presses it.
+                    device.shell("input keyevent KEYCODE_BACK")
                 elif what == "shot":
                     shots = Path(tempfile.gettempdir()) / "famio-android-review-shots"
                     shots.mkdir(exist_ok=True)

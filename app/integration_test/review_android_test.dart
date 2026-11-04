@@ -7,11 +7,13 @@
 // `E2E-HOST …`: it grants the permissions Android asks a person for, moves
 // the emulator (`adb emu geo fix`) and shares to Famio from outside the
 // app: text like another app would (`am start -a …SEND`), photos and PDFs
-// from the Files app (held, "Share", "Famio Dev"). What
+// from the Files app (held, "Share", "Famio Dev"), and presses the back
+// button. What
 // Android shows is read back from its notification list. Only the camera
 // is replaced at its plugin boundary: the test hands in a photographed
 // receipt. With `--play-models` the app takes the text recognition from
 // Google Play services instead of its own copy (the 64-bit release APK).
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -20,8 +22,10 @@ import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/ocr.dart';
 import 'package:famio/src/l10n.dart';
+import 'package:famio/src/screens/home_shell.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
@@ -644,6 +648,97 @@ void main() {
       await state.setDayPreview(null);
     } finally {
       await finish(tester, state, {Collections.events});
+    }
+  });
+
+  testWidgets('#290 Zurück-Taste: erst die Seite, dann Start, dann raus', (
+    tester,
+  ) async {
+    // The test binding forgets the app's lifecycle state after each test.
+    // Without one, Flutter never tells Android that it handles back itself,
+    // and Android closes Famio on every press: as Famio starts, resumed.
+    tester.platformDispatcher.initialLifecycleStateTestValue = AppLifecycleState
+        .resumed
+        .toString();
+    addTearDown(tester.platformDispatcher.resetInitialLifecycleState);
+    tester.binding.readTestInitialLifecycleStateFromNativeWindow();
+
+    // What Flutter tells Android: whether back goes to Famio (true) or
+    // Android handles it, which leaves Famio (false). Passed on unchanged.
+    bool? handlesBack;
+    final messenger = tester.binding.defaultBinaryMessenger;
+    messenger.setMockMessageHandler(SystemChannels.platform.name, (data) {
+      final call = SystemChannels.platform.codec.decodeMethodCall(data);
+      if (call.method == 'SystemNavigator.setFrameworkHandlesBack') {
+        handlesBack = call.arguments as bool;
+      }
+      return messenger.delegate.send(SystemChannels.platform.name, data);
+    });
+    addTearDown(
+      () => messenger.setMockMessageHandler(SystemChannels.platform.name, null),
+    );
+
+    /// The back button pressed on the device; true if Famio is still in
+    /// front afterwards. Waits in real time: a pump needs frames, and Famio
+    /// in the background has none.
+    Future<bool> back() async {
+      // Flutter tells Android whether it handles back after a frame; a
+      // person is never faster than that.
+      await tester.pumpAndSettle();
+      expect(handlesBack, isTrue, reason: 'Android would handle back');
+      host('back');
+      await Future<void>.delayed(const Duration(seconds: 3));
+      return WidgetsBinding.instance.lifecycleState ==
+          AppLifecycleState.resumed;
+    }
+
+    final state = await start(tester);
+    try {
+      // A page within the start section, as opened from one of its cards.
+      final section = tester.element(
+        find
+            .descendant(
+              of: find.byType(HomeShell),
+              matching: find.byType(Scaffold),
+            )
+            .last,
+      );
+      unawaited(
+        Navigator.of(section).push(
+          MaterialPageRoute<void>(
+            builder: (_) =>
+                const Scaffold(body: Center(child: Text('E2E Unterseite'))),
+          ),
+        ),
+      );
+      await waitFor(tester, find.text('E2E Unterseite'));
+      expect(await back(), isTrue, reason: 'back on a page closed Famio');
+      await until(
+        tester,
+        () => find.text('E2E Unterseite').evaluate().isEmpty,
+        'page closed',
+      );
+
+      // From another section to the start page.
+      await tap(tester, find.byTooltip('Einkauf'));
+      await waitFor(tester, find.text('Was brauchen wir?'));
+      expect(
+        await back(),
+        isTrue,
+        reason: 'back in the shopping list closed Famio',
+      );
+      await until(
+        tester,
+        () => find.text('Was brauchen wir?').evaluate().isEmpty,
+        'back on the start page',
+      );
+
+      // On the start page Android handles back and leaves Famio as usual.
+      // Not pressed here: Android would end the test's activity with it.
+      await tester.pumpAndSettle();
+      expect(handlesBack, isFalse);
+    } finally {
+      await finish(tester, state, {});
     }
   });
 
