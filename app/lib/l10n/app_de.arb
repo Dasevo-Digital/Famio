@@ -4088,7 +4088,7 @@
     }
   },
   "kidsPeriodsGermanChildHealth": "Zeiträume laut gelbem Kinderuntersuchungsheft. Den Termin am besten früh beim Kinderarzt vereinbaren.",
-  "kidsBasedStikoVaccinationCalendar": "Orientierung nach dem STIKO-Impfkalender (Stand 2025). Maßgeblich sind Kinderarzt und Impfpass.",
+  "kidsBasedStikoVaccinationCalendar": "Orientierung nach dem STIKO-Impfkalender (Stand 2026). Maßgeblich sind Kinderarzt und Impfpass.",
   "kidsWhatDone": "{what} erledigt",
   "@kidsWhatDone": {
     "placeholders": {

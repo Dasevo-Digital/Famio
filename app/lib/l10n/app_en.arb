@@ -1776,7 +1776,7 @@
   "kidsChildNoLongerExists": "This child no longer exists.",
   "kidsAgeBornBorn2": "{age} · born on {born}",
   "kidsPeriodsGermanChildHealth": "Periods as in the German child health booklet. Best book the appointment with the pediatrician early.",
-  "kidsBasedStikoVaccinationCalendar": "Based on the STIKO vaccination calendar (as of 2025). The pediatrician and the vaccination record are what count.",
+  "kidsBasedStikoVaccinationCalendar": "Based on the STIKO vaccination calendar (as of 2026). The pediatrician and the vaccination record are what count.",
   "kidsWhatDone": "{what} done",
   "kidsVaccinationTitleDose": "Vaccination: {title} ({dose})",
   "kidsHeadSizeCm": "Head {size} cm",

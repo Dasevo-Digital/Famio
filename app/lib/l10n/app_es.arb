@@ -1776,7 +1776,7 @@
   "kidsChildNoLongerExists": "Este niño ya no existe.",
   "kidsAgeBornBorn2": "{age} · nacido el {born}",
   "kidsPeriodsGermanChildHealth": "Periodos según la cartilla de salud infantil alemana. Lo mejor es pedir cita pronto con el pediatra.",
-  "kidsBasedStikoVaccinationCalendar": "Orientación según el calendario de vacunación de la STIKO (Alemania, 2025). Lo que cuenta es el pediatra y la cartilla de vacunación.",
+  "kidsBasedStikoVaccinationCalendar": "Orientación según el calendario de vacunación de la STIKO (Alemania, 2026). Lo que cuenta es el pediatra y la cartilla de vacunación.",
   "kidsWhatDone": "{what} hecha",
   "kidsVaccinationTitleDose": "Vacuna: {title} ({dose})",
   "kidsHeadSizeCm": "Cabeza {size} cm",
