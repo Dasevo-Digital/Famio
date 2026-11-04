@@ -4,6 +4,23 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.32 – «No fui yo» y el botón Atrás de Android
+
+- En Ajustes → Mis dispositivos, los inicios de sesión nuevos muestran
+  «No fui yo»: Famio cierra la sesión de ese dispositivo y abre
+  «Cambiar contraseña».
+- Android: el botón Atrás cierra primero la página abierta y después
+  vuelve a la página de inicio. Hasta ahora cerraba Famio enseguida.
+- Android: compartir algo desde otra app con Famio ya no abre un segundo
+  Famio; llega a la app que está abierta.
+- Si se cierra la sesión de un dispositivo desde otro lugar, las ventanas
+  abiertas se cierran bien en vez de mostrar un error.
+- Un cambio de zona horaria de la familia llega enseguida a todas las apps.
+- Con el teléfono en formato de 12 horas no se podía escribir una hora
+  como 16:30. Ahora sí.
+- La tarjeta de la mochila y los cuadros de entrada funcionan de forma más
+  fiable.
+
 ## 2.0.31 – Ubicación en Home Assistant sin saltos
 
 - La ubicación de Famio en Home Assistant solo cambia con una posición

@@ -4,6 +4,21 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.32 – „Das war ich nicht“ und Android-Zurück
+
+- Unter Einstellungen → Meine Geräte steht bei neuen Anmeldungen „Das war
+  ich nicht“: Famio meldet das Gerät ab und öffnet „Passwort ändern“.
+- Android: Die Zurück-Taste schließt erst die offene Seite, dann geht es
+  zur Startseite. Bisher schloss sie Famio sofort.
+- Android: Etwas aus einer anderen App an Famio zu teilen öffnet kein
+  zweites Famio mehr, es landet in der laufenden App.
+- Wird ein Gerät von woanders abgemeldet, schließen offene Fenster sauber,
+  statt einen Fehler zu zeigen.
+- Eine geänderte Zeitzone der Familie kommt sofort in allen Apps an.
+- Steht das Telefon auf 12 Stunden, ließ sich eine Uhrzeit wie 16:30 nicht
+  eintippen. Das geht jetzt.
+- Die Schulranzen-Karte und Eingabedialoge verhalten sich zuverlässiger.
+
 ## 2.0.31 – Standort in Home Assistant ohne Springen
 
 - Der Famio-Standort in Home Assistant ändert sich nur noch mit einer

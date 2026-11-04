@@ -4,6 +4,21 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.32 – "That wasn't me" and Android back
+
+- Under Settings → My devices, new sign-ins show "That wasn't me": Famio
+  signs that device out and opens "Change password".
+- Android: the back button first closes the open page, then goes to the
+  start page. Until now it closed Famio right away.
+- Android: sharing something from another app to Famio no longer opens a
+  second Famio; it arrives in the running app.
+- When a device is signed out from elsewhere, open windows close cleanly
+  instead of showing an error.
+- A changed family time zone reaches all apps at once.
+- With German or Spanish on a phone set to 12 hours, a time like 16:30
+  could not be typed in. Now it can.
+- The school bag card and input dialogs behave more reliably.
+
 ## 2.0.31 – Location in Home Assistant without jumps
 
 - The Famio location in Home Assistant now changes only with a new
