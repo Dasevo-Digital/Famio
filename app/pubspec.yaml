@@ -66,6 +66,10 @@ dev_dependencies:
     sdk: flutter
   integration_test:
     sdk: flutter
+  # Integration tests hand in a photo instead of the camera.
+  image_picker_platform_interface: ^2.11.2
+  # … and keep files from opening in the system's apps.
+  url_launcher_platform_interface: ^2.3.2
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
