@@ -53,20 +53,40 @@ class FamioApp extends StatelessWidget {
             L10n.delegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
-          // The development build says so on every screen.
-          builder: AppEnv.isDev
-              ? (context, child) => Banner(
-                  message: 'DEV',
-                  location: BannerLocation.topEnd,
-                  color: const Color(0xFFE8703A),
-                  child: child!,
-                )
-              : null,
+          builder: (context, child) {
+            var result = _hours24(context, child!);
+            // The development build says so on every screen.
+            if (AppEnv.isDev) {
+              result = Banner(
+                message: 'DEV',
+                location: BannerLocation.topEnd,
+                color: const Color(0xFFE8703A),
+                child: result,
+              );
+            }
+            return result;
+          },
           home: const _Root(),
         ),
       ),
     );
   }
+}
+
+/// German and Spanish write times with 24 hours, also on a phone set to 12.
+/// The time picker shows them so, but its text mode checks the hour against
+/// the phone's setting alone: there, "16" was refused. With the language's
+/// own clock as the app's setting, both agree.
+Widget _hours24(BuildContext context, Widget child) {
+  final format = MaterialLocalizations.of(context).timeOfDayFormat();
+  if (MediaQuery.alwaysUse24HourFormatOf(context) ||
+      hourFormat(of: format) == HourFormat.h) {
+    return child;
+  }
+  return MediaQuery(
+    data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+    child: child,
+  );
 }
 
 class _Root extends StatelessWidget {
