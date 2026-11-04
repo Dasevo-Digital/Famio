@@ -16,6 +16,8 @@ están en las versiones publicadas.
 - Si se cierra la sesión de un dispositivo desde otro lugar, las ventanas
   abiertas se cierran bien en vez de mostrar un error.
 - Un cambio de zona horaria de la familia llega enseguida a todas las apps.
+- En el ordenador no llegaban más notificaciones si el sistema no podía
+  mostrar una (por ejemplo, Linux sin servicio de notificaciones).
 - Con el teléfono en formato de 12 horas no se podía escribir una hora
   como 16:30. Ahora sí.
 - La tarjeta de la mochila y los cuadros de entrada funcionan de forma más

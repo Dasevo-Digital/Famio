@@ -15,6 +15,8 @@ stehen bei den Releases.
 - Wird ein Gerät von woanders abgemeldet, schließen offene Fenster sauber,
   statt einen Fehler zu zeigen.
 - Eine geänderte Zeitzone der Familie kommt sofort in allen Apps an.
+- Am Computer kamen keine Mitteilungen mehr an, wenn das System eine
+  einzige nicht anzeigen konnte (etwa Linux ohne Mitteilungsdienst).
 - Steht das Telefon auf 12 Stunden, ließ sich eine Uhrzeit wie 16:30 nicht
   eintippen. Das geht jetzt.
 - Die Schulranzen-Karte und Eingabedialoge verhalten sich zuverlässiger.

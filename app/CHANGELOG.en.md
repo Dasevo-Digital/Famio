@@ -15,6 +15,8 @@ with the releases.
 - When a device is signed out from elsewhere, open windows close cleanly
   instead of showing an error.
 - A changed family time zone reaches all apps at once.
+- On computers, no further notifications arrived once the system could
+  not show one (for example Linux without a notification service).
 - With German or Spanish on a phone set to 12 hours, a time like 16:30
   could not be typed in. Now it can.
 - The school bag card and input dialogs behave more reliably.

@@ -180,7 +180,14 @@ class OwnPush {
                 notice.tag == 'tada' ||
                 notice.tag == 'key' ||
                 notice.alarm) {
-              await show(notice, details: _details);
+              try {
+                await show(notice, details: _details);
+              } catch (e) {
+                // One notice the system would not show (a Linux desktop
+                // without a notification service) must not end the loop
+                // and with it every later notice.
+                debugPrint('Famio: notice ${notice.id} not shown: $e');
+              }
             }
           }
         }
