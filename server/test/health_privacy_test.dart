@@ -1,0 +1,374 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:famio_server/famio_server.dart';
+import 'package:famio_shared/famio_shared.dart';
+import 'package:shelf/shelf.dart';
+import 'package:test/test.dart';
+
+/// Who receives and changes health data: the server decides that itself,
+/// not only `visibleTo`, which clients set and which may be empty.
+void main() {
+  late FamioServerApp app;
+  late FamilyMember mama, papa, kid, oma, ha;
+  late Map<String, String> tokens;
+  var clock = 1000;
+
+  setUp(() {
+    app = FamioServerApp.inMemory();
+    mama = app.accounts.create(
+      username: 'mama',
+      displayName: 'Mama',
+      isAdmin: true,
+    );
+    papa = app.accounts.create(username: 'papa', displayName: 'Papa');
+    kid = app.accounts.create(
+      username: 'kid',
+      displayName: 'Kid',
+      role: MemberRole.child,
+    );
+    oma = app.accounts.create(
+      username: 'oma',
+      displayName: 'Oma',
+      role: MemberRole.guest,
+    );
+    ha = app.accounts.create(
+      username: 'ha',
+      displayName: 'HA',
+      role: MemberRole.service,
+    );
+    tokens = {
+      for (final m in [mama, papa, kid, oma, ha])
+        m.id: app.accounts.createSession(m.id),
+    };
+  });
+  tearDown(() async {
+    await app.close();
+    Directory(app.dataDir).deleteSync(recursive: true);
+  });
+
+  Future<SyncResponse> sync(
+    FamilyMember who, {
+    List<SyncRecord> changes = const [],
+    int since = 0,
+    String? scope,
+  }) async {
+    final response = await app.handler(
+      Request(
+        'POST',
+        Uri.parse('http://famio.test/api/sync'),
+        headers: {
+          'authorization': 'Bearer ${tokens[who.id]}',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode(
+          SyncRequest(
+            since: since,
+            changes: changes,
+            scope: scope,
+            resettable: scope != null,
+          ).toJson(),
+        ),
+      ),
+    );
+    expect(response.statusCode, 200);
+    return SyncResponse.fromJson(
+      (jsonDecode(await response.readAsString()) as Map).cast(),
+    );
+  }
+
+  SyncRecord record(
+    String collection,
+    String id,
+    Map<String, Object?> data, {
+    List<String>? audience,
+  }) => SyncRecord(
+    collection: collection,
+    id: id,
+    data: {...data, SyncRecord.visibilityKey: ?audience},
+    updatedAt: clock += 1000,
+  );
+
+  SyncRecord medication(String id, {List<String>? audience}) => record(
+    Collections.medications,
+    id,
+    {'name': 'Sertralin', 'start': '2026-01-01', 'careIds': ?audience},
+    audience: audience,
+  );
+
+  SyncRecord appointment(
+    String id, {
+    bool confidential = true,
+    List<String> members = const [],
+  }) => record(Collections.events, id, {
+    'title': 'Psychotherapie',
+    'location': 'Praxis',
+    'notes': 'Thema',
+    'start': '2026-12-01T10:00:00.000Z',
+    'end': '2026-12-01T11:00:00.000Z',
+    'confidential': confidential,
+    'memberIds': members,
+  });
+
+  Future<Set<String>> sees(FamilyMember who) async => {
+    for (final r in (await sync(who)).changes)
+      if (!r.deleted) r.id,
+  };
+
+  group('receiving', () {
+    test('health data nobody chose goes to adults only', () async {
+      await sync(
+        mama,
+        changes: [
+          medication('open'),
+          record(Collections.documents, 'befund', {
+            'title': 'Befund',
+            'category': 'health',
+          }),
+          record(Collections.children, 'mia', {
+            'name': 'Mia',
+            'birthDate': '2020-01-01',
+            'emergency': {'allergies': 'Nüsse'},
+          }),
+          record(Collections.documents, 'rechnung', {
+            'title': 'Rechnung',
+            'category': 'finance',
+          }),
+        ],
+      );
+      expect(await sees(papa), containsAll(['open', 'befund', 'mia']));
+      expect(await sees(kid), {'rechnung'});
+      expect(await sees(ha), {'rechnung'});
+      expect(await sees(oma), isEmpty);
+    });
+
+    test('a named child receives it, a named service account never', () async {
+      await sync(
+        mama,
+        changes: [
+          medication('saft', audience: [mama.id, kid.id, ha.id]),
+        ],
+      );
+      expect(await sees(kid), {'saft'});
+      expect(await sees(ha), isEmpty);
+    });
+
+    test('old devices lose what they may no longer have', () async {
+      await sync(mama, changes: [medication('open')]);
+      // Their last sync was under the older rules.
+      final next = await sync(ha, since: 1, scope: 'older');
+      expect(next.reset, isTrue);
+      expect(next.changes.where((r) => r.id == 'open'), isEmpty);
+    });
+
+    test('a health document cannot be fetched by a service account', () {
+      const r = SyncRecord(
+        collection: Collections.documents,
+        id: 'befund',
+        data: {'category': 'health'},
+        updatedAt: 1,
+      );
+      expect(app.records.canAccess(r, mama.id), isTrue);
+      expect(app.records.canAccess(r, ha.id), isFalse);
+      expect(app.records.canAccess(r, kid.id), isFalse);
+    });
+  });
+
+  group('changing', () {
+    test('children leave plans alone, also where they are named', () async {
+      final plan = medication('saft', audience: [mama.id, kid.id]);
+      await sync(mama, changes: [plan]);
+      final answer = await sync(
+        kid,
+        changes: [
+          record(Collections.medications, 'saft', {
+            'name': 'Saft',
+            'dose': '10 Tabletten',
+            'start': '2026-01-01',
+          }),
+        ],
+      );
+      expect(answer.rejected.map((r) => r.id), ['saft']);
+      final stored = app.records.get(Collections.medications, 'saft')!;
+      expect(stored.data['dose'], isNull);
+      expect(stored.visibleTo, [mama.id, kid.id]);
+    });
+
+    test('a child who may log keeps the audience as it is', () async {
+      final audience = [mama.id, kid.id];
+      SyncRecord log(String id, {List<String>? to}) =>
+          record(Collections.childLogs, id, {
+            'childId': 'baby',
+            'kind': 'feeding',
+            'start': '2026-11-01T10:00:00.000Z',
+          }, audience: to);
+      expect(
+        (await sync(kid, changes: [log('a', to: audience)])).rejected,
+        [isA<SyncRecord>()].sublist(1),
+      );
+      expect(app.records.get(Collections.childLogs, 'a'), isNotNull);
+      // Not for everyone.
+      await sync(kid, changes: [log('a')]);
+      expect(app.records.get(Collections.childLogs, 'a')!.visibleTo, audience);
+      await sync(kid, changes: [log('b')]);
+      expect(app.records.get(Collections.childLogs, 'b'), isNull);
+    });
+
+    test('a child ticks off what is on their plan', () async {
+      await sync(
+        mama,
+        changes: [
+          medication('saft', audience: [mama.id, kid.id]),
+        ],
+      );
+      await sync(
+        kid,
+        changes: [
+          record(
+            Collections.medicationIntakes,
+            'genommen',
+            {
+              'medicationId': 'saft',
+              'at': '2026-11-01T10:00:00.000Z',
+              'byId': kid.id,
+            },
+            audience: [mama.id, kid.id],
+          ),
+        ],
+      );
+      expect(
+        app.records.get(Collections.medicationIntakes, 'genommen'),
+        isNotNull,
+      );
+    });
+
+    test('service accounts change no health data', () async {
+      final answer = await sync(ha, changes: [medication('neu')]);
+      expect(answer.rejected, isNotEmpty);
+      expect(app.records.get(Collections.medications, 'neu'), isNull);
+    });
+  });
+
+  group('deleting an account', () {
+    test('takes their own health data, leaves the shared', () async {
+      await sync(
+        papa,
+        changes: [
+          record(Collections.memberEmergency, papa.id, {
+            'info': {'allergies': 'Penicillin'},
+          }),
+          medication('allein', audience: [papa.id]),
+          medication('gemeinsam', audience: [papa.id, mama.id]),
+          record(
+            Collections.documents,
+            'befund',
+            {'title': 'Befund', 'category': 'health'},
+            audience: [papa.id],
+          ),
+          record(
+            Collections.children,
+            'mia',
+            {'name': 'Mia', 'birthDate': '2020-01-01'},
+            audience: [papa.id],
+          ),
+        ],
+      );
+      final before = app.records.currentRev;
+      final response = await app.handler(
+        Request(
+          'DELETE',
+          Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+          headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+        ),
+      );
+      expect(response.statusCode, 200);
+      bool gone(String c, String id) => app.records.get(c, id)?.deleted ?? true;
+      expect(gone(Collections.memberEmergency, papa.id), isTrue);
+      expect(
+        app.records.get(Collections.memberEmergency, papa.id)?.data.keys,
+        isNot(contains('info')),
+      );
+      expect(gone(Collections.medications, 'allein'), isTrue);
+      expect(gone(Collections.documents, 'befund'), isTrue);
+      expect(gone(Collections.medications, 'gemeinsam'), isFalse);
+      // A child's record is the family's, not one person's.
+      expect(gone(Collections.children, 'mia'), isFalse);
+      // Not in the bin either, and other devices hear of it.
+      expect(app.records.trashFor(mama.id).$1, isEmpty);
+      final seen = await sync(mama, since: before);
+      expect(
+        seen.changes.where((r) => r.deleted).map((r) => r.id),
+        containsAll([papa.id]),
+      );
+    });
+  });
+
+  group('confidential appointments', () {
+    test('reach whoever takes part, and adults', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('therapie'),
+          appointment('kinderarzt', members: [kid.id]),
+          appointment('turnen', confidential: false),
+        ],
+      );
+      expect(await sees(papa), containsAll(['therapie', 'kinderarzt']));
+      expect(await sees(kid), {'kinderarzt', 'turnen'});
+      expect(await sees(oma), {'turnen'});
+    });
+
+    test('are only busy times for a service account', () async {
+      await sync(mama, changes: [appointment('therapie')]);
+      final event = (await sync(ha)).changes.single;
+      expect(event.data['title'], '');
+      expect(event.data['location'], '');
+      expect(event.data['notes'], '');
+      expect(event.data['confidential'], isTrue);
+      expect(event.data['start'], isNotNull);
+    });
+
+    test('a service account leaves them alone', () async {
+      await sync(mama, changes: [appointment('therapie')]);
+      await sync(
+        ha,
+        changes: [
+          record(Collections.events, 'therapie', {
+            'title': '',
+            'start': '2026-12-01T10:00:00.000Z',
+            'end': '2026-12-01T11:00:00.000Z',
+            'confidential': true,
+          }),
+        ],
+      );
+      expect(
+        app.records.get(Collections.events, 'therapie')!.data['title'],
+        'Psychotherapie',
+      );
+    });
+
+    test('becoming confidential takes them and their comments away', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('therapie', confidential: false),
+          record(Collections.eventComments, 'kommentar', {
+            'eventId': 'therapie',
+            'text': 'Bis dann',
+            'memberId': mama.id,
+            'at': '2026-11-01T10:00:00.000Z',
+          }),
+        ],
+      );
+      final rev = app.records.currentRev;
+      expect(await sees(oma), {'therapie', 'kommentar'});
+      await sync(mama, changes: [appointment('therapie')]);
+      final next = await sync(oma, since: rev);
+      expect(
+        next.changes.where((r) => r.deleted).map((r) => r.id),
+        containsAll(['therapie', 'kommentar']),
+      );
+      expect(await sees(oma), isEmpty);
+    });
+  });
+}

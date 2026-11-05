@@ -45,6 +45,19 @@ extension RecordTrash on RecordStore {
     );
   }
 
+  /// Health documents in the bin that only [memberId] could get back.
+  void _forgetTrashOf(String memberId) {
+    for (final row in _db.select('SELECT * FROM trash')) {
+      final entry = _trashEntry(row);
+      final audience = entry.record.visibleTo;
+      if (audience?.length == 1 &&
+          audience!.single == memberId &&
+          RecordStore._isPersonalHealth(entry.record)) {
+        _db.execute('DELETE FROM trash WHERE id = ?', [entry.id]);
+      }
+    }
+  }
+
   TrashEntry _trashEntry(Row row) => TrashEntry(
     id: row['id'] as String,
     record: SyncRecord.fromJson(

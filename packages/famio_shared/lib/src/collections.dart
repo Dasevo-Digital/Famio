@@ -306,6 +306,11 @@ abstract final class Collections {
   /// (as requests an adult confirms).
   static const adultOnly = {
     memberEmergency,
+    // Plans, doses, allergies and who sees them: older children may log and
+    // tick off what they are named for, but do not change these.
+    children,
+    pregnancies,
+    medications,
     locationSettings,
     chores,
     vacations,
@@ -322,6 +327,28 @@ abstract final class Collections {
   /// Health data of adults: children, guests and service accounts (the
   /// wall display, Home Assistant) never receive it.
   static const adultReadable = {memberEmergency};
+
+  /// Health data, whoever it is about. A child's record holds allergies,
+  /// illnesses and the pediatrician ([EmergencyInfo]).
+  ///
+  /// The server decides who receives it, not only `visibleTo`: service
+  /// accounts never (a token in Home Assistant, a wall display), children
+  /// only when they are named, also when nobody was chosen. See
+  /// `RecordStore.canAccess`.
+  static const health = {
+    children,
+    childEntries,
+    childLogs,
+    pregnancies,
+    medications,
+    medicationIntakes,
+  };
+
+  /// Whether a record with [data] holds health data: [health], and documents
+  /// filed under health.
+  static bool isHealth(String collection, Map<String, Object?> data) =>
+      health.contains(collection) ||
+      (collection == documents && data['category'] == 'health');
 
   /// Collections clients may read but never write.
   static const serverOwned = {

@@ -266,11 +266,13 @@ extension _CalendarRoutes on FamioApi {
         final event = CalendarEvent.fromRecord(r).inTimeZone(location.name);
         for (final o in event.occurrencesBetween(from, to)) {
           final source = event.sourceId;
+          // A service account shows it as busy, and only learns that much.
+          final hidden = member.isService && event.confidential;
           result.add((
             o.start,
             {
               'id': event.id,
-              'title': event.title,
+              'title': hidden ? '' : event.title,
               'allDay': event.allDay,
               'start': event.allDay
                   ? date(o.start)
@@ -278,8 +280,8 @@ extension _CalendarRoutes on FamioApi {
               'end': event.allDay
                   ? date(o.end)
                   : o.end.toUtc().toIso8601String(),
-              'location': event.location,
-              'notes': event.notes,
+              'location': hidden ? '' : event.location,
+              'notes': hidden ? '' : event.notes,
               'memberIds': event.memberIds,
               'recurring': event.recurrence != null,
               'readOnly': source != null,

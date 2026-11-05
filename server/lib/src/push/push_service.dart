@@ -273,7 +273,9 @@ class PushService {
             () => PushNotice(
               to: {author},
               title: t('Rückmeldung zur Zuständigkeit'),
-              body: accepted
+              body: parent.data['confidential'] == true
+                  ? t('Neue Rückmeldung')
+                  : accepted
                   ? t('{name} übernimmt: {title}', {
                       'name': name(userId),
                       'title': parent.data['title'] ?? '',
@@ -429,9 +431,11 @@ class PushService {
         () => PushNotice(
           to: {request.memberId},
           title: t('Zusage noch offen'),
-          body: t('Bitte die Zuständigkeit bestätigen: {title}', {
-            'title': record.data['title'] ?? '',
-          }),
+          body: record.data['confidential'] == true
+              ? t('Eine Zuständigkeit wartet auf deine Rückmeldung')
+              : t('Bitte die Zuständigkeit bestätigen: {title}', {
+                  'title': record.data['title'] ?? '',
+                }),
           brief: t('Eine Zuständigkeit wartet auf deine Rückmeldung'),
           tag: 'clipboard',
         ),
@@ -593,13 +597,18 @@ class PushService {
     if (eventRecord == null || eventRecord.deleted) return null;
     final event = CalendarEvent.fromRecord(eventRecord);
     final to = event.memberIds.isEmpty
-        ? _everyone(r, except: author)
+        ? _everyone(r, except: author).where((m) => records.canAccess(r, m))
         : event.memberIds.toSet().difference({author});
+    final brief = t('Neuer Kommentar zu einem Termin');
     return PushNotice(
-      to: to,
-      title: t('Kommentar zu „{title}“', {'title': event.title}),
-      body: '${name(author)}: ${c.text}',
-      brief: t('Neuer Kommentar zu einem Termin'),
+      to: to.toSet(),
+      // Confidential: nothing about it leaves the server, also with details
+      // on (ntfy.sh and the like only see what the notice says).
+      title: event.confidential
+          ? brief
+          : t('Kommentar zu „{title}“', {'title': event.title}),
+      body: event.confidential ? name(author) : '${name(author)}: ${c.text}',
+      brief: brief,
       tag: 'calendar',
     );
   }
@@ -609,11 +618,14 @@ class PushService {
     if (event.memberIds.isEmpty || event.sourceId != null) return null;
     final to = event.memberIds.toSet().difference({author});
     if (to.isEmpty) return null;
+    final brief = t('Neuer Termin für dich');
     return PushNotice(
       to: to,
-      title: t('Neuer Termin: {title}', {'title': event.title}),
+      title: event.confidential
+          ? brief
+          : t('Neuer Termin: {title}', {'title': event.title}),
       body: _when(event),
-      brief: t('Neuer Termin für dich'),
+      brief: brief,
       tag: 'calendar',
     );
   }

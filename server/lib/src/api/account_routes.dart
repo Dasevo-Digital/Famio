@@ -143,11 +143,13 @@ extension _AccountRoutes on FamioApi {
     throttle.succeeded(address, '#delete:${member.id}');
     await caldav?.disconnectUser(member.id);
     locations?.memberDeleted(member.id);
+    records.purgeMember(member.id);
     accounts.delete(
       member.id,
     ); // cascades sessions, feeds, app passwords and SSO.
     _audit(member, 'hat das eigene Konto gelöscht');
     hub.notifyMembersChanged();
+    hub.notifyRev(records.currentRev);
     if (calendarAccess?.reapply() ?? false) hub.notifyRev(records.currentRev);
     return _json({'ok': true});
   }

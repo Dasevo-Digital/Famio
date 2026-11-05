@@ -662,11 +662,13 @@ extension _AdminRoutes on FamioApi {
       );
     }
     final target = accounts.byId(id);
+    records.purgeMember(id);
     accounts.delete(id);
     locations?.memberDeleted(id);
     if (target != null) _audit(admin, 'hat ${_who(target)} entfernt');
     hub.notifyMembersChanged();
-    if (calendarAccess?.reapply() ?? false) hub.notifyRev(records.currentRev);
+    calendarAccess?.reapply();
+    hub.notifyRev(records.currentRev);
     return _json({'ok': true});
   }
 }

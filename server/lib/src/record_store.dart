@@ -87,7 +87,8 @@ class RecordStore {
     }
     final role = _role(userId);
     if (role != MemberRole.adult &&
-        Collections.adultReadable.contains(r.collection)) {
+        (Collections.adultReadable.contains(r.collection) ||
+            !_mayReceive(r, userId, role))) {
       return false;
     }
     return _canSee(r, userId) &&
@@ -95,6 +96,48 @@ class RecordStore {
             (Collections.guestReadable.contains(r.collection) &&
                 _guestMaySee(r, userId)));
   }
+
+  /// What everyone but adults may not receive although nothing restricts
+  /// it: health data unless they are named (service accounts never), and
+  /// confidential appointments they have no part in. A service account
+  /// keeps those as busy times, without what they are about ([_shown]).
+  bool _mayReceive(SyncRecord r, String userId, MemberRole role) {
+    if (Collections.isHealth(r.collection, r.data)) {
+      return role != MemberRole.service &&
+          (r.visibleTo?.contains(userId) ?? false);
+    }
+    final event = _confidentialEvent(r);
+    if (event == null) return true;
+    if (role == MemberRole.service) return r.collection == Collections.events;
+    return event.updatedBy == userId ||
+        [
+          ...?(event.data['memberIds'] as List?),
+          event.data['bringerId'],
+          event.data['pickerId'],
+        ].contains(userId);
+  }
+
+  /// The confidential appointment [r] is, or comments on.
+  SyncRecord? _confidentialEvent(SyncRecord r) {
+    final event = switch (r.collection) {
+      Collections.events => r,
+      Collections.eventComments => _get(
+        Collections.events,
+        '${r.data['eventId']}',
+      ),
+      _ => null,
+    };
+    return event?.data['confidential'] == true ? event : null;
+  }
+
+  /// [r] as a member with [role] gets it: for a service account a
+  /// confidential appointment is only a busy time.
+  static SyncRecord _shown(SyncRecord r, MemberRole role) =>
+      role == MemberRole.service &&
+          r.collection == Collections.events &&
+          r.data['confidential'] == true
+      ? r.copyWith(data: {...r.data, 'title': '', 'location': '', 'notes': ''})
+      : r;
 
   /// Leaves out [Collections.adultReadable] for everyone but adults (names
   /// are constants, no input).
@@ -121,7 +164,21 @@ class RecordStore {
   /// there are guests, everyone but the guests it is not assigned to; else
   /// null for everyone.
   List<String>? _audience(SyncRecord r) {
-    if (r.visibleTo case final ids?) return ids;
+    final health = Collections.isHealth(r.collection, r.data);
+    if (r.visibleTo case final ids?) {
+      return health
+          ? [
+              for (final id in ids)
+                if (_role(id) != MemberRole.service) id,
+            ]
+          : ids;
+    }
+    if (health || _confidentialEvent(r) != null) {
+      return [
+        for (final m in memberIds())
+          if (canAccess(r, m)) m,
+      ];
+    }
     if (r.collection != Collections.tasks) return null;
     final members = memberIds();
     if (!members.any((m) => _role(m) == MemberRole.guest)) return null;
@@ -141,6 +198,17 @@ class RecordStore {
     ServiceAccess access = ServiceAccess.full,
   }) {
     final collection = incoming.collection;
+    bool health(SyncRecord? r) =>
+        r != null && Collections.isHealth(r.collection, r.data);
+    // Service accounts neither receive health data nor see what confidential
+    // appointments are about, so they cannot sensibly change them.
+    if (role == MemberRole.service &&
+        (health(incoming) ||
+            health(existing) ||
+            incoming.data['confidential'] == true ||
+            existing?.data['confidential'] == true)) {
+      return false;
+    }
     if (collection == Collections.assignmentResponses) {
       return access != ServiceAccess.readOnly &&
           (incoming.deleted
@@ -173,6 +241,15 @@ class RecordStore {
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
         if (Collections.adultOnly.contains(collection)) return false;
+        // Who sees health data is for adults to decide: a child who may log
+        // something keeps its audience as it is.
+        if (health(incoming) || health(existing)) {
+          if (incoming.deleted) return true;
+          return existing == null || existing.deleted
+              ? incoming.visibleTo?.contains(userId) ?? false
+              : jsonEncode(incoming.visibleTo) ==
+                    jsonEncode(existing.visibleTo);
+        }
         // Children save for their own goals only.
         if (collection == Collections.savingsGoals) {
           bool own(SyncRecord? r) =>
@@ -374,7 +451,12 @@ class RecordStore {
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
     // older ones would ask again and again).
-    final scope = '$_generation:${role.name}:${access.name}';
+    final scope = [
+      _generation,
+      role.name,
+      access.name,
+      if (role != MemberRole.adult) _accessRules,
+    ].join(':');
     final reset =
         request.resettable &&
         request.since > 0 &&
@@ -715,9 +797,10 @@ class RecordStore {
     final changes = [
       for (final r in page)
         if (r.deleted ||
-            r.collection != Collections.assignmentResponses ||
+            (role == MemberRole.adult &&
+                r.collection != Collections.assignmentResponses) ||
             canAccess(r, userId))
-          r,
+          _shown(r, role),
     ];
     final zone = assignmentLocation?.call();
     return SyncResponse(
@@ -735,6 +818,10 @@ class RecordStore {
       maxUploadBytes: maxUploadBytes?.call(),
     );
   }
+
+  /// Raised when members other than adults receive less than before: their
+  /// next sync is a full one, which takes the rest off their devices.
+  static const _accessRules = 2;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 
@@ -808,7 +895,7 @@ class RecordStore {
     }
     final audience = [
       for (final id in {lost.updatedBy, kept.updatedBy})
-        if (id != null && _canSee(kept, id) && _canSee(lost, id)) id,
+        if (id != null && canAccess(kept, id) && canAccess(lost, id)) id,
     ];
     if (audience.isEmpty) return;
     final conflict = SyncConflict.between(lost: lost, kept: kept);
@@ -823,6 +910,72 @@ class RecordStore {
       previous: _get(Collections.conflicts, conflict.id),
     );
   }
+
+  /// Comments go with their appointment: when it becomes confidential (or
+  /// no longer is), they reach as many people as it does.
+  void _commentsFollow(SyncRecord event, SyncRecord? previous) {
+    if (event.collection != Collections.events ||
+        event.deleted ||
+        previous == null ||
+        previous.deleted ||
+        event.data['confidential'] == previous.data['confidential']) {
+      return;
+    }
+    final members = memberIds();
+    for (final row in _db.select(
+      'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
+      "AND json_extract(data, '\$.eventId') = ?",
+      [Collections.eventComments, event.id],
+    )) {
+      final comment = _record(row);
+      _put(comment, previous: comment, before: members);
+    }
+  }
+
+  /// Removes what is [memberId]'s alone before their account goes: their
+  /// emergency facts and the health data nobody else may see (it would stay
+  /// on the server with no one left to read or delete it). Children's
+  /// records stay, they are the family's. Returns how many went.
+  int purgeMember(String memberId, {DateTime? now}) {
+    final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final personal = [
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE deleted = 0 AND ('
+        '(collection = ? AND id = ?) OR '
+        "(json_array_length(visible_to) = 1 "
+        "AND json_extract(visible_to, '\$[0]') = ?))",
+        [Collections.memberEmergency, memberId, memberId],
+      ))
+        if (_isPersonalHealth(_record(row))) _record(row),
+    ];
+    _transaction(() {
+      for (final r in personal) {
+        _put(
+          SyncRecord(
+            collection: r.collection,
+            id: r.id,
+            data: {SyncRecord.visibilityKey: ?r.visibleTo},
+            deleted: true,
+            updatedAt: at,
+            updatedBy: serverMemberId,
+          ),
+          previous: r,
+          trash: false,
+        );
+      }
+      _forgetTrashOf(memberId);
+    });
+    return personal.length;
+  }
+
+  static bool _isPersonalHealth(SyncRecord r) =>
+      r.collection == Collections.memberEmergency ||
+      (Collections.isHealth(r.collection, r.data) &&
+          !const {
+            Collections.children,
+            Collections.childEntries,
+            Collections.childLogs,
+          }.contains(r.collection));
 
   /// Same data apart from visibility and fields of other apps.
   static bool _sameContent(SyncRecord a, SyncRecord b) {
@@ -843,6 +996,7 @@ class RecordStore {
     required SyncRecord? previous,
     List<String>? before,
     SyncRecord? deletionSnapshot,
+    bool trash = true,
   }) {
     r = _canonicalFiles(r);
     if (deletionSnapshot != null) {
@@ -871,8 +1025,9 @@ class RecordStore {
       ],
     );
 
-    _rememberDeletion(r, deletionSnapshot ?? previous, rev);
+    if (trash) _rememberDeletion(r, deletionSnapshot ?? previous, rev);
     _assignmentsFollow(r);
+    _commentsFollow(r, previous);
 
     final audience = _audience(r);
     if (audience == null) {
