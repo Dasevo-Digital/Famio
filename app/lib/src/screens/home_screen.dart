@@ -26,6 +26,7 @@ import '../weather/weather_tile.dart';
 import 'search_screen.dart';
 import 'notes_screen.dart';
 import 'inbox_screen.dart';
+import 'quick_entry_sheet.dart';
 import 'loans_screen.dart';
 import 'wishes_screen.dart';
 import 'waste_screen.dart';
@@ -236,6 +237,10 @@ class HomeScreen extends StatelessWidget {
                     const _YearReviewBanner(),
                     const SizedBox(height: gap),
                   ],
+                  if (!guest && !me.isService) ...[
+                    const _QuickEntryField(),
+                    const SizedBox(height: gap),
+                  ],
                   for (var i = 0; i < tiles.length; i += columns) ...[
                     if (i > 0) const SizedBox(height: gap),
                     IntrinsicHeight(
@@ -258,6 +263,47 @@ class HomeScreen extends StatelessWidget {
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+/// Looks like a text field; the quick entry itself opens in a sheet.
+class _QuickEntryField extends StatelessWidget {
+  const _QuickEntryField();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Semantics(
+      button: true,
+      label: tr.quickEntryTitle,
+      excludeSemantics: true,
+      child: SoftCard(
+        radius: 22,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        onTap: () => showQuickEntry(context),
+        child: Row(
+          children: [
+            Icon(AppIcons.sparkle, color: FamioSection.home.strong),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(tr.quickEntryTitle, style: theme.textTheme.titleSmall),
+                  Text(
+                    tr.quickEntryHint,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(color: muted),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

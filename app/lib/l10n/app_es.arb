@@ -2682,5 +2682,13 @@
   "@devicesNotMeBody": {"placeholders": {"device": {"type": "String"}}},
   "devicesNotMeConfirm": "Cerrar sesión",
   "devicesNotMeSignedOut": "Sesión cerrada en {device}.",
-  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}}
+  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}},
+  "quickEntryTitle": "Añadir rápido",
+  "quickEntryHint": "p. ej. «jueves a las 16 pediatra»",
+  "quickEntryNoDay": "No se ha reconocido ningún día",
+  "quickEntryNoTitle": "Todavía sin título",
+  "quickEntryWhichDay": "¿Qué día quieres decir?",
+  "quickEntryAsEvent": "Como cita",
+  "quickEntryAsTask": "Como tarea",
+  "quickEntryCheck": "En el siguiente paso lo revisas todo y guardas."
 }

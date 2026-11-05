@@ -531,6 +531,16 @@ _Time? _twelveHour(Match m, String lang) {
 }
 
 String _title(String line, String previous) {
+  var t = _clean(line);
+  if (t.length < 3) {
+    t = previous.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+  if (t.isEmpty) t = tr.commonEvent;
+  return t.length > 60 ? '${t.substring(0, 57)}…' : t;
+}
+
+/// [line] without its dates, times and the small words around them.
+String _clean(String line) {
   // Short weekdays first: they are only recognised before a date.
   var t = line
       .replaceAll(_shortWeekday, ' ')
@@ -561,10 +571,189 @@ String _title(String line, String previous) {
   while (words.isNotEmpty && _fillers.contains(words.last.toLowerCase())) {
     words = words.sublist(0, words.length - 1);
   }
-  t = words.join(' ');
-  if (t.length < 3) {
-    t = previous.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-  if (t.isEmpty) t = tr.commonEvent;
-  return t.length > 60 ? '${t.substring(0, 57)}…' : t;
+  return words.join(' ');
 }
+
+/// What a quick entry names: "Donnerstag 16 Uhr Kinderarzt", "morgen Müll
+/// rausbringen", "next Friday 3 pm dentist", "mañana a las 9 pediatra".
+class QuickEntry {
+  const QuickEntry({
+    required this.title,
+    this.days = const [],
+    this.lastDay,
+    this.time,
+  });
+
+  /// What is left once the day and time are taken out (may be empty).
+  final String title;
+
+  /// The days it can mean, as dates without a time, the nearest first:
+  /// none (no day named), one, or two to choose from ("nächsten
+  /// Donnerstag" on a Monday: this week's or the next).
+  final List<DateTime> days;
+
+  /// The last day of a range ("12.–16.10."), else null.
+  final DateTime? lastDay;
+
+  /// Start hour and minute, with end hour and minute when given.
+  final (int, int, int?, int?)? time;
+
+  bool get ambiguous => days.length > 1;
+}
+
+const _weekdayNumbers = {
+  'montag': 1, 'dienstag': 2, 'mittwoch': 3, 'donnerstag': 4,
+  'freitag': 5, 'samstag': 6, 'sonntag': 7, //
+  'monday': 1, 'tuesday': 2, 'wednesday': 3, 'thursday': 4,
+  'friday': 5, 'saturday': 6, 'sunday': 7, //
+  'lunes': 1, 'martes': 2, 'miércoles': 3, 'miercoles': 3, 'jueves': 4,
+  'viernes': 5, 'sábado': 6, 'sabado': 6, 'domingo': 7,
+};
+
+/// "nächsten Donnerstag", "next Thursday", "el próximo jueves": this week's
+/// or the next week's (people mean both).
+const _nextWords =
+    r'nächsten|nächste|nächster|naechsten|next|próximo|proximo|próxima|proxima';
+
+/// "kommenden Donnerstag", "this Thursday", "este jueves": the next one.
+const _thisWords =
+    r'kommenden|kommende|diesen|diese|dieser|this|coming|este|esta';
+
+final _quickWeekday = RegExp(
+  '(?<![a-zäöüßáéíóúñ])(?:(?:am|on|el)\\s+)?(?:($_nextWords|$_thisWords)\\s+)?'
+  '(${_weekdayNumbers.keys.join('|')})(?:\\s+(que viene))?(?![a-zäöüßáéíóúñ])',
+  caseSensitive: false,
+);
+
+/// "Do 16 Uhr …", "Thu 4 pm …": a short weekday, only at the start (inside
+/// a title "So" and "Sa" are words).
+final _quickShortDay = RegExp(
+  r'^(Mo|Di|Mi|Do|Fr|Sa|So|Mon|Tue|Wed|Thu|Fri|Sat|Sun)\.?(?=\s|$)',
+);
+
+const _shortDayNumbers = {
+  'Mo': 1, 'Di': 2, 'Mi': 3, 'Do': 4, 'Fr': 5, 'Sa': 6, 'So': 7, //
+  'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6, 'Sun': 7,
+};
+
+/// "heute", "morgen", "übermorgen" and their English and Spanish words;
+/// "mañana" after "la" is the morning ("a las 9 de la mañana").
+final _quickRelative = RegExp(
+  r'(?<![a-zäöüßáéíóúñ])(?:(übermorgen|uebermorgen|day after tomorrow|pasado mañana)'
+  r'|(heute|today|hoy)|(morgen|tomorrow|(?<!la\s)mañana))(?![a-zäöüßáéíóúñ])',
+  caseSensitive: false,
+);
+
+/// "in 3 Tagen", "in einer Woche", "in two weeks", "en 3 días".
+final _quickIn = RegExp(
+  r'(?<![a-zäöüßáéíóúñ])(?:in|en)\s+(\d{1,3}|einem|einer|zwei|drei|vier|a|one|two|three|four|un|una|dos|tres|cuatro)\s+'
+  r'(tag|tagen|woche|wochen|day|days|week|weeks|día|días|dia|dias|semana|semanas)(?![a-zäöüßáéíóúñ])',
+  caseSensitive: false,
+);
+
+/// A bare German "um 16" (with "Uhr" the general times find it).
+final _quickUm = RegExp(r'\bum\s+(\d{1,2})(?![\d:.])', caseSensitive: false);
+
+const _smallNumbers = {
+  'einem': 1,
+  'einer': 1,
+  'a': 1,
+  'one': 1,
+  'un': 1,
+  'una': 1,
+  'zwei': 2,
+  'two': 2,
+  'dos': 2,
+  'drei': 3,
+  'three': 3,
+  'tres': 3,
+  'vier': 4,
+  'four': 4,
+  'cuatro': 4,
+};
+
+/// Reads a quick entry. [today] is the family's day (its time is ignored);
+/// days without a year are the next such day, as in [extractEvents].
+QuickEntry parseQuickEntry(
+  String text, {
+  required DateTime today,
+  String? language,
+}) {
+  final line = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  final lang = language ?? guessLanguage(line, fallback: appLanguage);
+  final base = DateTime(today.year, today.month, today.day);
+  DateTime plus(int days) => DateTime(base.year, base.month, base.day + days);
+  // What is taken out becomes spaces of the same length, so the places of
+  // the other matches in [line] stay right.
+  var rest = line;
+  var days = <DateTime>[];
+  DateTime? lastDay;
+
+  final dates = _dates(line, base, lang).toList();
+  if (dates.isNotEmpty) {
+    days = [dates.first.day];
+    lastDay = dates.first.lastDay;
+  } else if (_quickIn.firstMatch(line) case final m?) {
+    final n = int.tryParse(m[1]!) ?? _smallNumbers[m[1]!.toLowerCase()]!;
+    final unit = m[2]!.toLowerCase();
+    final week =
+        unit.startsWith('woche') ||
+        unit.startsWith('week') ||
+        unit.startsWith('semana');
+    days = [plus(week ? 7 * n : n)];
+    rest = _blank(rest, m);
+  } else if (_quickRelative.firstMatch(line) case final m?) {
+    // "heute Morgen" is this morning: the day stays today.
+    final saysToday = RegExp(
+      r'(?<![a-zäöüß])(heute|today|hoy)(?![a-zäöüß])',
+      caseSensitive: false,
+    ).hasMatch(line);
+    days = [plus(saysToday ? 0 : (m[1] != null ? 2 : (m[2] != null ? 0 : 1)))];
+    rest = rest.replaceAllMapped(_quickRelative, (m) => ' ' * m[0]!.length);
+  } else if (_quickWeekday.firstMatch(line) ?? _quickShortDay.firstMatch(line)
+      case final m?) {
+    final long = m.pattern == _quickWeekday;
+    final wanted = long
+        ? _weekdayNumbers[m[2]!.toLowerCase()]!
+        : _shortDayNumbers[m[1]!]!;
+    final ahead = (wanted - base.weekday) % 7;
+    final word = long ? m[1]?.toLowerCase() ?? '' : '';
+    final next =
+        RegExp('^($_nextWords)\$').hasMatch(word) || (long && m[3] != null);
+    final upcoming = RegExp('^($_thisWords)\$').hasMatch(word);
+    if (ahead == 0) {
+      // Today's weekday: today, or the same day next week.
+      days = next ? [plus(7)] : (upcoming ? [plus(7)] : [plus(0), plus(7)]);
+    } else {
+      days = next ? [plus(ahead), plus(ahead + 7)] : [plus(ahead)];
+    }
+    rest = _blank(rest, m);
+  }
+
+  var time = _firstTime(line, lang);
+  final um = time == null ? _quickUm.firstMatch(line) : null;
+  if (um != null && int.parse(um[1]!) <= 23) {
+    time = (int.parse(um[1]!), 0, null, null);
+    rest = _blank(rest, um);
+  }
+  // Leftover words of the day ("am", "el", "next") go with it.
+  final title = _clean(rest)
+      .replaceAll(
+        RegExp(
+          '(?<![a-zäöüßáéíóúñ])($_nextWords|$_thisWords|que viene)(?![a-zäöüßáéíóúñ])',
+          caseSensitive: false,
+        ),
+        ' ',
+      )
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  return QuickEntry(
+    title: title.length > 120 ? '${title.substring(0, 117)}…' : title,
+    days: days,
+    lastDay: lastDay,
+    time: time,
+  );
+}
+
+String _blank(String text, Match m) =>
+    text.replaceRange(m.start, m.end, ' ' * (m.end - m.start));

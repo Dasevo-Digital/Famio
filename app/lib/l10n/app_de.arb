@@ -6903,5 +6903,13 @@
   "@devicesNotMeBody": {"placeholders": {"device": {"type": "String"}}},
   "devicesNotMeConfirm": "Abmelden",
   "devicesNotMeSignedOut": "{device} ist abgemeldet.",
-  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}}
+  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}},
+  "quickEntryTitle": "Schnell eintragen",
+  "quickEntryHint": "z. B. „Donnerstag 16 Uhr Kinderarzt“",
+  "quickEntryNoDay": "Kein Tag erkannt",
+  "quickEntryNoTitle": "Noch ohne Titel",
+  "quickEntryWhichDay": "Welcher Tag ist gemeint?",
+  "quickEntryAsEvent": "Als Termin",
+  "quickEntryAsTask": "Als Aufgabe",
+  "quickEntryCheck": "Im nächsten Schritt prüfst du alles und speicherst."
 }

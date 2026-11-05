@@ -49,6 +49,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
+| Schnell eintragen auf der Startseite: aus „Donnerstag 16 Uhr Kinderarzt“, „morgen Müll rausbringen“ oder „in 3 Tagen Paket abholen“ wird ein Termin- oder Aufgaben-Entwurf, der im Editor geprüft wird; kann der Text zwei Tage meinen („nächsten Donnerstag“), fragt Famio nach (Deutsch, Englisch, Spanisch, auf dem Gerät) | ✅ |
 | Familien-Eingang für noch unsortierte Texte, Links, Fotos und Scans; später als Aufgabe, Termin, Notiz, Dokument oder Einkauf einsortieren | ✅ |
 | Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
 | App-Updates über den eigenen Server (Android, Windows, Linux; signiert) | ✅ |

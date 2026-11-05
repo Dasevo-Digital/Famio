@@ -17,14 +17,16 @@ import '../l10n.dart';
 
 /// Opens the editor for a new event on [day], or for an existing
 /// [occurrence] (which may be one appearance of a series).
-/// [start], [end] and [memberIds] prefill a new appointment (e.g. a free
-/// time found for several people).
+/// [start], [end], [allDay], [title] and [memberIds] prefill a new
+/// appointment (e.g. a free time found for several people, a quick entry).
 Future<void> showEventEditor(
   BuildContext context, {
   DateTime? day,
   Occurrence? occurrence,
   DateTime? start,
   DateTime? end,
+  bool allDay = false,
+  String? title,
   Set<String>? memberIds,
 }) {
   return Navigator.of(context).push(
@@ -35,6 +37,8 @@ Future<void> showEventEditor(
         occurrence: occurrence,
         start: start,
         end: end,
+        allDay: allDay,
+        title: title,
         memberIds: memberIds,
       ),
     ),
@@ -102,6 +106,8 @@ class _EventEditor extends StatefulWidget {
     this.occurrence,
     this.start,
     this.end,
+    this.allDay = false,
+    this.title,
     this.memberIds,
   });
 
@@ -109,6 +115,10 @@ class _EventEditor extends StatefulWidget {
   final Occurrence? occurrence;
   final DateTime? start;
   final DateTime? end;
+
+  /// [start] and [end] are whole days (the end exclusive).
+  final bool allDay;
+  final String? title;
   final Set<String>? memberIds;
 
   @override
@@ -117,7 +127,9 @@ class _EventEditor extends StatefulWidget {
 
 class _EventEditorState extends State<_EventEditor> {
   late final CalendarEvent? _original = widget.occurrence?.event;
-  late final _title = TextEditingController(text: _original?.title);
+  late final _title = TextEditingController(
+    text: _original?.title ?? widget.title,
+  );
   late final _location = TextEditingController(text: _original?.location);
   late final _notes = TextEditingController(text: _original?.notes);
 
@@ -167,7 +179,7 @@ class _EventEditorState extends State<_EventEditor> {
       final hour = DateUtils.isSameDay(day, now)
           ? (now.hour + 1).clamp(0, 23)
           : 9;
-      _allDay = false;
+      _allDay = widget.allDay && widget.start != null && widget.end != null;
       _start =
           widget.start ?? calendarDate(now, day.year, day.month, day.day, hour);
       _end = widget.end ?? _start.add(const Duration(hours: 1));

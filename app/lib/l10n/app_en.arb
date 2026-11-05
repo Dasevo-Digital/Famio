@@ -2682,5 +2682,13 @@
   "@devicesNotMeBody": {"placeholders": {"device": {"type": "String"}}},
   "devicesNotMeConfirm": "Sign out",
   "devicesNotMeSignedOut": "{device} is signed out.",
-  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}}
+  "@devicesNotMeSignedOut": {"placeholders": {"device": {"type": "String"}}},
+  "quickEntryTitle": "Quick add",
+  "quickEntryHint": "e.g. “Thursday 4 pm dentist”",
+  "quickEntryNoDay": "No day found",
+  "quickEntryNoTitle": "No title yet",
+  "quickEntryWhichDay": "Which day do you mean?",
+  "quickEntryAsEvent": "As an event",
+  "quickEntryAsTask": "As a task",
+  "quickEntryCheck": "You check everything and save in the next step."
 }

@@ -1201,6 +1201,29 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
   });
 
+  testWidgets('quick entry phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.bySemanticsLabel('Schnell eintragen'));
+    await tester.pumpAndSettle();
+    // Tomorrow's weekday: "nächsten …" then means two days to choose from.
+    const days = [
+      'Montag',
+      'Dienstag',
+      'Mittwoch',
+      'Donnerstag',
+      'Freitag',
+      'Samstag',
+      'Sonntag',
+    ];
+    final tomorrow = DateTime.now().add(const Duration(days: 1));
+    await tester.enterText(
+      find.byType(TextField).last,
+      'nächsten ${days[tomorrow.weekday - 1]} 16 Uhr Elternabend',
+    );
+    await _shot(tester, key, 'phone_25_schnell_eintragen');
+    await tester.pump(const Duration(seconds: 1));
+  });
+
   testWidgets('admin', (tester) async {
     final key = await start(tester, desktop);
     await go(tester, 'Einstellungen');
