@@ -41,11 +41,11 @@ WeekPreview? buildWeekPreview(SyncEngine engine, DateTime monday) {
         day.format(o.start).replaceAll('.', ''),
         if (!o.event.allDay) time.format(o.start),
         if (o.event.bringerId == me)
-          tr.weekPreviewDropOffTitle(o.event.title)
+          tr.weekPreviewDropOffTitle(o.event.publicTitle)
         else if (o.event.pickerId == me)
-          tr.weekPreviewPickUpTitle(o.event.title)
+          tr.weekPreviewPickUpTitle(o.event.publicTitle)
         else
-          o.event.title,
+          o.event.publicTitle,
       ].join(' '),
   ];
   final lifts = items

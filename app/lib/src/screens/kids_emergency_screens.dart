@@ -183,15 +183,16 @@ class EmergencyScreen extends StatelessWidget {
           title: tr.kidsEmergencyName(child.name),
           subtitle: tr.kidsAlsoWorksWithoutInternet,
           actions: [
-            BubbleButton(
-              icon: AppIcons.pencilSimple,
-              tooltip: tr.kidsEditEmergencyData,
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => _EmergencyEditor(child: child),
+            if (!(AppScope.of(context).me?.isChild ?? false))
+              BubbleButton(
+                icon: AppIcons.pencilSimple,
+                tooltip: tr.kidsEditEmergencyData,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => _EmergencyEditor(child: child),
+                  ),
                 ),
               ),
-            ),
           ],
           body: ListView(
             padding: EdgeInsets.only(
@@ -292,7 +293,8 @@ class EmergencyScreen extends StatelessWidget {
                         tr.commonAtTime(logText(m), time.format(m.start)),
                         important: true,
                       ),
-                    if (info.isEmpty)
+                    if (info.isEmpty &&
+                        !(AppScope.of(context).me?.isChild ?? false))
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: FilledButton.tonalIcon(

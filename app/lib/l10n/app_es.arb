@@ -840,7 +840,7 @@
   "pushPhone": "En este móvil",
   "pushDevice": "En este dispositivo",
   "pushShowContents": "Mostrar contenido",
-  "pushNamesTextsEG": "Nombres y textos, p. ej. el mensaje del chat. Desactivado: solo «Mensaje nuevo» o similar.{lock}",
+  "pushNamesTextsEG": "Nombres y textos, p. ej. el mensaje del chat o el medicamento de un recordatorio. Desactivado: solo «Mensaje nuevo» o similar.{lock}",
   "pushLockScreenNeverShows": "La pantalla de bloqueo nunca muestra contenido.",
   "pushAndroidDoesNotAllow": "Android no permite notificaciones a Famio.",
   "pushBatteryOptimizationAndroidMay": "La optimización de batería está activada: Android puede cortar la conexión.",
@@ -1268,7 +1268,7 @@
   "eventDate": "el {date}",
   "eventMinutesMinutesBefore": "{minutes} minutos antes",
   "commonPrivate": "Privado",
-  "eventNotCalendarSubscriptionsGoogle": "No aparece en las suscripciones de calendario (Google, Apple …); p. ej. para citas médicas",
+  "eventNotCalendarSubscriptionsGoogle": "No aparece en las suscripciones de calendario y sale sin título en las notificaciones; invitados y niños solo lo ven si participan; p. ej. para citas médicas",
   "eventStartPageWallDisplay": "En la página de inicio y en la pantalla de pared: «Faltan 12 días»",
   "eventWhoDrives": "¿Quién lleva?",
   "eventDropsOff": "Lleva",
@@ -2690,5 +2690,13 @@
   "quickEntryWhichDay": "¿Qué día quieres decir?",
   "quickEntryAsEvent": "Como cita",
   "quickEntryAsTask": "Como tarea",
-  "quickEntryCheck": "En el siguiente paso lo revisas todo y guardas."
+  "quickEntryCheck": "En el siguiente paso lo revisas todo y guardas.",
+  "eventBusy": "Ocupado",
+  "remindersOpenFamioDetails": "Detalles en Famio",
+  "appLockTitle": "Bloquear la app",
+  "appLockSubtitle": "Tras un minuto en segundo plano, Famio pide la huella, el rostro o el PIN de este dispositivo. Famio queda oculto en la vista de apps; en Android tampoco se pueden hacer capturas.",
+  "appLockReason": "Desbloquear Famio",
+  "appLockLocked": "Famio está bloqueado",
+  "appLockUnlock": "Desbloquear",
+  "appLockNotChanged": "No ha funcionado. ¿Tiene este dispositivo un bloqueo de pantalla?"
 }

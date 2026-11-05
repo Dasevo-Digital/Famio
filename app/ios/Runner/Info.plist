@@ -11,6 +11,8 @@
 		<string>location</string>
 		<string>audio</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Damit du Famio mit Face ID entsperren kannst, wenn du die App-Sperre einschaltest.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Für Fotos im Chat, bei Dokumenten und Erinnerungen sowie zum Scannen von Barcodes für den Vorrat.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -840,7 +840,7 @@
   "pushPhone": "On this phone",
   "pushDevice": "On this device",
   "pushShowContents": "Show contents",
-  "pushNamesTextsEG": "Names and texts, e.g. the chat message. Off: only “New message” or similar.{lock}",
+  "pushNamesTextsEG": "Names and texts, e.g. the chat message or the medication in a reminder. Off: only “New message” or similar.{lock}",
   "pushLockScreenNeverShows": "The lock screen never shows contents.",
   "pushAndroidDoesNotAllow": "Android does not allow Famio to show notifications.",
   "pushBatteryOptimizationAndroidMay": "Battery optimization is on – Android may then cut the connection.",
@@ -1268,7 +1268,7 @@
   "eventDate": "on {date}",
   "eventMinutesMinutesBefore": "{minutes} minutes before",
   "commonPrivate": "Private",
-  "eventNotCalendarSubscriptionsGoogle": "Not in calendar subscriptions (Google, Apple …) – e.g. for doctor's appointments",
+  "eventNotCalendarSubscriptionsGoogle": "Not in calendar subscriptions and without a title in notifications; guests and children only see it if they take part – e.g. for doctor's appointments",
   "eventStartPageWallDisplay": "On the start page and the wall display: “12 days to go”",
   "eventWhoDrives": "Who drives?",
   "eventDropsOff": "Drops off",
@@ -2690,5 +2690,13 @@
   "quickEntryWhichDay": "Which day do you mean?",
   "quickEntryAsEvent": "As an event",
   "quickEntryAsTask": "As a task",
-  "quickEntryCheck": "You check everything and save in the next step."
+  "quickEntryCheck": "You check everything and save in the next step.",
+  "eventBusy": "Busy",
+  "remindersOpenFamioDetails": "Details in Famio",
+  "appLockTitle": "Lock the app",
+  "appLockSubtitle": "After a minute in the background, Famio asks for your fingerprint, face or this device’s PIN. Famio stays hidden in the app overview; on Android, screenshots are off as well.",
+  "appLockReason": "Unlock Famio",
+  "appLockLocked": "Famio is locked",
+  "appLockUnlock": "Unlock",
+  "appLockNotChanged": "That did not work. Does this device have a screen lock?"
 }

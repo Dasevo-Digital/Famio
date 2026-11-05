@@ -67,12 +67,14 @@ class _ChildScreenState extends State<ChildScreen> {
               color: Theme.of(context).colorScheme.error,
               onPressed: () => showEmergency(context, child),
             ),
-            const SizedBox(width: 8),
-            BubbleButton(
-              icon: AppIcons.pencilSimple,
-              tooltip: tr.commonEdit,
-              onPressed: () => showChildEditor(context, existing: child),
-            ),
+            if (!(AppScope.of(context).me?.isChild ?? false)) ...[
+              const SizedBox(width: 8),
+              BubbleButton(
+                icon: AppIcons.pencilSimple,
+                tooltip: tr.commonEdit,
+                onPressed: () => showChildEditor(context, existing: child),
+              ),
+            ],
           ],
           floating: AddButton(
             color: color,

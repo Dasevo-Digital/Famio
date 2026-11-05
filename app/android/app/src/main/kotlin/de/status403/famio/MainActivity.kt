@@ -10,7 +10,8 @@ import android.os.Build
 import android.os.PowerManager
 import android.provider.OpenableColumns
 import android.provider.Settings
-import io.flutter.embedding.android.FlutterActivity
+import android.view.WindowManager
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
@@ -18,9 +19,10 @@ import io.flutter.plugin.common.MethodChannel
  * Hosts Flutter and the channels `famio/location` (location sharing),
  * `famio/notify` (Famio's own push), `famio/sos` (emergency button) and
  * `famio/open_file` (calendar files opened with Famio and text or files
- * shared to Famio from other apps).
+ * shared to Famio from other apps) and `famio/privacy` (the app lock).
+ * A FragmentActivity, as the fingerprint dialog of the app lock needs one.
  */
-class MainActivity : FlutterActivity() {
+class MainActivity : FlutterFragmentActivity() {
     companion object {
         const val ACTION_SOS = "de.status403.famio.SOS"
 
@@ -268,6 +270,17 @@ class MainActivity : FlutterActivity() {
             }
         // The language chosen in Famio, so notification channels, widgets
         // and the system settings follow it (Android 13 and later).
+        // With the app lock on: no screenshots, blank in the app overview.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/privacy")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "setSecure") return@setMethodCallHandler result.notImplemented()
+                if (call.arguments == true) {
+                    window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                }
+                result.success(null)
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/language")
             .setMethodCallHandler { call, result ->
                 if (call.method != "set") return@setMethodCallHandler result.notImplemented()

@@ -627,7 +627,11 @@ class _OwnPushCardState extends State<_OwnPushCard>
             value: status?.details ?? true,
             onChanged: _busy || status == null
                 ? null
-                : (v) => _run(() => push.setDetails(v)),
+                : (v) => _run(() async {
+                    final state = AppScope.read(context);
+                    await push.setDetails(v);
+                    state.remindersChanged();
+                  }),
           ),
           if (enabled && OwnPush.native && status != null) ...[
             if (!status.notifications)

@@ -21,6 +21,7 @@ import 'secure_vault.dart';
 import 'data/app_update.dart';
 import 'data/holidays.dart';
 import 'reminders/reminder_service.dart';
+import 'security/app_lock.dart';
 import 'weather/weather.dart';
 import 'sos/sos_device.dart';
 import 'environment.dart';
@@ -103,6 +104,26 @@ class AppState extends ChangeNotifier {
   }
 
   /// Sunday evening's notification about the coming week.
+  /// The optional lock of this device's app.
+  late final AppLock lock = AppLock(_prefs);
+
+  /// Plain copies for other apps. Linux's temp folder is shared by all users
+  /// of the computer, so they go to the user's own folder there.
+  static Future<String> _openedFilesDir() async {
+    final temp = p.join((await getTemporaryDirectory()).path, 'famio_open');
+    if (defaultTargetPlatform != TargetPlatform.linux) return temp;
+    try {
+      // Up to 2.0.33 they lay there.
+      Directory(temp).deleteSync(recursive: true);
+    } on FileSystemException {
+      // None left, or another user's.
+    }
+    return p.join((await getApplicationSupportDirectory()).path, 'famio_open');
+  }
+
+  /// Plans notifications again, e.g. after their contents were switched off.
+  void remindersChanged() => _reminders?.refresh();
+
   bool get weekPreview => _prefs.getBool('reminders.weekPreview') ?? true;
 
   /// "Rechtzeitig losfahren": how this person usually travels to
@@ -781,6 +802,7 @@ class AppState extends ChangeNotifier {
     if (kIsWeb) setTabValue('famio.token', null);
     await _prefs.remove('me');
     me = null;
+    lock.signedOut();
     certificatePin = null;
     changedCertificate = null;
     twoFactorGate = null;
@@ -880,9 +902,7 @@ class AppState extends ChangeNotifier {
       p.join(support, 'files_${member.id}.db'),
       api,
       hexKey: key,
-      tempDir: kIsWeb
-          ? ''
-          : p.join((await getTemporaryDirectory()).path, 'famio_open'),
+      tempDir: kIsWeb ? '' : await _openedFilesDir(),
     )..clearTemp();
     serverUrl = normalized;
     certificatePin = pin;

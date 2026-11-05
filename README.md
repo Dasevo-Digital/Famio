@@ -430,13 +430,21 @@ jedem Sync durchsetzt:
 - **Erwachsen:** alles, was für das Mitglied sichtbar ist.
 - **Kind:** darf Ämter, Belohnungen, Routinen und Taschengeld nicht
   verwalten; erledigte Ämter und Belohnungswünsche sind Anfragen, die ein
-  Erwachsener bestätigt.
+  Erwachsener bestätigt. Gesundheitsdaten erhält es nur, wenn es dafür
+  ausgewählt ist; es darf dann eintragen und abhaken, aber weder Medikationspläne
+  und Kinderprofile ändern noch festlegen, wer etwas sieht.
 - **Gast:** bekommt nur Kalender, Termin-Kommentare, Chat, Einkauf,
   Aufgaben, Essen, Kontakte, Ämter und Vorrat; schreiben darf er nur Chat,
   Einkaufsartikel, Aufgaben, Kommentare und Umfrage-Stimmen. Von den
   Aufgaben sieht er nur die, die ihm zugewiesen oder unter „Wer darf es
   sehen?“ für ihn freigegeben sind. Standort und Kalender-Verbindungen sind
   für Gäste gesperrt.
+- **Dienstkonto** (Home Assistant, Wandanzeige): sieht, was Erwachsene sehen,
+  aber nie Gesundheitsdaten und Notfallangaben; vertrauliche Termine nur als
+  belegte Zeit.
+
+Vertrauliche Termine erreichen Gäste und Kinder nur, wenn sie beteiligt sind.
+Widget, Wandanzeige und Erinnerungen nennen sie nur als „Belegt“ bzw. „Termin“.
 
 ### Push-Benachrichtigungen
 
@@ -580,12 +588,12 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 | Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
 | Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht), Passkeys (WebAuthn) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; ein neues Gerät kann einmalig per fünf Minuten gültigem QR-Code gekoppelt werden; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung; „Das war ich nicht“ unter „Meine Geräte“ meldet das fremde Gerät ab und führt zum Passwortwechsel |
-| Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
+| Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Gesundheitsdaten gehen unabhängig von `visibleTo` nie an Dienstkonten und an Kinderkonten nur, wenn sie benannt sind (`Collections.health`, auch Dokumente der Kategorie Gesundheit); wird ein Konto gelöscht, gehen seine eigenen Gesundheitsdaten mit; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten holt der Server für sie (ohne private Ziele, auch nicht über Weiterleitungen) |
 | Server | Datenbank und Dateien verschlüsselt (SQLite3MultipleCiphers, ChaCha20-Poly1305), Schlüssel getrennt von den Daten (`FAMIO_KEY_FILE`); nur für den Famio-Benutzer lesbar (umask 077), redigiertes Request-Log, Audit-Log, Größenlimits |
 | Betrieb | Docker read-only ohne Capabilities; systemd-Sandbox (`systemd-analyze security`: 3.0 OK) |
-| Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt |
-| Kalender-Abos | Termine lassen sich als *vertraulich* markieren (nie im Abo, nie bei iCloud & Co.); Abos auf Wunsch nur als „Belegt“ ohne Details |
+| Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt; optionale App-Sperre mit Fingerabdruck, Gesicht oder Geräte-PIN (nach einer Minute im Hintergrund, unter Einstellungen → Dieses Gerät; nicht unter Linux und im Browser), dazu verdeckt in der App-Übersicht und unter Android ohne Bildschirmfotos; „Inhalte anzeigen“ aus lässt auch Erinnerungen nichts mehr verraten; Kopien für andere Apps werden nach einer Stunde entfernt, unter Linux liegen sie im eigenen Benutzerordner |
+| Kalender-Abos | Termine lassen sich als *vertraulich* markieren (nie im Abo, nie bei iCloud & Co., in Mitteilungen ohne Titel); Abos auf Wunsch nur als „Belegt“ ohne Details |
 | CalDAV | Eigenes App-Passwort pro Kalender-App (80 Bit, einzeln widerrufbar, Drosselung), Passwörter für iCloud & Co. nur verschlüsselt auf dem Server |
 | Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 1–365 Tage, nur für Eltern und die Person selbst; Pausieren nur mit Eltern-Code |
 

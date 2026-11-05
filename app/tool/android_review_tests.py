@@ -31,6 +31,8 @@ from pathlib import Path
 APP_DIR = Path(__file__).resolve().parent.parent
 SERVER_DIR = APP_DIR.parent / "server"
 PACKAGE = "de.status403.famio.dev"
+# Set for the app lock test only, cleared again at its end.
+PIN = "1234"
 ACTIVITY = f"{PACKAGE}/de.status403.famio.MainActivity"
 ADB = shutil.which("adb") or str(
     Path("/opt/homebrew/share/android-commandlinetools/platform-tools/adb")
@@ -119,6 +121,12 @@ class Device:
         # Background work would otherwise wait for the next maintenance
         # window of an idle emulator.
         self.shell(f"cmd deviceidle whitelist +{PACKAGE}")
+
+    def window_secure(self):
+        """Whether Famio's window is set to stay out of screenshots."""
+        windows = self.shell("dumpsys window windows")
+        ours = [b for b in windows.split("Window #") if PACKAGE in b.split("\n")[0]]
+        return any(re.search(r"fl=.*\bSECURE\b", b) for b in ours)
 
     def geo(self, lat, lon):
         """Moves the emulator; like a real GPS, the position keeps coming
@@ -302,6 +310,7 @@ def main():
             command, cwd=APP_DIR, env=env, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, text=True, bufsize=1,
         )
+        host_failed = False
         for line in test.stdout:
             print(line, end="", flush=True)
             found = re.search(r"E2E-HOST (\S+)(?: (.*))?$", line.rstrip())
@@ -316,6 +325,22 @@ def main():
                 elif what == "back":
                     # The back button, as a person presses it.
                     device.shell("input keyevent KEYCODE_BACK")
+                elif what == "home":
+                    device.shell("input keyevent KEYCODE_HOME")
+                elif what == "front":
+                    device.shell(f"am start -n {ACTIVITY}")
+                elif what == "pin-set":
+                    device.shell(f"locksettings set-pin {PIN}")
+                elif what == "pin-clear":
+                    device.shell(f"locksettings clear --old {PIN}")
+                elif what == "pin-enter":
+                    # Android's own screen for the device PIN.
+                    device.shell(f"input text {PIN}")
+                    device.shell("input keyevent KEYCODE_ENTER")
+                elif what in ("secure-on", "secure-off"):
+                    wanted = what == "secure-on"
+                    if device.window_secure() != wanted:
+                        raise RuntimeError(f"FLAG_SECURE ist nicht {wanted}")
                 elif what == "shot":
                     shots = Path(tempfile.gettempdir()) / "famio-android-review-shots"
                     shots.mkdir(exist_ok=True)
@@ -336,7 +361,8 @@ def main():
                 print(f"== host: {what} {' '.join(rest)} erledigt", flush=True)
             except Exception as e:  # noqa: BLE001 - reported, test then fails
                 print(f"!! host: {what} fehlgeschlagen: {e}", flush=True)
-        status = test.wait()
+                host_failed = True
+        status = test.wait() or int(host_failed)
         if status != 0:
             print("== Serverprotokoll (Ende):", flush=True)
             print("".join((work / "server.log").read_text().splitlines(True)[-40:]))

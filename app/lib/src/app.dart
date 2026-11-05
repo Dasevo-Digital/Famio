@@ -6,6 +6,7 @@ import 'design/theme.dart';
 import 'screens/security_screens.dart';
 import 'screens/connect_screen.dart';
 import 'screens/home_shell.dart';
+import 'security/app_lock.dart';
 import 'environment.dart';
 import 'l10n.dart';
 
@@ -64,7 +65,16 @@ class FamioApp extends StatelessWidget {
                 child: result,
               );
             }
-            return result;
+            final content = result;
+            return ListenableBuilder(
+              listenable: state,
+              builder: (_, _) => AppLockGate(
+                lock: state.lock,
+                active: state.me != null,
+                onSignOut: state.signOut,
+                child: content,
+              ),
+            );
           },
           home: const _Root(),
         ),

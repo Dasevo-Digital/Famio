@@ -4,6 +4,12 @@ import 'birthdays.dart';
 import 'holidays.dart';
 import '../l10n.dart';
 
+/// What may be shown where others can read along (a wall display, a home
+/// screen, a notification): a confidential appointment only says it is one.
+extension PublicEvent on CalendarEvent {
+  String get publicTitle => confidential ? tr.eventBusy : title;
+}
+
 /// Typed access to the generic records, one section per module.
 extension FamilyData on SyncEngine {
   // --- family inbox ---------------------------------------------------------
@@ -469,7 +475,9 @@ extension FamilyData on SyncEngine {
   /// Health data like the children's: only the chosen members see it.
   void savePregnancy(Pregnancy p) => put(Collections.pregnancies, p.id, {
     ...p.toData(),
-    SyncRecord.visibilityKey: p.guardianIds.isEmpty ? null : p.guardianIds,
+    SyncRecord.visibilityKey: p.guardianIds.isEmpty
+        ? [memberId]
+        : p.guardianIds,
   });
 
   void deletePregnancy(String id) => delete(Collections.pregnancies, id);

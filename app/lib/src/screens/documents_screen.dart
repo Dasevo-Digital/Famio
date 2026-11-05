@@ -395,11 +395,14 @@ class _DocumentEditorState extends State<DocumentEditor> {
       widget.existing?.category ?? widget.category ?? DocumentCategory.other;
   late final _about = {...?widget.existing?.memberIds};
   late DateTime? _expires = widget.existing?.expiresAt;
-  late var _visibility = widget.existing?.visibleTo == null
+  late var _visibility = widget.existing == null
+      ? _startingVisibility(_category)
+      : widget.existing!.visibleTo == null
       ? _Visibility.family
       : _Visibility.selected;
   late final _audience = {...?widget.existing?.visibleTo};
   var _saving = false;
+  var _visibilityChosen = false;
 
   /// The file's text for the search, recognised on the device.
   late var _content = widget.existing?.content ?? '';
@@ -437,6 +440,9 @@ class _DocumentEditorState extends State<DocumentEditor> {
       _readNothing = text == null;
     });
   }
+
+  static _Visibility _startingVisibility(DocumentCategory category) =>
+      category == DocumentCategory.health ? _Visibility.me : _Visibility.family;
 
   /// An existing file: fetched (or from the cache) and read.
   void _readExisting(FileRef file) {
@@ -579,7 +585,14 @@ class _DocumentEditorState extends State<DocumentEditor> {
                   label: Text(cat.label),
                   selected: _category == cat,
                   selectedColor: categoryLook(cat).$2.withValues(alpha: 0.2),
-                  onSelected: (_) => setState(() => _category = cat),
+                  onSelected: (_) => setState(() {
+                    // A new letter from the doctor starts out as the
+                    // author's; sharing it is a decision.
+                    if (widget.existing == null && !_visibilityChosen) {
+                      _visibility = _startingVisibility(cat);
+                    }
+                    _category = cat;
+                  }),
                 ),
             ],
           ),
@@ -636,7 +649,10 @@ class _DocumentEditorState extends State<DocumentEditor> {
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: RadioGroup<_Visibility>(
               groupValue: _visibility,
-              onChanged: (v) => setState(() => _visibility = v!),
+              onChanged: (v) => setState(() {
+                _visibility = v!;
+                _visibilityChosen = true;
+              }),
               child: Column(
                 children: [
                   RadioListTile(

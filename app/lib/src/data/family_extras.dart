@@ -550,9 +550,24 @@ extension FamilyExtras on SyncEngine {
     return r == null ? null : Medication.fromRecord(r);
   }
 
-  /// Health data: only the chosen members (and the author) see it.
-  void saveMedication(Medication m) =>
-      put(Collections.medications, m.id, m.toData());
+  /// Health data: only the chosen members (and the author) see it, what was
+  /// taken so far included. With nobody chosen it stays the author's.
+  void saveMedication(Medication m) {
+    final saved = m.careIds.isEmpty ? m.withCare([memberId]) : m;
+    put(Collections.medications, m.id, saved.toData());
+    final audience = saved.careIds.toSet();
+    for (final i in intakes(m.id)) {
+      final now = record(Collections.medicationIntakes, i.id)?.visibleTo;
+      if (now?.toSet().containsAll(audience) != true ||
+          now?.length != audience.length) {
+        put(
+          Collections.medicationIntakes,
+          i.id,
+          i.toData(visibleTo: saved.careIds),
+        );
+      }
+    }
+  }
 
   void deleteMedication(String id) {
     for (final i in intakes(id)) {
@@ -592,7 +607,7 @@ extension FamilyExtras on SyncEngine {
     put(
       Collections.medicationIntakes,
       intake.id,
-      intake.toData(visibleTo: m.careIds.isEmpty ? null : m.careIds),
+      intake.toData(visibleTo: m.careIds.isEmpty ? [memberId] : m.careIds),
     );
   }
 

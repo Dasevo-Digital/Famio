@@ -38,11 +38,14 @@ class MedicationScreen extends StatelessWidget {
       title: tr.commonMedications,
       subtitle: tr.medsDosesViewSupplyUnder,
       actions: const [SyncStatusIcon()],
-      floating: AddButton(
-        color: color,
-        tooltip: tr.medsAddMedication,
-        onPressed: () => showMedicationEditor(context),
-      ),
+      // Plans are for adults (the server sees to it as well).
+      floating: AppScope.of(context).me?.isChild ?? false
+          ? null
+          : AddButton(
+              color: color,
+              tooltip: tr.medsAddMedication,
+              onPressed: () => showMedicationEditor(context),
+            ),
       body: DataBuilder(
         collections: _collections,
         builder: (context, engine) {
@@ -243,7 +246,9 @@ class _MedicationCard extends StatelessWidget {
               'bis ${DateFormat.yMd(appLanguage).format(m.end!)}',
           ].join(' · ');
     return SoftCard(
-      onTap: () => showMedicationEditor(context, medication: m),
+      onTap: engine.me?.isChild ?? false
+          ? null
+          : () => showMedicationEditor(context, medication: m),
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -650,15 +655,20 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final m in engine.members.where((m) => !m.isGuest))
+              for (final m in engine.members.where(
+                (m) => !m.isGuest && !m.isService,
+              ))
                 FilterChip(
                   avatar: MemberAvatar(m, radius: 10),
                   label: Text(m.displayName),
                   selectedColor: tint,
                   selected: _careIds.contains(m.id),
-                  onSelected: (on) => setState(
-                    () => on ? _careIds.add(m.id) : _careIds.remove(m.id),
-                  ),
+                  // Someone has to stay: nobody chosen is not "everyone".
+                  onSelected: !_careIds.contains(m.id) || _careIds.length > 1
+                      ? (on) => setState(
+                          () => on ? _careIds.add(m.id) : _careIds.remove(m.id),
+                        )
+                      : null,
                 ),
             ],
           ),

@@ -1636,7 +1636,7 @@
   "pushPhone": "Auf diesem Handy",
   "pushDevice": "Auf diesem Gerät",
   "pushShowContents": "Inhalte anzeigen",
-  "pushNamesTextsEG": "Namen und Texte, z. B. die Chat-Nachricht. Aus: nur „Neue Nachricht“ o. Ä.{lock}",
+  "pushNamesTextsEG": "Namen und Texte, z. B. die Chat-Nachricht oder das Medikament einer Erinnerung. Aus: nur „Neue Nachricht“ o. Ä.{lock}",
   "@pushNamesTextsEG": {
     "placeholders": {
       "lock": {
@@ -2945,7 +2945,7 @@
     }
   },
   "commonPrivate": "Vertraulich",
-  "eventNotCalendarSubscriptionsGoogle": "Nicht in Kalender-Abos (Google, Apple …) – z. B. für Arzttermine",
+  "eventNotCalendarSubscriptionsGoogle": "Nicht in Kalender-Abos und ohne Titel in Mitteilungen; Gäste und Kinder sehen ihn nur, wenn sie dabei sind – z. B. für Arzttermine",
   "eventStartPageWallDisplay": "Auf der Startseite und der Wandanzeige: „Noch 12 Tage“",
   "eventWhoDrives": "Wer fährt?",
   "eventDropsOff": "Bringt",
@@ -6911,5 +6911,13 @@
   "quickEntryWhichDay": "Welcher Tag ist gemeint?",
   "quickEntryAsEvent": "Als Termin",
   "quickEntryAsTask": "Als Aufgabe",
-  "quickEntryCheck": "Im nächsten Schritt prüfst du alles und speicherst."
+  "quickEntryCheck": "Im nächsten Schritt prüfst du alles und speicherst.",
+  "eventBusy": "Belegt",
+  "remindersOpenFamioDetails": "Details in Famio",
+  "appLockTitle": "App sperren",
+  "appLockSubtitle": "Nach einer Minute im Hintergrund fragt Famio nach Fingerabdruck, Gesicht oder der PIN dieses Geräts. In der App-Übersicht bleibt Famio verdeckt; unter Android sind dann auch Bildschirmfotos aus.",
+  "appLockReason": "Famio entsperren",
+  "appLockLocked": "Famio ist gesperrt",
+  "appLockUnlock": "Entsperren",
+  "appLockNotChanged": "Das hat nicht geklappt. Hat dieses Gerät eine Bildschirmsperre?"
 }

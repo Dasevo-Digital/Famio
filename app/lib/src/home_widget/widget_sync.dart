@@ -31,7 +31,7 @@ typedef WidgetLine = ({String kind, String lead, String text});
     lines.add((
       kind: 'event',
       lead: o.event.allDay ? '📅' : time.format(o.start),
-      text: o.event.title,
+      text: o.event.publicTitle,
     ));
   }
   for (final m in engine.plannedMeals(today, tomorrow).take(1)) {

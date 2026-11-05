@@ -23,6 +23,7 @@ import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/ocr.dart';
 import 'package:famio/src/l10n.dart';
 import 'package:famio/src/screens/home_shell.dart';
+import 'package:famio/src/security/app_lock.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -738,6 +739,62 @@ void main() {
       await tester.pumpAndSettle();
       expect(handlesBack, isFalse);
     } finally {
+      await finish(tester, state, {});
+    }
+  });
+
+  testWidgets('#302 App-Sperre mit dem echten Dialog von Android', (
+    tester,
+  ) async {
+    // As in #290: without a lifecycle state nothing reaches the app lock.
+    tester.platformDispatcher.initialLifecycleStateTestValue = AppLifecycleState
+        .resumed
+        .toString();
+    addTearDown(tester.platformDispatcher.resetInitialLifecycleState);
+    tester.binding.readTestInitialLifecycleStateFromNativeWindow();
+    host('pin-set');
+    await Future<void>.delayed(const Duration(seconds: 2));
+    final state = await start(tester);
+    try {
+      expect(await state.lock.available, isTrue);
+      // Android only shows its dialog over the app in front; the sharing
+      // test may have left the Files app there.
+      host('front');
+      await Future<void>.delayed(const Duration(seconds: 3));
+      final on = state.lock.setEnabled(true);
+      await Future<void>.delayed(const Duration(seconds: 3));
+      host('pin-enter');
+      expect(await on, isTrue);
+      await tester.pumpAndSettle();
+      expect(state.lock.locked, isFalse);
+      host('secure-on');
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      // Away for longer than the grace period: locked on return.
+      host('home');
+      await Future<void>.delayed(AppLock.grace + const Duration(seconds: 5));
+      host('front');
+      await waitFor(tester, find.text('Famio ist gesperrt'));
+      await Future<void>.delayed(const Duration(seconds: 3));
+      host('pin-enter');
+      final end = DateTime.now().add(const Duration(seconds: 30));
+      while (state.lock.locked && DateTime.now().isBefore(end)) {
+        await tester.pump(const Duration(milliseconds: 200));
+      }
+      expect(state.lock.locked, isFalse);
+      await tester.pumpAndSettle();
+      expect(find.text('Famio ist gesperrt'), findsNothing);
+
+      // And off again, with the window flag.
+      final off = state.lock.setEnabled(false);
+      await Future<void>.delayed(const Duration(seconds: 3));
+      host('pin-enter');
+      expect(await off, isTrue);
+      host('secure-off');
+      await Future<void>.delayed(const Duration(seconds: 2));
+    } finally {
+      host('pin-clear');
+      await Future<void>.delayed(const Duration(seconds: 2));
       await finish(tester, state, {});
     }
   });

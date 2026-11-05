@@ -118,6 +118,8 @@ flutter {
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    // The themes of the app lock's fingerprint dialog.
+    implementation("androidx.appcompat:appcompat:1.7.1")
     // Text in photos (appointments from a letter), on the phone; the model
     // inside the app or from Google Play services (see playServicesModels).
     if (playServicesModels) {

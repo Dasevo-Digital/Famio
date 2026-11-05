@@ -264,6 +264,7 @@ class SettingsScreen extends StatelessWidget {
               ),
             ),
           ListHeading(context.l10n.settingsThisDevice, color: accent),
+          const _AppLockTile(),
           ListTile(
             leading: const Icon(AppIcons.tv),
             title: Text(context.l10n.settingsOpenKiosk),
@@ -1073,4 +1074,35 @@ class _TipsTileState extends State<_TipsTile> {
             if (mounted) setState(() => _on = on);
           },
   );
+}
+
+/// Only where the device can lock (not on Linux and in browsers).
+class _AppLockTile extends StatelessWidget {
+  const _AppLockTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final lock = AppScope.of(context).lock;
+    return FutureBuilder<bool>(
+      future: lock.available,
+      builder: (context, available) => available.data != true
+          ? const SizedBox.shrink()
+          : ListenableBuilder(
+              listenable: lock,
+              builder: (context, _) => SwitchListTile(
+                secondary: const Icon(AppIcons.lockKey),
+                title: Text(context.l10n.appLockTitle),
+                subtitle: Text(context.l10n.appLockSubtitle),
+                value: lock.enabled,
+                onChanged: (v) async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final text = context.l10n.appLockNotChanged;
+                  if (!await lock.setEnabled(v)) {
+                    messenger.showSnackBar(SnackBar(content: Text(text)));
+                  }
+                },
+              ),
+            ),
+    );
+  }
 }

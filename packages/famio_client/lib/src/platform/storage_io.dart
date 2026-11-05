@@ -19,6 +19,7 @@ BlobBackend openBlobBackend(String path, {String? hexKey}) =>
 /// its path.
 Future<String> writeTempFile(String dir, String name, List<int> data) async {
   Directory(dir).createSync(recursive: true);
+  await _keepPrivate(dir);
   final file = File('$dir/$name');
   await file.writeAsBytes(data, flush: true);
   return file.path;
@@ -33,6 +34,7 @@ Future<String> writeTempStream(
   int? expectedBytes,
 ) async {
   await Directory(dir).create(recursive: true);
+  await _keepPrivate(dir);
   final file = File('$dir/$name');
   await file.create(exclusive: true);
   final output = await file.open(mode: FileMode.writeOnly);
@@ -63,6 +65,29 @@ void restoreCopy(String path, StoreSnapshot snapshot) {}
 void clearTempFiles(String dir) {
   final directory = Directory(dir);
   if (directory.existsSync()) directory.deleteSync(recursive: true);
+}
+
+/// Removes plain copies older than [age]. One a viewer still has open may
+/// stay (Windows refuses); the next round takes it.
+void sweepTempFiles(String dir, Duration age) {
+  final directory = Directory(dir);
+  if (!directory.existsSync()) return;
+  final limit = DateTime.now().subtract(age);
+  for (final entry in directory.listSync()) {
+    try {
+      if (entry is File && entry.lastModifiedSync().isBefore(limit)) {
+        entry.deleteSync();
+      }
+    } on FileSystemException {
+      // In use.
+    }
+  }
+}
+
+/// Phones keep each app's files apart, and Windows and macOS each user's
+/// temp folder. A Linux desktop may have several users: only theirs reads it.
+Future<void> _keepPrivate(String dir) async {
+  if (Platform.isLinux) await Process.run('chmod', ['700', dir]);
 }
 
 class _SqliteRecords implements RecordBackend {

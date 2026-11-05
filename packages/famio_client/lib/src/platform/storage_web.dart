@@ -40,6 +40,8 @@ Future<String> writeTempStream(
 
 void clearTempFiles(String dir) {}
 
+void sweepTempFiles(String dir, Duration age) {}
+
 /// Only previews and recently opened files, at most [limit] bytes.
 class _MemoryBlobs implements BlobBackend {
   static const limit = 64 * 1024 * 1024;

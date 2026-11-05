@@ -72,11 +72,13 @@ class KidsScreen extends StatelessWidget {
       title: tr.sectionKids,
       subtitle: tr.kidsGrowingUpStepStep,
       actions: const [SyncStatusIcon()],
-      floating: AddButton(
-        color: color,
-        tooltip: tr.kidsAddChildPregnancy,
-        onPressed: () => _add(context),
-      ),
+      floating: AppScope.of(context).me?.isChild ?? false
+          ? null
+          : AddButton(
+              color: color,
+              tooltip: tr.kidsAddChildPregnancy,
+              onPressed: () => _add(context),
+            ),
       body: DataBuilder(
         collections: _kidsCollections,
         builder: (context, engine) {

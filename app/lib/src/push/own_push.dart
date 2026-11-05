@@ -50,12 +50,12 @@ class OwnPush {
   static bool get native => !kIsWeb && Platform.isAndroid;
 
   static const _enabledKey = 'ownPush.enabled';
-  static const _detailsKey = 'ownPush.details';
+  static const detailsKey = 'ownPush.details';
 
   /// On desktops it costs nothing noticeable, so it is on by default; on
   /// phones it needs a background connection and is switched on by hand.
   bool get _enabled => _prefs.getBool(_enabledKey) ?? !native;
-  bool get _details => _prefs.getBool(_detailsKey) ?? true;
+  bool get _details => _prefs.getBool(detailsKey) ?? true;
 
   /// True while this device receives own push (then the app's older
   /// in-app chat and place notifications stay quiet).
@@ -125,7 +125,7 @@ class OwnPush {
   }
 
   Future<void> setDetails(bool value) async {
-    await _prefs.setBool(_detailsKey, value);
+    await _prefs.setBool(detailsKey, value);
     if (native && _enabled) {
       final token = await _channel.invokeMethod<String>('token');
       if (token != null) await _startNative(token);

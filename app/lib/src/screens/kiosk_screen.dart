@@ -270,7 +270,7 @@ class _KioskScreenState extends State<KioskScreen> {
                                         vertical: 12,
                                       ),
                                       child: Text(
-                                        '🎉 ${e.occurrence.event.title}: '
+                                        '🎉 ${e.occurrence.event.publicTitle}: '
                                         '${countdownLabel(e.occurrence, e.days, _now)}',
                                         style: theme.textTheme.titleLarge,
                                       ),
@@ -422,7 +422,7 @@ class _EventsPanel extends StatelessWidget {
         if (items.isEmpty) _BigLine(tr.kioskNothingPlanned, dim: true),
         for (final o in items.take(6))
           _BigLine(
-            o.event.title,
+            o.event.publicTitle,
             leading: SizedBox(
               width: 56,
               child: Text(

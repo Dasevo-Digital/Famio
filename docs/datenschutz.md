@@ -22,6 +22,16 @@ verarbeitet werden, entscheidet die Familie beziehungsweise der Betreiber.
 
 Serverdaten und Dateien sind verschlüsselt. Die Geräte halten eine ebenfalls
 verschlüsselte lokale Datenbank und einen Dateicache für den Offlinebetrieb.
+Öffnet jemand ein Dokument in einer anderen App, entsteht dafür eine
+unverschlüsselte Kopie auf dem Gerät; sie wird nach spätestens einer Stunde beim
+nächsten Aufräumen entfernt.
+
+Gesundheitsdaten (Medikamente, Kinderdaten mit Notfallangaben, Schwangerschaften
+und Dokumente der Kategorie Gesundheit) erhalten nur Erwachsene und ausdrücklich
+ausgewählte Personen. Dienstkonten, etwa für Home Assistant oder eine
+Wandanzeige, erhalten sie nie, Kinderkonten nur, wenn sie ausgewählt sind.
+Vertrauliche Termine sehen Gäste und Kinderkonten nur, wenn sie beteiligt sind;
+Dienstkonten erfahren nur die belegte Zeit. Mitteilungen nennen sie ohne Titel.
 Administratoren können Konten und Passwörter verwalten und dadurch technisch
 Zugang zu Familiendaten erlangen; entsprechende Vorgänge erscheinen im
 Audit-Log.
@@ -36,6 +46,10 @@ Audit-Log.
   gelöscht.
 - Administratoren können die Familiendaten serverseitig löschen. Diese
   Löschung wird beim nächsten Abgleich auf die Geräte übertragen.
+- Wird ein Konto gelöscht, entfernt der Server dessen Notfallangaben und die
+  Gesundheitsdaten, die nur diese Person sehen konnte; auch aus dem Papierkorb.
+  Daten von Kindern bleiben als Daten der Familie erhalten. Vorhandene
+  Sicherungen enthalten die gelöschten Daten bis zu ihrem Ablauf weiter.
 - Einzelne gelöschte Aufgaben, Termine, Notizen und Dokumente werden mit ihren
   Anhängen bis zu 30 Tage im serverseitigen Papierkorb aufbewahrt. Mitglieder
   sehen nur Löschstände, die sie nach ihren aktuellen Rechten noch sehen dürfen;

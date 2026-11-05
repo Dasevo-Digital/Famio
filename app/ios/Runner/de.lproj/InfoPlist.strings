@@ -4,3 +4,4 @@
 "NSCameraUsageDescription" = "Für Fotos im Chat, bei Dokumenten und Erinnerungen sowie zum Scannen von Barcodes für den Vorrat.";
 "NSPhotoLibraryUsageDescription" = "Zum Teilen von Fotos im Chat und bei Dokumenten.";
 "NSLocalNetworkUsageDescription" = "Famio verbindet sich mit dem Famio-Server in deinem Heimnetz.";
+"NSFaceIDUsageDescription" = "Damit du Famio mit Face ID entsperren kannst, wenn du die App-Sperre einschaltest.";

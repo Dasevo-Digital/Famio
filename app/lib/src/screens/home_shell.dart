@@ -177,7 +177,9 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkSosLaunch();
+    if (state != AppLifecycleState.resumed) return;
+    _checkSosLaunch();
+    AppScope.read(context).files?.sweepTemp();
   }
 
   /// Opened from the "Famio Notruf" tile or the app shortcut (Android).

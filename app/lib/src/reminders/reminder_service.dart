@@ -24,6 +24,7 @@ import '../data/departures.dart';
 import '../data/week_preview.dart';
 import '../format.dart';
 import '../location/location_sharing.dart';
+import '../push/own_push.dart';
 import '../environment.dart';
 import '../l10n.dart';
 import '../weather/weather.dart';
@@ -315,8 +316,8 @@ class ReminderService {
         androidScheduleMode: _exactAlarms
             ? AndroidScheduleMode.exactAllowWhileIdle
             : AndroidScheduleMode.inexactAllowWhileIdle,
-        title: r.title,
-        body: _body(r),
+        title: _title(r),
+        body: _text(r),
       );
     }
     await _prefs.setString(
@@ -333,8 +334,8 @@ class ReminderService {
       _shown.add(next.key);
       await _plugin.show(
         id: next.notificationId,
-        title: next.title,
-        body: _body(next),
+        title: _title(next),
+        body: _text(next),
         notificationDetails: _details,
       );
       _reschedule();
@@ -350,8 +351,8 @@ class ReminderService {
     };
   }
 
-  static String _signature(DueReminder r) =>
-      '${r.at.millisecondsSinceEpoch}|${r.title}|${_body(r)}';
+  String _signature(DueReminder r) =>
+      '${r.at.millisecondsSinceEpoch}|${_title(r)}|${_text(r)}';
 
   static const _scheduledCollections = {
     Collections.events,
@@ -411,10 +412,14 @@ class ReminderService {
           at: m.sentAt,
           title: '',
         ).notificationId,
-        title: ChatIds.isDirect(m.chatId)
+        title: !_contents
+            ? AppEnv.appName
+            : ChatIds.isDirect(m.chatId)
             ? author
             : tr.remindersAuthorFamily(author),
-        body: m.poll != null
+        body: !_contents
+            ? tr.remindersOpenFamioDetails
+            : m.poll != null
             ? '📊 ${m.poll!.question}'
             : m.text.isNotEmpty
             ? m.text
@@ -534,6 +539,20 @@ class ReminderService {
     ),
   );
 
+  /// The switch "Inhalte anzeigen": off, a reminder only says that there is
+  /// one, also where the lock screen would show it (iOS, computers).
+  bool get _contents => _prefs.getBool(OwnPush.detailsKey) ?? true;
+
+  /// What others may read along: not what a confidential appointment is.
+  String _title(DueReminder r) => !_contents
+      ? AppEnv.appName
+      : r.occurrence?.event.confidential ?? false
+      ? tr.commonEvent
+      : r.title;
+
+  String _text(DueReminder r) =>
+      _contents ? _body(r) : tr.remindersOpenFamioDetails;
+
   static String _body(DueReminder r) {
     if (r.body != null) return r.body!;
     final o = r.occurrence;
@@ -542,7 +561,9 @@ class ReminderService {
           ? tr.remindersDayAllDay(dayLabel(o.start))
           : dateTimeLabel(o.start);
       final location = o.event.location;
-      return location.isEmpty ? when : '$when · $location';
+      return location.isEmpty || o.event.confidential
+          ? when
+          : '$when · $location';
     }
     final due = r.task?.due;
     return due == null ? tr.commonTask : tr.remindersTaskDueDue(dayLabel(due));
@@ -587,7 +608,8 @@ List<DueReminder> departureReminders(
       DueReminder(
         key: 'departure:${d.occurrence.key}',
         at: d.at,
-        title: '${mode.emoji} ${tr.departureTitle(d.occurrence.event.title)}',
+        title:
+            '${mode.emoji} ${tr.departureTitle(d.occurrence.event.publicTitle)}',
         body: tr.departureBody(
           d.place.name,
           d.minutes,

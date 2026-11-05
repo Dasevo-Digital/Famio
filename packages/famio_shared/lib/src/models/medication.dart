@@ -78,6 +78,24 @@ class Medication {
   /// Members who see the plan and are reminded.
   final List<String> careIds;
 
+  Medication withCare(List<String> ids) => Medication(
+    id: id,
+    name: name,
+    personName: personName,
+    dose: dose,
+    perDose: perDose,
+    times: times,
+    weekdays: weekdays,
+    start: start,
+    end: end,
+    stock: stock,
+    stockAt: stockAt,
+    refillDays: refillDays,
+    notes: notes,
+    careIds: ids,
+    asNeeded: asNeeded,
+  );
+
   /// Only when needed (no schedule, no reminders).
   final bool asNeeded;
 

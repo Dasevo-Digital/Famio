@@ -141,11 +141,12 @@ class _PregnancyScreenState extends State<PregnancyScreen> {
             _date.format(p.dueDate),
           ),
           actions: [
-            BubbleButton(
-              icon: AppIcons.pencilSimple,
-              tooltip: tr.commonEdit,
-              onPressed: () => showPregnancyEditor(context, existing: p),
-            ),
+            if (!(AppScope.of(context).me?.isChild ?? false))
+              BubbleButton(
+                icon: AppIcons.pencilSimple,
+                tooltip: tr.commonEdit,
+                onPressed: () => showPregnancyEditor(context, existing: p),
+              ),
           ],
           body: Column(
             children: [

@@ -127,6 +127,7 @@ class FileCache {
   /// path (not in the browser).
   Future<String> openable(FileRef ref) async {
     try {
+      sweepTemp();
       return await _openable(ref);
     } on ApiError {
       rethrow;
@@ -259,8 +260,14 @@ class FileCache {
     }
   }
 
+  /// How long a plain copy may stay for the app it was handed to.
+  static const tempLifetime = Duration(hours: 1);
+
   /// Deletes plain copies made by [openable].
   void clearTemp() => clearTempFiles(tempDir);
+
+  /// Deletes those older than [tempLifetime]: the app may run for days.
+  void sweepTemp() => sweepTempFiles(tempDir, tempLifetime);
 
   /// Puts freshly uploaded bytes into the cache, so the uploader never
   /// downloads their own file again.
