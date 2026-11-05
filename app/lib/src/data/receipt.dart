@@ -1,3 +1,4 @@
+// l10n-file: Wörter, nach denen der Kassenbon-Leser sucht
 import 'package:famio_client/famio_client.dart';
 
 import 'search.dart';

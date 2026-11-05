@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'app_icons.dart';
 
+// l10n-begin: Namen im Code und in Tests, angezeigt wird SectionTitle.title
 /// The app's areas. Each has its own pastel color and icon, so children
 /// (and tired parents) find their way by color.
 enum FamioSection {
@@ -46,6 +47,7 @@ enum FamioSection {
     Color(0xFF636A8A),
   );
 
+  // l10n-end
   const FamioSection(this.label, this.icon, this.tint, this.strong);
 
   final String label;

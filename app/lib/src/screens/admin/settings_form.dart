@@ -348,6 +348,7 @@ class _SettingsFormState extends State<_SettingsForm> {
             }
             result = await engine.api.wipeServerData(
               password: password.text,
+              // l10n: Bestätigungswort des Servers
               confirm: 'LÖSCHEN',
               removeMembers: removeMembers,
             );

@@ -1,3 +1,4 @@
+// l10n-file: Wörter, nach denen der Termin-Leser sucht
 /// Finds appointments in free text (a letter from school, an invitation, an
 /// e-mail) in German, English and Spanish:
 ///

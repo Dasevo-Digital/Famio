@@ -1,3 +1,4 @@
+// l10n-file: Feldnamen der Bankformate und Suchwörter für Kategorien
 import 'dart:convert';
 
 import 'package:famio_client/famio_client.dart';

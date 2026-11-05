@@ -300,6 +300,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
     },
   );
   late var _inBudget = widget.existing?.inBudget ?? false;
+  // l10n: gespeicherte Kategorie
   late var _category = widget.existing?.budgetCategory ?? 'Sonstiges';
 
   static const _notices = ['w2', 'w4', 'w6', 'm1', 'm2', 'm3', 'm6'];
@@ -509,6 +510,7 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                   DropdownButtonFormField<String>(
                     initialValue: expenseCategories.contains(_category)
                         ? _category
+                        // l10n: gespeicherte Kategorie
                         : 'Sonstiges',
                     decoration: InputDecoration(labelText: tr.contractCategory),
                     items: [

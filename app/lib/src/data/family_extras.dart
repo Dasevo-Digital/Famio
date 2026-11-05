@@ -600,9 +600,11 @@ extension FamilyExtras on SyncEngine {
 }
 
 /// Things a family packs once, not once per person.
+// l10n-begin: gespeicherte Packkategorien
 const sharedPackingCategories = {
   'Dokumente',
   'Unterwegs',
   'Technik',
   'Gemeinsam',
 };
+// l10n-end

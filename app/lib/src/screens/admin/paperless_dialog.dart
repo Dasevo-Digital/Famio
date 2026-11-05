@@ -17,6 +17,7 @@ class _PaperlessDialog extends StatefulWidget {
 class _PaperlessDialogState extends State<_PaperlessDialog> {
   final _url = TextEditingController();
   final _token = TextEditingController();
+  // l10n: Vorgabe für den Tag in Paperless
   final _tag = TextEditingController(text: 'Familie');
   final _dueField = TextEditingController();
   final _members = <String>{};
@@ -46,6 +47,7 @@ class _PaperlessDialogState extends State<_PaperlessDialog> {
     _info = json;
     if (json['connected'] != true) return;
     _url.text = json['url'] as String? ?? '';
+    // l10n: Vorgabe für den Tag in Paperless
     _tag.text = json['tag'] as String? ?? 'Familie';
     _dueField.text = json['dueField'] as String? ?? '';
     _members

@@ -38,6 +38,7 @@ extension DeadlineData on SyncEngine {
             ? DateTime(now.year, now.month)
             : BudgetEntry.fromRecord(existing).date,
         cents: cents,
+        // l10n: gespeicherte Kategorie
         category: d.budgetCategory ?? 'Sonstiges',
         note: d.label,
         monthly: true,
