@@ -909,7 +909,12 @@ Dateien, die Liste und ihre Signatur ab; die entpackte App und der
 Release-Text im selben Ordner bleiben lokal. Vorher prüft
 `tool/check_ci.dart`, dass der Gitea-Lauf sowie Tests und Build-Checks des
 Tags auf GitHub bestanden haben; ausgelassen wird das nur mit einer
-Begründung in `FAMIO_CI_OVERRIDE`. Bekommt ein GitHub-Job gar keinen
+Begründung in `FAMIO_CI_OVERRIDE`. Das Home-Assistant-Add-on baut aus dem
+GitHub-Release seiner Version; seine Version in
+`homeassistant-addon/famio/config.yaml` folgt deshalb erst, wenn das
+GitHub-Release vollständig ist (`bash tool/addon_release.sh <version>`,
+danach committen und pushen), sonst schlägt das angebotene Update fehl.
+Bekommt ein GitHub-Job gar keinen
 Rechner (das passierte mit macOS), meldet die Prüfung das gesondert; mit
 `GITHUB_RERUN_TOKEN` (Actions: Lesen und Schreiben) startet sie den Lauf
 einmal neu und wartet auf ihn (`FAMIO_CI_WAIT_MINUTES`, Standard 90). Die

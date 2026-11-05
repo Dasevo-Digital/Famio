@@ -42,10 +42,6 @@ void main(List<String> args) {
   final checks = <String, RegExp>{
     'app/pubspec.yaml': RegExp(r'^version:\s*([^+\s]+)', multiLine: true),
     'server/pubspec.yaml': RegExp(r'^version:\s*([^\s]+)', multiLine: true),
-    'homeassistant-addon/famio/config.yaml': RegExp(
-      r'^version:\s*"([^"]+)"',
-      multiLine: true,
-    ),
     'custom_components/famio/manifest.json': RegExp(r'"version":\s*"([^"]+)"'),
     'server/lib/src/api.dart': RegExp(r"const serverVersion = '([^']+)'"),
   };
@@ -59,6 +55,19 @@ void main(List<String> args) {
       );
       failed = true;
     }
+  }
+  // The add-on builds from the GitHub release of its version, so it follows
+  // only once that release is complete (tool/addon_release.sh): until then
+  // it may stay on an older version, never on a newer one.
+  final addon = RegExp(
+    r'^version:\s*"([^"]+)"',
+    multiLine: true,
+  ).firstMatch(File(addonConfig).readAsStringSync())?.group(1);
+  if (addon == null || compareVersions(addon, expected) > 0) {
+    stderr.writeln(
+      '$addonConfig: ${addon ?? 'Version fehlt'} (höchstens $expected)',
+    );
+    failed = true;
   }
   for (final file in changelogs) {
     final notes = changelogSection(expected, file: file);
@@ -114,6 +123,19 @@ const changelogs = [
   'app/CHANGELOG.en.md',
   'app/CHANGELOG.es.md',
 ];
+
+const addonConfig = 'homeassistant-addon/famio/config.yaml';
+
+/// Compares "2.0.9" and "2.0.10" by their numbers.
+int compareVersions(String a, String b) {
+  final x = a.split('.').map(int.parse).toList();
+  final y = b.split('.').map(int.parse).toList();
+  for (var i = 0; i < 3; i++) {
+    final c = x[i].compareTo(y[i]);
+    if (c != 0) return c;
+  }
+  return 0;
+}
 
 /// What Home Assistant shows when the add-on has an update: until 2.0.33 it
 /// still ended at 0.20.0.
