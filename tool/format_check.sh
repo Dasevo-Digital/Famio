@@ -5,14 +5,34 @@
 #
 #   bash tool/format_check.sh        check (pre-push hook and CI)
 #   bash tool/format_check.sh --fix  format them
+#
+# The style depends on each package's language version. The formatter reads
+# it from the package config of `pub get`; the CI checks before that, so the
+# version comes from the package's pubspec (sdk: ^3.12.2 → 3.12) instead.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-if [ "${1:-}" = --fix ]; then
-  git ls-files -z '*.dart' | xargs -0 dart format
-else
-  git ls-files -z '*.dart' |
-    xargs -0 dart format --output=none --set-exit-if-changed || {
-    echo "Nicht formatiert (bash tool/format_check.sh --fix)" >&2
-    exit 1
-  }
+check=(--output=none --set-exit-if-changed)
+[ "${1:-}" = --fix ] && check=()
+
+failed=0
+packages=()
+for pubspec in $(git ls-files '*pubspec.yaml'); do
+  dir=$(dirname "$pubspec")
+  version=$(sed -nE 's/^[[:space:]]+sdk:[[:space:]]*["'\'']?[\^>=]*([0-9]+\.[0-9]+).*/\1/p' "$pubspec" | head -1)
+  [ -n "$version" ] || { echo "$pubspec: keine SDK-Version" >&2; exit 1; }
+  packages+=("$dir")
+  files=$(git ls-files "$dir" | grep '\.dart$' || true)
+  [ -n "$files" ] || continue
+  printf '%s\n' "$files" | tr '\n' '\0' |
+    xargs -0 dart format "${check[@]}" --language-version="$version" 2>/dev/null ||
+    failed=1
+done
+# Files outside every package (tool/): the SDK's own language version.
+rest=$(git ls-files '*.dart' | grep -v -E "^($(IFS='|'; echo "${packages[*]}"))/" || true)
+if [ -n "$rest" ]; then
+  printf '%s\n' "$rest" | tr '\n' '\0' | xargs -0 dart format "${check[@]}" || failed=1
+fi
+if [ "$failed" -ne 0 ] && [ ${#check[@]} -gt 0 ]; then
+  echo "Nicht formatiert (bash tool/format_check.sh --fix)" >&2
+  exit 1
 fi
