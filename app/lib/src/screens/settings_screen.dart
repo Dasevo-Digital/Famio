@@ -1076,7 +1076,7 @@ class _TipsTileState extends State<_TipsTile> {
   );
 }
 
-/// Only where the device can lock (not on Linux and in browsers).
+/// Only where the device can lock (not on Windows, Linux and in browsers).
 class _AppLockTile extends StatelessWidget {
   const _AppLockTile();
 

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:local_auth/local_auth.dart';
+import 'package:local_auth_android/local_auth_android.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
+import 'package:local_auth_platform_interface/local_auth_platform_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../design/app_icons.dart';
@@ -20,11 +22,16 @@ abstract interface class DeviceUnlock {
 class SystemUnlock implements DeviceUnlock {
   const SystemUnlock();
 
-  static final _auth = LocalAuthentication();
-
-  /// The plugin has nothing for Linux and browsers.
+  /// Phones, tablets and Macs; not Windows, Linux and browsers.
   static bool get _supported =>
-      !kIsWeb && defaultTargetPlatform != TargetPlatform.linux;
+      !kIsWeb &&
+      const {
+        TargetPlatform.android,
+        TargetPlatform.iOS,
+        TargetPlatform.macOS,
+      }.contains(defaultTargetPlatform);
+
+  static LocalAuthPlatform get _auth => LocalAuthPlatform.instance;
 
   @override
   Future<bool> get available async {
@@ -39,7 +46,11 @@ class SystemUnlock implements DeviceUnlock {
   @override
   Future<bool> unlock(String reason) async {
     try {
-      return await _auth.authenticate(localizedReason: reason);
+      return await _auth.authenticate(
+        localizedReason: reason,
+        authMessages: const [AndroidAuthMessages(), IOSAuthMessages()],
+        options: const AuthenticationOptions(useErrorDialogs: false),
+      );
     } on Exception catch (e) {
       // Nothing set up (any more), or too many attempts.
       debugPrint('Famio: unlock failed: $e');
