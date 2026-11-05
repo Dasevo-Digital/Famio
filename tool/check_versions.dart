@@ -2,9 +2,13 @@ import 'dart:io';
 
 /// Checks that every place carries the version in `VERSION`, that
 /// `app/CHANGELOG.md` and its English and Spanish versions have the user
-/// notes (one to eight points) and that all workflows use one Flutter.
+/// notes (one to eight points), that the Home Assistant add-on shows the
+/// same notes and that all workflows use one Flutter.
 ///
 ///   dart run tool/check_versions.dart            check (pre-push, CI)
+///   dart run tool/check_versions.dart --addon-changelog
+///                                                write the add-on's
+///                                                changelog from the app's
 ///   dart run tool/check_versions.dart --notes    print this version's notes
 ///                                                (for the release text)
 ///   dart run tool/check_versions.dart --flutter  print the workflows'
@@ -19,6 +23,10 @@ void main(List<String> args) {
     } else {
       stdout.writeln(versions.single);
     }
+    return;
+  }
+  if (args.contains('--addon-changelog')) {
+    File(addonChangelog).writeAsStringSync(expectedAddonChangelog());
     return;
   }
   if (args.contains('--notes')) {
@@ -66,6 +74,13 @@ void main(List<String> args) {
       failed = true;
     }
   }
+  if (File(addonChangelog).readAsStringSync() != expectedAddonChangelog()) {
+    stderr.writeln(
+      '$addonChangelog: nicht wie app/CHANGELOG.md '
+      '(dart tool/check_versions.dart --addon-changelog)',
+    );
+    failed = true;
+  }
   final flutter = workflowFlutter();
   if (flutter.isEmpty || flutter.values.toSet().length > 1) {
     stderr.writeln(
@@ -99,6 +114,24 @@ const changelogs = [
   'app/CHANGELOG.en.md',
   'app/CHANGELOG.es.md',
 ];
+
+/// What Home Assistant shows when the add-on has an update: until 2.0.33 it
+/// still ended at 0.20.0.
+const addonChangelog = 'homeassistant-addon/famio/CHANGELOG.md';
+
+/// The add-on's changelog: the app's German notes, then the add-on's own
+/// notes of the 0.x versions (from before the app kept any).
+String expectedAddonChangelog() {
+  final app = File('app/CHANGELOG.md').readAsStringSync();
+  final notes = app.substring(app.indexOf('\n## ') + 1).trimRight();
+  final own = File(addonChangelog).readAsStringSync();
+  final old = RegExp(r'^## 0\.', multiLine: true).firstMatch(own);
+  return '# Changelog\n\n'
+      'Was sich je Version ändert. Die ausführlichen Release-Texte stehen '
+      'bei den Releases.\n\n'
+      '$notes\n'
+      '${old == null ? '' : '\n${own.substring(old.start).trimRight()}\n'}';
+}
 
 /// The section `## <version>` of [file] with its heading, or null.
 String? changelogSection(String version, {String file = 'app/CHANGELOG.md'}) {
