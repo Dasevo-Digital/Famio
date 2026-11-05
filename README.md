@@ -887,8 +887,8 @@ zusätzlich den verschlüsselten Home-Assistant-Backup-Mechanismus.
 
 Jeder Push auf `main` und jeder Tag läuft durch zwei CIs: Gitea prüft auf
 einem eigenen Runner (`.gitea/workflows/ci.yml`, Label `famio-linux`) dasselbe
-wie der Pre-Push-Hook unter `.githooks/` (Datenschutz, Versionen, Analyse und
-alle Tests); der GitHub-Spiegel baut zusätzlich alle Plattformen
+wie der Pre-Push-Hook unter `.githooks/` (Datenschutz, Versionen,
+Formatierung, Analyse und alle Tests); der GitHub-Spiegel baut zusätzlich alle Plattformen
 (`.github/workflows/`, von Gitea nicht ausgeführt). Die CI baut dort auch
 Server-Binaries für LXC und Docker-Images. Ein Release entsteht
 mit `bash tool/release.sh <version>` auf dem Tag: Es baut Web-App und
@@ -908,9 +908,13 @@ Dateien, die Liste und ihre Signatur ab; die entpackte App und der
 Release-Text im selben Ordner bleiben lokal. Vorher prüft
 `tool/check_ci.dart`, dass der Gitea-Lauf sowie Tests und Build-Checks des
 Tags auf GitHub bestanden haben; ausgelassen wird das nur mit einer
-Begründung in `FAMIO_CI_OVERRIDE`. Die Tokens bleiben
-ausschließlich in `GITEA_TOKEN` und `GITHUB_TOKEN` (nur Lesezugriff auf
-Actions) außerhalb des Repositories. Release-Builds, CI und der
+Begründung in `FAMIO_CI_OVERRIDE`. Bekommt ein GitHub-Job gar keinen
+Rechner (das passierte mit macOS), meldet die Prüfung das gesondert; mit
+`GITHUB_RERUN_TOKEN` (Actions: Lesen und Schreiben) startet sie den Lauf
+einmal neu und wartet auf ihn (`FAMIO_CI_WAIT_MINUTES`, Standard 90). Die
+Tokens bleiben ausschließlich in `GITEA_TOKEN`, `GITHUB_TOKEN` (nur
+Lesezugriff auf Actions) und `GITHUB_RERUN_TOKEN` außerhalb des
+Repositories. Release-Builds, CI und der
 Release-Check nutzen dieselbe Flutter-Version (`dart tool/check_versions.dart`
 prüft die Workflows, `tool/release.sh` den Mac und die Build-Rechner).
 

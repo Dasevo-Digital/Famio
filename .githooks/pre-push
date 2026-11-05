@@ -62,6 +62,7 @@ step() {
 
 step bash tool/repo_privacy_check.sh
 step dart tool/check_versions.dart
+step bash tool/format_check.sh
 for pkg in packages/famio_shared packages/famio_client server; do
   step bash -c "cd $pkg && dart pub get && dart analyze && dart test"
 done

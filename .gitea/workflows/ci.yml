@@ -46,6 +46,8 @@ jobs:
         run: bash tool/publish_gitea_release_test.sh
       - name: Check release version
         run: dart tool/check_versions.dart
+      - name: Formatting
+        run: bash tool/format_check.sh
       - name: Shared package
         working-directory: packages/famio_shared
         run: dart pub get && dart analyze && dart test

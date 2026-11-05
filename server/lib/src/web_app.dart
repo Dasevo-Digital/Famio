@@ -146,8 +146,9 @@ class WebApp {
     final accepted = request.headers.containsKey('x-ingress-path')
         ? const <String>{}
         : {
-            for (final part
-                in (request.headers['accept-encoding'] ?? '').split(','))
+            for (final part in (request.headers['accept-encoding'] ?? '').split(
+              ',',
+            ))
               part.split(';').first.trim(),
           };
     var send = plain;

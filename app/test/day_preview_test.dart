@@ -64,15 +64,11 @@ void main() {
         ),
       )
       ..saveTask(Task(id: 't1', title: 'Rasen mähen', due: day))
-      ..saveTask(
-        Task(id: 't2', title: 'Steuer', due: DateTime(2026, 10, 20)),
-      )
+      ..saveTask(Task(id: 't2', title: 'Steuer', due: DateTime(2026, 10, 20)))
       ..saveTask(
         Task(id: 't3', title: 'Nicht meins', due: day, assigneeIds: ['mama']),
       )
-      ..saveTask(
-        Task(id: 't4', title: 'Später', due: DateTime(2026, 10, 27)),
-      );
+      ..saveTask(Task(id: 't4', title: 'Später', due: DateTime(2026, 10, 27)));
     final p = buildDayPreview(engine, day)!;
     expect(p.title, 'Dein Tag · 2 Termine');
     expect(p.lines, [

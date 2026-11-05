@@ -115,8 +115,9 @@ void main() {
     }
   }
 
-  Future<Set<String>> titlesOf(FamioApiClient api, String collection) async =>
-      {for (final r in (await pull(api, collection)).values) '${r.data['title']}'};
+  Future<Set<String>> titlesOf(FamioApiClient api, String collection) async => {
+    for (final r in (await pull(api, collection)).values) '${r.data['title']}',
+  };
 
   Future<void> waitFor(
     WidgetTester tester,
@@ -284,7 +285,11 @@ void main() {
   }
 
   /// The Material date range picker, typed in.
-  Future<void> pickRange(WidgetTester tester, DateTime from, DateTime to) async {
+  Future<void> pickRange(
+    WidgetTester tester,
+    DateTime from,
+    DateTime to,
+  ) async {
     await tap(tester, find.byTooltip('Zur Texteingabe wechseln'));
     await enter(
       tester,
@@ -403,11 +408,7 @@ void main() {
       'E2E Garage aufräumen',
       assignees: [_adminName, f.bea.displayName],
     );
-    await newTask(
-      tester,
-      'E2E Gastaufgabe',
-      assignees: [f.guest.displayName],
-    );
+    await newTask(tester, 'E2E Gastaufgabe', assignees: [f.guest.displayName]);
     await newTask(tester, 'E2E Nur für mich', audience: de.docsOnlyMe);
     await newTask(
       tester,
@@ -571,8 +572,7 @@ void main() {
     final slot = RegExp(r'^\d\d:\d\d – \d\d:\d\d$');
     String firstSlotTomorrow() {
       final texts = [
-        for (final e in find.byType(Text).evaluate())
-          ?(e.widget as Text).data,
+        for (final e in find.byType(Text).evaluate()) ?(e.widget as Text).data,
       ];
       final i = texts.indexOf(heading);
       if (i < 0) return '';
@@ -751,7 +751,11 @@ void main() {
           matching: find.text(MoneyKind.gift.label),
         ),
       );
-      await enter(tester, find.widgetWithText(TextField, de.commonAmount), euros);
+      await enter(
+        tester,
+        find.widgetWithText(TextField, de.commonAmount),
+        euros,
+      );
       await leaveField(tester);
       await tap(tester, find.text(de.choresBook).last);
       await dialogClosed(tester);
@@ -779,9 +783,7 @@ void main() {
     expect(balance, greaterThanOrEqualTo(1000));
     await waitFor(
       tester,
-      find.text(
-        de.savingsGoalProgress(formatEuro(balance), formatEuro(5000)),
-      ),
+      find.text(de.savingsGoalProgress(formatEuro(balance), formatEuro(5000))),
     );
     final weeks = ((5000 - balance) / 500).ceil();
     var payday = inDays(1);
@@ -822,7 +824,11 @@ void main() {
     );
     expect(reply.rejected.map((r) => r.id), contains('e2e-goal-other-$ms'));
     await engine.sync();
-    await waitFor(tester, find.text('E2E Lego'), timeout: const Duration(seconds: 60));
+    await waitFor(
+      tester,
+      find.text('E2E Lego'),
+      timeout: const Duration(seconds: 60),
+    );
     final serverGoals = await titlesOf(f.admin, Collections.savingsGoals);
     expect(serverGoals, contains('E2E Lego'));
     expect(serverGoals, isNot(contains('E2E Fremdes Ziel')));
@@ -1019,15 +1025,18 @@ void main() {
     }
     await tester.pump(const Duration(seconds: 1));
     tip = tester.getRect(find.byType(SectionTipCard));
-    final tiles = find.byWidgetPredicate((w) => w is SoftCard).evaluate().where(
-      (e) => find
-          .descendant(
-            of: find.byType(SectionTipCard),
-            matching: find.byWidget(e.widget),
-          )
-          .evaluate()
-          .isEmpty,
-    );
+    final tiles = find
+        .byWidgetPredicate((w) => w is SoftCard)
+        .evaluate()
+        .where(
+          (e) => find
+              .descendant(
+                of: find.byType(SectionTipCard),
+                matching: find.byWidget(e.widget),
+              )
+              .evaluate()
+              .isEmpty,
+        );
     final last = tiles
         .map((e) => tester.getRect(find.byWidget(e.widget)))
         .reduce((a, b) => a.bottom > b.bottom ? a : b);
@@ -1073,8 +1082,10 @@ void main() {
     await eventually(
       tester,
       'Carl gets the idea',
-      () async =>
-          (await titlesOf(carl, Collections.wishes)).contains('E2E Kletterschuhe'),
+      () async => (await titlesOf(
+        carl,
+        Collections.wishes,
+      )).contains('E2E Kletterschuhe'),
     );
     final bea = await sessionOf(f.bea);
     expect(
@@ -1463,9 +1474,10 @@ void main() {
     final bea = await sessionOf(f.bea);
     late SyncRecord task;
     await eventually(tester, 'Bea gets the task and my answer', () async {
-      final tasks = (await pull(bea, Collections.tasks)).values.where(
-        (r) => r.data['title'] == 'E2E Rasen mähen',
-      );
+      final tasks = (await pull(
+        bea,
+        Collections.tasks,
+      )).values.where((r) => r.data['title'] == 'E2E Rasen mähen');
       if (tasks.isEmpty) return false;
       task = tasks.first;
       final answers = await pull(bea, Collections.assignmentResponses);

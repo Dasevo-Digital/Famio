@@ -44,6 +44,9 @@ jobs:
         with:
           flutter-version: "3.47.9"
           channel: stable
+      # The pinned SDK's formatter (the dart job above takes the newest).
+      - name: Formatting
+        run: bash tool/format_check.sh
       - name: Analyze and test
         working-directory: app
         run: flutter pub get && flutter analyze && flutter test

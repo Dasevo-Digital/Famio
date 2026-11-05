@@ -233,8 +233,9 @@ class AppUpdates {
       }
       // Written last: a package counts only together with its signed list.
       File(p.join(folder.path, 'SHA256SUMS.txt')).writeAsStringSync(sums);
-      File(p.join(folder.path, 'SHA256SUMS.txt.sig'))
-          .writeAsStringSync(signature);
+      File(
+        p.join(folder.path, 'SHA256SUMS.txt.sig'),
+      ).writeAsStringSync(signature);
       for (final other in Directory(dir).listSync()) {
         if (p.basename(other.path) != version) {
           other.deleteSync(recursive: true);

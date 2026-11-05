@@ -2,7 +2,9 @@
 # Creates (or reuses) a Gitea release and uploads verified release artifacts:
 # exactly the files listed in SHA256SUMS.txt, the list and its signature.
 # Usage: GITEA_TOKEN=... GITHUB_TOKEN=... tool/publish_gitea_release.sh VERSION /path/to/release
-# (both tokens also read the CI runs of the tag, see tool/check_ci.dart).
+# (both tokens also read the CI runs of the tag, see tool/check_ci.dart;
+# GITHUB_RERUN_TOKEN, if set, starts a GitHub run again whose job never got
+# a machine).
 set -eu
 
 VERSION=${1:?Usage: GITEA_TOKEN=... $0 VERSION RELEASE_DIR}

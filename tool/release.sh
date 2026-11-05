@@ -23,8 +23,9 @@
 # the next smoke test, default ~/Famio/release-work), FAMIO_PRIVATE_PATTERNS
 # (file with one extended regex per line: names, team ids, device ids, home
 # network addresses – kept outside the repository), FAMIO_ANDROID_EMULATOR
-# (running emulator that starts the 64-bit package once, default
-# emulator-5554; "none" leaves the start out – never a phone).
+# (running emulator that starts the 64-bit package once, e.g. emulator-5572;
+# unset = the one emulator adb lists; "none" leaves the start out – never a
+# phone).
 set -euo pipefail
 
 V=${1:?Aufruf: bash tool/release.sh <version>}
@@ -35,8 +36,9 @@ WORK=${FAMIO_RELEASE_WORK:-$HOME/Famio/release-work}
 LINUX=${FAMIO_LINUX_BUILD_HOST:-}
 WINDOWS=${FAMIO_WINDOWS_BUILD_HOST:-}
 PATTERNS=${FAMIO_PRIVATE_PATTERNS:-}
-EMULATOR=${FAMIO_ANDROID_EMULATOR:-emulator-5554}
+EMULATOR=${FAMIO_ANDROID_EMULATOR:-}
 ANDROID_SDK=${ANDROID_HOME:-/opt/homebrew/share/android-commandlinetools}
+ADB="$ANDROID_SDK/platform-tools/adb"
 BUILD_TOOLS=$(ls -d "$ANDROID_SDK"/build-tools/* | sort -V | tail -1)
 JAVA_HOME=${JAVA_HOME:-/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home}
 export JAVA_HOME
@@ -52,6 +54,22 @@ step "Stand prüfen"
 [ -z "$(git status --porcelain --untracked-files=no)" ] ||
   fail "Arbeitskopie hat Änderungen"
 [ "$(cat VERSION)" = "$V" ] || fail "VERSION ist $(cat VERSION), nicht $V"
+# The emulator for the start check, found now rather than after all builds:
+# 2.0.32 failed only at the very end because emulator-5554 was not running.
+if [ -z "$EMULATOR" ]; then
+  running=$("$ADB" devices 2> /dev/null | awk '$1 ~ /^emulator-/ && $2 == "device" { print $1 }')
+  case $(printf '%s' "$running" | grep -c .) in
+    1) EMULATOR=$running ;;
+    0) fail "Kein Android-Emulator läuft (emulator -avd famio_test36 -no-window) – oder FAMIO_ANDROID_EMULATOR=none" ;;
+    *) fail "Mehrere Emulatoren laufen ($(echo $running)): FAMIO_ANDROID_EMULATOR=<einer davon>" ;;
+  esac
+fi
+if [ "$EMULATOR" != none ]; then
+  [[ "$EMULATOR" == emulator-* ]] || fail "FAMIO_ANDROID_EMULATOR muss ein Emulator sein"
+  [ "$("$ADB" -s "$EMULATOR" get-state 2> /dev/null)" = device ] ||
+    fail "Emulator $EMULATOR läuft nicht – oder FAMIO_ANDROID_EMULATOR=none"
+  echo "Startprüfung auf $EMULATOR"
+fi
 dart tool/check_versions.dart
 # The same Flutter as the workflows that test and check the release.
 FLUTTER=$(dart tool/check_versions.dart --flutter)
@@ -221,10 +239,8 @@ for f in "$A1" "$A2"; do
 done
 # The release package must start: only a shrunk build shows such errors.
 if [ "$EMULATOR" != none ]; then
-  [[ "$EMULATOR" == emulator-* ]] || fail "FAMIO_ANDROID_EMULATOR muss ein Emulator sein"
-  ADB="$ANDROID_SDK/platform-tools/adb"
   [ "$("$ADB" -s "$EMULATOR" get-state 2> /dev/null)" = device ] ||
-    fail "Emulator $EMULATOR läuft nicht (emulator -avd famio_test -no-window) oder FAMIO_ANDROID_EMULATOR=none"
+    fail "Emulator $EMULATOR läuft nicht mehr (zu Beginn lief er noch)"
   "$ADB" -s "$EMULATOR" install -r "$A2" > /dev/null
   "$ADB" -s "$EMULATOR" logcat -c
   "$ADB" -s "$EMULATOR" shell am start -n de.status403.famio/.MainActivity > /dev/null

@@ -58,8 +58,8 @@ void main() {
                 for (final s in sessions.values)
                   {
                     ...s,
-                    'createdAt': (s['createdAt']! as DateTime)
-                        .millisecondsSinceEpoch,
+                    'createdAt':
+                        (s['createdAt']! as DateTime).millisecondsSinceEpoch,
                     'lastSeen': now.millisecondsSinceEpoch,
                   },
               ],
@@ -92,9 +92,9 @@ void main() {
     await tester.pumpAndSettle();
     final context = tester.element(find.byType(Scaffold).first);
     unawaited(
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const MyDevicesScreen()),
-      ),
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const MyDevicesScreen())),
     );
     await tester.pumpAndSettle();
 

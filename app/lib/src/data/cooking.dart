@@ -10,7 +10,8 @@ List<Duration> stepTimers(String step) {
     final seconds = unit.startsWith(RegExp('se[kcg]'))
         ? amount // Sekunden, seconds, segundos
         : unit.startsWith(RegExp('st|h'))
-        ? amount * 3600 // Stunden, hours, horas
+        ? amount *
+              3600 // Stunden, hours, horas
         : amount * 60; // Minuten, minutes, minutos
     final d = Duration(seconds: seconds.round());
     // Longer than a day is no kitchen timer ("2 Stunden ziehen lassen" is).

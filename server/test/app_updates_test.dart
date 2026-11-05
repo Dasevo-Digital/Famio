@@ -221,7 +221,11 @@ void main() {
     await call(
       'POST',
       'api/admin/users',
-      body: {'username': 'ben', 'password': 'wolke-tisch-8', 'displayName': 'Ben'},
+      body: {
+        'username': 'ben',
+        'password': 'wolke-tisch-8',
+        'displayName': 'Ben',
+      },
     );
     final login = await app.handler(
       Request(

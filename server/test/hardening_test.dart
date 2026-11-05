@@ -85,7 +85,10 @@ void main() {
       'api/me/password',
       auth: token,
       headers: {'content-type': 'text/plain'},
-      body: jsonEncode({'currentPassword': 'tulpe-regal-7', 'newPassword': 'x'}),
+      body: jsonEncode({
+        'currentPassword': 'tulpe-regal-7',
+        'newPassword': 'x',
+      }),
     );
     expect(r.statusCode, 415);
   });
