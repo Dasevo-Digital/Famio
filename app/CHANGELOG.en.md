@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.33 – Quick add
+
+- The start page has "Quick add": a line like "Thursday 4 pm dentist",
+  "tomorrow take out the bins" or "in 3 days pick up the parcel" becomes
+  an event or a task. The editor opens filled in; you check it and save.
+- If the line can mean two days ("next Thursday"), Famio asks which one
+  first.
+- It also works in German and Spanish and is read on the device only.
+
 ## 2.0.32 – "That wasn't me" and Android back
 
 - Under Settings → My devices, new sign-ins show "That wasn't me": Famio

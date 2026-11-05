@@ -4,6 +4,17 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.33 – Schnell eintragen
+
+- Auf der Startseite steht „Schnell eintragen“: Aus einer Zeile wie
+  „Donnerstag 16 Uhr Kinderarzt“, „morgen Müll rausbringen“ oder „in 3
+  Tagen Paket abholen“ wird ein Termin oder eine Aufgabe. Der Editor öffnet
+  sich ausgefüllt, du prüfst und speicherst.
+- Kann die Zeile zwei Tage meinen („nächsten Donnerstag“), fragt Famio
+  vorher, welcher gemeint ist.
+- Das klappt auch auf Englisch und Spanisch und wird nur auf dem Gerät
+  gelesen.
+
 ## 2.0.32 – „Das war ich nicht“ und Android-Zurück
 
 - Unter Einstellungen → Meine Geräte steht bei neuen Anmeldungen „Das war

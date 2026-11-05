@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.33 – Añadir rápido
+
+- La página de inicio tiene «Añadir rápido»: una línea como «jueves a las
+  16 pediatra», «mañana sacar la basura» o «en 3 días recoger el paquete»
+  se convierte en una cita o una tarea. El editor se abre ya rellenado; lo
+  revisas y guardas.
+- Si la línea puede referirse a dos días («el próximo jueves»), Famio
+  pregunta antes cuál.
+- También funciona en alemán e inglés y solo se lee en el dispositivo.
+
 ## 2.0.32 – «No fui yo» y el botón Atrás de Android
 
 - En Ajustes → Mis dispositivos, los inicios de sesión nuevos muestran
