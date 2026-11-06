@@ -220,8 +220,13 @@ void main() {
     await b.sync();
 
     // Both edit while "offline"; B edits later and should win everywhere.
+    // Later by B's clock: each device corrects its clock by the server's and
+    // the two can differ by more than a fixed pause (CI, 06.11.2026).
     a.put(Collections.tasks, 't1', {'title': 'von A'});
-    await Future<void>.delayed(const Duration(milliseconds: 5));
+    final edited = a.store.get(Collections.tasks, 't1')!.record.updatedAt;
+    while (b.now <= edited) {
+      await Future<void>.delayed(const Duration(milliseconds: 1));
+    }
     b.put(Collections.tasks, 't1', {'title': 'von B'});
     await b.sync();
     await a.sync();
