@@ -4,6 +4,16 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.36 – Recipes come in more easily
+
+- The recipe import now also takes the photo from Chefkoch and similar sites.
+- Android: “Share to Famio” imports a link as a recipe right away. Everywhere
+  this works from the family inbox, and the import has a button to paste the
+  copied link.
+- While editing, a recipe shows its photo. It can be removed, and older recipes
+  can get theirs from the source.
+- The chat counts unread messages faster.
+
 ## 2.0.35 – Tiles, salary and recipe photos
 
 - Server administration → Areas now lets you hide each tile of the start page

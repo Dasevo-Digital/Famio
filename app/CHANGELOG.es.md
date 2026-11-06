@@ -4,6 +4,17 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.36 – Recetas más fáciles de importar
+
+- La importación de recetas ahora también toma la foto de Chefkoch y sitios
+  parecidos.
+- Android: con «Compartir con Famio» un enlace se importa directamente como
+  receta. En todos los dispositivos funciona desde la bandeja familiar, y la
+  importación tiene un botón para pegar el enlace copiado.
+- Al editar, la receta muestra su foto. Se puede quitar, y las recetas antiguas
+  pueden traerla de la fuente.
+- El chat cuenta más rápido los mensajes sin leer.
+
 ## 2.0.35 – Tarjetas, sueldo y fotos de recetas
 
 - En Administración del servidor → Áreas se puede ocultar cada tarjeta de la

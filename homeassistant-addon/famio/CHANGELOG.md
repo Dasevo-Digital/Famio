@@ -2,6 +2,17 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.36 – Rezepte einfacher übernehmen
+
+- Der Rezept-Import übernimmt das Foto jetzt auch von Chefkoch und ähnlichen
+  Seiten.
+- Android: Ein Link lässt sich per „Teilen an Famio“ gleich als Rezept
+  importieren. Überall geht das aus dem Familien-Eingang, und der Import hat
+  einen Knopf zum Einfügen des kopierten Links.
+- Beim Bearbeiten zeigt das Rezept sein Foto. Es lässt sich entfernen und bei
+  älteren Rezepten von der Quelle nachholen.
+- Der Chat zählt ungelesene Nachrichten schneller.
+
 ## 2.0.35 – Kacheln, Gehalt und Rezeptfotos
 
 - Unter Server-Verwaltung → Bereiche lässt sich jede Kachel der Startseite
