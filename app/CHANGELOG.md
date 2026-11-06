@@ -4,6 +4,21 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.34 – Gesundheitsdaten besser geschützt
+
+- Neu: App-Sperre unter Einstellungen → Dieses Gerät. Famio fragt dann nach
+  Fingerabdruck, Gesicht oder Geräte-PIN (Android, iPhone, iPad, Mac).
+- Gesundheitsdaten erhalten nur Erwachsene und ausgewählte Personen, Home
+  Assistant und Wandanzeige nie. Kinder sehen sie nur, wenn sie ausgewählt sind.
+- Medikationspläne und Kinderprofile ändern nur Erwachsene; Kinder können
+  Einnahmen weiter abhaken.
+- Medikamente ohne Auswahl bleiben privat, neue Gesundheitsdokumente starten
+  mit „Nur ich“.
+- Vertrauliche Termine sehen Gäste und Kinder nur, wenn sie dabei sind.
+  Widget, Wandanzeige und Mitteilungen nennen keinen Titel.
+- „Inhalte anzeigen“ aus lässt auch Erinnerungen nichts mehr verraten.
+- Wird ein Konto gelöscht, gehen dessen eigene Gesundheitsdaten mit.
+
 ## 2.0.33 – Schnell eintragen
 
 - Auf der Startseite steht „Schnell eintragen“: Aus einer Zeile wie

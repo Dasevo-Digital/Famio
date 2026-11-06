@@ -4,6 +4,21 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.34 – Datos de salud mejor protegidos
+
+- Nuevo: bloqueo de la app en Ajustes → Este dispositivo. Famio pide entonces
+  la huella, el rostro o el PIN del dispositivo (Android, iPhone, iPad, Mac).
+- Los datos de salud solo llegan a adultos y personas elegidas, nunca a Home
+  Assistant ni a la pantalla de pared. Los niños solo los ven si se les elige.
+- Solo los adultos cambian los planes de medicación y los perfiles de los
+  niños; los niños pueden seguir marcando las tomas.
+- Los medicamentos sin nadie elegido siguen siendo privados, y los documentos
+  de salud nuevos empiezan como «Solo yo».
+- Invitados y niños solo ven las citas confidenciales en las que participan.
+  El widget, la pantalla de pared y las notificaciones no muestran el título.
+- Con «Mostrar contenido» desactivado, los recordatorios tampoco revelan nada.
+- Al eliminar una cuenta, sus propios datos de salud se eliminan con ella.
+
 ## 2.0.33 – Añadir rápido
 
 - La página de inicio tiene «Añadir rápido»: una línea como «jueves a las

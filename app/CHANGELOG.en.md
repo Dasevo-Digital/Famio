@@ -4,6 +4,21 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.34 – Health data better protected
+
+- New: app lock under Settings → This device. Famio then asks for your
+  fingerprint, face or device PIN (Android, iPhone, iPad, Mac).
+- Health data only goes to adults and people chosen for it, never to Home
+  Assistant or the wall display. Children only see it if they are chosen.
+- Only adults change medication plans and child profiles; children can
+  still tick off doses.
+- Medications with nobody chosen stay private, and new health documents
+  start as "Only me".
+- Guests and children only see confidential events they take part in. The
+  widget, wall display and notifications show no title.
+- With "Show contents" off, reminders give nothing away either.
+- When an account is deleted, its own health data goes with it.
+
 ## 2.0.33 – Quick add
 
 - The start page has "Quick add": a line like "Thursday 4 pm dentist",
