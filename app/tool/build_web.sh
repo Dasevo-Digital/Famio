@@ -4,6 +4,12 @@
 # add-on take it from there.
 set -eu
 cd "$(dirname "$0")/.."
+# tool/mac_install.sh leaves build as a link to build.noindex. With it, this
+# build reports success but leaves out main.dart.js (06.11.2026).
+if [ -L build ]; then
+  rm build
+  mv build.noindex build
+fi
 flutter build web --release --no-web-resources-cdn "$@"
 rm -rf ../server/web
 mkdir -p ../server/web
