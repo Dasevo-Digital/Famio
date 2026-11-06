@@ -2,6 +2,17 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.35 – Kacheln, Gehalt und Rezeptfotos
+
+- Unter Server-Verwaltung → Bereiche lässt sich jede Kachel der Startseite
+  einzeln ausblenden. Der Bereich bleibt im Menü.
+- Finanzen: Gehalt ab dem 15. zählt für den Folgemonat, das Gehalt vom
+  28. Oktober steht also im November. Mit „Zählt für den Folgemonat“ lässt sich
+  das je Buchung ändern, auch für andere Einnahmen.
+- Rezepte zeigen ihr Foto wieder. Dasselbe galt für „Heute vor einem Jahr“, den
+  Jahresrückblick und die Diashow.
+- Der Rezept-Import übernimmt auch das Foto der Seite.
+
 ## 2.0.34 – Gesundheitsdaten besser geschützt
 
 - Neu: App-Sperre unter Einstellungen → Dieses Gerät. Famio fragt dann nach

@@ -4,6 +4,17 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.35 – Tarjetas, sueldo y fotos de recetas
+
+- En Administración del servidor → Áreas se puede ocultar cada tarjeta de la
+  página de inicio por separado. El área sigue en el menú.
+- Dinero: el sueldo a partir del día 15 cuenta para el mes siguiente; el del
+  28 de octubre aparece en noviembre. Con «Cuenta para el mes siguiente» se
+  cambia por apunte, también para otros ingresos.
+- Las recetas vuelven a mostrar su foto. Lo mismo vale para «Hoy hace un año», el
+  resumen del año y la presentación de fotos.
+- La importación de recetas también toma la foto de la página.
+
 ## 2.0.34 – Datos de salud mejor protegidos
 
 - Nuevo: bloqueo de la app en Ajustes → Este dispositivo. Famio pide entonces

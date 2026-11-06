@@ -143,7 +143,7 @@ packages:
       path: "../../server"
       relative: true
     source: path
-    version: "2.0.34"
+    version: "2.0.35"
   famio_shared:
     dependency: "direct main"
     description:

@@ -4,6 +4,17 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.35 – Tiles, salary and recipe photos
+
+- Server administration → Areas now lets you hide each tile of the start page
+  on its own. The area stays in the menu.
+- Money: salary from the 15th on counts for the next month, so the salary of
+  28 October shows in November. “Counts for the next month” changes this per
+  booking, for other income too.
+- Recipes show their photo again. The same went for “One year ago today”, the
+  year in review and the slideshow.
+- The recipe import also takes over the page's photo.
+
 ## 2.0.34 – Health data better protected
 
 - New: app lock under Settings → This device. Famio then asks for your
