@@ -70,6 +70,9 @@ if [ "$EMULATOR" != none ]; then
     fail "Emulator $EMULATOR läuft nicht – oder FAMIO_ANDROID_EMULATOR=none"
   echo "Startprüfung auf $EMULATOR"
 fi
+# Now too: the remote builds below keep running when this script stops, and
+# a second attempt then collides with them (2.0.34).
+docker info > /dev/null 2>&1 || fail "Docker läuft nicht"
 dart tool/check_versions.dart
 # The same Flutter as the workflows that test and check the release.
 FLUTTER=$(dart tool/check_versions.dart --flutter)

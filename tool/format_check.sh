@@ -24,13 +24,13 @@ for pubspec in $(git ls-files '*pubspec.yaml'); do
   files=$(git ls-files "$dir" | grep '\.dart$' || true)
   [ -n "$files" ] || continue
   printf '%s\n' "$files" | tr '\n' '\0' |
-    xargs -0 dart format "${check[@]}" --language-version="$version" 2>/dev/null ||
+    xargs -0 dart format ${check[@]+"${check[@]}"} --language-version="$version" 2>/dev/null ||
     failed=1
 done
 # Files outside every package (tool/): the SDK's own language version.
 rest=$(git ls-files '*.dart' | grep -v -E "^($(IFS='|'; echo "${packages[*]}"))/" || true)
 if [ -n "$rest" ]; then
-  printf '%s\n' "$rest" | tr '\n' '\0' | xargs -0 dart format "${check[@]}" || failed=1
+  printf '%s\n' "$rest" | tr '\n' '\0' | xargs -0 dart format ${check[@]+"${check[@]}"} || failed=1
 fi
 if [ "$failed" -ne 0 ] && [ ${#check[@]} -gt 0 ]; then
   echo "Nicht formatiert (bash tool/format_check.sh --fix)" >&2
