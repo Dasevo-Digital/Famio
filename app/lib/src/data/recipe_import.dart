@@ -29,7 +29,10 @@ ImportedRecipe? recipeFromHtml(
     if (recipe != null) {
       return (
         recipe: _toRecipe(recipe, id: id, source: source),
-        image: _imageUrl(recipe['image'], source),
+        image:
+            _imageUrl(recipe['image'], source, _nodes(json)) ??
+            _imageUrl(recipe['thumbnailUrl'], source, const {}) ??
+            _pageImage(html, source),
       );
     }
   }
@@ -81,18 +84,57 @@ Map<String, Object?>? _findRecipe(Object? json) {
   return null;
 }
 
-/// schema.org `image`: an address, an `ImageObject`, or a list of them.
-Uri? _imageUrl(Object? image, String source) {
+/// The nodes of a JSON-LD document by their `@id`: in a `@graph`, `image` is
+/// often only a reference to one (Chefkoch, sites with Yoast).
+Map<Object?, Map<dynamic, dynamic>> _nodes(Object? json) {
+  final nodes = <Object?, Map<dynamic, dynamic>>{};
+  void collect(Object? value) {
+    if (value is List) {
+      value.forEach(collect);
+    } else if (value is Map) {
+      if (value.containsKey('@id') && value.length > 1) {
+        nodes[value['@id']] = value;
+      }
+      value.values.forEach(collect);
+    }
+  }
+
+  collect(json);
+  return nodes;
+}
+
+/// schema.org `image`: an address, an `ImageObject`, a reference to one in
+/// [nodes], or a list of them. A followed reference leaves [nodes], so that
+/// references in circles end.
+Uri? _imageUrl(Object? image, String source, Map<Object?, Map> nodes) {
   if (image is List) {
-    return image.map((i) => _imageUrl(i, source)).nonNulls.firstOrNull;
+    return image.map((i) => _imageUrl(i, source, nodes)).nonNulls.firstOrNull;
   }
   if (image is Map) {
-    return _imageUrl(image['url'] ?? image['contentUrl'], source);
+    final address =
+        image['url'] ?? image['contentUrl'] ?? nodes.remove(image['@id']);
+    return _imageUrl(address, source, nodes);
   }
   if (image is! String || image.trim().isEmpty) return null;
-  final url = Uri.tryParse(image.trim());
+  final url = Uri.tryParse(_unescape(image.trim()));
   if (url == null) return null;
   return url.hasScheme ? url : Uri.tryParse(source)?.resolveUri(url);
+}
+
+/// The picture a page names for sharing (`og:image`).
+Uri? _pageImage(String html, String source) {
+  final image = RegExp(
+    r"""property=["']og:image(:secure_url)?["']""",
+    caseSensitive: false,
+  );
+  final content = RegExp(r"""content=["']([^"']+)["']""", caseSensitive: false);
+  final tags = RegExp(r'<meta\b[^>]*>', caseSensitive: false).allMatches(html);
+  for (final tag in tags) {
+    if (!image.hasMatch(tag[0]!)) continue;
+    final url = _imageUrl(content.firstMatch(tag[0]!)?[1], source, const {});
+    if (url != null) return url;
+  }
+  return null;
 }
 
 Recipe _toRecipe(

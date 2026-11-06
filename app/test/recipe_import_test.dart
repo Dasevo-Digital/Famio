@@ -106,4 +106,72 @@ void main() {
       'Eier': '3',
     });
   });
+
+  test('the photo may be a reference inside the @graph', () {
+    // As Chefkoch and sites with Yoast describe it.
+    const page = '''
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[
+ {"@type":"Recipe","name":"Lasagne","image":{"@id":"https://rezepte.test/l#bild"}},
+ {"@type":"WebPage","primaryImageOfPage":{"@id":"https://rezepte.test/l#bild"}},
+ {"@type":"ImageObject","@id":"https://rezepte.test/l#bild",
+  "url":"https://bilder.test/lasagne.jpg","width":960,"height":540}
+]}</script>''';
+    expect(
+      recipeFromHtml(page, id: 'r1')?.image,
+      Uri.parse('https://bilder.test/lasagne.jpg'),
+    );
+  });
+
+  test('a reference that leads nowhere or in circles gives no photo', () {
+    Uri? image(String nodes) => recipeFromHtml(
+      '<script type="application/ld+json">{"@graph":['
+      '{"@type":"Recipe","name":"x","image":{"@id":"#a"}}$nodes]}</script>',
+      id: 'r1',
+    )?.image;
+    expect(image(''), isNull);
+    expect(image(',{"@id":"#a","url":{"@id":"#a"}}'), isNull);
+    expect(
+      image(',{"@id":"#a","url":{"@id":"#b"}},{"@id":"#b","url":{"@id":"#a"}}'),
+      isNull,
+    );
+  });
+
+  test('without a photo in the recipe the page has its own', () {
+    Uri? image(String head) => recipeFromHtml(
+      '<html><head>$head</head><script type="application/ld+json">'
+      '{"@type":"Recipe","name":"x"}</script></html>',
+      id: 'r1',
+      source: 'https://rezepte.test/kuchen/apfel',
+    )?.image;
+    final photo = Uri.parse('https://bilder.test/a.jpg?w=960&h=540');
+    expect(
+      image(
+        '<meta property="og:image" '
+        'content="https://bilder.test/a.jpg?w=960&amp;h=540">',
+      ),
+      photo,
+    );
+    expect(
+      image(
+        "<meta content='https://bilder.test/a.jpg?w=960&amp;h=540' "
+        "property='og:image:secure_url'/>",
+      ),
+      photo,
+    );
+    expect(
+      image('<meta property="og:image" content="/fotos/a.jpg">'),
+      Uri.parse('https://rezepte.test/fotos/a.jpg'),
+    );
+    expect(image('<meta property="og:title" content="Apfelkuchen">'), isNull);
+    // The address of the recipe's own photo goes first.
+    expect(
+      recipeFromHtml(
+        '<meta property="og:image" content="https://bilder.test/logo.png">'
+        '<script type="application/ld+json">{"@type":"Recipe","name":"x",'
+        '"image":"https://bilder.test/a.jpg"}</script>',
+        id: 'r1',
+      )?.image,
+      Uri.parse('https://bilder.test/a.jpg'),
+    );
+  });
 }
