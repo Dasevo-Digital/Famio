@@ -14,6 +14,11 @@ cd "$(git rev-parse --show-toplevel)"
 check=(--output=none --set-exit-if-changed)
 [ "${1:-}" = --fix ] && check=()
 
+# New files too: otherwise --fix passes them over until they are committed.
+dart_files() {
+  git ls-files --cached --others --exclude-standard "$1" | grep '\.dart$' || true
+}
+
 failed=0
 packages=()
 for pubspec in $(git ls-files '*pubspec.yaml'); do
@@ -21,14 +26,14 @@ for pubspec in $(git ls-files '*pubspec.yaml'); do
   version=$(sed -nE 's/^[[:space:]]+sdk:[[:space:]]*["'\'']?[\^>=]*([0-9]+\.[0-9]+).*/\1/p' "$pubspec" | head -1)
   [ -n "$version" ] || { echo "$pubspec: keine SDK-Version" >&2; exit 1; }
   packages+=("$dir")
-  files=$(git ls-files "$dir" | grep '\.dart$' || true)
+  files=$(dart_files "$dir")
   [ -n "$files" ] || continue
   printf '%s\n' "$files" | tr '\n' '\0' |
     xargs -0 dart format ${check[@]+"${check[@]}"} --language-version="$version" 2>/dev/null ||
     failed=1
 done
 # Files outside every package (tool/): the SDK's own language version.
-rest=$(git ls-files '*.dart' | grep -v -E "^($(IFS='|'; echo "${packages[*]}"))/" || true)
+rest=$(dart_files . | grep -v -E "^($(IFS='|'; echo "${packages[*]}"))/" || true)
 if [ -n "$rest" ]; then
   printf '%s\n' "$rest" | tr '\n' '\0' | xargs -0 dart format ${check[@]+"${check[@]}"} || failed=1
 fi
