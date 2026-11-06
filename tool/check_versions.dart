@@ -44,6 +44,11 @@ void main(List<String> args) {
     'server/pubspec.yaml': RegExp(r'^version:\s*([^\s]+)', multiLine: true),
     'custom_components/famio/manifest.json': RegExp(r'"version":\s*"([^"]+)"'),
     'server/lib/src/api.dart': RegExp(r"const serverVersion = '([^']+)'"),
+    // The client's tests use the server, and its lock file names the version.
+    'packages/famio_client/pubspec.lock': RegExp(
+      r'^  famio_server:\n(?:    .*\n)*?    version: "([^"]+)"',
+      multiLine: true,
+    ),
   };
   var failed = false;
   for (final entry in checks.entries) {
