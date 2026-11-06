@@ -402,6 +402,7 @@ class FamioApi {
       ..post('/api/calendar/subscriptions/<id>/refresh', _refreshSubscription)
       ..post('/api/calendar/ics-file', _icsFile)
       ..post('/api/web/page', _webPage)
+      ..post('/api/web/image', _webImage)
       ..post('/api/calendar/caldav/discover', _caldavDiscover)
       ..post('/api/calendar/google/connect', _googleConnect)
       ..get('/api/calendar/caldav', _caldavAccounts)

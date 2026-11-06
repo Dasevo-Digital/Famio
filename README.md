@@ -49,6 +49,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 |---|---|
 | Start-Übersicht (Familien-Dashboard) | ✅ |
 | Suche über alle Bereiche, offline auf dem Gerät | ✅ |
+| Server-Verwaltung → Bereiche: ganze Bereiche und einzelne Kacheln der Startseite für die Familie ein- und ausblenden | ✅ |
 | Schnell eintragen auf der Startseite: aus „Donnerstag 16 Uhr Kinderarzt“, „morgen Müll rausbringen“ oder „in 3 Tagen Paket abholen“ wird ein Termin- oder Aufgaben-Entwurf, der im Editor geprüft wird; kann der Text zwei Tage meinen („nächsten Donnerstag“), fragt Famio nach (Deutsch, Englisch, Spanisch, auf dem Gerät) | ✅ |
 | Familien-Eingang für noch unsortierte Texte, Links, Fotos und Scans; später als Aufgabe, Termin, Notiz, Dokument oder Einkauf einsortieren | ✅ |
 | Kurze Tour durch die wichtigsten Bereiche für neue Mitglieder (optional, je Rolle, jederzeit unter Einstellungen) und ein Tipp beim ersten Besuch jedes Bereichs (abschaltbar) | ✅ |
@@ -67,8 +68,8 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
-| Essen: Rezepte (Import von Webseiten), Kochmodus (Schritt für Schritt, Bildschirm bleibt an, Timer aus den Schritten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
-| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT) | ✅ |
+| Essen: Rezepte (Import von Webseiten samt Foto), Kochmodus (Schritt für Schritt, Bildschirm bleibt an, Timer aus den Schritten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
+| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT); Gehalt ab dem 15. zählt für den Folgemonat, je Buchung änderbar | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
 | PhotoVault: „Heute vor einem Jahr“ und Wandanzeige mit Fotos aus PhotoVault, Chat-Fotos als Beiträge an einen Link, Geburtstage aus dem Stammbaum (nur was noch nirgends steht) | ✅ |
@@ -589,7 +590,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 | Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht), Passkeys (WebAuthn) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; ein neues Gerät kann einmalig per fünf Minuten gültigem QR-Code gekoppelt werden; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung; „Das war ich nicht“ unter „Meine Geräte“ meldet das fremde Gerät ab und führt zum Passwortwechsel |
 | Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Gesundheitsdaten gehen unabhängig von `visibleTo` nie an Dienstkonten und an Kinderkonten nur, wenn sie benannt sind (`Collections.health`, auch Dokumente der Kategorie Gesundheit); wird ein Konto gelöscht, gehen seine eigenen Gesundheitsdaten mit; Wetter nur nach Zustimmung mit gerundeten Koordinaten |
-| Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten holt der Server für sie (ohne private Ziele, auch nicht über Weiterleitungen) |
+| Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten und ihre Fotos holt der Server (ohne private Ziele, auch nicht über Weiterleitungen) |
 | Server | Datenbank und Dateien verschlüsselt (SQLite3MultipleCiphers, ChaCha20-Poly1305), Schlüssel getrennt von den Daten (`FAMIO_KEY_FILE`); nur für den Famio-Benutzer lesbar (umask 077), redigiertes Request-Log, Audit-Log, Größenlimits |
 | Betrieb | Docker read-only ohne Capabilities; systemd-Sandbox (`systemd-analyze security`: 3.0 OK) |
 | Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt; optionale App-Sperre mit Fingerabdruck, Gesicht oder Geräte-PIN (nach einer Minute im Hintergrund, unter Einstellungen → Dieses Gerät; nicht unter Windows, Linux und im Browser), dazu verdeckt in der App-Übersicht und unter Android ohne Bildschirmfotos; „Inhalte anzeigen“ aus lässt auch Erinnerungen nichts mehr verraten; Kopien für andere Apps werden nach einer Stunde entfernt, unter Linux liegen sie im eigenen Benutzerordner |

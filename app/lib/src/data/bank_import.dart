@@ -678,7 +678,7 @@ BankDuplicate? bankDuplicate(BankTransaction t, List<BudgetEntry> entries) {
     }
     // The rent entered as monthly counts in every month.
     if (e.monthly
-        ? e.inMonth(t.date)
+        ? e.paidIn(t.date)
         : e.date.difference(t.date).inDays.abs() <= 3) {
       return BankDuplicate.likely;
     }

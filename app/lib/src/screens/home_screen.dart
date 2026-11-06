@@ -18,6 +18,7 @@ import '../widgets/data_builder.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'home_shell.dart';
+import 'home_tiles.dart';
 import 'kiosk_screen.dart';
 import '../data/budget_month.dart';
 import 'location/labels.dart';
@@ -155,29 +156,31 @@ class HomeScreen extends StatelessWidget {
             final columns = constraints.maxWidth >= 1100
                 ? 3
                 : (constraints.maxWidth >= 640 ? 2 : 1);
-            // Areas the family switched off get no tile either.
+            // Tiles the family switched off, and those of hidden areas.
             final hidden = AppScope.of(context).hiddenModules;
-            bool on(FamioSection s) => !hidden.contains(s.name);
+            bool on(HomeTile tile) => tile.shownWith(hidden);
             final memories = memoriesToday(engine, now);
             final showMemories =
+                on(HomeTile.memories) &&
                 !memories.isEmpty &&
                 AppScope.of(context).memoriesHiddenOn != dayKey(now);
             final tiles = [
-              if (!guest && engine.inboxItems.isNotEmpty)
+              if (on(HomeTile.inbox) && !guest && engine.inboxItems.isNotEmpty)
                 _InboxTile(engine: engine),
-              if (on(FamioSection.calendar)) _TodayTile(engine: engine),
-              WeatherTile(engine: engine),
+              if (on(HomeTile.today)) _TodayTile(engine: engine),
+              if (on(HomeTile.weather)) WeatherTile(engine: engine),
               if (showMemories) _MemoriesTile(memories: memories),
-              if (on(FamioSection.calendar) &&
-                  engine.countdowns(now).isNotEmpty)
+              if (on(HomeTile.countdown) && engine.countdowns(now).isNotEmpty)
                 _CountdownTile(engine: engine),
-              if (engine.nextWastePickup(now) != null)
+              if (on(HomeTile.waste) && engine.nextWastePickup(now) != null)
                 _WasteTile(engine: engine),
-              if (on(FamioSection.tasks)) _TasksTile(engine: engine),
-              if (!guest && engine.deadlinesSoon(now).isNotEmpty)
+              if (on(HomeTile.tasks)) _TasksTile(engine: engine),
+              if (on(HomeTile.deadlines) &&
+                  !guest &&
+                  engine.deadlinesSoon(now).isNotEmpty)
                 _DeadlinesTile(engine: engine),
-              if (on(FamioSection.shopping)) _ShoppingTile(engine: engine),
-              if (on(FamioSection.meals) &&
+              if (on(HomeTile.shopping)) _ShoppingTile(engine: engine),
+              if (on(HomeTile.meals) &&
                   engine
                       .plannedMeals(
                         DateUtils.dateOnly(now),
@@ -185,28 +188,30 @@ class HomeScreen extends StatelessWidget {
                       )
                       .isNotEmpty)
                 _MealsTile(engine: engine),
-              if (on(FamioSection.chores) &&
+              if (on(HomeTile.chores) &&
                   (engine.chores.isNotEmpty || engine.routines.isNotEmpty))
                 _ChoresTile(engine: engine),
-              if (on(FamioSection.chat)) _ChatTile(engine: engine),
-              if (!guest && on(FamioSection.location))
-                _WhereTile(engine: engine),
-              if (on(FamioSection.health) && engine.medications.isNotEmpty)
+              if (on(HomeTile.chat)) _ChatTile(engine: engine),
+              if (on(HomeTile.location) && !guest) _WhereTile(engine: engine),
+              if (on(HomeTile.medications) && engine.medications.isNotEmpty)
                 _MedsTile(engine: engine),
-              if (!guest && on(FamioSection.kids)) _KidsTile(engine: engine),
-              if (on(FamioSection.calendar) &&
+              if (on(HomeTile.kids) && !guest) _KidsTile(engine: engine),
+              if (on(HomeTile.birthdays) &&
                   upcomingBirthdays(engine, now).isNotEmpty)
                 _BirthdaysTile(engine: engine),
-              if (!guest && on(FamioSection.documents))
+              if (on(HomeTile.documents) && !guest)
                 _DocumentsTile(engine: engine),
-              if (on(FamioSection.budget) && engine.budgetEntries.isNotEmpty)
+              if (on(HomeTile.budget) && engine.budgetEntries.isNotEmpty)
                 _BudgetTile(engine: engine),
-              _NotesTile(engine: engine),
-              if (!guest &&
+              if (on(HomeTile.notes)) _NotesTile(engine: engine),
+              if (on(HomeTile.wishes) &&
+                  !guest &&
                   (engine.wishes.isNotEmpty ||
                       upcomingBirthdays(engine, now).isNotEmpty))
                 _WishesTile(engine: engine),
-              if (!guest && engine.loans.any((l) => !l.returned))
+              if (on(HomeTile.loans) &&
+                  !guest &&
+                  engine.loans.any((l) => !l.returned))
                 _LoansTile(engine: engine),
             ];
             const gap = 16.0;

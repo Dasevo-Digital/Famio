@@ -352,6 +352,8 @@
   "adminMembersMaySyncTasks": "Mitglieder dürfen Aufgaben und Einkaufslisten mit Bring! und Microsoft To Do abgleichen.",
   "commonSave": "Speichern",
   "adminAreasSaved": "Bereiche gespeichert",
+  "adminHomeTiles": "Kacheln auf der Startseite",
+  "adminHomeTilesHint": "Blendet nur die Kachel aus, der Bereich bleibt im Menü.",
   "adminParentsCode": "Eltern-Code",
   "adminCodeParentsCanPause": "Mit diesem Code können Eltern die Standortfreigabe eines Familienmitglieds pausieren oder auf einem Handy beenden. Kindern nicht verraten.",
   "adminNewCodeLeast4": "Neuer Code (mind. 4 Zeichen)",
@@ -478,7 +480,7 @@
   "adminSign": "Anmeldung",
   "adminSignAuthentikKeycloakAuthelia": "Anmelden mit Authentik, Keycloak, Authelia, Google, Microsoft …",
   "commonSetUp": "Einrichten",
-  "adminShowHideAreas": "Bereiche ein- und ausblenden",
+  "adminShowHideAreas": "Bereiche und Kacheln ein- und ausblenden",
   "adminAllAreasVisible": "Alle Bereiche sind sichtbar",
   "adminHiddenAreas": "Ausgeblendet: {areas}",
   "@adminHiddenAreas": {
@@ -1440,6 +1442,7 @@
   "commonAddress": "Adresse",
   "commonApply": "Übernehmen",
   "mealsNoRecipeWasFound": "Auf dieser Seite wurde kein Rezept gefunden.",
+  "mealsPhotoNotImported": "Das Foto der Seite ließ sich nicht übernehmen.",
   "mealsPageNotReachable": "Seite nicht erreichbar.",
   "commonDeleteName": "„{name}“ löschen?",
   "@commonDeleteName": {
@@ -2442,6 +2445,7 @@
   "budgetEGWeeklyShopping": "z. B. Wocheneinkauf, Miete, Schwimmkurs",
   "budgetFrom": "Ab ",
   "budgetMonthly": "Monatlich",
+  "budgetCountsNextMonth": "Zählt für den Folgemonat",
   "budgetEndAfterMonth": "Nach diesem Monat beenden",
   "budgetBudgetSettings": "Budget-Einstellungen",
   "budgetWhoSeesBudget": "Wer sieht das Budget?",

@@ -34,6 +34,7 @@ class BudgetEntry {
     this.monthly = false,
     this.until,
     this.importId,
+    this.nextMonth,
   });
 
   factory BudgetEntry.fromRecord(SyncRecord r) => BudgetEntry(
@@ -47,6 +48,7 @@ class BudgetEntry {
     monthly: r.data['monthly'] as bool? ?? false,
     until: _date(r.data['until']),
     importId: r.data['importId'] as String?,
+    nextMonth: r.data['nextMonth'] as bool?,
   );
 
   final String id;
@@ -71,8 +73,25 @@ class BudgetEntry {
   /// overlapping statement does not add it twice.
   final String? importId;
 
+  /// Counts for the month after it was paid. Null: see [countsNextMonth].
+  final bool? nextMonth;
+
+  /// Whether it counts for the month after it was paid. The salary that
+  /// arrives late in October is the money for November, so salary from the
+  /// [salaryCutoffDay] on does unless the entry says otherwise.
+  bool get countsNextMonth =>
+      nextMonth ??
+      (income && category == salaryCategory && date.day >= salaryCutoffDay);
+
+  static const salaryCategory = 'Gehalt';
+  static const salaryCutoffDay = 15;
+
   /// Whether the entry counts in [month] (any day of it).
-  bool inMonth(DateTime month) {
+  bool inMonth(DateTime month) =>
+      paidIn(countsNextMonth ? DateTime(month.year, month.month - 1) : month);
+
+  /// Whether it was paid in [month] (any day of it).
+  bool paidIn(DateTime month) {
     final m = month.year * 12 + month.month;
     final from = date.year * 12 + date.month;
     if (!monthly) return m == from;
@@ -90,6 +109,7 @@ class BudgetEntry {
     'monthly': monthly,
     'until': until == null ? null : _day(until!),
     if (importId != null) 'importId': importId,
+    if (nextMonth != null) 'nextMonth': nextMonth,
   };
 }
 

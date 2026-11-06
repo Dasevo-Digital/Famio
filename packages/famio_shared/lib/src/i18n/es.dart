@@ -1153,6 +1153,8 @@ const sharedEs = <String, String>{
   "Server|Das ist keine Webseite.": "Eso no es una página web.",
   "Server|Die Seite ist zu groß.": "La página es demasiado grande.",
   "Server|Die Seite antwortet nicht.": "La página no responde.",
+  "Server|Das ist kein Bild.": "Eso no es una imagen.",
+  "Server|Das Bild ist zu groß.": "La imagen es demasiado grande.",
   "Server|Zu viele Weiterleitungen.": "Demasiadas redirecciones.",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":

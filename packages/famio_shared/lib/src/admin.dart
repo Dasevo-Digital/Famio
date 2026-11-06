@@ -222,6 +222,33 @@ class ServerSettings {
     'contacts',
     // Not a section: connections to Bring! and Microsoft To Do.
     listSyncModule,
+    ...tileModules,
+  ];
+
+  /// In [hiddenModules]: tiles of the start page the family does not want.
+  /// The area itself stays in the menu.
+  static const tileModules = [
+    'tile.inbox',
+    'tile.today',
+    'tile.weather',
+    'tile.memories',
+    'tile.countdown',
+    'tile.waste',
+    'tile.tasks',
+    'tile.deadlines',
+    'tile.shopping',
+    'tile.meals',
+    'tile.chores',
+    'tile.chat',
+    'tile.location',
+    'tile.medications',
+    'tile.kids',
+    'tile.birthdays',
+    'tile.documents',
+    'tile.budget',
+    'tile.notes',
+    'tile.wishes',
+    'tile.loans',
   ];
 
   /// In [hiddenModules]: the family does not connect lists in other apps.

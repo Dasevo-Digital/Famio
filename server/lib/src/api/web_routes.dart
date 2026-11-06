@@ -4,10 +4,62 @@ part of '../api.dart';
 extension _WebRoutes on FamioApi {
   /// A recipe page for the web app: browsers may not read other sites
   /// (CORS), and the web app's content policy only lets it talk to a few
-  /// hosts. HTTPS only, never into a private network (also not through a
-  /// redirect), HTML only, at most [_maxPage].
+  /// hosts. HTML only, at most [_maxPage]; see [_webGet].
   Future<Response> _webPage(Request request) async {
     _member(request);
+    final (uri, response) = await _webGet(request);
+    if (!(response.headers['content-type'] ?? '').contains('html')) {
+      await response.stream.drain<void>();
+      throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
+    }
+    final bytes = <int>[];
+    await for (final chunk in _webRead(response)) {
+      bytes.addAll(chunk);
+      if (bytes.length > _maxPage) {
+        throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
+      }
+    }
+    return _json({
+      'url': uri.toString(),
+      'html': utf8.decode(bytes, allowMalformed: true),
+    });
+  }
+
+  /// The photo of an imported recipe, kept like an upload of the member (so
+  /// the upload limits apply too). The apps cannot do this themselves in the
+  /// browser; JPEG, PNG, WebP and GIF, at most [_maxImage]; see [_webGet].
+  Future<Response> _webImage(Request request) async {
+    final member = _member(request);
+    final (uri, response) = await _webGet(request);
+    final mime = (response.headers['content-type'] ?? '')
+        .split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    if (!_webImages.contains(mime)) {
+      await response.stream.drain<void>();
+      throw ApiException.badRequest('not_image', t('Das ist kein Bild.'));
+    }
+    final name = uri.pathSegments.lastOrNull ?? '';
+    var size = 0;
+    final file = await files.save(
+      owner: member.id,
+      name: name.isEmpty ? 'rezept' : name,
+      mime: mime,
+      body: _webRead(response).map((chunk) {
+        size += chunk.length;
+        if (size > _maxImage) {
+          throw ApiException(413, 'too_large', t('Das Bild ist zu groß.'));
+        }
+        return chunk;
+      }),
+    );
+    return _json(file.toJson(), status: 201);
+  }
+
+  /// Fetches the `url` of [request]: HTTPS only, never into a private
+  /// network (also not through a redirect). Returns where it ended up.
+  Future<(Uri, http.StreamedResponse)> _webGet(Request request) async {
     final body = await _body(request);
     var uri = Uri.tryParse(body['url'] as String? ?? '');
     if (uri == null || !uri.hasAuthority) {
@@ -51,34 +103,30 @@ extension _WebRoutes on FamioApi {
           t('Die Seite antwortet mit {code}.', {'code': response.statusCode}),
         );
       }
-      if (!(response.headers['content-type'] ?? '').contains('html')) {
-        await response.stream.drain<void>();
-        throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
-      }
-      final bytes = <int>[];
-      try {
-        await for (final chunk in response.stream) {
-          bytes.addAll(chunk);
-          if (bytes.length > _maxPage) {
-            throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
-          }
-        }
-      } on TimeoutException {
-        throw ApiException(
-          504,
-          'page_unavailable',
-          t('Die Seite antwortet nicht.'),
-        );
-      }
-      return _json({
-        'url': uri.toString(),
-        'html': utf8.decode(bytes, allowMalformed: true),
-      });
+      return (uri, response);
     }
     throw ApiException(502, 'page_unavailable', t('Zu viele Weiterleitungen.'));
   }
 
+  /// The body of [response]; a stalled download becomes a clean answer.
+  Stream<List<int>> _webRead(http.StreamedResponse response) =>
+      response.stream.handleError(
+        (Object _) => throw ApiException(
+          504,
+          'page_unavailable',
+          t('Die Seite antwortet nicht.'),
+        ),
+        test: (e) => e is TimeoutException,
+      );
+
   static const _maxPage = 3 * 1024 * 1024;
+  static const _maxImage = 20 * 1024 * 1024;
+  static const _webImages = {
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  };
 
   Response _health(Request request) => _json({
     'name': 'famio',

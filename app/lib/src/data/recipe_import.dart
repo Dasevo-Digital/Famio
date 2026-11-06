@@ -3,9 +3,16 @@ import 'dart:convert';
 import 'package:famio_client/famio_client.dart';
 import 'package:http/http.dart' as http;
 
+/// A recipe from a web page and the address of its photo.
+typedef ImportedRecipe = ({Recipe recipe, Uri? image});
+
 /// Reads a recipe from a web page: nearly all recipe sites (Chefkoch,
 /// Lecker, blogs …) describe it as schema.org `Recipe` in JSON-LD.
-Recipe? recipeFromHtml(String html, {required String id, String source = ''}) {
+ImportedRecipe? recipeFromHtml(
+  String html, {
+  required String id,
+  String source = '',
+}) {
   final scripts = RegExp(
     r'''<script[^>]*type=["']application/ld\+json["'][^>]*>(.*?)</script>''',
     dotAll: true,
@@ -19,7 +26,12 @@ Recipe? recipeFromHtml(String html, {required String id, String source = ''}) {
       continue;
     }
     final recipe = _findRecipe(json);
-    if (recipe != null) return _toRecipe(recipe, id: id, source: source);
+    if (recipe != null) {
+      return (
+        recipe: _toRecipe(recipe, id: id, source: source),
+        image: _imageUrl(recipe['image'], source),
+      );
+    }
   }
   return null;
 }
@@ -27,7 +39,7 @@ Recipe? recipeFromHtml(String html, {required String id, String source = ''}) {
 /// Downloads [url] and reads its recipe. The web app asks [api] to fetch
 /// it: browsers may not read other sites, and its content policy only lets
 /// it talk to a few hosts.
-Future<Recipe?> importRecipe(
+Future<ImportedRecipe?> importRecipe(
   Uri url, {
   required String id,
   http.Client? client,
@@ -67,6 +79,20 @@ Map<String, Object?>? _findRecipe(Object? json) {
     return _findRecipe(json['@graph']) ?? _findRecipe(json['mainEntity']);
   }
   return null;
+}
+
+/// schema.org `image`: an address, an `ImageObject`, or a list of them.
+Uri? _imageUrl(Object? image, String source) {
+  if (image is List) {
+    return image.map((i) => _imageUrl(i, source)).nonNulls.firstOrNull;
+  }
+  if (image is Map) {
+    return _imageUrl(image['url'] ?? image['contentUrl'], source);
+  }
+  if (image is! String || image.trim().isEmpty) return null;
+  final url = Uri.tryParse(image.trim());
+  if (url == null) return null;
+  return url.hasScheme ? url : Uri.tryParse(source)?.resolveUri(url);
 }
 
 Recipe _toRecipe(

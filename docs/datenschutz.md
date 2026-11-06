@@ -102,6 +102,11 @@ Modellen ein. Der Dokumentenscanner kommt immer von den Google-Play-Diensten.
 **Open Food Facts.** Eine Barcode-Suche überträgt den gescannten Barcode und
 die technisch notwendige IP-Adresse an `world.openfoodfacts.org`.
 
+**Rezept-Import.** Wer ein Rezept von einer Webseite übernimmt, ruft diese Seite
+auf: die App direkt, die Web-App über den Famio-Server. Das Foto des Rezepts holt
+immer der Server und speichert es wie einen Upload. Der Anbieter der Seite sieht
+dabei die IP-Adresse von Gerät oder Server, sonst nichts.
+
 **ntfy.** Nur nach Einrichtung. Der eingestellte ntfy-Server erhält das
 geheime Thema, die IP-Adresse und mindestens einen knappen Hinweis. Wenn
 „Details“ aktiviert ist, kann die eigentliche Benachrichtigung einschließlich

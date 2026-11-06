@@ -346,6 +346,9 @@ class _EntryEditorState extends State<_EntryEditor> {
   late DateTime _date =
       widget.existing?.date ?? DateUtils.dateOnly(DateTime.now());
   late var _monthly = widget.existing?.monthly ?? false;
+
+  /// Null: as the entry's category and date suggest.
+  late bool? _nextMonth = widget.existing?.nextMonth;
   late String? _member =
       widget.existing?.memberId ?? AppScope.read(context).me?.id;
 
@@ -356,6 +359,20 @@ class _EntryEditorState extends State<_EntryEditor> {
     super.dispose();
   }
 
+  BudgetEntry _entry({int cents = 0, DateTime? until}) => BudgetEntry(
+    id: widget.existing?.id ?? newId(),
+    date: _date,
+    cents: cents,
+    category: _category,
+    income: _income,
+    note: _note.text.trim(),
+    memberId: _member,
+    monthly: _monthly,
+    until: until ?? widget.existing?.until,
+    importId: widget.existing?.importId,
+    nextMonth: _income ? _nextMonth : null,
+  );
+
   void _save({DateTime? until}) {
     final cents = parseEuro(_amount.text);
     if (cents == null || cents == 0) {
@@ -364,20 +381,9 @@ class _EntryEditorState extends State<_EntryEditor> {
       ).showSnackBar(SnackBar(content: Text(tr.budgetPleaseEnterAmount)));
       return;
     }
-    AppScope.engineOf(context).saveBudgetEntry(
-      BudgetEntry(
-        id: widget.existing?.id ?? newId(),
-        date: _date,
-        cents: cents,
-        category: _category,
-        income: _income,
-        note: _note.text.trim(),
-        memberId: _member,
-        monthly: _monthly,
-        until: until ?? widget.existing?.until,
-        importId: widget.existing?.importId,
-      ),
-    );
+    AppScope.engineOf(
+      context,
+    ).saveBudgetEntry(_entry(cents: cents, until: until));
     Navigator.pop(context);
   }
 
@@ -472,6 +478,13 @@ class _EntryEditorState extends State<_EntryEditor> {
                   selected: _monthly,
                   onSelected: (v) => setState(() => _monthly = v),
                 ),
+                if (_income)
+                  FilterChip(
+                    avatar: const Icon(AppIcons.calendarBlank, size: 16),
+                    label: Text(tr.budgetCountsNextMonth),
+                    selected: _entry().countsNextMonth,
+                    onSelected: (v) => setState(() => _nextMonth = v),
+                  ),
                 for (final m in engine.members)
                   ChoiceChip(
                     avatar: MemberAvatar(m, radius: 10),

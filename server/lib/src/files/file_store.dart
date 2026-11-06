@@ -124,7 +124,10 @@ class FileStore {
 
   /// Uploads not referenced by any record are deleted after this time.
   static const orphanGrace = Duration(hours: 24);
-  static const thumbSizes = {160, 480, 1280};
+
+  /// The previews that are stored. A request gets the next size up, so the
+  /// apps can ask for what they show (see [thumbnail]).
+  static const thumbSizes = [160, 480, 1280, 1920];
 
   /// Larger images get no preview (~120 MB RAM while decoding; current phone
   /// photos are normally 12–24 MP). Decodes are serialised below, so several
@@ -282,12 +285,15 @@ class FileStore {
     return out.takeBytes();
   }
 
-  /// A JPEG no wider/higher than [size] (one of [thumbSizes]), cached.
+  /// A JPEG no wider/higher than the first of [thumbSizes] that covers
+  /// [size] (at most the largest), cached.
   Future<Uint8List?> thumbnail(StoredFile file, int size) async {
-    if (!file.mime.startsWith('image/') || !thumbSizes.contains(size)) {
-      return null;
-    }
-    final kind = 't$size';
+    if (!file.mime.startsWith('image/') || size < 1) return null;
+    final stored = thumbSizes.firstWhere(
+      (s) => s >= size,
+      orElse: () => thumbSizes.last,
+    );
+    final kind = 't$stored';
     return _serializeThumbnail(() async {
       // Check after entering the queue too: a preceding request may have
       // produced the same preview while this one was waiting.
@@ -297,7 +303,7 @@ class FileStore {
       if (bytes == null) return null;
       Uint8List? jpeg;
       try {
-        jpeg = await _decodeThumbnail(bytes, size);
+        jpeg = await _decodeThumbnail(bytes, stored);
       } catch (_) {
         jpeg = null; // Unsupported or broken image.
       }

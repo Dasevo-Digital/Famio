@@ -107,6 +107,95 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('tiles of the start page are hidden next to the areas', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({'tour.offered': true});
+    FlutterSecureStorage.setMockInitialValues({});
+    ServerOverview overview([List<String>? hidden]) => ServerOverview(
+      version: '2.0.1',
+      startedAt: DateTime(2026, 10, 12),
+      settings: ServerSettings(hiddenModules: hidden),
+      defaults: const ServerSettings(),
+      effective: const ServerSettings(),
+    );
+    List<String>? saved;
+    final answers = <String, Object>{
+      '/api/admin/users': {'users': <Object>[]},
+      '/api/admin/overview': overview().toJson(),
+      '/api/admin/sso': {'configured': false},
+      '/api/admin/paperless': {'connected': false},
+      '/api/admin/photovault': {'connected': false},
+      '/api/admin/app-updates': {'enabled': false},
+    };
+    final api = FamioApiClient(
+      'https://famio.test',
+      token: 't',
+      httpClient: MockClient((request) async {
+        if (request.method == 'PATCH') {
+          final changes = jsonDecode(request.body) as Map;
+          saved = (changes['hiddenModules'] as List).cast<String>();
+          return http.Response(jsonEncode(overview(saved).toJson()), 200);
+        }
+        final answer = answers[request.url.path];
+        return answer == null
+            ? http.Response('{}', 404)
+            : http.Response(jsonEncode(answer), 200);
+      }),
+    );
+    const me = FamilyMember(
+      id: 'm1',
+      username: 'mama',
+      displayName: 'Mama',
+      isAdmin: true,
+    );
+    final state = AppState();
+    await state.init();
+    state
+      ..me = me
+      ..engine = SyncEngine(
+        store: LocalStore.open(':memory:'),
+        api: api,
+        memberId: me.id,
+      );
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pumpAndSettle();
+    Navigator.of(
+      tester.element(find.byType(Scaffold).first),
+    ).push(MaterialPageRoute<void>(builder: (_) => const AdminScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Einstellungen').last);
+    await tester.pumpAndSettle();
+    final areas = find.widgetWithText(
+      ListTile,
+      'Bereiche und Kacheln ein- und ausblenden',
+    );
+    await tester.ensureVisible(areas);
+    await tester.tap(find.descendant(of: areas, matching: find.text('Ändern')));
+    await tester.pumpAndSettle();
+
+    Finder row(String title) => find.widgetWithText(SwitchListTile, title);
+    expect(find.text('Kacheln auf der Startseite'), findsOneWidget);
+    // Area and tile of the chat; the tile goes with its area.
+    expect(row('Chat'), findsNWidgets(2));
+    await tester.ensureVisible(row('Chat').first);
+    await tester.tap(row('Chat').first);
+    await tester.pumpAndSettle();
+    expect(row('Chat'), findsOneWidget);
+
+    await tester.ensureVisible(row('Wetter'));
+    await tester.tap(row('Wetter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern').last);
+    await tester.pumpAndSettle();
+    expect(saved, unorderedEquals(['chat', 'tile.weather']));
+    expect(find.text('Ausgeblendet: Chat, Wetter'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('PhotoVault: sign in with a code, then album and birthdays', (
     tester,
   ) async {

@@ -1121,6 +1121,8 @@ const sharedEn = <String, String>{
   "Server|Das ist keine Webseite.": "That is not a web page.",
   "Server|Die Seite ist zu groß.": "The page is too large.",
   "Server|Die Seite antwortet nicht.": "The page does not answer.",
+  "Server|Das ist kein Bild.": "That is not an image.",
+  "Server|Das Bild ist zu groß.": "The image is too large.",
   "Server|Zu viele Weiterleitungen.": "Too many redirects.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":

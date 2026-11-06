@@ -21,7 +21,13 @@ const _page = '''
 
 void main() {
   test('schema.org recipe is read from JSON-LD', () {
-    final r = recipeFromHtml(_page, id: 'r1', source: 'https://example.org')!;
+    final imported = recipeFromHtml(
+      _page,
+      id: 'r1',
+      source: 'https://example.org',
+    )!;
+    final r = imported.recipe;
+    expect(imported.image, isNull);
     expect(r.title, 'Omas Pfannkuchen & Apfelmus');
     expect(r.servings, 4);
     expect(r.minutes, 75);
@@ -33,6 +39,32 @@ void main() {
     ]);
     expect(r.steps, 'Alles verrühren.\nIn der Pfanne ausbacken.');
     expect(recipeFromHtml('<html></html>', id: 'x'), isNull);
+  });
+
+  test('the photo of a recipe comes in every form schema.org allows', () {
+    Uri? image(String json) => recipeFromHtml(
+      '<script type="application/ld+json">'
+      '{"@type":"Recipe","name":"x","image":$json}</script>',
+      id: 'r1',
+      source: 'https://rezepte.test/kuchen/apfel',
+    )?.image;
+    final photo = Uri.parse('https://bilder.test/a.jpg');
+    expect(image('"https://bilder.test/a.jpg"'), photo);
+    expect(
+      image('["https://bilder.test/a.jpg","https://bilder.test/b.jpg"]'),
+      photo,
+    );
+    expect(
+      image('{"@type":"ImageObject","url":"https://bilder.test/a.jpg"}'),
+      photo,
+    );
+    expect(image('[{"contentUrl":"https://bilder.test/a.jpg"}]'), photo);
+    expect(
+      image('"/fotos/a.jpg"'),
+      Uri.parse('https://rezepte.test/fotos/a.jpg'),
+    );
+    expect(image('[]'), isNull);
+    expect(image('""'), isNull);
   });
 
   test('ingredients join open items on the shopping list', () {

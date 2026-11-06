@@ -53,11 +53,21 @@ void main() {
       'budget',
       'meals',
     ]);
+    // Tiles of the start page go by themselves; the area stays.
+    final (tiles, _) = await call('PATCH', 'api/admin/settings', {
+      'hiddenModules': ['tile.weather', 'tile.budget'],
+    });
+    expect(tiles, 200);
+    expect((await call('GET', 'api/config')).$2['hiddenModules'], [
+      'tile.weather',
+      'tile.budget',
+    ]);
     // Start and settings cannot be switched off; unknown names neither.
     for (final bad in [
       ['home'],
       ['settings'],
       ['finanzen'],
+      ['tile.unknown'],
       'budget',
     ]) {
       final (code, body) = await call('PATCH', 'api/admin/settings', {

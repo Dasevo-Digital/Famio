@@ -968,26 +968,36 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     if (uri == null || !uri.hasScheme || !mounted) return;
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
+    final api = AppScope.read(context).engine!.api;
     try {
-      final r = await importRecipe(
-        uri,
-        id: _id,
-        api: kIsWeb ? AppScope.read(context).engine!.api : null,
-      );
+      final r = await importRecipe(uri, id: _id, api: kIsWeb ? api : null);
       if (r == null) {
         messenger.showSnackBar(
           SnackBar(content: Text(tr.mealsNoRecipeWasFound)),
         );
         return;
       }
+      final recipe = r.recipe;
       setState(() {
-        _title.text = r.title;
-        _servings.text = '${r.servings}';
-        _minutes.text = r.minutes?.toString() ?? '';
-        _ingredients.text = r.ingredients.join('\n');
-        _steps.text = r.steps;
-        _source.text = r.source;
+        _title.text = recipe.title;
+        _servings.text = '${recipe.servings}';
+        _minutes.text = recipe.minutes?.toString() ?? '';
+        _ingredients.text = recipe.ingredients.join('\n');
+        _steps.text = recipe.steps;
+        _source.text = recipe.source;
       });
+      // A photo chosen by hand stays. Without the page's photo the recipe is
+      // still imported.
+      if (r.image case final image? when _photo == null) {
+        try {
+          final photo = await api.importWebImage(image);
+          if (mounted) setState(() => _photo = photo);
+        } on ApiError {
+          messenger.showSnackBar(
+            SnackBar(content: Text(tr.mealsPhotoNotImported)),
+          );
+        }
+      }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
     } finally {

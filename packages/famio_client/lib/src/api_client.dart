@@ -736,6 +736,14 @@ class FamioApiClient {
     );
   }
 
+  /// Lets the server keep the picture at [url] as an upload.
+  Future<FileRef> importWebImage(Uri url) async {
+    final file = await _send('POST', 'api/web/image', {
+      'url': url.toString(),
+    }, const Duration(seconds: 60));
+    return FileRef.fromJson(file)!;
+  }
+
   Future<IcsFilePreview> readIcsFile(String ics) async =>
       IcsFilePreview.fromJson(
         await _send('POST', 'api/calendar/ics-file', {

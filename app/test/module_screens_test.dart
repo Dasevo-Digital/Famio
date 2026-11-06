@@ -10,6 +10,7 @@ import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/chores_screens.dart';
 import 'package:famio/src/screens/event_editor.dart';
 import 'package:famio/src/screens/event_import_screen.dart';
+import 'package:famio/src/screens/home_tiles.dart';
 import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/kids_log_screens.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
@@ -67,7 +68,11 @@ void main() {
   late AppState appState;
 
   /// Starts the app as Mama, optionally in [section].
-  Future<void> open(WidgetTester tester, {String? section}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    String? section,
+    Set<String> hidden = const {},
+  }) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -82,7 +87,8 @@ void main() {
     );
     state
       ..me = engine.members.firstWhere((m) => m.id == 'm1')
-      ..engine = engine;
+      ..engine = engine
+      ..hiddenModules = hidden;
     await tester.pumpWidget(FamioApp(state: state));
     if (section != null) {
       await tester.tap(find.text(section).first);
@@ -657,6 +663,38 @@ void main() {
       expect(find.text('Erste Buchung'), findsNothing);
     });
 
+    testWidgets('late salary counts for the next month', (tester) async {
+      await open(tester, section: 'Finanzen');
+      final late = DateTime(DateTime.now().year, DateTime.now().month, 28);
+      engine.saveBudgetEntry(
+        BudgetEntry(
+          id: 's',
+          date: late,
+          cents: 300000,
+          category: 'Gehalt',
+          income: true,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Gehalt'), findsNothing);
+      await tester.tap(find.byTooltip('Nächster Monat'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gehalt'), findsOneWidget);
+
+      // The salary that belongs to the month it was paid in.
+      await tester.tap(find.text('Gehalt'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Zählt für den Folgemonat'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.budgetEntries.single.nextMonth, isFalse);
+      expect(find.text('Gehalt'), findsNothing);
+      await tester.tap(find.byTooltip('Voriger Monat'));
+      await tester.pumpAndSettle();
+      expect(find.text('Gehalt'), findsOneWidget);
+    });
+
     testWidgets('a booking without an amount is refused', (tester) async {
       await open(tester, section: 'Finanzen');
       await tester.tap(find.text('Erste Buchung'));
@@ -1109,6 +1147,32 @@ void main() {
       await tester.tap(find.text('Einkauf').first);
       await tester.pumpAndSettle();
       expect(find.byTooltip('Mit anderen Apps verbinden'), findsNothing);
+    });
+  });
+
+  group('start page', () {
+    testWidgets('tiles can be hidden one by one', (tester) async {
+      await open(tester);
+      expect(find.text('Pinnwand'), findsOneWidget);
+      expect(find.text('Wetter'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      await open(tester, hidden: {'tile.notes', 'tile.weather'});
+      expect(find.text('Pinnwand'), findsNothing);
+      expect(find.text('Wetter'), findsNothing);
+      // The area stays in the menu, only its tile goes.
+      await tester.pumpWidget(const SizedBox());
+      await open(tester, hidden: {'tile.chat'});
+      expect(find.text('Chat'), findsOneWidget);
+    });
+
+    test('the server knows every tile', () {
+      expect([
+        for (final t in HomeTile.values) t.module,
+      ], ServerSettings.tileModules);
+      expect(HomeTile.chat.shownWith({}), isTrue);
+      expect(HomeTile.chat.shownWith({'tile.chat'}), isFalse);
+      expect(HomeTile.chat.shownWith({'chat'}), isFalse);
+      expect(HomeTile.notes.shownWith({'chat'}), isTrue);
     });
   });
 

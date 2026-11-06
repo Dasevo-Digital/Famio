@@ -21,6 +21,7 @@ import '../widgets/password_reveal.dart';
 import '../widgets/data_export.dart';
 import '../widgets/update_check.dart';
 import '../widgets/setup_checklist.dart';
+import 'home_tiles.dart';
 import 'invite_screens.dart' show InviteScreen;
 import '../l10n.dart';
 

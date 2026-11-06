@@ -231,6 +231,21 @@ void main() {
       ]),
       BankDuplicate.likely,
     );
+    // A monthly salary counts for the next month, but is paid in this one.
+    final salary = BankTransaction(date: DateTime(2026, 9, 28), cents: 300000);
+    expect(
+      bankDuplicate(salary, [
+        BudgetEntry(
+          id: 'g',
+          date: DateTime(2026, 9, 28),
+          cents: 300000,
+          category: 'Gehalt',
+          income: true,
+          monthly: true,
+        ),
+      ]),
+      BankDuplicate.likely,
+    );
     expect(
       bankDuplicate(t, [
         BudgetEntry(

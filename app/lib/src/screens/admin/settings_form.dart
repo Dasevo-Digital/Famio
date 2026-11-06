@@ -167,6 +167,29 @@ class _SettingsFormState extends State<_SettingsForm> {
                         : hidden.add(ServerSettings.listSyncModule),
                   ),
                 ),
+                const Divider(),
+                Text(
+                  tr.adminHomeTiles,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  tr.adminHomeTilesHint,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                // The tile of a hidden area is gone with it.
+                for (final t in HomeTile.values)
+                  if (t.section == null || !hidden.contains(t.section!.name))
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      secondary: Icon(t.icon),
+                      title: Text(t.title(context)),
+                      value: !hidden.contains(t.module),
+                      onChanged: (on) => setDialog(
+                        () =>
+                            on ? hidden.remove(t.module) : hidden.add(t.module),
+                      ),
+                    ),
               ],
             ),
           ),
@@ -634,6 +657,9 @@ class _SettingsFormState extends State<_SettingsForm> {
                             ServerSettings.listSyncModule,
                           ))
                             tr.adminListConnections,
+                          for (final t in HomeTile.values)
+                            if (o.settings.hiddenModules!.contains(t.module))
+                              t.title(context),
                         ].join(', '),
                       ),
               ),

@@ -23,8 +23,12 @@ void main() {
 
   test('every area that can be hidden is a section of the app', () {
     for (final name in ServerSettings.optionalModules) {
-      // The list connections are a feature, not a section.
-      if (name == ServerSettings.listSyncModule) continue;
+      // The list connections are a feature and tiles a part of the start
+      // page, not sections.
+      if (name == ServerSettings.listSyncModule ||
+          ServerSettings.tileModules.contains(name)) {
+        continue;
+      }
       expect(FamioSection.values.map((s) => s.name), contains(name));
     }
   });
