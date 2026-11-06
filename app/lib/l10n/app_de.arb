@@ -1443,6 +1443,9 @@
   "commonApply": "Übernehmen",
   "mealsNoRecipeWasFound": "Auf dieser Seite wurde kein Rezept gefunden.",
   "mealsPhotoNotImported": "Das Foto der Seite ließ sich nicht übernehmen.",
+  "mealsPasteLink": "Link einfügen",
+  "mealsPhotoFromSource": "Foto von der Quelle holen",
+  "mealsRemovePhoto": "Foto entfernen",
   "mealsPageNotReachable": "Seite nicht erreichbar.",
   "commonDeleteName": "„{name}“ löschen?",
   "@commonDeleteName": {
@@ -6201,6 +6204,7 @@
   },
   "shareAsTask": "Als Aufgabe",
   "shareAsNote": "Als Notiz auf die Pinnwand",
+  "shareAsRecipe": "Als Rezept importieren",
   "shareAsDocument": "Als Dokument speichern",
   "shareToChat": "In den Familien-Chat",
   "shareWhichList": "Auf welche Liste?",

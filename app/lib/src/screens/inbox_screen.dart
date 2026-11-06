@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/recipe_import.dart';
 import '../data/shopping_history.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
@@ -12,6 +13,7 @@ import '../l10n.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/files.dart';
+import 'meals_screens.dart' show showRecipeEditor;
 import 'shopping_screens.dart' show newShoppingItem;
 
 /// Unsorted family material: capture now, decide what it becomes later.
@@ -91,6 +93,15 @@ class InboxScreen extends StatelessWidget {
                               child: Text(tr.commonNote),
                             ),
                           ],
+                          if (item.files.isEmpty &&
+                              _recipeLink(item) != null &&
+                              !AppScope.read(
+                                context,
+                              ).hiddenModules.contains(FamioSection.meals.name))
+                            PopupMenuItem(
+                              value: _InboxAction.recipe,
+                              child: Text(tr.commonRecipe),
+                            ),
                           if (item.files.isNotEmpty)
                             PopupMenuItem(
                               value: _InboxAction.document,
@@ -236,6 +247,13 @@ class InboxScreen extends StatelessWidget {
         engine.saveNote(
           FamilyNote(id: newId(), title: item.title, text: item.text),
         );
+      case _InboxAction.recipe:
+        // Stays in the inbox unless the recipe is saved.
+        final saved = await showRecipeEditor(
+          context,
+          importFrom: _recipeLink(item),
+        );
+        if (!saved) return;
       case _InboxAction.document:
         for (final file in item.files) {
           engine.saveDocument(
@@ -268,7 +286,9 @@ class InboxScreen extends StatelessWidget {
   }
 }
 
-enum _InboxAction { task, event, note, document, shopping, delete }
+enum _InboxAction { task, event, note, recipe, document, shopping, delete }
+
+Uri? _recipeLink(InboxItem item) => linkIn('${item.title}\n${item.text}');
 
 String _fallbackTitle(String text, String? fileName) {
   final line = text.trim().split(RegExp(r'\r?\n')).firstOrNull ?? '';

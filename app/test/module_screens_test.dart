@@ -11,10 +11,13 @@ import 'package:famio/src/screens/chores_screens.dart';
 import 'package:famio/src/screens/event_editor.dart';
 import 'package:famio/src/screens/event_import_screen.dart';
 import 'package:famio/src/screens/home_tiles.dart';
+import 'package:famio/src/screens/inbox_screen.dart';
+import 'package:famio/src/screens/meals_screens.dart';
 import 'package:famio/src/screens/notes_screen.dart';
 import 'package:famio/src/screens/kids_log_screens.dart';
 import 'package:famio/src/screens/pantry_screens.dart';
 import 'package:famio/src/screens/pregnancy_screens.dart';
+import 'package:famio/src/screens/share_target.dart';
 import 'package:famio/src/screens/push_settings_screen.dart';
 import 'package:famio/src/screens/member_emergency_screen.dart';
 import 'package:famio/src/screens/settings_screen.dart';
@@ -24,6 +27,7 @@ import 'package:famio/src/screens/wishes_screen.dart';
 import 'package:famio/src/widgets/data_builder.dart';
 import 'package:famio/src/widgets/files.dart';
 import 'package:famio/src/data/ocr.dart';
+import 'package:famio/src/platform/opened_files.dart';
 import 'package:famio/src/screens/documents_screen.dart';
 import 'package:famio/src/widgets/undo_delete.dart';
 import 'package:famio_client/famio_client.dart';
@@ -1147,6 +1151,148 @@ void main() {
       await tester.tap(find.text('Einkauf').first);
       await tester.pumpAndSettle();
       expect(find.byTooltip('Mit anderen Apps verbinden'), findsNothing);
+    });
+  });
+
+  group('recipes', () {
+    const link = 'https://rezepte.test/lasagne.html';
+
+    Future<void> fileAsRecipe(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Einsortieren als …'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Rezept').last);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a link in the inbox becomes a recipe once saved', (
+      tester,
+    ) async {
+      await open(tester);
+      engine.saveInboxItem(
+        InboxItem(
+          id: 'i',
+          title: 'Lasagne',
+          text: 'Von Papa: $link',
+          createdAt: DateTime(2026, 11, 6),
+          createdBy: 'm1',
+        ),
+      );
+      await push(tester, const InboxScreen());
+
+      await fileAsRecipe(tester);
+      // The page cannot be reached here: the address stays for later.
+      expect(
+        find.widgetWithText(TextField, link),
+        findsOneWidget,
+        reason: 'source',
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.byType(TextField).first)).pop();
+      await tester.pumpAndSettle();
+      expect(engine.inboxItems, hasLength(1), reason: 'not saved: it stays');
+
+      await fileAsRecipe(tester);
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      await tester.enterText(field('Titel'), 'Lasagne');
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.recipes.single.source, link);
+      expect(engine.inboxItems, isEmpty);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a shared link offers the recipe', (tester) async {
+      Future<void> share(WidgetTester tester, String text) async {
+        final context = tester.element(find.byType(Scaffold).first);
+        unawaited(
+          showShareTarget(
+            context,
+            SharedContent(text: text),
+            go: (_) {},
+            navigatorOf: (_) => null,
+          ),
+        );
+        await tester.pumpAndSettle();
+      }
+
+      const offer = 'Als Rezept importieren';
+      await open(tester, hidden: {'meals'});
+      await share(tester, 'Lasagne $link');
+      expect(find.text(offer), findsNothing, reason: 'area switched off');
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      await tester.pumpWidget(const SizedBox());
+      await open(tester);
+      await share(tester, 'Lasagne ohne Link');
+      expect(find.text(offer), findsNothing);
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      await share(tester, 'Lasagne $link');
+      await tester.tap(find.text(offer));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, link), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('only a link can become a recipe', (tester) async {
+      await open(tester);
+      engine.saveInboxItem(
+        InboxItem(
+          id: 'i',
+          title: 'Lasagne',
+          createdAt: DateTime(2026, 11, 6),
+          createdBy: 'm1',
+        ),
+      );
+      await push(tester, const InboxScreen());
+      await tester.tap(find.byTooltip('Einsortieren als …'));
+      await tester.pumpAndSettle();
+      expect(find.text('Rezept'), findsNothing);
+    });
+
+    testWidgets('the editor shows the photo and can drop it', (tester) async {
+      await open(tester);
+      const photo = FileRef(
+        id: 'f',
+        name: 'lasagne.jpg',
+        mime: 'image/jpeg',
+        size: 4,
+      );
+      const recipe = Recipe(
+        id: 'r',
+        title: 'Lasagne',
+        servings: 4,
+        source: link,
+        photo: photo,
+      );
+      engine.saveRecipe(recipe);
+      await tester.pump();
+      unawaited(
+        showRecipeEditor(
+          tester.element(find.byType(Scaffold).first),
+          existing: recipe,
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(CachedImage), findsOneWidget);
+      expect(find.text('Foto von der Quelle holen'), findsNothing);
+
+      await tester.tap(find.text('Foto entfernen'));
+      await tester.pumpAndSettle();
+      expect(find.byType(CachedImage), findsNothing);
+      // Without a photo it can be fetched again, from a page only.
+      expect(find.text('Foto von der Quelle holen'), findsOneWidget);
+      await tester.enterText(field('Quelle (optional)'), 'Oma');
+      await tester.pumpAndSettle();
+      expect(find.text('Foto von der Quelle holen'), findsNothing);
+
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.recipes.single.photo, isNull);
     });
   });
 

@@ -3,6 +3,18 @@ import 'dart:convert';
 import 'package:famio_client/famio_client.dart';
 import 'package:http/http.dart' as http;
 
+/// The first web address in [text]: apps share "Lasagne https://…".
+Uri? linkIn(String text) {
+  final match = RegExp(
+    r'''https?://[^\s<>"']+''',
+    caseSensitive: false,
+  ).firstMatch(text);
+  if (match == null) return null;
+  final link = match[0]!.replaceFirst(RegExp(r'[.,;:!?)\]]+$'), '');
+  final url = Uri.tryParse(link);
+  return url != null && url.host.isNotEmpty ? url : null;
+}
+
 /// A recipe from a web page and the address of its photo.
 typedef ImportedRecipe = ({Recipe recipe, Uri? image});
 

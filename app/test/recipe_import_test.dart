@@ -107,6 +107,21 @@ void main() {
     });
   });
 
+  test('the link in shared text', () {
+    expect(
+      linkIn('Lasagne - Rezept https://www.chefkoch.de/rezepte/1/L.html'),
+      Uri.parse('https://www.chefkoch.de/rezepte/1/L.html'),
+    );
+    expect(
+      linkIn('Schau mal (https://rezepte.test/a?b=1), lecker!'),
+      Uri.parse('https://rezepte.test/a?b=1'),
+    );
+    expect(linkIn('Zuerst\nHTTP://rezepte.test/a'), isNotNull);
+    expect(linkIn('Lasagne ohne Link'), isNull);
+    expect(linkIn('mailto:mama@example.org'), isNull);
+    expect(linkIn('https://'), isNull);
+  });
+
   test('the photo may be a reference inside the @graph', () {
     // As Chefkoch and sites with Yoast describe it.
     const page = '''

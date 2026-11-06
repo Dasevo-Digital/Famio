@@ -948,13 +948,7 @@ class _ChatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final unread = engine.totalUnread;
-    final all =
-        engine
-            .records(Collections.chatMessages)
-            .map(ChatMessage.fromRecord)
-            .toList()
-          ..sort((a, b) => b.sentAt.compareTo(a.sentAt));
-    final last = all.firstOrNull;
+    final last = engine.latestChatMessage;
     final author = engine.member(last?.authorId);
     return _Tile(
       section: FamioSection.chat,

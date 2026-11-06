@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/recipe_import.dart';
 import '../data/shopping_history.dart';
 import '../design/app_icons.dart';
 import '../design/palette.dart';
@@ -12,15 +13,16 @@ import '../l10n.dart';
 import '../platform/opened_files.dart';
 import '../widgets/files.dart';
 import 'documents_screen.dart';
+import 'meals_screens.dart';
 import 'notes_screen.dart';
 import 'shopping_screens.dart';
 import 'tasks_screen.dart';
 
-enum _Target { inbox, shopping, task, note, document, chat }
+enum _Target { inbox, recipe, shopping, task, note, document, chat }
 
 /// "Teilen an Famio": text, a link or files from another app go to the
-/// shopping list (one item per line), a new task or note, the documents
-/// or the family chat. [go] switches to a section, [navigatorOf] gives its
+/// shopping list (one item per line), a new task, note or recipe, the
+/// documents or the family chat. [go] switches to a section, [navigatorOf] gives its
 /// page stack.
 Future<void> showShareTarget(
   BuildContext context,
@@ -34,6 +36,7 @@ Future<void> showShareTarget(
   if (me == null || engine == null) return;
   final lines = shareLines(share.text);
   final files = share.files;
+  final link = linkIn(share.text);
   final target = await showModalBottomSheet<_Target>(
     context: context,
     useRootNavigator: true,
@@ -86,6 +89,16 @@ Future<void> showShareTarget(
                   FamioSection.home,
                   tr.shareToInbox,
                   tr.shareToInboxHint,
+                ),
+              if (files.isEmpty &&
+                  link != null &&
+                  !me.isGuest &&
+                  !state.hiddenModules.contains(FamioSection.meals.name))
+                option(
+                  _Target.recipe,
+                  AppIcons.cookingPot,
+                  FamioSection.meals,
+                  tr.shareAsRecipe,
                 ),
               if (files.isEmpty && lines.isNotEmpty)
                 option(
@@ -150,6 +163,11 @@ Future<void> showShareTarget(
           ),
         );
         messenger.showSnackBar(SnackBar(content: Text(tr.inboxSaved)));
+      case _Target.recipe:
+        go(FamioSection.meals);
+        await WidgetsBinding.instance.endOfFrame;
+        if (!context.mounted) break;
+        await showRecipeEditor(context, importFrom: link);
       case _Target.shopping:
         final list = await _pickList(context, engine);
         if (list == null) break;

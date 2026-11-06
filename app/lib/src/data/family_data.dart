@@ -267,10 +267,27 @@ extension FamilyData on SyncEngine {
   // --- chat ---------------------------------------------------------------
 
   List<ChatMessage> chatMessages(String chatId) =>
-      records(
-          Collections.chatMessages,
-        ).map(ChatMessage.fromRecord).where((m) => m.chatId == chatId).toList()
+      _chatRecords({chatId}).map(ChatMessage.fromRecord).toList()
         ..sort((a, b) => a.sentAt.compareTo(b.sentAt));
+
+  /// The messages of [chats], picked before parsing: over the years a family
+  /// has thousands of them, and the menu and the start page count them on
+  /// every change.
+  Iterable<SyncRecord> _chatRecords(Set<String> chats) => records(
+    Collections.chatMessages,
+  ).where((r) => chats.contains(r.data['chatId'] ?? ChatIds.family));
+
+  /// The newest message of all chats.
+  ChatMessage? get latestChatMessage {
+    ChatMessage? latest;
+    for (final r in records(Collections.chatMessages)) {
+      final message = ChatMessage.fromRecord(r);
+      if (latest == null || message.sentAt.isAfter(latest.sentAt)) {
+        latest = message;
+      }
+    }
+    return latest;
+  }
 
   /// Audience of a chat: null (everyone) for the family chat.
   List<String>? chatAudience(String chatId) {
@@ -318,18 +335,23 @@ extension FamilyData on SyncEngine {
     );
   }
 
-  int unreadCount(String chatId) {
-    final since = lastRead(chatId);
-    return chatMessages(
-      chatId,
-    ).where((m) => m.authorId != memberId && m.sentAt.isAfter(since)).length;
-  }
+  int unreadCount(String chatId) => _unread({chatId});
 
-  int get totalUnread => [
+  int get totalUnread => _unread({
     ChatIds.family,
     for (final m in members)
       if (m.id != memberId) ChatIds.direct(memberId, m.id),
-  ].fold(0, (sum, chat) => sum + unreadCount(chat));
+  });
+
+  int _unread(Set<String> chats) {
+    final since = {for (final chat in chats) chat: lastRead(chat)};
+    return _chatRecords(chats)
+        .map(ChatMessage.fromRecord)
+        .where(
+          (m) => m.authorId != memberId && m.sentAt.isAfter(since[m.chatId]!),
+        )
+        .length;
+  }
 
   // --- documents ------------------------------------------------------------
 

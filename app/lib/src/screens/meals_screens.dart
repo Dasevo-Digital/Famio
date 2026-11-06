@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_extras.dart';
@@ -880,18 +881,26 @@ class _MealEditorState extends State<_MealEditor> {
   }
 }
 
-/// Adds or edits a recipe; can take one from a web page.
-Future<void> showRecipeEditor(BuildContext context, {Recipe? existing}) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => _RecipeEditor(existing: existing),
+/// Adds or edits a recipe; can take one from a web page, [importFrom] right
+/// away. True once it was saved.
+Future<bool> showRecipeEditor(
+  BuildContext context, {
+  Recipe? existing,
+  Uri? importFrom,
+}) async =>
+    await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) =>
+            _RecipeEditor(existing: existing, importFrom: importFrom),
       ),
-    );
+    ) ??
+    false;
 
 class _RecipeEditor extends StatefulWidget {
-  const _RecipeEditor({this.existing});
+  const _RecipeEditor({this.existing, this.importFrom});
 
   final Recipe? existing;
+  final Uri? importFrom;
 
   @override
   State<_RecipeEditor> createState() => _RecipeEditorState();
@@ -916,6 +925,18 @@ class _RecipeEditorState extends State<_RecipeEditor> {
   );
   late FileRef? _photo = widget.existing?.photo;
   var _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.importFrom case final link?) {
+      // Without a recipe on the page the address at least stays.
+      _source.text = '$link';
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _fetch(link);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -949,6 +970,17 @@ class _RecipeEditorState extends State<_RecipeEditor> {
             decoration: InputDecoration(
               labelText: tr.commonAddress,
               hintText: 'https://www.chefkoch.de/rezepte/…',
+              // Asked for, not read on its own: iPhones ask to allow it, and
+              // it is no business of Famio what was copied.
+              suffixIcon: IconButton(
+                icon: const Icon(AppIcons.clipboardList),
+                tooltip: tr.mealsPasteLink,
+                onPressed: () async {
+                  final copied = await Clipboard.getData(Clipboard.kTextPlain);
+                  final link = linkIn(copied?.text ?? '');
+                  if (link != null) url.text = '$link';
+                },
+              ),
             ),
           ),
           actions: [
@@ -966,6 +998,11 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     );
     final uri = Uri.tryParse(address ?? '');
     if (uri == null || !uri.hasScheme || !mounted) return;
+    await _fetch(uri);
+  }
+
+  /// Fills the form from the recipe at [uri].
+  Future<void> _fetch(Uri uri) async {
     setState(() => _busy = true);
     final messenger = ScaffoldMessenger.of(context);
     final api = AppScope.read(context).engine!.api;
@@ -977,6 +1014,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         );
         return;
       }
+      if (!mounted) return;
       final recipe = r.recipe;
       setState(() {
         _title.text = recipe.title;
@@ -989,14 +1027,44 @@ class _RecipeEditorState extends State<_RecipeEditor> {
       // A photo chosen by hand stays. Without the page's photo the recipe is
       // still imported.
       if (r.image case final image? when _photo == null) {
-        try {
-          final photo = await api.importWebImage(image);
-          if (mounted) setState(() => _photo = photo);
-        } on ApiError {
-          messenger.showSnackBar(
-            SnackBar(content: Text(tr.mealsPhotoNotImported)),
-          );
-        }
+        await _takePhoto(image, api, messenger);
+      }
+    } catch (_) {
+      messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _takePhoto(
+    Uri image,
+    FamioApiClient api,
+    ScaffoldMessengerState messenger,
+  ) async {
+    try {
+      final photo = await api.importWebImage(image);
+      if (mounted) setState(() => _photo = photo);
+    } on ApiError {
+      messenger.showSnackBar(SnackBar(content: Text(tr.mealsPhotoNotImported)));
+    }
+  }
+
+  /// For a recipe imported before Famio took the photo along. Only the photo:
+  /// a new import would overwrite what was changed since.
+  Future<void> _photoFromSource() async {
+    final link = linkIn(_source.text);
+    if (link == null) return;
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final api = AppScope.read(context).engine!.api;
+    try {
+      final page = await importRecipe(link, id: _id, api: kIsWeb ? api : null);
+      if (page?.image case final image?) {
+        await _takePhoto(image, api, messenger);
+      } else {
+        messenger.showSnackBar(
+          SnackBar(content: Text(tr.mealsPhotoNotImported)),
+        );
       }
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
@@ -1056,7 +1124,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         favorite: widget.existing?.favorite ?? false,
       ),
     );
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   Future<void> _delete() async {
@@ -1119,6 +1187,23 @@ class _RecipeEditorState extends State<_RecipeEditor> {
                 ),
                 onPressed: _busy ? null : _pickPhoto,
               ),
+              ValueListenableBuilder(
+                valueListenable: _source,
+                builder: (context, source, _) =>
+                    _photo != null || linkIn(source.text) == null
+                    ? const SizedBox.shrink()
+                    : OutlinedButton.icon(
+                        icon: const Icon(AppIcons.images),
+                        label: Text(tr.mealsPhotoFromSource),
+                        onPressed: _busy ? null : _photoFromSource,
+                      ),
+              ),
+              if (_photo != null)
+                OutlinedButton.icon(
+                  icon: const Icon(AppIcons.trash),
+                  label: Text(tr.mealsRemovePhoto),
+                  onPressed: _busy ? null : () => setState(() => _photo = null),
+                ),
               if (_busy)
                 const SizedBox.square(
                   dimension: 24,
@@ -1126,6 +1211,13 @@ class _RecipeEditorState extends State<_RecipeEditor> {
                 ),
             ],
           ),
+          if (_photo case final photo?) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 160,
+              child: CachedImage(photo, thumb: 480, radius: 16),
+            ),
+          ],
           const SizedBox(height: 12),
           TextField(
             controller: _title,
