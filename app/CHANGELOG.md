@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.38 – Erkannte Termine bearbeiten
+
+- Termine aus Fotos und Texten lassen sich vor dem Übernehmen im Termin-Formular
+  bearbeiten: über den Stift am Vorschlag, mit Datum, Uhrzeit, Ort und Personen.
+- Tabellen und Terminlisten werden Zeile für Zeile gelesen.
+- Der Ort kommt aus Zeilen wie „Ort: Aula“ gleich mit.
+- Sätze über mehrere Zeilen und Daten wie „Di 24.11“ werden erkannt, die Titel
+  sind aufgeräumt.
+- Vergangene Daten, etwa das Briefdatum, sind nicht mehr vorausgewählt.
+
 ## 2.0.37 – Termine aus Fotos
 
 - Einladungen, Elternbriefe und Arztzettel: Famio findet Datum, Uhrzeit und

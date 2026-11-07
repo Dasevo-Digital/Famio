@@ -4,6 +4,17 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.38 – Edit recognised appointments
+
+- Appointments from photos and texts can be edited in the event form before
+  they are added: with the pencil on the suggestion, including date, time,
+  place and people.
+- Tables and lists of dates are read line by line.
+- The place comes along from lines like “Where: Hall”.
+- Sentences across several lines and dates like “Di 24.11” are recognised, and
+  titles are tidier.
+- Dates in the past, such as the date of a letter, are no longer preselected.
+
 ## 2.0.37 – Appointments from photos
 
 - Invitations, school letters and doctor's cards: Famio now finds the date,

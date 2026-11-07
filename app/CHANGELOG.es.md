@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.38 – Editar las citas reconocidas
+
+- Las citas de fotos y textos se pueden editar en el formulario antes de
+  añadirlas: con el lápiz de la sugerencia, con fecha, hora, lugar y personas.
+- Las tablas y listas de fechas se leen línea por línea.
+- El lugar se toma de líneas como «Lugar: Salón».
+- Se reconocen frases en varias líneas y fechas como «Di 24.11», y los títulos
+  quedan más limpios.
+- Las fechas pasadas, como la de una carta, ya no vienen preseleccionadas.
+
 ## 2.0.37 – Citas desde fotos
 
 - Invitaciones, cartas del colegio y tarjetas del médico: Famio encuentra la
