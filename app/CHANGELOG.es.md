@@ -4,6 +4,13 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.37 – Citas desde fotos
+
+- Invitaciones, cartas del colegio y tarjetas del médico: Famio encuentra la
+  fecha, la hora y el título aunque estén en líneas separadas.
+- Se reconocen fechas con espacios como «13. 11. 2026».
+- iPhone: las fotos tomadas en vertical se leen en el orden correcto.
+
 ## 2.0.36 – Recetas más fáciles de importar
 
 - La importación de recetas ahora también toma la foto de Chefkoch y sitios

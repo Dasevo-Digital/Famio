@@ -2,6 +2,14 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.37 – Termine aus Fotos
+
+- Einladungen, Elternbriefe und Arztzettel: Famio findet Datum, Uhrzeit und
+  Titel jetzt auch, wenn sie in eigenen Zeilen stehen.
+- Daten mit Leerzeichen wie „13. 11. 2026“ werden erkannt.
+- iPhone: Hochkant aufgenommene Fotos werden in der richtigen Reihenfolge
+  gelesen.
+
 ## 2.0.36 – Rezepte einfacher übernehmen
 
 - Der Rezept-Import übernimmt das Foto jetzt auch von Chefkoch und ähnlichen

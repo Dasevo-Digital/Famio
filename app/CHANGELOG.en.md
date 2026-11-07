@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.37 – Appointments from photos
+
+- Invitations, school letters and doctor's cards: Famio now finds the date,
+  time and title even when they stand on lines of their own.
+- Dates with spaces like “13. 11. 2026” are recognised.
+- iPhone: photos taken upright are read in the right order.
+
 ## 2.0.36 – Recipes come in more easily
 
 - The recipe import now also takes the photo from Chefkoch and similar sites.
