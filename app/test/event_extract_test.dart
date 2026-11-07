@@ -165,7 +165,7 @@ Teatro el 15 de enero a las 6 de la tarde
       expectOne(
         'Praxis Dr. Muster\nIhr nächster Termin\nDi 24.11.26\n10:15\n'
             'Bitte Karte mitbringen',
-        'Ihr nächster Termin',
+        'Praxis Dr. Muster',
         DateTime(2026, 11, 24, 10, 15),
       );
     });
@@ -344,6 +344,205 @@ Teatro el 15 de enero a las 6 de la tarde
       );
       expect(fiesta.single.title, 'Fiesta de otoño');
       expect(fiesta.single.start, DateTime(2026, 11, 19, 18));
+    });
+  });
+
+  group('what a title is not', () {
+    test('a place: the event below it, the place stays the place', () {
+      final e = extractEvents(
+        'Im Kulturhaus\n21.11.2026, 19 Uhr\nKonzert des Schulchors',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Konzert des Schulchors');
+      expect(e.location, 'Im Kulturhaus');
+    });
+
+    test('a place below the date is the place', () {
+      final e = extractEvents(
+        'Elternabend\nMittwoch, 18.11.2026 um 19 Uhr\n'
+        'Turnhalle der Grundschule',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Elternabend');
+      expect(e.location, 'Turnhalle der Grundschule');
+    });
+
+    test('nothing but a place: an appointment there', () {
+      for (final text in [
+        'Stadthalle\n14.11.2026, 19 Uhr',
+        'Stadthalle, 14.11.2026, 19 Uhr',
+      ]) {
+        final e = extractEvents(
+          text,
+          now: DateTime(2026, 11, 7),
+          language: 'de',
+        ).single;
+        expect(e.title, 'Termin', reason: text);
+        expect(e.location, 'Stadthalle', reason: text);
+      }
+    });
+
+    test('compounds are what they end in', () {
+      final e = extractEvents(
+        'Kindergartenfest\n14.11.2026\nFesthalle am Markt',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Kindergartenfest');
+      expect(e.location, 'Festhalle am Markt');
+    });
+
+    test('an event in a place keeps its whole title', () {
+      final e = extractEvents(
+        'Wichtige Information\nSommerfest im Gemeindehaus\n14.11.2026',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Sommerfest im Gemeindehaus');
+    });
+
+    test('a reminder card: the practice, not "your next appointment"', () {
+      final e = extractEvents(
+        'Zahnarztpraxis Dr. Meier\nHauptstraße 5\n12345 Musterstadt\n'
+        'Tel. 01234 56789\nIhr nächster Termin:\nDi. 17.11.2026\n14:30 Uhr',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Zahnarztpraxis Dr. Meier');
+      expect(e.location, 'Hauptstraße 5, 12345 Musterstadt');
+      expect((e.start.hour, e.start.minute), (14, 30));
+    });
+
+    test('small words stay inside names', () {
+      final e = extractEvents(
+        'Grundschule am Park\nFest am See\n14.11.2026 um 15 Uhr',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Fest am See');
+      expect(e.location, 'Grundschule am Park');
+    });
+
+    test('a sentence after the date does not become the title', () {
+      final e = extractEvents(
+        'Theaterstück\n13.11.2026\nWir freuen uns auf ein schönes Fest!',
+        now: DateTime(2026, 11, 7),
+        language: 'de',
+      ).single;
+      expect(e.title, 'Theaterstück');
+    });
+
+    final november = DateTime(2026, 11, 7);
+    void expectParts(String text, String title, String location) {
+      final found = extractEvents(text, now: november, language: 'de');
+      expect(found, hasLength(1), reason: text);
+      expect(found.single.title, title, reason: text);
+      expect(found.single.location, location, reason: text);
+    }
+
+    test('a form in two columns', () {
+      expectParts(
+        'Veranstaltung   Sommerfest\nOrt   Aula der Grundschule\n'
+            'Datum   12.12.2026\nUhrzeit   15:00',
+        'Sommerfest',
+        'Aula der Grundschule',
+      );
+    });
+
+    test('labels whose colon the recognition lost', () {
+      expectParts(
+        'Sommerfest\nOrt Aula\nDatum 12.12.2026\nUhrzeit 15:00',
+        'Sommerfest',
+        'Aula',
+      );
+      expectParts(
+        'Sommerfest\nOrt. Aula\nDatum. 12.12.2026\nUhrzeit. 15:00',
+        'Sommerfest',
+        'Aula',
+      );
+    });
+
+    test('a place between the title and the date', () {
+      expectParts(
+        'Kindergeburtstag\nTrampolinhalle Jump\nSamstag, 21.11.2026\n15 Uhr',
+        'Kindergeburtstag',
+        'Trampolinhalle Jump',
+      );
+      expectParts(
+        'Ballett\nTanzschule Meier\nDi 24.11.2026 um 16 Uhr',
+        'Ballett',
+        'Tanzschule Meier',
+      );
+    });
+
+    test('an address', () {
+      expectParts(
+        'Einladung zum Geburtstag\nHauptstraße 12\n12345 Musterstadt\n'
+            'Samstag, 21.11.2026 um 15 Uhr',
+        'Einladung zum Geburtstag',
+        'Hauptstraße 12, 12345 Musterstadt',
+      );
+    });
+
+    test('a phone number', () {
+      expectParts(
+        'Praxis Dr. Muster\nHauptstr. 5\n12345 Stadt\nTel. 030 1234567\n'
+            'Di 24.11.2026 10:15 Uhr',
+        'Praxis Dr. Muster',
+        'Hauptstr. 5, 12345 Stadt',
+      );
+    });
+
+    test('the place in the sentence of the date', () {
+      expectParts(
+        'Laternenfest\nAuf dem Schulhof am 13.11.2026 um 17 Uhr',
+        'Laternenfest',
+        'Auf dem Schulhof',
+      );
+      expectParts(
+        'Im Kindergarten am 13.11.2026 um 17 Uhr',
+        'Termin',
+        'Im Kindergarten',
+      );
+    });
+
+    test('a greeting', () {
+      expectParts('Liebe Eltern,\nBasar\n12.12.2026', 'Basar', '');
+      expectParts('Liebe Eltern,\n\n12.12.2026', 'Termin', '');
+    });
+
+    test('what is said outright wins, wherever it stands', () {
+      expectParts(
+        'Was: Sommerfest\nWann: 12.12.2026, 15 Uhr\nWo: Aula',
+        'Sommerfest',
+        'Aula',
+      );
+      expectParts(
+        'Wo: Aula\nWann: 12.12.2026 15 Uhr\nWas: Sommerfest',
+        'Sommerfest',
+        'Aula',
+      );
+      expectParts(
+        'Datum: 12.12.2026\nUhrzeit: 15 Uhr\nOrt: Aula\nThema: Elternabend',
+        'Elternabend',
+        'Aula',
+      );
+      expectParts('Was Sommerfest\nWann 12.12.2026', 'Sommerfest', '');
+    });
+
+    test('titles that start like a label stay titles', () {
+      expectParts(
+        'Tag der offenen Tür am 12.12.2026',
+        'Tag der offenen Tür',
+        '',
+      );
+      expectParts(
+        'Termin bei Dr. Muster\n12.12.2026',
+        'Termin bei Dr. Muster',
+        '',
+      );
     });
   });
 

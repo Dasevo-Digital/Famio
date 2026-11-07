@@ -258,15 +258,103 @@ const _labels = [
   'lugar',
 ];
 
-/// "Ort: Aula": a line that says something other than what it is about.
+/// Labels that say what the event is, and where.
+const _titleLabels =
+    'was|veranstaltung|anlass|thema|betreff|titel|what|event|subject|qué'
+    '|evento|asunto|título';
+const _placeLabels = 'ort|wo|treffpunkt|where|venue|place|lugar|dónde|donde';
+
+/// After a label: a colon the recognition may have read as another mark, or
+/// the gap to the next column of a form.
+const _afterLabel = r'(?:\s*[:.;]\s*|\s{2,})';
+
+/// "Ort: Aula", also without its colon: a line that is no title.
 final _labelled = RegExp(
-  '^(?:${_labels.join('|')})\\s*:',
+  '^(?:${_labels.join('|')}|$_titleLabels)$_afterLabel'
+  r'|^(?:ort|wo|was|wann|datum|uhrzeit)\s',
   caseSensitive: false,
 );
 
-/// "Ort: Aula": where it takes place.
+/// "Was: Sommerfest", "Veranstaltung   Sommerfest", "Was Sommerfest".
+final _titleLine = RegExp(
+  '^(?:$_titleLabels)$_afterLabel(.+)\$|^was\\s+(.+)\$',
+  caseSensitive: false,
+);
+
+/// "Ort: Aula", "Ort   Aula", "Ort Aula": where it takes place.
 final _placeLine = RegExp(
-  r'^(?:ort|wo|treffpunkt|where|venue|place|lugar|dónde|donde)\s*:\s*(.+)$',
+  '^(?:$_placeLabels)$_afterLabel(.+)\$'
+  r'|^(?:ort|wo)\s+(?!ist\b|sind\b)(.+)$',
+  caseSensitive: false,
+);
+
+/// "Hauptstraße 12", "12345 Musterstadt".
+final _address = RegExp(
+  r'(?<!\d)\d{5}\s+\p{L}'
+  r'|(?:straße|strasse|str\.|weg|allee|gasse|platz|ring|damm)\s*\d+',
+  unicode: true,
+  caseSensitive: false,
+);
+
+/// Phone, mail, web and bank details.
+final _contact = RegExp(
+  r'^(?:tel|telefon|fax|mobil|handy|e-?mail|www|web|iban|bic)\b'
+  r'|https?://|\S@\S|(?<!\d)0\d{2,5}[ /-]?\d{4,}',
+  caseSensitive: false,
+);
+
+final _greeting = RegExp(
+  r'^(?:liebe|lieber|sehr geehrte|hallo|guten tag|dear|hello|hi\b|querid'
+  r'|estimad|hola)',
+  caseSensitive: false,
+);
+
+/// Words that tell a line is about an event ...
+final _eventWord = RegExp(
+  r'fest|feier|geburtstag|abend|umzug|basar|markt|ausflug|fahrt|treffen'
+  r'|training|turnier|konzert|aufführung|vorstellung|sprechtag|sprechstunde'
+  r'|versammlung|konferenz|kurs|party|einladung|termin|untersuchung|impfung'
+  r'|praxis|\bdr\.|invitation|meeting|appointment|birthday|trip|outing'
+  r'|festival|concert|recital|excursi|reunión|cita|cumpleaños|fiesta'
+  r'|concierto',
+  caseSensitive: false,
+);
+
+/// ... or a place, also when nothing labels it.
+final _placeWord = RegExp(
+  r'schule|kita|kindergarten|aula|halle|saal|zentrum|schulhof|klinik'
+  r'|haus\b|heim\b|gasthof|gaststätte|restaurant|hotel|museum|bibliothek'
+  r'|bücherei|schwimmbad|hallenbad|freibad|spielplatz|sportplatz|stadtpark'
+  r'|kirche|stadion|school|hall\b|escuela|colegio|centro\b|sala\b',
+  caseSensitive: false,
+);
+
+/// Whether [text] is about an event. Only what comes before "am", "im" … :
+/// the "Festhalle am Markt" is no market. German compounds are what they end
+/// in: a "Festhalle" is a hall, a "Kindergartenfest" a party.
+bool _namesEvent(String text) => text
+    .split(RegExp(r'\s(?:am|im|in|an|auf|at|en)\s', caseSensitive: false))
+    .first
+    .split(RegExp(r'[\s-]+'))
+    .any((word) {
+      int last(RegExp r) => r.allMatches(word).lastOrNull?.start ?? -1;
+      return last(_eventWord) > last(_placeWord);
+    });
+
+/// "Ihr nächster Termin:" announces a date and says nothing about it.
+final _justADate = RegExp(
+  r'^(?:(?:ihr|ihre|dein|deine|unser|unsere|der|die|nächste[rns]?|neue[rns]?'
+  r'|folgende[rns]?|your|our|next|new|the|su|tu|próxim[oa]|nuev[oa])\s+)*'
+  r'(?:termin|termine|datum|appointment|date|event|cita|fecha|evento)$',
+  caseSensitive: false,
+);
+
+/// A line that ends like a sentence tells something, it names nothing.
+final _statement = RegExp(r'[.!?]\s*$');
+
+/// "Auf dem Schulhof am 13.11." says where, not what.
+final _placeStart = RegExp(
+  r'^(?:im|in der|in dem|auf dem|auf der|an der|at the|en el|en la)\s',
   caseSensitive: false,
 );
 
@@ -376,7 +464,7 @@ List<EventSuggestion> extractEvents(
           _firstTime(line.substring(date.endIndex), lang) ??
           _firstTime(line.substring(0, date.startIndex), lang) ??
           (date.lastDay == null ? _timeNearby(lines, i, today, lang) : null);
-      final title = _title(lines, i);
+      final (:title, :place) = _titleAndPlace(lines, i, today, lang);
       final DateTime start;
       final DateTime end;
       final bool allDay;
@@ -414,7 +502,7 @@ List<EventSuggestion> extractEvents(
           end: end,
           allDay: allDay,
           line: line,
-          location: _place(lines, i, today, lang),
+          location: place,
         ),
       );
     }
@@ -679,46 +767,97 @@ _Time? _timeOfLine(String line, DateTime today, String lang) {
       : _firstTime(line, lang);
 }
 
-/// The place near the date at [index]: below down to the next date, else
-/// above, unless a date further up claims it.
-String _place(List<String> lines, int index, DateTime today, String lang) {
+/// What the date at [index] is about and where. Most lines around a date
+/// are something else: labels, addresses, phone numbers, a greeting. What is
+/// said outright counts first, then the line of the date, then the nearest
+/// line that names an event, above before below, then the nearest that is
+/// no place. A place is never the title: without one the appointment is
+/// just an appointment there. What stands between two dates belongs to the
+/// first.
+({String title, String place}) _titleAndPlace(
+  List<String> lines,
+  int index,
+  DateTime today,
+  String lang,
+) {
   bool dated(String line) => _dates(line, today, lang).isNotEmpty;
-  String? placeIn(String line) => _placeLine.firstMatch(line)?[1]?.trim();
-
-  final below = _nextLines(lines, index, 1).take(3).takeWhile((l) => !dated(l));
-  final above = _nextLines(lines, index, -1).toList();
-  return below.map(placeIn).nonNulls.firstOrNull ??
-      (above.any(dated)
-          ? null
-          : above.take(3).map(placeIn).nonNulls.firstOrNull) ??
-      '';
-}
-
-/// What is left of the line at [index], else the nearest line above that
-/// can be a title, else one below.
-String _title(List<String> lines, int index) {
   bool fits(String title) =>
-      title.length >= 3 && !_labels.contains(title.toLowerCase());
-
-  String? near(int step) {
-    var seen = 0;
-    for (
-      var i = index + step;
-      i >= 0 && i < lines.length && seen < 4;
-      i += step
-    ) {
-      if (lines[i].isEmpty) continue;
-      seen++;
-      final title = _sentence(_clean(lines[i]));
-      if (fits(title) && !_labelled.hasMatch(lines[i])) return title;
-    }
-    return null;
+      title.length >= 3 &&
+      !_labels.contains(title.toLowerCase()) &&
+      !_justADate.hasMatch(title);
+  String titleIn(String line) => _sentence(_clean(line));
+  String? value(RegExp label, String line) {
+    final match = label.firstMatch(line);
+    return (match?[1] ?? match?[2])?.trim();
   }
 
-  final own = _sentence(_clean(lines[index]));
-  var t = fits(own) ? own : near(-1) ?? near(1) ?? tr.commonEvent;
-  t = '${t[0].toUpperCase()}${t.substring(1)}';
-  return t.length > 60 ? '${t.substring(0, 57)}…' : t;
+  bool plain(String line) =>
+      !_labelled.hasMatch(line) &&
+      !_address.hasMatch(line) &&
+      !_contact.hasMatch(line) &&
+      !_greeting.hasMatch(line);
+  bool place(String title) =>
+      !_namesEvent(title) &&
+      (_placeWord.hasMatch(title) || _placeStart.hasMatch(title));
+
+  final up = _nextLines(lines, index, -1).toList();
+  final above = up.takeWhile((l) => !dated(l)).take(5).toList();
+  final below = _nextLines(
+    lines,
+    index,
+    1,
+  ).takeWhile((l) => !dated(l)).take(4).toList();
+  final around = [...below, if (!up.any(dated)) ...above];
+
+  final said = around
+      .map((l) => value(_titleLine, l))
+      .nonNulls
+      .where((t) => t.split(' ').length <= 8)
+      .firstOrNull;
+  var where = around.map((l) => value(_placeLine, l)).nonNulls.firstOrNull;
+
+  final titles = above.where(plain).map(titleIn).where(fits).toList();
+  final next = below
+      .take(2)
+      .where((l) => plain(l) && !_statement.hasMatch(l))
+      .map(titleIn)
+      .where(fits)
+      .toList();
+  bool noPlace(String title) => !place(title);
+  final own = titleIn(lines[index]);
+  final ownIsPlace = fits(own) && place(own);
+  final t =
+      said ??
+      (fits(own) && !ownIsPlace ? own : null) ??
+      titles.where(_namesEvent).firstOrNull ??
+      next.where(_namesEvent).firstOrNull ??
+      titles.where(noPlace).firstOrNull ??
+      next.where(noPlace).firstOrNull ??
+      below
+          .where(plain)
+          .map(titleIn)
+          .where((t) => fits(t) && noPlace(t))
+          .firstOrNull ??
+      tr.commonEvent;
+
+  if (where == null && ownIsPlace) where = own;
+  where ??= [
+    ...next,
+    if (!up.any(dated)) ...titles,
+  ].where((n) => n != t && place(n)).firstOrNull;
+  if (where == null) {
+    final addresses = [
+      ...above.reversed,
+      ...below,
+    ].where(_address.hasMatch).take(2);
+    if (addresses.isNotEmpty) where = addresses.join(', ');
+  }
+
+  final title = '${t[0].toUpperCase()}${t.substring(1)}';
+  return (
+    title: title.length > 60 ? '${title.substring(0, 57)}…' : title,
+    place: where ?? '',
+  );
 }
 
 /// What a sentence is about, once the date is out of it: "Der Elternabend
@@ -733,38 +872,52 @@ String _sentence(String text) {
 
 /// [line] without its dates, times and the small words around them.
 String _clean(String line) {
+  // Where a date stood, for the small words that led up to it.
+  const date = '\u0000';
   // Short weekdays first: they are only recognised before a date.
   var t = line
-      .replaceAll(_shortWeekday, ' ')
-      .replaceAll(_weekday, ' ')
-      .replaceAll(_named, ' ')
-      .replaceAll(_monthFirst, ' ')
-      .replaceAll(_slashed, ' ')
-      .replaceAll(_numeric, ' ')
-      .replaceAll(_meridiem, ' ')
-      .replaceAll(_aLas, ' ')
-      .replaceAll(_time, ' ')
-      .replaceAll(
-        RegExp(
-          r'\b(am|um|vom|von|bis|ab|den|ganztägig|all day|todo el día)\b',
-          caseSensitive: false,
-        ),
-        ' ',
-      )
+      .replaceAll(_shortWeekday, date)
+      .replaceAll(_weekday, date)
+      .replaceAll(_named, date)
+      .replaceAll(_monthFirst, date)
+      .replaceAll(_slashed, date)
+      .replaceAll(_numeric, date)
+      .replaceAll(_meridiem, date)
+      .replaceAll(_aLas, date)
+      .replaceAll(_time, date)
+      .replaceAll(_beforeDate, '')
+      .replaceAll(date, ' ')
+      .replaceAll(_allDay, ' ')
       .replaceAll(RegExp(r'[\s,;:–—\-|•*.]+$'), '')
       .replaceAll(RegExp(r'[\s,;:–—\-|•*]+'), ' ')
       .trim();
-  // English and Spanish small words only at the edges: inside they belong
-  // to the title ("Fiesta de otoño").
+  // Small words only at the edges: inside they belong to the title
+  // ("Fiesta de otoño", "Fest am See").
   var words = t.split(' ');
-  while (words.isNotEmpty && _fillers.contains(words.first.toLowerCase())) {
+  bool filler(String word) =>
+      _fillers.contains(word.toLowerCase()) ||
+      _germanFillers.contains(word.toLowerCase());
+  while (words.isNotEmpty && filler(words.first)) {
     words = words.sublist(1);
   }
-  while (words.isNotEmpty && _fillers.contains(words.last.toLowerCase())) {
+  while (words.isNotEmpty && filler(words.last)) {
     words = words.sublist(0, words.length - 1);
   }
   return words.join(' ');
 }
+
+const _germanFillers = {'am', 'um', 'vom', 'von', 'bis', 'ab', 'den'};
+
+/// "am ", ", den " and the like directly before a date.
+final _beforeDate = RegExp(
+  '(?:\\b(?:${_germanFillers.join('|')})\\b[\\s,]*)+(?=\u0000)',
+  caseSensitive: false,
+);
+
+final _allDay = RegExp(
+  r'\b(?:ganztägig|all day|todo el día)\b',
+  caseSensitive: false,
+);
 
 /// What a quick entry names: "Donnerstag 16 Uhr Kinderarzt", "morgen Müll
 /// rausbringen", "next Friday 3 pm dentist", "mañana a las 9 pediatra".
