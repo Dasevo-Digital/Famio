@@ -19,7 +19,7 @@ import '../l10n.dart';
 /// [occurrence] (which may be one appearance of a series).
 /// [start], [end], [allDay], [title] and [memberIds] prefill a new
 /// appointment (e.g. a free time found for several people, a quick entry).
-Future<void> showEventEditor(
+Future<bool> showEventEditor(
   BuildContext context, {
   DateTime? day,
   Occurrence? occurrence,
@@ -27,10 +27,12 @@ Future<void> showEventEditor(
   DateTime? end,
   bool allDay = false,
   String? title,
+  String? location,
+  String? notes,
   Set<String>? memberIds,
-}) {
-  return Navigator.of(context).push(
-    MaterialPageRoute<void>(
+}) async {
+  final saved = await Navigator.of(context).push<bool>(
+    MaterialPageRoute(
       fullscreenDialog: true,
       builder: (_) => _EventEditor(
         day: day,
@@ -39,10 +41,13 @@ Future<void> showEventEditor(
         end: end,
         allDay: allDay,
         title: title,
+        location: location,
+        notes: notes,
         memberIds: memberIds,
       ),
     ),
   );
+  return saved ?? false;
 }
 
 enum _Repeat {
@@ -108,6 +113,8 @@ class _EventEditor extends StatefulWidget {
     this.end,
     this.allDay = false,
     this.title,
+    this.location,
+    this.notes,
     this.memberIds,
   });
 
@@ -119,6 +126,8 @@ class _EventEditor extends StatefulWidget {
   /// [start] and [end] are whole days (the end exclusive).
   final bool allDay;
   final String? title;
+  final String? location;
+  final String? notes;
   final Set<String>? memberIds;
 
   @override
@@ -130,8 +139,12 @@ class _EventEditorState extends State<_EventEditor> {
   late final _title = TextEditingController(
     text: _original?.title ?? widget.title,
   );
-  late final _location = TextEditingController(text: _original?.location);
-  late final _notes = TextEditingController(text: _original?.notes);
+  late final _location = TextEditingController(
+    text: _original?.location ?? widget.location,
+  );
+  late final _notes = TextEditingController(
+    text: _original?.notes ?? widget.notes,
+  );
 
   late bool _allDay;
   late DateTime _start;
@@ -379,7 +392,7 @@ class _EventEditorState extends State<_EventEditor> {
         );
       }
     }
-    if (mounted) Navigator.pop(context);
+    if (mounted) Navigator.pop(context, true);
   }
 
   Future<void> _delete() async {

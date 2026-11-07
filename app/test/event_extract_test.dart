@@ -22,7 +22,7 @@ Fotograf: Mittwoch 4.11.2026
 ''';
     expect(found(letter), [
       (
-        'findet der Elternabend statt',
+        'Der Elternabend',
         DateTime(2026, 10, 16, 15),
         DateTime(2026, 10, 16, 16),
         false,
@@ -61,7 +61,7 @@ March 2-6
 ''';
     expect(found(letter), [
       (
-        'parent evening is',
+        'Parent evening',
         DateTime(2026, 10, 16, 15),
         DateTime(2026, 10, 16, 16),
         false,
@@ -96,7 +96,7 @@ Teatro el 15 de enero a las 6 de la tarde
 ''';
     expect(found(letter), [
       (
-        'reunión de padres será',
+        'Reunión de padres',
         DateTime(2026, 10, 16, 18),
         DateTime(2026, 10, 16, 19),
         false,
@@ -241,6 +241,92 @@ Teatro el 15 de enero a las 6 de la tarde
 
     test('numbered things with spaces stay no dates', () {
       expect(read('Für die 1. 2. Klasse gibt es Saft.'), isEmpty);
+    });
+
+    test('a sentence goes on after the line break', () {
+      final found = read(
+        'unser diesjähriger Laternenumzug findet am Freitag, den\n'
+        '13. November um 17 Uhr statt. Treffpunkt ist der Schulhof.\n'
+        'Der Elternabend der Klasse 3b ist am 19.11.\n'
+        'um 19:30 Uhr im Raum 12.',
+      );
+      expect(found.map((e) => e.title), [
+        'Unser diesjähriger Laternenumzug',
+        'Der Elternabend der Klasse 3b',
+      ]);
+      expect(found.first.start, DateTime(2026, 11, 13, 17));
+      expect(found.last.start, DateTime(2026, 11, 19, 19, 30));
+    });
+
+    test('an abbreviation does not end the sentence', () {
+      expectOne(
+        'Termin bei Dr. Muster am 24.11. um 10:15',
+        'Termin bei Dr. Muster',
+        DateTime(2026, 11, 24, 10, 15),
+      );
+    });
+
+    test('the month may come without its dot after a weekday', () {
+      expectOne(
+        'Termin bei Dr. Muster\nDi 24.11 um 10:15\nTel. 030/1234567',
+        'Termin bei Dr. Muster',
+        DateTime(2026, 11, 24, 10, 15),
+      );
+      expectOne(
+        'Schwimmen am 24.11 ab 15 Uhr',
+        'Schwimmen',
+        DateTime(2026, 11, 24, 15),
+      );
+      // A time stays a time.
+      expect(read('Treffen am 10.15 Uhr'), isEmpty);
+      expect(read('Beginn um 10.11'), isEmpty);
+    });
+
+    test('a flyer: big title, then what stands around the date', () {
+      expectOne(
+        'Sommerfest\nEinlass ab\nSamstag\n14 Uhr\n12.12.2026\n'
+            'Kita Sonnenschein, Hauptstr. 5',
+        'Sommerfest',
+        DateTime(2026, 12, 12, 14),
+      );
+    });
+
+    test('a table read row by row', () {
+      final found = read(
+        'Termine im 1. Halbjahr\n'
+        'Datum   Uhrzeit   Veranstaltung\n'
+        '12.11.2026   19:00   Elternabend Klasse 3\n'
+        '20.11.2026   15:30   Adventsbasar\n'
+        '18.12.   Letzter Schultag',
+      );
+      expect(found.map((e) => e.title), [
+        'Elternabend Klasse 3',
+        'Adventsbasar',
+        'Letzter Schultag',
+      ]);
+      expect(found[1].start, DateTime(2026, 11, 20, 15, 30));
+      expect(found[2].allDay, isTrue);
+    });
+
+    test('the place comes along', () {
+      final found = read(
+        'Einladung zum Elternabend\nDatum: 19.11.2026\nUhrzeit: 19:30 Uhr\n'
+        'Ort: Aula der Grundschule',
+      );
+      expect(found.single.location, 'Aula der Grundschule');
+      final above = read('Sommerfest\nWo: Spielplatz\nWann: 12.12.2026');
+      expect(above.single.location, 'Spielplatz');
+      expect(read('Schulfest am 12.12.2026').single.location, isEmpty);
+    });
+
+    test('what stands between two dates belongs to the first', () {
+      final found = read(
+        'Basar am 12.12.2026\nOrt: Aula\n15 Uhr\nFlohmarkt am 13.12.2026',
+      );
+      expect(found.first.location, 'Aula');
+      expect(found.first.start, DateTime(2026, 12, 12, 15));
+      expect(found.last.location, isEmpty);
+      expect(found.last.allDay, isTrue);
     });
 
     test('other languages have their labels too', () {

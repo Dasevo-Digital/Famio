@@ -39,12 +39,31 @@ class MainFlutterWindow: NSWindow {
   }
 }
 
+/// Top to bottom, row by row: Vision reports every cell of a table on its
+/// own, and sorted by height alone the cells of a row change places.
+func readingOrder(_ observations: [VNRecognizedTextObservation]) -> [String] {
+  var rows: [[VNRecognizedTextObservation]] = []
+  for line in observations.sorted(by: { $0.boundingBox.midY > $1.boundingBox.midY }) {
+    if let first = rows.last?.first,
+      abs(first.boundingBox.midY - line.boundingBox.midY)
+        < min(first.boundingBox.height, line.boundingBox.height) * 0.6
+    {
+      rows[rows.count - 1].append(line)
+    } else {
+      rows.append([line])
+    }
+  }
+  return rows.map { row in
+    row.sorted { $0.boundingBox.minX < $1.boundingBox.minX }
+      .compactMap { $0.topCandidates(1).first?.string }
+      .joined(separator: "   ")
+  }
+}
+
 /// Lines of text in [image], top to bottom (German first), via Vision.
 func recognizeText(in image: CGImage, result: @escaping FlutterResult) {
   let request = VNRecognizeTextRequest { request, _ in
-    let lines = (request.results as? [VNRecognizedTextObservation] ?? [])
-      .sorted { $0.boundingBox.minY > $1.boundingBox.minY }
-      .compactMap { $0.topCandidates(1).first?.string }
+    let lines = readingOrder(request.results as? [VNRecognizedTextObservation] ?? [])
     DispatchQueue.main.async { result(lines.joined(separator: "\n")) }
   }
   request.recognitionLevel = .accurate

@@ -1847,6 +1847,7 @@
   "importNoEventsFoundText": "No se han encontrado eventos en el texto.",
   "importTakenLine": "Tomado de: {line}",
   "import1EventAdded": "1 evento añadido",
+  "importEditEvent": "Editar evento",
   "importCountEventsAdded": "{count} eventos añadidos",
   "importDay": "{day}, {from}–{to}",
   "importDayAllDay": "{day}, todo el día",

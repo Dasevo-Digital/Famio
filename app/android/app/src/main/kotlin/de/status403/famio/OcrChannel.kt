@@ -9,12 +9,15 @@ import android.os.ParcelFileDescriptor
 import com.google.android.gms.common.moduleinstall.ModuleInstall
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
+import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * Text in photos (`famio/ocr`), e.g. appointments from a letter from
@@ -84,6 +87,29 @@ class OcrChannel(private val context: Context, messenger: BinaryMessenger) {
             }
     }
 
+    /**
+     * Top to bottom, row by row: the cells of a table come as blocks of their
+     * own, and sorted by height alone they change places within a row.
+     */
+    private fun readingOrder(text: Text): String {
+        val rows = mutableListOf<MutableList<Text.Line>>()
+        val lines = text.textBlocks.flatMap { it.lines }.filter { it.boundingBox != null }
+        for (line in lines.sortedBy { it.boundingBox!!.exactCenterY() }) {
+            val first = rows.lastOrNull()?.first()?.boundingBox
+            val box = line.boundingBox!!
+            if (first != null &&
+                abs(first.exactCenterY() - box.exactCenterY()) < min(first.height(), box.height()) * 0.6f
+            ) {
+                rows.last().add(line)
+            } else {
+                rows.add(mutableListOf(line))
+            }
+        }
+        return rows.joinToString("\n") { row ->
+            row.sortedBy { it.boundingBox!!.left }.joinToString("   ") { it.text }
+        }
+    }
+
     private fun recognize(recognizer: TextRecognizer, path: String?, result: MethodChannel.Result) {
         val image = runCatching {
             InputImage.fromFilePath(context, Uri.fromFile(File(path!!)))
@@ -95,11 +121,7 @@ class OcrChannel(private val context: Context, messenger: BinaryMessenger) {
         }
         recognizer.process(image)
             .addOnSuccessListener { text ->
-                // Blocks top to bottom, lines in order.
-                val lines = text.textBlocks
-                    .sortedBy { it.boundingBox?.top ?: 0 }
-                    .flatMap { block -> block.lines.map { it.text } }
-                result.success(lines.joinToString("\n"))
+                result.success(readingOrder(text))
                 recognizer.close()
             }
             .addOnFailureListener {
@@ -138,10 +160,7 @@ class OcrChannel(private val context: Context, messenger: BinaryMessenger) {
         pages.forEachIndexed { i, bitmap ->
             recognizer.process(InputImage.fromBitmap(bitmap, 0))
                 .addOnCompleteListener { task ->
-                    texts[i] = (if (task.isSuccessful) task.result else null)?.textBlocks
-                        ?.sortedBy { it.boundingBox?.top ?: 0 }
-                        ?.flatMap { block -> block.lines.map { it.text } }
-                        ?.joinToString("\n")
+                    texts[i] = (if (task.isSuccessful) task.result else null)?.let(::readingOrder)
                     if (--left == 0) {
                         recognizer.close()
                         result.success(texts.filterNotNull().joinToString("\n"))

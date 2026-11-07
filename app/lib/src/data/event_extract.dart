@@ -23,6 +23,7 @@ class EventSuggestion {
     required this.end,
     required this.allDay,
     required this.line,
+    this.location = '',
   });
 
   final String title;
@@ -34,6 +35,9 @@ class EventSuggestion {
 
   /// The text line it came from, to show next to the suggestion.
   final String line;
+
+  /// What a line like "Ort: Aula" says near the date.
+  final String location;
 }
 
 const _months = {
@@ -112,12 +116,40 @@ final _numeric = RegExp(
   r'(?<!\d)(?:(\d{1,2})\.?\s*(?:-|–|—|bis)\s*)?(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})?(?!\d)',
 );
 
+/// Words that announce a date, so that the numbers after them are one.
+const _announced =
+    r'(?:\b(?:am|den|vom|bis|montag|dienstag|mittwoch|donnerstag|freitag'
+    r'|samstag|sonntag|mo|di|mi|do|fr|sa|so)\.?|,)';
+
 /// "13. 11. 2026", "13.11. 2026": printed letters and recognised text put
-/// spaces into dates. Without a year only after a word that announces one,
-/// because "1. 2. Klasse" is none.
+/// spaces into dates. Without a year only after [_announced], because "1. 2.
+/// Klasse" is none.
 final _spacedDate = RegExp(
   r'(?<![\d.])(\d{1,2})\.[ \t]*(\d{1,2})\.[ \t]*(\d{4})(?!\d)'
-  r'|(?<=(?:\b(?:am|den|vom|bis)|,)[ \t]+)(\d{1,2})\.[ \t]+(\d{1,2})\.(?!\d)',
+  '|(?<=$_announced[ \\t]+)(\\d{1,2})\\.[ \\t]+(\\d{1,2})\\.(?!\\d)',
+  caseSensitive: false,
+);
+
+/// "Di 24.11": the last dot left out. Only after [_announced] and not before
+/// "Uhr": "10.15" alone is a time.
+final _bareDate = RegExp(
+  '(?<=$_announced[ \\t]+)(\\d{1,2})\\.(\\d{1,2})(?![\\d.:]|[ \\t]*uhr)',
+  caseSensitive: false,
+);
+
+/// A sentence broken just before its date: "… am Freitag, den" and then
+/// "13. November …".
+final _brokenBeforeDate = RegExp(
+  r'(?:\b(?:am|den|vom)|\b(?:montag|dienstag|mittwoch|donnerstag|freitag'
+  r'|samstag|sonntag),)$',
+  caseSensitive: false,
+);
+
+/// A line that goes on with the time of the line before: "um 19:30 Uhr im
+/// Raum 12".
+final _startsWithTime = RegExp(
+  r'^(?:(?:um|ab|gegen|von)\s+)?\d{1,2}(?:[:.]\d{2})?\s*uhr\b'
+  r'|^(?:um|ab|gegen|von)\s+\d{1,2}[:.]\d{2}\b',
   caseSensitive: false,
 );
 
@@ -216,6 +248,7 @@ const _fillers = {
 /// What stands in front of the facts of an invitation: never its title.
 const _labels = [
   // German
+  'einlass',
   'datum', 'termin', 'wann', 'tag', 'zeit', 'uhrzeit', 'beginn', 'start',
   'ende', 'wo', 'ort', 'treffpunkt',
   // English
@@ -229,6 +262,29 @@ const _labels = [
 final _labelled = RegExp(
   '^(?:${_labels.join('|')})\\s*:',
   caseSensitive: false,
+);
+
+/// "Ort: Aula": where it takes place.
+final _placeLine = RegExp(
+  r'^(?:ort|wo|treffpunkt|where|venue|place|lugar|dónde|donde)\s*:\s*(.+)$',
+  caseSensitive: false,
+);
+
+/// What ends a line of a sentence but no title: "findet statt", "ist".
+final _trailingVerb = RegExp(
+  r'(?:\s+(?:findet|finden|statt|ist|sind|beginnt|startet'
+  r'|is|are|starts|será|serán|es|son))+$',
+  caseSensitive: false,
+);
+
+/// The same at the start: "findet der Elternabend statt".
+final _leadingVerb = RegExp(r'^(?:findet|finden)\s+', caseSensitive: false);
+
+/// The first sentence when another follows. Short words before the dot are
+/// rather abbreviations ("Dr. Muster").
+final _firstSentence = RegExp(
+  r'^(.*?[\p{L}\d]{4,})[.!?]\s+\p{Lu}',
+  unicode: true,
 );
 
 /// The language [text] is most likely written in (de, en or es), else
@@ -309,14 +365,7 @@ List<EventSuggestion> extractEvents(
 }) {
   final today = now ?? DateTime.now();
   final lang = language ?? guessLanguage(text, fallback: appLanguage);
-  final lines = text
-      .replaceAllMapped(
-        _spacedDate,
-        (m) => '${m[1] ?? m[4]}.${m[2] ?? m[5]}.${m[3] ?? ''}',
-      )
-      .split(RegExp(r'\r?\n'))
-      .map((l) => l.trim())
-      .toList();
+  final lines = _lines(text);
   final found = <EventSuggestion>[];
   final seen = <String>{};
   for (var i = 0; i < lines.length; i++) {
@@ -365,12 +414,41 @@ List<EventSuggestion> extractEvents(
           end: end,
           allDay: allDay,
           line: line,
+          location: _place(lines, i, today, lang),
         ),
       );
     }
   }
   found.sort((a, b) => a.start.compareTo(b.start));
   return found;
+}
+
+/// [text] line by line, with dates as the patterns above expect them and
+/// sentences broken before their date made whole.
+List<String> _lines(String text) {
+  final lines = <String>[];
+  final repaired = text
+      .replaceAllMapped(
+        _spacedDate,
+        (m) => '${m[1] ?? m[4]}.${m[2] ?? m[5]}.${m[3] ?? ''}',
+      )
+      .replaceAllMapped(
+        _bareDate,
+        (m) => int.parse(m[2]!) > 12 ? m[0]! : '${m[1]}.${m[2]}.',
+      );
+  for (final raw in repaired.split(RegExp(r'\r?\n'))) {
+    final line = raw.trim();
+    final goesOn =
+        lines.isNotEmpty &&
+        _brokenBeforeDate.hasMatch(lines.last) &&
+        line.startsWith(RegExp(r'\d{1,2}\.'));
+    if (goesOn) {
+      lines.last = '${lines.last} $line';
+    } else {
+      lines.add(line);
+    }
+  }
+  return lines;
 }
 
 typedef _Date = ({
@@ -576,10 +654,18 @@ _Time? _timeNearby(List<String> lines, int index, DateTime today, String lang) {
     seen++;
     if (_timeOfLine(lines[i], today, lang) case final time?) return time;
   }
-  for (var i = index - 1; i >= 0; i--) {
-    if (lines[i].isNotEmpty) return _timeOfLine(lines[i], today, lang);
+  // Above only what no date before it claims.
+  final above = _nextLines(lines, index, -1).take(3).toList();
+  if (above.isEmpty) return null;
+  final claimed = above.skip(1).any((l) => _dates(l, today, lang).isNotEmpty);
+  return claimed ? null : _timeOfLine(above.first, today, lang);
+}
+
+/// The lines around [index] that say something, nearest first.
+Iterable<String> _nextLines(List<String> lines, int index, int step) sync* {
+  for (var i = index + step; i >= 0 && i < lines.length; i += step) {
+    if (lines[i].isNotEmpty) yield lines[i];
   }
-  return null;
 }
 
 /// The time of a line that says little else: "Uhrzeit: 19:30 Uhr", "von 14
@@ -588,7 +674,24 @@ _Time? _timeNearby(List<String> lines, int index, DateTime today, String lang) {
 _Time? _timeOfLine(String line, DateTime today, String lang) {
   if (_dates(line, today, lang).isNotEmpty) return null;
   final words = _clean(line).split(' ').where((w) => w.isNotEmpty);
-  return words.length > 2 ? null : _firstTime(line, lang);
+  return words.length > 2 && !_startsWithTime.hasMatch(line)
+      ? null
+      : _firstTime(line, lang);
+}
+
+/// The place near the date at [index]: below down to the next date, else
+/// above, unless a date further up claims it.
+String _place(List<String> lines, int index, DateTime today, String lang) {
+  bool dated(String line) => _dates(line, today, lang).isNotEmpty;
+  String? placeIn(String line) => _placeLine.firstMatch(line)?[1]?.trim();
+
+  final below = _nextLines(lines, index, 1).take(3).takeWhile((l) => !dated(l));
+  final above = _nextLines(lines, index, -1).toList();
+  return below.map(placeIn).nonNulls.firstOrNull ??
+      (above.any(dated)
+          ? null
+          : above.take(3).map(placeIn).nonNulls.firstOrNull) ??
+      '';
 }
 
 /// What is left of the line at [index], else the nearest line above that
@@ -606,15 +709,26 @@ String _title(List<String> lines, int index) {
     ) {
       if (lines[i].isEmpty) continue;
       seen++;
-      final title = _clean(lines[i]);
+      final title = _sentence(_clean(lines[i]));
       if (fits(title) && !_labelled.hasMatch(lines[i])) return title;
     }
     return null;
   }
 
-  final own = _clean(lines[index]);
-  final t = fits(own) ? own : near(-1) ?? near(1) ?? tr.commonEvent;
+  final own = _sentence(_clean(lines[index]));
+  var t = fits(own) ? own : near(-1) ?? near(1) ?? tr.commonEvent;
+  t = '${t[0].toUpperCase()}${t.substring(1)}';
   return t.length > 60 ? '${t.substring(0, 57)}…' : t;
+}
+
+/// What a sentence is about, once the date is out of it: "Der Elternabend
+/// ist am 19.11." leaves "Der Elternabend ist".
+String _sentence(String text) {
+  final first = _firstSentence.firstMatch(text)?[1] ?? text;
+  return first
+      .replaceFirst(_trailingVerb, '')
+      .replaceFirst(_leadingVerb, '')
+      .trim();
 }
 
 /// [line] without its dates, times and the small words around them.

@@ -17,6 +17,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
+import 'event_editor.dart';
 import 'ics_import_screen.dart';
 
 /// Appointments from a photo of a letter, an invitation or pasted text:
@@ -35,6 +36,9 @@ class _EventImportScreenState extends State<EventImportScreen> {
   List<EventSuggestion>? _found;
   final _chosen = <int>{};
   final _titles = <int, TextEditingController>{};
+
+  /// Suggestions already taken over through the editor.
+  final _saved = <int>{};
   var _busy = false;
   String? _message;
 
@@ -139,13 +143,58 @@ class _EventImportScreenState extends State<EventImportScreen> {
         for (final (i, e) in found.indexed)
           i: TextEditingController(text: e.title),
       });
+    // The date of the letter and what is over already stay unticked.
+    final now = DateTime.now();
     setState(() {
       _found = found;
+      _saved.clear();
       _chosen
         ..clear()
-        ..addAll(List.generate(found.length, (i) => i));
+        ..addAll([
+          for (final (i, e) in found.indexed)
+            if (e.end.isAfter(now)) i,
+        ]);
       _message = found.isEmpty ? tr.importNoEventsFoundText : null;
     });
+  }
+
+  /// The whole event form, filled in: saved from there, the suggestion is
+  /// done.
+  Future<void> _edit(int i) async {
+    final e = _found![i];
+    final title = _titles[i]!.text.trim();
+    final saved = await showEventEditor(
+      context,
+      start: e.start,
+      end: e.end,
+      allDay: e.allDay,
+      title: title.isEmpty ? e.title : title,
+      location: e.location,
+      notes: tr.importTakenLine(e.line),
+    );
+    if (!saved || !mounted) return;
+    setState(() {
+      _saved.add(i);
+      _chosen.remove(i);
+    });
+    if (_saved.length == _found!.length) {
+      _finish(_saved.length);
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.import1EventAdded)));
+    }
+  }
+
+  void _finish(int added) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          added == 1 ? tr.import1EventAdded : tr.importCountEventsAdded(added),
+        ),
+      ),
+    );
+    Navigator.pop(context);
   }
 
   Future<void> _icsFile() async {
@@ -205,19 +254,13 @@ class _EventImportScreenState extends State<EventImportScreen> {
           start: e.start,
           end: e.end,
           allDay: e.allDay,
+          location: e.location,
           notes: tr.importTakenLine(e.line),
         ),
       );
       added++;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          added == 1 ? tr.import1EventAdded : tr.importCountEventsAdded(added),
-        ),
-      ),
-    );
-    Navigator.pop(context);
+    _finish(added + _saved.length);
   }
 
   static String _when(EventSuggestion e) {
@@ -313,50 +356,62 @@ class _EventImportScreenState extends State<EventImportScreen> {
             ),
           ] else ...[
             for (final (i, e) in found.indexed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: SoftCard(
-                  padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Checkbox(
-                        value: _chosen.contains(i),
-                        onChanged: (v) => setState(
-                          () => v ?? false ? _chosen.add(i) : _chosen.remove(i),
+              if (!_saved.contains(i))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SoftCard(
+                    padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Checkbox(
+                          value: _chosen.contains(i),
+                          onChanged: (v) => setState(
+                            () =>
+                                v ?? false ? _chosen.add(i) : _chosen.remove(i),
+                          ),
                         ),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            TextField(
-                              controller: _titles[i],
-                              decoration: InputDecoration(
-                                isDense: true,
-                                labelText: tr.commonTitle,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              TextField(
+                                controller: _titles[i],
+                                decoration: InputDecoration(
+                                  isDense: true,
+                                  labelText: tr.commonTitle,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _when(e),
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                color: FamioColors.of(context).text(accent),
+                              const SizedBox(height: 4),
+                              Text(
+                                _when(e),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: FamioColors.of(context).text(accent),
+                                ),
                               ),
-                            ),
-                            Text(
-                              e.line,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ],
+                              if (e.location.isNotEmpty)
+                                Text(
+                                  e.location,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              Text(
+                                e.line,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        IconButton(
+                          icon: const Icon(AppIcons.pencilSimple),
+                          tooltip: tr.importEditEvent,
+                          onPressed: () => _edit(i),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
             Row(
               children: [
                 TextButton(

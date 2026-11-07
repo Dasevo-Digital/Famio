@@ -262,6 +262,93 @@ void main() {
     });
   });
 
+  group('appointments from a photo', () {
+    final now = DateTime.now();
+    final soon = DateTime(now.year, now.month, now.day + 10);
+    final later = DateTime(now.year, now.month, now.day + 12);
+
+    Future<void> search(WidgetTester tester, String text) async {
+      await open(tester);
+      await push(tester, const EventImportScreen());
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Oder Text hier einfügen'),
+        text,
+      );
+      await tester.tap(find.text('Termine suchen'));
+      await tester.pumpAndSettle();
+    }
+
+    String day(DateTime d) => '${d.day}.${d.month}.${d.year}';
+
+    testWidgets('a suggestion is changed in the whole event form', (
+      tester,
+    ) async {
+      await search(
+        tester,
+        'Sommerfest\nDatum: ${day(soon)}\nUhrzeit: 15:30 Uhr\n'
+        'Ort: Spielplatz\nBasar am ${day(later)}',
+      );
+      expect(find.text('2 Termine übernehmen'), findsOneWidget);
+      expect(find.text('Spielplatz'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Termin bearbeiten').first);
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(TextField, 'Spielplatz'), findsOneWidget);
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Sommerfest'),
+        'Sommerfest der Kita',
+      );
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+
+      final event = engine.events.single;
+      expect(event.title, 'Sommerfest der Kita');
+      expect(event.location, 'Spielplatz');
+      expect((event.start.hour, event.start.minute), (15, 30));
+      expect(event.notes, contains('Datum: '));
+      // The other suggestion is still there, this one is done.
+      expect(find.byTooltip('Termin bearbeiten'), findsOneWidget);
+      await tester.tap(find.text('1 Termin übernehmen'));
+      await tester.pumpAndSettle();
+      expect(engine.events.map((e) => e.title), contains('Basar'));
+      expect(engine.events, hasLength(2));
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('leaving the form keeps the suggestion', (tester) async {
+      await search(tester, 'Basar am ${day(soon)}');
+      await tester.tap(find.byTooltip('Termin bearbeiten'));
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.text('Speichern'))).pop();
+      await tester.pumpAndSettle();
+      expect(engine.events, isEmpty);
+      expect(find.text('1 Termin übernehmen'), findsOneWidget);
+    });
+
+    testWidgets('the last suggestion saved in the form ends the page', (
+      tester,
+    ) async {
+      await search(tester, 'Basar am ${day(soon)}');
+      await tester.tap(find.byTooltip('Termin bearbeiten'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(engine.events, hasLength(1));
+      expect(find.byType(EventImportScreen), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('a date that has passed is offered, but not ticked', (
+      tester,
+    ) async {
+      final past = DateTime(now.year, now.month, now.day - 5);
+      await search(tester, 'Stadt, ${day(past)}\nBasar am ${day(soon)}');
+      final boxes = tester.widgetList<Checkbox>(find.byType(Checkbox)).toList();
+      expect(boxes.map((b) => b.value), [false, true]);
+      expect(find.text('1 Termin übernehmen'), findsOneWidget);
+    });
+  });
+
   group('pinboard', () {
     testWidgets('a pinned note shows on the start page', (tester) async {
       await open(tester);
