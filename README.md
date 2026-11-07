@@ -79,6 +79,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Ein bestehendes Konto über einen einmaligen, fünf Minuten gültigen QR-Code mit einem neuen Gerät koppeln | ✅ |
 | Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), Web Push für die Web-App, alternativ über ntfy | ✅ |
 | Wandanzeige fürs Küchen-Tablet | ✅ |
+| Termine aus Fotos, Scans und PDFs von Briefen und Einladungen (Erkennung auf dem Gerät, Bearbeiten vor dem Übernehmen, das Original bleibt als Anhang am Termin); Fotos und Dateien an Terminen | ✅ |
 | Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
 | Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
 | Medikamentenplan mit Erinnerung und Vorrat | ✅ |

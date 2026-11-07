@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
@@ -35,6 +37,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,6 +80,7 @@ void main() {
     WidgetTester tester, {
     String? section,
     Set<String> hidden = const {},
+    http.Client? client,
   }) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
@@ -86,7 +91,7 @@ void main() {
     await state.init();
     engine = SyncEngine(
       store: LocalStore.open(':memory:')..setMeta('members', _members),
-      api: FamioApiClient('localhost:1'),
+      api: FamioApiClient('localhost:1', httpClient: client),
       memberId: 'm1',
     );
     state
@@ -313,6 +318,120 @@ void main() {
       expect(engine.events.map((e) => e.title), contains('Basar'));
       expect(engine.events, hasLength(2));
       await tester.pump(const Duration(seconds: 5));
+    });
+
+    group('the photo stays', () {
+      final uploads = <String>[];
+
+      /// The import page after reading a photo that says [text].
+      Future<void> read(
+        WidgetTester tester,
+        String text, {
+        bool serverWorks = true,
+      }) async {
+        uploads.clear();
+        await open(
+          tester,
+          client: MockClient((request) async {
+            if (!request.url.path.contains('/files')) {
+              return http.Response('{}', 404);
+            }
+            if (!serverWorks) throw http.ClientException('offline');
+            uploads.add(request.url.queryParameters['name'] ?? '');
+            return http.Response(
+              jsonEncode({
+                'id': 'f1',
+                'name': 'photo.jpg',
+                'mime': 'image/jpeg',
+                'size': 4,
+              }),
+              201,
+              headers: {'content-type': 'application/json; charset=utf-8'},
+            );
+          }),
+        );
+        Ocr.debugAvailable = true;
+        addTearDown(() => Ocr.debugAvailable = null);
+        const channel = MethodChannel('famio/ocr');
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        messenger.setMockMethodCallHandler(channel, (_) async => text);
+        addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+        final dir = Directory.systemTemp.createTempSync('famio-import-test');
+        addTearDown(() => dir.deleteSync(recursive: true));
+        final photo = File('${dir.path}/photo.jpg')
+          ..writeAsBytesSync([1, 2, 3, 4]);
+        await push(tester, EventImportScreen(debugPhoto: photo.path));
+      }
+
+      /// Taps [what] while the file is read and sent: real work, which the
+      /// test clock of a widget test would never let finish.
+      Future<void> tapAndWait(WidgetTester tester, Finder what) async {
+        await tester.tap(what);
+        await tester.pump();
+        final working = find.byType(CircularProgressIndicator);
+        for (var i = 0; i < 200 && working.evaluate().isNotEmpty; i++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 5)),
+          );
+          await tester.pump(const Duration(milliseconds: 20));
+        }
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('on every appointment, sent once', (tester) async {
+        await read(
+          tester,
+          'Sommerfest am ${day(soon)}\nBasar am ${day(later)}',
+        );
+        await tapAndWait(tester, find.byTooltip('Termin bearbeiten').first);
+        await tester.tap(find.text('Speichern'));
+        await tester.pumpAndSettle();
+        await tapAndWait(tester, find.text('1 Termin übernehmen'));
+
+        expect(engine.events, hasLength(2));
+        for (final event in engine.events) {
+          expect(event.files.single.id, 'f1');
+        }
+        expect(uploads, hasLength(1));
+        await tester.pump(const Duration(seconds: 5));
+      });
+
+      testWidgets('in the form, where it can be taken off', (tester) async {
+        await read(tester, 'Basar am ${day(soon)}');
+        await tapAndWait(tester, find.byTooltip('Termin bearbeiten'));
+        await tester.tap(find.byTooltip('Anhang entfernen'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Speichern'));
+        await tester.pumpAndSettle();
+
+        expect(engine.events.single.files, isEmpty);
+        await tester.pump(const Duration(seconds: 5));
+      });
+
+      testWidgets('not when it is unticked', (tester) async {
+        await read(tester, 'Basar am ${day(soon)}');
+        await tester.tap(find.byType(Checkbox).first);
+        await tester.pump();
+        await tapAndWait(tester, find.text('1 Termin übernehmen'));
+
+        expect(engine.events.single.files, isEmpty);
+        expect(uploads, isEmpty);
+        await tester.pump(const Duration(seconds: 5));
+      });
+
+      testWidgets('the appointment counts more than the photo', (tester) async {
+        await read(tester, 'Basar am ${day(soon)}', serverWorks: false);
+        await tapAndWait(tester, find.text('1 Termin übernehmen'));
+
+        expect(engine.events.single.title, 'Basar');
+        expect(engine.events.single.files, isEmpty);
+        expect(
+          find.textContaining('Das Original konnte nicht gespeichert werden'),
+          findsOneWidget,
+        );
+        await tester.pump(const Duration(seconds: 5));
+      });
     });
 
     testWidgets('leaving the form keeps the suggestion', (tester) async {

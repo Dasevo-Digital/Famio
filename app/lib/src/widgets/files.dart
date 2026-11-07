@@ -144,7 +144,7 @@ Future<PickedFile?> pickFile(
     if (choice == null) return null;
     if (choice == 'scan') {
       if (!context.mounted) return null;
-      return _scan(context);
+      return scanPicked(context);
     }
     fromCamera = choice == 'camera';
   }
@@ -181,7 +181,7 @@ Future<PickedFile?> pickFile(
 }
 
 /// A letter or form from the phone's document scanner, as one PDF.
-Future<PickedFile?> _scan(BuildContext context) async {
+Future<PickedFile?> scanPicked(BuildContext context) async {
   final limit = uploadLimit(AppScope.read(context).engine!);
   try {
     final pdf = await scanDocument();
@@ -335,7 +335,18 @@ class _CachedImageState extends State<CachedImage> {
     if (old.ref.id != widget.ref.id || old.thumb != widget.thumb) _load();
   }
 
-  void _load() => _bytes = _files?.bytes(widget.ref, thumb: widget.thumb);
+  void _load() {
+    final files = _files;
+    final ref = widget.ref;
+    _bytes = files
+        ?.bytes(ref, thumb: widget.thumb)
+        .catchError(
+          // No preview from the server (HEIC …): this device may still be
+          // able to show the original.
+          (Object _) => files.bytes(ref),
+          test: (e) => widget.thumb != null && e is ApiError && e.status == 404,
+        );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +381,87 @@ class _CachedImageState extends State<CachedImage> {
               },
             ),
     );
+  }
+}
+
+/// An attachment in an editor: tap opens it, the cross takes it off.
+class FileThumb extends StatelessWidget {
+  const FileThumb({
+    super.key,
+    required this.file,
+    required this.gallery,
+    required this.section,
+    required this.onRemove,
+  });
+
+  final FileRef file;
+  final FamioSection section;
+
+  /// The task's other pictures, to go through in the viewer.
+  final List<FileRef> gallery;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FamioColors.of(context);
+    final theme = Theme.of(context);
+    final open = Semantics(
+      button: true,
+      label: '${tr.tasksOpenPhoto}: ${file.name}',
+      child: GestureDetector(
+        onTap: () => openFileRef(context, file, gallery: gallery),
+        child: file.isImage
+            ? CachedImage(file, thumb: 160, radius: 14)
+            // Other files (PDF …) as their icon and name.
+            : Container(
+                height: 72,
+                constraints: const BoxConstraints(maxWidth: 200),
+                padding: const EdgeInsets.fromLTRB(10, 8, 32, 8),
+                decoration: BoxDecoration(
+                  color: c.tint(section),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(fileIcon(file.mime), color: c.strong(section)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        file.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      ),
+    );
+    final remove = Positioned(
+      top: 2,
+      right: 2,
+      child: Material(
+        color: c.surface.withValues(alpha: 0.9),
+        shape: const CircleBorder(),
+        child: IconButton(
+          tooltip: tr.tasksRemovePhoto,
+          visualDensity: VisualDensity.compact,
+          iconSize: 16,
+          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+          padding: EdgeInsets.zero,
+          icon: const Icon(AppIcons.x),
+          onPressed: onRemove,
+        ),
+      ),
+    );
+    return file.isImage
+        ? SizedBox.square(
+            dimension: 72,
+            child: Stack(fit: StackFit.expand, children: [open, remove]),
+          )
+        : Stack(children: [open, remove]);
   }
 }
 

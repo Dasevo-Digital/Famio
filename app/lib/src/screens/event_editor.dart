@@ -9,6 +9,7 @@ import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../widgets/event_comments.dart';
+import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/undo_delete.dart';
 import '../widgets/assignment_confirmation.dart';
@@ -29,6 +30,7 @@ Future<bool> showEventEditor(
   String? title,
   String? location,
   String? notes,
+  List<FileRef>? files,
   Set<String>? memberIds,
 }) async {
   final saved = await Navigator.of(context).push<bool>(
@@ -43,6 +45,7 @@ Future<bool> showEventEditor(
         title: title,
         location: location,
         notes: notes,
+        files: files,
         memberIds: memberIds,
       ),
     ),
@@ -115,6 +118,7 @@ class _EventEditor extends StatefulWidget {
     this.title,
     this.location,
     this.notes,
+    this.files,
     this.memberIds,
   });
 
@@ -128,6 +132,7 @@ class _EventEditor extends StatefulWidget {
   final String? title;
   final String? location;
   final String? notes;
+  final List<FileRef>? files;
   final Set<String>? memberIds;
 
   @override
@@ -145,6 +150,9 @@ class _EventEditorState extends State<_EventEditor> {
   late final _notes = TextEditingController(
     text: _original?.notes ?? widget.notes,
   );
+
+  late final _files = [...?(_original?.files ?? widget.files)];
+  var _uploading = false;
 
   late bool _allDay;
   late DateTime _start;
@@ -341,6 +349,7 @@ class _EventEditorState extends State<_EventEditor> {
           ),
     reminderMinutes: _reminder,
     confidential: _confidential,
+    files: _files,
     bringerId: _allDay ? null : _bringerId,
     pickerId: _allDay ? null : _pickerId,
     countdown: _countdown,
@@ -353,6 +362,24 @@ class _EventEditorState extends State<_EventEditor> {
   List<int> _weekdayList() {
     final days = Recurrence.normalizeWeekdays(_weekdays);
     return days.length == 1 && days.single == _start.weekday ? const [] : days;
+  }
+
+  Future<void> _addFile() async {
+    final picked = await pickFile(context);
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final file = await uploadPicked(context, picked);
+      if (mounted) setState(() => _files.add(file));
+    } on ApiError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   Future<void> _save() async {
@@ -697,6 +724,42 @@ class _EventEditorState extends State<_EventEditor> {
                   labelText: tr.commonNotes,
                   prefixIcon: Icon(AppIcons.note),
                 ),
+              ),
+              const SizedBox(height: 12),
+              ListHeading(tr.tasksPhotos),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final (i, file) in _files.indexed)
+                    FileThumb(
+                      file: file,
+                      gallery: _files,
+                      section: FamioSection.calendar,
+                      onRemove: () => setState(() => _files.removeAt(i)),
+                    ),
+                  SizedBox.square(
+                    dimension: 72,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: _uploading ? null : _addFile,
+                      child: _uploading
+                          ? const SizedBox.square(
+                              dimension: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Tooltip(
+                              message: tr.tasksAddPhoto,
+                              child: const Icon(AppIcons.paperclip),
+                            ),
+                    ),
+                  ),
+                ],
               ),
               if (_original != null) ...[
                 if (_original.sourceId == null)

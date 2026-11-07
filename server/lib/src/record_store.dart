@@ -136,7 +136,10 @@ class RecordStore {
       role == MemberRole.service &&
           r.collection == Collections.events &&
           r.data['confidential'] == true
-      ? r.copyWith(data: {...r.data, 'title': '', 'location': '', 'notes': ''})
+      ? r.copyWith(
+          data: {...r.data, 'title': '', 'location': '', 'notes': ''}
+            ..remove('files'),
+        )
       : r;
 
   /// Leaves out [Collections.adultReadable] for everyone but adults (names
@@ -1297,12 +1300,19 @@ class RecordStore {
     if (_indexedTrashReference(fileId, memberId: memberId)) return true;
     for (final key in _recordsByFile[fileId] ?? const <(String, String)>{}) {
       final record = _get(key.$1, key.$2);
-      if (record != null && !record.deleted && canAccess(record, memberId)) {
+      if (record != null &&
+          !record.deleted &&
+          canAccess(record, memberId) &&
+          _showsFile(record, fileId, memberId)) {
         return true;
       }
     }
     return false;
   }
+
+  /// Whether [fileId] is still there in what [memberId] gets of [r].
+  bool _showsFile(SyncRecord r, String fileId, String memberId) =>
+      recordFileIds(_shown(r, _role(memberId))).contains(fileId);
 
   /// Retention includes quarantined data without granting read permission.
   bool referenced(String fileId) {

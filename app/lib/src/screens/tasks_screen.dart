@@ -792,9 +792,10 @@ class _TaskEditorState extends State<_TaskEditor> {
                 runSpacing: 8,
                 children: [
                   for (final (i, photo) in _photos.indexed)
-                    _PhotoThumb(
-                      photo: photo,
+                    FileThumb(
+                      file: photo,
                       gallery: _photos,
+                      section: FamioSection.tasks,
                       onRemove: () => setState(() => _photos.removeAt(i)),
                     ),
                   SizedBox.square(
@@ -912,86 +913,5 @@ class _TaskEditorState extends State<_TaskEditor> {
         ),
       ),
     );
-  }
-}
-
-/// A task's photo in the editor: tap opens it, the cross takes it off.
-class _PhotoThumb extends StatelessWidget {
-  const _PhotoThumb({
-    required this.photo,
-    required this.gallery,
-    required this.onRemove,
-  });
-
-  final FileRef photo;
-
-  /// The task's other pictures, to go through in the viewer.
-  final List<FileRef> gallery;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = FamioColors.of(context);
-    final theme = Theme.of(context);
-    final open = Semantics(
-      button: true,
-      label: '${tr.tasksOpenPhoto}: ${photo.name}',
-      child: GestureDetector(
-        onTap: () => openFileRef(context, photo, gallery: gallery),
-        child: photo.isImage
-            ? CachedImage(photo, thumb: 160, radius: 14)
-            // Other files (PDF …) as their icon and name.
-            : Container(
-                height: 72,
-                constraints: const BoxConstraints(maxWidth: 200),
-                padding: const EdgeInsets.fromLTRB(10, 8, 32, 8),
-                decoration: BoxDecoration(
-                  color: c.tint(FamioSection.tasks),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      fileIcon(photo.mime),
-                      color: c.strong(FamioSection.tasks),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        photo.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-      ),
-    );
-    final remove = Positioned(
-      top: 2,
-      right: 2,
-      child: Material(
-        color: c.surface.withValues(alpha: 0.9),
-        shape: const CircleBorder(),
-        child: IconButton(
-          tooltip: tr.tasksRemovePhoto,
-          visualDensity: VisualDensity.compact,
-          iconSize: 16,
-          constraints: const BoxConstraints.tightFor(width: 28, height: 28),
-          padding: EdgeInsets.zero,
-          icon: const Icon(AppIcons.x),
-          onPressed: onRemove,
-        ),
-      ),
-    );
-    return photo.isImage
-        ? SizedBox.square(
-            dimension: 72,
-            child: Stack(fit: StackFit.expand, children: [open, remove]),
-          )
-        : Stack(children: [open, remove]);
   }
 }

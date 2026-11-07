@@ -380,6 +380,7 @@ ParsedEvent parseEventComponents(
       bringerId: existing?.bringerId,
       pickerId: existing?.pickerId,
       countdown: existing?.countdown ?? false,
+      files: existing?.files ?? const [],
       recurrence: recurrence,
       exceptions: exceptions,
       reminderMinutes: reminder,

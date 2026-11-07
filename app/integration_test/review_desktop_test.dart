@@ -10,11 +10,15 @@
 // desktop and the person's clipboard stays as it was.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/l10n.dart';
+import 'package:famio/src/screens/event_import_screen.dart';
+import 'package:famio/src/widgets/files.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -38,6 +42,29 @@ final _pdf = utf8.encode(
   '2 0 obj << /Type /Pages /Kids [] /Count 0 >> endobj\n'
   'trailer << /Root 1 0 R >>\n%%EOF\n',
 );
+
+/// A letter as a picture, for the real text recognition of this Mac.
+Future<File> _letter(List<String> lines) async {
+  final recorder = ui.PictureRecorder();
+  final canvas = Canvas(recorder)
+    ..drawRect(
+      const Rect.fromLTWH(0, 0, 1200, 800),
+      Paint()..color = Colors.white,
+    );
+  for (final (i, line) in lines.indexed) {
+    (TextPainter(
+      text: TextSpan(
+        text: line,
+        style: const TextStyle(color: Colors.black, fontSize: 56),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout()).paint(canvas, Offset(80, 80.0 + i * 120));
+  }
+  final image = await recorder.endRecording().toImage(1200, 800);
+  final png = await image.toByteData(format: ui.ImageByteFormat.png);
+  return File('${Directory.systemTemp.path}/famio-e2e-brief.png')
+    ..writeAsBytesSync(png!.buffer.asUint8List());
+}
 
 /// Stands in for "open with the system's app": keeps the files.
 class _FakeLauncher extends UrlLauncherPlatform {
@@ -490,6 +517,54 @@ void main() {
       UrlLauncherPlatform.instance = launcherBefore;
       state.engine?.delete(Collections.documents, id);
       await state.engine?.sync();
+      await finish(tester, state);
+    }
+  });
+
+  testWidgets('Termin aus einem Foto behält das Foto als Anhang', (
+    tester,
+  ) async {
+    final state = await start(tester);
+    try {
+      final now = DateTime.now();
+      final photo = await _letter([
+        'Kinderflohmarkt',
+        'am ${now.day}.${now.month}.${now.year} um 23:30 Uhr',
+        'Turnhalle der Grundschule',
+      ]);
+      Navigator.of(tester.element(find.byType(Scaffold).first)).push(
+        MaterialPageRoute<void>(
+          builder: (_) => EventImportScreen(debugPhoto: photo.path),
+        ),
+      );
+      await waitFor(tester, find.text('1 Termin übernehmen'));
+      await waitFor(tester, find.text('Original an den Terminen speichern'));
+      await tap(tester, find.text('1 Termin übernehmen'));
+
+      final engine = state.engine!;
+      await until(
+        tester,
+        () => engine.events.any((e) => e.title == 'Kinderflohmarkt'),
+        'appointment saved',
+      );
+      final event = engine.events.single;
+      expect(event.location, 'Turnhalle der Grundschule');
+      final file = event.files.single;
+      await engine.sync();
+
+      // On the server, as sent and with a preview.
+      expect(await engine.api.downloadFile(file.id), photo.readAsBytesSync());
+      expect(await engine.api.downloadFile(file.id, thumb: 160), isNotEmpty);
+
+      // In the calendar, on the appointment.
+      await openSection(tester, 'Kalender');
+      await scrollTo(tester, find.text('Kinderflohmarkt'));
+      await tap(tester, find.text('Kinderflohmarkt'));
+      await scrollTo(tester, find.byType(FileThumb));
+      await tap(tester, find.text('Speichern'));
+      await engine.sync();
+      expect(engine.events.single.files.single.id, file.id);
+    } finally {
       await finish(tester, state);
     }
   });

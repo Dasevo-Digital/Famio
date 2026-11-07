@@ -205,7 +205,7 @@ List<String> _fileFields(String collection) => switch (collection) {
   Collections.children || Collections.recipes => ['photo'],
   Collections.chatMessages => ['attachment'],
   Collections.documents => ['file'],
-  Collections.inbox => ['files'],
+  Collections.inbox || Collections.events => ['files'],
   _ => const <String>[],
 };
 

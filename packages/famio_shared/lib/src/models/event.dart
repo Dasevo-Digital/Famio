@@ -1,6 +1,7 @@
 import '../sync_record.dart';
 import '../calendar_clock.dart';
 import 'assignment.dart';
+import 'chat.dart' show FileRef;
 
 enum RecurrenceFrequency { daily, weekly, monthly, yearly }
 
@@ -114,6 +115,7 @@ class CalendarEvent {
     this.pickerId,
     this.countdown = false,
     this.assignmentConfirmation = const AssignmentSettings(),
+    this.files = const [],
   });
 
   factory CalendarEvent.fromRecord(SyncRecord r) {
@@ -145,8 +147,16 @@ class CalendarEvent {
       bringerId: r.data['bringerId'] as String?,
       pickerId: r.data['pickerId'] as String?,
       countdown: r.data['countdown'] as bool? ?? false,
+      files: [
+        for (final f in r.data['files'] as List? ?? const [])
+          ?FileRef.fromJson(f),
+      ],
     );
   }
+
+  /// Attachments, e.g. the photo of the letter it was read from. Other
+  /// calendar apps do not see them; an edit there keeps them.
+  final List<FileRef> files;
 
   /// Counted down to on the start page and the wall display ("noch 12
   /// Tage"), e.g. holidays, a birthday party or the first day at school.
@@ -401,6 +411,7 @@ class CalendarEvent {
     Object? pickerId = _keep,
     bool? countdown,
     AssignmentSettings? assignmentConfirmation,
+    List<FileRef>? files,
   }) => CalendarEvent(
     id: id,
     title: title ?? this.title,
@@ -425,6 +436,7 @@ class CalendarEvent {
     countdown: countdown ?? this.countdown,
     assignmentConfirmation:
         assignmentConfirmation ?? this.assignmentConfirmation,
+    files: files ?? this.files,
   );
 
   /// A copy with a new [id], e.g. to detach one occurrence from a series.
@@ -444,6 +456,7 @@ class CalendarEvent {
     sourceId: sourceId,
     confidential: confidential,
     countdown: countdown,
+    files: files,
   );
 
   Map<String, Object?> toData() => {
@@ -456,6 +469,7 @@ class CalendarEvent {
     'notes': notes,
     'memberIds': memberIds,
     'recurrence': recurrence?.toJson(),
+    if (files.isNotEmpty) 'files': [for (final f in files) f.toJson()],
     'exceptions': [for (final d in exceptions) _formatDate(d)]..sort(),
     'reminderMinutes': reminderMinutes,
     'sourceId': ?sourceId,

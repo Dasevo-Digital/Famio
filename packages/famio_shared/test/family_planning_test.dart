@@ -32,6 +32,41 @@ void main() {
     expect(parseEuro('abc'), isNull);
   });
 
+  test('an appointment keeps its files, also in copies', () {
+    const photo = FileRef(id: 'f1', name: 'a.jpg', mime: 'image/jpeg', size: 3);
+    final event = CalendarEvent(
+      id: 'e',
+      title: 'Basar',
+      start: DateTime(2026, 12, 12, 15),
+      end: DateTime(2026, 12, 12, 16),
+      files: const [photo],
+    );
+    final back = CalendarEvent.fromRecord(
+      SyncRecord(
+        collection: Collections.events,
+        id: 'e',
+        data: event.toData(),
+        updatedAt: 1,
+      ),
+    );
+    expect(back.files.single.id, 'f1');
+    expect(event.withId('x').files, hasLength(1));
+    expect(event.copyWith(title: 'Markt').files, hasLength(1));
+    expect(
+      recordFileIds(
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e',
+          data: event.toData(),
+          updatedAt: 1,
+        ),
+      ),
+      ['f1'],
+    );
+    // Without files nothing is written.
+    expect(event.copyWith(files: []).toData(), isNot(contains('files')));
+  });
+
   group('salary paid late in the month', () {
     BudgetEntry salary(
       DateTime date, {

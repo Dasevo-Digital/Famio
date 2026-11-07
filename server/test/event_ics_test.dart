@@ -111,4 +111,27 @@ void main() {
     expect((changed.bringerId, changed.pickerId), ('papa', 'mama'));
     expect(changed.countdown, isTrue);
   });
+
+  test('an edit in another calendar app keeps the attachments', () {
+    const photo = FileRef(id: 'f1', name: 'a.jpg', mime: 'image/jpeg', size: 3);
+    final existing = CalendarEvent(
+      id: 'x',
+      title: 'Training',
+      start: DateTime(2026, 10, 8, 17),
+      end: DateTime(2026, 10, 8, 18),
+      files: const [photo],
+    );
+    final changed = parseEventIcs(
+      eventToIcs(
+        existing.copyWith(title: 'Training (Halle 2)'),
+        location: berlin,
+        updatedAt: 0,
+      ),
+      id: 'x',
+      location: berlin,
+      existing: existing,
+    ).event!;
+    expect(changed.title, 'Training (Halle 2)');
+    expect(changed.files.single.id, 'f1');
+  });
 }

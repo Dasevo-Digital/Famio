@@ -17,6 +17,8 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
+import '../platform/document_scanner.dart';
+import '../widgets/files.dart';
 import 'event_editor.dart';
 import 'ics_import_screen.dart';
 
@@ -25,10 +27,37 @@ import 'ics_import_screen.dart';
 /// (`.ics`) are read by the family's server and taken over completely,
 /// series included.
 class EventImportScreen extends StatefulWidget {
-  const EventImportScreen({super.key});
+  const EventImportScreen({super.key, @visibleForTesting this.debugPhoto});
+
+  /// Starts with this picture, as if it had just been chosen.
+  final String? debugPhoto;
 
   @override
   State<EventImportScreen> createState() => _EventImportScreenState();
+}
+
+/// The photo or PDF the text was read from. It stays with the appointments:
+/// recognition makes mistakes, the original shows what the letter said.
+class _Source {
+  const _Source(
+    this.path,
+    this.name, {
+    this.pdf = false,
+    this.mime,
+    this.temporary = false,
+  });
+
+  final String path;
+  final String name;
+  final bool pdf;
+  final String? mime;
+
+  /// A copy of our own, deleted with the screen.
+  final bool temporary;
+
+  void delete() {
+    if (temporary) File(path).delete().ignore();
+  }
 }
 
 class _EventImportScreenState extends State<EventImportScreen> {
@@ -42,7 +71,25 @@ class _EventImportScreenState extends State<EventImportScreen> {
   var _busy = false;
   String? _message;
 
+  _Source? _source;
+  var _keepSource = true;
+
+  /// One upload, however many appointments carry the original.
+  Future<FileRef>? _upload;
+  var _notKept = false;
+
   static bool get _camera => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+
+  @override
+  void initState() {
+    super.initState();
+    final photo = widget.debugPhoto;
+    if (photo != null) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _recognise(_Source(photo, photo.split('/').last)),
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -50,7 +97,18 @@ class _EventImportScreenState extends State<EventImportScreen> {
     for (final c in _titles.values) {
       c.dispose();
     }
+    _source?.delete();
     super.dispose();
+  }
+
+  /// A copy for recognition of a file that has no path (e.g. in a cloud).
+  static Future<String> _copy(PlatformFile file, String ending) async {
+    final tmp = File(
+      '${Directory.systemTemp.path}/famio-import-'
+      '${DateTime.now().millisecondsSinceEpoch}$ending',
+    );
+    await tmp.writeAsBytes(await file.readAsBytes());
+    return tmp.path;
   }
 
   Future<void> _pdf() async {
@@ -60,61 +118,85 @@ class _EventImportScreenState extends State<EventImportScreen> {
     );
     if (picked.isEmpty) return;
     final file = picked.first;
-    var path = file.path;
-    if (path == null) {
-      final tmp = File(
-        '${Directory.systemTemp.path}/famio-pdf-${DateTime.now().millisecondsSinceEpoch}.pdf',
-      );
-      await tmp.writeAsBytes(await file.readAsBytes());
-      path = tmp.path;
-    }
-    setState(() {
-      _busy = true;
-      _message = null;
-    });
-    final text = await _read(() => Ocr.pdfText(path!));
-    if (!mounted) return;
-    setState(() => _busy = false);
-    if (text == null) {
-      setState(() => _message ??= tr.importNoTextWasFound);
-      return;
-    }
-    _text.text = text;
-    _analyse();
+    await _recognise(
+      _Source(
+        file.path ?? await _copy(file, '.pdf'),
+        file.name,
+        pdf: true,
+        mime: 'application/pdf',
+        temporary: file.path == null,
+      ),
+    );
   }
 
   Future<void> _photo({required bool camera}) async {
-    String? path;
     if (camera) {
       final shot = await ImagePicker().pickImage(
         source: ImageSource.camera,
         maxWidth: 3000,
       );
-      path = shot?.path;
-    } else {
-      final picked = await FilePicker.pickFiles(type: FileType.image);
-      if (picked.isEmpty) return;
-      final file = picked.first;
-      path = file.path;
-      if (path == null) {
-        // No path (e.g. a cloud file): a temporary copy for recognition.
-        final tmp = File(
-          '${Directory.systemTemp.path}/famio-ocr-${DateTime.now().millisecondsSinceEpoch}',
-        );
-        await tmp.writeAsBytes(await file.readAsBytes());
-        path = tmp.path;
-      }
+      if (shot == null) return;
+      await _recognise(_Source(shot.path, shot.name, mime: 'image/jpeg'));
+      return;
     }
-    if (path == null) return;
+    final picked = await FilePicker.pickFiles(type: FileType.image);
+    if (picked.isEmpty) return;
+    final file = picked.first;
+    await _recognise(
+      _Source(
+        file.path ?? await _copy(file, ''),
+        file.name,
+        temporary: file.path == null,
+      ),
+    );
+  }
+
+  /// The scanner straightens the page and evens out the light, which reads
+  /// far better than a photo at an angle.
+  Future<void> _scan() async {
+    final scan = await scanPicked(context);
+    if (scan == null) return;
+    final tmp = File(
+      '${Directory.systemTemp.path}/famio-import-'
+      '${DateTime.now().millisecondsSinceEpoch}.pdf',
+    );
+    await tmp.writeAsBytes(scan.bytes!);
+    await _recognise(
+      _Source(
+        tmp.path,
+        scan.name,
+        pdf: true,
+        mime: 'application/pdf',
+        temporary: true,
+      ),
+    );
+  }
+
+  void _use(_Source? source) {
+    _source?.delete();
+    _source = source;
+    _upload = null;
+    _keepSource = true;
+  }
+
+  Future<void> _recognise(_Source source) async {
+    if (!mounted) return source.delete();
+    _use(source);
     setState(() {
       _busy = true;
       _message = null;
     });
-    final text = await _read(() => Ocr.recognize(path!));
+    final text = await _read(
+      () => source.pdf ? Ocr.pdfText(source.path) : Ocr.recognize(source.path),
+    );
     if (!mounted) return;
     setState(() => _busy = false);
     if (text == null) {
-      setState(() => _message ??= tr.importNoTextWasRecognized);
+      setState(
+        () => _message ??= source.pdf
+            ? tr.importNoTextWasFound
+            : tr.importNoTextWasRecognized,
+      );
       return;
     }
     _text.text = text;
@@ -158,11 +240,42 @@ class _EventImportScreenState extends State<EventImportScreen> {
     });
   }
 
+  /// The original as an attachment; empty if it is not wanted or cannot be
+  /// stored right now. The appointments matter more: they stay, and
+  /// [_finish] says that the original is missing.
+  Future<List<FileRef>> _attachment() async {
+    final source = _source;
+    if (source == null || !_keepSource) return const [];
+    final state = AppScope.read(context);
+    final file = File(source.path);
+    try {
+      final ref = await (_upload ??= pickedFromSource(
+        name: source.name,
+        path: source.path,
+        mime: source.mime,
+        length: file.length,
+        openRead: file.openRead,
+        maxBytes: uploadLimit(state.engine!),
+      ).then((picked) => uploadPickedState(state, picked)));
+      return [ref];
+    } on ApiError {
+      _upload = null;
+    } on FileSystemException {
+      _upload = null;
+    }
+    _notKept = true;
+    return const [];
+  }
+
   /// The whole event form, filled in: saved from there, the suggestion is
   /// done.
   Future<void> _edit(int i) async {
     final e = _found![i];
     final title = _titles[i]!.text.trim();
+    setState(() => _busy = true);
+    final files = await _attachment();
+    if (!mounted) return;
+    setState(() => _busy = false);
     final saved = await showEventEditor(
       context,
       start: e.start,
@@ -171,6 +284,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
       title: title.isEmpty ? e.title : title,
       location: e.location,
       notes: tr.importTakenLine(e.line),
+      files: files,
     );
     if (!saved || !mounted) return;
     setState(() {
@@ -180,20 +294,20 @@ class _EventImportScreenState extends State<EventImportScreen> {
     if (_saved.length == _found!.length) {
       _finish(_saved.length);
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(tr.import1EventAdded)));
+      _tell(tr.import1EventAdded);
     }
   }
 
-  void _finish(int added) {
+  void _tell(String added) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          added == 1 ? tr.import1EventAdded : tr.importCountEventsAdded(added),
-        ),
+        content: Text(_notKept ? '$added ${tr.importOriginalNotKept}' : added),
       ),
     );
+  }
+
+  void _finish(int added) {
+    _tell(added == 1 ? tr.import1EventAdded : tr.importCountEventsAdded(added));
     Navigator.pop(context);
   }
 
@@ -239,9 +353,13 @@ class _EventImportScreenState extends State<EventImportScreen> {
     }
   }
 
-  void _add() {
+  Future<void> _add() async {
     final engine = AppScope.engineOf(context);
     final found = _found!;
+    setState(() => _busy = true);
+    final files = await _attachment();
+    if (!mounted) return;
+    setState(() => _busy = false);
     var added = 0;
     for (final i in _chosen) {
       final e = found[i];
@@ -256,12 +374,90 @@ class _EventImportScreenState extends State<EventImportScreen> {
           allDay: e.allDay,
           location: e.location,
           notes: tr.importTakenLine(e.line),
+          files: files,
         ),
       );
       added++;
     }
     _finish(added + _saved.length);
   }
+
+  void _showSource(String path) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: InteractiveViewer(
+                maxScale: 6,
+                child: Image.file(File(path)),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(tr.commonClose),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// What the suggestions were read from, to compare them with it.
+  Widget _sourceCard(_Source source) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: SoftCard(
+      padding: const EdgeInsets.fromLTRB(4, 8, 12, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: MergeSemantics(
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _keepSource,
+                    onChanged: (v) => setState(() => _keepSource = v ?? false),
+                  ),
+                  Expanded(child: Text(tr.importKeepOriginal)),
+                ],
+              ),
+            ),
+          ),
+          if (source.pdf)
+            const Padding(
+              padding: EdgeInsets.all(8),
+              child: Icon(AppIcons.fileText),
+            )
+          else
+            Semantics(
+              button: true,
+              label: tr.importShowOriginal,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _showSource(source.path),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(
+                    File(source.path),
+                    width: 72,
+                    height: 72,
+                    cacheWidth: 216,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox.square(
+                      dimension: 72,
+                      child: Icon(AppIcons.imageBroken),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 
   static String _when(EventSuggestion e) {
     final day = DateFormat.yMMMEd(appLanguage);
@@ -304,6 +500,12 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     label: Text(tr.importTakePhoto),
                     onPressed: _busy ? null : () => _photo(camera: true),
                   ),
+                if (Ocr.available && canScanDocuments)
+                  OutlinedButton.icon(
+                    icon: const Icon(AppIcons.scanText),
+                    label: Text(tr.filesScanDocument),
+                    onPressed: _busy ? null : _scan,
+                  ),
                 if (Ocr.available)
                   OutlinedButton.icon(
                     icon: const Icon(AppIcons.image),
@@ -329,6 +531,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
                       : () async {
                           final data = await Clipboard.getData('text/plain');
                           if (data?.text != null) {
+                            _use(null);
                             _text.text = data!.text!;
                             _analyse();
                           }
@@ -355,6 +558,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
               ),
             ),
           ] else ...[
+            if (_source != null) _sourceCard(_source!),
             for (final (i, e) in found.indexed)
               if (!_saved.contains(i))
                 Padding(
@@ -406,7 +610,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
                         IconButton(
                           icon: const Icon(AppIcons.pencilSimple),
                           tooltip: tr.importEditEvent,
-                          onPressed: () => _edit(i),
+                          onPressed: _busy ? null : () => _edit(i),
                         ),
                       ],
                     ),
@@ -420,7 +624,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
                 ),
                 const Spacer(),
                 FilledButton(
-                  onPressed: _chosen.isEmpty ? null : _add,
+                  onPressed: _chosen.isEmpty || _busy ? null : _add,
                   child: Text(
                     _chosen.length == 1
                         ? tr.importTakeOver1Event

@@ -92,7 +92,9 @@ IP-Adresse.
 
 **Text- und Barcode-Erkennung (Android).** Termine aus Fotos und der
 Barcode-Scanner werten die Bilder auf dem Handy aus; Bilder verlassen das
-Handy dafür nicht. Im kleinen Paket für 64-Bit-Handys kommen die
+Handy dafür nicht. Ein Foto oder Scan eines Termins kommt nur als Anhang auf
+den eigenen Famio-Server, wenn beim Übernehmen „Original an den Terminen
+speichern“ eingeschaltet bleibt. Im kleinen Paket für 64-Bit-Handys kommen die
 Erkennungsmodelle von den Google-Play-Diensten, die sie beim ersten Gebrauch
 einmal herunterladen; dabei sieht Google die Anfrage des Handys wie bei jedem
 anderen Download aus Google Play. Wer das nicht möchte, schaltet unter

@@ -193,7 +193,11 @@ extension RecordFiles on RecordStore {
       ).firstOrNull;
       if (row == null) continue;
       if (memberId == null) return true;
-      if (_trashVisible(_trashEntry(row), memberId)) return true;
+      final entry = _trashEntry(row);
+      if (_trashVisible(entry, memberId) &&
+          _showsFile(entry.record, file, memberId)) {
+        return true;
+      }
     }
     return false;
   }

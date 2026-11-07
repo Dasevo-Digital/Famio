@@ -4323,6 +4323,9 @@
   },
   "import1EventAdded": "1 Termin eingetragen",
   "importEditEvent": "Termin bearbeiten",
+  "importKeepOriginal": "Original an den Terminen speichern",
+  "importShowOriginal": "Original ansehen",
+  "importOriginalNotKept": "Das Original konnte nicht gespeichert werden.",
   "importCountEventsAdded": "{count} Termine eingetragen",
   "@importCountEventsAdded": {
     "placeholders": {

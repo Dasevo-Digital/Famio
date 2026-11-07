@@ -100,7 +100,9 @@ void main() {
     String id, {
     bool confidential = true,
     List<String> members = const [],
+    StoredFile? file,
   }) => record(Collections.events, id, {
+    if (file != null) 'files': [file.toJson()],
     'title': 'Psychotherapie',
     'location': 'Praxis',
     'notes': 'Thema',
@@ -326,6 +328,80 @@ void main() {
       expect(event.data['notes'], '');
       expect(event.data['confidential'], isTrue);
       expect(event.data['start'], isNotNull);
+    });
+
+    group('with a photo', () {
+      Future<StoredFile> photo() => app.files.save(
+        owner: mama.id,
+        name: 'brief.jpg',
+        mime: 'image/jpeg',
+        body: Stream.value([1, 2, 3]),
+      );
+
+      test('it goes only to those who see the appointment', () async {
+        final file = await photo();
+        await sync(mama, changes: [appointment('therapie', file: file)]);
+        expect(app.files.mayRead(file, papa.id), isTrue);
+        expect(app.files.mayRead(file, kid.id), isFalse);
+        expect(app.files.mayRead(file, oma.id), isFalse);
+      });
+
+      test('a service account gets neither the file nor its name', () async {
+        final file = await photo();
+        await sync(mama, changes: [appointment('therapie', file: file)]);
+        expect(app.files.mayRead(file, ha.id), isFalse);
+        final event = (await sync(ha)).changes.single;
+        expect(event.data, isNot(contains('files')));
+      });
+
+      test('the trash keeps those rules', () async {
+        final file = await photo();
+        await sync(mama, changes: [appointment('therapie', file: file)]);
+        final stored = app.records.get(Collections.events, 'therapie')!;
+        await sync(
+          mama,
+          changes: [
+            stored.copyWith(
+              data: const {},
+              updatedAt: stored.updatedAt + 1,
+              deleted: true,
+            ),
+          ],
+        );
+        expect(app.files.mayRead(file, papa.id), isTrue);
+        expect(app.files.mayRead(file, ha.id), isFalse);
+      });
+
+      test('an open appointment shares its photo with everyone', () async {
+        final file = await photo();
+        await sync(
+          mama,
+          changes: [appointment('turnen', confidential: false, file: file)],
+        );
+        expect(app.files.mayRead(file, kid.id), isTrue);
+        expect(app.files.mayRead(file, ha.id), isTrue);
+        final event = (await sync(ha)).changes.single;
+        expect(event.data, contains('files'));
+      });
+
+      test('someone else\'s file cannot be attached', () async {
+        final file = await app.files.save(
+          owner: papa.id,
+          name: 'privat.jpg',
+          mime: 'image/jpeg',
+          body: Stream.value([1, 2, 3]),
+        );
+        try {
+          await sync(
+            mama,
+            changes: [appointment('fremd', confidential: false, file: file)],
+          );
+        } on Object {
+          // The server refuses the whole request.
+        }
+        expect(app.records.get(Collections.events, 'fremd'), isNull);
+        expect(app.files.mayRead(file, mama.id), isFalse);
+      });
     });
 
     test('a service account leaves them alone', () async {
