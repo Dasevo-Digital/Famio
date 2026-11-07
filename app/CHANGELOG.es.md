@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.39 – La foto se queda en la cita
+
+- Al importar desde fotos, el título y el lugar quedan separados: el lugar ya no
+  se convierte en título y se reconocen lugares debajo de la fecha.
+- La foto, el escaneo o el PDF se queda como adjunto de la cita para poder
+  comprobarla. Una casilla en la importación lo desactiva.
+- Las citas ahora pueden llevar fotos y archivos. Esto también requiere un
+  servidor actualizado.
+- En los teléfonos, la importación ofrece «Escanear documento».
+
 ## 2.0.38 – Editar las citas reconocidas
 
 - Las citas de fotos y textos se pueden editar en el formulario antes de

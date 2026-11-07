@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.39 – Das Foto bleibt am Termin
+
+- Beim Import aus Fotos bleiben Titel und Ort getrennt: Der Ort wird nicht mehr
+  zum Titel, und Orte unter dem Datum werden erkannt.
+- Das Foto, der Scan oder das PDF bleibt als Anhang am Termin, zum Kontrollieren.
+  Ein Haken im Import schaltet das ab.
+- Termine können jetzt Fotos und Dateien tragen. Auch dafür muss der Server
+  aktuell sein.
+- Auf Telefonen bietet der Import „Dokument scannen“ an.
+
 ## 2.0.38 – Erkannte Termine bearbeiten
 
 - Termine aus Fotos und Texten lassen sich vor dem Übernehmen im Termin-Formular
