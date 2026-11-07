@@ -68,7 +68,11 @@ import VisionKit
         name: "famio/ocr", binaryMessenger: registrar.messenger())
       ocr.setMethodCallHandler { call, result in
         let path = (call.arguments as? [String: Any])?["path"] as? String
-        var image = path.flatMap { UIImage(contentsOfFile: $0)?.cgImage }
+        let photo = path.flatMap { UIImage(contentsOfFile: $0) }
+        var image = photo?.cgImage
+        // cgImage holds the pixels as the camera took them: an upright photo
+        // lies on its side, and Vision would sort its lines across the page.
+        var orientation = photo.map { CGImagePropertyOrientation($0.imageOrientation) } ?? .up
         if call.method == "pdfText", let path {
           // The text layer; scanned letters: the first page as an image.
           guard let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
@@ -86,6 +90,7 @@ import VisionKit
             image = page.thumbnail(
               of: CGSize(width: box.width * 2, height: box.height * 2), for: .mediaBox
             ).cgImage
+            orientation = .up
           }
         } else if call.method != "recognize" {
           result(FlutterMethodNotImplemented)
@@ -106,12 +111,28 @@ import VisionKit
         request.usesLanguageCorrection = true
         DispatchQueue.global(qos: .userInitiated).async {
           do {
-            try VNImageRequestHandler(cgImage: cg).perform([request])
+            try VNImageRequestHandler(cgImage: cg, orientation: orientation).perform([request])
           } catch {
             DispatchQueue.main.async { result(nil) }
           }
         }
       }
+    }
+  }
+}
+
+extension CGImagePropertyOrientation {
+  init(_ orientation: UIImage.Orientation) {
+    switch orientation {
+    case .up: self = .up
+    case .upMirrored: self = .upMirrored
+    case .down: self = .down
+    case .downMirrored: self = .downMirrored
+    case .left: self = .left
+    case .leftMirrored: self = .leftMirrored
+    case .right: self = .right
+    case .rightMirrored: self = .rightMirrored
+    @unknown default: self = .up
     }
   }
 }

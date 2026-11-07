@@ -119,6 +119,148 @@ Teatro el 15 de enero a las 6 de la tarde
     ]);
   });
 
+  group('photos: what belongs together stands on several lines', () {
+    final november = DateTime(2026, 11, 7);
+    List<EventSuggestion> read(String text) =>
+        extractEvents(text, now: november, language: 'de');
+    void expectOne(
+      String text,
+      String title,
+      DateTime start, {
+      DateTime? end,
+      bool allDay = false,
+    }) {
+      final found = read(text);
+      expect(found, hasLength(1), reason: text);
+      expect(found.single.title, title);
+      expect(found.single.start, start);
+      expect(found.single.allDay, allDay);
+      if (end != null) expect(found.single.end, end);
+    }
+
+    test('an invitation with one fact per line', () {
+      expectOne(
+        'Einladung zum Elternabend\n'
+            'Datum: Donnerstag, 19.11.2026\n'
+            'Uhrzeit: 19:30 Uhr\n'
+            'Ort: Aula der Grundschule',
+        'Einladung zum Elternabend',
+        DateTime(2026, 11, 19, 19, 30),
+      );
+    });
+
+    test('a time range on the next line, under a label', () {
+      expectOne(
+        'Kindergeburtstag bei Mia\n'
+            'Wann: Samstag, 21. November\n'
+            'von 14 bis 17 Uhr\n'
+            'Wo: Spielplatz',
+        'Kindergeburtstag bei Mia',
+        DateTime(2026, 11, 21, 14),
+        end: DateTime(2026, 11, 21, 17),
+      );
+    });
+
+    test('a card from the doctor', () {
+      expectOne(
+        'Praxis Dr. Muster\nIhr nächster Termin\nDi 24.11.26\n10:15\n'
+            'Bitte Karte mitbringen',
+        'Ihr nächster Termin',
+        DateTime(2026, 11, 24, 10, 15),
+      );
+    });
+
+    test('the time may stand above the date', () {
+      expectOne(
+        'Sommerfest\n15:00 Uhr\nSamstag, 12.12.2026',
+        'Sommerfest',
+        DateTime(2026, 12, 12, 15),
+      );
+    });
+
+    test('a weekday on its own line is no title', () {
+      expectOne(
+        'Weihnachtsfeier\nFreitag,\n18. Dezember\n15.30 Uhr',
+        'Weihnachtsfeier',
+        DateTime(2026, 12, 18, 15, 30),
+      );
+    });
+
+    test('empty lines are skipped on the way to the title', () {
+      expectOne(
+        'Schulfest\n\n12.12.2026',
+        'Schulfest',
+        DateTime(2026, 12, 12),
+        allDay: true,
+      );
+    });
+
+    test('with nothing above, the title may follow the date', () {
+      expectOne(
+        'Samstag, 12.12.2026\nBasar im Gemeindehaus\n',
+        'Basar im Gemeindehaus',
+        DateTime(2026, 12, 12),
+        allDay: true,
+      );
+    });
+
+    test('a time belongs to its own date, not the one before', () {
+      final found = read(
+        'Laternenumzug\n13.11.2026\nAdventsbasar\n28.11.2026\n15 Uhr',
+      );
+      expect(found.map((e) => e.title), ['Laternenumzug', 'Adventsbasar']);
+      expect(found.first.allDay, isTrue);
+      expect(found.last.start, DateTime(2026, 11, 28, 15));
+    });
+
+    test('a sentence with an hour is no time of the date above', () {
+      final found = read(
+        'Elternsprechtag am 20.11.2026\n'
+        'Bitte melden Sie sich bis 12 Uhr im Sekretariat an.',
+      );
+      expect(found.single.allDay, isTrue);
+    });
+
+    test('recognised text puts spaces into dates', () {
+      expectOne(
+        'Laternenumzug am 13. 11. 2026 um 17 Uhr',
+        'Laternenumzug',
+        DateTime(2026, 11, 13, 17),
+      );
+      expectOne(
+        'Laternenumzug\nFreitag, 13.11. 2026\n17:00 Uhr',
+        'Laternenumzug',
+        DateTime(2026, 11, 13, 17),
+      );
+      expectOne(
+        'Laternenumzug am 13. 11. um 17 Uhr',
+        'Laternenumzug',
+        DateTime(2026, 11, 13, 17),
+      );
+    });
+
+    test('numbered things with spaces stay no dates', () {
+      expect(read('Für die 1. 2. Klasse gibt es Saft.'), isEmpty);
+    });
+
+    test('other languages have their labels too', () {
+      final found = extractEvents(
+        'Parents evening\nDate: 19 November 2026\nTime: 7:30 pm',
+        now: november,
+        language: 'en',
+      );
+      expect(found.single.title, 'Parents evening');
+      expect(found.single.start, DateTime(2026, 11, 19, 19, 30));
+      final fiesta = extractEvents(
+        'Fiesta de otoño\nFecha: 19 de noviembre de 2026\nHora: 18:00 h',
+        now: november,
+        language: 'es',
+      );
+      expect(fiesta.single.title, 'Fiesta de otoño');
+      expect(fiesta.single.start, DateTime(2026, 11, 19, 18));
+    });
+  });
+
   test('ambiguities follow the language of the text', () {
     expect(guessLanguage('Liebe Eltern, am Freitag', fallback: 'en'), 'de');
     expect(guessLanguage('Dear parents, on Friday', fallback: 'de'), 'en');

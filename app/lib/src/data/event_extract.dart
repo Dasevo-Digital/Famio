@@ -112,6 +112,15 @@ final _numeric = RegExp(
   r'(?<!\d)(?:(\d{1,2})\.?\s*(?:-|–|—|bis)\s*)?(\d{1,2})\.(\d{1,2})\.(\d{4}|\d{2})?(?!\d)',
 );
 
+/// "13. 11. 2026", "13.11. 2026": printed letters and recognised text put
+/// spaces into dates. Without a year only after a word that announces one,
+/// because "1. 2. Klasse" is none.
+final _spacedDate = RegExp(
+  r'(?<![\d.])(\d{1,2})\.[ \t]*(\d{1,2})\.[ \t]*(\d{4})(?!\d)'
+  r'|(?<=(?:\b(?:am|den|vom|bis)|,)[ \t]+)(\d{1,2})\.[ \t]+(\d{1,2})\.(?!\d)',
+  caseSensitive: false,
+);
+
 /// "10/12/2026" (day or month first, see [extractEvents]) and
 /// "2026-10-12". Without a year only after "on", "el" and the like ("on
 /// 10/16", "el 16/10"): "1/2" alone is rather half of something.
@@ -204,6 +213,24 @@ const _fillers = {
   'und',
 };
 
+/// What stands in front of the facts of an invitation: never its title.
+const _labels = [
+  // German
+  'datum', 'termin', 'wann', 'tag', 'zeit', 'uhrzeit', 'beginn', 'start',
+  'ende', 'wo', 'ort', 'treffpunkt',
+  // English
+  'date', 'when', 'time', 'where', 'starts', 'venue', 'place',
+  // Spanish
+  'fecha', 'cuándo', 'cuando', 'hora', 'día', 'dia', 'dónde', 'donde',
+  'lugar',
+];
+
+/// "Ort: Aula": a line that says something other than what it is about.
+final _labelled = RegExp(
+  '^(?:${_labels.join('|')})\\s*:',
+  caseSensitive: false,
+);
+
 /// The language [text] is most likely written in (de, en or es), else
 /// [fallback]: by small words every letter uses.
 String guessLanguage(String text, {required String fallback}) {
@@ -282,7 +309,14 @@ List<EventSuggestion> extractEvents(
 }) {
   final today = now ?? DateTime.now();
   final lang = language ?? guessLanguage(text, fallback: appLanguage);
-  final lines = text.split(RegExp(r'\r?\n')).map((l) => l.trim()).toList();
+  final lines = text
+      .replaceAllMapped(
+        _spacedDate,
+        (m) => '${m[1] ?? m[4]}.${m[2] ?? m[5]}.${m[3] ?? ''}',
+      )
+      .split(RegExp(r'\r?\n'))
+      .map((l) => l.trim())
+      .toList();
   final found = <EventSuggestion>[];
   final seen = <String>{};
   for (var i = 0; i < lines.length; i++) {
@@ -291,8 +325,9 @@ List<EventSuggestion> extractEvents(
     for (final date in _dates(line, today, lang)) {
       final time =
           _firstTime(line.substring(date.endIndex), lang) ??
-          _firstTime(line.substring(0, date.startIndex), lang);
-      final title = _title(line, i > 0 ? lines[i - 1] : '');
+          _firstTime(line.substring(0, date.startIndex), lang) ??
+          (date.lastDay == null ? _timeNearby(lines, i, today, lang) : null);
+      final title = _title(lines, i);
       final DateTime start;
       final DateTime end;
       final bool allDay;
@@ -530,12 +565,55 @@ _Time? _twelveHour(Match m, String lang) {
   return (startHour, int.parse(m[2] ?? '0'), endHour, int.parse(m[5] ?? '0'));
 }
 
-String _title(String line, String previous) {
-  var t = _clean(line);
-  if (t.length < 3) {
-    t = previous.replaceAll(RegExp(r'\s+'), ' ').trim();
+/// The time beside the date at [index] for letters and invitations with one
+/// fact per line: up to two lines below, stopping at the next date, else the
+/// line above.
+_Time? _timeNearby(List<String> lines, int index, DateTime today, String lang) {
+  var seen = 0;
+  for (var i = index + 1; i < lines.length && seen < 2; i++) {
+    if (lines[i].isEmpty) continue;
+    if (_dates(lines[i], today, lang).isNotEmpty) break;
+    seen++;
+    if (_timeOfLine(lines[i], today, lang) case final time?) return time;
   }
-  if (t.isEmpty) t = tr.commonEvent;
+  for (var i = index - 1; i >= 0; i--) {
+    if (lines[i].isNotEmpty) return _timeOfLine(lines[i], today, lang);
+  }
+  return null;
+}
+
+/// The time of a line that says little else: "Uhrzeit: 19:30 Uhr", "von 14
+/// bis 17 Uhr", "10:15". A sentence that mentions an hour is about something
+/// else ("bitte bis 12 Uhr anmelden").
+_Time? _timeOfLine(String line, DateTime today, String lang) {
+  if (_dates(line, today, lang).isNotEmpty) return null;
+  final words = _clean(line).split(' ').where((w) => w.isNotEmpty);
+  return words.length > 2 ? null : _firstTime(line, lang);
+}
+
+/// What is left of the line at [index], else the nearest line above that
+/// can be a title, else one below.
+String _title(List<String> lines, int index) {
+  bool fits(String title) =>
+      title.length >= 3 && !_labels.contains(title.toLowerCase());
+
+  String? near(int step) {
+    var seen = 0;
+    for (
+      var i = index + step;
+      i >= 0 && i < lines.length && seen < 4;
+      i += step
+    ) {
+      if (lines[i].isEmpty) continue;
+      seen++;
+      final title = _clean(lines[i]);
+      if (fits(title) && !_labelled.hasMatch(lines[i])) return title;
+    }
+    return null;
+  }
+
+  final own = _clean(lines[index]);
+  final t = fits(own) ? own : near(-1) ?? near(1) ?? tr.commonEvent;
   return t.length > 60 ? '${t.substring(0, 57)}…' : t;
 }
 
