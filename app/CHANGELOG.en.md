@@ -20,7 +20,7 @@ with the releases.
 - The photo, scan or PDF stays attached to the event, so you can check it. A tick
   in the import turns this off.
 - Events can now carry photos and files. This also needs an up-to-date server.
-- On phones the import offers “Scan document”.
+- On phones the import offers “Scan a document”.
 
 ## 2.0.38 – Edit recognised appointments
 
