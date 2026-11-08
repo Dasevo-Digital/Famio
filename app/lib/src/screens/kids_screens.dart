@@ -315,11 +315,14 @@ class _Chip extends StatelessWidget {
         children: [
           Icon(icon, size: 15, color: ink),
           const SizedBox(width: 5),
-          Text(
-            text,
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: ink),
+          // Large text wraps instead of running out of the card.
+          Flexible(
+            child: Text(
+              text,
+              style: Theme.of(
+                context,
+              ).textTheme.labelMedium?.copyWith(color: ink),
+            ),
           ),
         ],
       ),

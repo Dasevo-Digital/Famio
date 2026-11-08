@@ -12,6 +12,9 @@ class DaySummary {
   var sleep = Duration.zero;
   var wet = 0;
   var dirty = 0;
+
+  /// Diapers with watery stool (diarrhoea), part of [dirty].
+  var diarrhea = 0;
   double? maxTemperature;
   var medications = 0;
 
@@ -58,7 +61,10 @@ DaySummary summarize(List<ChildLog> logs, DateTime day, [DateTime? now]) {
       case LogKind.diaper:
         if (inDay) {
           if (l.diaper != DiaperKind.dirty) s.wet++;
-          if (l.diaper != DiaperKind.wet) s.dirty++;
+          if (l.diaper?.poo ?? true) {
+            s.dirty++;
+            if (l.stool == StoolKind.watery) s.diarrhea++;
+          }
         }
       case LogKind.temperature:
         final t = l.temperatureC;
@@ -137,6 +143,7 @@ class PeriodSummary {
       sleep += s.sleep;
       wet += s.wet;
       dirty += s.dirty;
+      diarrhea += s.diarrhea;
       if (s.maxTemperature case final t?
           when maxTemperature == null || t > maxTemperature!) {
         maxTemperature = t;
@@ -151,6 +158,7 @@ class PeriodSummary {
   var sleep = Duration.zero;
   var wet = 0;
   var dirty = 0;
+  var diarrhea = 0;
   double? maxTemperature;
 
   double perDay(num total) => days == 0 ? 0 : total / days;

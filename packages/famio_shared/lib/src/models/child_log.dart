@@ -57,9 +57,9 @@ enum MilkKind {
 }
 
 enum DiaperKind {
-  wet('nass'),
-  dirty('voll'),
-  both('nass + voll');
+  wet('Pipi'),
+  dirty('Kacka'),
+  both('Pipi + Kacka');
 
   const DiaperKind(this._label);
 
@@ -67,6 +67,25 @@ enum DiaperKind {
 
   /// The label in the language of [sharedTexts].
   String get label => sharedText('DiaperKind.$name', _label);
+
+  /// The diaper had stool in it, so [ChildLog.stool] may describe it.
+  bool get poo => this != wet;
+}
+
+/// How the stool in a diaper looked, from hard to watery (the four
+/// consistencies of the Amsterdam Infant Stool Scale).
+enum StoolKind {
+  hard('hart'),
+  formed('geformt'),
+  soft('breiig'),
+  watery('Durchfall');
+
+  const StoolKind(this._label);
+
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('StoolKind.$name', _label);
 }
 
 /// One entry of a child's daily log (feeding, sleep, diaper, fever …),
@@ -83,6 +102,7 @@ class ChildLog {
     this.milk,
     this.amountMl,
     this.diaper,
+    this.stool,
     this.temperatureC,
     this.medication = '',
     this.dose = '',
@@ -106,6 +126,7 @@ class ChildLog {
       milk: pick(MilkKind.values, r.data['milk']),
       amountMl: (r.data['amountMl'] as num?)?.toInt(),
       diaper: pick(DiaperKind.values, r.data['diaper']),
+      stool: pick(StoolKind.values, r.data['stool']),
       temperatureC: (r.data['temperatureC'] as num?)?.toDouble(),
       medication: r.data['medication'] as String? ?? '',
       dose: r.data['dose'] as String? ?? '',
@@ -128,6 +149,10 @@ class ChildLog {
   final MilkKind? milk;
   final int? amountMl;
   final DiaperKind? diaper;
+
+  /// How the stool looked; only for diapers with stool, null when nobody
+  /// said.
+  final StoolKind? stool;
   final double? temperatureC;
 
   /// Name of the medicine and the dose as given by doctor or leaflet;
@@ -162,6 +187,8 @@ class ChildLog {
     MilkKind? milk,
     int? amountMl,
     DiaperKind? diaper,
+    StoolKind? stool,
+    bool clearStool = false,
     double? temperatureC,
     String? medication,
     String? dose,
@@ -180,6 +207,7 @@ class ChildLog {
     milk: milk ?? this.milk,
     amountMl: amountMl ?? this.amountMl,
     diaper: diaper ?? this.diaper,
+    stool: clearStool ? null : stool ?? this.stool,
     temperatureC: temperatureC ?? this.temperatureC,
     medication: medication ?? this.medication,
     dose: dose ?? this.dose,
@@ -199,6 +227,7 @@ class ChildLog {
     'milk': ?milk?.name,
     'amountMl': ?amountMl,
     'diaper': ?diaper?.name,
+    'stool': ?stool?.name,
     'temperatureC': ?temperatureC,
     if (medication.isNotEmpty) 'medication': medication,
     if (dose.isNotEmpty) 'dose': dose,

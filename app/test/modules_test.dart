@@ -208,8 +208,8 @@ void main() {
     await pumpData(tester);
     await tester.tap(find.text('Lena'));
     await tester.pumpAndSettle();
-    expect(find.text('Windel nass'), findsOneWidget);
-    expect(find.text('Windel voll'), findsNothing);
+    expect(find.text('Windel Pipi'), findsOneWidget);
+    expect(find.text('Windel Kacka'), findsNothing);
 
     await tester.tap(find.text('Woche'));
     await tester.pumpAndSettle();
@@ -218,8 +218,8 @@ void main() {
     await tester.tap(find.byTooltip('Früher'));
     await tester.pumpAndSettle();
     expect(find.text('Letzte Woche'), findsOneWidget);
-    expect(find.text('Windel voll'), findsOneWidget);
-    expect(find.text('Windel nass'), findsNothing);
+    expect(find.text('Windel Kacka'), findsOneWidget);
+    expect(find.text('Windel Pipi'), findsNothing);
 
     await tester.tap(find.text('Heute'));
     await tester.pumpAndSettle();
@@ -235,6 +235,82 @@ void main() {
     await tester.tap(find.text('Monat'));
     await tester.pumpAndSettle();
     expect(find.text(DateFormat.yMMMM('de').format(now)), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('kids: diapers and how the stool looked', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 60)),
+    );
+    engine.saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth));
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    List<ChildLog> logs() => engine.childLogs('k1');
+
+    // Pipi: one tap, no question about stool.
+    await tester.tap(find.text('Windel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pipi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsNothing);
+    expect(logs().single.diaper, DiaperKind.wet);
+    expect(logs().single.stool, isNull);
+
+    // Kacka without a rating.
+    await tester.tap(find.text('Windel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kacka'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ohne Angabe'));
+    await tester.pumpAndSettle();
+    expect(logs(), hasLength(2));
+    expect(
+      logs().where((l) => l.diaper == DiaperKind.dirty).single.stool,
+      isNull,
+    );
+
+    // Closing the sheet at the question keeps the diaper.
+    await tester.tap(find.text('Windel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kacka'));
+    await tester.pumpAndSettle();
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsNothing);
+    expect(logs(), hasLength(3));
+
+    // Rated afterwards in the editor.
+    await tester.tap(find.text('Windel Kacka').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Stuhl'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'breiig'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    final rated = logs().firstWhere((l) => l.stool != null);
+    expect(rated.stool, StoolKind.soft);
+    expect(find.text('Windel Kacka · breiig'), findsOneWidget);
+
+    // Pipi has no stool: switching back drops the rating.
+    await tester.tap(find.text('Windel Kacka · breiig'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Durchfall'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SegmentedButton<DiaperKind>),
+        matching: find.text('Pipi'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Stuhl'), findsNothing);
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    final changed = logs().firstWhere((l) => l.id == rated.id);
+    expect(changed.diaper, DiaperKind.wet);
+    expect(changed.stool, isNull);
     await tester.pump(const Duration(seconds: 5));
   });
 
@@ -263,10 +339,16 @@ void main() {
     expect(find.text('Protokoll'), findsOneWidget);
     await tester.tap(find.text('Windel'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('nass + voll'));
+    await tester.tap(find.text('Pipi + Kacka'));
     await tester.pumpAndSettle();
+    // Saved at once; the sheet then asks about the stool.
     expect(engine.childLogs('k1').single.diaper, DiaperKind.both);
-    expect(find.text('Windel nass + voll'), findsOneWidget);
+    expect(find.text('Wie war der Stuhl?'), findsOneWidget);
+    await tester.tap(find.text('Durchfall'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsNothing);
+    expect(engine.childLogs('k1').single.stool, StoolKind.watery);
+    expect(find.text('Windel Pipi + Kacka · Durchfall'), findsOneWidget);
 
     await tester.tap(find.text('Zeitstrahl'));
     await tester.pumpAndSettle();

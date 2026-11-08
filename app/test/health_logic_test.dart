@@ -39,6 +39,7 @@ void main() {
     int? ml,
     BreastSide? side,
     DiaperKind? diaper,
+    StoolKind? stool,
     double? temp,
     String medication = '',
     double? interval,
@@ -51,6 +52,7 @@ void main() {
     amountMl: ml,
     side: side,
     diaper: diaper,
+    stool: stool,
     temperatureC: temp,
     medication: medication,
     minIntervalHours: interval,
@@ -91,6 +93,48 @@ void main() {
       summarize(logs, DateTime(2026, 9, 26), DateTime(2026, 9, 27, 23)).sleep,
       const Duration(hours: 2),
     );
+  });
+
+  test('diarrhoea counts the diapers with watery stool', () {
+    final day = DateTime(2026, 9, 27);
+    final logs = [
+      log(
+        LogKind.diaper,
+        DateTime(2026, 9, 27, 7),
+        diaper: DiaperKind.both,
+        stool: StoolKind.watery,
+      ),
+      log(
+        LogKind.diaper,
+        DateTime(2026, 9, 27, 9),
+        diaper: DiaperKind.dirty,
+        stool: StoolKind.watery,
+      ),
+      log(
+        LogKind.diaper,
+        DateTime(2026, 9, 27, 12),
+        diaper: DiaperKind.dirty,
+        stool: StoolKind.soft,
+      ),
+      log(LogKind.diaper, DateTime(2026, 9, 27, 15), diaper: DiaperKind.dirty),
+      log(LogKind.diaper, DateTime(2026, 9, 27, 18), diaper: DiaperKind.wet),
+      log(
+        LogKind.diaper,
+        DateTime(2026, 9, 28, 7),
+        diaper: DiaperKind.dirty,
+        stool: StoolKind.watery,
+      ),
+    ];
+    final s = summarize(logs, day, DateTime(2026, 9, 28, 8));
+    expect(s.dirty, 4);
+    expect(s.wet, 2);
+    expect(s.diarrhea, 2);
+    final week = PeriodSummary(logs, [
+      day,
+      DateTime(2026, 9, 28),
+    ], DateTime(2026, 9, 28, 8));
+    expect(week.diarrhea, 3);
+    expect(week.perDay(week.diarrhea), 1.5);
   });
 
   test('a running sleep counts up to now', () {

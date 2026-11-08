@@ -40,6 +40,40 @@ void main() {
     expect(fever.duration(), Duration.zero);
   });
 
+  test('a diaper keeps how the stool looked', () {
+    final log = ChildLog(
+      id: 'l1',
+      childId: 'c1',
+      kind: LogKind.diaper,
+      start: DateTime(2026, 11, 8, 9),
+      diaper: DiaperKind.dirty,
+      stool: StoolKind.hard,
+    );
+    expect(log.toData()['stool'], 'hard');
+    final back = ChildLog.fromRecord(
+      _record(Collections.childLogs, 'l1', log.toData()),
+    );
+    expect(back.stool, StoolKind.hard);
+    expect(back.copyWith(stool: StoolKind.watery).stool, StoolKind.watery);
+    expect(back.copyWith(clearStool: true).stool, isNull);
+    expect(DiaperKind.wet.poo, isFalse);
+    expect(DiaperKind.dirty.poo, isTrue);
+    expect(DiaperKind.both.poo, isTrue);
+
+    // Entries from before the rating, and unknown values, have none.
+    final old = ChildLog.fromRecord(
+      _record(Collections.childLogs, 'l2', {
+        'childId': 'c1',
+        'kind': 'diaper',
+        'start': '2026-11-08T08:00:00Z',
+        'diaper': 'dirty',
+        'stool': 'green',
+      }),
+    );
+    expect(old.stool, isNull);
+    expect(old.toData().containsKey('stool'), isFalse);
+  });
+
   test('emergency info and sex survive the child record', () {
     final child = Child(
       id: 'c1',

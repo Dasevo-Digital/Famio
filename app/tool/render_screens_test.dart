@@ -1282,6 +1282,30 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
   });
 
+  testWidgets('kids diaper phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byIcon(AppIcons.dotsThreeCircle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kinder').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Emil');
+    await go(tester, 'Windel');
+    await go(tester, 'Kacka');
+    await _shot(tester, key, 'phone_9b_windel_stuhl');
+    await go(tester, 'Durchfall');
+    final row = find.text('Windel Kacka · Durchfall');
+    await tester.dragUntilVisible(
+      row,
+      find.byType(ListView).last,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_9c_windel_bearbeiten');
+    await tester.pump(const Duration(seconds: 2));
+  });
+
   testWidgets('kids desktop', (tester) async {
     final key = await start(tester, desktop);
     await go(tester, 'Kinder');

@@ -61,7 +61,10 @@ String logText(ChildLog l, [DateTime? now]) => switch (l.kind) {
     if (l.amountMl != null) '${l.amountMl} ml',
     ?l.side?.label,
   ].join(' · '),
-  LogKind.diaper => tr.kidsLogDiaperKind(l.diaper?.label ?? '').trim(),
+  LogKind.diaper => [
+    tr.kidsLogDiaperKind(l.diaper?.label ?? '').trim(),
+    ?l.stool?.label,
+  ].join(' · '),
   LogKind.temperature =>
     l.temperatureC == null ? tr.kidsLogTemperature : _temp(l.temperatureC!),
   LogKind.medication => [
@@ -421,16 +424,18 @@ class _QuickButtons extends StatelessWidget {
         .where((l) => l.kind == LogKind.breast && l.running)
         .firstOrNull;
 
-    void quick(LogKind kind, {DiaperKind? diaper}) => engine.saveChildLog(
-      ChildLog(
+    ChildLog quick(LogKind kind, {DiaperKind? diaper}) {
+      final log = ChildLog(
         id: newId(),
         childId: child.id,
         kind: kind,
         start: DateTime.now(),
         diaper: diaper,
         by: engine.memberId,
-      ),
-    );
+      );
+      engine.saveChildLog(log);
+      return log;
+    }
 
     Future<void> breast() async {
       if (nursing != null) return;
@@ -512,41 +517,17 @@ class _QuickButtons extends StatelessWidget {
       );
     }
 
-    Future<void> diaper() async {
-      final kind = await showModalBottomSheet<DiaperKind>(
-        context: context,
-        // Above the floating navigation bar.
-        useRootNavigator: true,
-        builder: (context) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  tr.kidsLogDiaper,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final d in DiaperKind.values)
-                      FilledButton.tonal(
-                        onPressed: () => Navigator.pop(context, d),
-                        child: Text(d.label),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      if (kind != null) quick(LogKind.diaper, diaper: kind);
-    }
+    Future<void> diaper() => showModalBottomSheet<void>(
+      context: context,
+      // Above the floating navigation bar.
+      useRootNavigator: true,
+      // Large text needs more than the default nine sixteenths.
+      isScrollControlled: true,
+      builder: (context) => _DiaperSheet(
+        save: (kind) => quick(LogKind.diaper, diaper: kind),
+        rate: (log, stool) => engine.saveChildLog(log.copyWith(stool: stool)),
+      ),
+    );
 
     void snack(String text) => ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
@@ -801,7 +782,80 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// "2 nass · 1 voll" in the app's language.
+/// Logs a diaper with one tap and, when it had stool in it, asks how the
+/// stool looked. The diaper is saved at once, so closing the sheet at the
+/// second question keeps it without a rating.
+class _DiaperSheet extends StatefulWidget {
+  const _DiaperSheet({required this.save, required this.rate});
+
+  final ChildLog Function(DiaperKind kind) save;
+  final void Function(ChildLog log, StoolKind stool) rate;
+
+  @override
+  State<_DiaperSheet> createState() => _DiaperSheetState();
+}
+
+class _DiaperSheetState extends State<_DiaperSheet> {
+  ChildLog? _saved;
+
+  @override
+  Widget build(BuildContext context) {
+    final saved = _saved;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              saved == null ? tr.kidsLogDiaper : tr.kidsLogHowWasStool,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                if (saved == null)
+                  for (final d in DiaperKind.values)
+                    FilledButton.tonal(
+                      onPressed: () {
+                        final log = widget.save(d);
+                        if (d.poo) {
+                          setState(() => _saved = log);
+                        } else {
+                          Navigator.pop(context);
+                        }
+                      },
+                      child: Text(d.label),
+                    )
+                else
+                  for (final stool in StoolKind.values)
+                    FilledButton.tonal(
+                      onPressed: () {
+                        widget.rate(saved, stool);
+                        Navigator.pop(context);
+                      },
+                      child: Text(stool.label),
+                    ),
+              ],
+            ),
+            if (saved != null) ...[
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(tr.kidsLogStoolSkip),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "2 Pipi · 1 Kacka" in the app's language.
 String _diapers(Object wet, Object dirty) =>
     '$wet ${DiaperKind.wet.label} · $dirty ${DiaperKind.dirty.label}';
 
@@ -822,6 +876,7 @@ class _DayCard extends StatelessWidget {
           (tr.kidsLogBreastfeeding, durationLabel(s.breast)),
         (tr.kidsLogSleepNoun, durationLabel(s.sleep)),
         (tr.kidsLogDiapers, _diapers(s.wet, s.dirty)),
+        if (s.diarrhea > 0) (tr.kidsLogDiarrhea, '${s.diarrhea}'),
         if (s.maxTemperature != null)
           (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
       ],
@@ -848,6 +903,7 @@ class _AverageCard extends StatelessWidget {
           (tr.kidsLogBreastfeeding, durationLabel(s.durationPerDay(s.breast))),
         (tr.kidsLogSleepNoun, durationLabel(s.durationPerDay(s.sleep))),
         (tr.kidsLogDiapers, _diapers(avg(s.wet), avg(s.dirty))),
+        if (s.diarrhea > 0) (tr.kidsLogDiarrhea, avg(s.diarrhea)),
         if (s.maxTemperature != null)
           (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
       ],
@@ -977,11 +1033,13 @@ class _HistoryChartState extends State<_HistoryChart> {
         children: [
           Row(
             children: [
-              Text(
-                tr.kidsLogHistory,
-                style: Theme.of(context).textTheme.titleMedium,
+              Expanded(
+                child: Text(
+                  tr.kidsLogHistory,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
-              const Spacer(),
               DropdownButton<_Series>(
                 value: _series,
                 underline: const SizedBox.shrink(),
@@ -1243,6 +1301,7 @@ class _LogEditorState extends State<_LogEditor> {
   late BreastSide? _side = _old?.side ?? BreastSide.left;
   late MilkKind? _milk = _old?.milk ?? MilkKind.formula;
   late DiaperKind _diaper = _old?.diaper ?? DiaperKind.wet;
+  late StoolKind? _stool = _old?.stool;
   late final _amount = TextEditingController(
     text: _old?.amountMl?.toString() ?? '',
   );
@@ -1360,6 +1419,7 @@ class _LogEditorState extends State<_LogEditor> {
           ? int.tryParse(_amount.text.trim())
           : null,
       diaper: kind == LogKind.diaper ? _diaper : null,
+      stool: kind == LogKind.diaper && _diaper.poo ? _stool : null,
       temperatureC: kind == LogKind.temperature ? temp : null,
       medication: kind == LogKind.medication ? _medication.text.trim() : '',
       dose: kind == LogKind.medication ? _dose.text.trim() : '',
@@ -1504,6 +1564,24 @@ class _LogEditorState extends State<_LogEditor> {
                 selected: {_diaper},
                 onSelectionChanged: (s) => setState(() => _diaper = s.first),
               ),
+              if (_diaper.poo) ...[
+                const SizedBox(height: 16),
+                Text(tr.kidsLogStool, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final stool in StoolKind.values)
+                      ChoiceChip(
+                        label: Text(stool.label),
+                        selected: _stool == stool,
+                        onSelected: (on) =>
+                            setState(() => _stool = on ? stool : null),
+                      ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
             ],
             if (kind == LogKind.temperature) ...[
@@ -1678,7 +1756,11 @@ class _LogEditorState extends State<_LogEditor> {
               ),
             ],
             const SizedBox(height: 20),
-            Row(
+            // Side by side; stacked when large text leaves no room.
+            OverflowBar(
+              alignment: MainAxisAlignment.spaceBetween,
+              overflowAlignment: OverflowBarAlignment.end,
+              overflowSpacing: 8,
               children: [
                 if (_old != null)
                   TextButton.icon(
@@ -1695,8 +1777,9 @@ class _LogEditorState extends State<_LogEditor> {
                       );
                       Navigator.pop(context);
                     },
-                  ),
-                const Spacer(),
+                  )
+                else
+                  const SizedBox.shrink(),
                 ColorButton(
                   label: tr.commonSave,
                   color: color,
