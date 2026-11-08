@@ -41,6 +41,24 @@ void main() {
     });
   }
 
+  for (final language in ['de', 'en', 'es']) {
+    test('app_$language.arb names every key once', () {
+      // jsonDecode keeps the last of two equal keys without a word.
+      final keys = [
+        for (final m in RegExp(
+          r'^  "([^"]+)":',
+          multiLine: true,
+        ).allMatches(File('lib/l10n/app_$language.arb').readAsStringSync()))
+          m[1]!,
+      ];
+      final seen = <String>{};
+      expect([
+        for (final k in keys)
+          if (!seen.add(k)) k,
+      ], isEmpty);
+    });
+  }
+
   test('the device language decides, English for unknown ones', () {
     final before = deviceLanguage;
     addTearDown(() => deviceLanguage = before);

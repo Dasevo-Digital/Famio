@@ -176,6 +176,48 @@ void main() {
     });
   });
 
+  group('a photo in the child log', () {
+    Future<StoredFile> photo(FamilyMember owner) => app.files.save(
+      owner: owner.id,
+      name: 'ausschlag.jpg',
+      mime: 'image/jpeg',
+      body: Stream.value([1, 2, 3]),
+    );
+    SyncRecord log(String id, StoredFile file) =>
+        record(Collections.childLogs, id, {
+          'childId': 'mia',
+          'kind': 'diaper',
+          'diaper': 'dirty',
+          'stoolColor': 'pale',
+          'start': '2026-11-08T07:30:00.000Z',
+          'photos': [file.toJson()],
+        });
+
+    test('goes only to those who receive the entry', () async {
+      final file = await photo(mama);
+      await sync(mama, changes: [log('windel', file)]);
+      expect(app.files.mayRead(file, mama.id), isTrue);
+      expect(app.files.mayRead(file, papa.id), isTrue);
+      expect(app.files.mayRead(file, kid.id), isFalse);
+      expect(app.files.mayRead(file, oma.id), isFalse);
+      expect(app.files.mayRead(file, ha.id), isFalse);
+      final stored = app.records.get(Collections.childLogs, 'windel')!;
+      expect(stored.data['stoolColor'], 'pale');
+      expect(app.records.referenced(file.id), isTrue);
+    });
+
+    test('someone else\'s file cannot be attached', () async {
+      final file = await photo(papa);
+      try {
+        await sync(mama, changes: [log('fremd', file)]);
+      } on Object {
+        // The server refuses the whole request.
+      }
+      expect(app.records.get(Collections.childLogs, 'fremd'), isNull);
+      expect(app.files.mayRead(file, mama.id), isFalse);
+    });
+  });
+
   group('changing', () {
     test('children leave plans alone, also where they are named', () async {
       final plan = medication('saft', audience: [mama.id, kid.id]);

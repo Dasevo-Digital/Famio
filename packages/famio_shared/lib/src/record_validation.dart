@@ -201,7 +201,9 @@ Iterable<String> recordFileIds(SyncRecord record) sync* {
 }
 
 List<String> _fileFields(String collection) => switch (collection) {
-  Collections.tasks || Collections.childEntries => ['photos'],
+  Collections.tasks ||
+  Collections.childEntries ||
+  Collections.childLogs => ['photos'],
   Collections.children || Collections.recipes => ['photo'],
   Collections.chatMessages => ['attachment'],
   Collections.documents => ['file'],

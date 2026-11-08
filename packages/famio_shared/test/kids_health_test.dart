@@ -56,6 +56,40 @@ void main() {
     expect(back.stool, StoolKind.hard);
     expect(back.copyWith(stool: StoolKind.watery).stool, StoolKind.watery);
     expect(back.copyWith(clearStool: true).stool, isNull);
+
+    const photo = FileRef(
+      id: 'f1',
+      name: 'po.jpg',
+      mime: 'image/jpeg',
+      size: 3,
+    );
+    final full = ChildLog.fromRecord(
+      _record(
+        Collections.childLogs,
+        'l3',
+        log
+            .copyWith(
+              stoolColor: StoolColor.pale,
+              stoolAmount: StoolAmount.little,
+              photos: const [photo],
+            )
+            .toData(),
+      ),
+    );
+    expect(full.stoolColor, StoolColor.pale);
+    expect(full.stoolAmount, StoolAmount.little);
+    expect(full.photos.single.id, 'f1');
+    expect(
+      recordFileIds(
+        _record(Collections.childLogs, 'l3', full.toData()),
+      ).toList(),
+      ['f1'],
+    );
+    final cleared = full.copyWith(clearStool: true);
+    expect(
+      [cleared.stool, cleared.stoolColor, cleared.stoolAmount],
+      [null, null, null],
+    );
     expect(DiaperKind.wet.poo, isFalse);
     expect(DiaperKind.dirty.poo, isTrue);
     expect(DiaperKind.both.poo, isTrue);

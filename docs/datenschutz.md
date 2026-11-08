@@ -26,9 +26,10 @@ verschlüsselte lokale Datenbank und einen Dateicache für den Offlinebetrieb.
 unverschlüsselte Kopie auf dem Gerät; sie wird nach spätestens einer Stunde beim
 nächsten Aufräumen entfernt.
 
-Gesundheitsdaten (Medikamente, Kinderdaten mit Notfallangaben, Schwangerschaften
-und Dokumente der Kategorie Gesundheit) erhalten nur Erwachsene und ausdrücklich
-ausgewählte Personen. Dienstkonten, etwa für Home Assistant oder eine
+Gesundheitsdaten (Medikamente, Kinderdaten mit Notfallangaben und Protokoll,
+Schwangerschaften und Dokumente der Kategorie Gesundheit) erhalten nur
+Erwachsene und ausdrücklich ausgewählte Personen. Fotos an Einträgen des
+Kinder-Protokolls, etwa von einem Ausschlag, folgen denselben Regeln. Dienstkonten, etwa für Home Assistant oder eine
 Wandanzeige, erhalten sie nie, Kinderkonten nur, wenn sie ausgewählt sind.
 Vertrauliche Termine sehen Gäste und Kinderkonten nur, wenn sie beteiligt sind;
 Dienstkonten erfahren nur die belegte Zeit. Mitteilungen nennen sie ohne Titel.

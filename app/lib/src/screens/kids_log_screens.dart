@@ -12,6 +12,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../design/theme.dart';
+import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import 'kids_screens.dart';
 import '../widgets/undo_delete.dart';
@@ -64,6 +65,9 @@ String logText(ChildLog l, [DateTime? now]) => switch (l.kind) {
   LogKind.diaper => [
     tr.kidsLogDiaperKind(l.diaper?.label ?? '').trim(),
     ?l.stool?.label,
+    ?l.stoolColor?.label,
+    // "normal" alone would read like the consistency.
+    if (l.stoolAmount != StoolAmount.normal) ?l.stoolAmount?.label,
   ].join(' · '),
   LogKind.temperature =>
     l.temperatureC == null ? tr.kidsLogTemperature : _temp(l.temperatureC!),
@@ -525,7 +529,7 @@ class _QuickButtons extends StatelessWidget {
       isScrollControlled: true,
       builder: (context) => _DiaperSheet(
         save: (kind) => quick(LogKind.diaper, diaper: kind),
-        rate: (log, stool) => engine.saveChildLog(log.copyWith(stool: stool)),
+        update: engine.saveChildLog,
       ),
     );
 
@@ -782,14 +786,14 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// Logs a diaper with one tap and, when it had stool in it, asks how the
-/// stool looked. The diaper is saved at once, so closing the sheet at the
-/// second question keeps it without a rating.
+/// Logs a diaper with one tap and, when it had stool in it, asks for its
+/// amount, consistency and colour. The diaper is saved at once and each
+/// answer right away, so closing the sheet keeps what was given.
 class _DiaperSheet extends StatefulWidget {
-  const _DiaperSheet({required this.save, required this.rate});
+  const _DiaperSheet({required this.save, required this.update});
 
   final ChildLog Function(DiaperKind kind) save;
-  final void Function(ChildLog log, StoolKind stool) rate;
+  final void Function(ChildLog log) update;
 
   @override
   State<_DiaperSheet> createState() => _DiaperSheetState();
@@ -797,6 +801,17 @@ class _DiaperSheet extends StatefulWidget {
 
 class _DiaperSheetState extends State<_DiaperSheet> {
   ChildLog? _saved;
+
+  void _change(ChildLog next) {
+    widget.update(next);
+    if (next.stool != null &&
+        next.stoolColor != null &&
+        next.stoolAmount != null) {
+      Navigator.pop(context);
+    } else {
+      setState(() => _saved = next);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -813,11 +828,11 @@ class _DiaperSheetState extends State<_DiaperSheet> {
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                if (saved == null)
+            if (saved == null)
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
                   for (final d in DiaperKind.values)
                     FilledButton.tonal(
                       onPressed: () {
@@ -829,28 +844,127 @@ class _DiaperSheetState extends State<_DiaperSheet> {
                         }
                       },
                       child: Text(d.label),
-                    )
-                else
-                  for (final stool in StoolKind.values)
-                    FilledButton.tonal(
-                      onPressed: () {
-                        widget.rate(saved, stool);
-                        Navigator.pop(context);
-                      },
-                      child: Text(stool.label),
                     ),
-              ],
-            ),
-            if (saved != null) ...[
+                ],
+              )
+            else ...[
+              _StoolChoices(
+                amount: saved.stoolAmount,
+                stool: saved.stool,
+                color: saved.stoolColor,
+                onAmount: (v) => _change(saved.copyWith(stoolAmount: v)),
+                onStool: (v) => _change(saved.copyWith(stool: v)),
+                onColor: (v) => _change(saved.copyWith(stoolColor: v)),
+              ),
               const SizedBox(height: 8),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(tr.kidsLogStoolSkip),
+              Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(tr.commonDone),
+                ),
               ),
             ],
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Amount, consistency and colour of the stool as rows of choice chips.
+class _StoolChoices extends StatelessWidget {
+  const _StoolChoices({
+    required this.amount,
+    required this.stool,
+    required this.color,
+    required this.onAmount,
+    required this.onStool,
+    required this.onColor,
+    this.clearable = false,
+  });
+
+  final StoolAmount? amount;
+  final StoolKind? stool;
+  final StoolColor? color;
+  final ValueChanged<StoolAmount> onAmount;
+  final ValueChanged<StoolKind> onStool;
+  final ValueChanged<StoolColor> onColor;
+
+  /// Tapping the chosen chip again clears it (editor); the quick sheet
+  /// only picks.
+  final bool clearable;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    Widget row<T>(
+      String label,
+      List<T> values,
+      T? chosen,
+      String Function(T) text,
+      ValueChanged<T> pick, {
+      Widget Function(T)? avatar,
+    }) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelLarge),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final v in values)
+                ChoiceChip(
+                  avatar: avatar?.call(v),
+                  showCheckmark: avatar == null,
+                  label: Text(text(v)),
+                  selected: chosen == v,
+                  onSelected: (on) {
+                    if (on || clearable) pick(v);
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row(
+          tr.commonQuantity,
+          StoolAmount.values,
+          amount,
+          (v) => v.label,
+          onAmount,
+        ),
+        row(
+          tr.kidsLogStoolConsistency,
+          StoolKind.values,
+          stool,
+          (v) => v.label,
+          onStool,
+        ),
+        row(
+          tr.kidsColor,
+          StoolColor.values,
+          color,
+          (v) => v.label,
+          onColor,
+          avatar: (v) => Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              color: Color(v.argb),
+              shape: BoxShape.circle,
+              border: Border.all(color: theme.colorScheme.outline),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1247,6 +1361,16 @@ class _LogRow extends StatelessWidget {
                 ],
               ),
             ),
+            if (log.photos.isNotEmpty)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 8),
+                child: Icon(
+                  AppIcons.image,
+                  size: 18,
+                  color: FamioColors.of(context).inkSoft,
+                  semanticLabel: tr.tasksPhotos,
+                ),
+              ),
             if (by != null) MemberAvatar(by, radius: 11),
           ],
         ),
@@ -1302,6 +1426,10 @@ class _LogEditorState extends State<_LogEditor> {
   late MilkKind? _milk = _old?.milk ?? MilkKind.formula;
   late DiaperKind _diaper = _old?.diaper ?? DiaperKind.wet;
   late StoolKind? _stool = _old?.stool;
+  late StoolColor? _stoolColor = _old?.stoolColor;
+  late StoolAmount? _stoolAmount = _old?.stoolAmount;
+  late final _photos = [...?_old?.photos];
+  var _uploading = false;
   late final _amount = TextEditingController(
     text: _old?.amountMl?.toString() ?? '',
   );
@@ -1420,6 +1548,8 @@ class _LogEditorState extends State<_LogEditor> {
           : null,
       diaper: kind == LogKind.diaper ? _diaper : null,
       stool: kind == LogKind.diaper && _diaper.poo ? _stool : null,
+      stoolColor: kind == LogKind.diaper && _diaper.poo ? _stoolColor : null,
+      stoolAmount: kind == LogKind.diaper && _diaper.poo ? _stoolAmount : null,
       temperatureC: kind == LogKind.temperature ? temp : null,
       medication: kind == LogKind.medication ? _medication.text.trim() : '',
       dose: kind == LogKind.medication ? _dose.text.trim() : '',
@@ -1427,6 +1557,7 @@ class _LogEditorState extends State<_LogEditor> {
       symptom: kind == LogKind.symptom ? _symptom.text.trim() : '',
       note: _note.text.trim(),
       remindAt: remindAt,
+      photos: _photos,
       by: _old?.by ?? engine.memberId,
     );
     engine.saveChildLog(log);
@@ -1446,6 +1577,20 @@ class _LogEditorState extends State<_LogEditor> {
 
   void _snack(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+
+  Future<void> _addPhoto() async {
+    final picked = await pickFile(context);
+    if (picked == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      final file = await uploadPicked(context, picked);
+      if (mounted) setState(() => _photos.add(file));
+    } on ApiError catch (e) {
+      if (mounted) _snack(e.message);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1566,20 +1711,18 @@ class _LogEditorState extends State<_LogEditor> {
               ),
               if (_diaper.poo) ...[
                 const SizedBox(height: 16),
-                Text(tr.kidsLogStool, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final stool in StoolKind.values)
-                      ChoiceChip(
-                        label: Text(stool.label),
-                        selected: _stool == stool,
-                        onSelected: (on) =>
-                            setState(() => _stool = on ? stool : null),
-                      ),
-                  ],
+                _StoolChoices(
+                  amount: _stoolAmount,
+                  stool: _stool,
+                  color: _stoolColor,
+                  clearable: true,
+                  onAmount: (v) => setState(
+                    () => _stoolAmount = _stoolAmount == v ? null : v,
+                  ),
+                  onStool: (v) =>
+                      setState(() => _stool = _stool == v ? null : v),
+                  onColor: (v) =>
+                      setState(() => _stoolColor = _stoolColor == v ? null : v),
                 ),
               ],
               const SizedBox(height: 12),
@@ -1731,6 +1874,43 @@ class _LogEditorState extends State<_LogEditor> {
                     ? tr.kidsLogWhatWas
                     : 'Notiz (optional)',
               ),
+            ),
+            const SizedBox(height: 12),
+            Text(tr.tasksPhotos, style: theme.textTheme.labelLarge),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final (i, file) in _photos.indexed)
+                  FileThumb(
+                    file: file,
+                    gallery: _photos,
+                    section: FamioSection.kids,
+                    onRemove: () => setState(() => _photos.removeAt(i)),
+                  ),
+                SizedBox.square(
+                  dimension: 72,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    onPressed: _uploading ? null : _addPhoto,
+                    child: _uploading
+                        ? const SizedBox.square(
+                            dimension: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Tooltip(
+                            message: tr.tasksAddPhoto,
+                            child: const Icon(AppIcons.camera),
+                          ),
+                  ),
+                ),
+              ],
             ),
             if (_feeding) ...[
               const SizedBox(height: 12),

@@ -263,7 +263,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kacka'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Ohne Angabe'));
+    await tester.tap(find.text('Fertig'));
     await tester.pumpAndSettle();
     expect(logs(), hasLength(2));
     expect(
@@ -284,17 +284,25 @@ void main() {
     // Rated afterwards in the editor.
     await tester.tap(find.text('Windel Kacka').first);
     await tester.pumpAndSettle();
-    expect(find.text('Stuhl'), findsOneWidget);
+    expect(find.text('Beschaffenheit'), findsOneWidget);
     await tester.tap(find.widgetWithText(ChoiceChip, 'breiig'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'grün'));
+    await tester.tap(find.widgetWithText(ChoiceChip, 'normal'));
     await tester.pumpAndSettle();
+    // Tapped again, a choice goes away.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'normal'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Speichern'));
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
     final rated = logs().firstWhere((l) => l.stool != null);
     expect(rated.stool, StoolKind.soft);
-    expect(find.text('Windel Kacka · breiig'), findsOneWidget);
+    expect(rated.stoolColor, StoolColor.green);
+    expect(rated.stoolAmount, isNull);
+    expect(find.text('Windel Kacka · breiig · grün'), findsOneWidget);
 
     // Pipi has no stool: switching back drops the rating.
-    await tester.tap(find.text('Windel Kacka · breiig'));
+    await tester.tap(find.text('Windel Kacka · breiig · grün'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'Durchfall'));
     await tester.pumpAndSettle();
@@ -305,12 +313,75 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Stuhl'), findsNothing);
+    expect(find.text('Beschaffenheit'), findsNothing);
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
     final changed = logs().firstWhere((l) => l.id == rated.id);
     expect(changed.diaper, DiaperKind.wet);
     expect(changed.stool, isNull);
+
+    // All three answers in the quick sheet close it.
+    await tester.tap(find.text('Windel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kacka'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'viel'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'geformt'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'weißlich/grau'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsNothing);
+    final full = logs().firstWhere((l) => l.stoolColor == StoolColor.pale);
+    expect(full.stool, StoolKind.formed);
+    expect(full.stoolAmount, StoolAmount.much);
+    expect(
+      find.text('Windel Kacka · geformt · weißlich/grau · viel'),
+      findsOneWidget,
+    );
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('kids: a log entry shows its photos', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 60)),
+    );
+    const photo = FileRef(
+      id: 'f1',
+      name: 'ausschlag.jpg',
+      mime: 'image/jpeg',
+      size: 3,
+    );
+    engine
+      ..saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth))
+      ..saveChildLog(
+        ChildLog(
+          id: 'a',
+          childId: 'k1',
+          kind: LogKind.symptom,
+          symptom: 'Ausschlag',
+          start: DateTime.now().subtract(const Duration(minutes: 5)),
+          photos: const [photo],
+        ),
+      );
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    expect(find.byIcon(AppIcons.image), findsOneWidget);
+    await tester.tap(find.text('Ausschlag'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fotos und Dateien'), findsOneWidget);
+    // Removed in the editor and saved: the entry has none left.
+    await tester.ensureVisible(find.byTooltip('Anhang entfernen').first);
+    await tester.tap(find.byTooltip('Anhang entfernen').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Speichern'));
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(engine.childLogs('k1').single.photos, isEmpty);
+    expect(find.byIcon(AppIcons.image), findsNothing);
     await tester.pump(const Duration(seconds: 5));
   });
 
@@ -346,8 +417,11 @@ void main() {
     expect(find.text('Wie war der Stuhl?'), findsOneWidget);
     await tester.tap(find.text('Durchfall'));
     await tester.pumpAndSettle();
-    expect(find.text('Wie war der Stuhl?'), findsNothing);
+    // Saved right away; the other questions are optional.
     expect(engine.childLogs('k1').single.stool, StoolKind.watery);
+    await tester.tap(find.text('Fertig'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsNothing);
     expect(find.text('Windel Pipi + Kacka · Durchfall'), findsOneWidget);
 
     await tester.tap(find.text('Zeitstrahl'));

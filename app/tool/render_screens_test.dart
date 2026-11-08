@@ -1293,7 +1293,10 @@ void main() {
     await go(tester, 'Kacka');
     await _shot(tester, key, 'phone_9b_windel_stuhl');
     await go(tester, 'Durchfall');
-    final row = find.text('Windel Kacka · Durchfall');
+    await go(tester, 'gelb');
+    // The third answer closes the sheet.
+    await go(tester, 'viel');
+    final row = find.text('Windel Kacka · Durchfall · gelb · viel');
     await tester.dragUntilVisible(
       row,
       find.byType(ListView).last,

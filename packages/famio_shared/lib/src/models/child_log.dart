@@ -1,5 +1,6 @@
 import '../sync_record.dart';
 import '../texts.dart';
+import 'chat.dart' show FileRef;
 
 /// What a [ChildLog] records.
 enum LogKind {
@@ -88,6 +89,41 @@ enum StoolKind {
   String get label => sharedText('StoolKind.$name', _label);
 }
 
+/// The colour of the stool. Pale (whitish, grey, clay) is listed because
+/// the stool colour card of the child health booklet asks about it.
+enum StoolColor {
+  yellow('gelb', 0xFFE3B21C),
+  green('grün', 0xFF6E8F2C),
+  brown('braun', 0xFF7A4A28),
+  black('schwarz', 0xFF1F1B1A),
+  red('rot', 0xFFC62828),
+  pale('weißlich/grau', 0xFFDAD5C8);
+
+  const StoolColor(this._label, this.argb);
+
+  final String _label;
+
+  /// The swatch shown next to the label.
+  final int argb;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('StoolColor.$name', _label);
+}
+
+/// How much stool there was.
+enum StoolAmount {
+  little('wenig'),
+  normal('normal'),
+  much('viel');
+
+  const StoolAmount(this._label);
+
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('StoolAmount.$name', _label);
+}
+
 /// One entry of a child's daily log (feeding, sleep, diaper, fever …),
 /// stored in `Collections.childLogs`. Health data: visible to the child's
 /// guardians like the other child records.
@@ -103,6 +139,8 @@ class ChildLog {
     this.amountMl,
     this.diaper,
     this.stool,
+    this.stoolColor,
+    this.stoolAmount,
     this.temperatureC,
     this.medication = '',
     this.dose = '',
@@ -110,6 +148,7 @@ class ChildLog {
     this.symptom = '',
     this.note = '',
     this.remindAt,
+    this.photos = const [],
     this.by,
   });
 
@@ -127,6 +166,8 @@ class ChildLog {
       amountMl: (r.data['amountMl'] as num?)?.toInt(),
       diaper: pick(DiaperKind.values, r.data['diaper']),
       stool: pick(StoolKind.values, r.data['stool']),
+      stoolColor: pick(StoolColor.values, r.data['stoolColor']),
+      stoolAmount: pick(StoolAmount.values, r.data['stoolAmount']),
       temperatureC: (r.data['temperatureC'] as num?)?.toDouble(),
       medication: r.data['medication'] as String? ?? '',
       dose: r.data['dose'] as String? ?? '',
@@ -134,6 +175,10 @@ class ChildLog {
       symptom: r.data['symptom'] as String? ?? '',
       note: r.data['note'] as String? ?? '',
       remindAt: _time(r.data['remindAt']),
+      photos: [
+        for (final f in r.data['photos'] as List? ?? const [])
+          ?FileRef.fromJson(f),
+      ],
       by: r.data['by'] as String?,
     );
   }
@@ -153,6 +198,8 @@ class ChildLog {
   /// How the stool looked; only for diapers with stool, null when nobody
   /// said.
   final StoolKind? stool;
+  final StoolColor? stoolColor;
+  final StoolAmount? stoolAmount;
   final double? temperatureC;
 
   /// Name of the medicine and the dose as given by doctor or leaflet;
@@ -168,6 +215,9 @@ class ChildLog {
 
   /// Reminder for the guardians (next feeding, next dose possible).
   final DateTime? remindAt;
+
+  /// Photos, e.g. of a rash or of the stool, to show the doctor.
+  final List<FileRef> photos;
 
   /// Member who logged it.
   final String? by;
@@ -189,6 +239,8 @@ class ChildLog {
     DiaperKind? diaper,
     StoolKind? stool,
     bool clearStool = false,
+    StoolColor? stoolColor,
+    StoolAmount? stoolAmount,
     double? temperatureC,
     String? medication,
     String? dose,
@@ -197,6 +249,7 @@ class ChildLog {
     String? note,
     DateTime? remindAt,
     bool clearRemind = false,
+    List<FileRef>? photos,
   }) => ChildLog(
     id: id,
     childId: childId,
@@ -208,6 +261,8 @@ class ChildLog {
     amountMl: amountMl ?? this.amountMl,
     diaper: diaper ?? this.diaper,
     stool: clearStool ? null : stool ?? this.stool,
+    stoolColor: clearStool ? null : stoolColor ?? this.stoolColor,
+    stoolAmount: clearStool ? null : stoolAmount ?? this.stoolAmount,
     temperatureC: temperatureC ?? this.temperatureC,
     medication: medication ?? this.medication,
     dose: dose ?? this.dose,
@@ -215,6 +270,7 @@ class ChildLog {
     symptom: symptom ?? this.symptom,
     note: note ?? this.note,
     remindAt: clearRemind ? null : remindAt ?? this.remindAt,
+    photos: photos ?? this.photos,
     by: by,
   );
 
@@ -228,6 +284,8 @@ class ChildLog {
     'amountMl': ?amountMl,
     'diaper': ?diaper?.name,
     'stool': ?stool?.name,
+    'stoolColor': ?stoolColor?.name,
+    'stoolAmount': ?stoolAmount?.name,
     'temperatureC': ?temperatureC,
     if (medication.isNotEmpty) 'medication': medication,
     if (dose.isNotEmpty) 'dose': dose,
@@ -235,6 +293,7 @@ class ChildLog {
     if (symptom.isNotEmpty) 'symptom': symptom,
     if (note.isNotEmpty) 'note': note,
     'remindAt': ?_iso(remindAt),
+    if (photos.isNotEmpty) 'photos': [for (final f in photos) f.toJson()],
     'by': ?by,
   };
 }
