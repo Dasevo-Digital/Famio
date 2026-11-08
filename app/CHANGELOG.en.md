@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.42 – Drinks and walks
+
+- New in the log: drinks with type and amount. The overview counts them apart
+  from milk.
+- Walks run as a timer like sleep; the overview shows the time outdoors.
+- With large text the quick buttons no longer break words in the middle, and
+  the sleep and breastfeeding cards stay readable.
+- Older apps show drinks and walks as a symptom. Please update all devices.
+
 ## 2.0.41 – Stool colour and photos in the log
 
 - After “poo” Famio now asks for amount, consistency and colour. Every answer

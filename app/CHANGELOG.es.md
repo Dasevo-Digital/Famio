@@ -4,6 +4,17 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.42 – Bebidas y paseos
+
+- Nuevo en el registro: bebidas con tipo y cantidad. El resumen las cuenta
+  aparte de la leche.
+- Los paseos funcionan con temporizador como el sueño; el resumen muestra el
+  tiempo al aire libre.
+- Con letra grande, los botones rápidos ya no cortan las palabras por la mitad
+  y las tarjetas de sueño y lactancia siguen siendo legibles.
+- Las aplicaciones antiguas muestran bebidas y paseos como síntoma. Actualiza
+  todos los dispositivos.
+
 ## 2.0.41 – Color de las heces y fotos en el registro
 
 - Tras «caca», Famio pregunta ahora por la cantidad, la consistencia y el

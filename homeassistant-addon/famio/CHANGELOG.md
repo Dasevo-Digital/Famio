@@ -2,6 +2,17 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.42 – Getränk und Spaziergang
+
+- Neu im Protokoll: Getränke mit Art und Menge. Die Übersicht zählt sie
+  getrennt von der Milch.
+- Spaziergänge laufen wie Schlaf als Timer, die Übersicht zeigt die Zeit
+  draußen.
+- Bei großer Schrift brechen die Schnellknöpfe nicht mehr mitten im Wort um,
+  und die Karten für Schlaf und Stillen bleiben lesbar.
+- Ältere Apps zeigen Getränke und Spaziergänge als Symptom. Bitte alle Geräte
+  aktualisieren.
+
 ## 2.0.41 – Stuhlfarbe und Fotos im Protokoll
 
 - Nach „Kacka“ fragt Famio jetzt nach Menge, Beschaffenheit und Farbe. Jede
