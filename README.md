@@ -63,7 +63,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Familienchat + Einzelchats mit Fotos und Dateien | ✅ |
 | Dokumente mit Sichtbarkeit pro Dokument und Ablauf-Erinnerung, optional aus Paperless-ngx; Briefe und Formulare mit der Kamera als PDF scannen (Ränder werden erkannt) | ✅ (Scannen: Android, iOS) |
 | Kinder: Meilensteine von der Geburt bis ins Erwachsenenalter (Sinne, Bewegung, Sprache, Denken, Miteinander, Selbstständigkeit, Körper mit Fontanellen und Zähnen, Pubertät nach Geschlecht), Entwicklungsphasen mit Erklärung, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven | ✅ |
-| Baby-Protokoll: Stillen, Fläschchen, Schlaf, Windeln (Pipi, Kacka, Stuhl mit Menge, Beschaffenheit und Farbe), Fotos an Einträgen, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
+| Baby-Protokoll: Stillen, Fläschchen, Getränke, Schlaf, Spaziergänge, Windeln (Pipi, Kacka, Stuhl mit Menge, Beschaffenheit und Farbe), Fotos an Einträgen, Fieber, Medikamente mit Timern und Diagrammen | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |

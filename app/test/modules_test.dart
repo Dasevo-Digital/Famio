@@ -343,6 +343,50 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('kids: drinks and walks in the log', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 300)),
+    );
+    engine.saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth));
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    List<ChildLog> logs() => engine.childLogs('k1');
+
+    // A drink: what and how much.
+    await tester.tap(find.text('Getränk'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Tee'));
+    await tester.tap(find.widgetWithText(ActionChip, '150'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Speichern'));
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    final drink = logs().single;
+    expect(drink.kind, LogKind.drink);
+    expect(drink.drink, DrinkKind.tea);
+    expect(drink.amountMl, 150);
+    expect(find.text('Getränk · 150 ml · Tee'), findsOneWidget);
+    expect(find.text('Getränke'), findsOneWidget);
+    expect(find.text('150 ml'), findsOneWidget);
+
+    // A walk runs like sleep: started with a tap, ended with another.
+    await tester.tap(find.text('Spaziergang'));
+    await tester.pump();
+    await tester.pump();
+    final walk = logs().firstWhere((l) => l.kind == LogKind.walk);
+    expect(walk.running, isTrue);
+    expect(find.textContaining('Unterwegs seit'), findsOneWidget);
+    await tester.tap(find.text('Wieder da'));
+    await tester.pump();
+    await tester.pump();
+    expect(logs().firstWhere((l) => l.id == walk.id).running, isFalse);
+    expect(find.textContaining('Unterwegs seit'), findsNothing);
+    expect(find.text('Spaziergang'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('kids: a log entry shows its photos', (tester) async {
     await open(tester, 'Kinder');
     final birth = DateUtils.dateOnly(

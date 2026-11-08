@@ -27,6 +27,7 @@ Map<String, String> collectSharedTexts() {
       LogKind.values,
       BreastSide.values,
       MilkKind.values,
+      DrinkKind.values,
       DiaperKind.values,
       StoolKind.values,
       StoolColor.values,

@@ -514,6 +514,12 @@ abstract final class AppIcons {
   /// Lucide `glass-water`.
   static const IconData glassWater = IconData(0xe2d5, fontFamily: _font);
 
+  /// Lucide `cup-soda`.
+  static const IconData cupSoda = IconData(0xe2d1, fontFamily: _font);
+
+  /// Lucide `trees`.
+  static const IconData trees = IconData(0xe2f5, fontFamily: _font);
+
   /// Lucide `cooking-pot`.
   static const IconData cookingPot = IconData(0xe584, fontFamily: _font);
 

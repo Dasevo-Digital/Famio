@@ -619,6 +619,17 @@
   "kidsLogDiaper": "Windel",
   "kidsLogHowWasStool": "Wie war der Stuhl?",
   "kidsLogStoolConsistency": "Beschaffenheit",
+  "kidsLogDrinks": "Getränke",
+  "kidsLogOutdoors": "Draußen",
+  "kidsLogBackHome": "Wieder da",
+  "kidsLogOutSince": "Unterwegs seit {since}",
+  "@kidsLogOutSince": {
+    "placeholders": {
+      "since": {
+        "type": "Object?"
+      }
+    }
+  },
   "kidsLogBreastfeeding": "Stillen",
   "kidsLogBreastfeedingRunning": "Stillen läuft",
   "kidsLogSleep": "Schlafen",

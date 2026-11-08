@@ -108,6 +108,45 @@ void main() {
     expect(old.toData().containsKey('stool'), isFalse);
   });
 
+  test('drinks and walks', () {
+    final start = DateTime(2026, 11, 8, 10);
+    final drink = ChildLog.fromRecord(
+      _record(
+        Collections.childLogs,
+        'd',
+        ChildLog(
+          id: 'd',
+          childId: 'c1',
+          kind: LogKind.drink,
+          start: start,
+          drink: DrinkKind.tea,
+          amountMl: 120,
+        ).toData(),
+      ),
+    );
+    expect(drink.kind, LogKind.drink);
+    expect(drink.drink, DrinkKind.tea);
+    expect(drink.amountMl, 120);
+    expect(drink.running, isFalse);
+
+    final walk = ChildLog(
+      id: 'w',
+      childId: 'c1',
+      kind: LogKind.walk,
+      start: start,
+    );
+    expect(LogKind.walk.timed, isTrue);
+    expect(walk.running, isTrue);
+    final back = walk.copyWith(end: start.add(const Duration(minutes: 40)));
+    expect(back.duration(), const Duration(minutes: 40));
+    expect(
+      ChildLog.fromRecord(
+        _record(Collections.childLogs, 'w', back.toData()),
+      ).kind,
+      LogKind.walk,
+    );
+  });
+
   test('emergency info and sex survive the child record', () {
     final child = Child(
       id: 'c1',

@@ -19,7 +19,14 @@ enum LogKind {
   temperature('Temperatur'),
   medication('Medikament'),
   symptom('Symptom'),
-  bath('Baden');
+  bath('Baden'),
+
+  /// Something to drink besides milk: [ChildLog.drink] and
+  /// [ChildLog.amountMl].
+  drink('Getränk'),
+
+  /// Time outdoors; running while [ChildLog.end] is null.
+  walk('Spaziergang');
 
   const LogKind(this._label);
 
@@ -29,7 +36,7 @@ enum LogKind {
   String get label => sharedText('LogKind.$name', _label);
 
   /// Kinds measured as a duration (start/stop).
-  bool get timed => this == breast || this == sleep;
+  bool get timed => this == breast || this == sleep || this == walk;
 }
 
 enum BreastSide {
@@ -89,6 +96,22 @@ enum StoolKind {
   String get label => sharedText('StoolKind.$name', _label);
 }
 
+/// What a [LogKind.drink] entry was.
+enum DrinkKind {
+  water('Wasser'),
+  tea('Tee'),
+  juice('Saft'),
+  milk('Milch'),
+  other('Anderes');
+
+  const DrinkKind(this._label);
+
+  final String _label;
+
+  /// The label in the language of [sharedTexts].
+  String get label => sharedText('DrinkKind.$name', _label);
+}
+
 /// The colour of the stool. Pale (whitish, grey, clay) is listed because
 /// the stool colour card of the child health booklet asks about it.
 enum StoolColor {
@@ -137,6 +160,7 @@ class ChildLog {
     this.side,
     this.milk,
     this.amountMl,
+    this.drink,
     this.diaper,
     this.stool,
     this.stoolColor,
@@ -164,6 +188,7 @@ class ChildLog {
       side: pick(BreastSide.values, r.data['side']),
       milk: pick(MilkKind.values, r.data['milk']),
       amountMl: (r.data['amountMl'] as num?)?.toInt(),
+      drink: pick(DrinkKind.values, r.data['drink']),
       diaper: pick(DiaperKind.values, r.data['diaper']),
       stool: pick(StoolKind.values, r.data['stool']),
       stoolColor: pick(StoolColor.values, r.data['stoolColor']),
@@ -193,6 +218,7 @@ class ChildLog {
   final BreastSide? side;
   final MilkKind? milk;
   final int? amountMl;
+  final DrinkKind? drink;
   final DiaperKind? diaper;
 
   /// How the stool looked; only for diapers with stool, null when nobody
@@ -236,6 +262,7 @@ class ChildLog {
     BreastSide? side,
     MilkKind? milk,
     int? amountMl,
+    DrinkKind? drink,
     DiaperKind? diaper,
     StoolKind? stool,
     bool clearStool = false,
@@ -259,6 +286,7 @@ class ChildLog {
     side: side ?? this.side,
     milk: milk ?? this.milk,
     amountMl: amountMl ?? this.amountMl,
+    drink: drink ?? this.drink,
     diaper: diaper ?? this.diaper,
     stool: clearStool ? null : stool ?? this.stool,
     stoolColor: clearStool ? null : stoolColor ?? this.stoolColor,
@@ -282,6 +310,7 @@ class ChildLog {
     'side': ?side?.name,
     'milk': ?milk?.name,
     'amountMl': ?amountMl,
+    'drink': ?drink?.name,
     'diaper': ?diaper?.name,
     'stool': ?stool?.name,
     'stoolColor': ?stoolColor?.name,

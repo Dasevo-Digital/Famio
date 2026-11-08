@@ -34,6 +34,8 @@ DateFormat get _day => DateFormat.MMMMEEEEd(appLanguage);
   LogKind.medication => (AppIcons.pill, const Color(0xFF16927F)),
   LogKind.symptom => (AppIcons.bandage, const Color(0xFFE8703A)),
   LogKind.bath => (AppIcons.bath, const Color(0xFF3AA8C9)),
+  LogKind.drink => (AppIcons.cupSoda, const Color(0xFF2B86B5)),
+  LogKind.walk => (AppIcons.trees, const Color(0xFF4A9A3A)),
 };
 
 String _temp(double t) => '${decimal(t)} °C';
@@ -77,6 +79,18 @@ String logText(ChildLog l, [DateTime? now]) => switch (l.kind) {
   ].join(' · '),
   LogKind.symptom => l.symptom.isEmpty ? tr.kidsLogSymptom : l.symptom,
   LogKind.bath => tr.kidsLogBathed,
+  LogKind.drink => [
+    LogKind.drink.label,
+    if (l.amountMl != null) '${l.amountMl} ml',
+    ?l.drink?.label,
+  ].join(' · '),
+  LogKind.walk => [
+    LogKind.walk.label,
+    if (l.running)
+      tr.kidsLogRunningDuration(durationLabel(l.duration(now)))
+    else
+      durationLabel(l.duration()),
+  ].join(' · '),
 };
 
 /// Rebuilds every [interval]: the stopwatch of a running timer each
@@ -330,84 +344,109 @@ class _RunningCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (icon, color) = logLook(log.kind);
     final engine = AppScope.engineOf(context);
+    final info = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(switch (log.kind) {
+          LogKind.sleep => tr.kidsLogAsleepSinceSince(_time.format(log.start)),
+          LogKind.walk => tr.kidsLogOutSince(_time.format(log.start)),
+          _ => tr.kidsLogBreastfeedingSideSinceSince(
+            log.side?.label ?? '',
+            _time.format(log.start),
+          ),
+        }, style: Theme.of(context).textTheme.titleMedium),
+        _Ticker(
+          builder: (context) {
+            final elapsed = log.duration(DateTime.now());
+            return Text(
+              '${elapsed.inHours > 0 ? '${elapsed.inHours}:' : ''}'
+              '${(elapsed.inMinutes % 60).toString().padLeft(elapsed.inHours > 0 ? 2 : 1, '0')}:'
+              '${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                color: FamioColors.of(context).text(color),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            );
+          },
+        ),
+      ],
+    );
+    final buttons = <Widget>[
+      if (log.kind == LogKind.breast)
+        BubbleButton(
+          icon: AppIcons.arrowsLeftRight,
+          tooltip: tr.kidsLogSwitchSide,
+          onPressed: () {
+            final at = DateTime.now();
+            engine.saveChildLog(log.copyWith(end: at));
+            engine.saveChildLog(
+              ChildLog(
+                id: newId(),
+                childId: child.id,
+                kind: LogKind.breast,
+                start: at,
+                side: log.side == BreastSide.left
+                    ? BreastSide.right
+                    : BreastSide.left,
+                by: engine.memberId,
+              ),
+            );
+          },
+        ),
+      const SizedBox(width: 8),
+      ColorButton(
+        label: tr.kidsLogStop,
+        icon: AppIcons.stop,
+        color: color,
+        onPressed: () {
+          final done = log.copyWith(end: DateTime.now());
+          engine.saveChildLog(done);
+          if (log.kind == LogKind.breast) {
+            showLogEditor(
+              context,
+              child: child,
+              kind: log.kind,
+              existing: done,
+            );
+          }
+        },
+      ),
+    ];
+    // Large text: the buttons go below, the time keeps its line.
+    final stacked = MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3;
     return SoftCard(
       color: color.withValues(alpha: 0.14),
-      child: Row(
-        children: [
-          IconBlob(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: stacked
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  log.kind == LogKind.sleep
-                      ? tr.kidsLogAsleepSinceSince(_time.format(log.start))
-                      : tr.kidsLogBreastfeedingSideSinceSince(
-                          log.side?.label ?? '',
-                          _time.format(log.start),
-                        ),
-                  style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  children: [
+                    IconBlob(icon, color: color),
+                    const SizedBox(width: 12),
+                    Expanded(child: info),
+                  ],
                 ),
-                _Ticker(
-                  builder: (context) {
-                    final elapsed = log.duration(DateTime.now());
-                    return Text(
-                      '${elapsed.inHours > 0 ? '${elapsed.inHours}:' : ''}'
-                      '${(elapsed.inMinutes % 60).toString().padLeft(elapsed.inHours > 0 ? 2 : 1, '0')}:'
-                      '${(elapsed.inSeconds % 60).toString().padLeft(2, '0')}',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            color: FamioColors.of(context).text(color),
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                    );
-                  },
+                const SizedBox(height: 10),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final b in buttons)
+                      if (b is! SizedBox) b,
+                  ],
                 ),
               ],
+            )
+          : Row(
+              children: [
+                IconBlob(icon, color: color),
+                const SizedBox(width: 12),
+                Expanded(child: info),
+                ...buttons,
+              ],
             ),
-          ),
-          if (log.kind == LogKind.breast)
-            BubbleButton(
-              icon: AppIcons.arrowsLeftRight,
-              tooltip: tr.kidsLogSwitchSide,
-              onPressed: () {
-                final at = DateTime.now();
-                engine.saveChildLog(log.copyWith(end: at));
-                engine.saveChildLog(
-                  ChildLog(
-                    id: newId(),
-                    childId: child.id,
-                    kind: LogKind.breast,
-                    start: at,
-                    side: log.side == BreastSide.left
-                        ? BreastSide.right
-                        : BreastSide.left,
-                    by: engine.memberId,
-                  ),
-                );
-              },
-            ),
-          const SizedBox(width: 8),
-          ColorButton(
-            label: tr.kidsLogStop,
-            icon: AppIcons.stop,
-            color: color,
-            onPressed: () {
-              final done = log.copyWith(end: DateTime.now());
-              engine.saveChildLog(done);
-              if (log.kind == LogKind.breast) {
-                showLogEditor(
-                  context,
-                  child: child,
-                  kind: log.kind,
-                  existing: done,
-                );
-              }
-            },
-          ),
-        ],
-      ),
     );
   }
 }
@@ -421,6 +460,9 @@ class _QuickButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final engine = AppScope.engineOf(context);
+    final walking = logs
+        .where((l) => l.kind == LogKind.walk && l.running)
+        .firstOrNull;
     final sleeping = logs
         .where((l) => l.kind == LogKind.sleep && l.running)
         .firstOrNull;
@@ -588,6 +630,14 @@ class _QuickButtons extends StatelessWidget {
             null,
           ),
           (
+            LogKind.drink,
+            LogKind.drink.label,
+            logLook(LogKind.drink).$1,
+            logLook(LogKind.drink).$2,
+            () => showLogEditor(context, child: child, kind: LogKind.drink),
+            null,
+          ),
+          (
             LogKind.temperature,
             tr.kidsLogTemperature,
             logLook(LogKind.temperature).$1,
@@ -633,6 +683,20 @@ class _QuickButtons extends StatelessWidget {
             () => showLogEditor(context, child: child, kind: LogKind.bath),
           ),
           (
+            LogKind.walk,
+            walking == null ? LogKind.walk.label : tr.kidsLogBackHome,
+            walking == null ? logLook(LogKind.walk).$1 : AppIcons.house,
+            logLook(LogKind.walk).$2,
+            () {
+              if (walking != null) {
+                engine.saveChildLog(walking.copyWith(end: DateTime.now()));
+              } else {
+                quick(LogKind.walk);
+              }
+            },
+            () => showLogEditor(context, child: child, kind: LogKind.walk),
+          ),
+          (
             null,
             tr.kidsLogWeight,
             AppIcons.ruler,
@@ -650,9 +714,14 @@ class _QuickButtons extends StatelessWidget {
       color,
       on: Color.alphaBlend(color.withValues(alpha: 0.13), c.background),
     );
+    // Large text gets two wider columns, so labels break between words.
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = math.max(3, (constraints.maxWidth / 110).floor());
+        final columns = math.max(
+          scale > 1.3 ? 2 : 3,
+          (constraints.maxWidth / (110 * scale)).floor(),
+        );
         final width = (constraints.maxWidth - (columns - 1) * 8) / columns;
         return Wrap(
           spacing: 8,
@@ -991,6 +1060,9 @@ class _DayCard extends StatelessWidget {
         (tr.kidsLogSleepNoun, durationLabel(s.sleep)),
         (tr.kidsLogDiapers, _diapers(s.wet, s.dirty)),
         if (s.diarrhea > 0) (tr.kidsLogDiarrhea, '${s.diarrhea}'),
+        if (s.drinkMl > 0) (tr.kidsLogDrinks, '${s.drinkMl} ml'),
+        if (s.outdoors > Duration.zero)
+          (tr.kidsLogOutdoors, durationLabel(s.outdoors)),
         if (s.maxTemperature != null)
           (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
       ],
@@ -1018,6 +1090,10 @@ class _AverageCard extends StatelessWidget {
         (tr.kidsLogSleepNoun, durationLabel(s.durationPerDay(s.sleep))),
         (tr.kidsLogDiapers, _diapers(avg(s.wet), avg(s.dirty))),
         if (s.diarrhea > 0) (tr.kidsLogDiarrhea, avg(s.diarrhea)),
+        if (s.drinkMl > 0)
+          (tr.kidsLogDrinks, '${s.perDay(s.drinkMl).round()} ml'),
+        if (s.outdoors > Duration.zero)
+          (tr.kidsLogOutdoors, durationLabel(s.durationPerDay(s.outdoors))),
         if (s.maxTemperature != null)
           (tr.kidsLogHighestTemp, _temp(s.maxTemperature!)),
       ],
@@ -1424,6 +1500,7 @@ class _LogEditorState extends State<_LogEditor> {
   late DateTime? _end = _old?.end;
   late BreastSide? _side = _old?.side ?? BreastSide.left;
   late MilkKind? _milk = _old?.milk ?? MilkKind.formula;
+  late DrinkKind? _drink = _old?.drink ?? DrinkKind.water;
   late DiaperKind _diaper = _old?.diaper ?? DiaperKind.wet;
   late StoolKind? _stool = _old?.stool;
   late StoolColor? _stoolColor = _old?.stoolColor;
@@ -1465,7 +1542,7 @@ class _LogEditorState extends State<_LogEditor> {
     // Past entries of timed kinds get a default duration.
     if (_old == null && widget.kind.timed) {
       _start = DateTime.now().subtract(
-        Duration(minutes: widget.kind == LogKind.sleep ? 60 : 15),
+        Duration(minutes: widget.kind == LogKind.breast ? 15 : 60),
       );
       _end = DateTime.now();
     }
@@ -1543,7 +1620,11 @@ class _LogEditorState extends State<_LogEditor> {
       end: kind.timed ? _end : null,
       side: kind == LogKind.breast || kind == LogKind.pumping ? _side : null,
       milk: kind == LogKind.bottle ? _milk : null,
-      amountMl: kind == LogKind.bottle || kind == LogKind.pumping
+      drink: kind == LogKind.drink ? _drink : null,
+      amountMl:
+          kind == LogKind.bottle ||
+              kind == LogKind.pumping ||
+              kind == LogKind.drink
           ? int.tryParse(_amount.text.trim())
           : null,
       diaper: kind == LogKind.diaper ? _diaper : null,
@@ -1684,13 +1765,34 @@ class _LogEditorState extends State<_LogEditor> {
               ),
               const SizedBox(height: 12),
             ],
-            if (kind == LogKind.bottle || kind == LogKind.pumping) ...[
+            if (kind == LogKind.drink) ...[
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final d in DrinkKind.values)
+                    ChoiceChip(
+                      label: Text(d.label),
+                      selected: _drink == d,
+                      onSelected: (on) =>
+                          setState(() => _drink = on ? d : null),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (kind == LogKind.bottle ||
+                kind == LogKind.pumping ||
+                kind == LogKind.drink) ...[
               numberField(_amount, 'Menge (ml)', autofocus: _old == null),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
                 children: [
-                  for (final ml in [60, 90, 120, 150, 180, 210])
+                  for (final ml
+                      in kind == LogKind.drink
+                          ? [50, 100, 150, 200, 250]
+                          : [60, 90, 120, 150, 180, 210])
                     ActionChip(
                       label: Text('$ml'),
                       onPressed: () => setState(() => _amount.text = '$ml'),

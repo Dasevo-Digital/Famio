@@ -40,6 +40,7 @@ void main() {
     BreastSide? side,
     DiaperKind? diaper,
     StoolKind? stool,
+    DrinkKind? drink,
     double? temp,
     String medication = '',
     double? interval,
@@ -53,6 +54,7 @@ void main() {
     side: side,
     diaper: diaper,
     stool: stool,
+    drink: drink,
     temperatureC: temp,
     medication: medication,
     minIntervalHours: interval,
@@ -135,6 +137,50 @@ void main() {
     ], DateTime(2026, 9, 28, 8));
     expect(week.diarrhea, 3);
     expect(week.perDay(week.diarrhea), 1.5);
+  });
+
+  test('drinks add up apart from milk, walks are cut at midnight', () {
+    final day = DateTime(2026, 11, 8);
+    final logs = [
+      log(
+        LogKind.drink,
+        DateTime(2026, 11, 8, 9),
+        ml: 100,
+        drink: DrinkKind.tea,
+      ),
+      log(LogKind.drink, DateTime(2026, 11, 8, 15), ml: 150),
+      log(LogKind.bottle, DateTime(2026, 11, 8, 12), ml: 120),
+      log(
+        LogKind.walk,
+        DateTime(2026, 11, 8, 14),
+        end: DateTime(2026, 11, 8, 15, 30),
+      ),
+      // Late walk into the next day: 30 minutes count today.
+      log(
+        LogKind.walk,
+        DateTime(2026, 11, 8, 23, 30),
+        end: DateTime(2026, 11, 9, 0, 20),
+      ),
+    ];
+    final s = summarize(logs, day, DateTime(2026, 11, 9, 12));
+    expect(s.drinkMl, 250);
+    expect(s.milkMl, 120);
+    expect(s.feedings, 1);
+    expect(s.outdoors, const Duration(hours: 2));
+    final next = summarize(
+      logs,
+      DateTime(2026, 11, 9),
+      DateTime(2026, 11, 9, 12),
+    );
+    expect(next.outdoors, const Duration(minutes: 20));
+    expect(next.drinkMl, 0);
+    // A walk still going counts up to now.
+    final running = summarize(
+      [log(LogKind.walk, DateTime(2026, 11, 8, 16))],
+      day,
+      DateTime(2026, 11, 8, 16, 45),
+    );
+    expect(running.outdoors, const Duration(minutes: 45));
   });
 
   test('a running sleep counts up to now', () {
