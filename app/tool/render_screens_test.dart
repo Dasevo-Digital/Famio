@@ -1289,7 +1289,6 @@ void main() {
     await tester.tap(find.text('Kinder').last);
     await tester.pumpAndSettle();
     await go(tester, 'Emil');
-    await go(tester, 'Windel');
     await go(tester, 'Kacka');
     await _shot(tester, key, 'phone_9b_windel_stuhl');
     await go(tester, 'Durchfall');

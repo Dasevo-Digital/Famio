@@ -576,7 +576,7 @@
   "kidsLogMedication": "Medikament",
   "kidsLogSymptom": "Symptom",
   "kidsLogBathed": "Gebadet",
-  "kidsLogNoEntriesYetTap": "Noch keine Einträge. Tippe oben auf Stillen, Fläschchen, Schlaf oder Windel – beide Eltern sehen alles sofort.",
+  "kidsLogNoEntriesYetTap": "Noch keine Einträge. Tippe oben auf Stillen, Fläschchen, Schlaf, Pipi oder Kacka – beide Eltern sehen alles sofort.",
   "kidsLogFamioDoesNotReplace": "Famio ersetzt keinen ärztlichen Rat. Dosierungen nur nach Kinderarzt oder Beipackzettel.",
   "kidsLogAsleepSinceSince": "Schläft seit {since}",
   "@kidsLogAsleepSinceSince": {
@@ -616,9 +616,13 @@
   "kidsLogLeft": "Links",
   "kidsLogRight": "Rechts",
   "kidsLogAddAfterwards": "Nachtragen",
-  "kidsLogDiaper": "Windel",
   "kidsLogHowWasStool": "Wie war der Stuhl?",
   "kidsLogStoolConsistency": "Beschaffenheit",
+  "kidsLogMeasure": "Messen",
+  "kidsLogPee": "Pipi",
+  "kidsLogPoo": "Kacka",
+  "kidsLogPeePoo": "Pipi + Kacka",
+  "kidsLogPeeAdded": "Pipi eingetragen",
   "kidsLogDrinks": "Getränke",
   "kidsLogOutdoors": "Draußen",
   "kidsLogBackHome": "Wieder da",
@@ -4072,6 +4076,15 @@
   "kidsHeightCm": "Größe (cm)",
   "kidsWeightKg": "Gewicht (kg)",
   "kidsHeadCm": "Kopf (cm)",
+  "kidsFootCm": "Fuß (cm)",
+  "kidsFootSizeCm": "Fuß {size} cm",
+  "@kidsFootSizeCm": {
+    "placeholders": {
+      "size": {
+        "type": "Object?"
+      }
+    }
+  },
   "kidsDateUnknown": "Datum unbekannt",
   "kidsDate": "Am {date}",
   "@kidsDate": {
@@ -4690,6 +4703,7 @@
     }
   },
   "growthHeadCircumferenceCm": "Kopfumfang (cm)",
+  "growthFootLengthCm": "Fußlänge (cm)",
   "growthAddMeasurement": "Messung eintragen",
   "growthCurveAppearsHereTwo": "Ab zwei Messungen erscheint hier eine Kurve. Die Werte aus dem U-Heft eignen sich gut dafür – sie lassen sich auch direkt bei der Vorsorge eintragen.",
   "growthGenderProfileFamioShows": "Mit dem Geschlecht im Profil zeigt Famio die WHO-Kurven (0–24 Monate) zum Vergleich.",

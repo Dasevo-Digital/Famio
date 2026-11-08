@@ -162,6 +162,7 @@ class ChildEntry {
     this.heightCm,
     this.weightKg,
     this.headCm,
+    this.footCm,
     this.dateUnknown = false,
     this.planned = false,
     this.time,
@@ -186,6 +187,7 @@ class ChildEntry {
     heightCm: (r.data['heightCm'] as num?)?.toDouble(),
     weightKg: (r.data['weightKg'] as num?)?.toDouble(),
     headCm: (r.data['headCm'] as num?)?.toDouble(),
+    footCm: (r.data['footCm'] as num?)?.toDouble(),
     dateUnknown: r.data['dateUnknown'] as bool? ?? false,
     planned: r.data['planned'] as bool? ?? false,
     time: _time(r.data['time']),
@@ -204,6 +206,9 @@ class ChildEntry {
   final double? heightCm;
   final double? weightKg;
   final double? headCm;
+
+  /// Length of the foot, heel to the longest toe (for shoes).
+  final double? footCm;
 
   /// Recorded afterwards without knowing the day (e.g. older check-ups);
   /// [date] then holds the recommended date.
@@ -239,6 +244,7 @@ class ChildEntry {
     'heightCm': heightCm,
     'weightKg': weightKg,
     'headCm': headCm,
+    'footCm': ?footCm,
     if (dateUnknown) 'dateUnknown': true,
     if (planned) 'planned': true,
     if (planned && time != null) 'time': time,

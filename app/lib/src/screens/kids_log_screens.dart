@@ -563,21 +563,30 @@ class _QuickButtons extends StatelessWidget {
       );
     }
 
-    Future<void> diaper() => showModalBottomSheet<void>(
+    void snack(String text) => ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
+    );
+
+    void pee() {
+      quick(LogKind.diaper, diaper: DiaperKind.wet);
+      snack(tr.kidsLogPeeAdded);
+    }
+
+    // Saved at once; the sheet then asks about the stool.
+    Future<void> poo(DiaperKind kind) => showModalBottomSheet<void>(
       context: context,
       // Above the floating navigation bar.
       useRootNavigator: true,
       // Large text needs more than the default nine sixteenths.
       isScrollControlled: true,
-      builder: (context) => _DiaperSheet(
-        save: (kind) => quick(LogKind.diaper, diaper: kind),
+      builder: (context) => _StoolSheet(
+        log: quick(LogKind.diaper, diaper: kind),
         update: engine.saveChildLog,
       ),
     );
 
-    void snack(String text) => ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(text), duration: const Duration(seconds: 2)),
-    );
+    void diaperEditor() =>
+        showLogEditor(context, child: child, kind: LogKind.diaper);
 
     final buttons =
         <(LogKind?, String, IconData, Color, VoidCallback, VoidCallback?)>[
@@ -615,11 +624,27 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             LogKind.diaper,
-            tr.kidsLogDiaper,
+            tr.kidsLogPee,
+            AppIcons.droplet,
+            logLook(LogKind.diaper).$2,
+            pee,
+            diaperEditor,
+          ),
+          (
+            LogKind.diaper,
+            tr.kidsLogPoo,
+            AppIcons.bean,
+            const Color(0xFF9A6A2F),
+            () => poo(DiaperKind.dirty),
+            diaperEditor,
+          ),
+          (
+            LogKind.diaper,
+            tr.kidsLogPeePoo,
             logLook(LogKind.diaper).$1,
             logLook(LogKind.diaper).$2,
-            diaper,
-            null,
+            () => poo(DiaperKind.both),
+            diaperEditor,
           ),
           (
             LogKind.solids,
@@ -698,7 +723,7 @@ class _QuickButtons extends StatelessWidget {
           ),
           (
             null,
-            tr.kidsLogWeight,
+            tr.kidsLogMeasure,
             AppIcons.ruler,
             const Color(0xFF2A9D6E),
             () => showEntryEditor(
@@ -855,21 +880,21 @@ class _StatusCard extends StatelessWidget {
   }
 }
 
-/// Logs a diaper with one tap and, when it had stool in it, asks for its
-/// amount, consistency and colour. The diaper is saved at once and each
-/// answer right away, so closing the sheet keeps what was given.
-class _DiaperSheet extends StatefulWidget {
-  const _DiaperSheet({required this.save, required this.update});
+/// Asks for amount, consistency and colour of the stool of a diaper that
+/// is already saved. Each answer is saved right away, so closing the sheet
+/// keeps what was given; the third answer closes it.
+class _StoolSheet extends StatefulWidget {
+  const _StoolSheet({required this.log, required this.update});
 
-  final ChildLog Function(DiaperKind kind) save;
+  final ChildLog log;
   final void Function(ChildLog log) update;
 
   @override
-  State<_DiaperSheet> createState() => _DiaperSheetState();
+  State<_StoolSheet> createState() => _StoolSheetState();
 }
 
-class _DiaperSheetState extends State<_DiaperSheet> {
-  ChildLog? _saved;
+class _StoolSheetState extends State<_StoolSheet> {
+  late ChildLog _log = widget.log;
 
   void _change(ChildLog next) {
     widget.update(next);
@@ -878,13 +903,13 @@ class _DiaperSheetState extends State<_DiaperSheet> {
         next.stoolAmount != null) {
       Navigator.pop(context);
     } else {
-      setState(() => _saved = next);
+      setState(() => _log = next);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final saved = _saved;
+    final log = _log;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
@@ -893,47 +918,26 @@ class _DiaperSheetState extends State<_DiaperSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              saved == null ? tr.kidsLogDiaper : tr.kidsLogHowWasStool,
+              tr.kidsLogHowWasStool,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
-            if (saved == null)
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  for (final d in DiaperKind.values)
-                    FilledButton.tonal(
-                      onPressed: () {
-                        final log = widget.save(d);
-                        if (d.poo) {
-                          setState(() => _saved = log);
-                        } else {
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: Text(d.label),
-                    ),
-                ],
-              )
-            else ...[
-              _StoolChoices(
-                amount: saved.stoolAmount,
-                stool: saved.stool,
-                color: saved.stoolColor,
-                onAmount: (v) => _change(saved.copyWith(stoolAmount: v)),
-                onStool: (v) => _change(saved.copyWith(stool: v)),
-                onColor: (v) => _change(saved.copyWith(stoolColor: v)),
+            _StoolChoices(
+              amount: log.stoolAmount,
+              stool: log.stool,
+              color: log.stoolColor,
+              onAmount: (v) => _change(log.copyWith(stoolAmount: v)),
+              onStool: (v) => _change(log.copyWith(stool: v)),
+              onColor: (v) => _change(log.copyWith(stoolColor: v)),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(tr.commonDone),
               ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: AlignmentDirectional.centerEnd,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(tr.commonDone),
-                ),
-              ),
-            ],
+            ),
           ],
         ),
       ),

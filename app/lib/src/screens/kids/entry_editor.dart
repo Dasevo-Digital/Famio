@@ -61,6 +61,9 @@ class _EntryEditorState extends State<_EntryEditor> {
   late final _head = TextEditingController(
     text: widget.existing?.headCm == null ? '' : _num(widget.existing!.headCm!),
   );
+  late final _foot = TextEditingController(
+    text: widget.existing?.footCm == null ? '' : _num(widget.existing!.footCm!),
+  );
   late DateTime _date =
       widget.existing?.date ?? DateUtils.dateOnly(DateTime.now());
   late final _photos = [...?widget.existing?.photos];
@@ -100,7 +103,7 @@ class _EntryEditorState extends State<_EntryEditor> {
 
   @override
   void dispose() {
-    for (final c in [_title, _note, _height, _weight, _head]) {
+    for (final c in [_title, _note, _height, _weight, _head, _foot]) {
       c.dispose();
     }
     super.dispose();
@@ -148,7 +151,8 @@ class _EntryEditorState extends State<_EntryEditor> {
     if (widget.kind == ChildEntryKind.measurement &&
         _parse(_height) == null &&
         _parse(_weight) == null &&
-        _parse(_head) == null) {
+        _parse(_head) == null &&
+        _parse(_foot) == null) {
       return;
     }
     AppScope.engineOf(context).saveChildEntry(
@@ -164,6 +168,7 @@ class _EntryEditorState extends State<_EntryEditor> {
         heightCm: _withMeasurements ? _parse(_height) : null,
         weightKg: _withMeasurements ? _parse(_weight) : null,
         headCm: _withMeasurements ? _parse(_head) : null,
+        footCm: _withMeasurements ? _parse(_foot) : null,
         dateUnknown: _datedItem && !_planned && _dateUnknown,
         planned: _planned,
         time: _planned && _time != null
@@ -241,39 +246,29 @@ class _EntryEditorState extends State<_EntryEditor> {
                     style: theme.textTheme.labelLarge,
                   ),
                 ),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _height,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+              // Two per row, so each label has room on a phone.
+              for (final pair in [
+                [(_height, tr.kidsHeightCm), (_weight, tr.kidsWeightKg)],
+                [(_head, tr.kidsHeadCm), (_foot, tr.kidsFootCm)],
+              ]) ...[
+                Row(
+                  children: [
+                    for (final (i, (controller, label)) in pair.indexed) ...[
+                      if (i > 0) const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: controller,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(labelText: label),
+                        ),
                       ),
-                      decoration: InputDecoration(labelText: tr.kidsHeightCm),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _weight,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(labelText: tr.kidsWeightKg),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _head,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(labelText: tr.kidsHeadCm),
-                    ),
-                  ),
-                ],
-              ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
               const SizedBox(height: 12),
             ],
             if (_datedItem && !_planned)

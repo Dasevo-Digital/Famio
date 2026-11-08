@@ -250,17 +250,14 @@ void main() {
     List<ChildLog> logs() => engine.childLogs('k1');
 
     // Pipi: one tap, no question about stool.
-    await tester.tap(find.text('Windel'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Pipi'));
     await tester.pumpAndSettle();
+    expect(find.text('Pipi eingetragen'), findsOneWidget);
     expect(find.text('Wie war der Stuhl?'), findsNothing);
     expect(logs().single.diaper, DiaperKind.wet);
     expect(logs().single.stool, isNull);
 
     // Kacka without a rating.
-    await tester.tap(find.text('Windel'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Kacka'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Fertig'));
@@ -272,8 +269,6 @@ void main() {
     );
 
     // Closing the sheet at the question keeps the diaper.
-    await tester.tap(find.text('Windel'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Kacka'));
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(20, 20));
@@ -321,8 +316,6 @@ void main() {
     expect(changed.stool, isNull);
 
     // All three answers in the quick sheet close it.
-    await tester.tap(find.text('Windel'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Kacka'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ChoiceChip, 'viel'));
@@ -340,6 +333,31 @@ void main() {
       find.text('Windel Kacka · geformt · weißlich/grau · viel'),
       findsOneWidget,
     );
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('kids: foot length is a measurement', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 300)),
+    );
+    engine.saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth));
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Messen'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'Fuß (cm)'), '11,5');
+    await tester.ensureVisible(find.text('Speichern'));
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    final entry = engine.childEntries('k1').single;
+    expect(entry.kind, ChildEntryKind.measurement);
+    expect(entry.footCm, 11.5);
+    expect(entry.heightCm, isNull);
+    await tester.tap(find.text('Wachstum'));
+    await tester.pumpAndSettle();
+    expect(find.text('Fuß 11,5 cm'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
   });
 
@@ -452,8 +470,6 @@ void main() {
 
     // Babies open on the daily log: one tap logs a diaper.
     expect(find.text('Protokoll'), findsOneWidget);
-    await tester.tap(find.text('Windel'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Pipi + Kacka'));
     await tester.pumpAndSettle();
     // Saved at once; the sheet then asks about the stool.

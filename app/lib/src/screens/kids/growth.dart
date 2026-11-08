@@ -20,7 +20,11 @@ class _GrowthView extends StatelessWidget {
     // Measurements, also those taken at check-ups.
     final measured = entries
         .where(
-          (e) => e.heightCm != null || e.weightKg != null || e.headCm != null,
+          (e) =>
+              e.heightCm != null ||
+              e.weightKg != null ||
+              e.headCm != null ||
+              e.footCm != null,
         )
         .toList();
     List<(double, double)> series(double? Function(ChildEntry) value) => [
@@ -46,6 +50,13 @@ class _GrowthView extends StatelessWidget {
         series((e) => e.headCm),
         const Color(0xFF7B5BE0),
       ),
+      // No WHO curve for feet: only the child's own line.
+      (
+        tr.growthFootLengthCm,
+        null,
+        series((e) => e.footCm),
+        const Color(0xFF2A9D6E),
+      ),
     ];
     final sex = child.sex;
     return ListView(
@@ -67,15 +78,18 @@ class _GrowthView extends StatelessWidget {
         const SizedBox(height: 12),
         for (final (title, measure, points, lineColor) in charts)
           if (points.length >= 2 ||
-              (points.isNotEmpty && sex != null && points.last.$1 <= 24)) ...[
+              (points.isNotEmpty &&
+                  sex != null &&
+                  measure != null &&
+                  points.last.$1 <= 24)) ...[
             _ChartCard(
               title: title,
               points: points,
               color: lineColor,
-              reference: sex == null
+              reference: sex == null || measure == null
                   ? null
                   : (x) => growthReference(sex, measure, x),
-              percentile: sex == null || points.isEmpty
+              percentile: sex == null || measure == null || points.isEmpty
                   ? null
                   : () {
                       final (x, y) = points.reduce(
@@ -114,6 +128,7 @@ class _GrowthView extends StatelessWidget {
                 if (e.heightCm != null) '${_num(e.heightCm!)} cm',
                 if (e.weightKg != null) '${_num(e.weightKg!)} kg',
                 if (e.headCm != null) tr.kidsHeadSizeCm(_num(e.headCm!)),
+                if (e.footCm != null) tr.kidsFootSizeCm(_num(e.footCm!)),
               ].join(' · '),
             ),
             subtitle: Text(

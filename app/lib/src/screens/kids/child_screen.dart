@@ -209,6 +209,7 @@ String _entryTitle(ChildEntry e) => switch (e.kind) {
     if (e.heightCm != null) '${_num(e.heightCm!)} cm',
     if (e.weightKg != null) '${_num(e.weightKg!)} kg',
     if (e.headCm != null) tr.kidsHeadSizeCm(_num(e.headCm!)),
+    if (e.footCm != null) tr.kidsFootSizeCm(_num(e.footCm!)),
   ].join(' · '),
   ChildEntryKind.memory => e.title,
 };

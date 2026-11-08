@@ -108,6 +108,32 @@ void main() {
     expect(old.toData().containsKey('stool'), isFalse);
   });
 
+  test('a measurement keeps the foot length', () {
+    final entry = ChildEntry(
+      id: 'm',
+      childId: 'c1',
+      kind: ChildEntryKind.measurement,
+      date: DateTime(2026, 11, 8),
+      footCm: 12.3,
+    );
+    expect(entry.toData()['footCm'], 12.3);
+    final back = ChildEntry.fromRecord(
+      _record(Collections.childEntries, 'm', entry.toData()),
+    );
+    expect(back.footCm, 12.3);
+    // Older entries without it stay without it.
+    expect(
+      ChildEntry(
+        id: 'n',
+        childId: 'c1',
+        kind: ChildEntryKind.measurement,
+        date: DateTime(2026, 11, 8),
+        heightCm: 70,
+      ).toData().containsKey('footCm'),
+      isFalse,
+    );
+  });
+
   test('drinks and walks', () {
     final start = DateTime(2026, 11, 8, 10);
     final drink = ChildLog.fromRecord(
