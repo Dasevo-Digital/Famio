@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.41 – Stuhlfarbe und Fotos im Protokoll
+
+- Nach „Kacka“ fragt Famio jetzt nach Menge, Beschaffenheit und Farbe. Jede
+  Angabe ist freiwillig, nach der dritten schließt sich das Fenster.
+- Zu den Farben gehört auch „weißlich/grau“.
+- Jeder Protokolleintrag kann Fotos tragen, etwa von einem Ausschlag für den
+  Arzt. Dafür muss der Server aktuell sein.
+
 ## 2.0.40 – Windel und Stuhl
 
 - Im Protokoll heißen die Windeln jetzt Pipi, Kacka und Pipi + Kacka.

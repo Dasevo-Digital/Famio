@@ -4,6 +4,14 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.41 – Stool colour and photos in the log
+
+- After “poo” Famio now asks for amount, consistency and colour. Every answer
+  is optional; the sheet closes after the third.
+- The colours include “pale/grey”.
+- Every log entry can carry photos, for example of a rash for the doctor. This
+  needs an up-to-date server.
+
 ## 2.0.40 – Diapers and stool
 
 - The log now calls diapers pee, poo and pee + poo.

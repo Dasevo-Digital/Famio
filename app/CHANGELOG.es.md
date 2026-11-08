@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.41 – Color de las heces y fotos en el registro
+
+- Tras «caca», Famio pregunta ahora por la cantidad, la consistencia y el
+  color. Cada dato es opcional; la ventana se cierra tras el tercero.
+- Entre los colores está «blanquecina/gris».
+- Cada entrada del registro puede llevar fotos, por ejemplo de una erupción
+  para el médico. Esto requiere un servidor actualizado.
+
 ## 2.0.40 – Pañal y heces
 
 - El registro llama ahora a los pañales pipí, caca y pipí + caca.
