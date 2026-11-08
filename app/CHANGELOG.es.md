@@ -4,6 +4,15 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.40 – Pañal y heces
+
+- El registro llama ahora a los pañales pipí, caca y pipí + caca.
+- Se puede valorar la caca: dura, formada, blanda o diarrea. Tras «caca»,
+  Famio lo pregunta enseguida; la respuesta es opcional.
+- Los resúmenes diario y semanal muestran cuántas veces hubo diarrea.
+- Con letra grande, el editor del registro y las tarjetas de los niños vuelven
+  a caber en la pantalla.
+
 ## 2.0.39 – La foto se queda en la cita
 
 - Al importar desde fotos, el título y el lugar quedan separados: el lugar ya no

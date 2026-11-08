@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.40 – Diapers and stool
+
+- The log now calls diapers pee, poo and pee + poo.
+- You can rate the stool: hard, formed, soft or diarrhoea. After “poo” Famio
+  asks right away; the answer is optional.
+- The daily and weekly summaries show how often there was diarrhoea.
+- With large text, the log editor and the children's cards fit on the screen
+  again.
+
 ## 2.0.39 – The photo stays with the event
 
 - Importing from photos keeps title and place apart: the place no longer becomes

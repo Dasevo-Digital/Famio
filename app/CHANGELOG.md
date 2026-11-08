@@ -4,6 +4,15 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.40 – Windel und Stuhl
+
+- Im Protokoll heißen die Windeln jetzt Pipi, Kacka und Pipi + Kacka.
+- Der Stuhl lässt sich bewerten: hart, geformt, breiig oder Durchfall. Nach
+  „Kacka“ fragt Famio gleich danach, die Angabe ist freiwillig.
+- Tages- und Wochenübersicht zeigen, wie oft Durchfall vorkam.
+- Bei großer Schrift passen Protokoll-Editor und Kinderkarten wieder auf den
+  Bildschirm.
+
 ## 2.0.39 – Das Foto bleibt am Termin
 
 - Beim Import aus Fotos bleiben Titel und Ort getrennt: Der Ort wird nicht mehr
