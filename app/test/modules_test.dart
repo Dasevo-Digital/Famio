@@ -548,7 +548,11 @@ void main() {
     await tester.tap(find.text('Speichern'));
     await tester.pumpAndSettle();
     expect(engine.timetable('k1')!.lesson(1, 0)?.subject, 'Mathe');
-    expect(find.text('Mathe'), findsOneWidget);
+    // In the grid; on a Sunday the card for tomorrow names it as well.
+    expect(
+      find.descendant(of: find.byType(Table), matching: find.text('Mathe')),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(seconds: 1));
   });
 
