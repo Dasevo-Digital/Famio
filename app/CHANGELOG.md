@@ -4,6 +4,14 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.43 – Pipi, Kacka und Fußlänge
+
+- Im Protokoll gibt es eigene Knöpfe für Pipi, Kacka und Pipi + Kacka. Pipi
+  braucht nur einen Tipp, nach Kacka fragt Famio wie bisher nach dem Stuhl.
+- Messungen halten jetzt auch die Fußlänge fest, das Wachstum zeigt dafür eine
+  eigene Kurve.
+- Der Knopf „Gewicht“ heißt jetzt „Messen“.
+
 ## 2.0.42 – Getränk und Spaziergang
 
 - Neu im Protokoll: Getränke mit Art und Menge. Die Übersicht zählt sie

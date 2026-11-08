@@ -4,6 +4,14 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.43 – Pipí, caca y longitud del pie
+
+- El registro tiene botones propios para pipí, caca y pipí + caca. Pipí basta
+  con un toque; tras caca, Famio pregunta por las heces como antes.
+- Las mediciones registran ahora también la longitud del pie, con su propia
+  curva de crecimiento.
+- El botón «Peso» se llama ahora «Medir».
+
 ## 2.0.42 – Bebidas y paseos
 
 - Nuevo en el registro: bebidas con tipo y cantidad. El resumen las cuenta

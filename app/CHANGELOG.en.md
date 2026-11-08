@@ -4,6 +4,13 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.43 – Pee, poo and foot length
+
+- The log has separate buttons for pee, poo and pee + poo. Pee takes a single
+  tap; after poo Famio asks about the stool as before.
+- Measurements now also record the foot length, with its own growth chart.
+- The “Weight” button is now called “Measure”.
+
 ## 2.0.42 – Drinks and walks
 
 - New in the log: drinks with type and amount. The overview counts them apart
