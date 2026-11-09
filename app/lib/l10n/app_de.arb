@@ -6896,6 +6896,14 @@
   "pairInvalidCode": "Das ist kein Famio-Kopplungscode.",
   "inboxTitle": "Familien-Eingang",
   "inboxSubtitle": "Erst sammeln, später richtig einsortieren",
+  "inboxFileNotUploaded": "Die Datei wurde nicht hochgeladen ({reason}). Der Text ist im Eingang.",
+  "@inboxFileNotUploaded": {
+    "placeholders": {
+      "reason": {
+        "type": "Object?"
+      }
+    }
+  },
   "inboxAdd": "Etwas ablegen",
   "inboxEmpty": "Der Familien-Eingang ist leer. Hier kannst du Texte, Links, Fotos und Scans zunächst unsortiert ablegen.",
   "inboxEmptyShort": "Nichts einzusortieren",

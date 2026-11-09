@@ -189,7 +189,24 @@ class InboxScreen extends StatelessWidget {
     );
     if (ok == true && context.mounted) {
       final state = AppScope.read(context);
-      final files = [if (picked != null) await uploadPicked(context, picked!)];
+      final messenger = ScaffoldMessenger.of(context);
+      final typed = title.text.trim().isNotEmpty || text.text.trim().isNotEmpty;
+      final files = <FileRef>[];
+      if (picked != null) {
+        try {
+          files.add(await uploadPicked(context, picked!));
+        } on ApiError catch (e) {
+          // What was typed stays, only the attachment is missing.
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                typed ? tr.inboxFileNotUploaded(e.message) : e.message,
+              ),
+            ),
+          );
+          if (!typed) return;
+        }
+      }
       final heading = title.text.trim().isNotEmpty
           ? title.text.trim()
           : _fallbackTitle(text.text, picked?.name);

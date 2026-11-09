@@ -2672,6 +2672,7 @@
   "pairInvalidCode": "This is not a Famio pairing code.",
   "inboxTitle": "Family inbox",
   "inboxSubtitle": "Collect now and file properly later",
+  "inboxFileNotUploaded": "The file was not uploaded ({reason}). The text is in the inbox.",
   "inboxAdd": "Add something",
   "inboxEmpty": "The family inbox is empty. Keep texts, links, photos and scans here until you know where they belong.",
   "inboxEmptyShort": "Nothing to file",
