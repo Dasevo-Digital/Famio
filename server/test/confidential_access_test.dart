@@ -441,6 +441,161 @@ void main() {
     });
   });
 
+  group('messages and comments', () {
+    SyncRecord message(String id, String author, {String text = 'Hallo'}) =>
+        SyncRecord(
+          collection: Collections.chatMessages,
+          id: id,
+          data: {
+            'chatId': 'family',
+            'authorId': author,
+            'text': text,
+            'sentAt': '2026-11-01T10:00:00.000Z',
+          },
+          updatedAt: clock += 1000,
+        );
+    SyncRecord gone(String id) => SyncRecord(
+      collection: Collections.chatMessages,
+      id: id,
+      data: const {},
+      deleted: true,
+      updatedAt: clock += 1000,
+    );
+
+    test('nobody writes in somebody else\'s name', () async {
+      for (final writer in [oma, kid, papa]) {
+        final id = 'forged${writer.username}';
+        await sync(writer, changes: [message(id, mama.id)]);
+        expect(app.records.get(Collections.chatMessages, id), isNull);
+      }
+    });
+
+    test('everybody writes in their own', () async {
+      for (final writer in [oma, kid, mama]) {
+        final id = 'own${writer.username}';
+        await sync(writer, changes: [message(id, writer.id)]);
+        expect(app.records.get(Collections.chatMessages, id), isNotNull);
+      }
+    });
+
+    test('only adults take down what others wrote', () async {
+      await sync(mama, changes: [message('m1', mama.id)]);
+      await sync(kid, changes: [message('m1', mama.id, text: 'Geaendert')]);
+      expect(
+        app.records.get(Collections.chatMessages, 'm1')!.data['text'],
+        'Hallo',
+      );
+      await sync(oma, changes: [gone('m1')]);
+      expect(app.records.get(Collections.chatMessages, 'm1')!.deleted, isFalse);
+      await sync(papa, changes: [gone('m1')]);
+      expect(app.records.get(Collections.chatMessages, 'm1')!.deleted, isTrue);
+    });
+
+    test('authors take down their own', () async {
+      await sync(oma, changes: [message('m2', oma.id)]);
+      await sync(oma, changes: [gone('m2')]);
+      expect(app.records.get(Collections.chatMessages, 'm2')!.deleted, isTrue);
+    });
+
+    test('comments count the same', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('e1', members: [kid.id]),
+        ],
+      );
+      await sync(
+        kid,
+        changes: [
+          SyncRecord(
+            collection: Collections.eventComments,
+            id: 'c1',
+            data: {'eventId': 'e1', 'authorId': mama.id, 'text': 'Gefaelscht'},
+            updatedAt: clock += 1000,
+          ),
+        ],
+      );
+      expect(app.records.get(Collections.eventComments, 'c1'), isNull);
+    });
+  });
+
+  group('a guest and a task', () {
+    Map<String, Object?> theirTask() => {
+      ...Task(id: 't1', title: 'Kuchen', assigneeIds: [oma.id]).toData(),
+    };
+    SyncRecord version(Map<String, Object?> data) => SyncRecord(
+      collection: Collections.tasks,
+      id: 't1',
+      data: data,
+      updatedAt: clock += 1000,
+    );
+
+    test('ticks it off', () async {
+      await sync(mama, changes: [version(theirTask())]);
+      await sync(
+        oma,
+        changes: [
+          version({...theirTask(), 'done': true}),
+        ],
+      );
+      expect(app.records.get(Collections.tasks, 't1')!.data['done'], isTrue);
+    });
+
+    test('does not change what it is or who sees it', () async {
+      await sync(mama, changes: [version(theirTask())]);
+      await sync(
+        oma,
+        changes: [
+          version({...theirTask(), 'title': 'Anders'}),
+        ],
+      );
+      expect(app.records.get(Collections.tasks, 't1')!.data['title'], 'Kuchen');
+      await sync(
+        oma,
+        changes: [
+          version({
+            ...theirTask(),
+            SyncRecord.visibilityKey: [oma.id],
+          }),
+        ],
+      );
+      expect(app.records.get(Collections.tasks, 't1')!.visibleTo, isNull);
+      expect(await has(mama, 't1'), isTrue);
+    });
+
+    test('does not delete it', () async {
+      await sync(mama, changes: [version(theirTask())]);
+      await sync(
+        oma,
+        changes: [
+          SyncRecord(
+            collection: Collections.tasks,
+            id: 't1',
+            data: const {},
+            deleted: true,
+            updatedAt: clock += 1000,
+          ),
+        ],
+      );
+      expect(app.records.get(Collections.tasks, 't1')!.deleted, isFalse);
+    });
+
+    test('may add their own', () async {
+      await sync(
+        oma,
+        changes: [
+          SyncRecord(
+            collection: Collections.tasks,
+            id: 't2',
+            data: Task(id: 't2', title: 'Eis', assigneeIds: [oma.id]).toData(),
+            updatedAt: clock += 1000,
+          ),
+        ],
+      );
+      expect(app.records.get(Collections.tasks, 't2'), isNotNull);
+    });
+  });
+
   group('subscriptions', () {
     SyncRecord abo(String id, {List<String>? audience}) => SyncRecord(
       collection: Collections.subscriptions,
@@ -500,6 +655,195 @@ void main() {
         ).toJson(),
       );
       expect(r.statusCode, 400);
+    });
+  });
+
+  group('a packing list of an appointment with an audience', () {
+    test('reaches only that audience, also among adults', () async {
+      await sync(
+        mama,
+        changes: [
+          shared('a1', [mama.id]),
+          list('l1', 'a1'),
+          item('i1', 'l1'),
+        ],
+      );
+      expect(await has(mama, 'l1'), isTrue);
+      expect(await has(mama, 'i1'), isTrue);
+      for (final other in [papa, kid, oma, ha]) {
+        expect(await has(other, 'l1'), isFalse, reason: other.username);
+        expect(await has(other, 'i1'), isFalse, reason: other.username);
+      }
+    });
+
+    test('leaves the devices of those outside when it narrows', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('a2', extra: const {'confidential': false}),
+          list('l2', 'a2'),
+          item('i2', 'l2'),
+        ],
+      );
+      final before = await sync(papa);
+      expect(before.changes.any((r) => r.id == 'l2' && !r.deleted), isTrue);
+      await sync(
+        mama,
+        changes: [
+          shared('a2', [mama.id]),
+        ],
+      );
+      final after = await sync(papa, since: before.rev);
+      expect(after.changes.any((r) => r.id == 'l2' && !r.deleted), isFalse);
+      expect(after.changes.any((r) => r.id == 'l2' && r.deleted), isTrue);
+      expect(after.changes.any((r) => r.id == 'i2' && r.deleted), isTrue);
+    });
+
+    test('stays with the audience after the appointment is deleted', () async {
+      await sync(
+        mama,
+        changes: [
+          shared('a3', [mama.id]),
+          list('l3', 'a3'),
+          comment('c3', 'a3'),
+        ],
+      );
+      await sync(mama, changes: [deleted('a3')]);
+      expect(await has(papa, 'l3'), isFalse);
+      expect(await has(papa, 'c3'), isFalse);
+      expect(await has(mama, 'l3'), isTrue);
+    });
+  });
+
+  group('who takes part in a confidential appointment', () {
+    test('brings its list and comments along', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('p1'),
+          list('l1', 'p1'),
+          item('i1', 'l1'),
+          comment('c1', 'p1'),
+        ],
+      );
+      final before = await sync(kid);
+      expect(before.changes.any((r) => r.id == 'l1' && !r.deleted), isFalse);
+      await sync(
+        mama,
+        changes: [
+          appointment('p1', members: [kid.id]),
+        ],
+      );
+      final added = await sync(kid, since: before.rev);
+      for (final id in ['p1', 'l1', 'i1', 'c1']) {
+        expect(
+          added.changes.any((r) => r.id == id && !r.deleted),
+          isTrue,
+          reason: id,
+        );
+      }
+
+      await sync(mama, changes: [appointment('p1')]);
+      final removed = await sync(kid, since: added.rev);
+      for (final id in ['p1', 'l1', 'i1', 'c1']) {
+        expect(
+          removed.changes.any((r) => r.id == id && r.deleted),
+          isTrue,
+          reason: id,
+        );
+      }
+    });
+
+    test('a list kept after deleting opens with the confidentiality', () async {
+      await sync(
+        mama,
+        changes: [appointment('p2'), list('l2', 'p2'), item('i2', 'l2')],
+      );
+      await sync(mama, changes: [deleted('p2')]);
+      expect(await has(kid, 'l2'), isFalse);
+      final trash =
+          jsonDecode(
+                await (await call(mama, 'GET', 'api/trash')).readAsString(),
+              )
+              as Map;
+      final id = (trash['items'] as List).single['id'];
+      expect(
+        (await call(mama, 'POST', 'api/trash/$id/restore')).statusCode,
+        200,
+      );
+      expect(await has(kid, 'l2'), isFalse);
+      await sync(
+        mama,
+        changes: [
+          // After the restore, which is stamped with the real time.
+          appointment(
+            'p2',
+            extra: const {'confidential': false},
+            at: DateTime.now().millisecondsSinceEpoch + 1000,
+          ),
+        ],
+      );
+      expect(await has(kid, 'l2'), isTrue);
+      expect(await has(kid, 'i2'), isTrue);
+    });
+  });
+
+  group('the emergency button', () {
+    SosAlert alert(String id) =>
+        SosAlert.fromRecord(app.records.get(Collections.sosAlerts, id)!);
+
+    /// An open alarm of [who], started [ago].
+    void openAlarm(String id, FamilyMember who, Duration ago) =>
+        app.records.writeAsServer([
+          SyncRecord(
+            collection: Collections.sosAlerts,
+            id: id,
+            data: {
+              ...SosAlert(
+                id: id,
+                memberId: who.id,
+                startedAt: DateTime.now().subtract(ago),
+                state: SosState.active,
+              ).toData(),
+              SyncRecord.visibilityKey: [who.id, mama.id],
+            },
+            updatedAt: 0,
+          ),
+        ]);
+
+    Future<String> press(FamilyMember who) async {
+      final r = await call(who, 'POST', 'api/sos', body: <String, Object?>{});
+      expect(r.statusCode, 201);
+      return (jsonDecode(await r.readAsString()) as Map)['id'] as String;
+    }
+
+    test('continues an alarm still running', () async {
+      openAlarm('s1', kid, const Duration(minutes: 5));
+      expect(await press(kid), 's1');
+    });
+
+    test('a forgotten alarm gives way to the new one', () async {
+      openAlarm('s2', kid, const Duration(hours: 2));
+      final id = await press(kid);
+      expect(id, isNot('s2'));
+      expect(alert('s2').open, isFalse);
+      expect(alert(id).open, isTrue);
+    });
+
+    test('ending it ends every open one of that person', () async {
+      openAlarm('s3', kid, const Duration(hours: 3));
+      openAlarm('s4', kid, const Duration(hours: 2));
+      openAlarm('s5', papa, const Duration(hours: 2));
+      final r = await call(
+        kid,
+        'POST',
+        'api/sos/s4/resolve',
+        body: <String, Object?>{},
+      );
+      expect(r.statusCode, 200);
+      expect(alert('s3').open, isFalse);
+      expect(alert('s4').open, isFalse);
+      expect(alert('s5').open, isTrue);
     });
   });
 

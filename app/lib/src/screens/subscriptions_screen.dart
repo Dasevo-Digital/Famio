@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -454,6 +455,11 @@ class _EditorState extends State<_Editor> {
   late String? _memberId = _old?.memberId;
   late int? _remindDays = _old == null ? 3 : _old.remindDays;
 
+  String? _nameError;
+  String? _amountError;
+  String? _everyError;
+  String? _linkError;
+
   /// Null: the family's own, typed into [_customCategory].
   late String? _category = _old?.category ?? subscriptionCategories.first;
 
@@ -473,20 +479,20 @@ class _EditorState extends State<_Editor> {
     super.dispose();
   }
 
-  void _snack(String text) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-
   void _save() {
     final name = _name.text.trim();
-    if (name.isEmpty) return _snack(tr.subscriptionsEnterName);
     final cents = parseEuro(_amount.text);
-    if (cents == null || cents == 0) {
-      return _snack(tr.budgetPleaseEnterAmount);
-    }
     final every = int.tryParse(_every.text.trim());
-    if (every == null || every < 1 || every > 999) {
-      return _snack(tr.subscriptionsEnterPeriod);
-    }
+    final periodOk = every != null && every >= 1 && every <= 999;
+    // Next to the fields: a snack bar would be behind this sheet.
+    setState(() {
+      _nameError = name.isEmpty ? tr.subscriptionsEnterName : null;
+      _amountError = cents == null || cents == 0
+          ? tr.budgetPleaseEnterAmount
+          : null;
+      _everyError = periodOk ? null : tr.subscriptionsEnterPeriod;
+    });
+    if (name.isEmpty || cents == null || cents == 0 || !periodOk) return;
     final typed = _customCategory.text.trim();
     AppScope.engineOf(context).saveSubscription(
       Subscription(
@@ -513,7 +519,8 @@ class _EditorState extends State<_Editor> {
     final text = _url.text.trim();
     final uri = Uri.tryParse(text.contains('://') ? text : 'https://$text');
     if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
-      return _snack(tr.subscriptionsLinkInvalid);
+      setState(() => _linkError = tr.subscriptionsLinkInvalid);
+      return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
@@ -536,12 +543,15 @@ class _EditorState extends State<_Editor> {
     (1, SubscriptionUnit.years),
   ];
 
+  /// What the field says, as far as it is a period at all.
+  int get _period => (int.tryParse(_every.text.trim()) ?? 1).clamp(1, 999);
+
   Subscription get _preview => Subscription(
     id: '',
     name: '',
     cents: 0,
     start: _start,
-    every: int.tryParse(_every.text.trim()) ?? 1,
+    every: _period,
     unit: _unit,
   );
 
@@ -551,7 +561,7 @@ class _EditorState extends State<_Editor> {
     final engine = AppScope.engineOf(context);
     final color = FamioColors.of(context).strong(FamioSection.budget);
     final dates = DateFormat.yMd(appLanguage);
-    final count = int.tryParse(_every.text.trim()) ?? 1;
+    final count = _period;
     final categories = {
       ...subscriptionCategories,
       for (final s in engine.subscriptions) s.category,
@@ -577,6 +587,7 @@ class _EditorState extends State<_Editor> {
               decoration: InputDecoration(
                 labelText: tr.commonName,
                 hintText: tr.subscriptionsNameHint,
+                errorText: _nameError,
               ),
             ),
             const SizedBox(height: 12),
@@ -589,6 +600,7 @@ class _EditorState extends State<_Editor> {
               decoration: InputDecoration(
                 labelText: tr.commonAmount,
                 suffixText: '€',
+                errorText: _amountError,
               ),
             ),
             const SizedBox(height: 12),
@@ -626,9 +638,12 @@ class _EditorState extends State<_Editor> {
                   child: TextField(
                     controller: _every,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
                     decoration: InputDecoration(
                       labelText: tr.subscriptionsEvery,
+                      errorText: _everyError,
+                      errorMaxLines: 3,
                     ),
                   ),
                 ),
@@ -732,9 +747,10 @@ class _EditorState extends State<_Editor> {
             TextField(
               controller: _url,
               keyboardType: TextInputType.url,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) => setState(() => _linkError = null),
               decoration: InputDecoration(
                 labelText: tr.subscriptionsLink,
+                errorText: _linkError,
                 suffixIcon: _url.text.trim().isEmpty
                     ? null
                     : IconButton(
@@ -792,9 +808,13 @@ class _EditorState extends State<_Editor> {
                 else
                   OutlinedButton(
                     onPressed: () async {
+                      // The day before the next payment: that one is saved.
                       final now = DateTime.now();
+                      final next = _preview.nextPayment(now);
                       final picked = await _pick(
-                        _preview.nextPayment(now) ?? now,
+                        next == null
+                            ? now
+                            : DateTime(next.year, next.month, next.day - 1),
                       );
                       if (picked != null) setState(() => _endsOn = picked);
                     },

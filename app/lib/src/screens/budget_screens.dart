@@ -357,6 +357,7 @@ class _EntryEditorState extends State<_EntryEditor> {
         : formatEuro(widget.existing!.cents).replaceAll(' €', ''),
   );
   late final _note = TextEditingController(text: widget.existing?.note);
+  String? _amountError;
   late String _category = widget.existing?.category ?? expenseCategories.first;
   late DateTime _date =
       widget.existing?.date ?? DateUtils.dateOnly(DateTime.now());
@@ -391,9 +392,8 @@ class _EntryEditorState extends State<_EntryEditor> {
   void _save({DateTime? until}) {
     final cents = parseEuro(_amount.text);
     if (cents == null || cents == 0) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(tr.budgetPleaseEnterAmount)));
+      // Next to the field: a snack bar would be behind this sheet.
+      setState(() => _amountError = tr.budgetPleaseEnterAmount);
       return;
     }
     AppScope.engineOf(
@@ -442,6 +442,7 @@ class _EntryEditorState extends State<_EntryEditor> {
               decoration: InputDecoration(
                 labelText: tr.commonAmount,
                 suffixText: '€',
+                errorText: _amountError,
               ),
             ),
             const SizedBox(height: 12),

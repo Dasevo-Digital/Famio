@@ -400,7 +400,7 @@ class ListSync {
         final list = records.get(Collections.shoppingLists, famio);
         if (list == null ||
             list.deleted ||
-            !RecordStore.canSee(list, memberId)) {
+            !records.canAccess(list, memberId)) {
           throw ApiException.badRequest(
             'invalid_link',
             t('Diese Einkaufsliste gibt es nicht.'),
@@ -530,7 +530,7 @@ class ListSync {
       final list = records.get(Collections.shoppingLists, famioList);
       // Also gone for whoever connected it once the list is no longer
       // theirs to see: their sync would take its items for deleted.
-      if (list == null || list.deleted || !RecordStore.canSee(list, memberId)) {
+      if (list == null || list.deleted || !records.canAccess(list, memberId)) {
         stats.missing = true;
         return false;
       }
@@ -649,7 +649,7 @@ class ListSync {
       // No longer visible to this member: neither sent nor deleted.
       if (record != null &&
           !record.deleted &&
-          !RecordStore.canSee(record, memberId)) {
+          !records.canAccess(record, memberId)) {
         continue;
       }
       final here = famioState(

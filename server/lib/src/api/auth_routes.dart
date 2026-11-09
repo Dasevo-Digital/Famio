@@ -345,8 +345,9 @@ extension _AuthRoutes on FamioApi {
   }
 
   /// Starts the setup: secret and otpauth link for the QR code.
-  Response _totpBegin(Request request) {
+  Future<Response> _totpBegin(Request request) async {
     final member = _auth(request);
+    await _confirmPassword(request, member);
     if (mfa.hasTotp(member.id)) {
       throw ApiException(
         409,
@@ -527,12 +528,14 @@ extension _AuthRoutes on FamioApi {
     return _json({'ok': true});
   }
 
-  Response _adminResetTwoFactor(Request request, String id) {
+  Future<Response> _adminResetTwoFactor(Request request, String id) async {
     final admin = _admin(request);
     final target = accounts.byId(id);
     if (target == null) {
       throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
+    // A stolen session must not take the second factor off its own account.
+    if (target.id == admin.id) await _confirmPassword(request, admin);
     mfa.disable(id);
     _audit(
       admin,

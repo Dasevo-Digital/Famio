@@ -648,6 +648,10 @@ class Accounts {
       _appPassword(row),
   ];
 
+  /// All of them, when the password changes.
+  void deleteAppPasswords(String userId) =>
+      _db.execute('DELETE FROM app_passwords WHERE user_id = ?', [userId]);
+
   void deleteAppPassword(String userId, String id) => _db.execute(
     'DELETE FROM app_passwords WHERE user_id = ? AND id = ?',
     [userId, id],

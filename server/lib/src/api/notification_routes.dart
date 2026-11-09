@@ -18,6 +18,7 @@ extension _NotificationRoutes on FamioApi {
   Future<Response> _addPushTarget(Request request) async {
     final member = _auth(request);
     final body = await _body(request);
+    await _confirmPassword(request, member, body: body);
     final target = await _push.add(
       member.id,
       name: body['name'] as String? ?? '',

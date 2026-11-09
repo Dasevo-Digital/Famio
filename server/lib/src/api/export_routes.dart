@@ -6,8 +6,15 @@ extension _ExportRoutes on FamioApi {
   DataExport get _exports =>
       exports ?? (throw ApiException(404, 'not_found', t('Export fehlt')));
 
-  Future<void> _confirmPassword(Request request, FamilyMember member) async {
-    final body = await _body(request);
+  /// The member's password from the request ([body] if it was read already).
+  /// Accounts without one (single sign-on, service accounts) have nothing to
+  /// confirm.
+  Future<void> _confirmPassword(
+    Request request,
+    FamilyMember member, {
+    Map<String, Object?>? body,
+  }) async {
+    body ??= await _body(request);
     final address = clientAddress.of(request);
     _checkThrottle(address, '#pw:${member.id}');
     if (accounts.hasPassword(member.id) &&

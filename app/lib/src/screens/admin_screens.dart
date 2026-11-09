@@ -13,6 +13,7 @@ import '../design/palette.dart';
 import '../data/family_data.dart';
 import '../format.dart';
 import '../widgets/files.dart';
+import '../widgets/account_password.dart';
 import '../widgets/account_widgets.dart';
 import '../widgets/birthday_field.dart';
 import '../widgets/form_dialog.dart';
@@ -23,6 +24,7 @@ import '../widgets/update_check.dart';
 import '../widgets/setup_checklist.dart';
 import 'home_tiles.dart';
 import 'invite_screens.dart' show InviteScreen;
+import 'settings_screen.dart' show showChangePasswordDialog;
 import '../l10n.dart';
 
 part 'admin/app_updates_dialog.dart';

@@ -13,6 +13,7 @@ extension _CalendarRoutes on FamioApi {
   Future<Response> _createFeed(Request request) async {
     final member = _member(request);
     final body = await _body(request);
+    await _confirmPassword(request, member, body: body);
     final scope = FeedScope.values
         .where((s) => s.name == body['scope'])
         .firstOrNull;

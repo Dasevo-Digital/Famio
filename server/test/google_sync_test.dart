@@ -166,6 +166,7 @@ void main() {
     final secret =
         (await call(remoteBase, 'POST', 'api/me/app-passwords', remoteToken, {
               'name': 'Google-Attrappe',
+              'password': 'tulpe-regal-7',
             }))['secret']
             as String;
     remoteApp.records.writeAs(remoteApp.accounts.members().single.id, [

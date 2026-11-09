@@ -70,17 +70,13 @@ class SosService {
       );
     }
     final now = DateTime.now();
-    final open =
-        [
-          for (final r in records.all(Collections.sosAlerts))
-            SosAlert.fromRecord(r),
-        ].where(
-          (a) =>
-              a.memberId == member.id &&
-              a.open &&
-              now.difference(a.startedAt) < _repeat,
-        );
-    final previous = open.isEmpty ? null : open.first;
+    final open = _openOf(member.id);
+    final recent = open.where((a) => now.difference(a.startedAt) < _repeat);
+    final previous = recent.isEmpty ? null : recent.first;
+    // One forgotten long ago gives way to the new one.
+    for (final old in open) {
+      if (old.id != previous?.id) _close(old, member.id, now);
+    }
     final position = latitude != null && longitude != null;
     final alert = SosAlert(
       id: previous?.id ?? newId(),
@@ -110,6 +106,32 @@ class SosService {
             }),
     );
     return alert;
+  }
+
+  List<SosAlert> _openOf(String memberId) => [
+    for (final r in records.all(Collections.sosAlerts))
+      if (SosAlert.fromRecord(r) case final a
+          when a.memberId == memberId && a.open)
+        a,
+  ];
+
+  SyncRecord _close(SosAlert alert, String by, DateTime now) {
+    final updated = SosAlert(
+      id: alert.id,
+      memberId: alert.memberId,
+      startedAt: alert.startedAt,
+      state: SosState.resolved,
+      latitude: alert.latitude,
+      longitude: alert.longitude,
+      accuracy: alert.accuracy,
+      positionAt: alert.positionAt,
+      battery: alert.battery,
+      comingBy: alert.comingBy,
+      resolvedBy: by,
+      resolvedAt: now,
+      liveUntil: now,
+    );
+    return _write(updated, _audience(updated));
   }
 
   /// A newer position from the phone that raised [id].
@@ -190,22 +212,12 @@ class SosService {
     }
     if (!alert.open) return alert;
     final now = DateTime.now();
-    final updated = SosAlert(
-      id: alert.id,
-      memberId: alert.memberId,
-      startedAt: alert.startedAt,
-      state: SosState.resolved,
-      latitude: alert.latitude,
-      longitude: alert.longitude,
-      accuracy: alert.accuracy,
-      positionAt: alert.positionAt,
-      battery: alert.battery,
-      comingBy: alert.comingBy,
-      resolvedBy: member.id,
-      resolvedAt: now,
-      liveUntil: now,
-    );
-    final record = _write(updated, _audience(updated));
+    final record = _close(alert, member.id, now);
+    final updated = SosAlert.fromRecord(record);
+    // "Ich bin sicher" ends everything of this person, not only the latest.
+    for (final other in _openOf(alert.memberId)) {
+      _close(other, member.id, now);
+    }
     final who = accounts.members().where((m) => m.id == alert.memberId);
     final name = who.isEmpty ? t('Jemand') : who.first.displayName;
     push?.deliver(

@@ -13,6 +13,7 @@ import '../design/palette.dart';
 import '../platform/web_push.dart';
 import '../push/own_push.dart';
 import '../l10n.dart';
+import '../widgets/account_password.dart';
 
 /// Push notifications: directly from the Famio server (own push) or
 /// through ntfy.
@@ -747,7 +748,10 @@ class _AddTargetDialogState extends State<_AddTargetDialog> {
       _error = null;
     });
     try {
+      final password = await askAccountPassword(context);
+      if (password == null || !mounted) return;
       final target = await AppScope.read(context).engine!.api.addPushTarget(
+        password: password,
         name: _name.text.trim(),
         url: _url.text.trim(),
         token: _token.text.trim().isEmpty ? null : _token.text.trim(),

@@ -524,7 +524,15 @@ extension _AdminRoutes on FamioApi {
     if (target == null) {
       throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
+    if (target.id == admin.id) {
+      throw ApiException(
+        403,
+        'own_account',
+        t('Dein eigenes Passwort änderst du in den Einstellungen.'),
+      );
+    }
     await accounts.setPassword(id, body['password'] as String? ?? '');
+    accounts.deleteAppPasswords(id);
     var signedOut = 0;
     if (body['signOut'] as bool? ?? true) {
       signedOut = accounts.deleteSessions(id, exceptToken: _bearer(request));

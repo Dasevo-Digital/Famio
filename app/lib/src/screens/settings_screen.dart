@@ -536,6 +536,8 @@ Future<void> showChangePasswordDialog(BuildContext context) async {
       title: tr.settingsChangePassword,
       controllers: [current, next],
       fields: [
+        Text(tr.settingsPasswordChangeNote),
+        const SizedBox(height: 8),
         PasswordReveal(
           builder: (_, obscure, toggle) => TextField(
             controller: current,

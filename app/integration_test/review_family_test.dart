@@ -1772,7 +1772,9 @@ void main() {
       isAdmin: true,
     );
     final admin2Api = await signedIn('e2e-admin2');
-    final (:secret, uri: _) = await admin2Api.beginTotp();
+    final (:secret, uri: _) = await admin2Api.beginTotp(
+      password: _memberPassword,
+    );
     final codes = await admin2Api.confirmTotp(totp(secret));
     final strong = FamioApiClient(_url);
     try {

@@ -620,6 +620,7 @@ void main() {
       final papa = await addMember('papa', MemberRole.adult);
       for (final (m, topic) in [(kind, 'kind'), (papa, 'papa')]) {
         await m.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
           'url': 'https://push.example/$topic',
           'details': true,
         });
@@ -671,6 +672,7 @@ void main() {
       final papa = await addMember('papa', MemberRole.adult);
       for (final (m, topic) in [(mama, 'mama'), (papa, 'papa')]) {
         await m.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
           'url': 'https://push.example/$topic',
           'details': true,
         });
@@ -998,7 +1000,10 @@ void main() {
         'https://ntfy.sh/',
         'https://u:p@ntfy.sh/x',
       ]) {
-        final r = await mama.call('POST', 'api/me/push', {'url': url});
+        final r = await mama.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
+          'url': url,
+        });
         expect(r['_status'], 400, reason: url);
       }
     });
@@ -1007,6 +1012,7 @@ void main() {
       'chat messages reach the others, without details by default',
       () async {
         final added = await kind.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
           'name': 'Handy',
           'url': 'https://push.example/famio-geheim',
           'token': 'tk_123',
@@ -1034,6 +1040,7 @@ void main() {
         final id = ((targets['targets'] as List).single as Map)['id'];
         await kind.call('DELETE', 'api/me/push/$id');
         await kind.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
           'url': 'https://push.example/famio-geheim',
           'details': true,
         });
@@ -1060,6 +1067,7 @@ void main() {
 
     test('a sign-in on another device is told to the member', () async {
       await kind.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
         'url': 'https://push.example/kind',
         'details': true,
       });
@@ -1087,6 +1095,7 @@ void main() {
 
     test('point requests go to the adults', () async {
       await mama.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
         'url': 'https://push.example/eltern',
         'details': true,
       });
@@ -1126,6 +1135,7 @@ void main() {
           'end': at(60),
         });
         await mama.call('POST', 'api/me/push', {
+          'password': 'tulpe-regal-7',
           'url': 'https://push.example/famio-mama',
         });
         pushed.clear();
@@ -1246,6 +1256,7 @@ void main() {
       final phone = _Member(base, created['token'] as String, kind.id);
       await phone.call('GET', 'api/notifications');
       await kind.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
         'url': 'https://push.example/famio-kind',
       });
       final after = await mama.call('GET', 'api/members/reachability');
@@ -1457,6 +1468,7 @@ void main() {
       });
       expect(saved['start'], at(-60));
       await kind.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
         'url': 'https://push.example/famio-geheim',
       });
       pushed.clear();

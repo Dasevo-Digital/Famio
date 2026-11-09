@@ -15,6 +15,7 @@ import 'caldav_screens.dart';
 import '../widgets/section_header.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import '../widgets/account_password.dart';
 
 /// Connects Famio with Google Calendar, Apple Calendar & co. via ICS links:
 /// publishing Famio events (feeds) and showing external calendars
@@ -151,9 +152,12 @@ class _FeedsSectionState extends State<_FeedsSection> {
       ),
     );
     if (ok == true && mounted) {
+      final password = await askAccountPassword(context);
+      if (password == null || !mounted) return;
       await _guard(
         () => AppScope.read(context).engine!.api.createCalendarFeed(
           name: name.text.trim().isEmpty ? 'Famio' : name.text.trim(),
+          password: password,
           scope: scope,
           hideDetails: hideDetails,
         ),

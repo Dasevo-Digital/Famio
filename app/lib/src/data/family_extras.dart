@@ -14,9 +14,10 @@ extension FamilyExtras on SyncEngine {
 
   bool get iAmAdult => myRole == MemberRole.adult;
 
-  /// Whose reminder a payment is: who pays it, else every adult who sees it.
+  /// Whose reminder a payment is: who pays it, else (also when that account
+  /// is gone) every adult who sees it.
   bool subscriptionIsMine(Subscription a) =>
-      a.memberId == null ? iAmAdult : a.memberId == memberId;
+      member(a.memberId) == null ? iAmAdult : a.memberId == memberId;
 
   bool get iAmGuest => myRole == MemberRole.guest;
 

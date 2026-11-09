@@ -13,6 +13,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/calendar_sharing.dart';
+import '../widgets/account_password.dart';
 import '../widgets/form_dialog.dart';
 import '../widgets/password_reveal.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -74,8 +75,11 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
             ),
           ],
           onSubmit: () async {
+            final password = await askAccountPassword(context);
+            if (password == null) return;
             final (_, s) = await api.createAppPassword(
               name: name.text,
+              password: password,
               includeConfidential: confidential,
             );
             secret = s;
@@ -138,7 +142,10 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
           ),
         ],
         onSubmit: () async {
+          final password = await askAccountPassword(context);
+          if (password == null) return;
           result = await api.appleProfile(
+            password: password,
             url: FamioApiClient.normalizeUrl(address.text),
             name: name.text.trim().isEmpty ? null : name.text.trim(),
           );

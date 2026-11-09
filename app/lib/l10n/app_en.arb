@@ -2786,5 +2786,8 @@
   "subscriptionsInDays": "{count, plural, =1{in 1 day} other{in {count} days}}",
   "subscriptionsRemindDays": "{count, plural, =1{1 day before} other{{count} days before}}",
   "subscriptionsCardSummary": "{count, plural, =1{1 subscription} other{{count} subscriptions}} · {amount} a month",
-  "remindersSubscription": "{name}: charge {count, plural, =1{tomorrow} other{in {count} days}}"
+  "remindersSubscription": "{name}: charge {count, plural, =1{tomorrow} other{in {count} days}}",
+  "accountPasswordTitle": "Confirm password",
+  "accountPasswordHint": "So nobody can set up lasting access from someone else's or an unlocked device.",
+  "settingsPasswordChangeNote": "Calendar app passwords stop working and have to be created again."
 }

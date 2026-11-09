@@ -14,6 +14,8 @@ extension _AccountRoutes on FamioApi {
   Future<Response> _createAppPassword(Request request) async {
     final member = _auth(request);
     final body = await _body(request);
+    // It outlives every session, so a stolen one must not leave one behind.
+    await _confirmPassword(request, member, body: body);
     final (password, secret) = accounts.createAppPassword(
       member.id,
       name: body['name'] as String? ?? '',
@@ -32,6 +34,7 @@ extension _AccountRoutes on FamioApi {
   Future<Response> _appleProfile(Request request) async {
     final member = _auth(request);
     final body = await _body(request);
+    await _confirmPassword(request, member, body: body);
     final base = Uri.tryParse(body['url'] as String? ?? '');
     if (base == null ||
         base.host.isEmpty ||
@@ -194,11 +197,13 @@ extension _AccountRoutes on FamioApi {
     }
     throttle.succeeded(address, '#pw:${member.id}');
     await accounts.setPassword(member.id, body['newPassword'] as String? ?? '');
-    // A new password also locks out whoever may know the old one.
+    // A new password also locks out whoever may know the old one, on the
+    // calendar apps as well.
     final signedOut = accounts.deleteSessions(
       member.id,
       exceptToken: _bearer(request),
     );
+    accounts.deleteAppPasswords(member.id);
     return _json({'ok': true, 'signedOut': signedOut});
   }
 }

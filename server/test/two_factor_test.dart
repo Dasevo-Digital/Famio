@@ -111,6 +111,7 @@ void main() {
         'POST',
         'api/me/two-factor/totp',
         token: token,
+        body: {'password': 'tulpe-regal-7'},
       );
       expect(begun['uri'], contains('otpauth://totp/Famio:mama'));
       final confirmed = await call(
@@ -357,6 +358,7 @@ void main() {
         'DELETE',
         'api/admin/users/${mama['id']}/two-factor',
         token: admin,
+        body: {'password': 'tulpe-regal-7'},
       );
       expect((await login('mama'))['token'], isNotEmpty);
     });

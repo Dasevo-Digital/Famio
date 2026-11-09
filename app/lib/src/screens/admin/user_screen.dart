@@ -181,10 +181,12 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           ),
           subtitle: Text(
             isMe
-                ? tr.adminSetsPasswordAnewWithout
+                ? tr.settingsPasswordChangeNote
                 : tr.adminEGIfName(m.displayName),
           ),
-          onTap: () => _resetPassword(u, isMe: isMe),
+          onTap: isMe
+              ? () => showChangePasswordDialog(context)
+              : () => _resetPassword(u, isMe: isMe),
         ),
         ListTile(
           leading: Icon(
@@ -205,10 +207,16 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
                     tr.adminResetTwoFactorName(m.displayName),
                     tr.adminAfterThatPasswordEnough(m.displayName),
                     tr.commonReset,
-                    () => _run(
-                      () => _api.resetTwoFactor(m.id),
-                      done: tr.adminTwoFactorReset,
-                    ),
+                    () async {
+                      final password = isMe
+                          ? await askAccountPassword(context)
+                          : null;
+                      if (isMe && password == null) return;
+                      await _run(
+                        () => _api.resetTwoFactor(m.id, password: password),
+                        done: tr.adminTwoFactorReset,
+                      );
+                    },
                   ),
                   child: Text(tr.commonReset),
                 )

@@ -65,7 +65,7 @@ void main() {
         'authorization': 'Bearer $token',
         'content-type': 'application/json',
       },
-      body: jsonEncode({'name': 'iPhone'}),
+      body: jsonEncode({'name': 'iPhone', 'password': 'tulpe-regal-7'}),
     );
     secret = (jsonDecode(created.body) as Map)['secret'] as String;
   });

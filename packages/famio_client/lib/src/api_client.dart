@@ -382,8 +382,12 @@ class FamioApiClient {
       TwoFactorStatus.fromJson(await _send('GET', 'api/me/two-factor'));
 
   /// Starts the setup: the secret and the `otpauth://` link for the QR code.
-  Future<({String secret, String uri})> beginTotp() async {
-    final json = await _send('POST', 'api/me/two-factor/totp');
+  Future<({String secret, String uri})> beginTotp({
+    required String password,
+  }) async {
+    final json = await _send('POST', 'api/me/two-factor/totp', {
+      'password': password,
+    });
     return (secret: json['secret'] as String, uri: json['uri'] as String);
   }
 
@@ -628,8 +632,16 @@ class FamioApiClient {
 
   /// Signs a member out on one device, or on all (except this one).
   /// Switches off two-factor login of member [id] (lost phone).
-  Future<void> resetTwoFactor(String id) =>
-      _send('DELETE', 'api/admin/users/$id/two-factor');
+  /// [password] is the admin's own, needed for their own account only.
+  Future<void> resetTwoFactor(String id, {String? password}) => _send(
+    'DELETE',
+    'api/admin/users/$id/two-factor',
+    password == null ? null : {'password': password},
+  );
+
+  /// Whether this account has a password to confirm things with.
+  Future<bool> hasPassword() async =>
+      (await _send('GET', 'api/me'))['hasPassword'] == true;
 
   Future<void> unlinkUserSso(String id) =>
       _send('DELETE', 'api/admin/users/$id/sso');
@@ -832,9 +844,11 @@ class FamioApiClient {
   Future<CalendarFeed> createCalendarFeed({
     required String name,
     required FeedScope scope,
+    required String password,
     bool hideDetails = false,
   }) async => CalendarFeed.fromJson(
     await _send('POST', 'api/calendar/feeds', {
+      'password': password,
       'name': name,
       'scope': scope.name,
       'hideDetails': hideDetails,
@@ -875,10 +889,12 @@ class FamioApiClient {
   Future<PushTarget> addPushTarget({
     required String name,
     required String url,
+    required String password,
     String? token,
     bool details = false,
   }) async => PushTarget.fromJson(
     await _send('POST', 'api/me/push', {
+      'password': password,
       'name': name,
       'url': url,
       'token': ?token,
@@ -936,9 +952,11 @@ class FamioApiClient {
   /// Creates an app password; the secret is only shown this once.
   Future<(AppPassword, String secret)> createAppPassword({
     required String name,
+    required String password,
     bool includeConfidential = false,
   }) async {
     final json = await _send('POST', 'api/me/app-passwords', {
+      'password': password,
       'name': name,
       'includeConfidential': includeConfidential,
     });
@@ -952,9 +970,11 @@ class FamioApiClient {
   /// new app password) for devices reaching the server at [url].
   Future<({String fileName, String profile})> appleProfile({
     required Uri url,
+    required String password,
     String? name,
   }) async {
     final json = await _send('POST', 'api/me/apple-profile', {
+      'password': password,
       'url': url.toString(),
       'name': ?name,
     });

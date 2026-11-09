@@ -51,6 +51,7 @@ SchoolBag? schoolBag(SyncEngine engine, Child child, DateTime day) {
     events: [
       for (final o in engine.occurrencesForDays(day, end))
         if (name.isNotEmpty &&
+            !o.event.confidential &&
             !o.start.isBefore(engine.calendar.day(day)) &&
             named.hasMatch(o.event.title))
           o.event.title,

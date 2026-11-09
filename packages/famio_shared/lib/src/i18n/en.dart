@@ -864,6 +864,8 @@ const sharedEn = <String, String>{
   "Server|Passwort zur Bestätigung falsch":
       "Password for confirmation is wrong",
   "Server|Bestätigungscode falsch": "Confirmation code is wrong",
+  "Server|Dein eigenes Passwort änderst du in den Einstellungen.":
+      "You change your own password in the settings.",
   "Server|Aktuelles Passwort falsch": "Current password is wrong",
   "Server|Öffentliche Adresse": "Public address",
   "Server|Nicht eingetragen: Die Apps erreichen Famio nur im Heimnetz, und Google oder iCloud können Famio-Kalender nicht abonnieren.":

@@ -233,6 +233,7 @@ class TotpSetupScreen extends StatefulWidget {
 
 class _TotpSetupScreenState extends State<TotpSetupScreen> {
   final _code = TextEditingController();
+  final _password = TextEditingController();
   ({String secret, String uri})? _setup;
   List<String>? _recovery;
   String? _error;
@@ -243,21 +244,37 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
   @override
   void initState() {
     super.initState();
-    _begin();
+    _startWithoutPassword();
   }
 
   @override
   void dispose() {
     _code.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _begin() async {
+  /// Single sign-on accounts have no password to confirm.
+  Future<void> _startWithoutPassword() async {
     try {
-      final setup = await _api.beginTotp();
+      if (!await _api.hasPassword() && mounted) await _begin();
+    } on ApiError {
+      // The password form stays; sending it will tell.
+    }
+  }
+
+  Future<void> _begin() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final setup = await _api.beginTotp(password: _password.text);
       if (mounted) setState(() => _setup = setup);
     } on ApiError catch (e) {
       if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -303,6 +320,39 @@ class _TotpSetupScreenState extends State<TotpSetupScreen> {
     final accent = c.strong(FamioSection.settings);
     final setup = _setup;
     final recovery = _recovery;
+    if (setup == null && recovery == null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(tr.accountPasswordHint),
+          const SizedBox(height: 12),
+          PasswordReveal(
+            builder: (_, obscure, toggle) => TextField(
+              controller: _password,
+              autofocus: true,
+              enabled: !_busy,
+              obscureText: obscure,
+              contextMenuBuilder: PasswordReveal.contextMenu,
+              decoration: InputDecoration(
+                labelText: tr.commonPassword,
+                errorText: _error,
+                suffixIcon: toggle,
+              ),
+              onSubmitted: (_) => _busy ? null : _begin(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ColorButton(
+              label: tr.commonNext,
+              color: accent,
+              onPressed: _busy ? null : _begin,
+            ),
+          ),
+        ],
+      );
+    }
     if (recovery != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

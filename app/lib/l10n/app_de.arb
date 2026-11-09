@@ -7152,5 +7152,8 @@
         "type": "int"
       }
     }
-  }
+  },
+  "accountPasswordTitle": "Passwort bestätigen",
+  "accountPasswordHint": "Damit niemand mit einem fremden oder entsperrten Gerät dauerhaft Zugang einrichten kann.",
+  "settingsPasswordChangeNote": "Kalender-App-Passwörter werden dabei ungültig und müssen neu angelegt werden."
 }

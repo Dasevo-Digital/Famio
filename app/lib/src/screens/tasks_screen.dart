@@ -269,7 +269,24 @@ class _TaskTile extends StatelessWidget {
       ),
       child: SoftCard(
         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
-        onTap: () => showTaskEditor(context, task: task),
+        // Guests tick off; what a task is, is for the family.
+        onTap: !engine.iAmGuest
+            ? () => showTaskEditor(context, task: task)
+            : task.notes.trim().isEmpty
+            ? null
+            : () => showDialog<void>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text(task.title),
+                  content: SingleChildScrollView(child: Text(task.notes)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(tr.commonClose),
+                    ),
+                  ],
+                ),
+              ),
         child: Row(
           children: [
             RoundCheck(

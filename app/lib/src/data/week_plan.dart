@@ -123,7 +123,7 @@ WeekPlan buildWeekPlan(SyncEngine engine, DateTime monday) {
     final everyone = e.memberIds.isEmpty;
     return (
       time: e.allDay || !firstDay ? null : time.format(o.start),
-      title: e.title,
+      title: e.publicTitle,
       people: [
         if (!everyone) names(e.memberIds).join(', '),
         if (e.bringerId != null && name(e.bringerId!).isNotEmpty)

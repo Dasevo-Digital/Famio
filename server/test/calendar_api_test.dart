@@ -121,10 +121,12 @@ void main() {
     ]);
 
     final all = await call('POST', 'api/calendar/feeds', {
+      'password': 'tulpe-regal-7',
       'name': 'Famio',
       'scope': 'all',
     });
     final mine = await call('POST', 'api/calendar/feeds', {
+      'password': 'tulpe-regal-7',
       'name': 'Meine',
       'scope': 'mine',
     });

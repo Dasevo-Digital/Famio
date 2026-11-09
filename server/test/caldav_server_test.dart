@@ -87,7 +87,7 @@ void main() {
         'authorization': 'Bearer $token',
         'content-type': 'application/json',
       },
-      body: jsonEncode({'name': 'iPhone'}),
+      body: jsonEncode({'name': 'iPhone', 'password': 'tulpe-regal-7'}),
     );
     expect(created.statusCode, 201);
     secret = (jsonDecode(created.body) as Map)['secret'] as String;
@@ -596,7 +596,7 @@ END:VCALENDAR
         'authorization': 'Bearer $papaToken',
         'content-type': 'application/json',
       },
-      body: jsonEncode({'name': 'Mac'}),
+      body: jsonEncode({'name': 'Mac', 'password': 'tulpe-regal-7'}),
     );
     final papaSecret = (jsonDecode(app.body) as Map)['secret'] as String;
     final papaView = await props(user: 'papa', password: papaSecret);

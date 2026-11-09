@@ -2786,5 +2786,8 @@
   "subscriptionsInDays": "{count, plural, =1{en 1 día} other{en {count} días}}",
   "subscriptionsRemindDays": "{count, plural, =1{1 día antes} other{{count} días antes}}",
   "subscriptionsCardSummary": "{count, plural, =1{1 suscripción} other{{count} suscripciones}} · {amount} al mes",
-  "remindersSubscription": "{name}: cargo {count, plural, =1{mañana} other{en {count} días}}"
+  "remindersSubscription": "{name}: cargo {count, plural, =1{mañana} other{en {count} días}}",
+  "accountPasswordTitle": "Confirmar contraseña",
+  "accountPasswordHint": "Para que nadie pueda configurar un acceso duradero desde un dispositivo ajeno o desbloqueado.",
+  "settingsPasswordChangeNote": "Las contraseñas de aplicaciones de calendario dejan de funcionar y hay que crearlas de nuevo."
 }

@@ -596,7 +596,7 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 | Betrieb | Docker read-only ohne Capabilities; systemd-Sandbox (`systemd-analyze security`: 3.0 OK) |
 | Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt; optionale App-Sperre mit Fingerabdruck, Gesicht oder Geräte-PIN (nach einer Minute im Hintergrund, unter Einstellungen → Dieses Gerät; nicht unter Windows, Linux und im Browser), dazu verdeckt in der App-Übersicht und unter Android ohne Bildschirmfotos; „Inhalte anzeigen“ aus lässt auch Erinnerungen nichts mehr verraten; Kopien für andere Apps werden nach einer Stunde entfernt, unter Linux liegen sie im eigenen Benutzerordner |
 | Kalender-Abos | Termine lassen sich als *vertraulich* markieren (nie im Abo, nie bei iCloud & Co., in Mitteilungen ohne Titel); Abos auf Wunsch nur als „Belegt“ ohne Details |
-| CalDAV | Eigenes App-Passwort pro Kalender-App (80 Bit, einzeln widerrufbar, Drosselung), Passwörter für iCloud & Co. nur verschlüsselt auf dem Server |
+| CalDAV | Eigenes App-Passwort pro Kalender-App (80 Bit, einzeln widerrufbar, Drosselung, nur mit dem Kontopasswort anzulegen, endet mit dem Passwortwechsel), Passwörter für iCloud & Co. nur verschlüsselt auf dem Server |
 | Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 1–365 Tage, nur für Eltern und die Person selbst; Pausieren nur mit Eltern-Code |
 
 Bewusst offen bzw. Aufgabe des Betriebs:

@@ -396,8 +396,9 @@ class _SosCountdownState extends State<_SosCountdown> {
   }
 }
 
-/// Starts the alarm (or shows the running one) for this member.
-Future<void> openSos(BuildContext context) async {
+/// Starts the alarm (or shows the running one) for this member. With
+/// [running] it only ever shows that one.
+Future<void> openSos(BuildContext context, {SosAlert? running}) async {
   final state = AppScope.read(context);
   final engine = state.engine;
   if (engine == null) return;
@@ -407,6 +408,9 @@ Future<void> openSos(BuildContext context) async {
     pin: state.certificatePin,
     device: AppState.deviceName,
   );
+  if (running != null && controller.alertId == null) {
+    controller.follow(running.id);
+  }
   final fresh =
       controller.step == SosStep.starting && controller.alertId == null;
   await Navigator.of(context, rootNavigator: true).push(
@@ -643,7 +647,7 @@ class SosBanner extends StatelessWidget {
                     ),
                     trailing: const Icon(AppIcons.caretRight),
                     onTap: () => a.memberId == engine.memberId
-                        ? openSos(context)
+                        ? openSos(context, running: a)
                         : Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute<void>(
                               builder: (_) => sosAlertPage(a.id),

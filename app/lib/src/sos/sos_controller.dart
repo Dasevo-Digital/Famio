@@ -84,6 +84,14 @@ class SosController extends ChangeNotifier {
     if (call && number != null) await SosDevice.call(number);
   }
 
+  /// Shows an alarm already running, raised earlier or on another device:
+  /// nothing goes off again.
+  void follow(String id) {
+    alertId = id;
+    step = SosStep.sent;
+    _notify();
+  }
+
   /// The text sent without internet.
   static String smsText(String name, SosFix? fix) {
     final where = fix == null

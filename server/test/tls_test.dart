@@ -167,6 +167,7 @@ void main() {
       final fingerprint = tls.fingerprint;
       expect(tls.covers('192.168.1.9'), isFalse);
       final response = await post('/api/me/apple-profile', {
+        'password': 'tulpe-regal-7',
         'url': 'http://192.168.1.9:8765/',
       }, token as String);
       expect(response.statusCode, 201);

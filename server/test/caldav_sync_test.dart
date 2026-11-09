@@ -103,6 +103,7 @@ void main() {
     secret =
         (await remote.call('POST', 'api/me/app-passwords', {
                   'name': 'Famio von Mama',
+                  'password': 'tulpe-regal-7',
                 })
                 as Map)['secret']
             as String;

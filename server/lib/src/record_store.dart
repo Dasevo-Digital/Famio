@@ -85,11 +85,11 @@ class RecordStore {
         return false;
       }
     }
-    if (r.collection == Collections.eventComments && !r.deleted) {
-      final event = _commentedEvent(r);
-      if (event != null && !event.deleted && !_canSee(event, userId)) {
-        return false;
-      }
+    // Comments and packing lists reach as far as their appointment does.
+    // Its tombstone keeps the audience.
+    if (!r.deleted) {
+      final event = _attachedEvent(r);
+      if (event != null && !_canSee(event, userId)) return false;
     }
     final role = _role(userId);
     if (role != MemberRole.adult &&
@@ -147,6 +147,16 @@ class RecordStore {
     final id = list?.data['eventId'];
     return id == null ? null : _get(Collections.events, '$id');
   }
+
+  /// The appointment [r] comments on or is packed for.
+  SyncRecord? _attachedEvent(SyncRecord r) => switch (r.collection) {
+    Collections.eventComments => _commentedEvent(r),
+    Collections.shoppingLists => _packedFor(r),
+    Collections.shoppingItems => _packedFor(
+      _get(Collections.shoppingLists, '${r.data['listId']}'),
+    ),
+    _ => null,
+  };
 
   /// The appointment, own or from a connected calendar, [comment] is about.
   SyncRecord? _commentedEvent(SyncRecord comment) {
@@ -216,19 +226,16 @@ class RecordStore {
   /// null for everyone.
   List<String>? _audience(SyncRecord r) {
     final health = Collections.isHealth(r.collection, r.data);
+    final within = r.deleted ? null : _attachedEvent(r)?.visibleTo;
     if (r.visibleTo case final ids?) {
-      return health
-          ? [
-              for (final id in ids)
-                if (_role(id) != MemberRole.service) id,
-            ]
-          : ids;
+      return [
+        for (final id in ids)
+          if ((!health || _role(id) != MemberRole.service) &&
+              (within == null || within.contains(id)))
+            id,
+      ];
     }
-    if (health ||
-        _confidentialEvent(r) != null ||
-        (r.collection == Collections.eventComments &&
-            !r.deleted &&
-            _commentedEvent(r)?.visibleTo != null)) {
+    if (health || _confidentialEvent(r) != null || within != null) {
       return [
         for (final m in memberIds())
           if (canAccess(r, m)) m,
@@ -277,6 +284,20 @@ class RecordStore {
           role != MemberRole.guest &&
           access != ServiceAccess.readOnly;
     }
+    // Messages and comments carry their author's name: nobody writes in
+    // somebody else's, and only adults take down what others wrote.
+    if (collection == Collections.chatMessages ||
+        collection == Collections.eventComments) {
+      final live = existing != null && !existing.deleted;
+      final author = live
+          ? existing.data['authorId'] ?? existing.updatedBy
+          : userId;
+      if (!incoming.deleted &&
+          (incoming.data['authorId'] ?? author) != author) {
+        return false;
+      }
+      if (author != userId && role != MemberRole.adult) return false;
+    }
     // "Bin unterwegs" and emergency facts: everyone writes only their own.
     if ((collection == Collections.trips ||
             collection == Collections.memberEmergency) &&
@@ -293,6 +314,9 @@ class RecordStore {
           ServiceAccess.everyday => _everyday(incoming, existing),
         };
       case MemberRole.guest:
+        if (collection == Collections.tasks) {
+          return _guestMayChangeTask(incoming, existing);
+        }
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
         if (Collections.adultOnly.contains(collection)) return false;
@@ -321,6 +345,36 @@ class RecordStore {
         }
         return incoming.deleted || ownPending(incoming);
     }
+  }
+
+  /// Guests tick off what they were given and add their own; what a task
+  /// is, who has it and who sees it is for the family.
+  static bool _guestMayChangeTask(SyncRecord incoming, SyncRecord? existing) {
+    if (existing == null || existing.deleted) return true;
+    if (incoming.deleted) return false;
+    List<Object?> fixed(Map<String, Object?> d) => [
+      d['title'] ?? '',
+      d['notes'] ?? '',
+      Task.assigneesIn(d),
+      d['repeat'],
+      d['repeatEvery'],
+      [
+        for (final p in d['photos'] as List? ?? const [])
+          if (p is Map) p['id'],
+      ],
+      [
+        for (final i in d['checklist'] as List? ?? const [])
+          if (i is Map) i['text'],
+      ],
+    ];
+    if (jsonEncode(fixed(incoming.data)) != jsonEncode(fixed(existing.data))) {
+      return false;
+    }
+    if (!incoming.data.containsKey(SyncRecord.visibilityKey)) return true;
+    final now = incoming.visibleTo;
+    final before = existing.visibleTo;
+    if (now == null || before == null) return now == before;
+    return now.length == before.length && now.toSet().containsAll(before);
   }
 
   /// Ids of all family members; needed when a record visible to everyone
@@ -854,8 +908,7 @@ class RecordStore {
       for (final r in page)
         if (r.deleted ||
             (role == MemberRole.adult &&
-                r.collection != Collections.assignmentResponses &&
-                r.collection != Collections.eventComments) ||
+                !_followsParent.contains(r.collection)) ||
             canAccess(r, userId))
           _shown(r, role),
     ];
@@ -876,9 +929,17 @@ class RecordStore {
     );
   }
 
+  /// Decided by what they belong to, for adults too.
+  static const _followsParent = {
+    Collections.assignmentResponses,
+    Collections.eventComments,
+    Collections.shoppingLists,
+    Collections.shoppingItems,
+  };
+
   /// Raised when members other than adults receive less than before: their
   /// next sync is a full one, which takes the rest off their devices.
-  static const _accessRules = 4;
+  static const _accessRules = 5;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 
@@ -983,9 +1044,13 @@ class RecordStore {
       return;
     }
     if (!previous.deleted &&
-        event.data['confidential'] == previous.data['confidential'] &&
-        jsonEncode(event.visibleTo) == jsonEncode(previous.visibleTo)) {
+        jsonEncode(_reach(event)) == jsonEncode(_reach(previous))) {
       return;
+    }
+    if (previous.data['confidential'] == true &&
+        event.data['confidential'] != true &&
+        !previous.deleted) {
+      _releasePackingList(event, previous);
     }
     final members = memberIds();
     void rewrite(String collection, String field, String id) {
@@ -1006,14 +1071,54 @@ class RecordStore {
     rewrite(Collections.shoppingLists, 'eventId', event.id);
   }
 
+  /// What decides who gets an appointment: besides the audience, for a
+  /// confidential one who takes part.
+  static List<Object?> _reach(SyncRecord e) => [
+    e.data['confidential'] == true,
+    e.visibleTo,
+    if (e.data['confidential'] == true) ...[
+      e.updatedBy,
+      e.data['memberIds'],
+      e.data['bringerId'],
+      e.data['pickerId'],
+    ],
+  ];
+
+  /// Who may see a confidential appointment, for its packing list.
+  List<String> _pinnedAudience(SyncRecord event) => [
+    for (final m in memberIds())
+      if (_role(m) != MemberRole.service && canAccess(event, m)) m,
+  ];
+
+  /// No longer confidential: a packing list whose audience was only that
+  /// is open again.
+  void _releasePackingList(SyncRecord event, SyncRecord previous) {
+    final pinned = _pinnedAudience(previous).toSet();
+    for (final row in _db.select(
+      'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
+      "AND json_extract(data, '\$.eventId') = ?",
+      [Collections.shoppingLists, event.id],
+    )) {
+      final list = _record(row);
+      final ids = list.visibleTo;
+      if (ids == null ||
+          ids.length != pinned.length ||
+          !pinned.containsAll(ids)) {
+        continue;
+      }
+      final open = list.copyWith(
+        data: {...list.data}..remove(SyncRecord.visibilityKey),
+      );
+      _put(open, previous: list);
+      _itemsFollowList(open, list);
+    }
+  }
+
   /// A deleted appointment no longer says that it was confidential: from
   /// now on its packing list says who may see it.
   void _pinPackingListAudience(SyncRecord event) {
     if (event.deleted || event.data['confidential'] != true) return;
-    final audience = [
-      for (final m in memberIds())
-        if (_role(m) != MemberRole.service && canAccess(event, m)) m,
-    ];
+    final audience = _pinnedAudience(event);
     for (final row in _db.select(
       'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
       "AND json_extract(data, '\$.eventId') = ?",

@@ -863,13 +863,17 @@ List<DueReminder> familyReminders(
           : tr.remindersMarkDoneFamio,
     );
   }
-  // Subscriptions: ahead of the next payments (two, the app may not be
-  // opened again before the first one).
+  // Subscriptions: ahead of the next payments (more than one, the app may
+  // not be opened again before the first).
   if (subscriptions) {
     for (final a in engine.subscriptions) {
       final days = a.remindDays;
       if (days == null || !engine.subscriptionIsMine(a)) continue;
-      for (final due in a.payments(from, 2)) {
+      // From the first one whose reminder is still ahead.
+      for (final due in a.payments(
+        DateTime(from.year, from.month, from.day + days),
+        3,
+      )) {
         add(
           'subscription:${a.id}:${dayKey(due)}',
           nineOn(due, -days),
@@ -966,7 +970,7 @@ List<DueReminder> familyReminders(
     add(
       'pack:${list.id}:${dayKey(start)}',
       DateTime(start.year, start.month, start.day - 1, 18),
-      tr.remindersTomorrowTrip(trip.title),
+      tr.remindersTomorrowTrip(trip.publicTitle),
       left == 1
           ? tr.reminders1ThingLeftPack
           : tr.remindersLeftThingsLeftPack(left),
