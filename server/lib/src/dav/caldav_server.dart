@@ -993,10 +993,13 @@ class CalDavServer {
 
   bool _isExposed(_Context c, _Collection collection, SyncRecord r) =>
       !r.deleted &&
-      RecordStore.canSee(r, c.member.id) &&
+      records.canAccess(r, c.member.id) &&
       switch (collection.kind) {
+        // A service account only ever gets a busy time, not even by asking.
         _Content.events =>
-          c.password.includeConfidential || r.data['confidential'] != true,
+          r.data['confidential'] != true ||
+              (c.password.includeConfidential &&
+                  c.member.role != MemberRole.service),
         _Content.tasks => true,
         _Content.shopping => _onList(r, collection),
       };

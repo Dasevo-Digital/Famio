@@ -80,7 +80,10 @@ extension RecordTrash on RecordStore {
         current.deleted &&
         current.rev == entry.deletedRev &&
         RecordStore._canSee(current, memberId) &&
-        canAccess(snapshot, memberId);
+        canAccess(snapshot, memberId) &&
+        // In the trash there is no busy time to reduce it to.
+        (_role(memberId) != MemberRole.service ||
+            _confidentialEvent(snapshot) == null);
   }
 
   /// Pagination advances across inaccessible rows without revealing them.
@@ -160,10 +163,43 @@ extension RecordTrash on RecordStore {
       );
 
   int expireTrash({DateTime? now}) {
-    _db.execute('DELETE FROM trash WHERE expires_at <= ?', [
-      (now ?? DateTime.now()).millisecondsSinceEpoch,
-    ]);
-    return _db.updatedRows;
+    final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    _db.execute('DELETE FROM trash WHERE expires_at <= ?', [at]);
+    final expired = _db.updatedRows;
+    _removeCommentsOfDeletedEvents(at);
+    return expired;
+  }
+
+  /// Comments wait with their appointment while it can still come back from
+  /// the trash, and go for good after that.
+  void _removeCommentsOfDeletedEvents(int at) {
+    final comments = [
+      for (final row in _db.select(
+        'SELECT c.* FROM records c '
+        'JOIN records e ON e.collection = ? AND e.deleted = 1 '
+        "AND e.id = json_extract(c.data, '\$.eventId') "
+        'WHERE c.collection = ? AND c.deleted = 0 AND NOT EXISTS '
+        '(SELECT 1 FROM trash t WHERE t.collection = ? AND t.record_id = e.id)',
+        [Collections.events, Collections.eventComments, Collections.events],
+      ))
+        RecordStore._record(row),
+    ];
+    if (comments.isEmpty) return;
+    _transaction(() {
+      for (final c in comments) {
+        _put(
+          SyncRecord(
+            collection: c.collection,
+            id: c.id,
+            data: {SyncRecord.visibilityKey: ?c.visibleTo},
+            deleted: true,
+            updatedAt: at,
+            updatedBy: RecordStore.serverMemberId,
+          ),
+          previous: c,
+        );
+      }
+    });
   }
 
   List<TrashEntry> trashForExport({String? memberId}) => [

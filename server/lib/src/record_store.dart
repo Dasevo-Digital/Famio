@@ -106,6 +106,8 @@ class RecordStore {
       return role != MemberRole.service &&
           (r.visibleTo?.contains(userId) ?? false);
     }
+    if (role == MemberRole.service && _isConfidentialConflict(r)) return false;
+    if (_isOrphanComment(r)) return false;
     final event = _confidentialEvent(r);
     if (event == null) return true;
     if (role == MemberRole.service) return r.collection == Collections.events;
@@ -128,6 +130,32 @@ class RecordStore {
       _ => null,
     };
     return event?.data['confidential'] == true ? event : null;
+  }
+
+  /// A saved losing version of an appointment that is, or was then,
+  /// confidential.
+  bool _isConfidentialConflict(SyncRecord r) {
+    if (r.collection != Collections.conflicts ||
+        r.data['collection'] != Collections.events) {
+      return false;
+    }
+    final lost = r.data['lost'];
+    return (lost is Map && lost['confidential'] == true) ||
+        _get(
+              Collections.events,
+              '${r.data['recordId']}',
+            )?.data['confidential'] ==
+            true;
+  }
+
+  /// A comment whose appointment is gone: a deleted one no longer says
+  /// whether it was confidential, so everyone but adults loses the comment.
+  bool _isOrphanComment(SyncRecord r) {
+    if (r.collection != Collections.eventComments || r.deleted) return false;
+    final id = '${r.data['eventId']}';
+    final event =
+        _get(Collections.events, id) ?? _get(Collections.externalEvents, id);
+    return event == null || event.deleted;
   }
 
   /// [r] as a member with [role] gets it: for a service account a
@@ -810,7 +838,7 @@ class RecordStore {
       rev: hasMore ? page.last.rev : currentRev,
       serverTime: now,
       changes: changes,
-      rejected: rejected,
+      rejected: [for (final r in rejected) _shown(r, role)],
       unsupported: unsupported,
       hasMore: hasMore,
       reset: reset,
@@ -824,7 +852,7 @@ class RecordStore {
 
   /// Raised when members other than adults receive less than before: their
   /// next sync is a full one, which takes the rest off their devices.
-  static const _accessRules = 2;
+  static const _accessRules = 3;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 
@@ -1284,13 +1312,16 @@ class RecordStore {
                 Collections.adultReadable.contains(collection)))) {
       return const [];
     }
+    final rows = _db.select(
+      'SELECT * FROM records WHERE collection = ? AND deleted = 0',
+      [collection],
+    );
+    if (visibleToMember == null) return [for (final row in rows) _record(row)];
+    final role = _role(visibleToMember);
     return [
-      for (final row in _db.select(
-        'SELECT * FROM records WHERE collection = ? AND deleted = 0',
-        [collection],
-      ))
-        if (visibleToMember == null || canAccess(_record(row), visibleToMember))
-          _record(row),
+      for (final row in rows)
+        if (_record(row) case final r when canAccess(r, visibleToMember))
+          _shown(r, role),
     ];
   }
 
