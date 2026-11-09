@@ -961,9 +961,7 @@ class CalDavServer {
     if (!slug.startsWith(CalDavServer.shoppingPrefix)) return null;
     final listId = slug.substring(CalDavServer.shoppingPrefix.length);
     final list = records.get(Collections.shoppingLists, listId);
-    if (list == null ||
-        list.deleted ||
-        !RecordStore.canSee(list, c.member.id)) {
+    if (list == null || list.deleted || !records.canAccess(list, c.member.id)) {
       return null;
     }
     return _Collection(_Content.shopping, slug, listId: listId);

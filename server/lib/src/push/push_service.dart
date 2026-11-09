@@ -596,9 +596,11 @@ class PushService {
     final eventRecord = records.get(Collections.events, c.eventId);
     if (eventRecord == null || eventRecord.deleted) return null;
     final event = CalendarEvent.fromRecord(eventRecord);
-    final to = event.memberIds.isEmpty
-        ? _everyone(r, except: author).where((m) => records.canAccess(r, m))
-        : event.memberIds.toSet().difference({author});
+    final to =
+        (event.memberIds.isEmpty
+                ? _everyone(r, except: author)
+                : event.memberIds.toSet().difference({author}))
+            .where((m) => records.canAccess(r, m));
     final brief = t('Neuer Kommentar zu einem Termin');
     return PushNotice(
       to: to.toSet(),

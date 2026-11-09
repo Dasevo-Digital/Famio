@@ -12,7 +12,7 @@ import 'package:test/test.dart';
 /// the trash, the export, conflict copies and comments.
 void main() {
   late FamioServerApp app;
-  late FamilyMember mama, kid, oma, ha;
+  late FamilyMember mama, papa, kid, oma, ha;
   late Map<String, String> tokens;
   var clock = DateTime.now().millisecondsSinceEpoch - 100000;
 
@@ -23,6 +23,7 @@ void main() {
       displayName: 'Mama',
       isAdmin: true,
     );
+    papa = app.accounts.create(username: 'papa', displayName: 'Papa');
     kid = app.accounts.create(
       username: 'kid',
       displayName: 'Kid',
@@ -39,7 +40,7 @@ void main() {
       role: MemberRole.service,
     );
     tokens = {
-      for (final m in [mama, kid, oma, ha])
+      for (final m in [mama, papa, kid, oma, ha])
         m.id: app.accounts.createSession(m.id),
     };
   });
@@ -309,6 +310,220 @@ void main() {
       ];
       expect(conflicts(await sync(mama)), hasLength(1));
       expect(conflicts(await sync(ha)), isEmpty);
+    });
+  });
+
+  /// An appointment of a calendar shared with some members only.
+  SyncRecord shared(String id, List<String> audience) => SyncRecord(
+    collection: Collections.events,
+    id: id,
+    data: {
+      'title': 'Nur fuer uns',
+      'start': '2026-12-01T10:00:00.000Z',
+      'end': '2026-12-01T11:00:00.000Z',
+      SyncRecord.visibilityKey: audience,
+    },
+    updatedAt: clock += 1000,
+  );
+
+  SyncRecord list(String id, String eventId) => SyncRecord(
+    collection: Collections.shoppingLists,
+    id: id,
+    data: ShoppingList(
+      id: id,
+      name: 'Koffer Psychotherapie',
+      packing: true,
+      eventId: eventId,
+    ).toData(),
+    updatedAt: clock += 1000,
+  );
+
+  SyncRecord item(String id, String listId) => SyncRecord(
+    collection: Collections.shoppingItems,
+    id: id,
+    data: ShoppingItem(id: id, listId: listId, name: 'Befunde').toData(),
+    updatedAt: clock += 1000,
+  );
+
+  Future<bool> has(FamilyMember who, String id) async =>
+      (await sync(who)).changes.any((r) => r.id == id && !r.deleted);
+
+  group('an appointment with an audience', () {
+    test('keeps it when an app edits it', () async {
+      await sync(
+        mama,
+        changes: [
+          shared('a1', [mama.id, papa.id]),
+        ],
+      );
+      await sync(
+        papa,
+        changes: [
+          SyncRecord(
+            collection: Collections.events,
+            id: 'a1',
+            data: const {
+              'title': 'Geaendert',
+              'start': '2026-12-01T10:00:00.000Z',
+              'end': '2026-12-01T11:00:00.000Z',
+            },
+            updatedAt: clock += 1000,
+          ),
+        ],
+      );
+      expect(
+        app.records.get(Collections.events, 'a1')!.visibleTo,
+        unorderedEquals([mama.id, papa.id]),
+      );
+      expect(
+        app.records.get(Collections.events, 'a1')!.data['title'],
+        'Geaendert',
+      );
+      for (final other in [kid, oma, ha]) {
+        expect(await has(other, 'a1'), isFalse, reason: other.username);
+      }
+    });
+
+    test('takes its comments and notices along', () async {
+      final notices = <List<String>>[];
+      app.push.onNotice = (ids, n, quiet) => notices.add(ids.toList());
+      await sync(
+        mama,
+        changes: [
+          shared('a2', [mama.id, papa.id]),
+        ],
+      );
+      await sync(mama, changes: [comment('c20', 'a2')]);
+      expect(await has(papa, 'c20'), isTrue);
+      for (final other in [kid, oma, ha]) {
+        expect(await has(other, 'c20'), isFalse, reason: other.username);
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(notices.expand((ids) => ids), isNot(contains(kid.id)));
+      expect(notices.expand((ids) => ids), contains(papa.id));
+    });
+
+    test('hides comments from an adult outside it', () async {
+      await sync(
+        mama,
+        changes: [
+          shared('a3', [mama.id]),
+        ],
+      );
+      await sync(mama, changes: [comment('c30', 'a3')]);
+      expect(await has(mama, 'c30'), isTrue);
+      expect(await has(papa, 'c30'), isFalse);
+    });
+
+    test('takes its comments off devices when it narrows', () async {
+      final everyone = SyncRecord(
+        collection: Collections.events,
+        id: 'a4',
+        data: const {
+          'title': 'Fuer alle',
+          'start': '2026-12-01T10:00:00.000Z',
+          'end': '2026-12-01T11:00:00.000Z',
+        },
+        updatedAt: clock += 1000,
+      );
+      await sync(mama, changes: [everyone]);
+      await sync(mama, changes: [comment('c40', 'a4')]);
+      final before = await sync(kid);
+      expect(before.changes.any((r) => r.id == 'c40' && !r.deleted), isTrue);
+      await sync(
+        mama,
+        changes: [
+          shared('a4', [mama.id]),
+        ],
+      );
+      final after = await sync(kid, since: before.rev);
+      expect(after.changes.any((r) => r.id == 'c40' && r.deleted), isTrue);
+    });
+  });
+
+  group('a packing list', () {
+    test('of a confidential appointment follows it', () async {
+      await sync(
+        mama,
+        changes: [appointment('p1'), list('l1', 'p1'), item('i1', 'l1')],
+      );
+      for (final other in [kid, oma, ha]) {
+        expect(await has(other, 'l1'), isFalse, reason: other.username);
+        expect(await has(other, 'i1'), isFalse, reason: other.username);
+      }
+      expect(await has(papa, 'l1'), isTrue);
+    });
+
+    test('reaches those who take part', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('p2', members: [kid.id]),
+          list('l2', 'p2'),
+          item('i2', 'l2'),
+        ],
+      );
+      expect(await has(kid, 'l2'), isTrue);
+      expect(await has(kid, 'i2'), isTrue);
+    });
+
+    test('of an ordinary appointment stays with everybody', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('p3', extra: const {'confidential': false}),
+          list('l3', 'p3'),
+          item('i3', 'l3'),
+        ],
+      );
+      expect(await has(kid, 'l3'), isTrue);
+      expect(await has(kid, 'i3'), isTrue);
+      await sync(mama, changes: [deleted('p3')]);
+      expect(await has(kid, 'l3'), isTrue);
+    });
+
+    test('leaves devices when its appointment becomes confidential', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('p4', extra: const {'confidential': false}),
+          list('l4', 'p4'),
+          item('i4', 'l4'),
+        ],
+      );
+      final before = await sync(kid);
+      expect(before.changes.any((r) => r.id == 'l4' && !r.deleted), isTrue);
+      await sync(mama, changes: [appointment('p4')]);
+      final after = await sync(kid, since: before.rev);
+      expect(after.changes.any((r) => r.id == 'l4' && r.deleted), isTrue);
+      expect(after.changes.any((r) => r.id == 'i4' && r.deleted), isTrue);
+    });
+
+    test('stays hidden after the appointment is deleted', () async {
+      await sync(
+        mama,
+        changes: [appointment('p5'), list('l5', 'p5'), item('i5', 'l5')],
+      );
+      await sync(mama, changes: [deleted('p5')]);
+      for (final other in [kid, oma, ha]) {
+        expect(await has(other, 'l5'), isFalse, reason: other.username);
+        expect(await has(other, 'i5'), isFalse, reason: other.username);
+      }
+      expect(await has(mama, 'l5'), isTrue);
+    });
+
+    test('does not show up in calendar apps either', () async {
+      await sync(
+        mama,
+        changes: [appointment('p6'), list('l6', 'p6'), item('i6', 'l6')],
+      );
+      final auth = await davAuth(kid, confidential: true);
+      final r = await davGet(
+        kid,
+        auth,
+        '${CalDavServer.shoppingPrefix}l6/i6.ics',
+      );
+      expect(r.statusCode, 404);
     });
   });
 

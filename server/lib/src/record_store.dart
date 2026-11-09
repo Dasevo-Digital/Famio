@@ -85,6 +85,12 @@ class RecordStore {
         return false;
       }
     }
+    if (r.collection == Collections.eventComments && !r.deleted) {
+      final event = _commentedEvent(r);
+      if (event != null && !event.deleted && !_canSee(event, userId)) {
+        return false;
+      }
+    }
     final role = _role(userId);
     if (role != MemberRole.adult &&
         (Collections.adultReadable.contains(r.collection) ||
@@ -119,7 +125,7 @@ class RecordStore {
         ].contains(userId);
   }
 
-  /// The confidential appointment [r] is, or comments on.
+  /// The confidential appointment [r] is, comments on or is packed for.
   SyncRecord? _confidentialEvent(SyncRecord r) {
     final event = switch (r.collection) {
       Collections.events => r,
@@ -127,9 +133,25 @@ class RecordStore {
         Collections.events,
         '${r.data['eventId']}',
       ),
+      Collections.shoppingLists => _packedFor(r),
+      Collections.shoppingItems => _packedFor(
+        _get(Collections.shoppingLists, '${r.data['listId']}'),
+      ),
       _ => null,
     };
     return event?.data['confidential'] == true ? event : null;
+  }
+
+  /// The appointment a packing list was made for.
+  SyncRecord? _packedFor(SyncRecord? list) {
+    final id = list?.data['eventId'];
+    return id == null ? null : _get(Collections.events, '$id');
+  }
+
+  /// The appointment, own or from a connected calendar, [comment] is about.
+  SyncRecord? _commentedEvent(SyncRecord comment) {
+    final id = '${comment.data['eventId']}';
+    return _get(Collections.events, id) ?? _get(Collections.externalEvents, id);
   }
 
   /// A saved losing version of an appointment that is, or was then,
@@ -152,9 +174,7 @@ class RecordStore {
   /// whether it was confidential, so everyone but adults loses the comment.
   bool _isOrphanComment(SyncRecord r) {
     if (r.collection != Collections.eventComments || r.deleted) return false;
-    final id = '${r.data['eventId']}';
-    final event =
-        _get(Collections.events, id) ?? _get(Collections.externalEvents, id);
+    final event = _commentedEvent(r);
     return event == null || event.deleted;
   }
 
@@ -204,7 +224,11 @@ class RecordStore {
             ]
           : ids;
     }
-    if (health || _confidentialEvent(r) != null) {
+    if (health ||
+        _confidentialEvent(r) != null ||
+        (r.collection == Collections.eventComments &&
+            !r.deleted &&
+            _commentedEvent(r)?.visibleTo != null)) {
       return [
         for (final m in memberIds())
           if (canAccess(r, m)) m,
@@ -658,7 +682,8 @@ class RecordStore {
           rejected.add(existing);
           continue;
         }
-        if (change.collection == Collections.shoppingLists &&
+        if ((change.collection == Collections.shoppingLists ||
+                change.collection == Collections.events) &&
             !incoming.deleted) {
           incoming = _keepAudience(incoming, existing);
         }
@@ -829,7 +854,8 @@ class RecordStore {
       for (final r in page)
         if (r.deleted ||
             (role == MemberRole.adult &&
-                r.collection != Collections.assignmentResponses) ||
+                r.collection != Collections.assignmentResponses &&
+                r.collection != Collections.eventComments) ||
             canAccess(r, userId))
           _shown(r, role),
     ];
@@ -852,7 +878,7 @@ class RecordStore {
 
   /// Raised when members other than adults receive less than before: their
   /// next sync is a full one, which takes the rest off their devices.
-  static const _accessRules = 3;
+  static const _accessRules = 4;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 
@@ -942,25 +968,64 @@ class RecordStore {
     );
   }
 
-  /// Comments go with their appointment: when it becomes confidential (or
-  /// no longer is), they reach as many people as it does, and when it comes
-  /// back from the trash devices that dropped them get them again.
-  void _commentsFollow(SyncRecord event, SyncRecord? previous) {
-    if (event.collection != Collections.events ||
-        event.deleted ||
-        previous == null ||
-        (!previous.deleted &&
-            event.data['confidential'] == previous.data['confidential'])) {
+  /// What hangs on an appointment goes with it: when it becomes confidential
+  /// (or no longer is) or its audience changes, its comments and packing list
+  /// reach as many people as it does, and when it comes back from the trash
+  /// devices that dropped them get them again.
+  void _attachedFollow(SyncRecord event, SyncRecord? previous) {
+    if (event.collection != Collections.events &&
+        event.collection != Collections.externalEvents) {
+      return;
+    }
+    if (previous == null) return;
+    if (event.deleted) {
+      _pinPackingListAudience(previous);
+      return;
+    }
+    if (!previous.deleted &&
+        event.data['confidential'] == previous.data['confidential'] &&
+        jsonEncode(event.visibleTo) == jsonEncode(previous.visibleTo)) {
       return;
     }
     final members = memberIds();
+    void rewrite(String collection, String field, String id) {
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
+        "AND json_extract(data, '\$.$field') = ?",
+        [collection, id],
+      )) {
+        final r = _record(row);
+        _put(r, previous: r, before: members);
+        if (r.collection == Collections.shoppingLists) {
+          rewrite(Collections.shoppingItems, 'listId', r.id);
+        }
+      }
+    }
+
+    rewrite(Collections.eventComments, 'eventId', event.id);
+    rewrite(Collections.shoppingLists, 'eventId', event.id);
+  }
+
+  /// A deleted appointment no longer says that it was confidential: from
+  /// now on its packing list says who may see it.
+  void _pinPackingListAudience(SyncRecord event) {
+    if (event.deleted || event.data['confidential'] != true) return;
+    final audience = [
+      for (final m in memberIds())
+        if (_role(m) != MemberRole.service && canAccess(event, m)) m,
+    ];
     for (final row in _db.select(
       'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
       "AND json_extract(data, '\$.eventId') = ?",
-      [Collections.eventComments, event.id],
+      [Collections.shoppingLists, event.id],
     )) {
-      final comment = _record(row);
-      _put(comment, previous: comment, before: members);
+      final list = _record(row);
+      if (list.visibleTo != null) continue;
+      final pinned = list.copyWith(
+        data: {...list.data, SyncRecord.visibilityKey: audience},
+      );
+      _put(pinned, previous: list);
+      _itemsFollowList(pinned, list);
     }
   }
 
@@ -1059,7 +1124,7 @@ class RecordStore {
 
     if (trash) _rememberDeletion(r, deletionSnapshot ?? previous, rev);
     _assignmentsFollow(r);
-    _commentsFollow(r, previous);
+    _attachedFollow(r, previous);
 
     final audience = _audience(r);
     if (audience == null) {
@@ -1086,8 +1151,9 @@ class RecordStore {
     }
   }
 
-  /// Apps before 2.0.15 know nothing of who sees a shopping list and leave
-  /// the key out; their changes keep the stored audience.
+  /// Apps before 2.0.15 know nothing of who sees a shopping list, and no app
+  /// of who sees an appointment from a shared calendar: they leave the key
+  /// out, and their changes keep the stored audience.
   static SyncRecord _keepAudience(SyncRecord incoming, SyncRecord? existing) {
     if (incoming.data.containsKey(SyncRecord.visibilityKey) ||
         existing == null ||
