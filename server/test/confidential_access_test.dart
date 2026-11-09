@@ -68,12 +68,13 @@ void main() {
   Future<SyncResponse> sync(
     FamilyMember who, {
     List<SyncRecord> changes = const [],
+    int since = 0,
   }) async {
     final r = await call(
       who,
       'POST',
       'api/sync',
-      body: SyncRequest(since: 0, changes: changes).toJson(),
+      body: SyncRequest(since: since, changes: changes).toJson(),
     );
     expect(r.statusCode, 200);
     return SyncResponse.fromJson(
@@ -344,6 +345,35 @@ void main() {
       final restored = await call(mama, 'POST', 'api/trash/$id/restore');
       expect(restored.statusCode, 200);
       expect(await hasComment(kid, 'c6'), isTrue);
+    });
+
+    test('reach devices that dropped them when it comes back', () async {
+      await sync(
+        mama,
+        changes: [
+          appointment('e10', members: [kid.id]),
+        ],
+      );
+      await sync(mama, changes: [comment('c10', 'e10')]);
+      await sync(mama, changes: [deleted('e10')]);
+      // A full sync while it is in the trash takes the comment off the device.
+      final during = await sync(kid);
+      expect(during.changes.any((r) => r.id == 'c10' && !r.deleted), isFalse);
+
+      final trash =
+          jsonDecode(
+                await (await call(mama, 'GET', 'api/trash')).readAsString(),
+              )
+              as Map;
+      final id = (trash['items'] as List).single['id'];
+      expect(
+        (await call(mama, 'POST', 'api/trash/$id/restore')).statusCode,
+        200,
+      );
+
+      final after = await sync(kid, since: during.rev);
+      expect(after.changes.any((r) => r.id == 'e10' && !r.deleted), isTrue);
+      expect(after.changes.any((r) => r.id == 'c10' && !r.deleted), isTrue);
     });
 
     test('go for good once the trash has let go of the appointment', () async {

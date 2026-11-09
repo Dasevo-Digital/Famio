@@ -943,13 +943,14 @@ class RecordStore {
   }
 
   /// Comments go with their appointment: when it becomes confidential (or
-  /// no longer is), they reach as many people as it does.
+  /// no longer is), they reach as many people as it does, and when it comes
+  /// back from the trash devices that dropped them get them again.
   void _commentsFollow(SyncRecord event, SyncRecord? previous) {
     if (event.collection != Collections.events ||
         event.deleted ||
         previous == null ||
-        previous.deleted ||
-        event.data['confidential'] == previous.data['confidential']) {
+        (!previous.deleted &&
+            event.data['confidential'] == previous.data['confidential'])) {
       return;
     }
     final members = memberIds();
