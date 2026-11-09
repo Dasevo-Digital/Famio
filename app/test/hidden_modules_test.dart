@@ -23,9 +23,10 @@ void main() {
 
   test('every area that can be hidden is a section of the app', () {
     for (final name in ServerSettings.optionalModules) {
-      // The list connections are a feature and tiles a part of the start
-      // page, not sections.
+      // The list connections and subscriptions are features and tiles a
+      // part of the start page, not sections.
       if (name == ServerSettings.listSyncModule ||
+          name == ServerSettings.subscriptionsModule ||
           ServerSettings.tileModules.contains(name)) {
         continue;
       }

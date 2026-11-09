@@ -5,6 +5,7 @@ import 'sync_record.dart';
 import 'models/absence.dart';
 import 'models/assignment.dart';
 import 'models/budget.dart';
+import 'models/subscription.dart';
 import 'models/calendar_sync.dart';
 import 'models/chat.dart';
 import 'models/child_log.dart';
@@ -90,6 +91,7 @@ void validateRecordData(SyncRecord record) {
       Collections.timetables => Timetable.fromRecord(record).toData(),
       Collections.budgetEntries => BudgetEntry.fromRecord(record).toData(),
       Collections.budgetSettings => BudgetSettings.fromRecord(record).toData(),
+      Collections.subscriptions => Subscription.fromRecord(record).toData(),
       Collections.places => Place.fromRecord(record).toData(),
       Collections.memberLocations => MemberLocation.fromRecord(record).toData(),
       Collections.locationAlerts => LocationAlert.fromRecord(record).toData(),

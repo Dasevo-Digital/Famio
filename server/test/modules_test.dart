@@ -62,6 +62,14 @@ void main() {
       'tile.weather',
       'tile.budget',
     ]);
+    // Subscriptions are a part of the budget that can go by itself.
+    final (abos, _) = await call('PATCH', 'api/admin/settings', {
+      'hiddenModules': ['subscriptions'],
+    });
+    expect(abos, 200);
+    expect((await call('GET', 'api/config')).$2['hiddenModules'], [
+      'subscriptions',
+    ]);
     // Start and settings cannot be switched off; unknown names neither.
     for (final bad in [
       ['home'],

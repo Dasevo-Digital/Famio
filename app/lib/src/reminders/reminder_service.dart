@@ -107,6 +107,9 @@ class ReminderService {
   /// Minutes after midnight for the morning overview, null when off.
   int? Function()? dayPreview;
 
+  /// Whether the family keeps track of subscriptions.
+  bool Function()? subscriptions;
+
   /// The cached forecast at home for the morning overview, if any.
   WeatherForecast? Function()? dayWeather;
 
@@ -245,7 +248,12 @@ class ReminderService {
         to: now.add(_window),
         limit: _maxScheduled,
       ),
-      ...familyReminders(engine, from: now, to: now.add(_window)),
+      ...familyReminders(
+        engine,
+        from: now,
+        to: now.add(_window),
+        subscriptions: subscriptions?.call() ?? true,
+      ),
       ...departureReminders(
         engine,
         departure?.call(),
@@ -362,6 +370,7 @@ class ReminderService {
     Collections.externalEvents,
     Collections.wasteSettings,
     Collections.deadlines,
+    Collections.subscriptions,
     Collections.loans,
     Collections.timetables,
     Collections.shoppingLists,
@@ -625,6 +634,7 @@ List<DueReminder> familyReminders(
   SyncEngine engine, {
   required DateTime from,
   required DateTime to,
+  bool subscriptions = true,
 }) {
   // 9 o'clock [days] calendar days after [d] (24 h steps would land on
   // the wrong day across a clock change).
@@ -852,6 +862,25 @@ List<DueReminder> familyReminders(
           ? tr.remindersContractTodayBody
           : tr.remindersMarkDoneFamio,
     );
+  }
+  // Subscriptions: ahead of the next payments (two, the app may not be
+  // opened again before the first one).
+  if (subscriptions) {
+    for (final a in engine.subscriptions) {
+      final days = a.remindDays;
+      if (days == null || !engine.subscriptionIsMine(a)) continue;
+      for (final due in a.payments(from, 2)) {
+        add(
+          'subscription:${a.id}:${dayKey(due)}',
+          nineOn(due, -days),
+          tr.remindersSubscription(a.name, days),
+          tr.remindersSubscriptionBody(
+            formatEuro(a.cents),
+            DateFormat.yMd(appLanguage).format(due),
+          ),
+        );
+      }
+    }
   }
   // Loans: on the day they should be back; what we borrowed also two days
   // before, to have it ready.

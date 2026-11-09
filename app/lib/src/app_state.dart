@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/family_data.dart';
+import 'design/palette.dart';
 import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
 import 'push/own_push.dart';
@@ -954,6 +955,9 @@ class AppState extends ChangeNotifier {
     _reminders?.weekPreview = () => weekPreview;
     _reminders?.departure = () => departureMode;
     _reminders?.dayPreview = () => dayPreview;
+    _reminders?.subscriptions = () =>
+        !hiddenModules.contains(ServerSettings.subscriptionsModule) &&
+        !hiddenModules.contains(FamioSection.budget.name);
     _reminders?.profileExpires = () => profileExpires.value;
     _reminders?.dayWeather = () {
       final weather = WeatherService(_prefs);

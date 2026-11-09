@@ -441,6 +441,68 @@ void main() {
     });
   });
 
+  group('subscriptions', () {
+    SyncRecord abo(String id, {List<String>? audience}) => SyncRecord(
+      collection: Collections.subscriptions,
+      id: id,
+      data: {
+        ...Subscription(
+          id: id,
+          name: 'Film',
+          cents: 999,
+          start: DateTime(2026, 1, 15),
+        ).toData(),
+        SyncRecord.visibilityKey: ?audience,
+      },
+      updatedAt: clock += 1000,
+    );
+
+    test('reach adults only', () async {
+      await sync(mama, changes: [abo('s1')]);
+      expect(await has(papa, 's1'), isTrue);
+      for (final other in [kid, oma, ha]) {
+        expect(await has(other, 's1'), isFalse, reason: other.username);
+      }
+    });
+
+    test('follow the audience of the budget', () async {
+      await sync(
+        mama,
+        changes: [
+          abo('s2', audience: [mama.id]),
+        ],
+      );
+      expect(await has(mama, 's2'), isTrue);
+      expect(await has(papa, 's2'), isFalse);
+    });
+
+    test('cannot be written by a child', () async {
+      final answer = await sync(kid, changes: [abo('s3')]);
+      expect(app.records.get(Collections.subscriptions, 's3'), isNull);
+      expect(answer.rejected.where((r) => r.id == 's3'), hasLength(1));
+    });
+
+    test('are refused when they are damaged', () async {
+      final r = await call(
+        mama,
+        'POST',
+        'api/sync',
+        body: SyncRequest(
+          since: 0,
+          changes: [
+            SyncRecord(
+              collection: Collections.subscriptions,
+              id: 's4',
+              data: const {'name': 42},
+              updatedAt: clock += 1000,
+            ),
+          ],
+        ).toJson(),
+      );
+      expect(r.statusCode, 400);
+    });
+  });
+
   group('a packing list', () {
     test('of a confidential appointment follows it', () async {
       await sync(

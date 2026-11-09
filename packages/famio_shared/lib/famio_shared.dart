@@ -24,6 +24,7 @@ export 'src/models/absence.dart';
 export 'src/models/assignment.dart';
 export 'src/models/trash.dart';
 export 'src/models/budget.dart';
+export 'src/models/subscription.dart';
 export 'src/models/calendar_sync.dart';
 export 'src/models/chat.dart';
 export 'src/models/child_log.dart';

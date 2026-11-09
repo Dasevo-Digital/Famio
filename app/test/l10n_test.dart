@@ -17,10 +17,11 @@ Map<String, String> _texts(String file) => {
     if (!(e.key as String).startsWith('@')) e.key as String: e.value as String,
 };
 
-/// `{name}` placeholders, also the variable of a plural.
-Set<String> _placeholders(String text) =>
-    {for (final m in RegExp(r'\{(\w+)(?=[},])').allMatches(text)) m[1]!}
-      ..remove('other');
+/// `{name}` placeholders, also the variable of a plural, but not a plural
+/// case of one word (`=1{monatlich}`).
+Set<String> _placeholders(String text) => {
+  for (final m in RegExp(r'(?<![=\w])\{(\w+)(?=[},])').allMatches(text)) m[1]!,
+}..remove('other');
 
 void main() {
   setUpAll(initializeDateFormatting);

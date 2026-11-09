@@ -71,6 +71,9 @@ abstract final class Collections {
   static const budgetEntries = 'budget_entries';
   static const budgetSettings = 'budget_settings';
 
+  /// What is paid again and again; follows the budget's audience.
+  static const subscriptions = 'subscriptions';
+
   /// Places with a radius (home, school …); edited by members.
   static const places = 'places';
 
@@ -179,6 +182,7 @@ abstract final class Collections {
     pregnancies,
     timetables,
     budgetEntries,
+    subscriptions,
     documents,
     inbox,
     medications,
@@ -245,6 +249,7 @@ abstract final class Collections {
     timetables,
     budgetEntries,
     budgetSettings,
+    subscriptions,
     tasks,
     shoppingLists,
     shoppingItems,
@@ -322,11 +327,12 @@ abstract final class Collections {
     sosSettings,
     wasteSettings,
     deadlines,
+    subscriptions,
   };
 
   /// Health data of adults: children, guests and service accounts (the
   /// wall display, Home Assistant) never receive it.
-  static const adultReadable = {memberEmergency};
+  static const adultReadable = {memberEmergency, subscriptions};
 
   /// Health data, whoever it is about. A child's record holds allergies,
   /// illnesses and the pediatrician ([EmergencyInfo]).

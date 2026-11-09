@@ -12,12 +12,14 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import 'bank_import_screen.dart';
+import 'subscriptions_screen.dart';
 import '../data/budget_month.dart';
 import '../l10n.dart';
 
 const _collections = {
   Collections.budgetEntries,
   Collections.budgetSettings,
+  Collections.subscriptions,
   'members',
 };
 
@@ -70,8 +72,9 @@ class _BudgetScreenState extends State<BudgetScreen> {
           final all = engine.budgetEntries;
           final settings = engine.budgetSettings;
           final m = BudgetMonth(all, _month);
+          final subscriptions = subscriptionsShown(context);
           if (all.isEmpty) {
-            return EmptyHint(
+            final hint = EmptyHint(
               icon: AppIcons.wallet,
               color: color,
               text: tr.budgetKeepEyeIncomeExpenses,
@@ -80,6 +83,14 @@ class _BudgetScreenState extends State<BudgetScreen> {
                 color: color,
                 onPressed: () => showBudgetEntryEditor(context),
               ),
+            );
+            if (!subscriptions) return hint;
+            return Column(
+              children: [
+                const SizedBox(height: 4),
+                const SubscriptionsCard(),
+                Expanded(child: hint),
+              ],
             );
           }
           final categories =
@@ -148,6 +159,10 @@ class _BudgetScreenState extends State<BudgetScreen> {
                   ],
                 ),
               ),
+              if (subscriptions) ...[
+                const SizedBox(height: 12),
+                const SubscriptionsCard(),
+              ],
               if (categories.isNotEmpty) ...[
                 ListHeading(tr.budgetExpensesCategory),
                 SoftCard(

@@ -6980,5 +6980,177 @@
   "appLockReason": "Famio entsperren",
   "appLockLocked": "Famio ist gesperrt",
   "appLockUnlock": "Entsperren",
-  "appLockNotChanged": "Das hat nicht geklappt. Hat dieses Gerät eine Bildschirmsperre?"
+  "appLockNotChanged": "Das hat nicht geklappt. Hat dieses Gerät eine Bildschirmsperre?",
+  "subscriptionsTitle": "Abos",
+  "subscriptionsSubtitle": "Wiederkehrende Zahlungen im Blick",
+  "subscriptionsEmpty": "Streaming, Cloud, Zeitung: Hier siehst du, was regelmäßig abgebucht wird und was das im Jahr ausmacht.",
+  "subscriptionsFirst": "Erstes Abo eintragen",
+  "subscriptionsAdd": "Abo eintragen",
+  "subscriptionsNameHint": "z. B. Netflix",
+  "subscriptionsEnterName": "Bitte einen Namen angeben",
+  "subscriptionsEnterPeriod": "Bitte einen Zeitraum von 1 bis 999 angeben",
+  "subscriptionsEvery": "Alle",
+  "subscriptionsFirstPayment": "Erste Zahlung: {date}",
+  "@subscriptionsFirstPayment": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "subscriptionsOwnCategory": "Eigene Kategorie",
+  "subscriptionsPayment": "Zahlungsart (optional)",
+  "subscriptionsPaymentHint": "z. B. Lastschrift oder PayPal",
+  "subscriptionsLink": "Link zum Verwalten oder Kündigen (optional)",
+  "subscriptionsOpenLink": "Link öffnen",
+  "subscriptionsLinkInvalid": "Dieser Link lässt sich nicht öffnen",
+  "subscriptionsRemind": "Erinnerung vor der Abbuchung",
+  "subscriptionsRemindOff": "Keine",
+  "subscriptionsMarkCancelled": "Als gekündigt markieren",
+  "subscriptionsEndsOn": "Gekündigt zum {date}",
+  "@subscriptionsEndsOn": {
+    "placeholders": {
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "subscriptionsNotCancelled": "Doch nicht gekündigt",
+  "subscriptionsRunning": "Laufende Abos",
+  "subscriptionsEnded": "Beendet",
+  "subscriptionsPerMonth": "Pro Monat",
+  "subscriptionsPerYear": "Pro Jahr",
+  "subscriptionsNextDays": "Nächste 30 Tage",
+  "subscriptionsCount": "Laufend",
+  "subscriptionsSaved": "Monatlich gespart",
+  "subscriptionsByPerson": "Wer bezahlt",
+  "subscriptionsTogether": "Gemeinsam",
+  "subscriptionsSortNext": "Fällig",
+  "subscriptionsSortPrice": "Preis",
+  "subscriptionsCatStreaming": "Streaming",
+  "subscriptionsCatMusic": "Musik",
+  "subscriptionsCatSoftware": "Software",
+  "subscriptionsCatCloud": "Cloud",
+  "subscriptionsCatGames": "Spiele",
+  "subscriptionsCatNews": "Zeitung",
+  "subscriptionsCatSport": "Sport",
+  "subscriptionsCatMobile": "Mobilfunk",
+  "subscriptionsCatInsurance": "Versicherung",
+  "subscriptionsCatOther": "Sonstiges",
+  "adminSubscriptionsHint": "Wiederkehrende Zahlungen unter Finanzen",
+  "remindersSubscriptionBody": "{amount} am {date}",
+  "@remindersSubscriptionBody": {
+    "placeholders": {
+      "amount": {
+        "type": "Object?"
+      },
+      "date": {
+        "type": "Object?"
+      }
+    }
+  },
+  "subscriptionsQuarterly": "vierteljährlich",
+  "subscriptionsHalfYearly": "halbjährlich",
+  "subscriptionsEveryDays": "{count, plural, =1{täglich} other{alle {count} Tage}}",
+  "@subscriptionsEveryDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsEveryWeeks": "{count, plural, =1{wöchentlich} other{alle {count} Wochen}}",
+  "@subscriptionsEveryWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsEveryMonths": "{count, plural, =1{monatlich} other{alle {count} Monate}}",
+  "@subscriptionsEveryMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsEveryYears": "{count, plural, =1{jährlich} other{alle {count} Jahre}}",
+  "@subscriptionsEveryYears": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsUnitDays": "{count, plural, =1{Tag} other{Tage}}",
+  "@subscriptionsUnitDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsUnitWeeks": "{count, plural, =1{Woche} other{Wochen}}",
+  "@subscriptionsUnitWeeks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsUnitMonths": "{count, plural, =1{Monat} other{Monate}}",
+  "@subscriptionsUnitMonths": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsUnitYears": "{count, plural, =1{Jahr} other{Jahre}}",
+  "@subscriptionsUnitYears": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsInDays": "{count, plural, =1{in 1 Tag} other{in {count} Tagen}}",
+  "@subscriptionsInDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsRemindDays": "{count, plural, =1{1 Tag vorher} other{{count} Tage vorher}}",
+  "@subscriptionsRemindDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "subscriptionsCardSummary": "{count, plural, =1{1 Abo} other{{count} Abos}} · {amount} im Monat",
+  "@subscriptionsCardSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "amount": {
+        "type": "Object?"
+      }
+    }
+  },
+  "remindersSubscription": "{name}: Abbuchung {count, plural, =1{morgen} other{in {count} Tagen}}",
+  "@remindersSubscription": {
+    "placeholders": {
+      "name": {
+        "type": "Object?"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

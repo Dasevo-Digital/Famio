@@ -585,6 +585,27 @@ void _seed(SyncEngine e) {
       ),
     );
   }
+  for (final (i, (name, cents, every, unit, cat, who)) in [
+    ('Filmabend', 1399, 1, SubscriptionUnit.months, 'Streaming', 'mama'),
+    ('Musik Familie', 1699, 1, SubscriptionUnit.months, 'Musik', 'papa'),
+    ('Fotospeicher', 2999, 1, SubscriptionUnit.years, 'Cloud', null),
+    ('Tageszeitung', 8700, 3, SubscriptionUnit.months, 'Zeitung', 'papa'),
+    ('Turnverein', 6000, 6, SubscriptionUnit.months, 'Sport', null),
+  ].indexed) {
+    e.saveSubscription(
+      Subscription(
+        id: 'abo$i',
+        name: name,
+        cents: cents,
+        start: DateTime(today.year - 1, today.month, today.day + 3 + 4 * i),
+        every: every,
+        unit: unit,
+        category: cat,
+        memberId: who,
+        payment: i.isEven ? 'Lastschrift' : 'PayPal',
+      ),
+    );
+  }
   e.saveBudgetSettings(
     const BudgetSettings(
       memberIds: ['mama', 'papa'],
@@ -1344,6 +1365,20 @@ void main() {
     );
     await tester.pumpAndSettle();
     await _shot(tester, key, 'phone_9d_getraenke_monat');
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('subscriptions phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byIcon(AppIcons.dotsThreeCircle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finanzen').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Abos');
+    await _shot(tester, key, 'phone_23a_abos');
+    await tester.tap(find.byTooltip('Abo eintragen'));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_23b_abo_bearbeiten');
     await tester.pump(const Duration(seconds: 2));
   });
 

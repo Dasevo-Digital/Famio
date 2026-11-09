@@ -222,6 +222,8 @@ class ServerSettings {
     'contacts',
     // Not a section: connections to Bring! and Microsoft To Do.
     listSyncModule,
+    // Part of the budget section.
+    subscriptionsModule,
     ...tileModules,
   ];
 
@@ -250,6 +252,9 @@ class ServerSettings {
     'tile.wishes',
     'tile.loans',
   ];
+
+  /// In [hiddenModules]: the family keeps no track of subscriptions.
+  static const subscriptionsModule = 'subscriptions';
 
   /// In [hiddenModules]: the family does not connect lists in other apps.
   static const listSyncModule = 'listSync';

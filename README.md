@@ -69,7 +69,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
 | Essen: Rezepte (Import von Webseiten samt Foto, auf Android auch per „Teilen an Famio“, überall aus dem Familien-Eingang), Kochmodus (Schritt für Schritt, Bildschirm bleibt an, Timer aus den Schritten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
-| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT); Gehalt ab dem 15. zählt für den Folgemonat, je Buchung änderbar | ✅ |
+| Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT); Gehalt ab dem 15. zählt für den Folgemonat, je Buchung änderbar; optional Abos im Blick (Kosten pro Monat und Jahr, nächste Zahlungen, Erinnerung vor der Abbuchung) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
 | PhotoVault: „Heute vor einem Jahr“ und Wandanzeige mit Fotos aus PhotoVault, Chat-Fotos als Beiträge an einen Link, Geburtstage aus dem Stammbaum (nur was noch nirgends steht) | ✅ |

@@ -619,7 +619,24 @@ extension FamilyData on SyncEngine {
         SyncRecord.visibilityKey: audience,
       });
     }
+    for (final a in subscriptions) {
+      put(Collections.subscriptions, a.id, {
+        ...a.toData(),
+        SyncRecord.visibilityKey: audience,
+      });
+    }
   }
+
+  List<Subscription> get subscriptions =>
+      records(Collections.subscriptions).map(Subscription.fromRecord).toList();
+
+  void saveSubscription(Subscription a) => put(
+    Collections.subscriptions,
+    a.id,
+    {...a.toData(), SyncRecord.visibilityKey: _budgetAudience},
+  );
+
+  void deleteSubscription(String id) => delete(Collections.subscriptions, id);
 
   List<BudgetEntry> get budgetEntries =>
       records(Collections.budgetEntries).map(BudgetEntry.fromRecord).toList()

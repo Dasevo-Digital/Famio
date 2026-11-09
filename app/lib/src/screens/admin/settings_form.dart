@@ -167,6 +167,18 @@ class _SettingsFormState extends State<_SettingsForm> {
                         : hidden.add(ServerSettings.listSyncModule),
                   ),
                 ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  secondary: const Icon(AppIcons.repeat),
+                  title: Text(tr.subscriptionsTitle),
+                  subtitle: Text(tr.adminSubscriptionsHint),
+                  value: !hidden.contains(ServerSettings.subscriptionsModule),
+                  onChanged: (on) => setDialog(
+                    () => on
+                        ? hidden.remove(ServerSettings.subscriptionsModule)
+                        : hidden.add(ServerSettings.subscriptionsModule),
+                  ),
+                ),
                 const Divider(),
                 Text(
                   tr.adminHomeTiles,
@@ -657,6 +669,10 @@ class _SettingsFormState extends State<_SettingsForm> {
                             ServerSettings.listSyncModule,
                           ))
                             tr.adminListConnections,
+                          if (o.settings.hiddenModules!.contains(
+                            ServerSettings.subscriptionsModule,
+                          ))
+                            tr.subscriptionsTitle,
                           for (final t in HomeTile.values)
                             if (o.settings.hiddenModules!.contains(t.module))
                               t.title(context),
