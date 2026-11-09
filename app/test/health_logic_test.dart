@@ -183,6 +183,70 @@ void main() {
     expect(running.outdoors, const Duration(minutes: 45));
   });
 
+  test('a period adds up drinks by kind and counts the days with one', () {
+    final logs = [
+      log(
+        LogKind.drink,
+        DateTime(2026, 11, 2, 9),
+        ml: 100,
+        drink: DrinkKind.tea,
+      ),
+      log(
+        LogKind.drink,
+        DateTime(2026, 11, 2, 15),
+        ml: 300,
+        drink: DrinkKind.water,
+      ),
+      log(
+        LogKind.drink,
+        DateTime(2026, 11, 4, 9),
+        ml: 200,
+        drink: DrinkKind.water,
+      ),
+      // Neither amount nor kind: still a drink, under "other".
+      log(LogKind.drink, DateTime(2026, 11, 4, 12)),
+      // Milk from the bottle is not a drink here.
+      log(LogKind.bottle, DateTime(2026, 11, 3, 8), ml: 120),
+    ];
+    // Thursday: four days of the week count, two of them with a drink.
+    final s = PeriodSummary(
+      logs,
+      periodDays(LogPeriod.week, DateTime(2026, 11, 5)),
+      DateTime(2026, 11, 5, 12),
+    );
+    expect(s.days, 4);
+    expect(s.drinks, 4);
+    expect(s.drinkMl, 600);
+    expect(s.drinkDays, 2);
+    expect(s.perDay(s.drinkMl), 150);
+    expect(s.drinksRanked.map((e) => e.key), [
+      DrinkKind.water,
+      DrinkKind.tea,
+      DrinkKind.other,
+    ]);
+    expect(s.drinksByKind[DrinkKind.water]!.ml, 500);
+    expect(s.drinksByKind[DrinkKind.water]!.count, 2);
+    expect(s.drinksByKind[DrinkKind.tea]!.count, 1);
+    expect(s.drinksByKind[DrinkKind.other]!.ml, 0);
+    expect(s.drinksByKind[DrinkKind.other]!.count, 1);
+    // A day with only a drink without an amount is not empty.
+    expect(
+      summarize([
+        log(LogKind.drink, DateTime(2026, 11, 4, 12)),
+      ], DateTime(2026, 11, 4)).isEmpty,
+      isFalse,
+    );
+    // A week without drinks has nothing to rank.
+    final other = PeriodSummary(
+      logs,
+      periodDays(LogPeriod.week, DateTime(2026, 11, 12)),
+      DateTime(2026, 11, 12, 12),
+    );
+    expect(other.drinks, 0);
+    expect(other.drinkDays, 0);
+    expect(other.drinksRanked, isEmpty);
+  });
+
   test('a running sleep counts up to now', () {
     final logs = [log(LogKind.sleep, DateTime(2026, 9, 27, 13))];
     final s = summarize(

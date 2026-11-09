@@ -180,6 +180,9 @@ class _ChildLogViewState extends State<ChildLogView> {
           child.birthDate,
           if (logs.isNotEmpty) logs.last.start,
         ].reduce((a, b) => a.isBefore(b) ? a : b);
+        final average = _period == LogPeriod.day
+            ? null
+            : PeriodSummary(logs, days, now);
         return ListView(
           padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
           children: [
@@ -203,9 +206,15 @@ class _ChildLogViewState extends State<ChildLogView> {
               onToday: () => setState(() => _anchor = now),
             ),
             const SizedBox(height: 8),
-            _period == LogPeriod.day
-                ? _DayCard(summary: summarize(logs, days.first, now))
-                : _AverageCard(summary: PeriodSummary(logs, days, now)),
+            if (average == null)
+              _DayCard(summary: summarize(logs, days.first, now))
+            else ...[
+              _AverageCard(summary: average),
+              if (average.drinks > 0) ...[
+                const SizedBox(height: 12),
+                _DrinkCard(summary: average),
+              ],
+            ],
             const SizedBox(height: 12),
             _HistoryChart(logs: logs, period: _period, days: days, now: now),
             if (logs.isEmpty)
@@ -1105,11 +1114,73 @@ class _AverageCard extends StatelessWidget {
   }
 }
 
+/// "850 ml", from one litre on "1,3 l".
+String _volume(int ml) => ml < 1000 ? '$ml ml' : '${decimal(ml / 1000)} l';
+
+/// A week or month of drinks: how much, on how many days and of what.
+class _DrinkCard extends StatelessWidget {
+  const _DrinkCard({required this.summary});
+
+  final PeriodSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final s = summary;
+    final theme = Theme.of(context);
+    final color = logLook(LogKind.drink).$2;
+    return _SummaryCard(
+      title: tr.kidsLogDrinksTotal,
+      items: [
+        if (s.drinkMl > 0) (tr.commonQuantity, _volume(s.drinkMl)),
+        (tr.kidsLogDrinkCount, '${s.drinks}'),
+        (tr.kidsLogDaysWithDrink, tr.kidsLogDaysOf(s.drinkDays, s.days)),
+      ],
+      below: [
+        for (final MapEntry(key: kind, value: total) in s.drinksRanked) ...[
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(child: Text(kind.label)),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  [
+                    if (total.ml > 0) _volume(total.ml),
+                    '${total.count}×',
+                  ].join(' · '),
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(5),
+            child: LinearProgressIndicator(
+              value: s.drinkMl > 0
+                  ? total.ml / s.drinkMl
+                  : total.count / s.drinks,
+              minHeight: 8,
+              color: color,
+              backgroundColor: color.withValues(alpha: 0.15),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.items, this.title});
+  const _SummaryCard({required this.items, this.title, this.below = const []});
 
   final List<(String, String)> items;
   final String? title;
+
+  /// Details under the figures.
+  final List<Widget> below;
 
   @override
   Widget build(BuildContext context) {
@@ -1136,6 +1207,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
             ],
           ),
+          ...below,
         ],
       ),
     );
@@ -1144,6 +1216,7 @@ class _SummaryCard extends StatelessWidget {
 
 enum _Series {
   milk('ml'),
+  drinks('ml'),
   feedings(''),
   sleep('h'),
   diapers(''),
@@ -1155,6 +1228,7 @@ enum _Series {
 
   String get label => switch (this) {
     milk => tr.kidsLogMilk,
+    drinks => tr.kidsLogDrinks,
     feedings => tr.kidsLogMeals,
     sleep => tr.kidsLogSleepNoun,
     diapers => tr.kidsLogDiapers,
@@ -1207,6 +1281,7 @@ class _HistoryChartState extends State<_HistoryChart> {
       for (final s in sums)
         switch (_series) {
           _Series.milk => s.milkMl.toDouble(),
+          _Series.drinks => s.drinkMl.toDouble(),
           _Series.feedings => s.feedings.toDouble(),
           _Series.sleep => s.sleep.inMinutes / 60,
           _Series.diapers => (s.wet + s.dirty).toDouble(),
@@ -1215,36 +1290,44 @@ class _HistoryChartState extends State<_HistoryChart> {
     ];
     final color = switch (_series) {
       _Series.milk => logLook(LogKind.bottle).$2,
+      _Series.drinks => logLook(LogKind.drink).$2,
       _Series.feedings => logLook(LogKind.solids).$2,
       _Series.sleep => logLook(LogKind.sleep).$2,
       _Series.diapers => logLook(LogKind.diaper).$2,
       _Series.temperature => logLook(LogKind.temperature).$2,
     };
     final c = FamioColors.of(context);
+    // With large text the title and the choice do not fit side by side.
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+    final heading = Text(
+      tr.kidsLogHistory,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.titleMedium,
+    );
+    final picker = DropdownButton<_Series>(
+      value: _series,
+      isExpanded: largeText,
+      underline: const SizedBox.shrink(),
+      items: [
+        for (final s in _Series.values)
+          DropdownMenuItem(value: s, child: Text(s.label)),
+      ],
+      onChanged: (s) => setState(() => _series = s ?? _series),
+    );
     return SoftCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  tr.kidsLogHistory,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              DropdownButton<_Series>(
-                value: _series,
-                underline: const SizedBox.shrink(),
-                items: [
-                  for (final s in _Series.values)
-                    DropdownMenuItem(value: s, child: Text(s.label)),
-                ],
-                onChanged: (s) => setState(() => _series = s ?? _series),
-              ),
-            ],
-          ),
+          if (largeText) ...[
+            heading,
+            picker,
+          ] else
+            Row(
+              children: [
+                Expanded(child: heading),
+                picker,
+              ],
+            ),
           const SizedBox(height: 8),
           SizedBox(
             height: 150,

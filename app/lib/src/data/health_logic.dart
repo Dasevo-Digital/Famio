@@ -1,6 +1,24 @@
 import 'package:famio_client/famio_client.dart';
 import '../l10n.dart';
 
+/// What was drunk of one kind: how often, and how much where an amount
+/// was noted.
+class DrinkTotal {
+  var count = 0;
+  var ml = 0;
+}
+
+void _addDrink(
+  Map<DrinkKind, DrinkTotal> totals,
+  DrinkKind kind,
+  int count,
+  int ml,
+) {
+  (totals[kind] ??= DrinkTotal())
+    ..count += count
+    ..ml += ml;
+}
+
 /// Totals of one day of a child's log.
 class DaySummary {
   DaySummary(this.day);
@@ -19,6 +37,12 @@ class DaySummary {
   /// Water, tea and other drinks; milk from the bottle is in [milkMl].
   var drinkMl = 0;
 
+  /// Every drink, also those written down without an amount.
+  var drinks = 0;
+
+  /// [drinks] by kind; a drink without a kind counts as [DrinkKind.other].
+  final drinksByKind = <DrinkKind, DrinkTotal>{};
+
   /// Walks, cut at midnight like [sleep].
   var outdoors = Duration.zero;
   double? maxTemperature;
@@ -29,7 +53,7 @@ class DaySummary {
       sleep == Duration.zero &&
       wet == 0 &&
       dirty == 0 &&
-      drinkMl == 0 &&
+      drinks == 0 &&
       outdoors == Duration.zero &&
       maxTemperature == null &&
       medications == 0;
@@ -84,7 +108,12 @@ DaySummary summarize(List<ChildLog> logs, DateTime day, [DateTime? now]) {
       case LogKind.medication:
         if (inDay) s.medications++;
       case LogKind.drink:
-        if (inDay) s.drinkMl += l.amountMl ?? 0;
+        if (inDay) {
+          final ml = l.amountMl ?? 0;
+          s.drinks++;
+          s.drinkMl += ml;
+          _addDrink(s.drinksByKind, l.drink ?? DrinkKind.other, 1, ml);
+        }
       case LogKind.walk:
         s.outdoors += overlap(l);
       case LogKind.pumping || LogKind.symptom || LogKind.bath:
@@ -157,6 +186,11 @@ class PeriodSummary {
       dirty += s.dirty;
       diarrhea += s.diarrhea;
       drinkMl += s.drinkMl;
+      drinks += s.drinks;
+      if (s.drinks > 0) drinkDays++;
+      for (final MapEntry(key: kind, value: total) in s.drinksByKind.entries) {
+        _addDrink(drinksByKind, kind, total.count, total.ml);
+      }
       outdoors += s.outdoors;
       if (s.maxTemperature case final t?
           when maxTemperature == null || t > maxTemperature!) {
@@ -174,8 +208,22 @@ class PeriodSummary {
   var dirty = 0;
   var diarrhea = 0;
   var drinkMl = 0;
+  var drinks = 0;
+
+  /// Days with at least one drink, out of [days].
+  var drinkDays = 0;
+  final drinksByKind = <DrinkKind, DrinkTotal>{};
   var outdoors = Duration.zero;
   double? maxTemperature;
+
+  /// [drinksByKind], the most drunk first.
+  List<MapEntry<DrinkKind, DrinkTotal>> get drinksRanked =>
+      drinksByKind.entries.toList()..sort((a, b) {
+        final byMl = b.value.ml.compareTo(a.value.ml);
+        if (byMl != 0) return byMl;
+        final byCount = b.value.count.compareTo(a.value.count);
+        return byCount != 0 ? byCount : a.key.index.compareTo(b.key.index);
+      });
 
   double perDay(num total) => days == 0 ? 0 : total / days;
   Duration durationPerDay(Duration total) =>

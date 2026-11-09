@@ -687,6 +687,7 @@ void _seed(SyncEngine e) {
     int? ml,
     BreastSide? side,
     DiaperKind? diaper,
+    DrinkKind? drink,
     double? temp,
     String medication = '',
     String dose = '',
@@ -704,6 +705,7 @@ void _seed(SyncEngine e) {
         amountMl: ml,
         side: side,
         diaper: diaper,
+        drink: drink,
         temperatureC: temp,
         medication: medication,
         dose: dose,
@@ -754,6 +756,20 @@ void _seed(SyncEngine e) {
       Duration(hours: 24 * d + 3),
       length: Duration(minutes: 540 + d * 17),
     );
+    log(
+      LogKind.drink,
+      Duration(hours: 24 * d + 2),
+      ml: 80 + d * 10,
+      drink: DrinkKind.water,
+    );
+    if (d.isEven) {
+      log(
+        LogKind.drink,
+        Duration(hours: 24 * d + 7),
+        ml: 100,
+        drink: DrinkKind.tea,
+      );
+    }
     for (var f = 0; f < 5 + d % 3; f++) {
       log(
         LogKind.bottle,
@@ -1305,6 +1321,29 @@ void main() {
     await tester.tap(row);
     await tester.pumpAndSettle();
     await _shot(tester, key, 'phone_9c_windel_bearbeiten');
+    await tester.pump(const Duration(seconds: 2));
+  });
+
+  testWidgets('kids drinks phone', (tester) async {
+    final key = await start(tester, phone);
+    await tester.tap(find.byIcon(AppIcons.dotsThreeCircle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kinder').last);
+    await tester.pumpAndSettle();
+    await go(tester, 'Emil');
+    await Scrollable.ensureVisible(
+      tester.element(find.text('Monat')),
+      alignment: 0.3,
+    );
+    await tester.pumpAndSettle();
+    await go(tester, 'Monat');
+    await tester.dragUntilVisible(
+      find.text('Getränke insgesamt'),
+      find.byType(ListView).last,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'phone_9d_getraenke_monat');
     await tester.pump(const Duration(seconds: 2));
   });
 

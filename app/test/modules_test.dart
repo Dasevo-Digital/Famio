@@ -1,6 +1,7 @@
 import 'package:famio/src/screens/share_target.dart';
 import 'package:famio/src/platform/opened_files.dart';
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
@@ -402,6 +403,82 @@ void main() {
     expect(logs().firstWhere((l) => l.id == walk.id).running, isFalse);
     expect(find.textContaining('Unterwegs seit'), findsNothing);
     expect(find.text('Spaziergang'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('kids: week and month show what was drunk', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 300)),
+    );
+    // Today, so that the entries are in the current week on any weekday.
+    final today = DateUtils.dateOnly(DateTime.now());
+    ChildLog drink(String id, DrinkKind? kind, int? ml) => ChildLog(
+      id: id,
+      childId: 'k1',
+      kind: LogKind.drink,
+      start: today.add(const Duration(minutes: 1)),
+      drink: kind,
+      amountMl: ml,
+    );
+    engine
+      ..saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth))
+      ..saveChildLog(drink('a', DrinkKind.water, 900))
+      ..saveChildLog(drink('b', DrinkKind.water, 300))
+      ..saveChildLog(drink('c', DrinkKind.tea, 300))
+      ..saveChildLog(drink('d', null, null));
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    expect(find.text('Getränke insgesamt'), findsNothing);
+
+    for (final period in ['Monat', 'Woche']) {
+      await tester.tap(find.text(period));
+      await tester.pumpAndSettle();
+      expect(find.text('Getränke insgesamt'), findsOneWidget);
+      expect(find.text('1,5 l'), findsOneWidget);
+      expect(find.text('1 von 1'), findsOneWidget);
+      expect(find.text('Wasser'), findsOneWidget);
+      expect(find.text('1,2 l · 2×'), findsOneWidget);
+      expect(find.text('Tee'), findsOneWidget);
+      expect(find.text('300 ml · 1×'), findsOneWidget);
+      expect(find.text('Anderes'), findsOneWidget);
+      expect(find.text('1×'), findsOneWidget);
+    }
+
+    // The history can show the amount drunk per day.
+    await tester.tap(
+      find.descendant(
+        of: find.byWidgetPredicate((w) => w is DropdownButton),
+        matching: find.text('Mahlzeiten'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Getränke').last);
+    await tester.pumpAndSettle();
+    expect(find.text('in ml'), findsOneWidget);
+    final bars =
+        tester
+                .widgetList<CustomPaint>(find.byType(CustomPaint))
+                .map((w) => w.painter)
+                .firstWhere((p) => p.runtimeType.toString() == '_BarPainter')
+            as dynamic;
+    expect((bars.values as List<double>).reduce(math.max), 1500);
+
+    // On a phone with large text the card still fits.
+    await tester.tap(find.text('Verstanden'));
+    await tester.pumpAndSettle();
+    tester.view.physicalSize = const Size(390, 844);
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    await tester.pumpAndSettle();
+    await tester.dragUntilVisible(
+      find.text('Wasser'),
+      find.byType(ListView).last,
+      const Offset(0, -200),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('1,2 l · 2×'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
   });
 

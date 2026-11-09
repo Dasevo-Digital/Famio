@@ -624,6 +624,20 @@
   "kidsLogPeePoo": "Pipi + Kacka",
   "kidsLogPeeAdded": "Pipi eingetragen",
   "kidsLogDrinks": "Getränke",
+  "kidsLogDrinksTotal": "Getränke insgesamt",
+  "kidsLogDrinkCount": "Anzahl",
+  "kidsLogDaysWithDrink": "Tage mit Getränk",
+  "kidsLogDaysOf": "{days} von {total}",
+  "@kidsLogDaysOf": {
+    "placeholders": {
+      "days": {
+        "type": "Object?"
+      },
+      "total": {
+        "type": "Object?"
+      }
+    }
+  },
   "kidsLogOutdoors": "Draußen",
   "kidsLogBackHome": "Wieder da",
   "kidsLogOutSince": "Unterwegs seit {since}",
