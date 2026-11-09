@@ -2,6 +2,18 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.46 – Zugänge mit Passwort, Gäste und Notfall-Knopf
+
+- Wer einen Kalender-Zugang, ein Kalender-Abo, eine Mitteilungsadresse oder
+  Zwei-Faktor einrichtet, bestätigt das jetzt mit dem Passwort. Kalender-Passwörter
+  enden beim Passwortwechsel.
+- Gäste lesen bestehende Aufgaben, haken Schritte ab und öffnen Anhänge. Ihr Haken
+  bleibt erhalten, auch wenn die Aufgabe inzwischen geändert wurde.
+- Der Notfall-Knopf löst nach einem beendeten Alarm wieder aus, das Banner startet
+  keinen neuen.
+- Packlisten und Kommentare erreichen genau die Personen, die ihren Termin sehen.
+- Im Abo-Formular stehen fehlende Angaben sichtbar am Feld.
+
 ## 2.0.45 – Abos im Blick
 
 - Unter Finanzen gibt es jetzt auf Wunsch einen Überblick über Abos: was sie

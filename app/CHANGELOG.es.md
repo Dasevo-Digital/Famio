@@ -4,6 +4,18 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.46 – Accesos con contraseña, invitados y botón de emergencia
+
+- Configurar un acceso de calendario, una suscripción de calendario, una dirección
+  de avisos o la verificación en dos pasos ahora requiere tu contraseña. Las
+  contraseñas de calendario terminan al cambiar la contraseña.
+- Los invitados leen las tareas existentes, marcan pasos y abren adjuntos. Su marca
+  se conserva aunque la tarea haya cambiado entretanto.
+- El botón de emergencia vuelve a activarse tras terminar una alarma; el aviso no
+  inicia una nueva.
+- Las listas de equipaje y los comentarios llegan exactamente a quienes ven su cita.
+- El formulario de suscripciones muestra los datos que faltan junto al campo.
+
 ## 2.0.45 – Suscripciones de un vistazo
 
 - En Finanzas ahora puedes ver tus suscripciones si quieres: lo que cuestan al mes

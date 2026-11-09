@@ -4,6 +4,18 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.46 – Access with a password, guests and the emergency button
+
+- Setting up a calendar access, a calendar feed, a notification address or
+  two-factor sign-in now needs your password. Calendar passwords end when the
+  password changes.
+- Guests read existing tasks, tick off steps and open attachments. Their tick stays
+  even if the task has changed in the meantime.
+- The emergency button goes off again after an alarm has ended; the banner does not
+  start a new one.
+- Packing lists and comments reach exactly the people who see their appointment.
+- The subscription form shows missing details right at the field.
+
 ## 2.0.45 – Subscriptions at a glance
 
 - Finances can now show your subscriptions if you want: what they cost per month
