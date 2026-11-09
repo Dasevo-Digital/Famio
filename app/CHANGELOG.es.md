@@ -4,6 +4,12 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.44 – Bebidas de un vistazo
+
+- En la vista semanal y mensual del registro, una tarjeta nueva muestra cuánto
+  se ha bebido, en cuántos días y qué: agua, té, etc.
+- En «Evolución» ahora también se pueden ver las bebidas por día.
+
 ## 2.0.43 – Pipí, caca y longitud del pie
 
 - El registro tiene botones propios para pipí, caca y pipí + caca. Pipí basta

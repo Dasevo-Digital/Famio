@@ -4,6 +4,12 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.44 – Drinks at a glance
+
+- In the log's week and month view, a new card shows how much was drunk, on
+  how many days and what: water, tea and so on.
+- The history can now show drinks per day as well.
+
 ## 2.0.43 – Pee, poo and foot length
 
 - The log has separate buttons for pee, poo and pee + poo. Pee takes a single

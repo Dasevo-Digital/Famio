@@ -2,6 +2,12 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.44 – Getränke im Überblick
+
+- In der Wochen- und Monatsansicht des Protokolls zeigt eine neue Karte, wie
+  viel getrunken wurde, an wie vielen Tagen und was: Wasser, Tee und so weiter.
+- Der Verlauf kann jetzt auch die Getränke pro Tag anzeigen.
+
 ## 2.0.43 – Pipi, Kacka und Fußlänge
 
 - Im Protokoll gibt es eigene Knöpfe für Pipi, Kacka und Pipi + Kacka. Pipi
