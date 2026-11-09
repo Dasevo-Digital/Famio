@@ -406,6 +406,57 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('kids: the stool question saves one diaper, not one per '
+      'rebuild', (tester) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 300)),
+    );
+    engine.saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth));
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    List<ChildLog> diapers() => [
+      for (final l in engine.childLogs('k1'))
+        if (l.kind == LogKind.diaper) l,
+    ];
+
+    await tester.tap(find.text('Kacka').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsOneWidget);
+    expect(diapers(), hasLength(1));
+
+    // Dragged a little and let go: the sheet rebuilds and stays.
+    final sheet = tester.getRect(find.byType(BottomSheet).first);
+    final drag = await tester.startGesture(
+      sheet.topCenter + const Offset(0, 12),
+    );
+    await tester.pump();
+    await drag.moveBy(const Offset(0, 30));
+    await tester.pump();
+    await drag.up();
+    await tester.pumpAndSettle();
+    expect(diapers(), hasLength(1));
+
+    // Turning the phone, resizing the window, dark mode.
+    tester.view.physicalSize = const Size(1000, 1400);
+    await tester.pump();
+    tester.view.physicalSize = const Size(1400, 1000);
+    await tester.pump();
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(diapers(), hasLength(1));
+
+    // The answers still go to that one entry.
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Durchfall'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(diapers().single.stool, StoolKind.watery);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('kids: week and month show what was drunk', (tester) async {
     await open(tester, 'Kinder');
     final birth = DateUtils.dateOnly(

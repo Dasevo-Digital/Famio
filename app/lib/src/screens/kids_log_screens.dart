@@ -582,17 +582,20 @@ class _QuickButtons extends StatelessWidget {
     }
 
     // Saved at once; the sheet then asks about the stool.
-    Future<void> poo(DiaperKind kind) => showModalBottomSheet<void>(
-      context: context,
-      // Above the floating navigation bar.
-      useRootNavigator: true,
-      // Large text needs more than the default nine sixteenths.
-      isScrollControlled: true,
-      builder: (context) => _StoolSheet(
-        log: quick(LogKind.diaper, diaper: kind),
-        update: engine.saveChildLog,
-      ),
-    );
+    Future<void> poo(DiaperKind kind) {
+      // Here and not in the builder, which runs again with every rebuild of
+      // the sheet (dragging it, turning the phone).
+      final log = quick(LogKind.diaper, diaper: kind);
+      return showModalBottomSheet<void>(
+        context: context,
+        // Above the floating navigation bar.
+        useRootNavigator: true,
+        // Large text needs more than the default nine sixteenths.
+        isScrollControlled: true,
+        builder: (context) =>
+            _StoolSheet(log: log, update: engine.saveChildLog),
+      );
+    }
 
     void diaperEditor() =>
         showLogEditor(context, child: child, kind: LogKind.diaper);
@@ -1676,6 +1679,7 @@ class _LogEditorState extends State<_LogEditor> {
       widget.kind == LogKind.solids;
 
   void _save() {
+    if (_uploading) return;
     final engine = AppScope.engineOf(context);
     final kind = widget.kind;
     final temp = _parse(_temp);
@@ -2152,7 +2156,7 @@ class _LogEditorState extends State<_LogEditor> {
                 ColorButton(
                   label: tr.commonSave,
                   color: color,
-                  onPressed: _save,
+                  onPressed: _uploading ? null : _save,
                 ),
               ],
             ),

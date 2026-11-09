@@ -383,6 +383,7 @@ class _EventEditorState extends State<_EventEditor> {
   }
 
   Future<void> _save() async {
+    if (_uploading) return;
     if (_title.text.trim().isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -506,7 +507,7 @@ class _EventEditorState extends State<_EventEditor> {
         ColorButton(
           label: tr.commonSave,
           color: FamioColors.of(context).strong(FamioSection.calendar),
-          onPressed: _save,
+          onPressed: _uploading ? null : _save,
         ),
       ],
       bodyPadding: EdgeInsets.zero,
