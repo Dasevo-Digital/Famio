@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.45 – Suscripciones de un vistazo
+
+- En Finanzas ahora puedes ver tus suscripciones si quieres: lo que cuestan al mes
+  y al año y cuándo llega el próximo cargo, con recordatorio.
+- La pregunta sobre las heces ya no crea entradas de pañal duplicadas.
+- Mientras se sube una foto o un archivo, «Guardar» espera para que no se pierda el
+  adjunto. Si falla una subida en la bandeja, el texto se conserva.
+- Las citas confidenciales, sus comentarios y listas de equipaje se quedan, por
+  cualquier vía, con las personas que pueden verlas.
+
 ## 2.0.44 – Bebidas de un vistazo
 
 - En la vista semanal y mensual del registro, una tarjeta nueva muestra cuánto

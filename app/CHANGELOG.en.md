@@ -4,6 +4,16 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.45 – Subscriptions at a glance
+
+- Finances can now show your subscriptions if you want: what they cost per month
+  and year, when the next charge comes, with a reminder.
+- The stool question no longer creates duplicate diaper entries.
+- While a photo or file uploads, “Save” waits so the attachment is not lost. If
+  an upload fails in the inbox, the text is kept.
+- Confidential appointments, their comments and packing lists stay with the people
+  who may see them on every route.
+
 ## 2.0.44 – Drinks at a glance
 
 - In the log's week and month view, a new card shows how much was drunk, on

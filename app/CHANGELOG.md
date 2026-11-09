@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.45 – Abos im Blick
+
+- Unter Finanzen gibt es jetzt auf Wunsch einen Überblick über Abos: was sie
+  im Monat und im Jahr kosten, wann die nächste Abbuchung kommt, mit Erinnerung.
+- Die Frage nach dem Stuhl legt keine doppelten Windel-Einträge mehr an.
+- Während ein Foto oder eine Datei hochlädt, wartet „Speichern“, damit der Anhang
+  nicht verloren geht. Scheitert im Eingang ein Upload, bleibt der Text erhalten.
+- Vertrauliche Termine, ihre Kommentare und Packlisten bleiben auf allen Wegen bei
+  den Personen, die sie sehen dürfen.
+
 ## 2.0.44 – Getränke im Überblick
 
 - In der Wochen- und Monatsansicht des Protokolls zeigt eine neue Karte, wie
