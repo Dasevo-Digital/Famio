@@ -391,7 +391,7 @@ class FileThumb extends StatelessWidget {
     required this.file,
     required this.gallery,
     required this.section,
-    required this.onRemove,
+    this.onRemove,
   });
 
   final FileRef file;
@@ -399,7 +399,9 @@ class FileThumb extends StatelessWidget {
 
   /// The task's other pictures, to go through in the viewer.
   final List<FileRef> gallery;
-  final VoidCallback onRemove;
+
+  /// Null: to look at only.
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -459,9 +461,12 @@ class FileThumb extends StatelessWidget {
     return file.isImage
         ? SizedBox.square(
             dimension: 72,
-            child: Stack(fit: StackFit.expand, children: [open, remove]),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [open, if (onRemove != null) remove],
+            ),
           )
-        : Stack(children: [open, remove]);
+        : Stack(children: [open, if (onRemove != null) remove]);
   }
 }
 

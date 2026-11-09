@@ -27,6 +27,12 @@ class FormDialog extends StatefulWidget {
   State<FormDialog> createState() => _FormDialogState();
 }
 
+/// Thrown by [FormDialog.onSubmit] when the user backed out of a further
+/// step (a password prompt …): nothing happened, the form stays open.
+class FormStepCancelled implements Exception {
+  const FormStepCancelled();
+}
+
 class _FormDialogState extends State<FormDialog> {
   var _busy = false;
   var _closed = false;
@@ -60,6 +66,8 @@ class _FormDialogState extends State<FormDialog> {
         _closed = true;
         Navigator.pop(context);
       }
+    } on FormStepCancelled {
+      // Back to the form as it was.
     } on ApiError catch (e) {
       if (mounted && !_closed) setState(() => _error = e.message);
     } finally {

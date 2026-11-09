@@ -251,7 +251,10 @@ class _TaskTile extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(task.id),
-      direction: DismissDirection.endToStart,
+      // Guests tick off; taking a task away is for the family.
+      direction: engine.iAmGuest
+          ? DismissDirection.none
+          : DismissDirection.endToStart,
       background: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.errorContainer,
@@ -269,24 +272,7 @@ class _TaskTile extends StatelessWidget {
       ),
       child: SoftCard(
         padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
-        // Guests tick off; what a task is, is for the family.
-        onTap: !engine.iAmGuest
-            ? () => showTaskEditor(context, task: task)
-            : task.notes.trim().isEmpty
-            ? null
-            : () => showDialog<void>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: Text(task.title),
-                  content: SingleChildScrollView(child: Text(task.notes)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(tr.commonClose),
-                    ),
-                  ],
-                ),
-              ),
+        onTap: () => showTaskEditor(context, task: task),
         child: Row(
           children: [
             RoundCheck(
@@ -436,15 +422,109 @@ class _Assignees extends StatelessWidget {
 enum _Audience { family, me, selected }
 
 /// [draft]: a new task filled in beforehand (e.g. shared to Famio).
-Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      // Above the floating navigation bar.
-      useRootNavigator: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (_) => _TaskEditor(task: task, draft: draft),
+/// A guest gets to read a task that exists and to tick off its steps; what
+/// a task is, is for the family.
+Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) {
+  final reading = task != null && AppScope.engineOf(context).iAmGuest;
+  return showModalBottomSheet<void>(
+    context: context,
+    // Above the floating navigation bar.
+    useRootNavigator: true,
+    isScrollControlled: true,
+    useSafeArea: true,
+    builder: (_) => reading
+        ? _TaskDetails(id: task.id)
+        : _TaskEditor(task: task, draft: draft),
+  );
+}
+
+/// A task for reading, with its steps to tick off and its files to open.
+class _TaskDetails extends StatelessWidget {
+  const _TaskDetails({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context) {
+    return DataBuilder(
+      collections: const {Collections.tasks},
+      builder: (context, engine) {
+        final task = engine.tasks.where((t) => t.id == id).firstOrNull;
+        if (task == null) return const SizedBox.shrink();
+        final theme = Theme.of(context);
+        final c = FamioColors.of(context);
+        final due = task.due;
+        return SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(task.title, style: theme.textTheme.titleLarge),
+              if (due != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat.yMMMEd(appLanguage).format(due),
+                  style: theme.textTheme.bodyMedium?.copyWith(color: c.inkSoft),
+                ),
+              ],
+              if (task.notes.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                SelectableText(task.notes),
+              ],
+              if (task.checklist.isNotEmpty) ...[
+                ListHeading(
+                  tr.tasksChecklistDoneTotal(
+                    task.checklist.where((s) => s.done).length,
+                    task.checklist.length,
+                  ),
+                ),
+                for (final (i, step) in task.checklist.indexed)
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    title: Text(step.text),
+                    value: step.done,
+                    onChanged: (v) => engine.saveTask(
+                      task.copyWith(
+                        checklist: [
+                          for (final (n, s) in task.checklist.indexed)
+                            n == i ? s.copyWith(done: v ?? false) : s,
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+              if (task.photos.isNotEmpty) ...[
+                ListHeading(tr.tasksPhotos),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final photo in task.photos)
+                      FileThumb(
+                        file: photo,
+                        gallery: task.photos,
+                        section: FamioSection.tasks,
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(tr.commonClose),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
+  }
+}
 
 const _repeatChoices = <(TaskRepeat?, int)>[
   (null, 1),

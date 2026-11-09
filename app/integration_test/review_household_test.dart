@@ -1503,6 +1503,8 @@ void main() {
     try {
       final engine = state.engine!;
       final day = DateFormat.yMMMEd('de');
+      // Past dates are offered, but not ticked.
+      final year = DateTime.now().year + 1;
 
       Future<void> recognize(String text, List<String> expected) async {
         await openSection(tester, 'Kalender');
@@ -1528,20 +1530,20 @@ void main() {
 
       await recognize(
         'Dear parents,\n'
-        'the parent evening is on Friday, December 11 at 2:30 pm.\n'
-        'School party 10/12/2026',
+        'the parent evening is on December 11, $year at 2:30 pm.\n'
+        'School party 10/12/$year',
         [
-          '${day.format(DateTime(2026, 12, 11))}, 14:30–15:30 Uhr',
-          '${day.format(DateTime(2026, 10, 12))}, ganztägig',
+          '${day.format(DateTime(year, 12, 11))}, 14:30–15:30 Uhr',
+          '${day.format(DateTime(year, 10, 12))}, ganztägig',
         ],
       );
       await recognize(
         'Queridas familias:\n'
-        'la reunión de padres será el martes 15 de diciembre a las 18:30 h.\n'
-        'Fiesta 10/12/2026',
+        'la reunión de padres será el 15 de diciembre de $year a las 18:30 h.\n'
+        'Fiesta 10/12/$year',
         [
-          '${day.format(DateTime(2026, 12, 15))}, 18:30–19:30 Uhr',
-          '${day.format(DateTime(2026, 12, 10))}, ganztägig',
+          '${day.format(DateTime(year, 12, 15))}, 18:30–19:30 Uhr',
+          '${day.format(DateTime(year, 12, 10))}, ganztägig',
         ],
       );
 
@@ -1549,19 +1551,15 @@ void main() {
       (int, int, int, int, int) at(DateTime d) =>
           (d.year, d.month, d.day, d.hour, d.minute);
       debugPrint('E2E recognised: ${events.keys.join(' | ')}');
-      final evening = events.entries
-          .singleWhere((e) => e.key.contains('parent evening'))
-          .value;
-      expect(at(evening.start), (2026, 12, 11, 14, 30));
+      final evening = events['Parent evening']!;
+      expect(at(evening.start), (year, 12, 11, 14, 30));
       expect(evening.allDay, isFalse);
       // Month first in an English text …
-      expect(at(events['School party']!.start), (2026, 10, 12, 0, 0));
-      final meeting = events.entries
-          .singleWhere((e) => e.key.contains('reunión de padres'))
-          .value;
-      expect(at(meeting.start), (2026, 12, 15, 18, 30));
+      expect(at(events['School party']!.start), (year, 10, 12, 0, 0));
+      final meeting = events['Reunión de padres']!;
+      expect(at(meeting.start), (year, 12, 15, 18, 30));
       // … day first in a Spanish one.
-      expect(at(events['Fiesta']!.start), (2026, 12, 10, 0, 0));
+      expect(at(events['Fiesta']!.start), (year, 12, 10, 0, 0));
       expect(events['Fiesta']?.allDay, isTrue);
     } finally {
       await finish(tester, state, {Collections.events});

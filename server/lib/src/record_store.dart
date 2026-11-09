@@ -227,15 +227,17 @@ class RecordStore {
   List<String>? _audience(SyncRecord r) {
     final health = Collections.isHealth(r.collection, r.data);
     final within = r.deleted ? null : _attachedEvent(r)?.visibleTo;
+    final confidential = _confidentialEvent(r) != null;
     if (r.visibleTo case final ids?) {
       return [
         for (final id in ids)
           if ((!health || _role(id) != MemberRole.service) &&
-              (within == null || within.contains(id)))
+              (within == null || within.contains(id)) &&
+              (!confidential || canAccess(r, id)))
             id,
       ];
     }
-    if (health || _confidentialEvent(r) != null || within != null) {
+    if (health || confidential || within != null) {
       return [
         for (final m in memberIds())
           if (canAccess(r, m)) m,
@@ -296,7 +298,14 @@ class RecordStore {
           (incoming.data['authorId'] ?? author) != author) {
         return false;
       }
-      if (author != userId && role != MemberRole.adult) return false;
+      if (author != userId && (role != MemberRole.adult || !incoming.deleted)) {
+        return false;
+      }
+    }
+    if (collection == Collections.pollVotes) {
+      bool own(SyncRecord? r) =>
+          r == null || r.deleted || r.data['memberId'] == userId;
+      if (!own(existing) || !(incoming.deleted || own(incoming))) return false;
     }
     // "Bin unterwegs" and emergency facts: everyone writes only their own.
     if ((collection == Collections.trips ||
@@ -315,7 +324,8 @@ class RecordStore {
         };
       case MemberRole.guest:
         if (collection == Collections.tasks) {
-          return _guestMayChangeTask(incoming, existing);
+          // What they may change of it is left to [_guestTaskChange].
+          return existing == null || existing.deleted || !incoming.deleted;
         }
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
@@ -348,33 +358,37 @@ class RecordStore {
   }
 
   /// Guests tick off what they were given and add their own; what a task
-  /// is, who has it and who sees it is for the family.
-  static bool _guestMayChangeTask(SyncRecord incoming, SyncRecord? existing) {
-    if (existing == null || existing.deleted) return true;
-    if (incoming.deleted) return false;
-    List<Object?> fixed(Map<String, Object?> d) => [
-      d['title'] ?? '',
-      d['notes'] ?? '',
-      Task.assigneesIn(d),
-      d['repeat'],
-      d['repeatEvery'],
-      [
-        for (final p in d['photos'] as List? ?? const [])
-          if (p is Map) p['id'],
-      ],
-      [
-        for (final i in d['checklist'] as List? ?? const [])
-          if (i is Map) i['text'],
-      ],
-    ];
-    if (jsonEncode(fixed(incoming.data)) != jsonEncode(fixed(existing.data))) {
-      return false;
+  /// is, who has it and who sees it is for the family. So of a guest's write
+  /// only the ticks count, on top of the task as it is now: the device may
+  /// not know yet that it has changed, and the tick must not get lost.
+  static SyncRecord _guestTaskChange(SyncRecord incoming, SyncRecord existing) {
+    final theirs = incoming.data;
+    final data = {...existing.data};
+    for (final key in [
+      'done',
+      'completedAt',
+      // Ticking off a repeating task moves it on.
+      if (existing.data['repeat'] != null) ...['due', 'remindAt'],
+    ]) {
+      if (theirs.containsKey(key)) {
+        data[key] = theirs[key];
+      } else {
+        data.remove(key);
+      }
     }
-    if (!incoming.data.containsKey(SyncRecord.visibilityKey)) return true;
-    final now = incoming.visibleTo;
-    final before = existing.visibleTo;
-    if (now == null || before == null) return now == before;
-    return now.length == before.length && now.toSet().containsAll(before);
+    final ticks = {
+      for (final step in theirs['checklist'] as List? ?? const [])
+        if (step is Map) step['id']: step['done'],
+    };
+    if (existing.data['checklist'] case final List<Object?> steps) {
+      data['checklist'] = [
+        for (final step in steps)
+          step is Map && ticks.containsKey(step['id'])
+              ? {...step, 'done': ticks[step['id']]}
+              : step,
+      ];
+    }
+    return incoming.copyWith(data: data);
   }
 
   /// Ids of all family members; needed when a record visible to everyone
@@ -692,6 +706,15 @@ class RecordStore {
             );
           }
         }
+        var merged = false;
+        if (role == MemberRole.guest &&
+            change.collection == Collections.tasks &&
+            !incoming.deleted &&
+            existing != null &&
+            !existing.deleted) {
+          incoming = _guestTaskChange(incoming, existing);
+          merged = true;
+        }
         // Even a losing edit can be retained as a readable conflict. Check
         // new attachments before either version can reach persistent data.
         final previousFiles =
@@ -838,7 +861,8 @@ class RecordStore {
         _put(incoming, previous: existing, deletionSnapshot: localDeletion);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
-        if (existing != null) {
+        // A guest's ticks on top of the stored task: nothing was lost.
+        if (existing != null && !merged) {
           _keepConflict(
             lost: existing,
             kept: incoming,
@@ -1043,14 +1067,10 @@ class RecordStore {
       _pinPackingListAudience(previous);
       return;
     }
-    if (!previous.deleted &&
-        jsonEncode(_reach(event)) == jsonEncode(_reach(previous))) {
+    if (previous.deleted) {
+      _releasePackingList(event);
+    } else if (jsonEncode(_reach(event)) == jsonEncode(_reach(previous))) {
       return;
-    }
-    if (previous.data['confidential'] == true &&
-        event.data['confidential'] != true &&
-        !previous.deleted) {
-      _releasePackingList(event, previous);
     }
     final members = memberIds();
     void rewrite(String collection, String field, String id) {
@@ -1084,51 +1104,70 @@ class RecordStore {
     ],
   ];
 
-  /// Who may see a confidential appointment, for its packing list.
+  /// Who may see an appointment, for its packing list.
   List<String> _pinnedAudience(SyncRecord event) => [
     for (final m in memberIds())
       if (_role(m) != MemberRole.service && canAccess(event, m)) m,
   ];
 
-  /// No longer confidential: a packing list whose audience was only that
-  /// is open again.
-  void _releasePackingList(SyncRecord event, SyncRecord previous) {
-    final pinned = _pinnedAudience(previous).toSet();
+  /// Marks an audience that only stands in for a deleted appointment, as
+  /// against one somebody chose for the list.
+  static const _standInAudience = 'audienceFromEvent';
+
+  /// The packing lists made for [event].
+  List<SyncRecord> _packingLists(SyncRecord event) => [
     for (final row in _db.select(
       'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
       "AND json_extract(data, '\$.eventId') = ?",
       [Collections.shoppingLists, event.id],
-    )) {
-      final list = _record(row);
-      final ids = list.visibleTo;
-      if (ids == null ||
-          ids.length != pinned.length ||
-          !pinned.containsAll(ids)) {
-        continue;
-      }
+    ))
+      _record(row),
+  ];
+
+  /// The appointment is back and says again who sees its packing list.
+  void _releasePackingList(SyncRecord event) {
+    for (final list in _packingLists(event)) {
+      if (list.data[_standInAudience] != true) continue;
       final open = list.copyWith(
-        data: {...list.data}..remove(SyncRecord.visibilityKey),
+        data: {...list.data}
+          ..remove(SyncRecord.visibilityKey)
+          ..remove(_standInAudience),
       );
       _put(open, previous: list);
       _itemsFollowList(open, list);
     }
   }
 
-  /// A deleted appointment no longer says that it was confidential: from
-  /// now on its packing list says who may see it.
+  /// A deleted appointment soon no longer says who may see it (its deletion
+  /// mark goes after a while, and a mark does not say that it was
+  /// confidential): from now on its packing list says so itself.
   void _pinPackingListAudience(SyncRecord event) {
-    if (event.deleted || event.data['confidential'] != true) return;
+    if (event.deleted ||
+        (event.data['confidential'] != true && event.visibleTo == null)) {
+      return;
+    }
     final audience = _pinnedAudience(event);
-    for (final row in _db.select(
-      'SELECT * FROM records WHERE collection = ? AND deleted = 0 '
-      "AND json_extract(data, '\$.eventId') = ?",
-      [Collections.shoppingLists, event.id],
-    )) {
-      final list = _record(row);
-      if (list.visibleTo != null) continue;
-      final pinned = list.copyWith(
-        data: {...list.data, SyncRecord.visibilityKey: audience},
-      );
+    for (final list in _packingLists(event)) {
+      final own = list.visibleTo;
+      final SyncRecord pinned;
+      if (own == null) {
+        pinned = list.copyWith(
+          data: {
+            ...list.data,
+            SyncRecord.visibilityKey: audience,
+            _standInAudience: true,
+          },
+        );
+      } else {
+        final kept = [
+          for (final id in own)
+            if (audience.contains(id)) id,
+        ];
+        if (kept.length == own.length) continue;
+        pinned = list.copyWith(
+          data: {...list.data, SyncRecord.visibilityKey: kept},
+        );
+      }
       _put(pinned, previous: list);
       _itemsFollowList(pinned, list);
     }

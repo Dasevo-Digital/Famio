@@ -619,11 +619,17 @@ List<DueReminder> departureReminders(
         at: d.at,
         title:
             '${mode.emoji} ${tr.departureTitle(d.occurrence.event.publicTitle)}',
-        body: tr.departureBody(
-          d.place.name,
-          d.minutes,
-          time.format(d.occurrence.start),
-        ),
+        // Where it is says what it is.
+        body: d.occurrence.event.confidential
+            ? tr.departureBodyPrivate(
+                d.minutes,
+                time.format(d.occurrence.start),
+              )
+            : tr.departureBody(
+                d.place.name,
+                d.minutes,
+                time.format(d.occurrence.start),
+              ),
       ),
   ];
 }

@@ -491,6 +491,40 @@ void main() {
       expect(app.records.get(Collections.chatMessages, 'm1')!.deleted, isTrue);
     });
 
+    test('not even adults change what others wrote', () async {
+      await sync(kid, changes: [message('m3', kid.id)]);
+      await sync(papa, changes: [message('m3', kid.id, text: 'Geaendert')]);
+      expect(
+        app.records.get(Collections.chatMessages, 'm3')!.data['text'],
+        'Hallo',
+      );
+    });
+
+    test('a vote is one\'s own', () async {
+      SyncRecord vote(FamilyMember forWhom, {bool off = false}) => SyncRecord(
+        collection: Collections.pollVotes,
+        id: PollVote.idFor('m9', forWhom.id),
+        data: off
+            ? const {}
+            : {
+                'messageId': 'm9',
+                'memberId': forWhom.id,
+                'optionIds': ['a'],
+              },
+        deleted: off,
+        updatedAt: clock += 1000,
+      );
+      final mine = PollVote.idFor('m9', mama.id);
+      await sync(kid, changes: [vote(mama)]);
+      expect(app.records.get(Collections.pollVotes, mine), isNull);
+      await sync(mama, changes: [vote(mama)]);
+      expect(app.records.get(Collections.pollVotes, mine)!.deleted, isFalse);
+      await sync(kid, changes: [vote(mama, off: true)]);
+      expect(app.records.get(Collections.pollVotes, mine)!.deleted, isFalse);
+      await sync(mama, changes: [vote(mama, off: true)]);
+      expect(app.records.get(Collections.pollVotes, mine)!.deleted, isTrue);
+    });
+
     test('authors take down their own', () async {
       await sync(oma, changes: [message('m2', oma.id)]);
       await sync(oma, changes: [gone('m2')]);
@@ -561,6 +595,125 @@ void main() {
       );
       expect(app.records.get(Collections.tasks, 't1')!.visibleTo, isNull);
       expect(await has(mama, 't1'), isTrue);
+    });
+
+    test('keeps a tick made on a version since changed', () async {
+      await sync(mama, changes: [version(theirTask())]);
+      await sync(
+        mama,
+        changes: [
+          version({...theirTask(), 'title': 'Apfelkuchen', 'notes': 'Bio'}),
+        ],
+      );
+      final answer = await sync(
+        oma,
+        changes: [
+          version({...theirTask(), 'done': true}),
+        ],
+      );
+      final stored = app.records.get(Collections.tasks, 't1')!;
+      expect(stored.data['done'], isTrue);
+      expect(stored.data['title'], 'Apfelkuchen');
+      expect(stored.data['notes'], 'Bio');
+      expect(answer.rejected.where((r) => r.id == 't1'), isEmpty);
+      // Nothing was lost, so there is nothing to decide.
+      expect(app.records.all(Collections.conflicts), isEmpty);
+      // The device gets the task as the family left it.
+      expect(
+        answer.changes.firstWhere((r) => r.id == 't1').data['title'],
+        'Apfelkuchen',
+      );
+    });
+
+    test('keeps the audience whatever the device thought it was', () async {
+      await sync(
+        mama,
+        changes: [
+          version({
+            ...theirTask(),
+            SyncRecord.visibilityKey: [mama.id, oma.id],
+          }),
+        ],
+      );
+      await sync(
+        oma,
+        changes: [
+          version({...theirTask(), 'done': true}),
+        ],
+      );
+      final stored = app.records.get(Collections.tasks, 't1')!;
+      expect(stored.data['done'], isTrue);
+      expect(stored.visibleTo, unorderedEquals([mama.id, oma.id]));
+    });
+
+    test('ticks off steps, the steps themselves stay', () async {
+      List<Map<String, Object?>> steps(bool done) => [
+        {'id': 's1', 'text': 'Mehl', 'done': done},
+        {'id': 's2', 'text': 'Eier', 'done': false},
+      ];
+      await sync(
+        mama,
+        changes: [
+          version({...theirTask(), 'checklist': steps(false)}),
+        ],
+      );
+      await sync(
+        mama,
+        changes: [
+          version({
+            ...theirTask(),
+            'checklist': [
+              ...steps(false),
+              {'id': 's3', 'text': 'Zucker', 'done': false},
+            ],
+          }),
+        ],
+      );
+      await sync(
+        oma,
+        changes: [
+          version({
+            ...theirTask(),
+            'checklist': [
+              ...steps(true).map((e) => {...e, 'text': 'Anders'}),
+            ],
+          }),
+        ],
+      );
+      final stored = Task.fromRecord(app.records.get(Collections.tasks, 't1')!);
+      expect(stored.checklist.map((e) => e.text), ['Mehl', 'Eier', 'Zucker']);
+      expect(stored.checklist.map((e) => e.done), [true, false, false]);
+    });
+
+    test('moves on a repeating task, but no other date', () async {
+      final repeating = {
+        ...theirTask(),
+        'repeat': 'weekly',
+        'repeatEvery': 1,
+        'due': '2026-12-01T00:00:00.000',
+      };
+      await sync(mama, changes: [version(repeating)]);
+      await sync(
+        oma,
+        changes: [
+          version({...repeating, 'due': '2026-12-08T00:00:00.000'}),
+        ],
+      );
+      expect(
+        app.records.get(Collections.tasks, 't1')!.data['due'],
+        '2026-12-08T00:00:00.000',
+      );
+      final once = {...theirTask(), 'due': '2026-12-01T00:00:00.000'};
+      await sync(mama, changes: [version(once)]);
+      await sync(
+        oma,
+        changes: [
+          version({...once, 'due': '2027-01-01T00:00:00.000', 'done': true}),
+        ],
+      );
+      final stored = app.records.get(Collections.tasks, 't1')!;
+      expect(stored.data['due'], '2026-12-01T00:00:00.000');
+      expect(stored.data['done'], isTrue);
     });
 
     test('does not delete it', () async {
@@ -830,6 +983,26 @@ void main() {
       expect(alert(id).open, isTrue);
     });
 
+    test('ending one long over still ends what is running', () async {
+      openAlarm('s6', kid, const Duration(hours: 3));
+      final first = await call(
+        kid,
+        'POST',
+        'api/sos/s6/resolve',
+        body: <String, Object?>{},
+      );
+      expect(first.statusCode, 200);
+      openAlarm('s7', kid, const Duration(minutes: 1));
+      final second = await call(
+        kid,
+        'POST',
+        'api/sos/s6/resolve',
+        body: <String, Object?>{},
+      );
+      expect(second.statusCode, 200);
+      expect(alert('s7').open, isFalse);
+    });
+
     test('ending it ends every open one of that person', () async {
       openAlarm('s3', kid, const Duration(hours: 3));
       openAlarm('s4', kid, const Duration(hours: 2));
@@ -844,6 +1017,140 @@ void main() {
       expect(alert('s3').open, isFalse);
       expect(alert('s4').open, isFalse);
       expect(alert('s5').open, isTrue);
+    });
+  });
+
+  group('a packing list and its audience', () {
+    test('one somebody chose stays when no longer confidential', () async {
+      await sync(mama, changes: [appointment('z1')]);
+      final chosen = list('z1l', 'z1');
+      await sync(
+        mama,
+        changes: [
+          chosen.copyWith(
+            data: {
+              ...chosen.data,
+              SyncRecord.visibilityKey: [mama.id, papa.id],
+            },
+          ),
+          item('z1i', 'z1l'),
+        ],
+      );
+      expect(await has(kid, 'z1l'), isFalse);
+      await sync(
+        mama,
+        changes: [
+          appointment('z1', extra: const {'confidential': false}),
+        ],
+      );
+      expect(await has(papa, 'z1l'), isTrue);
+      expect(await has(kid, 'z1l'), isFalse);
+      expect(await has(kid, 'z1i'), isFalse);
+    });
+
+    test(
+      'one with its own audience leaves devices with the appointment',
+      () async {
+        await sync(
+          mama,
+          changes: [
+            appointment('z2', extra: const {'confidential': false}),
+          ],
+        );
+        final own = list('z2l', 'z2');
+        await sync(
+          mama,
+          changes: [
+            own.copyWith(
+              data: {
+                ...own.data,
+                SyncRecord.visibilityKey: [mama.id, kid.id],
+              },
+            ),
+          ],
+        );
+        final before = await sync(kid);
+        expect(before.changes.any((r) => r.id == 'z2l' && !r.deleted), isTrue);
+        await sync(mama, changes: [appointment('z2')]);
+        final after = await sync(kid, since: before.rev);
+        expect(after.changes.any((r) => r.id == 'z2l' && r.deleted), isTrue);
+      },
+    );
+
+    test(
+      'of an appointment with an audience outlives its deletion mark',
+      () async {
+        final t0 = DateTime.now();
+        await sync(
+          mama,
+          changes: [
+            shared('z3', [mama.id]),
+            list('z3l', 'z3'),
+          ],
+        );
+        await sync(mama, changes: [deleted('z3')]);
+        app.records.purgeDeleted(now: t0.add(const Duration(minutes: 5)));
+        expect(
+          app.records.purgeDeleted(now: t0.add(const Duration(days: 200))),
+          greaterThan(0),
+        );
+        expect(app.records.get(Collections.events, 'z3'), isNull);
+        expect(await has(mama, 'z3l'), isTrue);
+        expect(await has(papa, 'z3l'), isFalse);
+        expect(await has(kid, 'z3l'), isFalse);
+      },
+    );
+
+    test('opens again when its appointment comes back', () async {
+      await sync(
+        mama,
+        changes: [
+          shared('z4', [mama.id, papa.id, kid.id, oma.id]),
+          list('z4l', 'z4'),
+        ],
+      );
+      await sync(mama, changes: [deleted('z4')]);
+      expect(
+        app.records.get(Collections.shoppingLists, 'z4l')!.visibleTo,
+        isNotNull,
+      );
+      await sync(
+        mama,
+        changes: [
+          shared('z4', [mama.id, papa.id, kid.id, oma.id]),
+        ],
+      );
+      final open = app.records.get(Collections.shoppingLists, 'z4l')!;
+      expect(open.visibleTo, isNull);
+      expect(open.data.containsKey('audienceFromEvent'), isFalse);
+    });
+
+    test('stays out of a calendar app without the confidential', () async {
+      await sync(
+        mama,
+        changes: [appointment('z5'), list('z5l', 'z5'), item('z5i', 'z5l')],
+      );
+      Future<Response> find(String auth) async => app.handler(
+        Request(
+          'PROPFIND',
+          Uri.parse('http://famio.test/dav/calendars/mama/'),
+          headers: {'authorization': auth, 'depth': '1'},
+          body:
+              '<?xml version="1.0"?><d:propfind xmlns:d="DAV:"><d:prop>'
+              '<d:displayname/></d:prop></d:propfind>',
+        ),
+      );
+      final without = await davAuth(mama, confidential: false);
+      final listing = await (await find(without)).readAsString();
+      expect(listing, isNot(contains('Psychotherapie')));
+      final slug = '${CalDavServer.shoppingPrefix}z5l';
+      expect((await davGet(mama, without, '$slug/z5i.ics')).statusCode, 404);
+      final allowed = await davAuth(mama, confidential: true);
+      expect(
+        await (await find(allowed)).readAsString(),
+        contains('Psychotherapie'),
+      );
+      expect((await davGet(mama, allowed, '$slug/z5i.ics')).statusCode, 200);
     });
   });
 

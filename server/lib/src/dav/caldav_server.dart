@@ -940,7 +940,7 @@ class CalDavServer {
       Collections.shoppingLists,
       visibleToMember: c.member.id,
     ))
-      if (!list.deleted && _validListId(list.id))
+      if (!list.deleted && _validListId(list.id) && _listShown(c, list))
         _Collection(
           _Content.shopping,
           '${CalDavServer.shoppingPrefix}${list.id}',
@@ -961,11 +961,28 @@ class CalDavServer {
     if (!slug.startsWith(CalDavServer.shoppingPrefix)) return null;
     final listId = slug.substring(CalDavServer.shoppingPrefix.length);
     final list = records.get(Collections.shoppingLists, listId);
-    if (list == null || list.deleted || !records.canAccess(list, c.member.id)) {
+    if (list == null ||
+        list.deleted ||
+        !records.canAccess(list, c.member.id) ||
+        !_listShown(c, list)) {
       return null;
     }
     return _Collection(_Content.shopping, slug, listId: listId);
   }
+
+  /// A packing list is named after its appointment: where a confidential
+  /// appointment stays out, so does its list.
+  bool _listShown(_Context c, SyncRecord list) {
+    final eventId = list.data['eventId'];
+    final event = eventId == null
+        ? null
+        : records.get(Collections.events, '$eventId');
+    return event?.data['confidential'] != true || _confidentialShown(c);
+  }
+
+  /// A service account only ever gets a busy time, not even by asking.
+  static bool _confidentialShown(_Context c) =>
+      c.password.includeConfidential && c.member.role != MemberRole.service;
 
   static bool _validListId(String id) =>
       _Target._validId.hasMatch('${CalDavServer.shoppingPrefix}$id');
@@ -993,11 +1010,8 @@ class CalDavServer {
       !r.deleted &&
       records.canAccess(r, c.member.id) &&
       switch (collection.kind) {
-        // A service account only ever gets a busy time, not even by asking.
         _Content.events =>
-          r.data['confidential'] != true ||
-              (c.password.includeConfidential &&
-                  c.member.role != MemberRole.service),
+          r.data['confidential'] != true || _confidentialShown(c),
         _Content.tasks => true,
         _Content.shopping => _onList(r, collection),
       };

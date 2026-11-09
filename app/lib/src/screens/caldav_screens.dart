@@ -76,7 +76,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
           ],
           onSubmit: () async {
             final password = await askAccountPassword(context);
-            if (password == null) return;
+            if (password == null) throw const FormStepCancelled();
             final (_, s) = await api.createAppPassword(
               name: name.text,
               password: password,
@@ -143,7 +143,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
         ],
         onSubmit: () async {
           final password = await askAccountPassword(context);
-          if (password == null) return;
+          if (password == null) throw const FormStepCancelled();
           result = await api.appleProfile(
             password: password,
             url: FamioApiClient.normalizeUrl(address.text),

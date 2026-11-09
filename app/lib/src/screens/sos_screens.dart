@@ -308,7 +308,8 @@ class SosCard extends StatelessWidget {
 /// From the quick settings tile or the shortcut: 5 seconds to cancel a
 /// slip, then the alarm.
 Future<void> startSosCountdown(BuildContext context) async {
-  if (SosController.current != null) return openSos(context);
+  final engine = AppScope.read(context).engine;
+  if (engine != null && _pressStillOn(engine) != null) return openSos(context);
   final go = await Navigator.of(context, rootNavigator: true).push<bool>(
     MaterialPageRoute(
       fullscreenDialog: true,
@@ -396,19 +397,37 @@ class _SosCountdownState extends State<_SosCountdown> {
   }
 }
 
+/// This device's press of the button, while its alarm runs. One that has
+/// been ended since, here or elsewhere, is over: the next press is a new
+/// alarm. (An alarm not synced yet counts as running.)
+SosController? _pressStillOn(SyncEngine engine) {
+  final controller = SosController.current;
+  final id = controller?.alertId;
+  if (controller == null || id == null) return controller;
+  final stored = engine.store.get(Collections.sosAlerts, id)?.record;
+  if (stored == null || (!stored.deleted && SosAlert.fromRecord(stored).open)) {
+    return controller;
+  }
+  SosController.current = null;
+  controller.dispose();
+  return null;
+}
+
 /// Starts the alarm (or shows the running one) for this member. With
 /// [running] it only ever shows that one.
 Future<void> openSos(BuildContext context, {SosAlert? running}) async {
   final state = AppScope.read(context);
   final engine = state.engine;
   if (engine == null) return;
-  final controller = SosController.current ??= SosController(
-    engine,
-    serverUrl: state.serverUrl,
-    pin: state.certificatePin,
-    device: AppState.deviceName,
-  );
-  if (running != null && controller.alertId == null) {
+  final controller =
+      _pressStillOn(engine) ??
+      (SosController.current = SosController(
+        engine,
+        serverUrl: state.serverUrl,
+        pin: state.certificatePin,
+        device: AppState.deviceName,
+      ));
+  if (running != null && controller.alertId != running.id) {
     controller.follow(running.id);
   }
   final fresh =

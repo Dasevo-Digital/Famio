@@ -180,6 +180,9 @@ void main() {
     await openSettings(tester);
     await tap(tester, find.text('Anmeldung & Sicherheit'));
     await tap(tester, find.widgetWithText(FilledButton, 'Einrichten'));
+    // Setting up a second factor needs the account password first.
+    await enter(tester, find.widgetWithText(TextField, 'Passwort'), _password);
+    await tap(tester, find.text('Weiter'));
     await waitFor(tester, find.byType(QrImageView));
     // The key shown for typing it by hand (groups of four).
     final secret = tester

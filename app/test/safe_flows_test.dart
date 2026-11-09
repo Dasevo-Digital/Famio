@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio/src/app.dart';
@@ -7,11 +8,13 @@ import 'package:famio/src/data/school_bag.dart';
 import 'package:famio/src/data/week_plan.dart';
 import 'package:famio/src/reminders/reminder_service.dart';
 import 'package:famio/src/screens/budget_screens.dart';
+import 'package:famio/src/screens/search_screen.dart';
 import 'package:famio/src/screens/sos_screens.dart';
 import 'package:famio/src/screens/subscriptions_screen.dart';
 import 'package:famio/src/screens/tasks_screen.dart';
 import 'package:famio/src/sos/sos_controller.dart';
 import 'package:famio/src/widgets/account_password.dart';
+import 'package:famio/src/widgets/form_dialog.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart'
@@ -35,6 +38,7 @@ void main() {
   late SyncEngine engine;
   var hasPassword = false;
   var raised = 0;
+  final resolved = <String>[];
 
   Future<BuildContext> start(
     WidgetTester tester, {
@@ -48,6 +52,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     raised = 0;
+    resolved.clear();
     final client = MockClient((r) async {
       if (r.url.path.endsWith('/api/me')) {
         return http.Response(
@@ -61,7 +66,15 @@ void main() {
           headers: {'content-type': 'application/json; charset=utf-8'},
         );
       }
-      if (r.url.path.endsWith('/api/sos')) raised++;
+      if (r.url.path.endsWith('/resolve')) resolved.add(r.url.path);
+      if (r.url.path.endsWith('/api/sos')) {
+        raised++;
+        return http.Response(
+          jsonEncode({'id': 'new-alarm'}),
+          201,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
       return http.Response('{}', 503);
     });
     final state = AppState();
@@ -126,6 +139,53 @@ void main() {
       await tester.pump(const Duration(seconds: 5));
     });
 
+    testWidgets('the departure reminder names no place either', (tester) async {
+      await start(tester);
+      engine
+        ..put(
+          Collections.places,
+          'p0',
+          const Place(
+            id: 'p0',
+            name: 'Zuhause',
+            latitude: 52.52,
+            longitude: 13.40,
+          ).toData(),
+        )
+        ..put(
+          Collections.places,
+          'p1',
+          const Place(
+            id: 'p1',
+            name: 'Psychiatrie West',
+            latitude: 52.574,
+            longitude: 13.40,
+          ).toData(),
+        )
+        ..saveEvent(
+          CalendarEvent(
+            id: 'e1',
+            title: 'Therapie',
+            location: 'Psychiatrie West',
+            start: DateTime(2026, 11, 11, 10),
+            end: DateTime(2026, 11, 11, 11),
+            confidential: true,
+            memberIds: const ['m1'],
+          ),
+        );
+      final at = DateTime(2026, 11, 11, 7);
+      final reminder = departureReminders(
+        engine,
+        TripMode.car,
+        from: at,
+        to: at.add(const Duration(days: 1)),
+      ).single;
+      expect(reminder.title, isNot(contains('Therapie')));
+      expect(reminder.body, isNot(contains('Psychiatrie')));
+      expect(reminder.body, contains('Beginn 10:00'));
+      await tester.pump(const Duration(seconds: 5));
+    });
+
     testWidgets('stay out of the week plan', (tester) async {
       await start(tester);
       engine.saveEvent(secret('Psychotherapie'));
@@ -166,6 +226,20 @@ void main() {
   });
 
   group('the subscription editor', () {
+    testWidgets('brings what is missing into view on a phone', (tester) async {
+      final context = await start(tester, size: const Size(390, 844));
+      showSubscriptionEditor(context);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final where = tester.getRect(find.text('Bitte einen Namen angeben'));
+      expect(where.top, greaterThanOrEqualTo(0));
+      expect(where.bottom, lessThanOrEqualTo(844));
+      await tester.pump(const Duration(seconds: 5));
+    });
+
     testWidgets('says what is missing where it can be seen', (tester) async {
       final context = await start(tester);
       showSubscriptionEditor(context);
@@ -307,8 +381,192 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Kuchen'));
     await tester.pumpAndSettle();
-    expect(find.byType(AlertDialog), findsOneWidget);
+    expect(find.text('Bitte ohne Nuesse'), findsWidgets);
     expect(find.text('Speichern'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  group('a guest and the steps of a task', () {
+    const task = Task(
+      id: 't1',
+      title: 'Kuchen',
+      assigneeIds: ['g1'],
+      checklist: [TaskStep(id: 's1', text: 'Mehl kaufen')],
+    );
+
+    Future<void> tasks(WidgetTester tester, BuildContext context) async {
+      engine.saveTask(task);
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const TasksScreen()));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('sees and ticks them off, also without notes', (tester) async {
+      await tasks(tester, await start(tester, memberId: 'g1'));
+      await tester.tap(find.text('Kuchen'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Mehl kaufen'));
+      await tester.pumpAndSettle();
+      expect(engine.tasks.single.checklist.single.done, isTrue);
+      expect(find.text('Speichern'), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('cannot swipe a task away', (tester) async {
+      await tasks(tester, await start(tester, memberId: 'g1'));
+      await tester.drag(find.byType(Dismissible).first, const Offset(-800, 0));
+      await tester.pumpAndSettle();
+      expect(engine.tasks, hasLength(1));
+      expect(find.byType(SnackBar), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('reads it too when coming from the search', (tester) async {
+      final context = await start(tester, memberId: 'g1');
+      engine.saveTask(task);
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen()));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, 'Kuchen');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Kuchen').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Mehl kaufen'), findsOneWidget);
+      expect(find.text('Speichern'), findsNothing);
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('an adult still gets the editor', (tester) async {
+      await tasks(tester, await start(tester));
+      await tester.tap(find.text('Kuchen'));
+      await tester.pumpAndSettle();
+      expect(find.text('Speichern'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  group('the emergency button after an alarm has ended elsewhere', () {
+    SyncRecord alarm(String id, SosState state) => SyncRecord(
+      collection: Collections.sosAlerts,
+      id: id,
+      data: SosAlert(
+        id: id,
+        memberId: 'k1',
+        startedAt: DateTime.now().subtract(const Duration(minutes: 5)),
+        state: state,
+      ).toData(),
+      updatedAt: 1,
+    );
+    final banner = find
+        .descendant(of: find.byType(SosBanner), matching: find.byType(ListTile))
+        .first;
+    const away = 'Zurück zu Famio (Alarm läuft weiter)';
+
+    testWidgets('raises a new alarm after one only looked at', (tester) async {
+      final context = await start(
+        tester,
+        memberId: 'k1',
+        before: (s) => s.put(alarm('s1', SosState.active), dirty: false),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(banner);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(away));
+      await tester.pumpAndSettle();
+      engine.put(
+        Collections.sosAlerts,
+        's1',
+        alarm('s1', SosState.resolved).data,
+      );
+      await tester.pumpAndSettle();
+      expect(raised, 0);
+      unawaited(openSos(context));
+      await tester.pumpAndSettle();
+      expect(raised, 1);
+      expect(SosController.current!.alertId, 'new-alarm');
+      SosController.current!.stop();
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('raises a new alarm after one raised here', (tester) async {
+      final context = await start(tester, memberId: 'k1');
+      await tester.pumpAndSettle();
+      unawaited(openSos(context));
+      await tester.pumpAndSettle();
+      expect(raised, 1);
+      await tester.tap(find.text(away));
+      await tester.pumpAndSettle();
+      // Still running: pressing again only shows it.
+      unawaited(openSos(context));
+      await tester.pumpAndSettle();
+      expect(raised, 1);
+      await tester.tap(find.text(away));
+      await tester.pumpAndSettle();
+      engine.put(
+        Collections.sosAlerts,
+        'new-alarm',
+        alarm('new-alarm', SosState.resolved).data,
+      );
+      await tester.pumpAndSettle();
+      unawaited(openSos(context));
+      await tester.pumpAndSettle();
+      expect(raised, 2);
+      SosController.current!.stop();
+      await tester.pump(const Duration(seconds: 5));
+    });
+
+    testWidgets('the banner takes over a newer alarm', (tester) async {
+      await start(
+        tester,
+        memberId: 'k1',
+        before: (s) => s.put(alarm('s1', SosState.active), dirty: false),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(banner);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(away));
+      await tester.pumpAndSettle();
+      engine
+        ..put(Collections.sosAlerts, 's1', alarm('s1', SosState.resolved).data)
+        ..put(Collections.sosAlerts, 's2', alarm('s2', SosState.active).data);
+      await tester.pumpAndSettle();
+      await tester.tap(banner);
+      await tester.pumpAndSettle();
+      expect(SosController.current!.alertId, 's2');
+      expect(raised, 0);
+      await tester.tap(find.text('Ich bin sicher – Alarm beenden'));
+      await tester.pumpAndSettle();
+      expect(resolved.single, endsWith('/api/sos/s2/resolve'));
+      await tester.pump(const Duration(seconds: 5));
+    });
+  });
+
+  testWidgets('a form stays open when a further step is cancelled', (
+    tester,
+  ) async {
+    final context = await start(tester);
+    var asked = 0;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (_) => FormDialog(
+          title: 'Formular',
+          fields: const [Text('Feld')],
+          onSubmit: () async {
+            asked++;
+            throw const FormStepCancelled();
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(asked, 1);
+    expect(find.text('Feld'), findsOneWidget);
     await tester.pump(const Duration(seconds: 5));
   });
 

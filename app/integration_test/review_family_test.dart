@@ -1461,6 +1461,9 @@ void main() {
       'E2E Kalender',
     );
     await tap(tester, find.text('Erstellen').last);
+    // A calendar password keeps access: the account password comes first.
+    await enter(tester, find.widgetWithText(TextField, 'Passwort'), _password);
+    await tap(tester, find.text('Bestätigen'));
     await waitFor(tester, find.text('Dein App-Passwort'));
     final secret = tester
         .widget<SelectableText>(

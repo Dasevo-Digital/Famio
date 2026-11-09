@@ -6415,6 +6415,17 @@
       }
     }
   },
+  "departureBodyPrivate": "ca. {minutes} Min. · Beginn {time}",
+  "@departureBodyPrivate": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "departureBody": "{place} · ca. {minutes} Min. · Beginn {time}",
   "@departureBody": {
     "placeholders": {

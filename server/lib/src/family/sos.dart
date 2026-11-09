@@ -210,14 +210,17 @@ class SosService {
     if (alert == null || (!member.isAdult && alert.memberId != member.id)) {
       throw ApiException(404, 'not_found', t('Notfall nicht gefunden'));
     }
-    if (!alert.open) return alert;
+    // "Ich bin sicher" ends everything of this person, not only the alarm
+    // the device knows about (that one may be long over).
+    final open = _openOf(alert.memberId);
+    if (open.isEmpty) return alert;
     final now = DateTime.now();
-    final record = _close(alert, member.id, now);
+    final records = [for (final a in open) _close(a, member.id, now)];
+    final record = records.firstWhere(
+      (r) => r.id == id,
+      orElse: () => records.first,
+    );
     final updated = SosAlert.fromRecord(record);
-    // "Ich bin sicher" ends everything of this person, not only the latest.
-    for (final other in _openOf(alert.memberId)) {
-      _close(other, member.id, now);
-    }
     final who = accounts.members().where((m) => m.id == alert.memberId);
     final name = who.isEmpty ? t('Jemand') : who.first.displayName;
     push?.deliver(

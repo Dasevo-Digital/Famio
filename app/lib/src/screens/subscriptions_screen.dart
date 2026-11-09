@@ -479,6 +479,10 @@ class _EditorState extends State<_Editor> {
     super.dispose();
   }
 
+  final _nameField = GlobalKey();
+  final _amountField = GlobalKey();
+  final _everyField = GlobalKey();
+
   void _save() {
     final name = _name.text.trim();
     final cents = parseEuro(_amount.text);
@@ -492,7 +496,25 @@ class _EditorState extends State<_Editor> {
           : null;
       _everyError = periodOk ? null : tr.subscriptionsEnterPeriod;
     });
-    if (name.isEmpty || cents == null || cents == 0 || !periodOk) return;
+    if (name.isEmpty || cents == null || cents == 0 || !periodOk) {
+      final wrong = name.isEmpty
+          ? _nameField
+          : cents == null || cents == 0
+          ? _amountField
+          : _everyField;
+      // The button is at the end of a long form: show what is missing.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final field = wrong.currentContext;
+        if (field != null && field.mounted) {
+          Scrollable.ensureVisible(
+            field,
+            alignment: 0.1,
+            duration: const Duration(milliseconds: 200),
+          );
+        }
+      });
+      return;
+    }
     final typed = _customCategory.text.trim();
     AppScope.engineOf(context).saveSubscription(
       Subscription(
@@ -581,6 +603,7 @@ class _EditorState extends State<_Editor> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
+              key: _nameField,
               controller: _name,
               autofocus: old == null,
               textCapitalization: TextCapitalization.sentences,
@@ -592,6 +615,7 @@ class _EditorState extends State<_Editor> {
             ),
             const SizedBox(height: 12),
             TextField(
+              key: _amountField,
               controller: _amount,
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
@@ -636,6 +660,7 @@ class _EditorState extends State<_Editor> {
                 SizedBox(
                   width: 96,
                   child: TextField(
+                    key: _everyField,
                     controller: _every,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
