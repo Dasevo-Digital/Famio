@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'app_icons.dart';
 
 import 'palette.dart';
@@ -65,6 +66,18 @@ class SectionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final canPop = Navigator.of(context).canPop();
+    final titleStyle = Theme.of(context).textTheme.headlineMedium;
+    final measure = TextPainter(
+      text: TextSpan(
+        text: title,
+        style: DefaultTextStyle.of(context).style.merge(titleStyle),
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final titleWidth = measure.width.ceilToDouble();
+    measure.dispose();
     return Scaffold(
       backgroundColor: c.background,
       floatingActionButton: floating,
@@ -90,7 +103,8 @@ class SectionPage extends StatelessWidget {
               children: [
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
-                  child: Row(
+                  child: _HeaderRow(
+                    titleWidth: titleWidth,
                     children: [
                       if (leading != null)
                         leading!
@@ -102,48 +116,53 @@ class SectionPage extends StatelessWidget {
                             tooltip: tr.commonBack,
                             onPressed: () => Navigator.of(context).maybePop(),
                           ),
-                        ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                        )
+                      else
+                        const SizedBox.shrink(),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: titleStyle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (subtitle != null)
                             Text(
-                              title,
-                              style: Theme.of(context).textTheme.headlineMedium,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            if (subtitle != null)
-                              Text(
-                                subtitle!,
-                                // Partly on the pastel circle behind it.
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: c.text(
-                                        c.inkSoft,
-                                        on: Color.alphaBlend(
-                                          c
-                                              .tint(section)
-                                              .withValues(
-                                                alpha: c.dark ? 0.6 : 0.9,
-                                              ),
-                                          c.background,
-                                        ),
+                              subtitle!,
+                              // Partly on the pastel circle behind it.
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: c.text(
+                                      c.inkSoft,
+                                      on: Color.alphaBlend(
+                                        c
+                                            .tint(section)
+                                            .withValues(
+                                              alpha: c.dark ? 0.6 : 0.9,
+                                            ),
+                                        c.background,
                                       ),
                                     ),
-                                // Two lines on narrow phones, e.g. a
-                                // child's age and birthday.
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                          ],
-                        ),
+                                  ),
+                              // Two lines on narrow phones, e.g. a
+                              // child's age and birthday.
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
-                      for (final a in actions)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8),
-                          child: a,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final a in actions)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: a,
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
@@ -170,6 +189,98 @@ class SectionPage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Leading button, title column and actions of a [SectionPage] in one row.
+/// When the title would be cut off next to the actions (narrow phones with
+/// many buttons), the actions move to their own row below it.
+class _HeaderRow extends MultiChildRenderObjectWidget {
+  const _HeaderRow({required this.titleWidth, required super.children})
+    : assert(children.length == 3);
+
+  /// Width the title needs on one line.
+  final double titleWidth;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderHeaderRow(titleWidth);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderHeaderRow renderObject) {
+    renderObject.titleWidth = titleWidth;
+  }
+}
+
+class _HeaderParentData extends ContainerBoxParentData<RenderBox> {}
+
+class _RenderHeaderRow extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, _HeaderParentData>,
+        RenderBoxContainerDefaultsMixin<RenderBox, _HeaderParentData> {
+  _RenderHeaderRow(this._titleWidth);
+
+  static const _rowGap = 8.0;
+
+  double _titleWidth;
+  set titleWidth(double value) {
+    if (value == _titleWidth) return;
+    _titleWidth = value;
+    markNeedsLayout();
+  }
+
+  /// Whether the actions share the title's row in the last layout.
+  bool oneRow = true;
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! _HeaderParentData) {
+      child.parentData = _HeaderParentData();
+    }
+  }
+
+  @override
+  void performLayout() {
+    final leading = firstChild!;
+    final heading = childAfter(leading)!;
+    final actions = childAfter(heading)!;
+    final width = constraints.maxWidth;
+    final loose = BoxConstraints(maxWidth: width);
+    leading.layout(loose, parentUsesSize: true);
+    actions.layout(loose, parentUsesSize: true);
+    final lead = leading.size;
+    final act = actions.size;
+    oneRow =
+        act.width == 0 ||
+        !width.isFinite ||
+        lead.width + _titleWidth + act.width <= width;
+    final headWidth = max(0.0, width - lead.width - (oneRow ? act.width : 0));
+    heading.layout(
+      BoxConstraints.tightFor(width: headWidth),
+      parentUsesSize: true,
+    );
+    final head = heading.size;
+    final rowHeight = max(
+      max(lead.height, head.height),
+      oneRow ? act.height : 0.0,
+    );
+    Offset centered(Size s, double x) => Offset(x, (rowHeight - s.height) / 2);
+    (leading.parentData! as BoxParentData).offset = centered(lead, 0);
+    (heading.parentData! as BoxParentData).offset = centered(head, lead.width);
+    (actions.parentData! as BoxParentData).offset = oneRow
+        ? centered(act, width - act.width)
+        : Offset(width - act.width, rowHeight + _rowGap);
+    size = constraints.constrain(
+      Size(width, oneRow ? rowHeight : rowHeight + _rowGap + act.height),
+    );
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// Round icon button on a soft background.

@@ -17,6 +17,7 @@ import 'package:famio/src/screens/kiosk_screen.dart';
 import 'package:famio/src/widgets/famio_tour.dart';
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/design/theme.dart' show debugFontFallback;
 import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
@@ -51,6 +52,16 @@ Future<void> _loadFonts() async {
   await load('Lucide', ['assets/fonts/Lucide.ttf']);
   // Framework dialogs use these icons even though most screens use Lucide.
   await load('MaterialIcons', ['fonts/MaterialIcons-Regular.otf']);
+  // Store screenshots should show emoji (weather, packing lists) like the
+  // phone does. The test engine has no system fonts, so load the Mac's.
+  const emoji = '/System/Library/Fonts/Apple Color Emoji.ttc';
+  if (Platform.environment.containsKey('FAMIO_STORE') &&
+      File(emoji).existsSync()) {
+    final loader = FontLoader('Apple Color Emoji')
+      ..addFont(File(emoji).readAsBytes().then(ByteData.sublistView));
+    await loader.load();
+    debugFontFallback = const ['Apple Color Emoji'];
+  }
 }
 
 String _weatherCache() {
@@ -1131,9 +1142,10 @@ void main() {
     bool signedIn = true,
     Brightness? brightness,
     List<String> hiddenModules = const [],
+    double ratio = 2,
   }) async {
-    tester.view.physicalSize = size * 2;
-    tester.view.devicePixelRatio = 2;
+    tester.view.physicalSize = size * ratio;
+    tester.view.devicePixelRatio = ratio;
     if (brightness != null) {
       tester.platformDispatcher.platformBrightnessTestValue = brightness;
     }
@@ -1574,6 +1586,100 @@ void main() {
     debugDefaultTargetPlatformOverride = null;
     await tester.pump(const Duration(seconds: 1));
   });
+
+  // App Store screenshots in the sizes Apple asks for, only with
+  // FAMIO_STORE=1: iPhone with Dynamic Island 402 × 874 pt at 3x
+  // (1206 × 2622 px), iPad 13" 1032 × 1376 pt at 2x (2064 × 2752 px).
+  final noStore = !Platform.environment.containsKey('FAMIO_STORE');
+  Future<GlobalKey> device(
+    WidgetTester tester,
+    Size size, {
+    required double ratio,
+    required double top,
+    required double bottom,
+  }) {
+    final padding = FakeViewPadding(top: top * ratio, bottom: bottom * ratio);
+    tester.view.padding = padding;
+    tester.view.viewPadding = padding;
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    return start(tester, size, ratio: ratio);
+  }
+
+  Future<void> more(WidgetTester tester, String label) async {
+    await tester.tap(find.byIcon(AppIcons.dotsThreeCircle));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(label).last);
+    await tester.pumpAndSettle();
+  }
+
+  // iPhone with Dynamic Island in both sizes App Store Connect offers:
+  // 402 × 874 pt (1206 × 2622 px) and 440 × 956 pt (1320 × 2868 px).
+  Future<void> iphone(WidgetTester tester, Size size, String prefix) async {
+    Future<GlobalKey> fresh() =>
+        device(tester, size, ratio: 3, top: 62, bottom: 34);
+    var key = await fresh();
+    await _shot(tester, key, '${prefix}_01_start');
+    await go(tester, 'Kalender');
+    await _shot(tester, key, '${prefix}_02_kalender');
+    await go(tester, 'Aufgaben');
+    await _shot(tester, key, '${prefix}_03_aufgaben');
+    await go(tester, 'Einkauf');
+    await _shot(tester, key, '${prefix}_04_einkauf');
+    await tester.tap(find.byTooltip('Chat').first);
+    await tester.pumpAndSettle();
+    await go(tester, 'Familie');
+    await _shot(tester, key, '${prefix}_05_chat');
+    key = await fresh();
+    await more(tester, 'Kinder');
+    await go(tester, 'Emil');
+    await _shot(tester, key, '${prefix}_06_kinder_protokoll');
+    key = await fresh();
+    await more(tester, 'Essen');
+    await _shot(tester, key, '${prefix}_07_essen');
+    key = await fresh();
+    await more(tester, 'Finanzen');
+    await _shot(tester, key, '${prefix}_08_finanzen');
+    debugDefaultTargetPlatformOverride = null;
+    await tester.pump(const Duration(seconds: 2));
+  }
+
+  testWidgets(
+    'store iphone',
+    (tester) => iphone(tester, const Size(402, 874), 'iphone'),
+    skip: noStore,
+  );
+
+  testWidgets(
+    'store iphone large',
+    (tester) => iphone(tester, const Size(440, 956), 'iphone_large'),
+    skip: noStore,
+  );
+
+  testWidgets('store ipad', (tester) async {
+    Future<GlobalKey> fresh() =>
+        device(tester, const Size(1032, 1376), ratio: 2, top: 24, bottom: 20);
+    var key = await fresh();
+    await _shot(tester, key, 'ipad_01_start');
+    await go(tester, 'Kalender');
+    await _shot(tester, key, 'ipad_02_kalender');
+    await go(tester, 'Aufgaben');
+    await _shot(tester, key, 'ipad_03_aufgaben');
+    await go(tester, 'Chat');
+    await _shot(tester, key, 'ipad_04_chat');
+    await go(tester, 'Kinder');
+    await go(tester, 'Emil');
+    await _shot(tester, key, 'ipad_05_kinder');
+    await go(tester, 'Essen');
+    await _shot(tester, key, 'ipad_06_essen');
+    key = await fresh();
+    openKiosk(tester.element(find.byType(Scaffold).first));
+    await tester.pumpAndSettle();
+    await _shot(tester, key, 'ipad_07_wandanzeige');
+    debugDefaultTargetPlatformOverride = null;
+    await tester.pump(const Duration(seconds: 2));
+  }, skip: noStore);
 
   testWidgets('kiosk by person', (tester) async {
     final key = await start(tester, const Size(1366, 1024));

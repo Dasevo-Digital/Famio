@@ -4,6 +4,7 @@ import 'package:famio/src/widgets/famio_glyph.dart';
 import 'package:famio/src/widgets/pixel_snap.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -35,10 +36,8 @@ void main() {
     expect(tester.getTopLeft(find.byKey(key)), const Offset(10.5, 20.5));
   });
 
-  testWidgets('the logo of a tall window on a 1x display is sharp', (
-    tester,
-  ) async {
-    tester.view.physicalSize = const Size(2704, 980);
+  Future<void> shell(WidgetTester tester, Size size) async {
+    tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
     SharedPreferences.setMockInitialValues({'tour.offered': true});
@@ -55,11 +54,34 @@ void main() {
       );
     await tester.pumpWidget(FamioApp(state: state));
     await tester.pumpAndSettle();
+  }
+
+  testWidgets('the logo of a tall window on a 1x display is sharp', (
+    tester,
+  ) async {
+    await shell(tester, const Size(2704, 980));
     bool whole(Offset o) =>
         o.dx == o.dx.roundToDouble() && o.dy == o.dy.roundToDouble();
     expect(whole(tester.getTopLeft(find.byType(FamioGlyph).first)), isTrue);
     expect(whole(tester.getTopLeft(find.text('Famio').first)), isTrue);
     expect(whole(tester.getTopLeft(find.text('Kalender').first)), isTrue);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('long rail labels shrink instead of being cut off', (
+    tester,
+  ) async {
+    await shell(tester, const Size(1366, 1024));
+    // The rail is 108 wide with a 12 margin; items keep 10 on each side.
+    final text = find.text('Einstellungen').first;
+    // Cut-off text fades out at the edge instead.
+    expect(
+      tester.renderObject<RenderParagraph>(text).debugHasOverflowShader,
+      isFalse,
+    );
+    final label = tester.getRect(text);
+    expect(label.left, greaterThanOrEqualTo(12 + 10));
+    expect(label.right, lessThanOrEqualTo(12 + 108 - 10));
     await tester.pump(const Duration(seconds: 5));
   });
 }

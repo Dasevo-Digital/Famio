@@ -683,21 +683,30 @@ class _RailItem extends StatelessWidget {
                     SizedBox(
                       height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
                     ),
+                    // Long names such as "Einstellungen" shrink a little
+                    // instead of being cut off at the rail's edge.
                     PixelSnap(
-                      child: AnimatedDefaultTextStyle(
-                        duration: _railAnimationDuration(context),
-                        curve: Curves.easeOutCubic,
-                        maxLines: 1,
-                        overflow: TextOverflow.fade,
-                        softWrap: false,
-                        style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                          color: selected ? c.ink : c.inkSoft,
-                          fontSize: labelSize,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w700,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: AnimatedDefaultTextStyle(
+                            duration: _railAnimationDuration(context),
+                            curve: Curves.easeOutCubic,
+                            maxLines: 1,
+                            overflow: TextOverflow.fade,
+                            softWrap: false,
+                            style: Theme.of(context).textTheme.labelSmall!
+                                .copyWith(
+                                  color: selected ? c.ink : c.inkSoft,
+                                  fontSize: labelSize,
+                                  fontWeight: selected
+                                      ? FontWeight.w800
+                                      : FontWeight.w700,
+                                ),
+                            child: Text(section.title(context)),
+                          ),
                         ),
-                        child: Text(section.title(context)),
                       ),
                     ),
                   ],

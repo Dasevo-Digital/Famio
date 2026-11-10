@@ -5,6 +5,11 @@ import 'palette.dart';
 const bodyFont = 'Nunito';
 const displayFont = 'Fredoka';
 
+/// Fonts to try for missing glyphs. Real devices fall back to their system
+/// fonts on their own; only the screenshot renderer sets this, because the
+/// test engine has no system fonts and shows emoji as boxes.
+List<String>? debugFontFallback;
+
 /// The Famio look: warm pastel surfaces, rounded shapes, playful headings.
 /// Deliberately avoids stock Material cues (ripples, Roboto, sharp app bars).
 ///
@@ -57,6 +62,7 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
   TextStyle display(double size, [FontWeight weight = FontWeight.w600]) =>
       TextStyle(
         fontFamily: displayFont,
+        fontFamilyFallback: debugFontFallback,
         fontSize: size,
         fontWeight: weight,
         color: c.ink,
@@ -65,6 +71,7 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
   TextStyle body(double size, [FontWeight weight = FontWeight.w600]) =>
       TextStyle(
         fontFamily: bodyFont,
+        fontFamilyFallback: debugFontFallback,
         fontSize: size,
         fontWeight: weight,
         color: c.ink,
@@ -95,6 +102,7 @@ ThemeData famioTheme(Brightness brightness, {bool highContrast = false}) {
     brightness: brightness,
     colorScheme: scheme,
     fontFamily: bodyFont,
+    fontFamilyFallback: debugFontFallback,
     textTheme: textTheme,
     scaffoldBackgroundColor: c.background,
     canvasColor: c.background,
