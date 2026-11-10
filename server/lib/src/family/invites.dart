@@ -130,14 +130,26 @@ class Invites {
   void revoke(String id) =>
       _db.execute('DELETE FROM invites WHERE id = ? AND used_at IS NULL', [id]);
 
-  /// The open invitation for [code], or null.
+  /// Withdraws what [memberId] invited to and nobody has used yet: when they
+  /// are no longer an admin (or no longer there), neither are their codes.
+  void revokeBy(String memberId) => _db.execute(
+    'DELETE FROM invites WHERE created_by = ? AND used_at IS NULL',
+    [memberId],
+  );
+
+  /// The open invitation for [code], or null. It counts only as long as
+  /// whoever made it is still an admin.
   Invite? find(String code) {
     final row = _db.select(
       'SELECT * FROM invites WHERE code_hash = ? AND used_at IS NULL'
       ' AND expires_at > ?',
       [_hash(code), DateTime.now().millisecondsSinceEpoch],
     ).firstOrNull;
-    return row == null ? null : _invite(row);
+    if (row == null) return null;
+    final invite = _invite(row);
+    final by = invite.createdBy;
+    if (by != null && accounts.byId(by)?.isAdmin != true) return null;
+    return invite;
   }
 
   /// Creates the member for [code]; the invitation is used up.

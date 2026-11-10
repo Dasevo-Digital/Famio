@@ -439,6 +439,7 @@ extension _AdminRoutes on FamioApi {
     if (removeMembers) {
       for (final m in accounts.members()) {
         if (m.id == admin.id) continue;
+        invites?.revokeBy(m.id);
         accounts.delete(m.id);
         memberCount++;
       }
@@ -502,6 +503,9 @@ extension _AdminRoutes on FamioApi {
         admin,
         'hat ${_who(updated)} die Rolle ${updated.role.label} gegeben',
       );
+    }
+    if (before != null && before.isAdmin && !updated.isAdmin) {
+      invites?.revokeBy(id);
     }
     if (before != null && before.isAdmin != updated.isAdmin) {
       _audit(
@@ -671,6 +675,7 @@ extension _AdminRoutes on FamioApi {
     }
     final target = accounts.byId(id);
     records.purgeMember(id);
+    invites?.revokeBy(id);
     accounts.delete(id);
     locations?.memberDeleted(id);
     if (target != null) _audit(admin, 'hat ${_who(target)} entfernt');

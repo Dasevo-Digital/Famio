@@ -15,6 +15,7 @@ import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../l10n.dart';
+import '../security/app_lock.dart';
 
 const _chatCollections = {
   Collections.chatMessages,
@@ -270,9 +271,29 @@ class _ChatScreenState extends State<ChatScreen> {
   final _focus = FocusNode();
   var _uploading = false;
 
+  /// Back in the app or unlocked: what is on screen now counts as read.
+  late final _resumed = AppLifecycleListener(onResume: _look);
+  AppLock? _lock;
+
+  void _look() {
+    if (mounted) setState(() {});
+  }
+
+  /// Only messages somebody can actually see count as read: not while the
+  /// app is in the background or locked, nor from a chat that stays
+  /// mounted behind another section or page.
+  bool get _inView {
+    final state = WidgetsBinding.instance.lifecycleState;
+    if (state != null && state != AppLifecycleState.resumed) return false;
+    final lock = _lock;
+    return lock == null || !(lock.locked || lock.covered);
+  }
+
   @override
   void initState() {
     super.initState();
+    _resumed;
+    _lock = AppScope.read(context).lock..addListener(_look);
     _focus.onKeyEvent = (node, event) {
       // Enter sends, Shift+Enter makes a new line (desktop keyboards).
       if (event is KeyDownEvent &&
@@ -287,6 +308,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _resumed.dispose();
+    _lock?.removeListener(_look);
     _input.dispose();
     _focus.dispose();
     super.dispose();
@@ -357,6 +380,11 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(FamioSection.chat);
+    // Hidden behind another section (which keeps it, see the home shell)
+    // or covered by another page or dialog.
+    final shown =
+        TickerMode.valuesOf(context).enabled &&
+        (ModalRoute.of(context)?.isCurrent ?? true);
     return SectionPage(
       section: FamioSection.chat,
       title: widget.title,
@@ -370,7 +398,7 @@ class _ChatScreenState extends State<ChatScreen> {
           final messages = engine.chatMessages(widget.chatId);
           // Everything visible counts as read.
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (messages.isNotEmpty) {
+            if (shown && mounted && _inView && messages.isNotEmpty) {
               engine.markChatRead(widget.chatId, at: messages.last.sentAt);
             }
           });

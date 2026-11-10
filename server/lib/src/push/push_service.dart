@@ -12,6 +12,7 @@ import '../api_exception.dart';
 import '../record_store.dart';
 import '../remote_url_policy.dart';
 import '../i18n.dart';
+import 'delivery.dart';
 import 'web_push.dart';
 
 /// A notification for some members, with and without details.
@@ -59,6 +60,7 @@ class PushService {
     RemoteUrlPolicy? urlPolicy,
     this.onOperationalError,
     this.onSent,
+    this.retries = urgentRetries,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null,
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
@@ -74,6 +76,12 @@ class PushService {
 
   /// Called after each attempt to send to ntfy (for the metrics).
   final void Function({required bool ok})? onSent;
+
+  /// Waits before trying an urgent notice again (see [urgentRetries]).
+  final List<Duration> retries;
+
+  /// Completes when the server shuts down: no more tries after that.
+  final _stopped = Completer<void>();
 
   /// Browsers with Web Push (the web app); they get every notice too.
   WebPush? web;
@@ -153,7 +161,14 @@ class PushService {
 
   /// Closes only the client this service created itself. A supplied client is
   /// shared with other server services and remains owned by its caller.
+  /// Stops waiting to try again (before [idle] when the server shuts down).
+  void stop() {
+    if (!_stopped.isCompleted) _stopped.complete();
+    web?.stop();
+  }
+
   void close() {
+    stop();
     if (_ownsClient) _client.close();
     web?.close();
   }
@@ -770,8 +785,25 @@ class PushService {
     _pending.add(f);
   }
 
-  /// Publishes via ntfy's JSON API; returns the error text, if any.
-  Future<String?> _send(
+  /// Publishes via ntfy's JSON API, an urgent notice with further tries;
+  /// returns the error text, if any.
+  Future<String?> _send(Row row, PushNotice notice, {bool quiet = false}) =>
+      withRetries(
+        () async {
+          // The target may have gone meanwhile.
+          final current = _db.select(
+            'SELECT * FROM push_targets WHERE id = ?',
+            [row['id']],
+          ).firstOrNull;
+          if (current == null) return (null, null);
+          return _sendOnce(current, notice, quiet: quiet);
+        },
+        urgent: notice.urgent,
+        retries: retries,
+        stopped: _stopped.future,
+      );
+
+  Future<(String?, PushAttempt?)> _sendOnce(
     Row row,
     PushNotice notice, {
     bool quiet = false,
@@ -785,46 +817,43 @@ class PushService {
     final details = row['details'] == 1;
     final token = row['token'] as String?;
     String? error;
+    PushAttempt? attempt;
     try {
-      final request =
-          http.Request(
-              'POST',
-              base.replace(path: base.path.isEmpty ? '/' : base.path),
-            )
-            ..followRedirects = false
-            ..headers.addAll({
-              'content-type': 'application/json',
-              if (token != null) 'authorization': 'Bearer $token',
-            })
-            ..body = jsonEncode({
-              'topic': topic,
-              'title': details ? notice.title : 'Famio',
-              'message': details ? notice.body : notice.brief,
-              'tags': [notice.tag],
-              // ntfy's "low": no sound, no vibration, no pop-up.
-              if (quiet) 'priority': 2,
-              // "urgent": long vibration, breaks through on phones.
-              if (notice.urgent) 'priority': 5,
-            });
-      final response = await _client
-          .send(request)
-          .timeout(const Duration(seconds: 15));
-      // The answer says nothing; it may not hold up the next notice.
-      await response.stream.timeout(const Duration(seconds: 15)).drain<void>();
-      if (response.statusCode >= 300) {
-        error = t('Push-Server antwortet {status}', {
-          'status': response.statusCode,
-        });
+      // Checked again for every notice: a name may point elsewhere now.
+      await _urlPolicy.check(uri);
+      attempt = await postNotice(
+        _client,
+        base.replace(path: base.path.isEmpty ? '/' : base.path),
+        headers: {
+          'content-type': 'application/json',
+          if (token != null) 'authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'topic': topic,
+          'title': details ? notice.title : 'Famio',
+          'message': details ? notice.body : notice.brief,
+          'tags': [notice.tag],
+          // ntfy's "low": no sound, no vibration, no pop-up.
+          if (quiet) 'priority': 2,
+          // "urgent": long vibration, breaks through on phones.
+          if (notice.urgent) 'priority': 5,
+        }),
+      );
+      final status = attempt.status;
+      if (attempt.failed) {
+        error = t('Push-Server nicht erreichbar');
+      } else if (status != null && status >= 300) {
+        error = t('Push-Server antwortet {status}', {'status': status});
       }
-    } catch (e) {
-      error = t('Push-Server nicht erreichbar');
+    } on ApiException catch (e) {
+      error = e.message;
     }
     _db.execute('UPDATE push_targets SET last_error = ? WHERE id = ?', [
       error,
       row['id'],
     ]);
     onSent?.call(ok: error == null);
-    return error;
+    return (error, attempt);
   }
 
   static PushTarget _target(Row row) => PushTarget(

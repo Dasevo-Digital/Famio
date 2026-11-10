@@ -147,6 +147,7 @@ extension _AccountRoutes on FamioApi {
     await caldav?.disconnectUser(member.id);
     locations?.memberDeleted(member.id);
     records.purgeMember(member.id);
+    invites?.revokeBy(member.id);
     accounts.delete(
       member.id,
     ); // cascades sessions, feeds, app passwords and SSO.

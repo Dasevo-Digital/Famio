@@ -332,22 +332,28 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       children: [
         for (final s in FamioSection.values)
           if (_visited.contains(s))
-            HeroControllerScope.none(
-              // Which sections Android's back button leads back within;
-              // the shell decides (below), not each section on its own.
-              child: NotificationListener<NavigationNotification>(
-                onNotification: (n) {
-                  if (n.canHandlePop != _deeper.contains(s)) {
-                    setState(
-                      () => n.canHandlePop ? _deeper.add(s) : _deeper.remove(s),
-                    );
-                  }
-                  return true;
-                },
-                child: Navigator(
-                  key: _navigators[s],
-                  onGenerateRoute: (_) =>
-                      MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+            // Kept, but not running: animations stop and pages know they
+            // cannot be seen (the chat does not mark messages read).
+            TickerMode(
+              enabled: s == _section,
+              child: HeroControllerScope.none(
+                // Which sections Android's back button leads back within;
+                // the shell decides (below), not each section on its own.
+                child: NotificationListener<NavigationNotification>(
+                  onNotification: (n) {
+                    if (n.canHandlePop != _deeper.contains(s)) {
+                      setState(
+                        () =>
+                            n.canHandlePop ? _deeper.add(s) : _deeper.remove(s),
+                      );
+                    }
+                    return true;
+                  },
+                  child: Navigator(
+                    key: _navigators[s],
+                    onGenerateRoute: (_) =>
+                        MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+                  ),
                 ),
               ),
             )

@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 import '../accounts.dart';
 import '../api_exception.dart';
@@ -129,7 +130,7 @@ class LocationService {
     if (status.paused &&
         status.pausedUntil != null &&
         !now.isBefore(status.pausedUntil!)) {
-      _setPause(member.id, paused: false);
+      _endPause(member.id, status.pausedUntil!);
       status = _state(member.id);
     }
     final previous = _current(member.id);
@@ -180,12 +181,19 @@ class LocationService {
       );
     }
 
+    // A phone that was offline sends what it measured meanwhile: what it
+    // measured outside the schedule or during a pause stays private too.
+    final pauses = _pausesSince(member.id, now.subtract(retention));
     final valid = [
       for (final f in fixes)
         if (f.valid &&
             (f.accuracy ?? 0) <= 5000 &&
             f.at.isAfter(now.subtract(retention)) &&
-            f.at.isBefore(now.add(const Duration(minutes: 2))))
+            f.at.isBefore(now.add(const Duration(minutes: 2))) &&
+            (schedule == null || schedule.activeAt(_onClock(f.at))) &&
+            !pauses.any(
+              (p) => !f.at.isBefore(p.start) && f.at.isBefore(p.until),
+            ))
           f,
     ]..sort((a, b) => a.at.compareTo(b.at));
     if (valid.isNotEmpty) {
@@ -515,18 +523,67 @@ class LocationService {
 
   /// Pauses sharing of [memberId] for [duration] (null: until resumed).
   void pause(String memberId, {Duration? duration, required String byMember}) {
+    final now = _clock().toUtc();
+    final was = _state(memberId);
     _setPause(
       memberId,
       paused: true,
-      until: duration == null ? null : _clock().toUtc().add(duration),
+      until: duration == null ? null : now.add(duration),
       by: byMember,
+      // A longer pause keeps its beginning.
+      since: was.paused ? was.pausedSince ?? now : now,
     );
     _republishState(memberId);
   }
 
   void resume(String memberId) {
-    _setPause(memberId, paused: false);
+    final now = _clock().toUtc();
+    final s = _state(memberId);
+    final until = s.pausedUntil;
+    _endPause(memberId, until != null && until.isBefore(now) ? until : now);
     _republishState(memberId);
+  }
+
+  /// Ends the pause of [memberId] at [until] and remembers it.
+  void _endPause(String memberId, DateTime until) {
+    final s = _state(memberId);
+    final start = s.pausedSince;
+    if (s.paused && start != null && until.isAfter(start)) {
+      db.execute(
+        'INSERT INTO location_pauses (member_id, start, until) VALUES (?, ?, ?)',
+        [memberId, start.millisecondsSinceEpoch, until.millisecondsSinceEpoch],
+      );
+    }
+    _setPause(memberId, paused: false);
+  }
+
+  /// Pauses of [memberId] that ended after [from].
+  List<({DateTime start, DateTime until})> _pausesSince(
+    String memberId,
+    DateTime from,
+  ) => [
+    for (final row in db.select(
+      'SELECT start, until FROM location_pauses'
+      ' WHERE member_id = ? AND until > ?',
+      [memberId, from.millisecondsSinceEpoch],
+    ))
+      (
+        start: DateTime.fromMillisecondsSinceEpoch(
+          row['start'] as int,
+          isUtc: true,
+        ),
+        until: DateTime.fromMillisecondsSinceEpoch(
+          row['until'] as int,
+          isUtc: true,
+        ),
+      ),
+  ];
+
+  /// [at] on the clock schedules are read on (the family's time zone).
+  DateTime _onClock(DateTime at) {
+    final now = _clock();
+    if (now is tz.TZDateTime) return tz.TZDateTime.from(at, now.location);
+    return now.isUtc ? at.toUtc() : at.toLocal();
   }
 
   /// Whether [memberId] is paused right now (expired pauses end here).
@@ -541,12 +598,20 @@ class LocationService {
     required bool paused,
     DateTime? until,
     String? by,
+    DateTime? since,
   }) => db.execute(
-    'INSERT INTO location_state (member_id, paused, paused_until, paused_by)'
-    ' VALUES (?, ?, ?, ?) ON CONFLICT(member_id) DO UPDATE SET'
+    'INSERT INTO location_state'
+    ' (member_id, paused, paused_until, paused_by, paused_at)'
+    ' VALUES (?, ?, ?, ?, ?) ON CONFLICT(member_id) DO UPDATE SET'
     ' paused = excluded.paused, paused_until = excluded.paused_until,'
-    ' paused_by = excluded.paused_by',
-    [memberId, paused ? 1 : 0, until?.millisecondsSinceEpoch, by],
+    ' paused_by = excluded.paused_by, paused_at = excluded.paused_at',
+    [
+      memberId,
+      paused ? 1 : 0,
+      until?.millisecondsSinceEpoch,
+      by,
+      paused ? since?.millisecondsSinceEpoch : null,
+    ],
   );
 
   void _republishState(String memberId) {
@@ -595,6 +660,7 @@ class LocationService {
     return _State(
       paused: row?['paused'] == 1,
       pausedUntil: time(row?['paused_until']),
+      pausedSince: time(row?['paused_at']),
       placeId: row?['place_id'] as String?,
       placeSince: time(row?['place_since']),
       lastFix: time(row?['last_fix']),
@@ -675,6 +741,9 @@ class LocationService {
     db.execute('DELETE FROM location_points WHERE at < ?', [
       cutoff.millisecondsSinceEpoch,
     ]);
+    db.execute('DELETE FROM location_pauses WHERE until < ?', [
+      cutoff.millisecondsSinceEpoch,
+    ]);
     final members = {for (final m in accounts.members()) m.id};
     final changed = records.writeAsServer([
       for (final r in records.all(Collections.locationAlerts))
@@ -698,12 +767,14 @@ class LocationService {
   void deleteAll() {
     db.execute('DELETE FROM location_points');
     db.execute('DELETE FROM location_state');
+    db.execute('DELETE FROM location_pauses');
   }
 
   /// Removes everything about a deleted member.
   void memberDeleted(String memberId) {
     db.execute('DELETE FROM location_points WHERE member_id = ?', [memberId]);
     db.execute('DELETE FROM location_state WHERE member_id = ?', [memberId]);
+    db.execute('DELETE FROM location_pauses WHERE member_id = ?', [memberId]);
     final located = records.writeAsServer([
       SyncRecord(
         collection: Collections.memberLocations,
@@ -722,6 +793,7 @@ class _State {
   _State({
     required this.paused,
     this.pausedUntil,
+    this.pausedSince,
     this.placeId,
     this.placeSince,
     this.lastFix,
@@ -731,6 +803,10 @@ class _State {
   final DateTime? lastFix;
   final bool paused;
   final DateTime? pausedUntil;
+
+  /// When the current pause began (unknown for pauses begun before this
+  /// was recorded).
+  final DateTime? pausedSince;
   final String? placeId;
   final DateTime? placeSince;
 }

@@ -681,7 +681,7 @@ class _PeopleBoard extends StatelessWidget {
     }
 
     Widget eventLine(Occurrence o) => _BigLine(
-      o.event.title,
+      o.event.publicTitle,
       leading: SizedBox(
         width: 56,
         child: Text(
@@ -951,7 +951,7 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
                 ),
                 if (next != null)
                   Text(
-                    '${DateFormat.jm(appLanguage).format(next.start)} ${next.event.title}',
+                    '${DateFormat.jm(appLanguage).format(next.start)} ${next.event.publicTitle}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       shadows: shadow,

@@ -358,6 +358,17 @@ const _migrations = [
     json_extract(data, '$.targetCollection'), json_extract(data, '$.targetId')
   ) WHERE collection = 'assignment_responses' AND deleted = 0;
   ''',
+  '''
+  -- When sharing was paused: positions a phone measured then and sends
+  -- later are dropped as well.
+  ALTER TABLE location_state ADD COLUMN paused_at INTEGER;
+  CREATE TABLE location_pauses (
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    start INTEGER NOT NULL,
+    until INTEGER NOT NULL
+  );
+  CREATE INDEX location_pauses_member ON location_pauses(member_id, until);
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

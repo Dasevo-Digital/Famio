@@ -910,18 +910,23 @@ class RecordStore {
         : '';
     final tasks = role == MemberRole.guest ? _guestTasksSql : '';
     final adults = _adultsOnlySql(role);
+    // A revocation has the rev of the record it is about. It goes first:
+    // a page ending between the two would continue after that rev and lose
+    // it, while the record itself, revoked for this member, is not sent.
     final rows = _db.select(
       '''
-      SELECT collection, id, data, deleted, updated_at, updated_by, rev
+      SELECT collection, id, data, deleted, updated_at, updated_by, rev,
+             1 AS kind
         FROM records
        WHERE rev > ?1 $only $tasks $adults
          AND (visible_to IS NULL
               OR EXISTS (SELECT 1 FROM json_each(visible_to) WHERE value = ?2))
       UNION ALL
-      SELECT collection, id, '{}', 1, $revokedAt, '$serverMemberId', rev
+      SELECT collection, id, '{}', 1, $revokedAt, '$serverMemberId', rev,
+             0 AS kind
         FROM revocations
        WHERE member_id = ?2 AND rev > ?1 $only $adults
-      ORDER BY rev
+      ORDER BY rev, kind
       LIMIT ?3
       ''',
       [since, userId, pageSize + 1],

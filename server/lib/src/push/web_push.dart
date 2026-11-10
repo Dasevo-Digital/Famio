@@ -9,6 +9,7 @@ import 'package:sqlite3/sqlite3.dart';
 import '../api_exception.dart';
 import '../i18n.dart';
 import '../remote_url_policy.dart';
+import 'delivery.dart';
 import 'push_service.dart';
 import 'web_push_crypto.dart';
 
@@ -51,8 +52,19 @@ class WebPush {
     required this._publicUrl,
     this._urlPolicy = const RemoteUrlPolicy(),
     this.onSent,
+    this.retries = urgentRetries,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null;
+
+  /// Waits before trying an urgent notice again (see [urgentRetries]).
+  final List<Duration> retries;
+
+  final _stopped = Completer<void>();
+
+  /// No more tries (the server shuts down).
+  void stop() {
+    if (!_stopped.isCompleted) _stopped.complete();
+  }
 
   final Database _db;
   final http.Client _client;
@@ -230,9 +242,29 @@ class WebPush {
   );
 
   /// Encrypts [notice] for the browser of [row] and hands it to its push
-  /// service; returns the error text, if any. A subscription the service
-  /// no longer knows (404, 410) is removed.
-  Future<String?> send(Row row, PushNotice notice, {bool quiet = false}) async {
+  /// service, an urgent notice with further tries; returns the error text,
+  /// if any. A subscription the service no longer knows (404, 410) is
+  /// removed.
+  Future<String?> send(Row row, PushNotice notice, {bool quiet = false}) =>
+      withRetries(
+        () async {
+          final current = _db.select(
+            'SELECT * FROM web_push_subscriptions WHERE id = ?',
+            [row['id']],
+          ).firstOrNull;
+          if (current == null) return (null, null);
+          return _sendOnce(current, notice, quiet: quiet);
+        },
+        urgent: notice.urgent,
+        retries: retries,
+        stopped: _stopped.future,
+      );
+
+  Future<(String?, PushAttempt?)> _sendOnce(
+    Row row,
+    PushNotice notice, {
+    bool quiet = false,
+  }) async {
     final endpoint = Uri.parse(row['endpoint'] as String);
     final body = notice.body.length > 1000
         ? '${notice.body.substring(0, 999)}…'
@@ -246,11 +278,12 @@ class WebPush {
         if (notice.urgent) 'urgent': true,
       }),
     );
-    String? error;
+    final PushAttempt attempt;
     try {
-      final request = http.Request('POST', endpoint)
-        ..followRedirects = false
-        ..headers.addAll({
+      attempt = await postNotice(
+        _client,
+        endpoint,
+        headers: {
           'content-type': 'application/octet-stream',
           'content-encoding': 'aes128gcm',
           'authorization': keys.authorization(endpoint, subject: _subject()),
@@ -261,37 +294,42 @@ class WebPush {
               : quiet
               ? 'low'
               : 'normal',
-        })
-        ..bodyBytes = encryptPush(
+        },
+        bodyBytes: encryptPush(
           payload,
           uaPublic: unb64(row['p256dh'] as String),
           authSecret: unb64(row['auth'] as String),
-        );
-      final response = await _client
-          .send(request)
-          .timeout(const Duration(seconds: 15));
-      // The answer says nothing; it may not hold up the next notice.
-      await response.stream.timeout(const Duration(seconds: 15)).drain<void>();
-      final status = response.statusCode;
-      if (status == 404 || status == 410) {
-        _db.execute('DELETE FROM web_push_subscriptions WHERE id = ?', [
-          row['id'],
-        ]);
-        onSent?.call(ok: false);
-        return t('Der Browser hat die Benachrichtigungen abbestellt');
-      }
-      if (status >= 300) {
-        error = t('Push-Server antwortet {status}', {'status': status});
-      }
+        ),
+      );
     } catch (_) {
+      // A damaged subscription: nothing to try again.
+      _db.execute(
+        'UPDATE web_push_subscriptions SET last_error = ? WHERE id = ?',
+        [t('Push-Server nicht erreichbar'), row['id']],
+      );
+      onSent?.call(ok: false);
+      return (t('Push-Server nicht erreichbar'), null);
+    }
+    final status = attempt.status;
+    if (status == 404 || status == 410) {
+      _db.execute('DELETE FROM web_push_subscriptions WHERE id = ?', [
+        row['id'],
+      ]);
+      onSent?.call(ok: false);
+      return (t('Der Browser hat die Benachrichtigungen abbestellt'), null);
+    }
+    String? error;
+    if (attempt.failed) {
       error = t('Push-Server nicht erreichbar');
+    } else if (status != null && status >= 300) {
+      error = t('Push-Server antwortet {status}', {'status': status});
     }
     _db.execute(
       'UPDATE web_push_subscriptions SET last_error = ? WHERE id = ?',
       [error, row['id']],
     );
     onSent?.call(ok: error == null);
-    return error;
+    return (error, attempt);
   }
 
   /// How the push service can reach the operator (RFC 8292): the

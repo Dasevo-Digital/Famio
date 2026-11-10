@@ -490,6 +490,8 @@ class FamioServerApp {
     lists.stop();
     allowances.stop();
     await files.maintenanceIdle;
+    // Urgent notices still waiting to be tried again are not.
+    push.stop();
     await push.idle;
     notices.close();
     push.close();
