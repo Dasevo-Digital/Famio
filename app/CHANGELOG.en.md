@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.47 – Wall display, chat, location and emergencies
+
+- The wall display shows confidential appointments only as "Busy" in the view by
+  person and in the photo slideshow too.
+- In the chat, only messages that were actually on screen count as read.
+- Location schedules and pauses also apply to positions a phone sends later.
+- Emergencies via ntfy and Web Push are tried again when a connection fails.
+- Invitations only count as long as the person who made them is an admin.
+
 ## 2.0.46 – Access with a password, guests and the emergency button
 
 - Setting up a calendar access, a calendar feed, a notification address or

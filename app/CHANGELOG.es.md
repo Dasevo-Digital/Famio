@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.47 – Pantalla de pared, chat, ubicación y emergencias
+
+- La pantalla de pared muestra las citas confidenciales solo como «Ocupado» también
+  en la vista por persona y en el pase de fotos.
+- En el chat solo cuentan como leídos los mensajes que estuvieron en pantalla.
+- El horario y las pausas de la ubicación también valen para posiciones que un
+  teléfono envía más tarde.
+- Las emergencias por ntfy y Web Push se reintentan si falla la conexión.
+- Las invitaciones solo valen mientras quien las creó sea administrador.
+
 ## 2.0.46 – Accesos con contraseña, invitados y botón de emergencia
 
 - Configurar un acceso de calendario, una suscripción de calendario, una dirección

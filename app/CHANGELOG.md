@@ -4,6 +4,16 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.47 – Wandanzeige, Chat, Standort und Notfälle
+
+- Die Wandanzeige zeigt vertrauliche Termine auch in der Ansicht nach Person und in
+  der Fotoschau nur als „Belegt“.
+- Im Chat gelten nur Nachrichten als gelesen, die wirklich auf dem Bildschirm waren.
+- Zeitplan und Pausen beim Standort gelten auch für Positionen, die ein Telefon
+  später nachreicht.
+- Notfälle über ntfy und Web Push werden bei einer Störung wiederholt.
+- Einladungen gelten nur, solange die Person, die sie erstellt hat, Admin ist.
+
 ## 2.0.46 – Zugänge mit Passwort, Gäste und Notfall-Knopf
 
 - Wer einen Kalender-Zugang, ein Kalender-Abo, eine Mitteilungsadresse oder
