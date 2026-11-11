@@ -25,6 +25,7 @@ import 'package:famio/src/l10n.dart';
 import 'package:famio/src/screens/home_shell.dart';
 import 'package:famio/src/security/app_lock.dart';
 import 'package:famio_client/famio_client.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -772,7 +773,9 @@ void main() {
 
       // Away for longer than the grace period: locked on return.
       host('home');
-      await Future<void>.delayed(AppLock.grace + const Duration(seconds: 5));
+      await Future<void>.delayed(
+        AppLock.defaultDelay + const Duration(seconds: 5),
+      );
       host('front');
       await waitFor(tester, find.text('Famio ist gesperrt'));
       await Future<void>.delayed(const Duration(seconds: 3));
@@ -793,6 +796,112 @@ void main() {
       host('secure-off');
       await Future<void>.delayed(const Duration(seconds: 2));
     } finally {
+      host('pin-clear');
+      await Future<void>.delayed(const Duration(seconds: 2));
+      await finish(tester, state, {});
+    }
+  });
+
+  testWidgets('#393 Sofort sperren, die Dateiauswahl ausgenommen', (
+    tester,
+  ) async {
+    tester.platformDispatcher.initialLifecycleStateTestValue = AppLifecycleState
+        .resumed
+        .toString();
+    addTearDown(tester.platformDispatcher.resetInitialLifecycleState);
+    tester.binding.readTestInitialLifecycleStateFromNativeWindow();
+    host('pin-set');
+    await Future<void>.delayed(const Duration(seconds: 2));
+    final state = await start(tester);
+    final seen = <AppLifecycleState>[];
+    final listener = AppLifecycleListener(onStateChange: seen.add);
+    // No pumping here: in the background Android draws no frames, and
+    // pump() would wait for one forever.
+    Future<void> background() async {
+      final end = DateTime.now().add(const Duration(seconds: 30));
+      while (!seen.contains(AppLifecycleState.paused)) {
+        if (DateTime.now().isAfter(end)) {
+          throw TestFailure('Famio did not go to the background: $seen');
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+    }
+
+    // Android's PIN screen can take a moment after another app closed.
+    Future<void> unlock() async {
+      await waitFor(tester, find.text('Famio ist gesperrt'));
+      for (var attempt = 1; attempt <= 3 && state.lock.locked; attempt++) {
+        await Future<void>.delayed(const Duration(seconds: 3));
+        if (state.lock.failed) {
+          debugPrint('E2E unlock: asking again ($attempt)');
+          await tester.tap(find.text('Entsperren'));
+          await Future<void>.delayed(const Duration(seconds: 3));
+        }
+        host('pin-enter');
+        final end = DateTime.now().add(const Duration(seconds: 10));
+        while (state.lock.locked && DateTime.now().isBefore(end)) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        if (state.lock.locked) {
+          debugPrint('E2E unlock: still locked after attempt $attempt');
+          host('shot');
+        }
+      }
+      expect(state.lock.locked, isFalse);
+      await tester.pumpAndSettle();
+    }
+
+    try {
+      host('front');
+      await Future<void>.delayed(const Duration(seconds: 3));
+      final on = state.lock.setEnabled(true);
+      await Future<void>.delayed(const Duration(seconds: 3));
+      host('pin-enter');
+      expect(await on, isTrue);
+      await state.lock.setDelay(Duration.zero);
+      await tester.pumpAndSettle();
+
+      // At once: as soon as Android has sent Famio to the background. The
+      // emulator takes its time with that, a phone does not.
+      seen.clear();
+      host('home');
+      await background();
+      host('front');
+      await unlock();
+
+      // Android's own file picker sends Famio to the background, yet coming
+      // back from it needs no unlock.
+      seen.clear();
+      final picked = AppLock.picking(FilePicker.pickFiles);
+      await background();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      host('back');
+      expect(await picked, isEmpty);
+      await until(
+        tester,
+        () => seen.contains(AppLifecycleState.resumed),
+        'back from the picker',
+      );
+      await tester.pump(const Duration(seconds: 2));
+      expect(state.lock.locked, isFalse);
+      expect(find.text('Famio ist gesperrt'), findsNothing);
+
+      // Without announcing the picker the same trip locks.
+      seen.clear();
+      final plain = FilePicker.pickFiles();
+      await background();
+      await Future<void>.delayed(const Duration(seconds: 2));
+      host('back');
+      expect(await plain, isEmpty);
+      await unlock();
+
+      await state.lock.setDelay(AppLock.defaultDelay);
+      final off = state.lock.setEnabled(false);
+      await Future<void>.delayed(const Duration(seconds: 3));
+      host('pin-enter');
+      expect(await off, isTrue);
+    } finally {
+      listener.dispose();
       host('pin-clear');
       await Future<void>.delayed(const Duration(seconds: 2));
       await finish(tester, state, {});

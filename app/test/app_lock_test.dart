@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:famio/src/design/theme.dart';
 import 'package:famio/src/security/app_lock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,10 +35,14 @@ void main() {
   Future<AppLock> lock({
     bool enabled = true,
     TargetPlatform platform = TargetPlatform.android,
+    int? delaySeconds,
   }) async {
     now = DateTime(2026, 11, 5, 12);
     device = _Device();
-    SharedPreferences.setMockInitialValues({'appLock.enabled': enabled});
+    SharedPreferences.setMockInitialValues({
+      'appLock.enabled': enabled,
+      'appLock.delay': ?delaySeconds,
+    });
     final result = AppLock(
       await SharedPreferences.getInstance(),
       device: device,
@@ -69,8 +76,81 @@ void main() {
     await l.unlock();
     away(l, const Duration(seconds: 59));
     expect(l.locked, isFalse);
-    away(l, AppLock.grace);
+    away(l, AppLock.defaultDelay);
     expect(l.locked, isTrue);
+  });
+
+  test('the chosen time decides', () async {
+    final now0 = await lock(delaySeconds: 0);
+    await now0.unlock();
+    away(now0, Duration.zero);
+    expect(now0.locked, isTrue);
+
+    final five = await lock(delaySeconds: 300);
+    expect(five.delay, const Duration(minutes: 5));
+    await five.unlock();
+    away(five, const Duration(minutes: 4, seconds: 59));
+    expect(five.locked, isFalse);
+    away(five, const Duration(minutes: 5));
+    expect(five.locked, isTrue);
+  });
+
+  test('a minute until somebody chooses, and only offered times', () async {
+    final l = await lock();
+    expect(l.delay, AppLock.defaultDelay);
+    final odd = await lock(delaySeconds: 42);
+    expect(odd.delay, AppLock.defaultDelay);
+    expect(
+      () => odd.setDelay(const Duration(seconds: 42)),
+      throwsArgumentError,
+    );
+    await odd.setDelay(const Duration(minutes: 15));
+    expect(odd.delay, const Duration(minutes: 15));
+    expect(
+      (await SharedPreferences.getInstance()).getInt('appLock.delay'),
+      900,
+    );
+  });
+
+  test(
+    'at once: no unlock after the camera, the file picker or the scanner',
+    () async {
+      final l = await lock(delaySeconds: 0);
+      await l.unlock();
+      final answer = Completer<String?>();
+      final picked = AppLock.picking(() => answer.future);
+      l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      l.didChangeAppLifecycleState(AppLifecycleState.hidden);
+      l.didChangeAppLifecycleState(AppLifecycleState.paused);
+      now = now.add(const Duration(seconds: 50));
+      // The picker's answer arrives before Famio hears it is back.
+      answer.complete('photo.jpg');
+      expect(await picked, 'photo.jpg');
+      l.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      expect(l.locked, isFalse);
+
+      // Longer than a minute in the camera: locked again.
+      final slow = AppLock.picking(() async {
+        away(l, AppLock.pickerDelay);
+        return null;
+      });
+      await slow;
+      expect(l.locked, isTrue);
+      await l.unlock();
+
+      // Leaving any other way locks at once.
+      away(l, const Duration(seconds: 1));
+      expect(l.locked, isTrue);
+    },
+  );
+
+  test('a longer chosen time also counts for the camera', () async {
+    final l = await lock(delaySeconds: 900);
+    await l.unlock();
+    await AppLock.picking(() async {
+      away(l, const Duration(minutes: 10));
+    });
+    expect(l.locked, isFalse);
   });
 
   test('the system dialog itself does not lock again', () async {
@@ -128,6 +208,58 @@ void main() {
     expect(android.covered, isFalse);
   });
 
+  testWidgets(
+    'settings: the time is chosen in a dialog, also with large text',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.reset);
+      addTearDown(tester.platformDispatcher.clearAllTestValues);
+      final l = (await tester.runAsync(lock))!;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: famioTheme(Brightness.light),
+          home: Scaffold(
+            body: ListenableBuilder(
+              listenable: l,
+              builder: (_, _) =>
+                  ListView(children: [AppLockDelayTile(lock: l)]),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('Nach 1 Minute'), findsOneWidget);
+      await tester.tap(find.text('Sperren'));
+      await tester.pumpAndSettle();
+      for (final text in [
+        'Sofort',
+        'Nach 1 Minute',
+        'Nach 5 Minuten',
+        'Nach 15 Minuten',
+      ]) {
+        expect(
+          find.descendant(
+            of: find.byType(SimpleDialog),
+            matching: find.text(text),
+          ),
+          findsOneWidget,
+        );
+      }
+      await tester.tap(find.text('Sofort'));
+      await tester.runAsync(() => Future<void>.delayed(Duration.zero));
+      await tester.pumpAndSettle();
+      expect(find.byType(SimpleDialog), findsNothing);
+      expect(l.delay, Duration.zero);
+      expect(
+        find.text(
+          'Sofort\nKamera, Dateiauswahl und Scanner: nach einer Minute',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
   group('the gate', () {
     Widget gate(AppLock l, {bool active = true, VoidCallback? signOut}) =>
         MaterialApp(
@@ -167,7 +299,7 @@ void main() {
       await tester.pumpWidget(gate(l!));
       await tester.pumpAndSettle();
       expect(device.asked, 1);
-      away(l, AppLock.grace);
+      away(l, AppLock.defaultDelay);
       await tester.pumpAndSettle();
       expect(device.asked, 2);
       expect(l.locked, isFalse);

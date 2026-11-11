@@ -11,14 +11,17 @@ import '../design/palette.dart';
 import '../l10n.dart';
 import '../data/budget_month.dart';
 import 'budget_screens.dart';
+import '../security/app_lock.dart';
 
 /// Budget → "Kontoauszug importieren": a CSV or CAMT file from the bank,
 /// read on this device only.
 Future<void> importBankStatement(BuildContext context) async {
   final messenger = ScaffoldMessenger.of(context);
-  final picked = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: const ['csv', 'xml', 'txt'],
+  final picked = await AppLock.picking(
+    () => FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['csv', 'xml', 'txt'],
+    ),
   );
   if (picked.isEmpty) return;
   final List<BankTransaction> transactions;

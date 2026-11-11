@@ -21,6 +21,7 @@ import '../platform/document_scanner.dart';
 import '../widgets/files.dart';
 import 'event_editor.dart';
 import 'ics_import_screen.dart';
+import '../security/app_lock.dart';
 
 /// Appointments from a photo of a letter, an invitation or pasted text:
 /// recognised on the device, checked by hand, then added. Calendar files
@@ -112,9 +113,11 @@ class _EventImportScreenState extends State<EventImportScreen> {
   }
 
   Future<void> _pdf() async {
-    final picked = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['pdf'],
+    final picked = await AppLock.picking(
+      () => FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      ),
     );
     if (picked.isEmpty) return;
     final file = picked.first;
@@ -131,15 +134,17 @@ class _EventImportScreenState extends State<EventImportScreen> {
 
   Future<void> _photo({required bool camera}) async {
     if (camera) {
-      final shot = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        maxWidth: 3000,
+      final shot = await AppLock.picking(
+        () =>
+            ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 3000),
       );
       if (shot == null) return;
       await _recognise(_Source(shot.path, shot.name, mime: 'image/jpeg'));
       return;
     }
-    final picked = await FilePicker.pickFiles(type: FileType.image);
+    final picked = await AppLock.picking(
+      () => FilePicker.pickFiles(type: FileType.image),
+    );
     if (picked.isEmpty) return;
     final file = picked.first;
     await _recognise(
@@ -314,13 +319,15 @@ class _EventImportScreenState extends State<EventImportScreen> {
   Future<void> _icsFile() async {
     List<PlatformFile> picked;
     try {
-      picked = await FilePicker.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: const ['ics', 'ical', 'icalendar', 'ifb'],
+      picked = await AppLock.picking(
+        () => FilePicker.pickFiles(
+          type: FileType.custom,
+          allowedExtensions: const ['ics', 'ical', 'icalendar', 'ifb'],
+        ),
       );
     } on Exception {
       // Some systems know no calendar file type: any file then.
-      picked = await FilePicker.pickFiles();
+      picked = await AppLock.picking(() => FilePicker.pickFiles());
     }
     if (picked.isEmpty || !mounted) return;
     final file = picked.first;

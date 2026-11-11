@@ -59,10 +59,10 @@ class SystemUnlock implements DeviceUnlock {
   }
 }
 
-/// Optional lock of this device's app: after [grace] away it asks for the
+/// Optional lock of this device's app: after [delay] away it asks for the
 /// device's own unlock, and while locked or in the background it hides what
 /// is on screen. For phones the family shares; the data is encrypted either
-/// way. The setting stays on the device.
+/// way. The settings stay on the device.
 class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   AppLock(
     this._prefs, {
@@ -77,9 +77,37 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   static const _key = 'appLock.enabled';
+  static const _delayKey = 'appLock.delay';
 
-  /// Coming back from the camera or a file picker needs no second unlock.
-  static const grace = Duration(minutes: 1);
+  /// How long Famio may be in the background before it asks again.
+  static const delays = [
+    Duration.zero,
+    Duration(minutes: 1),
+    Duration(minutes: 5),
+    Duration(minutes: 15),
+  ];
+
+  /// Until somebody chooses: a quick look at another app needs no unlock.
+  static const defaultDelay = Duration(minutes: 1);
+
+  /// Famio's own trips to the camera, a file picker, the scanner or the share
+  /// sheet count as away only after this long, even with no [delay]: else
+  /// "at once" would ask after every photo.
+  static const pickerDelay = Duration(minutes: 1);
+
+  static var _picking = 0;
+
+  /// Runs [pick], which opens the camera, a file picker, the scanner or the
+  /// share sheet. On Android these are apps of their own that send Famio to
+  /// the background.
+  static Future<T> picking<T>(Future<T> Function() pick) async {
+    _picking++;
+    try {
+      return await pick();
+    } finally {
+      _picking--;
+    }
+  }
 
   static const _privacy = MethodChannel('famio/privacy');
 
@@ -93,6 +121,22 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
 
   bool get enabled => _prefs.getBool(_key) ?? false;
 
+  /// One of [delays].
+  Duration get delay {
+    final seconds = _prefs.getInt(_delayKey);
+    for (final d in delays) {
+      if (d.inSeconds == seconds) return d;
+    }
+    return defaultDelay;
+  }
+
+  /// Takes effect the next time Famio comes back.
+  Future<void> setDelay(Duration value) async {
+    if (!delays.contains(value)) throw ArgumentError.value(value, 'value');
+    await _prefs.setInt(_delayKey, value.inSeconds);
+    notifyListeners();
+  }
+
   /// Waits for the device's unlock.
   var locked = false;
 
@@ -105,6 +149,9 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   var failed = false;
 
   DateTime? _left;
+
+  /// Whether Famio went to the background for [picking].
+  var _leftToPick = false;
   var _asking = false;
 
   @override
@@ -115,15 +162,27 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     switch (state) {
       case AppLifecycleState.resumed:
         final left = _left;
-        _left = null;
-        locked = locked || (left != null && _now().difference(left) >= grace);
+        final allowed = _leftToPick && delay < pickerDelay
+            ? pickerDelay
+            : delay;
+        _forget();
+        locked =
+            locked ||
+            (left != null &&
+                (allowed == Duration.zero ||
+                    _now().difference(left) >= allowed));
         covered = false;
       case AppLifecycleState.inactive:
         covered = hide;
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
-        _left ??= _now();
+        // Decided when leaving: the picker's answer may arrive before
+        // Famio is told it is back.
+        if (_left == null) {
+          _left = _now();
+          _leftToPick = _picking > 0;
+        }
         covered = hide;
     }
     notifyListeners();
@@ -134,7 +193,7 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     if (_asking) return false;
     final ok = await _ask();
     if (ok) {
-      _left = null;
+      _forget();
       locked = covered = false;
     }
     failed = !ok;
@@ -149,7 +208,7 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     if (!await _ask()) return false;
     await _prefs.setBool(_key, value);
     locked = covered = failed = false;
-    _left = null;
+    _forget();
     await _applySecure();
     notifyListeners();
     return true;
@@ -158,8 +217,13 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   /// Nothing left to hide after signing out.
   void signedOut() {
     locked = covered = failed = false;
-    _left = null;
+    _forget();
     notifyListeners();
+  }
+
+  void _forget() {
+    _left = null;
+    _leftToPick = false;
   }
 
   Future<bool> _ask() async {
@@ -185,6 +249,60 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+}
+
+String appLockDelayLabel(Duration delay) => delay == Duration.zero
+    ? tr.appLockImmediately
+    : tr.appLockAfterMinutes(delay.inMinutes);
+
+/// Settings: how long Famio may be in the background before [lock] asks.
+class AppLockDelayTile extends StatelessWidget {
+  const AppLockDelayTile({super.key, required this.lock});
+
+  final AppLock lock;
+
+  @override
+  Widget build(BuildContext context) {
+    final delay = lock.delay;
+    return ListTile(
+      leading: const Icon(AppIcons.timer),
+      title: Text(tr.appLockDelay),
+      subtitle: Text(
+        [
+          appLockDelayLabel(delay),
+          if (delay < AppLock.pickerDelay) tr.appLockPickerNote,
+        ].join('\n'),
+      ),
+      onTap: () async {
+        final chosen = await showDialog<Duration>(
+          context: context,
+          builder: (context) => SimpleDialog(
+            title: Text(tr.appLockDelay),
+            children: [
+              RadioGroup<Duration>(
+                groupValue: delay,
+                onChanged: (value) => Navigator.pop(context, value),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (final d in AppLock.delays)
+                      RadioListTile<Duration>(
+                        value: d,
+                        title: Text(appLockDelayLabel(d)),
+                        subtitle: d < AppLock.pickerDelay
+                            ? Text(tr.appLockPickerNote)
+                            : null,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+        if (chosen != null) await lock.setDelay(chosen);
+      },
+    );
   }
 }
 

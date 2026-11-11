@@ -9,6 +9,7 @@ import '../data/family_data.dart';
 import '../data/shopping_history.dart';
 import '../data/preppsuite_import.dart';
 import '../l10n.dart';
+import '../security/app_lock.dart';
 
 /// Shopping list → menu → "Fehlbestände aus PreppSuite": reads the file
 /// PreppSuite exports (Vorräte → Einkaufsliste) and puts the chosen
@@ -21,9 +22,11 @@ Future<void> importFromPreppSuite(
   final messenger = ScaffoldMessenger.of(context);
   void say(String text) =>
       messenger.showSnackBar(SnackBar(content: Text(text)));
-  final picked = await FilePicker.pickFiles(
-    type: FileType.custom,
-    allowedExtensions: const ['json'],
+  final picked = await AppLock.picking(
+    () => FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['json'],
+    ),
   );
   if (picked.isEmpty) return;
   final PreppSuiteList prepp;

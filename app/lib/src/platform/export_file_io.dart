@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:share_plus/share_plus.dart';
+import '../security/app_lock.dart';
 
 /// Writes exclusively to a new file; failures leave no partial archive.
 Future<void> writeExportFile(
@@ -56,7 +57,9 @@ Future<bool> saveExport({
   final mobile = Platform.isAndroid || Platform.isIOS;
   final directory = mobile
       ? tempDir
-      : await FilePicker.getDirectoryPath(dialogTitle: dialogTitle);
+      : await AppLock.picking(
+          () => FilePicker.getDirectoryPath(dialogTitle: dialogTitle),
+        );
   if (directory == null || cancellation.cancelled) return false;
   await Directory(directory).create(recursive: true);
   final file = File(
@@ -80,10 +83,12 @@ Future<bool> saveExport({
     );
     if (cancellation.cancelled) return false;
     if (mobile) {
-      final result = await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'application/zip')],
-          sharePositionOrigin: sharePositionOrigin,
+      final result = await AppLock.picking(
+        () => SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path, mimeType: 'application/zip')],
+            sharePositionOrigin: sharePositionOrigin,
+          ),
         ),
       );
       handedOff = result.status != ShareResultStatus.dismissed;

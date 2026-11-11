@@ -27,6 +27,7 @@ import 'list_connect_screen.dart';
 import '../widgets/preppsuite_import.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
+import '../security/app_lock.dart';
 
 const _shopping = {
   Collections.shoppingLists,
@@ -300,13 +301,15 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
     }
     // The iPad and the Mac anchor the share sheet to a place on screen.
     final box = context.findRenderObject() as RenderBox?;
-    await SharePlus.instance.share(
-      ShareParams(
-        text: text,
-        subject: list.name,
-        sharePositionOrigin: box == null
-            ? null
-            : box.localToGlobal(Offset.zero) & box.size,
+    await AppLock.picking(
+      () => SharePlus.instance.share(
+        ShareParams(
+          text: text,
+          subject: list.name,
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
       ),
     );
   }

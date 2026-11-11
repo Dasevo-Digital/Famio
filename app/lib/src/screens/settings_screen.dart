@@ -43,6 +43,7 @@ import 'member_emergency_screen.dart';
 import 'device_pairing_screen.dart';
 import 'trash_screen.dart';
 import '../widgets/famio_tour.dart';
+import '../security/app_lock.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -1091,18 +1092,24 @@ class _AppLockTile extends StatelessWidget {
           ? const SizedBox.shrink()
           : ListenableBuilder(
               listenable: lock,
-              builder: (context, _) => SwitchListTile(
-                secondary: const Icon(AppIcons.lockKey),
-                title: Text(context.l10n.appLockTitle),
-                subtitle: Text(context.l10n.appLockSubtitle),
-                value: lock.enabled,
-                onChanged: (v) async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final text = context.l10n.appLockNotChanged;
-                  if (!await lock.setEnabled(v)) {
-                    messenger.showSnackBar(SnackBar(content: Text(text)));
-                  }
-                },
+              builder: (context, _) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SwitchListTile(
+                    secondary: const Icon(AppIcons.lockKey),
+                    title: Text(context.l10n.appLockTitle),
+                    subtitle: Text(context.l10n.appLockSubtitle),
+                    value: lock.enabled,
+                    onChanged: (v) async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final text = context.l10n.appLockNotChanged;
+                      if (!await lock.setEnabled(v)) {
+                        messenger.showSnackBar(SnackBar(content: Text(text)));
+                      }
+                    },
+                  ),
+                  if (lock.enabled) AppLockDelayTile(lock: lock),
+                ],
               ),
             ),
     );

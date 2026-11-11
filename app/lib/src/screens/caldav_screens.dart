@@ -19,6 +19,7 @@ import '../widgets/password_reveal.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/section_header.dart';
 import '../l10n.dart';
+import '../security/app_lock.dart';
 
 // --- calendar apps connecting to Famio (CalDAV server) ----------------------
 
@@ -156,11 +157,13 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
     if (profile == null || !mounted) return;
     _reload();
     try {
-      final saved = await FilePicker.saveFile(
-        dialogTitle: tr.caldavSaveProfileAppleCalendar,
-        fileName: profile.fileName,
-        bytes: Uint8List.fromList(utf8.encode(profile.profile)),
-        mimeType: 'application/x-apple-aspen-config',
+      final saved = await AppLock.picking(
+        () => FilePicker.saveFile(
+          dialogTitle: tr.caldavSaveProfileAppleCalendar,
+          fileName: profile.fileName,
+          bytes: Uint8List.fromList(utf8.encode(profile.profile)),
+          mimeType: 'application/x-apple-aspen-config',
+        ),
       );
       if (saved == null) {
         messenger.showSnackBar(

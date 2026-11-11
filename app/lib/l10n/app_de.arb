@@ -6987,11 +6987,22 @@
   "eventBusy": "Belegt",
   "remindersOpenFamioDetails": "Details in Famio",
   "appLockTitle": "App sperren",
-  "appLockSubtitle": "Nach einer Minute im Hintergrund fragt Famio nach Fingerabdruck, Gesicht oder der PIN dieses Geräts. In der App-Übersicht bleibt Famio verdeckt; unter Android sind dann auch Bildschirmfotos aus.",
+  "appLockSubtitle": "Nach der gewählten Zeit im Hintergrund fragt Famio nach Fingerabdruck, Gesicht oder der PIN dieses Geräts. In der App-Übersicht bleibt Famio verdeckt; unter Android sind dann auch Bildschirmfotos aus.",
   "appLockReason": "Famio entsperren",
   "appLockLocked": "Famio ist gesperrt",
   "appLockUnlock": "Entsperren",
   "appLockNotChanged": "Das hat nicht geklappt. Hat dieses Gerät eine Bildschirmsperre?",
+  "appLockDelay": "Sperren",
+  "appLockImmediately": "Sofort",
+  "appLockAfterMinutes": "{count, plural, =1{Nach 1 Minute} other{Nach {count} Minuten}}",
+  "@appLockAfterMinutes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "appLockPickerNote": "Kamera, Dateiauswahl und Scanner: nach einer Minute",
   "subscriptionsTitle": "Abos",
   "subscriptionsSubtitle": "Wiederkehrende Zahlungen im Blick",
   "subscriptionsEmpty": "Streaming, Cloud, Zeitung: Hier siehst du, was regelmäßig abgebucht wird und was das im Jahr ausmacht.",

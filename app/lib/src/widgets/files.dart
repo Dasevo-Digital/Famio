@@ -20,6 +20,7 @@ import 'photo_viewer.dart';
 import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
+import '../security/app_lock.dart';
 
 /// A file picked by the user, ready for upload.
 class PickedFile {
@@ -150,10 +151,12 @@ Future<PickedFile?> pickFile(
   }
 
   if (fromCamera) {
-    final photo = await ImagePicker().pickImage(
-      source: ImageSource.camera,
-      imageQuality: 85,
-      maxWidth: 2560,
+    final photo = await AppLock.picking(
+      () => ImagePicker().pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 2560,
+      ),
     );
     if (photo == null) return null;
     return pickedFromSource(
@@ -165,9 +168,11 @@ Future<PickedFile?> pickFile(
     );
   }
 
-  final picked = await FilePicker.pickFiles(
-    type: imagesOnly ? FileType.image : FileType.any,
-    dialogTitle: tr.filesUploadLimit(fileSizeLabel(limit)),
+  final picked = await AppLock.picking(
+    () => FilePicker.pickFiles(
+      type: imagesOnly ? FileType.image : FileType.any,
+      dialogTitle: tr.filesUploadLimit(fileSizeLabel(limit)),
+    ),
   );
   if (picked.isEmpty) return null;
   final file = picked.first;

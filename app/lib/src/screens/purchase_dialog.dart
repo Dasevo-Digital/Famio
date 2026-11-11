@@ -14,6 +14,7 @@ import '../design/app_icons.dart';
 import '../design/palette.dart';
 import '../l10n.dart';
 import '../widgets/undo_delete.dart';
+import '../security/app_lock.dart';
 
 /// Whether the member may put a purchase into the household budget: it is
 /// switched on, and they are among those who see it (never guests).
@@ -108,13 +109,15 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
   Future<void> _scan() async {
     String? path;
     if (Platform.isAndroid || Platform.isIOS) {
-      final shot = await ImagePicker().pickImage(
-        source: ImageSource.camera,
-        maxWidth: 3000,
+      final shot = await AppLock.picking(
+        () =>
+            ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 3000),
       );
       path = shot?.path;
     } else {
-      final picked = await FilePicker.pickFiles(type: FileType.image);
+      final picked = await AppLock.picking(
+        () => FilePicker.pickFiles(type: FileType.image),
+      );
       if (picked.isEmpty) return;
       path = picked.first.path;
     }

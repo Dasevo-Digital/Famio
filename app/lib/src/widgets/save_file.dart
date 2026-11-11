@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import '../security/app_lock.dart';
 
 /// Saves [bytes] where the user picks; false if they cancelled. In the
 /// browser the file is downloaded, and the browser does not tell whether
@@ -10,11 +11,13 @@ Future<bool> saveBytes({
   required Uint8List bytes,
   required String mimeType,
 }) async {
-  final saved = await FilePicker.saveFile(
-    dialogTitle: dialogTitle,
-    fileName: fileName,
-    bytes: bytes,
-    mimeType: mimeType,
+  final saved = await AppLock.picking(
+    () => FilePicker.saveFile(
+      dialogTitle: dialogTitle,
+      fileName: fileName,
+      bytes: bytes,
+      mimeType: mimeType,
+    ),
   );
   return saved != null || kIsWeb;
 }
