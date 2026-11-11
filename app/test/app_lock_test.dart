@@ -153,6 +153,19 @@ void main() {
     expect(l.locked, isFalse);
   });
 
+  test('a fresh sign-in is proof enough', () async {
+    final l = await lock(delaySeconds: 0);
+    // Signed out, and on the way back in a trip to the password manager.
+    l.signedOut();
+    away(l, const Duration(seconds: 30));
+    expect(l.locked, isTrue);
+    l.signedIn();
+    expect(l.locked, isFalse);
+    // After that the chosen time applies again.
+    away(l, Duration.zero);
+    expect(l.locked, isTrue);
+  });
+
   test('the system dialog itself does not lock again', () async {
     final l = await lock();
     device.during = () {

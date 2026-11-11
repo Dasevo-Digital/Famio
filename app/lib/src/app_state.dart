@@ -495,6 +495,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
   }
 
@@ -514,6 +515,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
   }
 
@@ -535,6 +537,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
     return true;
   }
@@ -574,6 +577,7 @@ class AppState extends ChangeNotifier {
           result.token,
           result.member,
           pin: server.pin,
+          fresh: true,
         );
         return;
       }
@@ -632,6 +636,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
   }
 
@@ -650,6 +655,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
   }
 
@@ -672,6 +678,7 @@ class AppState extends ChangeNotifier {
       result.token,
       result.member,
       pin: server.pin,
+      fresh: true,
     );
   }
 
@@ -827,11 +834,15 @@ class AppState extends ChangeNotifier {
     files = null;
   }
 
+  /// [fresh]: signed in just now (password, passkey, SSO, pairing, setup).
+  /// That is proof enough, also after a trip to a password manager or the
+  /// authenticator on the way; a restored session stays locked.
   Future<void> _startSession(
     String url,
     String? token,
     FamilyMember member, {
     String? pin,
+    bool fresh = false,
   }) async {
     final normalized = kIsWeb
         ? url
@@ -907,6 +918,7 @@ class AppState extends ChangeNotifier {
     )..clearTemp();
     serverUrl = normalized;
     certificatePin = pin;
+    if (fresh) lock.signedIn();
     me = member;
     notice = null;
     this.engine = engine..start();

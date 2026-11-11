@@ -895,6 +895,44 @@ void main() {
       expect(await plain, isEmpty);
       await unlock();
 
+      // Signed out, and on the way back in a trip to another app (password
+      // manager, authenticator): the fresh sign-in is proof enough.
+      await state.signOut();
+      await tester.pumpAndSettle();
+      seen.clear();
+      host('home');
+      await background();
+      host('front');
+      if (find.text('Verbinden').evaluate().isEmpty) {
+        await waitFor(tester, find.widgetWithText(TextField, 'Benutzername'));
+      } else {
+        await enter(
+          tester,
+          find.widgetWithText(TextField, 'Server-Adresse'),
+          _url,
+        );
+        await tap(tester, find.text('Verbinden'));
+      }
+      expect(state.lock.locked, isTrue, reason: 'the trip counted');
+      await enter(
+        tester,
+        find.widgetWithText(TextField, 'Benutzername'),
+        _user,
+      );
+      await enter(
+        tester,
+        find.widgetWithText(TextField, 'Passwort'),
+        _password,
+      );
+      await tap(tester, find.text('Anmelden'));
+      await until(tester, () => state.me != null, 'signed in again');
+      await tester.pump(const Duration(seconds: 2));
+      expect(state.lock.locked, isFalse);
+      expect(find.text('Famio ist gesperrt'), findsNothing);
+      if (find.text('Später').evaluate().isNotEmpty) {
+        await tap(tester, find.text('Später'));
+      }
+
       await state.lock.setDelay(AppLock.defaultDelay);
       final off = state.lock.setEnabled(false);
       await Future<void>.delayed(const Duration(seconds: 3));

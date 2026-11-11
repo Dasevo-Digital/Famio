@@ -221,6 +221,13 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Just signed in: no second question for leaving Famio on the way.
+  void signedIn() {
+    locked = failed = false;
+    _forget();
+    notifyListeners();
+  }
+
   void _forget() {
     _left = null;
     _leftToPick = false;
