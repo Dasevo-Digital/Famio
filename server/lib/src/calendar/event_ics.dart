@@ -444,7 +444,9 @@ const _frequencies = {
     if (weekdays.length == 1 && weekdays.single == startWall.weekday) {
       weekdays = [];
     }
-    if (interval > 1 && wkst != 'MO' && weekdays.length > 1) {
+    // Famio's weeks start on Monday: with an INTERVAL another start of
+    // the week moves the days of the first week.
+    if (interval > 1 && wkst != 'MO' && weekdays.isNotEmpty) {
       return (null, unsupported);
     }
   }
@@ -518,7 +520,8 @@ DateTime? _nthDate(
   final n = count - 1;
   switch (frequency) {
     case RecurrenceFrequency.daily:
-      return day(s.year, s.month, s.day + n * interval);
+      final d = day(s.year, s.month, s.day + n * interval);
+      return d.year > 9999 ? null : d;
     case RecurrenceFrequency.weekly:
       final days = weekdays.isEmpty ? [s.weekday] : weekdays;
       final monday = s.day - (s.weekday - 1);
@@ -529,8 +532,12 @@ DateTime? _nthDate(
       if (n < first.length) return day(s.year, s.month, monday + first[n] - 1);
       final rest = n - first.length;
       final week = 1 + rest ~/ days.length;
-      final d = days[rest % days.length];
-      return day(s.year, s.month, monday + week * 7 * interval + d - 1);
+      final d = day(
+        s.year,
+        s.month,
+        monday + week * 7 * interval + days[rest % days.length] - 1,
+      );
+      return d.year > 9999 ? null : d;
     case RecurrenceFrequency.monthly:
     case RecurrenceFrequency.yearly:
       final monthly = frequency == RecurrenceFrequency.monthly;

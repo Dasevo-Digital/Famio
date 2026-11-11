@@ -53,10 +53,16 @@ Future<R> runIsolated<R>(
   Duration limit = const Duration(seconds: 15),
 }) async {
   final answer = ReceivePort();
-  final isolate = await Isolate.spawn(_runIsolated, (
-    answer.sendPort,
-    work,
-  ), onExit: answer.sendPort);
+  final Isolate isolate;
+  try {
+    isolate = await Isolate.spawn(_runIsolated, (
+      answer.sendPort,
+      work,
+    ), onExit: answer.sendPort);
+  } catch (_) {
+    answer.close();
+    rethrow;
+  }
   try {
     final message = await answer.first.timeout(
       limit,
@@ -65,7 +71,7 @@ Future<R> runIsolated<R>(
     return switch (message) {
       (true, final R result) => result,
       (false, final String error) => throw FormatException(error),
-      _ => throw const FormatException('Import stopped'),
+      _ => throw FormatException(_unreadable()),
     };
   } finally {
     isolate.kill(priority: Isolate.immediate);
@@ -79,10 +85,15 @@ void _runIsolated((SendPort, Object? Function()) job) {
   tzdata.initializeTimeZones();
   try {
     reply.send((true, work()));
-  } catch (e) {
-    reply.send((false, e is FormatException ? e.message : '$e'));
+  } on FormatException catch (e) {
+    reply.send((false, e.message));
+  } catch (_) {
+    // No internals to the apps (the API hides them as well).
+    reply.send((false, _unreadable()));
   }
 }
+
+String _unreadable() => t('Die Kalenderdatei konnte nicht gelesen werden');
 
 /// Converts an external iCalendar feed into Famio events for the time window
 /// `[from, to)`. Series are expanded into single events, so every RRULE the
@@ -241,7 +252,7 @@ Iterable<DateTime> _instances(
   });
   final RecurrenceRule rule;
   try {
-    rule = RecurrenceRule.fromString('RRULE:$value');
+    rule = _rule(value);
   } catch (_) {
     yield start.wall; // Unparseable rule: show at least the first date.
     return;
@@ -261,14 +272,20 @@ Iterable<DateTime> _instances(
   final fromWall = wall(from).subtract(const Duration(days: 1));
   final end = wall(to);
   // rrule jumps to [from] by itself only for series without COUNT and with
-  // INTERVAL 1; others it expands from their start, so those dates count
+  // INTERVAL 1. A series with a longer INTERVAL starts, for rrule, whole
+  // periods later, shortly before [from]: the same dates in the window.
+  // Only a series with COUNT is expanded from its start; those dates count
   // towards [_maxSteps] as well.
-  final skip = (rule.interval ?? 1) == 1 && rule.count == null;
+  final interval = rule.interval ?? 1;
+  final skip = interval == 1 && rule.count == null;
+  final first = rule.count == null && interval > 1
+      ? _closer(rule.frequency, interval, start.wall, fromWall)
+      : start.wall;
   var count = 0;
   var steps = 0;
   for (final w in rule.getInstances(
-    start: start.wall,
-    after: skip && fromWall.isAfter(start.wall) ? fromWall : null,
+    start: first,
+    after: skip && fromWall.isAfter(first) ? fromWall : null,
     includeAfter: true,
   )) {
     if (!w.isBefore(end) || ++steps > _maxSteps) break;
@@ -282,6 +299,76 @@ Iterable<DateTime> _instances(
 /// to seconds.
 const _maxSteps = 10000;
 
+/// [rule] for rrule. Its parser refuses a week starting on another day than
+/// Monday (WKST=SU, as calendars set to start the week on Sunday write);
+/// without it the dates only differ for weekly series with an INTERVAL and
+/// several days, which are rare.
+RecurrenceRule _rule(String value) {
+  try {
+    return RecurrenceRule.fromString('RRULE:$value');
+  } on Object {
+    final without = value
+        .split(';')
+        .where((p) => !p.toUpperCase().startsWith('WKST='))
+        .join(';');
+    if (without == value) rethrow;
+    return RecurrenceRule.fromString('RRULE:$without');
+  }
+}
+
+/// [start] moved by whole periods of [interval] to shortly before [before]
+/// (at least one period), keeping its day, weekday and time; [start] when
+/// that is not after it.
+DateTime _closer(
+  Frequency frequency,
+  int interval,
+  DateTime start,
+  DateTime before,
+) {
+  if (!before.isAfter(start)) return start;
+  final days = before.difference(start).inDays;
+  final months = (before.year - start.year) * 12 + before.month - start.month;
+  final (int periods, DateTime Function(int) at) = switch (frequency) {
+    Frequency.daily => (days ~/ interval, (k) => start.add(Duration(days: k))),
+    Frequency.weekly => (
+      days ~/ (7 * interval),
+      (k) => start.add(Duration(days: 7 * k)),
+    ),
+    Frequency.monthly => (
+      months ~/ interval,
+      (k) => DateTime.utc(
+        start.year,
+        start.month + k,
+        start.day,
+        start.hour,
+        start.minute,
+        start.second,
+      ),
+    ),
+    Frequency.yearly => (
+      (before.year - start.year) ~/ interval,
+      (k) => DateTime.utc(
+        start.year + k,
+        start.month,
+        start.day,
+        start.hour,
+        start.minute,
+        start.second,
+      ),
+    ),
+    _ => (0, (k) => start),
+  };
+  // One period less than reaches [before]; a month without the day (the
+  // 31st, 29 February) a period earlier still.
+  final keepsDay =
+      frequency == Frequency.monthly || frequency == Frequency.yearly;
+  for (var k = periods - 1; k > 0; k--) {
+    final moved = at(k * interval);
+    if (!keepsDay || moved.day == start.day) return moved;
+  }
+  return start;
+}
+
 /// A rule that never falls on a day: BYMONTHDAY only on days its months do
 /// not have (30 February, 31 April).
 bool _never(RecurrenceRule rule, DateTime start) {
@@ -292,10 +379,9 @@ bool _never(RecurrenceRule rule, DateTime start) {
       rule.bySetPositions.isNotEmpty) {
     return false;
   }
+  // Without BYMONTH every month counts, also for a yearly series.
   final months = rule.byMonths.isNotEmpty
       ? rule.byMonths
-      : rule.frequency == Frequency.yearly
-      ? [start.month]
       : [for (var m = 1; m <= 12; m++) m];
   const longest = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
   return !months.any(

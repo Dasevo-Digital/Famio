@@ -99,7 +99,6 @@ class ServingNutrition {
   final int total;
 }
 
-/// One line of a recipe: "200 g Mehl", "2 Eier", "Salz".
 /// [v] in German notation with at most [decimals] places and no trailing
 /// zeros ("12,5", "0,125", "3"); thirds as "⅓"/"⅔" ("1 ⅓"), which have no
 /// exact decimal.
@@ -107,8 +106,9 @@ String formatAmount(double v, {int decimals = 3}) {
   final whole = v.floor();
   final part = v - whole;
   for (final (value, glyph) in const [(1 / 3, '⅓'), (2 / 3, '⅔')]) {
-    if ((part - value).abs() < 1e-6)
+    if ((part - value).abs() < 1e-6) {
       return whole == 0 ? glyph : '$whole $glyph';
+    }
   }
   var text = v.toStringAsFixed(decimals);
   if (text.contains('.')) {
@@ -129,11 +129,8 @@ String? addQuantities(String existing, Ingredient item) {
   final before = Ingredient.parse('$text x');
   final had = before.amount;
   if (before.name != 'x' || had == null || before.upTo != null) return null;
-  String result(double amount, String unit) => Ingredient(
-    name: '',
-    amount: amount,
-    unit: unit,
-  ).exactQuantity(decimals: 2);
+  String result(double amount, String unit) =>
+      Ingredient(name: '', amount: amount, unit: unit).exactQuantity();
   if (before.unit.toLowerCase() == item.unit.toLowerCase()) {
     return result(had + add, item.unit);
   }
@@ -142,7 +139,12 @@ String? addQuantities(String existing, Ingredient item) {
   if (a == null || b == null || a.$1 != b.$1) return null;
   final total = had * a.$2 + add * b.$2;
   final (small, large) = a.$1 == 'g' ? ('g', 'kg') : ('ml', 'l');
-  return total >= 1000 ? result(total / 1000, large) : result(total, small);
+  // In kilograms or litres only when nothing gets rounded away (whole
+  // grams or millilitres); otherwise in the small unit.
+  final whole = (total - total.roundToDouble()).abs() < 1e-6;
+  return total >= 1000 && whole
+      ? result(total.roundToDouble() / 1000, large)
+      : result(total, small);
 }
 
 /// Units that convert: base unit and factor.
@@ -156,6 +158,7 @@ const _metric = {
   'l': ('ml', 1000.0),
 };
 
+/// One line of a recipe: "200 g Mehl", "2 Eier", "Salz".
 class Ingredient {
   const Ingredient({
     required this.name,
@@ -175,7 +178,7 @@ class Ingredient {
     // "1 1/2", "1/2", "1,5", "2½", "½", also ranges like "2-3".
     final m = RegExp(
       r'^(?:(\d+)\s+(\d+)/(\d+)|(\d+)/(\d+)|(\d+(?:[.,]\d+)?)\s*([½¼¾⅓⅔])?|([½¼¾⅓⅔]))'
-      r'(?:\s*[-–]\s*(\d+(?:[.,]\d+)?))?',
+      r'(?:\s*[-–]\s*(\d+(?:[.,]\d+)?(?:\s*[½¼¾⅓⅔])?|[½¼¾⅓⅔]))?',
     ).firstMatch(text);
     if (m != null) {
       int g(int i) => int.parse(m.group(i)!);
@@ -191,7 +194,12 @@ class Ingredient {
         amount = fractions[m.group(8)];
       }
       if (m.group(9) case final top?) {
-        final v = double.parse(top.replaceAll(',', '.'));
+        final glyph = fractions[top[top.length - 1]];
+        final digits = glyph == null ? top : top.substring(0, top.length - 1);
+        final whole = digits.trim().isEmpty
+            ? 0.0
+            : double.parse(digits.trim().replaceAll(',', '.'));
+        final v = whole + (glyph ?? 0);
         if (amount != null && v > amount) upTo = v;
       }
       text = text.substring(m.group(0)!.length).trim();

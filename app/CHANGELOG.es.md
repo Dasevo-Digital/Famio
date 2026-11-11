@@ -15,7 +15,8 @@ están en las versiones publicadas.
   de movimientos, «Guardar» sigue visible en el teléfono.
 - Una alarma de emergencia ya terminada no se vuelve a entregar.
 - Los calendarios externos con repeticiones inusuales ya no ralentizan el
-  servidor.
+  servidor; las series semanales de calendarios cuya semana empieza en
+  domingo aparecen completas.
 - Los mensajes nuevos del chat no cuentan como leídos mientras hay un
   diálogo abierto encima.
 

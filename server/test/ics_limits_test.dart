@@ -3,10 +3,12 @@
 // expansions stop, and whatever still takes too long is stopped in its own
 // isolate.
 import 'dart:async';
+import 'dart:math';
 
 import 'package:famio_server/famio_server.dart';
 import 'package:famio_server/src/calendar/ics_import.dart';
 import 'package:famio_shared/famio_shared.dart';
+import 'package:rrule/rrule.dart';
 import 'package:test/test.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -68,6 +70,73 @@ void main() {
     expect(watch.elapsedMilliseconds, lessThan(3000));
   });
 
+  test('a yearly day without a month means every month', () {
+    final events = read(
+      feed('FREQ=YEARLY;BYMONTHDAY=30', start: '20260210T090000Z'),
+    );
+    expect(events.length, greaterThan(10));
+  });
+
+  test('series with an INTERVAL from long ago jump close to the window', () {
+    final watch = Stopwatch()..start();
+    final since1900 = read(
+      feed('FREQ=DAILY;INTERVAL=2', start: '19000101T090000Z'),
+    );
+    expect(watch.elapsedMilliseconds, lessThan(2000));
+    final first = DateTime.utc(1900, 1, 1, 9);
+    expect(since1900, isNotEmpty);
+    for (final e in since1900) {
+      expect(e.start.difference(first).inDays % 2, 0);
+    }
+    // The same dates in the window as rrule from the very start.
+    final random = Random(398);
+    final window = (
+      from: now.subtract(const Duration(days: 90)),
+      to: now.add(const Duration(days: 400)),
+    );
+    for (var i = 0; i < 120; i++) {
+      final frequency = ['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'][i % 4];
+      final interval = 2 + random.nextInt(4);
+      final day = 1 + random.nextInt(31);
+      final month = 1 + random.nextInt(12);
+      final year = 1995 + random.nextInt(25);
+      final start = DateTime.utc(year, month, day, 9);
+      if (start.day != day) continue;
+      var rule = 'FREQ=$frequency;INTERVAL=$interval';
+      if (frequency == 'WEEKLY' && random.nextBool()) {
+        rule += ';BYDAY=MO,TH';
+      }
+      final stamp =
+          '${start.year}${'${start.month}'.padLeft(2, '0')}'
+          '${'${start.day}'.padLeft(2, '0')}T090000Z';
+      final mine = [
+        for (final e in importIcs(
+          feed(rule, start: stamp),
+          sourceId: 's',
+          fallback: tz.UTC,
+          from: window.from,
+          to: window.to,
+        ))
+          e.start,
+      ]..sort();
+      final all = RecurrenceRule.fromString(
+        'RRULE:$rule',
+      ).getInstances(start: start, before: window.to);
+      final expected = [
+        for (final w in all)
+          if (!w.add(const Duration(hours: 1)).isBefore(window.from) &&
+              w.isBefore(window.to))
+            w,
+      ];
+      expect(mine, expected, reason: '$rule from $start');
+    }
+  });
+
+  test('a week starting on Sunday is read as well', () {
+    final events = read(feed('FREQ=WEEKLY;WKST=SU;BYDAY=TU,TH'));
+    expect(events.length, greaterThan(100));
+  });
+
   test('a long expansion from the past stops, normal ones are complete', () {
     // Every second day since 1990: expanded from its start, within bounds.
     final second = read(
@@ -75,8 +144,6 @@ void main() {
     );
     expect(second.length, inInclusiveRange(240, 250));
     final watch = Stopwatch()..start();
-    // Every second day since 1900 would need far more steps: stops quickly.
-    read(feed('FREQ=DAILY;INTERVAL=2', start: '19000101T090000Z'));
     read(feed('FREQ=DAILY;COUNT=1000000', start: '19000101T090000Z'));
     expect(watch.elapsedMilliseconds, lessThan(3000));
     // A plain weekly series since 1950 jumps to the window by itself.
@@ -94,16 +161,17 @@ void main() {
     );
     addTearDown(ticker.cancel);
     final watch = Stopwatch()..start();
-    // rrule looks for the 10th Monday of each month until the year 9999.
+    // Work that never ends (rrule can look for the 10th Monday of each
+    // month until the year 9999; how long that takes varies too much for
+    // a test).
     await expectLater(
-      importIcsIsolated(
-        feed('FREQ=MONTHLY;BYDAY=MO;BYSETPOS=10'),
-        sourceId: 's',
-        fallback: berlin,
-        from: now,
-        to: now.add(const Duration(days: 400)),
-        limit: const Duration(seconds: 1),
-      ),
+      runIsolated<int>(() {
+        var n = 0;
+        while (n >= 0) {
+          n = (n + 1) % 1000;
+        }
+        return n;
+      }, limit: const Duration(seconds: 1)),
       throwsA(isA<IcsTooComplex>()),
     );
     expect(watch.elapsedMilliseconds, lessThan(2500));
@@ -119,6 +187,17 @@ void main() {
     expect(
       [for (final e in events) e.toData()],
       [for (final e in read(feed('FREQ=WEEKLY'))) e.toData()],
+    );
+    // Other errors do not show their internals.
+    await expectLater(
+      runIsolated(() => throw StateError('intern')),
+      throwsA(
+        isA<FormatException>().having(
+          (e) => e.message,
+          'message',
+          'Die Kalenderdatei konnte nicht gelesen werden',
+        ),
+      ),
     );
     await expectLater(
       runIsolated(() => throw const FormatException('kaputt')),

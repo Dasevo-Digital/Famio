@@ -15,7 +15,8 @@ with the releases.
   "Save" stays visible on phones.
 - An emergency alarm that has ended is not delivered again.
 - Calendars from elsewhere with unusual repeats no longer slow the server
-  down.
+  down; weekly series from calendars whose week starts on Sunday show in
+  full.
 - New chat messages do not count as read while a dialog is open over them.
 
 ## 2.0.48 – App lock timing and page titles

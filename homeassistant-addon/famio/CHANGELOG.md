@@ -13,7 +13,8 @@ Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Rel
   bleibt „Speichern“ auf dem Telefon sichtbar.
 - Ein beendeter Notfall-Alarm wird nicht noch einmal zugestellt.
 - Kalender von außen mit ungewöhnlichen Wiederholungen bremsen den Server
-  nicht mehr.
+  nicht mehr; wöchentliche Serien aus Kalendern mit Wochenbeginn Sonntag
+  erscheinen vollständig.
 - Neue Chat-Nachrichten gelten unter einem geöffneten Dialog nicht als
   gelesen.
 

@@ -285,11 +285,17 @@ class CalDavSync {
     }
   });
 
+  /// An entry of the running sync had series too costly to work out.
+  var _tooComplex = false;
+
   Future<void> _syncGuarded(Row row) async {
     final id = row['id'] as String;
     String? error;
+    _tooComplex = false;
     try {
       await _sync(row);
+      // Synced, but an entry could not be worked out: said, not hidden.
+      if (_tooComplex) error = IcsTooComplex().message;
     } on DavException catch (e) {
       error = e.message;
     } catch (e) {
@@ -569,7 +575,9 @@ class CalDavSync {
         to: now.add(_readOnlyWindow),
       );
     } on IcsTooComplex {
-      // Keeps what was shown so far; the other entries go on syncing.
+      // Keeps what was shown so far; the other entries go on syncing, and
+      // the account tells about it (see [_syncGuarded]).
+      _tooComplex = true;
       return false;
     }
     final wanted = {for (final e in events) e.id};

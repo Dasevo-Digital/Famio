@@ -100,5 +100,29 @@ void main() {
       isNull, // beyond the year 9999
     );
     expect(watch.elapsedMilliseconds, lessThan(2000));
+    // Past the year 9999: not a series Famio keeps.
+    expect(
+      until(DateTime.utc(2000, 1, 1), 'FREQ=WEEKLY;INTERVAL=999;COUNT=99999'),
+      isNull,
+    );
+  });
+
+  test('a week starting on Sunday with an INTERVAL is not guessed', () {
+    // Famio's weeks start on Monday; the first week would differ.
+    expect(
+      until(
+        DateTime.utc(2026, 11, 2),
+        'FREQ=WEEKLY;INTERVAL=2;BYDAY=SU;WKST=SU;COUNT=3',
+      ),
+      isNull,
+    );
+    // The day of the start, or every week: the same either way.
+    expect(
+      until(
+        DateTime.utc(2026, 11, 2),
+        'FREQ=WEEKLY;INTERVAL=2;WKST=SU;COUNT=3',
+      ),
+      DateTime(2026, 11, 30),
+    );
   });
 }

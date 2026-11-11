@@ -49,6 +49,13 @@ void main() {
     expect(p('¼ l Sahne').editText, '0,25 l Sahne');
     expect(p('¼ l Sahne').scaled(1 / 3).exactQuantity(decimals: 2), '0,08 l');
     expect(Ingredient.fromJson(p('2-3 Eier').toJson()).upTo, 3);
+    // A range up to a fraction, as scaling writes it.
+    expect(p('1–1 ⅓ TL Zucker').upTo, closeTo(4 / 3, 1e-9));
+    expect(p('⅓–⅔ TL Zucker').upTo, closeTo(2 / 3, 1e-9));
+    expect(p('⅓–⅔ TL Zucker').name, 'Zucker');
+    for (final line in ['⅓–⅔ TL Zucker', '1–1 ⅓ TL Zucker', '½–1 Zitrone']) {
+      expect(p(p(line).editText).toJson(), p(line).toJson(), reason: line);
+    }
   });
 
   test('shopping amounts add up without losing anything (#402)', () {
@@ -60,6 +67,12 @@ void main() {
     expect(addQuantities('0,25 l', p('125 ml Sahne')), '375 ml');
     expect(addQuantities('750 ml', p('0,5 l Milch')), '1,25 l');
     expect(addQuantities('2 EL', p('1 el Öl')), '3 el');
+    // Nothing is rounded away: in grams where kilograms would round.
+    expect(addQuantities('1,5 kg', p('5 g Mehl')), '1,505 kg');
+    expect(addQuantities('1,5 kg', p('125 g Mehl')), '1,625 kg');
+    expect(addQuantities('5 mg', p('1 g Salz')), '1,005 g');
+    expect(addQuantities('1 kg', p('0,5 g Hefe')), '1000,5 g');
+    expect(p('0,125 l Weißwein').exactQuantity(), '0,125 l');
     expect(addQuantities('2', p('1 Zwiebeln')), '3');
     // Cannot be added up: the caller appends instead.
     expect(addQuantities('2 große', p('1 Zwiebeln')), isNull);
@@ -87,6 +100,8 @@ void main() {
     expect(parseEuro('1.500,00'), 150000);
     expect(parseEuro('1\u00a0500,00 €'), 150000);
     expect(parseEuro('1.50.0'), isNull);
+    // Half a euro written with a dot stays half a euro.
+    expect(parseEuro('0.500'), 50);
     expect(parseEuro('abc'), isNull);
   });
 

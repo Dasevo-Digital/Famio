@@ -155,7 +155,8 @@ String formatEuro(int cents) {
   return '${negative ? '−' : ''}$grouped,${(abs % 100).toString().padLeft(2, '0')} €';
 }
 
-final _thousands = RegExp(r'^\d{1,3}(\.\d{3})+$');
+// Not "0.500": half a euro written with a dot, as before.
+final _thousands = RegExp(r'^[1-9]\d{0,2}(\.\d{3})+$');
 
 /// Parses "12,50", "1.234,5", "1.500" or "12.5" into cents.
 int? parseEuro(String text) {

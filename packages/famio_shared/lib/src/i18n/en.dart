@@ -1230,6 +1230,8 @@ const sharedEn = <String, String>{
       "There is no calendar file (ICS) at this address",
   "Server|Der Kalender enthält Wiederholungen, die sich nicht in angemessener Zeit berechnen lassen":
       "The calendar contains repetitions that cannot be worked out in reasonable time",
+  "Server|Die Kalenderdatei konnte nicht gelesen werden":
+      "The calendar file could not be read",
   "Server|Zeitüberschreitung beim Abruf": "Timeout while fetching",
   "Server|Server nicht erreichbar ({message})":
       "Server not reachable ({message})",

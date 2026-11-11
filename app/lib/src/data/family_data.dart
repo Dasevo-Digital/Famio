@@ -555,7 +555,7 @@ extension FamilyData on SyncEngine {
           id: newId(),
           listId: listId,
           name: item.name.trim(),
-          quantity: item.exactQuantity(decimals: 2),
+          quantity: item.exactQuantity(),
         );
         saveShoppingItem(created);
         open[key] = created;
@@ -566,7 +566,7 @@ extension FamilyData on SyncEngine {
           addQuantities(existing.quantity, item) ??
           [
             existing.quantity,
-            item.exactQuantity(decimals: 2),
+            item.exactQuantity(),
           ].where((q) => q.isNotEmpty).join(' + ');
       final updated = existing.copyWith(quantity: quantity);
       saveShoppingItem(updated);
