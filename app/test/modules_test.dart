@@ -23,6 +23,15 @@ Future<void> pumpData(WidgetTester tester) async {
   await tester.pump();
 }
 
+/// A few minutes ago, but still today: right after midnight "five minutes
+/// ago" would be yesterday, and the log opens on today.
+DateTime earlierToday() {
+  final now = DateTime.now();
+  final today = DateUtils.dateOnly(now);
+  final then = now.subtract(const Duration(minutes: 5));
+  return then.isBefore(today) ? today : then;
+}
+
 void main() {
   setUpAll(() => initializeDateFormatting('de'));
 
@@ -195,9 +204,7 @@ void main() {
     );
     engine
       ..saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth))
-      ..saveChildLog(
-        diaper('a', now.subtract(const Duration(minutes: 5)), DiaperKind.wet),
-      )
+      ..saveChildLog(diaper('a', earlierToday(), DiaperKind.wet))
       // The same weekday a week ago: always "last week".
       ..saveChildLog(
         diaper(
@@ -552,7 +559,7 @@ void main() {
           childId: 'k1',
           kind: LogKind.symptom,
           symptom: 'Ausschlag',
-          start: DateTime.now().subtract(const Duration(minutes: 5)),
+          start: earlierToday(),
           photos: const [photo],
         ),
       );
