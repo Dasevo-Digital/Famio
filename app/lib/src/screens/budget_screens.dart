@@ -512,7 +512,11 @@ class _EntryEditorState extends State<_EntryEditor> {
               ],
             ),
             const SizedBox(height: 20),
-            Row(
+            // Side by side; stacked when the phone leaves no room (#406).
+            OverflowBar(
+              alignment: MainAxisAlignment.spaceBetween,
+              overflowAlignment: OverflowBarAlignment.end,
+              overflowSpacing: 8,
               children: [
                 if (widget.existing != null)
                   TextButton.icon(
@@ -525,7 +529,7 @@ class _EntryEditorState extends State<_EntryEditor> {
                       deleteWithUndo(
                         context,
                         what: widget.existing!.note.isEmpty
-                            ? widget.existing!.category
+                            ? categoryLabel(widget.existing!.category)
                             : widget.existing!.note,
                         collections: const {Collections.budgetEntries},
                         delete: () =>
@@ -533,7 +537,10 @@ class _EntryEditorState extends State<_EntryEditor> {
                       );
                       Navigator.pop(context);
                     },
-                  ),
+                  )
+                else
+                  // Keeps Save at the end of the row.
+                  const SizedBox.shrink(),
                 if (widget.existing?.monthly == true &&
                     widget.existing?.until == null)
                   TextButton(
@@ -542,7 +549,6 @@ class _EntryEditorState extends State<_EntryEditor> {
                         _save(until: DateTime(now.year, now.month + 1, 0)),
                     child: Text(tr.budgetEndAfterMonth),
                   ),
-                const Spacer(),
                 ColorButton(
                   label: tr.commonSave,
                   color: color,

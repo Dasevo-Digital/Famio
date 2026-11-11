@@ -325,7 +325,7 @@ class CalDavSync {
       for (final path in wanted) {
         final item = fetched[path];
         if (item == null) continue;
-        changed |= _pull(
+        changed |= await _pull(
           accountId,
           owner,
           path,
@@ -432,7 +432,7 @@ class CalDavSync {
 
   /// Applies one new or changed remote resource. Returns whether Famio data
   /// changed.
-  bool _pull(
+  Future<bool> _pull(
     String accountId,
     String owner,
     String path,
@@ -440,7 +440,7 @@ class CalDavSync {
     String data,
     _Link? link, {
     required List<String>? audience,
-  }) {
+  }) async {
     final eventId =
         link?.eventId ??
         _eventIdFor(path) ??
@@ -474,7 +474,7 @@ class CalDavSync {
       if (link?.mode == 'sync') {
         changed |= _removeLocal(accountId, owner, link!);
       }
-      changed |= _importReadOnly(accountId, path, data, audience);
+      changed |= await _importReadOnly(accountId, path, data, audience);
       _saveLink(
         accountId,
         path,
@@ -551,21 +551,27 @@ class CalDavSync {
     return true;
   }
 
-  bool _importReadOnly(
+  Future<bool> _importReadOnly(
     String accountId,
     String path,
     String data,
     List<String>? audience,
-  ) {
+  ) async {
     final sourceId = _readOnlySource(accountId, path);
     final now = DateTime.now();
-    final events = importIcs(
-      data,
-      sourceId: sourceId,
-      fallback: location(),
-      from: now.subtract(_history),
-      to: now.add(_readOnlyWindow),
-    );
+    final List<CalendarEvent> events;
+    try {
+      events = await importIcsIsolated(
+        data,
+        sourceId: sourceId,
+        fallback: location(),
+        from: now.subtract(_history),
+        to: now.add(_readOnlyWindow),
+      );
+    } on IcsTooComplex {
+      // Keeps what was shown so far; the other entries go on syncing.
+      return false;
+    }
     final wanted = {for (final e in events) e.id};
     return records.writeAsServer([
       for (final e in events)

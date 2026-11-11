@@ -8,6 +8,8 @@ import 'palette.dart';
 import '../l10n.dart';
 
 /// Leaves enough width for seven 48 dp day targets on phones from 360 dp.
+/// The range always includes [initialDate], so an older entry (a rent since
+/// 2019, a task overdue for years) still opens on its own date.
 Future<DateTime?> showFamioDatePicker({
   required BuildContext context,
   required DateTime initialDate,
@@ -15,23 +17,44 @@ Future<DateTime?> showFamioDatePicker({
   required DateTime lastDate,
   String? helpText,
   DatePickerMode initialDatePickerMode = DatePickerMode.day,
-}) => showDialog<DateTime>(
-  context: context,
-  builder: (_) => DatePickerDialog(
-    initialDate: initialDate,
-    firstDate: firstDate,
-    lastDate: lastDate,
-    helpText: helpText,
-    initialCalendarMode: initialDatePickerMode,
-    insetPadding: EdgeInsets.symmetric(
-      horizontal: min(
-        12.0,
-        max(0.0, (MediaQuery.sizeOf(context).width - 360) / 2),
+}) {
+  final (first, last) = datePickerRange(initialDate, firstDate, lastDate);
+  return showDialog<DateTime>(
+    context: context,
+    builder: (_) => DatePickerDialog(
+      initialDate: initialDate,
+      firstDate: first,
+      lastDate: last,
+      helpText: helpText,
+      initialCalendarMode: initialDatePickerMode,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: min(
+          12.0,
+          max(0.0, (MediaQuery.sizeOf(context).width - 360) / 2),
+        ),
+        vertical: 24,
       ),
-      vertical: 24,
     ),
-  ),
-);
+  );
+}
+
+/// The bounds a date picker gets: widened so that [initial] (and, for a
+/// range, [initialEnd]) lies inside, and never with the end before the start.
+(DateTime, DateTime) datePickerRange(
+  DateTime initial,
+  DateTime first,
+  DateTime last, [
+  DateTime? initialEnd,
+]) {
+  final start = DateUtils.dateOnly(initial);
+  final end = DateUtils.dateOnly(initialEnd ?? initial);
+  var from = DateUtils.dateOnly(first);
+  var to = DateUtils.dateOnly(last);
+  if (start.isBefore(from)) from = start;
+  if (end.isAfter(to)) to = end;
+  if (to.isBefore(from)) from = to;
+  return (from, to);
+}
 
 /// Page layout used by every section: a large friendly title on a soft
 /// colored blob instead of a Material app bar.
@@ -67,11 +90,13 @@ class SectionPage extends StatelessWidget {
     final c = FamioColors.of(context);
     final canPop = Navigator.of(context).canPop();
     final titleStyle = Theme.of(context).textTheme.headlineMedium;
+    var measured = DefaultTextStyle.of(context).style.merge(titleStyle);
+    // Measured as Text draws it: with the system's bold text (iOS), wider.
+    if (MediaQuery.boldTextOf(context)) {
+      measured = measured.merge(const TextStyle(fontWeight: FontWeight.bold));
+    }
     final measure = TextPainter(
-      text: TextSpan(
-        text: title,
-        style: DefaultTextStyle.of(context).style.merge(titleStyle),
-      ),
+      text: TextSpan(text: title, style: measured),
       textDirection: Directionality.of(context),
       textScaler: MediaQuery.textScalerOf(context),
       maxLines: 1,

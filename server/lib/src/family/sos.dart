@@ -445,6 +445,8 @@ class SosService {
       brief: title(),
       tag: 'rotating_light',
       urgent: true,
+      // Ended meanwhile: no further try after "Notfall beendet".
+      stillValid: () => _get(about.id)?.open ?? false,
     ),
     about,
   );

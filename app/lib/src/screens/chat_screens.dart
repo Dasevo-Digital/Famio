@@ -1,4 +1,5 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -16,6 +17,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import '../l10n.dart';
 import '../security/app_lock.dart';
+import '../widgets/section_shown.dart';
 
 const _chatCollections = {
   Collections.chatMessages,
@@ -282,9 +284,23 @@ class _ChatScreenState extends State<ChatScreen> {
   /// Only messages somebody can actually see count as read: not while the
   /// app is in the background or locked, nor from a chat that stays
   /// mounted behind another section or page.
+  static bool get _windowed =>
+      kIsWeb ||
+      const {
+        TargetPlatform.macOS,
+        TargetPlatform.windows,
+        TargetPlatform.linux,
+      }.contains(defaultTargetPlatform);
+
   bool get _inView {
     final state = WidgetsBinding.instance.lifecycleState;
-    if (state != null && state != AppLifecycleState.resumed) return false;
+    // A desktop or browser window without the focus is still on screen
+    // (the Home Assistant panel, a second display); on phones inactive
+    // means covered by the system (#400).
+    final unfocused = state == AppLifecycleState.inactive && _windowed;
+    if (state != null && state != AppLifecycleState.resumed && !unfocused) {
+      return false;
+    }
     final lock = _lock;
     return lock == null || !(lock.locked || lock.covered);
   }
@@ -381,9 +397,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final c = FamioColors.of(context);
     final color = c.strong(FamioSection.chat);
     // Hidden behind another section (which keeps it, see the home shell)
-    // or covered by another page or dialog.
+    // or covered by another page or dialog, also one over the whole app.
     final shown =
         TickerMode.valuesOf(context).enabled &&
+        SectionShown.of(context) &&
         (ModalRoute.of(context)?.isCurrent ?? true);
     return SectionPage(
       section: FamioSection.chat,

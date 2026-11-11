@@ -1500,6 +1500,51 @@ void main() {
       await tester.pumpAndSettle();
       expect(engine.recipes.single.photo, isNull);
     });
+
+    testWidgets('saving keeps the exact amounts (#401)', (tester) async {
+      await open(tester);
+      final yeast = Ingredient.parse(
+        '12,5 g Hefe',
+      ).withNutrition(const Nutrition(code: '1', product: 'Hefe', kcal: 105));
+      final recipe = Recipe(
+        id: 'r',
+        title: 'Zopf',
+        ingredients: [
+          Ingredient.parse('¼ l Sahne'),
+          yeast,
+          Ingredient.parse('⅓ TL Zimt'),
+          Ingredient.parse('2-3 Eier'),
+          Ingredient.parse('0,125 l Weißwein'),
+        ],
+      );
+      engine.saveRecipe(recipe);
+      await tester.pump();
+      unawaited(
+        showRecipeEditor(
+          tester.element(find.byType(Scaffold).first),
+          existing: recipe,
+        ),
+      );
+      await tester.pumpAndSettle();
+      final lines = tester
+          .widget<TextField>(field('Zutaten – eine pro Zeile'))
+          .controller!
+          .text;
+      expect(
+        lines,
+        '0,25 l Sahne\n12,5 g Hefe\n⅓ TL Zimt\n2–3 Eier\n0,125 l Weißwein',
+      );
+      await tester.enterText(field('Titel'), 'Hefezopf');
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      final saved = engine.recipes.single;
+      expect(saved.title, 'Hefezopf');
+      expect(
+        [for (final i in saved.ingredients) i.toJson()],
+        [for (final i in recipe.ingredients) i.toJson()],
+      );
+      expect(saved.ingredients[3].quantity(2), '4–6');
+    });
   });
 
   group('start page', () {

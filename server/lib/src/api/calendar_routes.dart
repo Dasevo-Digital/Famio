@@ -59,7 +59,15 @@ extension _CalendarRoutes on FamioApi {
         t('Keine Kalenderdatei übergeben.'),
       );
     }
-    final content = readIcsFile(text, location: location);
+    final IcsFileContent content;
+    // A local, as the isolate gets a copy of what the work refers to.
+    final zone = location;
+    try {
+      // In an isolate: series from elsewhere can take long (#395).
+      content = await runIsolated(() => readIcsFile(text, location: zone));
+    } on IcsTooComplex catch (e) {
+      throw ApiException.badRequest('ics_too_complex', e.message);
+    }
     if (content.events.isEmpty && content.skipped.isEmpty) {
       throw ApiException.badRequest(
         'ics_empty',

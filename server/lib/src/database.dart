@@ -369,6 +369,17 @@ const _migrations = [
   );
   CREATE INDEX location_pauses_member ON location_pauses(member_id, until);
   ''',
+  '''
+  -- Sharing schedules that applied until a change (null: none): positions
+  -- a phone measured then and sends later are judged by them as well.
+  CREATE TABLE location_schedules (
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    until INTEGER NOT NULL,
+    schedule TEXT
+  );
+  CREATE INDEX location_schedules_member
+    ON location_schedules(member_id, until);
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

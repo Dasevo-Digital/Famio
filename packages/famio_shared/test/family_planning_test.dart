@@ -23,12 +23,70 @@ void main() {
     expect(p('1 Prise Salz').toString(), '1 Prise Salz');
   });
 
+  test('ranges and exact amounts read back the same (#401)', () {
+    Ingredient p(String s) => Ingredient.parse(s);
+    expect(p('2-3 Eier').upTo, 3);
+    expect(p('2–3 Eier').quantity(), '2–3');
+    expect(p('2–3 Eier').quantity(2), '4–6');
+    expect(p('3-2 Eier').upTo, isNull);
+    expect(p('1 ½–2 EL Öl').upTo, 2);
+    for (final line in [
+      '0,25 l Sahne',
+      '12,5 g Hefe',
+      '37,5 g Butter',
+      '⅓ TL Zimt',
+      '1 ⅔ Tassen Mehl',
+      '0,125 l Weißwein',
+      '2–3 Eier',
+      '1 Prise Salz',
+      'Salz und Pfeffer',
+      '200 g Mehl',
+    ]) {
+      final i = p(line);
+      expect(i.editText, line);
+      expect(p(i.editText).toJson(), i.toJson(), reason: line);
+    }
+    expect(p('¼ l Sahne').editText, '0,25 l Sahne');
+    expect(p('¼ l Sahne').scaled(1 / 3).exactQuantity(decimals: 2), '0,08 l');
+    expect(Ingredient.fromJson(p('2-3 Eier').toJson()).upTo, 3);
+  });
+
+  test('shopping amounts add up without losing anything (#402)', () {
+    Ingredient p(String s) => Ingredient.parse(s);
+    expect(addQuantities('500 g', p('1 kg Mehl')), '1,5 kg');
+    expect(addQuantities('1,5 kg', p('200 g Mehl')), '1,7 kg');
+    expect(addQuantities('200 g', p('300 g Mehl')), '500 g');
+    expect(addQuantities('1 kg', p('1 kg Mehl')), '2 kg');
+    expect(addQuantities('0,25 l', p('125 ml Sahne')), '375 ml');
+    expect(addQuantities('750 ml', p('0,5 l Milch')), '1,25 l');
+    expect(addQuantities('2 EL', p('1 el Öl')), '3 el');
+    expect(addQuantities('2', p('1 Zwiebeln')), '3');
+    // Cannot be added up: the caller appends instead.
+    expect(addQuantities('2 große', p('1 Zwiebeln')), isNull);
+    expect(addQuantities('500 g + 1 kg', p('200 g Mehl')), isNull);
+    expect(addQuantities('1 Packung', p('500 ml Milch')), isNull);
+    expect(addQuantities('500 g', p('1 l Milch')), isNull);
+    expect(addQuantities('2–3', p('1 Ei')), isNull);
+    expect(addQuantities('2', p('1-2 Eier')), isNull);
+    expect(addQuantities('', p('1 Ei')), isNull);
+    expect(addQuantities('2', p('Salz')), isNull);
+  });
+
   test('euro amounts', () {
     expect(formatEuro(123456), '1.234,56 €');
     expect(formatEuro(-5), '−0,05 €');
     expect(parseEuro('12,50'), 1250);
     expect(parseEuro('1.234,5'), 123450);
     expect(parseEuro('12.5'), 1250);
+    // A dot before three digits groups thousands (#403).
+    expect(parseEuro('1.500'), 150000);
+    expect(parseEuro('2.000'), 200000);
+    expect(parseEuro('1.234.567'), 123456700);
+    expect(parseEuro('12.50'), 1250);
+    expect(parseEuro('1.5'), 150);
+    expect(parseEuro('1.500,00'), 150000);
+    expect(parseEuro('1\u00a0500,00 €'), 150000);
+    expect(parseEuro('1.50.0'), isNull);
     expect(parseEuro('abc'), isNull);
   });
 

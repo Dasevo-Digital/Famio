@@ -92,10 +92,16 @@ class _VacationsScreen extends StatelessWidget {
     Vacation? existing,
   ) async {
     final now = DateTime.now();
+    final (first, last) = datePickerRange(
+      existing?.from ?? now,
+      DateTime(now.year - 1),
+      DateTime(now.year + 3),
+      existing?.to,
+    );
     final range = await showDateRangePicker(
       context: context,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 3),
+      firstDate: first,
+      lastDate: last,
       initialDateRange: existing == null
           ? null
           : DateTimeRange(start: existing.from, end: existing.to),

@@ -23,6 +23,7 @@ import 'calendar/calendar_feeds.dart';
 import 'calendar/calendar_importer.dart';
 import 'calendar/ics_export.dart';
 import 'calendar/ics_file_import.dart';
+import 'calendar/ics_import.dart' show IcsTooComplex, runIsolated;
 import 'crypto/tls.dart';
 import 'dav/apple_profile.dart';
 import 'calendar/calendar_access.dart';

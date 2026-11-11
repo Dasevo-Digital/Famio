@@ -7,6 +7,10 @@ import 'package:http/http.dart' as http;
 /// get lost to one dropped connection.
 const urgentRetries = [Duration(seconds: 10), Duration(seconds: 30)];
 
+/// How long one try of a notice may take, from looking up the service's
+/// name to the end of its answer.
+const noticeDeadline = Duration(seconds: 15);
+
 /// What a push service answered to one try.
 typedef PushAttempt = ({int? status, bool failed});
 
@@ -19,7 +23,7 @@ Future<PushAttempt> postNotice(
   required Map<String, String> headers,
   String? body,
   List<int>? bodyBytes,
-  Duration timeout = const Duration(seconds: 15),
+  Duration timeout = noticeDeadline,
 }) async {
   try {
     final status = await httpTransfer<int>(
@@ -51,12 +55,15 @@ bool worthRetrying(PushAttempt attempt) =>
     (attempt.status != null && attempt.status! >= 500);
 
 /// Keeps trying [send] for an [urgent] notice after the delays in [retries],
-/// until it works, it is not [worthRetrying] or [stopped] completes.
+/// until it works, it is not [worthRetrying], [stopped] completes or the
+/// notice is no longer [stillValid]. A try that ran out of time may still
+/// have arrived: an alarm then comes twice rather than not at all (#400).
 Future<T> withRetries<T>(
   Future<(T, PushAttempt?)> Function() send, {
   required bool urgent,
   required List<Duration> retries,
   required Future<void> stopped,
+  bool Function()? stillValid,
 }) async {
   var done = false;
   unawaited(stopped.then((_) => done = true));
@@ -70,6 +77,6 @@ Future<T> withRetries<T>(
       return result;
     }
     await Future.any([Future<void>.delayed(retries[i]), stopped]);
-    if (done) return result;
+    if (done || !(stillValid?.call() ?? true)) return result;
   }
 }

@@ -256,6 +256,7 @@ class WebPush {
           return _sendOnce(current, notice, quiet: quiet);
         },
         urgent: notice.urgent,
+        stillValid: notice.stillValid,
         retries: retries,
         stopped: _stopped.future,
       );

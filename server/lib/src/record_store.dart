@@ -931,8 +931,17 @@ class RecordStore {
       ''',
       [since, userId, pageSize + 1],
     );
-    final hasMore = rows.length > pageSize;
-    final page = [for (final r in rows.take(pageSize)) _record(r)];
+    var size = pageSize;
+    // Never between a revocation and the record of the same rev, which a
+    // member sees again after a role change: the next page would start
+    // after that rev and miss the record (#399).
+    if (rows.length > size &&
+        size > 1 &&
+        rows[size]['rev'] == rows[size - 1]['rev']) {
+      size--;
+    }
+    final hasMore = rows.length > size;
+    final page = [for (final r in rows.take(size)) _record(r)];
     final changes = [
       for (final r in page)
         if (r.deleted ||

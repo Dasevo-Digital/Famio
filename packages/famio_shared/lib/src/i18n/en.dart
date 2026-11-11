@@ -1228,6 +1228,8 @@ const sharedEn = <String, String>{
   "Server|Abruf fehlgeschlagen (HTTP {code})": "Fetching failed (HTTP {code})",
   "Server|Unter dieser Adresse liegt keine Kalenderdatei (ICS)":
       "There is no calendar file (ICS) at this address",
+  "Server|Der Kalender enthält Wiederholungen, die sich nicht in angemessener Zeit berechnen lassen":
+      "The calendar contains repetitions that cannot be worked out in reasonable time",
   "Server|Zeitüberschreitung beim Abruf": "Timeout while fetching",
   "Server|Server nicht erreichbar ({message})":
       "Server not reachable ({message})",

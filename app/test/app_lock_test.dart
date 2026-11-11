@@ -53,6 +53,13 @@ void main() {
     return result;
   }
 
+  /// The way back as Flutter reports it: hidden, inactive, resumed.
+  void back(AppLock l) {
+    l.didChangeAppLifecycleState(AppLifecycleState.hidden);
+    l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+    l.didChangeAppLifecycleState(AppLifecycleState.resumed);
+  }
+
   void away(AppLock l, Duration time) {
     l.didChangeAppLifecycleState(AppLifecycleState.inactive);
     l.didChangeAppLifecycleState(AppLifecycleState.paused);
@@ -165,6 +172,38 @@ void main() {
     away(l, Duration.zero);
     expect(l.locked, isTrue);
   });
+
+  test(
+    'a sign-in finished in the background counts from then (#397)',
+    () async {
+      for (final seconds in [0, 60, 300]) {
+        final l = await lock(delaySeconds: seconds);
+        l.signedOut();
+        // Single sign-on in the browser: Famio polls and signs in meanwhile.
+        l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+        l.didChangeAppLifecycleState(AppLifecycleState.hidden);
+        l.didChangeAppLifecycleState(AppLifecycleState.paused);
+        now = now.add(const Duration(seconds: 20));
+        l.signedIn();
+        expect(l.locked, isFalse);
+        // Back soon after: no second question, also with "at once".
+        now = now.add(const Duration(seconds: 10));
+        back(l);
+        expect(l.locked, isFalse, reason: 'back after 10 s ($seconds s)');
+
+        // Three hours more in the browser after signing in: locked.
+        l.signedOut();
+        away(l, const Duration(seconds: 5));
+        l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+        l.didChangeAppLifecycleState(AppLifecycleState.hidden);
+        l.didChangeAppLifecycleState(AppLifecycleState.paused);
+        l.signedIn();
+        now = now.add(const Duration(hours: 3));
+        back(l);
+        expect(l.locked, isTrue, reason: 'back after 3 h ($seconds s)');
+      }
+    },
+  );
 
   test('the system dialog itself does not lock again', () async {
     final l = await lock();

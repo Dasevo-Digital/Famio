@@ -25,6 +25,7 @@ class PushNotice {
     this.tag = 'house',
     this.place = false,
     this.urgent = false,
+    this.stillValid,
   });
 
   final Set<String> to;
@@ -43,6 +44,10 @@ class PushNotice {
   /// An emergency: always loud, also in the quiet time; devices show it
   /// as an alarm.
   final bool urgent;
+
+  /// Asked before each further try of an [urgent] notice: an alarm that
+  /// ended meanwhile is not sounded again after "Notfall beendet" (#396).
+  final bool Function()? stillValid;
 }
 
 /// Real push notifications while the apps are closed: the server publishes
@@ -61,6 +66,7 @@ class PushService {
     this.onOperationalError,
     this.onSent,
     this.retries = urgentRetries,
+    this.deadline = noticeDeadline,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null,
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
@@ -79,6 +85,9 @@ class PushService {
 
   /// Waits before trying an urgent notice again (see [urgentRetries]).
   final List<Duration> retries;
+
+  /// How long one try may take (see [noticeDeadline]).
+  final Duration deadline;
 
   /// Completes when the server shuts down: no more tries after that.
   final _stopped = Completer<void>();
@@ -799,6 +808,7 @@ class PushService {
           return _sendOnce(current, notice, quiet: quiet);
         },
         urgent: notice.urgent,
+        stillValid: notice.stillValid,
         retries: retries,
         stopped: _stopped.future,
       );
@@ -820,7 +830,18 @@ class PushService {
     PushAttempt? attempt;
     try {
       // Checked again for every notice: a name may point elsewhere now.
-      await _urlPolicy.check(uri);
+      // Within the same deadline as the send: a name server that hangs
+      // must not hold up the notice, nor the server's shutdown (#400).
+      try {
+        await _urlPolicy.check(uri).timeout(deadline);
+      } on TimeoutException {
+        attempt = (status: null, failed: true);
+        throw ApiException(
+          504,
+          'push_lookup',
+          t('Push-Server nicht erreichbar'),
+        );
+      }
       attempt = await postNotice(
         _client,
         base.replace(path: base.path.isEmpty ? '/' : base.path),
@@ -828,6 +849,7 @@ class PushService {
           'content-type': 'application/json',
           if (token != null) 'authorization': 'Bearer $token',
         },
+        timeout: deadline,
         body: jsonEncode({
           'topic': topic,
           'title': details ? notice.title : 'Famio',

@@ -13,6 +13,7 @@ import '../data/family_data.dart';
 import '../design/components.dart';
 import '../widgets/famio_glyph.dart';
 import '../widgets/pixel_snap.dart';
+import '../widgets/section_shown.dart';
 import '../widgets/section_tips.dart';
 import '../widgets/trust_certificate.dart';
 import '../design/palette.dart';
@@ -327,6 +328,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= 720;
+    // A dialog or page on the app's own navigator covers every section.
+    final onTop = ModalRoute.of(context)?.isCurrent ?? true;
     final pages = IndexedStack(
       index: FamioSection.values.indexOf(_section),
       children: [
@@ -336,23 +339,27 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             // cannot be seen (the chat does not mark messages read).
             TickerMode(
               enabled: s == _section,
-              child: HeroControllerScope.none(
-                // Which sections Android's back button leads back within;
-                // the shell decides (below), not each section on its own.
-                child: NotificationListener<NavigationNotification>(
-                  onNotification: (n) {
-                    if (n.canHandlePop != _deeper.contains(s)) {
-                      setState(
-                        () =>
-                            n.canHandlePop ? _deeper.add(s) : _deeper.remove(s),
-                      );
-                    }
-                    return true;
-                  },
-                  child: Navigator(
-                    key: _navigators[s],
-                    onGenerateRoute: (_) =>
-                        MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+              child: SectionShown(
+                shown: s == _section && onTop,
+                child: HeroControllerScope.none(
+                  // Which sections Android's back button leads back within;
+                  // the shell decides (below), not each section on its own.
+                  child: NotificationListener<NavigationNotification>(
+                    onNotification: (n) {
+                      if (n.canHandlePop != _deeper.contains(s)) {
+                        setState(
+                          () => n.canHandlePop
+                              ? _deeper.add(s)
+                              : _deeper.remove(s),
+                        );
+                      }
+                      return true;
+                    },
+                    child: Navigator(
+                      key: _navigators[s],
+                      onGenerateRoute: (_) =>
+                          MaterialPageRoute<void>(builder: (_) => _pageFor(s)),
+                    ),
                   ),
                 ),
               ),

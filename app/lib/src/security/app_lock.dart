@@ -222,9 +222,18 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Just signed in: no second question for leaving Famio on the way.
+  /// Finished while Famio is still away (single sign-on in the browser,
+  /// polled in the background), the time away counts from the sign-in, as
+  /// for a trip to the camera; otherwise a long stay in the browser after
+  /// it would need no unlock (#397).
   void signedIn() {
     locked = failed = false;
-    _forget();
+    if (_left != null) {
+      _left = _now();
+      _leftToPick = true;
+    } else {
+      _forget();
+    }
     notifyListeners();
   }
 

@@ -1262,6 +1262,8 @@ const sharedEs = <String, String>{
       "Error al consultar (HTTP {code})",
   "Server|Unter dieser Adresse liegt keine Kalenderdatei (ICS)":
       "En esta dirección no hay ningún archivo de calendario (ICS)",
+  "Server|Der Kalender enthält Wiederholungen, die sich nicht in angemessener Zeit berechnen lassen":
+      "El calendario contiene repeticiones que no se pueden calcular en un tiempo razonable",
   "Server|Zeitüberschreitung beim Abruf":
       "Tiempo de espera agotado al consultar",
   "Server|Server nicht erreichbar ({message})":

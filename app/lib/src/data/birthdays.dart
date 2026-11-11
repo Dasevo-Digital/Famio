@@ -102,7 +102,12 @@ List<CalendarEvent> birthdayEvents(SyncEngine engine) => [
         start: first,
         end: DateTime(first.year, first.month, first.day + 1),
         allDay: true,
-        recurrence: const Recurrence(RecurrenceFrequency.yearly),
+        // Born on 29 February: on the 28th in other years, as on the home
+        // page and in reminders (Birthday.next).
+        recurrence: const Recurrence(
+          RecurrenceFrequency.yearly,
+          lastDayIfMissing: true,
+        ),
         sourceId: b.sourceId,
         notes: b.birthday.year == null ? '' : 'Geboren ${b.birthday.year}',
       );

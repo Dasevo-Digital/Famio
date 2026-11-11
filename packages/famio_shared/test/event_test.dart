@@ -88,6 +88,45 @@ void main() {
     ]);
   });
 
+  test('a series that takes the last day where its day is missing', () {
+    // Birthdays (#404): on the 28th when there is no 29 February.
+    final birthday = event(
+      start: DateTime(2000, 2, 29),
+      length: const Duration(days: 1),
+      allDay: true,
+      recurrence: const Recurrence(
+        RecurrenceFrequency.yearly,
+        lastDayIfMissing: true,
+      ),
+    );
+    expect(starts(birthday, DateTime(2026, 1, 1), DateTime(2029, 1, 1)), [
+      DateTime(2026, 2, 28),
+      DateTime(2027, 2, 28),
+      DateTime(2028, 2, 29),
+    ]);
+    final monthly = event(
+      start: DateTime(2026, 1, 31, 10),
+      recurrence: const Recurrence(
+        RecurrenceFrequency.monthly,
+        lastDayIfMissing: true,
+      ),
+    );
+    expect(starts(monthly, DateTime(2026, 1, 1), DateTime(2026, 5, 1)), [
+      DateTime(2026, 1, 31, 10),
+      DateTime(2026, 2, 28, 10),
+      DateTime(2026, 3, 31, 10),
+      DateTime(2026, 4, 30, 10),
+    ]);
+    // Not stored: synced events keep the iCalendar behavior.
+    expect(
+      const Recurrence(
+        RecurrenceFrequency.yearly,
+        lastDayIfMissing: true,
+      ).toJson(),
+      const Recurrence(RecurrenceFrequency.yearly).toJson(),
+    );
+  });
+
   test('old daily series is expanded quickly and correctly', () {
     final e = event(
       start: DateTime(2000, 1, 1, 7),

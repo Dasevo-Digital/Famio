@@ -13,6 +13,7 @@ class Recurrence {
     this.interval = 1,
     this.until,
     this.weekdays = const [],
+    this.lastDayIfMissing = false,
   });
 
   static Recurrence? fromJson(Object? json) {
@@ -51,6 +52,13 @@ class Recurrence {
   /// the first occurrence.
   final List<int> weekdays;
 
+  /// Monthly and yearly series: in a month without the start's day (the 31st,
+  /// 29 February) the series falls on that month's last day instead of
+  /// skipping it, as a birthday on 29 February does on the 28th. Only for
+  /// series Famio builds itself and does not store (see `birthdayEvents`):
+  /// iCalendar skips such dates, and the flag is not written to JSON.
+  final bool lastDayIfMissing;
+
   Map<String, Object?> toJson() => {
     'frequency': frequency.name,
     'interval': interval,
@@ -64,11 +72,17 @@ class Recurrence {
       other.frequency == frequency &&
       other.interval == interval &&
       other.until == until &&
+      other.lastDayIfMissing == lastDayIfMissing &&
       _sameList(other.weekdays, weekdays);
 
   @override
-  int get hashCode =>
-      Object.hash(frequency, interval, until, Object.hashAll(weekdays));
+  int get hashCode => Object.hash(
+    frequency,
+    interval,
+    until,
+    lastDayIfMissing,
+    Object.hashAll(weekdays),
+  );
 }
 
 bool _sameList(List<int> a, List<int> b) {
@@ -366,10 +380,12 @@ class CalendarEvent {
         return at(s.year, s.month, s.day + 7 * k);
       case RecurrenceFrequency.monthly:
         final d = at(s.year, s.month + k, s.day);
-        return d.day == s.day ? d : null;
+        if (d.day == s.day) return d;
+        return rule.lastDayIfMissing ? at(s.year, s.month + k + 1, 0) : null;
       case RecurrenceFrequency.yearly:
         final d = at(s.year + k, s.month, s.day);
-        return d.day == s.day ? d : null;
+        if (d.day == s.day) return d;
+        return rule.lastDayIfMissing ? at(s.year + k, s.month + 1, 0) : null;
     }
   }
 

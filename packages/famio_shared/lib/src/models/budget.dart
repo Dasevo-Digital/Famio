@@ -155,12 +155,22 @@ String formatEuro(int cents) {
   return '${negative ? '−' : ''}$grouped,${(abs % 100).toString().padLeft(2, '0')} €';
 }
 
-/// Parses "12,50", "1.234,5" or "12.5" into cents.
+final _thousands = RegExp(r'^\d{1,3}(\.\d{3})+$');
+
+/// Parses "12,50", "1.234,5", "1.500" or "12.5" into cents.
 int? parseEuro(String text) {
-  var t = text.trim().replaceAll('€', '').replaceAll(' ', '');
+  var t = text
+      .trim()
+      .replaceAll('€', '')
+      .replaceAll(' ', '')
+      .replaceAll('\u00a0', '');
   if (t.isEmpty) return null;
   if (t.contains(',')) {
     t = t.replaceAll('.', '').replaceAll(',', '.');
+  } else if (_thousands.hasMatch(t)) {
+    // "1.500" is fifteen hundred: a dot before exactly three digits groups
+    // thousands, as amounts have at most two decimal places.
+    t = t.replaceAll('.', '');
   }
   final v = double.tryParse(t);
   return v == null || v < 0 ? null : (v * 100).round();

@@ -183,12 +183,31 @@ class LocationService {
 
     // A phone that was offline sends what it measured meanwhile: what it
     // measured outside the schedule or during a pause stays private too.
+    // Of a schedule changed since, both have to allow it (#398).
     final pauses = _pausesSince(member.id, now.subtract(retention));
+    final earlier = _schedulesSince(member.id, now.subtract(retention));
+    bool allowedThen(DateTime at) {
+      for (final s in earlier) {
+        if (!at.isBefore(s.until)) continue;
+        final raw = s.schedule;
+        if (raw == null) return true;
+        try {
+          return LocationSchedule.fromJson(
+            (jsonDecode(raw) as Map).cast(),
+          ).activeAt(_onClock(at));
+        } on Object {
+          return false; // A broken value never exposes a position.
+        }
+      }
+      return true;
+    }
+
     final valid = [
       for (final f in fixes)
         if (f.valid &&
             (f.accuracy ?? 0) <= 5000 &&
             f.at.isAfter(now.subtract(retention)) &&
+            allowedThen(f.at) &&
             f.at.isBefore(now.add(const Duration(minutes: 2))) &&
             (schedule == null || schedule.activeAt(_onClock(f.at))) &&
             !pauses.any(
@@ -458,12 +477,25 @@ class LocationService {
   /// Sets or removes a recurring schedule and immediately removes a visible
   /// location if the new schedule is inactive now.
   void setSchedule(String memberId, LocationSchedule? schedule) {
-    db.execute(
-      'INSERT INTO location_state (member_id, sharing_schedule) VALUES (?, ?)'
-      ' ON CONFLICT(member_id) DO UPDATE SET'
-      ' sharing_schedule = excluded.sharing_schedule',
-      [memberId, schedule == null ? null : jsonEncode(schedule.toJson())],
-    );
+    final json = schedule == null ? null : jsonEncode(schedule.toJson());
+    final before = db.select(
+      'SELECT sharing_schedule FROM location_state WHERE member_id = ?',
+      [memberId],
+    ).firstOrNull?['sharing_schedule'];
+    if (before != json) {
+      // Kept for positions measured until now and sent later (#398).
+      db.execute(
+        'INSERT INTO location_schedules (member_id, until, schedule)'
+        ' VALUES (?, ?, ?)',
+        [memberId, _clock().toUtc().millisecondsSinceEpoch, before],
+      );
+      db.execute(
+        'INSERT INTO location_state (member_id, sharing_schedule) VALUES (?, ?)'
+        ' ON CONFLICT(member_id) DO UPDATE SET'
+        ' sharing_schedule = excluded.sharing_schedule',
+        [memberId, json],
+      );
+    }
     if (schedule != null && !schedule.activeAt(_clock())) {
       final previous = _current(memberId);
       final changed = _publish(
@@ -524,7 +556,15 @@ class LocationService {
   /// Pauses sharing of [memberId] for [duration] (null: until resumed).
   void pause(String memberId, {Duration? duration, required String byMember}) {
     final now = _clock().toUtc();
-    final was = _state(memberId);
+    var was = _state(memberId);
+    // A pause that ran out without a report since: it ended then, and the
+    // time between is no pause (#398).
+    if (was.paused &&
+        was.pausedUntil != null &&
+        !now.isBefore(was.pausedUntil!)) {
+      _endPause(memberId, was.pausedUntil!);
+      was = _state(memberId);
+    }
     _setPause(
       memberId,
       paused: true,
@@ -576,6 +616,26 @@ class LocationService {
           row['until'] as int,
           isUtc: true,
         ),
+      ),
+  ];
+
+  /// Schedules (as stored) of [memberId] that applied until a change after
+  /// [from], earliest first.
+  List<({DateTime until, String? schedule})> _schedulesSince(
+    String memberId,
+    DateTime from,
+  ) => [
+    for (final row in db.select(
+      'SELECT until, schedule FROM location_schedules'
+      ' WHERE member_id = ? AND until > ? ORDER BY until',
+      [memberId, from.millisecondsSinceEpoch],
+    ))
+      (
+        until: DateTime.fromMillisecondsSinceEpoch(
+          row['until'] as int,
+          isUtc: true,
+        ),
+        schedule: row['schedule'] as String?,
       ),
   ];
 
@@ -744,6 +804,9 @@ class LocationService {
     db.execute('DELETE FROM location_pauses WHERE until < ?', [
       cutoff.millisecondsSinceEpoch,
     ]);
+    db.execute('DELETE FROM location_schedules WHERE until < ?', [
+      cutoff.millisecondsSinceEpoch,
+    ]);
     final members = {for (final m in accounts.members()) m.id};
     final changed = records.writeAsServer([
       for (final r in records.all(Collections.locationAlerts))
@@ -768,6 +831,7 @@ class LocationService {
     db.execute('DELETE FROM location_points');
     db.execute('DELETE FROM location_state');
     db.execute('DELETE FROM location_pauses');
+    db.execute('DELETE FROM location_schedules');
   }
 
   /// Removes everything about a deleted member.
@@ -775,6 +839,9 @@ class LocationService {
     db.execute('DELETE FROM location_points WHERE member_id = ?', [memberId]);
     db.execute('DELETE FROM location_state WHERE member_id = ?', [memberId]);
     db.execute('DELETE FROM location_pauses WHERE member_id = ?', [memberId]);
+    db.execute('DELETE FROM location_schedules WHERE member_id = ?', [
+      memberId,
+    ]);
     final located = records.writeAsServer([
       SyncRecord(
         collection: Collections.memberLocations,

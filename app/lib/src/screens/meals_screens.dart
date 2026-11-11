@@ -288,14 +288,7 @@ class _WeekPlan extends StatelessWidget {
 
 List<Ingredient> _scaled(Recipe r, int? servings) {
   final factor = (servings ?? r.servings) / r.servings;
-  return [
-    for (final i in r.ingredients)
-      Ingredient(
-        name: i.name,
-        amount: i.amount == null ? null : i.amount! * factor,
-        unit: i.unit,
-      ),
-  ];
+  return [for (final i in r.ingredients) i.scaled(factor)];
 }
 
 /// Asks for the shopping list and adds [items].
@@ -916,8 +909,12 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     text: widget.existing?.minutes?.toString() ?? '',
   );
   late final _ingredients = TextEditingController(
-    text: widget.existing?.ingredients.join('\n'),
+    text: widget.existing?.ingredients.map((i) => i.editText).join('\n'),
   );
+
+  /// Ingredients whose line is unchanged keep everything they had: the
+  /// exact amount, range and linked product (#401).
+  late var _known = [...?widget.existing?.ingredients];
   late final _steps = TextEditingController(text: widget.existing?.steps);
   late final _source = TextEditingController(text: widget.existing?.source);
   late final _tags = TextEditingController(
@@ -1020,7 +1017,10 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         _title.text = recipe.title;
         _servings.text = '${recipe.servings}';
         _minutes.text = recipe.minutes?.toString() ?? '';
-        _ingredients.text = recipe.ingredients.join('\n');
+        _ingredients.text = recipe.ingredients
+            .map((i) => i.editText)
+            .join('\n');
+        _known = [..._known, ...recipe.ingredients];
         _steps.text = recipe.steps;
         _source.text = recipe.source;
       });
@@ -1112,7 +1112,9 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         minutes: int.tryParse(_minutes.text.trim()),
         ingredients: [
           for (final line in _ingredients.text.split('\n'))
-            if (line.trim().isNotEmpty) _keepLink(Ingredient.parse(line)),
+            if (line.trim().isNotEmpty)
+              _known.where((i) => i.editText == line.trim()).firstOrNull ??
+                  _keepLink(Ingredient.parse(line)),
         ],
         steps: _steps.text.trim(),
         source: _source.text.trim(),

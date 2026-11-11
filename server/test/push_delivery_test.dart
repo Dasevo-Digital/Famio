@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:famio_server/famio_server.dart';
+import 'package:famio_server/src/family/sos.dart';
 import 'package:famio_server/src/push/delivery.dart';
 import 'package:famio_server/src/push/push_service.dart';
+import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/io_client.dart';
 import 'package:http/testing.dart';
@@ -115,6 +118,96 @@ void main() {
     push.stop();
     await push.idle.timeout(const Duration(seconds: 5));
     expect(calls, 1);
+  });
+
+  test('an alarm ended meanwhile is not sounded again (#396)', () async {
+    public = true;
+    final kind = app.accounts.create(
+      username: 'mia',
+      displayName: 'Mia',
+      role: MemberRole.child,
+    );
+    final heard = <String>[];
+    var calls = 0;
+    final push = PushService(
+      db: app.db,
+      records: app.records,
+      accounts: app.accounts,
+      location: () => app.location,
+      client: MockClient((r) async {
+        // The first try of the alarm does not get through.
+        if (++calls == 1) return http.Response('', 503);
+        heard.add((jsonDecode(r.body) as Map)['title'] as String);
+        return http.Response('', 200);
+      }),
+      urlPolicy: RemoteUrlPolicy(lookup: lookup),
+      retries: const [Duration(milliseconds: 200)],
+    );
+    await push.add(
+      mama,
+      name: 'Handy',
+      url: 'https://ntfy.example/thema',
+      details: true,
+    );
+    final sos = SosService(
+      records: app.records,
+      accounts: app.accounts,
+      push: push,
+    );
+    final alert = sos.raise(kind, latitude: 52.5, longitude: 13.4);
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    sos.resolve(kind, alert.id);
+    await push.idle;
+    expect(heard, hasLength(1));
+    expect(heard.single, isNot(startsWith('🚨')));
+
+    // Still open: the alarm is tried again as before.
+    calls = 0;
+    heard.clear();
+    sos.raise(kind, latitude: 52.5, longitude: 13.4);
+    await push.idle;
+    expect(heard, ['🚨 SOS von Mia']);
+  });
+
+  test('retries ask whether the notice still holds', () async {
+    var tries = 0;
+    var valid = true;
+    final stop = Completer<void>();
+    final result = withRetries(
+      () async {
+        tries++;
+        valid = false;
+        return ('x', (status: 503, failed: false));
+      },
+      urgent: true,
+      retries: const [Duration.zero, Duration.zero],
+      stopped: stop.future,
+      stillValid: () => valid,
+    );
+    expect(await result, 'x');
+    expect(tries, 1);
+  });
+
+  test('a name server that hangs does not hold up the notice', () async {
+    var hang = false;
+    final push = PushService(
+      db: app.db,
+      records: app.records,
+      accounts: app.accounts,
+      location: () => app.location,
+      client: MockClient((r) async => http.Response('', 200)),
+      urlPolicy: RemoteUrlPolicy(
+        lookup: (host) =>
+            hang ? Completer<List<InternetAddress>>().future : lookup(host),
+      ),
+      retries: const [],
+      deadline: const Duration(milliseconds: 200),
+    );
+    await push.add(mama, name: 'Handy', url: 'https://ntfy.example/thema');
+    hang = true;
+    push.deliver(() => notice(urgent: true), null);
+    await push.idle.timeout(const Duration(seconds: 3));
+    expect(push.targets(mama).single.lastError, isNotNull);
   });
 
   test('a service that does not answer loses the connection', () async {

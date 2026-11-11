@@ -107,6 +107,40 @@ void main() {
     });
   });
 
+  test('the same item in several units on the shopping list (#402)', () {
+    final engine = SyncEngine(
+      store: LocalStore.open(':memory:'),
+      api: FamioApiClient('localhost:1'),
+      memberId: 'm',
+    );
+    addTearDown(engine.dispose);
+    engine
+      ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))
+      ..saveShoppingItem(
+        const ShoppingItem(
+          id: 'z',
+          listId: 'l',
+          name: 'Zwiebeln',
+          quantity: '2 große',
+        ),
+      );
+    engine.addToShoppingList('l', [
+      Ingredient.parse('500 g Mehl'),
+      Ingredient.parse('1 kg Mehl'),
+      Ingredient.parse('200 g Mehl'),
+      Ingredient.parse('1 Zwiebeln'),
+      Ingredient.parse('¼ l Sahne'),
+    ]);
+    final items = {
+      for (final i in engine.shoppingItems('l')) i.name: i.quantity,
+    };
+    expect(items, {
+      'Zwiebeln': '2 große + 1',
+      'Mehl': '1,7 kg',
+      'Sahne': '0,25 l',
+    });
+  });
+
   test('the link in shared text', () {
     expect(
       linkIn('Lasagne - Rezept https://www.chefkoch.de/rezepte/1/L.html'),

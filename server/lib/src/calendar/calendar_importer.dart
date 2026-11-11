@@ -138,7 +138,7 @@ class CalendarImporter {
             t('Unter dieser Adresse liegt keine Kalenderdatei (ICS)'),
           );
         }
-        final events = importIcs(
+        final events = await importIcsIsolated(
           text,
           sourceId: sub.id,
           fallback: location(),
@@ -156,6 +156,8 @@ class CalendarImporter {
         }
       }
     } on _ImportError catch (e) {
+      error = e.message;
+    } on IcsTooComplex catch (e) {
       error = e.message;
     } on TimeoutException {
       error = t('Zeitüberschreitung beim Abruf');

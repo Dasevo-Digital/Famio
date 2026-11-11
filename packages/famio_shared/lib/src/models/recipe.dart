@@ -100,10 +100,67 @@ class ServingNutrition {
 }
 
 /// One line of a recipe: "200 g Mehl", "2 Eier", "Salz".
+/// [v] in German notation with at most [decimals] places and no trailing
+/// zeros ("12,5", "0,125", "3"); thirds as "⅓"/"⅔" ("1 ⅓"), which have no
+/// exact decimal.
+String formatAmount(double v, {int decimals = 3}) {
+  final whole = v.floor();
+  final part = v - whole;
+  for (final (value, glyph) in const [(1 / 3, '⅓'), (2 / 3, '⅔')]) {
+    if ((part - value).abs() < 1e-6)
+      return whole == 0 ? glyph : '$whole $glyph';
+  }
+  var text = v.toStringAsFixed(decimals);
+  if (text.contains('.')) {
+    text = text.replaceFirst(RegExp(r'\.?0+$'), '');
+  }
+  return text.replaceAll('.', ',');
+}
+
+/// [existing] (the quantity of an item on the shopping list) plus [item],
+/// as text, or null when they cannot be added up without losing something:
+/// [existing] is more than one amount ("500 g + 1 Pck.", "2 große"), one of
+/// them is a range, or the units differ and are not grams and kilograms or
+/// millilitres and litres.
+String? addQuantities(String existing, Ingredient item) {
+  final add = item.amount;
+  final text = existing.trim();
+  if (add == null || item.upTo != null || text.isEmpty) return null;
+  final before = Ingredient.parse('$text x');
+  final had = before.amount;
+  if (before.name != 'x' || had == null || before.upTo != null) return null;
+  String result(double amount, String unit) => Ingredient(
+    name: '',
+    amount: amount,
+    unit: unit,
+  ).exactQuantity(decimals: 2);
+  if (before.unit.toLowerCase() == item.unit.toLowerCase()) {
+    return result(had + add, item.unit);
+  }
+  final a = _metric[before.unit.toLowerCase()];
+  final b = _metric[item.unit.toLowerCase()];
+  if (a == null || b == null || a.$1 != b.$1) return null;
+  final total = had * a.$2 + add * b.$2;
+  final (small, large) = a.$1 == 'g' ? ('g', 'kg') : ('ml', 'l');
+  return total >= 1000 ? result(total / 1000, large) : result(total, small);
+}
+
+/// Units that convert: base unit and factor.
+const _metric = {
+  'mg': ('g', 0.001),
+  'g': ('g', 1.0),
+  'kg': ('g', 1000.0),
+  'ml': ('ml', 1.0),
+  'cl': ('ml', 10.0),
+  'dl': ('ml', 100.0),
+  'l': ('ml', 1000.0),
+};
+
 class Ingredient {
   const Ingredient({
     required this.name,
     this.amount,
+    this.upTo,
     this.unit = '',
     this.nutrition,
   });
@@ -114,10 +171,11 @@ class Ingredient {
     var text = line.trim();
     const fractions = {'½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3};
     double? amount;
-    // "1 1/2", "1/2", "1,5", "2½", "½", also ranges like "2-3" (lower bound).
+    double? upTo;
+    // "1 1/2", "1/2", "1,5", "2½", "½", also ranges like "2-3".
     final m = RegExp(
       r'^(?:(\d+)\s+(\d+)/(\d+)|(\d+)/(\d+)|(\d+(?:[.,]\d+)?)\s*([½¼¾⅓⅔])?|([½¼¾⅓⅔]))'
-      r'(?:\s*[-–]\s*\d+(?:[.,]\d+)?)?',
+      r'(?:\s*[-–]\s*(\d+(?:[.,]\d+)?))?',
     ).firstMatch(text);
     if (m != null) {
       int g(int i) => int.parse(m.group(i)!);
@@ -132,6 +190,10 @@ class Ingredient {
       } else {
         amount = fractions[m.group(8)];
       }
+      if (m.group(9) case final top?) {
+        final v = double.parse(top.replaceAll(',', '.'));
+        if (amount != null && v > amount) upTo = v;
+      }
       text = text.substring(m.group(0)!.length).trim();
     }
     var unit = '';
@@ -145,12 +207,13 @@ class Ingredient {
         text = text.substring(u.group(0)!.length).trim();
       }
     }
-    return Ingredient(name: text, amount: amount, unit: unit);
+    return Ingredient(name: text, amount: amount, upTo: upTo, unit: unit);
   }
 
   factory Ingredient.fromJson(Map<String, Object?> json) => Ingredient(
     name: json['name'] as String? ?? '',
     amount: (json['amount'] as num?)?.toDouble(),
+    upTo: (json['upTo'] as num?)?.toDouble(),
     unit: json['unit'] as String? ?? '',
     nutrition: json['nutrition'] is Map
         ? Nutrition.fromJson((json['nutrition'] as Map).cast())
@@ -159,14 +222,31 @@ class Ingredient {
 
   final String name;
   final double? amount;
+
+  /// Upper end of a range like "2–3 Eier" ([amount] is the lower end).
+  final double? upTo;
   final String unit;
 
   /// The product it is linked to, for nutrients; null if not linked.
   final Nutrition? nutrition;
 
   /// The same with [nutrition] linked (null: unlinked).
-  Ingredient withNutrition(Nutrition? nutrition) =>
-      Ingredient(name: name, amount: amount, unit: unit, nutrition: nutrition);
+  Ingredient withNutrition(Nutrition? nutrition) => Ingredient(
+    name: name,
+    amount: amount,
+    upTo: upTo,
+    unit: unit,
+    nutrition: nutrition,
+  );
+
+  /// The same for [factor] times the servings.
+  Ingredient scaled(double factor) => Ingredient(
+    name: name,
+    amount: amount == null ? null : amount! * factor,
+    upTo: upTo == null ? null : upTo! * factor,
+    unit: unit,
+    nutrition: nutrition,
+  );
 
   /// The amount in grams (millilitres count as grams), as far as the unit
   /// tells: spoons by their usual size, pieces and packages by the linked
@@ -203,17 +283,35 @@ class Ingredient {
     'glas',
   }.contains(unit.toLowerCase().replaceAll('.', ''));
 
-  /// The amount for [factor] times the servings, as text ("1,5 kg").
+  /// The amount for [factor] times the servings, as text ("1,5 kg"),
+  /// rounded for reading. Ranges read "2–3".
   String quantity([double factor = 1]) {
     if (amount == null) return unit;
-    final v = amount! * factor;
-    final rounded = v >= 10
+    String round(double v) => v >= 10
         ? v.round().toString()
         : (v * 10).round() % 10 == 0
         ? v.round().toString()
         : v.toStringAsFixed(1).replaceAll('.', ',');
-    return unit.isEmpty ? rounded : '$rounded $unit';
+    var text = round(amount! * factor);
+    if (upTo case final top?) text = '$text–${round(top * factor)}';
+    return unit.isEmpty ? text : '$text $unit';
   }
+
+  /// The amount as text without rounding it away ("0,25 l", "12,5 g",
+  /// "⅓ TL", "2–3"), so that [Ingredient.parse] reads back the same:
+  /// for editing and for the shopping list.
+  String exactQuantity({int decimals = 3}) {
+    if (amount == null) return unit;
+    var text = formatAmount(amount!, decimals: decimals);
+    if (upTo case final top?) {
+      text = '$text–${formatAmount(top, decimals: decimals)}';
+    }
+    return unit.isEmpty ? text : '$text $unit';
+  }
+
+  /// The line as it is edited: [exactQuantity] and the name.
+  String get editText =>
+      [exactQuantity(), name].where((s) => s.isNotEmpty).join(' ');
 
   @override
   String toString() => [quantity(), name].where((s) => s.isNotEmpty).join(' ');
@@ -221,6 +319,7 @@ class Ingredient {
   Map<String, Object?> toJson() => {
     'name': name,
     'amount': ?amount,
+    'upTo': ?upTo,
     if (unit.isNotEmpty) 'unit': unit,
     'nutrition': ?nutrition?.toJson(),
   };

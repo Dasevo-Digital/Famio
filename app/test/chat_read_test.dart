@@ -1,9 +1,13 @@
 // Only messages somebody can see count as read: a chat kept behind
 // another section of the home shell does not mark them.
+import 'dart:async';
+
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/screens/chat_screens.dart';
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,6 +103,70 @@ void main() {
     incoming('w4', 'Gleich da');
     await tester.pumpAndSettle();
     expect(engine.unreadCount(ChatIds.family), 0);
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  for (final root in [true, false]) {
+    testWidgets('a dialog over the chat (root navigator: $root, #400)', (
+      tester,
+    ) async {
+      await start(tester, const Size(390, 844));
+      await tester.tap(find.byTooltip('Chat').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Familie').first);
+      await tester.pumpAndSettle();
+      unawaited(
+        showDialog<void>(
+          context: tester.element(find.byType(ChatScreen)),
+          useRootNavigator: root,
+          builder: (_) => const AlertDialog(content: Text('Löschen?')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      incoming('d1', 'Während des Dialogs');
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
+      expect(engine.unreadCount(ChatIds.family), 1);
+      // Closed again: now it is seen.
+      Navigator.of(
+        tester.element(find.text('Löschen?')),
+        rootNavigator: root,
+      ).pop();
+      await tester.pumpAndSettle();
+      expect(engine.unreadCount(ChatIds.family), 0);
+      await tester.pump(const Duration(seconds: 1));
+    });
+  }
+
+  testWidgets('a desktop window without the focus still shows the chat', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
+    await start(tester, const Size(1400, 1000));
+    await tester.tap(find.text('Chat').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Familie').first);
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    incoming('f1', 'Im anderen Fenster');
+    await tester.pumpAndSettle();
+    expect(engine.unreadCount(ChatIds.family), 0);
+    // Minimized: not on screen.
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    incoming('f2', 'Minimiert');
+    await tester.pumpAndSettle();
+    expect(engine.unreadCount(ChatIds.family), 1);
+    tester.binding
+      ..handleAppLifecycleStateChanged(AppLifecycleState.hidden)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(engine.unreadCount(ChatIds.family), 0);
+    debugDefaultTargetPlatformOverride = null;
     await tester.pump(const Duration(seconds: 1));
   });
 

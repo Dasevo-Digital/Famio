@@ -1,11 +1,88 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:rrule/rrule.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../i18n.dart';
 import 'ics.dart';
+
+/// A calendar whose series take too long to work out (see
+/// [importIcsIsolated]).
+class IcsTooComplex implements Exception {
+  @override
+  String toString() => message;
+
+  String get message => t(
+    'Der Kalender enthält Wiederholungen, die sich nicht in angemessener Zeit berechnen lassen',
+  );
+}
+
+/// [importIcs] in an isolate of its own (see [runIsolated]).
+Future<List<CalendarEvent>> importIcsIsolated(
+  String text, {
+  required String sourceId,
+  required tz.Location fallback,
+  required DateTime from,
+  required DateTime to,
+  int maxEvents = 5000,
+  Duration limit = const Duration(seconds: 15),
+}) => runIsolated(
+  () => importIcs(
+    text,
+    sourceId: sourceId,
+    fallback: fallback,
+    from: from,
+    to: to,
+    maxEvents: maxEvents,
+  ),
+  limit: limit,
+);
+
+/// Runs [work] (reading a calendar from elsewhere) in an isolate of its own,
+/// stopped after [limit]. Some rules keep rrule looking for dates for
+/// minutes (the 10th Monday of a month), and a calendar from elsewhere must
+/// not hold up the server with that (#395). Errors of [work] come back as
+/// [FormatException]; running out of time as [IcsTooComplex].
+Future<R> runIsolated<R>(
+  R Function() work, {
+  Duration limit = const Duration(seconds: 15),
+}) async {
+  final answer = ReceivePort();
+  final isolate = await Isolate.spawn(_runIsolated, (
+    answer.sendPort,
+    work,
+  ), onExit: answer.sendPort);
+  try {
+    final message = await answer.first.timeout(
+      limit,
+      onTimeout: () => throw IcsTooComplex(),
+    );
+    return switch (message) {
+      (true, final R result) => result,
+      (false, final String error) => throw FormatException(error),
+      _ => throw const FormatException('Import stopped'),
+    };
+  } finally {
+    isolate.kill(priority: Isolate.immediate);
+    answer.close();
+  }
+}
+
+void _runIsolated((SendPort, Object? Function()) job) {
+  final (reply, work) = job;
+  // A new isolate starts without the zones the server loaded.
+  tzdata.initializeTimeZones();
+  try {
+    reply.send((true, work()));
+  } catch (e) {
+    reply.send((false, e is FormatException ? e.message : '$e'));
+  }
+}
 
 /// Converts an external iCalendar feed into Famio events for the time window
 /// `[from, to)`. Series are expanded into single events, so every RRULE the
@@ -169,21 +246,61 @@ Iterable<DateTime> _instances(
     yield start.wall; // Unparseable rule: show at least the first date.
     return;
   }
+  // Series more often than daily are no family dates, and rrule needs long
+  // for them; neither has a series that can never fall on a day (30
+  // February). Shown once, like a rule Famio cannot read (#395).
+  if (rule.frequency > Frequency.daily || _never(rule, start.wall)) {
+    yield start.wall;
+    return;
+  }
   DateTime wall(DateTime instant) {
     final t = tz.TZDateTime.from(instant, start.location);
     return DateTime.utc(t.year, t.month, t.day, t.hour, t.minute, t.second);
   }
 
   final fromWall = wall(from).subtract(const Duration(days: 1));
+  final end = wall(to);
+  // rrule jumps to [from] by itself only for series without COUNT and with
+  // INTERVAL 1; others it expands from their start, so those dates count
+  // towards [_maxSteps] as well.
+  final skip = (rule.interval ?? 1) == 1 && rule.count == null;
   var count = 0;
+  var steps = 0;
   for (final w in rule.getInstances(
     start: start.wall,
-    after: fromWall.isAfter(start.wall) ? fromWall : null,
+    after: skip && fromWall.isAfter(start.wall) ? fromWall : null,
     includeAfter: true,
   )) {
-    if (!w.isBefore(wall(to)) || ++count > 5000) break;
+    if (!w.isBefore(end) || ++steps > _maxSteps) break;
+    if (w.isBefore(fromWall)) continue;
+    if (++count > 5000) break;
     yield w;
   }
+}
+
+/// Dates rrule works out for one series at most: above that it slows down
+/// to seconds.
+const _maxSteps = 10000;
+
+/// A rule that never falls on a day: BYMONTHDAY only on days its months do
+/// not have (30 February, 31 April).
+bool _never(RecurrenceRule rule, DateTime start) {
+  if (rule.byMonthDays.isEmpty ||
+      rule.byWeekDays.isNotEmpty ||
+      rule.byYearDays.isNotEmpty ||
+      rule.byWeeks.isNotEmpty ||
+      rule.bySetPositions.isNotEmpty) {
+    return false;
+  }
+  final months = rule.byMonths.isNotEmpty
+      ? rule.byMonths
+      : rule.frequency == Frequency.yearly
+      ? [start.month]
+      : [for (var m = 1; m <= 12; m++) m];
+  const longest = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return !months.any(
+    (m) => rule.byMonthDays.any((d) => d.abs() <= longest[m - 1]),
+  );
 }
 
 String _id(String sourceId, String uid, String key) => sha1

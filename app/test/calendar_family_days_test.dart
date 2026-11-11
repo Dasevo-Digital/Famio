@@ -136,6 +136,19 @@ void main() {
         birthday: Birthday(10, 29),
       ),
     );
+    // Born on 29 February: on the 28th in other years (#404).
+    engine.saveContact(
+      const FamilyContact(id: 'leap', name: 'Leap', birthday: Birthday(2, 29)),
+    );
+    List<String> leapOn(DateTime day) => [
+      for (final o in engine.occurrencesOn(day))
+        if (o.event.sourceId == 'birthday:contact:leap')
+          o.start.toIso8601String().substring(0, 10),
+    ];
+    expect(leapOn(DateTime.utc(2027, 2, 28)), ['2027-02-28']);
+    expect(leapOn(DateTime.utc(2027, 3, 1)), isEmpty);
+    expect(leapOn(DateTime.utc(2028, 2, 28)), isEmpty);
+    expect(leapOn(DateTime.utc(2028, 2, 29)), ['2028-02-29']);
     familyHolidayRegion = GermanState.values.first;
     final birthday = engine
         .occurrencesOn(DateTime.utc(2026, 10, 29))

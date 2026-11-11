@@ -538,7 +538,8 @@ extension FamilyData on SyncEngine {
   void deleteMeal(String id) => delete(Collections.mealPlan, id);
 
   /// Puts [items] on the list [listId]: open items of the same name get the
-  /// amount added (same unit) or appended.
+  /// amount added (same unit, or g/kg and ml/l) or appended, so nothing of
+  /// what was there is lost (#402).
   int addToShoppingList(String listId, List<Ingredient> items) {
     var added = 0;
     final open = {
@@ -554,27 +555,19 @@ extension FamilyData on SyncEngine {
           id: newId(),
           listId: listId,
           name: item.name.trim(),
-          quantity: item.quantity(),
+          quantity: item.exactQuantity(decimals: 2),
         );
         saveShoppingItem(created);
         open[key] = created;
         added++;
         continue;
       }
-      final before = Ingredient.parse('${existing.quantity} x');
       final quantity =
-          before.amount != null &&
-              item.amount != null &&
-              before.unit.toLowerCase() == item.unit.toLowerCase()
-          ? Ingredient(
-              name: item.name,
-              amount: before.amount! + item.amount!,
-              unit: item.unit,
-            ).quantity()
-          : [
-              existing.quantity,
-              item.quantity(),
-            ].where((q) => q.isNotEmpty).join(' + ');
+          addQuantities(existing.quantity, item) ??
+          [
+            existing.quantity,
+            item.exactQuantity(decimals: 2),
+          ].where((q) => q.isNotEmpty).join(' + ');
       final updated = existing.copyWith(quantity: quantity);
       saveShoppingItem(updated);
       open[key] = updated;

@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:famio_shared/famio_shared.dart';
-import 'package:rrule/rrule.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import 'ics.dart';
@@ -485,8 +484,10 @@ const _frequencies = {
     }
   } else if (countText != null) {
     final count = int.tryParse(countText);
-    if (count == null || count < 1) return (null, unsupported);
-    final last = _nthWall(value, start, count);
+    if (count == null || count < 1 || count > _maxCount) {
+      return (null, unsupported);
+    }
+    final last = _nthDate(frequency, interval, weekdays, startWall, count);
     if (last == null) return (null, unsupported);
     until = DateTime(last.year, last.month, last.day);
   }
@@ -496,12 +497,51 @@ const _frequencies = {
   );
 }
 
-/// Wall-clock date of the [count]th occurrence (for COUNT → UNTIL).
-DateTime? _nthWall(String rrule, IcsTime start, int count) {
-  try {
-    final rule = RecurrenceRule.fromString('RRULE:$rrule');
-    return rule.getInstances(start: start.wall).skip(count - 1).firstOrNull;
-  } catch (_) {
-    return null;
+/// More occurrences than any calendar app offers; beyond that the rule is
+/// taken for a mistake.
+const _maxCount = 100000;
+
+/// Wall-clock date of the [count]th occurrence of a series Famio can repeat
+/// (for COUNT → UNTIL), worked out instead of expanded one by one: rrule
+/// expands from the start, which for long counts holds up the server for
+/// minutes (#395). The same dates as rrule: days of the first week before
+/// [start] do not count, nor do months or years without [start]'s day.
+DateTime? _nthDate(
+  RecurrenceFrequency frequency,
+  int interval,
+  List<int> weekdays,
+  DateTime start,
+  int count,
+) {
+  DateTime day(int y, int m, int d) => DateTime.utc(y, m, d);
+  final s = start;
+  final n = count - 1;
+  switch (frequency) {
+    case RecurrenceFrequency.daily:
+      return day(s.year, s.month, s.day + n * interval);
+    case RecurrenceFrequency.weekly:
+      final days = weekdays.isEmpty ? [s.weekday] : weekdays;
+      final monday = s.day - (s.weekday - 1);
+      final first = [
+        for (final d in days)
+          if (d >= s.weekday) d,
+      ];
+      if (n < first.length) return day(s.year, s.month, monday + first[n] - 1);
+      final rest = n - first.length;
+      final week = 1 + rest ~/ days.length;
+      final d = days[rest % days.length];
+      return day(s.year, s.month, monday + week * 7 * interval + d - 1);
+    case RecurrenceFrequency.monthly:
+    case RecurrenceFrequency.yearly:
+      final monthly = frequency == RecurrenceFrequency.monthly;
+      var found = 0;
+      for (var k = 0; ; k++) {
+        final d = monthly
+            ? day(s.year, s.month + k * interval, s.day)
+            : day(s.year + k * interval, s.month, s.day);
+        if (d.year > 9999) return null;
+        if (d.day != s.day) continue; // the 31st, 29 February
+        if (found++ == n) return d;
+      }
   }
 }
