@@ -2,6 +2,21 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.49 – Rezepte, Beträge und Kalender genauer
+
+- Der Rezept-Editor behält genaue Mengen (¼ l bleibt 0,25 l) und Bereiche wie
+  „2–3 Eier“. Auf der Einkaufsliste werden g und kg sowie ml und l
+  zusammengerechnet; was sich nicht zusammenrechnen lässt, bleibt erhalten.
+- „1.500“ wird als 1.500 € gelesen.
+- Geburtstage am 29. Februar stehen in anderen Jahren am 28. im Kalender.
+- Die Datumswahl öffnet auch bei älteren Einträgen, und im Buchungs-Editor
+  bleibt „Speichern“ auf dem Telefon sichtbar.
+- Ein beendeter Notfall-Alarm wird nicht noch einmal zugestellt.
+- Kalender von außen mit ungewöhnlichen Wiederholungen bremsen den Server
+  nicht mehr.
+- Neue Chat-Nachrichten gelten unter einem geöffneten Dialog nicht als
+  gelesen.
+
 ## 2.0.48 – Sperrzeit der App-Sperre und Seitentitel
 
 - Unter Einstellungen → Dieses Gerät → Sperren lässt sich wählen, wann die

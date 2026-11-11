@@ -4,6 +4,21 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.49 – Recetas, importes y calendarios más exactos
+
+- El editor de recetas conserva las cantidades exactas (¼ l sigue siendo
+  0,25 l) y los intervalos como «2–3 huevos». La lista de la compra suma g y
+  kg, ml y l; lo que no se puede sumar se conserva.
+- «1.500» se lee como 1.500 €.
+- Los cumpleaños del 29 de febrero aparecen el 28 en los demás años.
+- El selector de fecha también se abre en entradas antiguas y, en el editor
+  de movimientos, «Guardar» sigue visible en el teléfono.
+- Una alarma de emergencia ya terminada no se vuelve a entregar.
+- Los calendarios externos con repeticiones inusuales ya no ralentizan el
+  servidor.
+- Los mensajes nuevos del chat no cuentan como leídos mientras hay un
+  diálogo abierto encima.
+
 ## 2.0.48 – Tiempo de bloqueo de la app y títulos de página
 
 - En Ajustes → Este dispositivo → Bloquear se elige cuándo pregunta el bloqueo de

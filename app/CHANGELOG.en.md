@@ -4,6 +4,20 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.49 – More exact recipes, amounts and calendars
+
+- The recipe editor keeps exact amounts (¼ l stays 0.25 l) and ranges like
+  "2–3 eggs". The shopping list adds up g and kg, ml and l; what cannot be
+  added up is kept.
+- "1.500" is read as 1,500 €.
+- Birthdays on 29 February show on the 28th in other years.
+- The date picker opens for older entries too, and in the entry editor
+  "Save" stays visible on phones.
+- An emergency alarm that has ended is not delivered again.
+- Calendars from elsewhere with unusual repeats no longer slow the server
+  down.
+- New chat messages do not count as read while a dialog is open over them.
+
 ## 2.0.48 – App lock timing and page titles
 
 - Under Settings → This device → Lock you choose when the app lock asks:
