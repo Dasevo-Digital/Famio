@@ -4,6 +4,16 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.48 – Tiempo de bloqueo de la app y títulos de página
+
+- En Ajustes → Este dispositivo → Bloquear se elige cuándo pregunta el bloqueo de
+  la app: inmediatamente o tras 1, 5 o 15 minutos en segundo plano. Tras la
+  cámara, el selector de archivos o el escáner pregunta como pronto al cabo de un
+  minuto.
+- Justo después de iniciar sesión, el bloqueo de la app no vuelve a preguntar.
+- Los títulos de página en el teléfono ya no se cortan cuando hay muchos botones al
+  lado; la barra lateral del iPad muestra «Ajustes» completo.
+
 ## 2.0.47 – Pantalla de pared, chat, ubicación y emergencias
 
 - La pantalla de pared muestra las citas confidenciales solo como «Ocupado» también

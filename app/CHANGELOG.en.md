@@ -4,6 +4,15 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.48 – App lock timing and page titles
+
+- Under Settings → This device → Lock you choose when the app lock asks:
+  immediately or after 1, 5 or 15 minutes in the background. After the camera,
+  a file picker or the scanner it asks after one minute at the earliest.
+- Right after signing in, the app lock does not ask again.
+- Page titles on phones are no longer cut off when many buttons sit next to them;
+  the side bar on the iPad shows "Settings" in full.
+
 ## 2.0.47 – Wall display, chat, location and emergencies
 
 - The wall display shows confidential appointments only as "Busy" in the view by

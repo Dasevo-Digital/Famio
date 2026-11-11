@@ -4,6 +4,15 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.48 – Sperrzeit der App-Sperre und Seitentitel
+
+- Unter Einstellungen → Dieses Gerät → Sperren lässt sich wählen, wann die
+  App-Sperre fragt: sofort oder nach 1, 5 oder 15 Minuten im Hintergrund.
+  Nach Kamera, Dateiauswahl und Scanner fragt sie frühestens nach einer Minute.
+- Direkt nach einer Anmeldung fragt die App-Sperre nicht noch einmal.
+- Seitentitel werden auf dem Telefon nicht mehr abgeschnitten, wenn daneben viele
+  Knöpfe stehen; die Seitenleiste auf dem iPad zeigt „Einstellungen“ vollständig.
+
 ## 2.0.47 – Wandanzeige, Chat, Standort und Notfälle
 
 - Die Wandanzeige zeigt vertrauliche Termine auch in der Ansicht nach Person und in
