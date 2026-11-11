@@ -206,7 +206,10 @@ Der Abgleich läuft über ICS-Abo-Links, ohne Passwörter oder Google-Cloud-Proj
   werden als Abo gespeichert. Der Server ruft sie alle 30 Minuten ab (mit
   ETag), löst Serien inkl. `BYDAY`, `EXDATE` und verschobener Einzeltermine
   für −90 bis +400 Tage auf und verteilt sie als schreibgeschützte Datensätze
-  (`external_events`) über den normalen Sync.
+  (`external_events`) über den normalen Sync. Serien, die öfter als täglich
+  wiederholen, und Regeln ohne möglichen Tag erscheinen nur einmal; das
+  Auflösen läuft in einem eigenen Prozess mit Zeitgrenze, ein zu aufwendiger
+  Kalender meldet am Abo einen Fehler.
 - **Wer sieht verbundene Kalender?** Abos und CalDAV-/Google-Verbindungen
   gehören dem Mitglied, das sie angelegt hat; nur es kann sie ändern oder
   entfernen. Es teilt sie mit der ganzen Familie, ausgewählten Mitgliedern
