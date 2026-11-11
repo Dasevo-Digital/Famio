@@ -4,6 +4,7 @@ import 'package:famio_server/famio_server.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   late FamioServerApp app;
@@ -49,6 +50,13 @@ void main() {
     return (jsonDecode(await r.readAsString()) as Map).cast();
   }
 
+  /// Today in the family's time zone, as the server works it out: on a
+  /// machine in UTC the family day starts an hour earlier.
+  DateTime familyToday() {
+    final now = tz.TZDateTime.now(app.location);
+    return DateTime(now.year, now.month, now.day);
+  }
+
   void write(String collection, String id, Map<String, Object?> data) => expect(
     app.records.writeAs(mama, [
       SyncRecord(
@@ -62,8 +70,7 @@ void main() {
   );
 
   test('today\'s chores with whose turn it is and what is done', () async {
-    final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day);
+    final start = familyToday();
     write(
       Collections.chores,
       'tisch',
@@ -121,8 +128,7 @@ void main() {
   });
 
   test('next bin pickups with who puts them out, and countdowns', () async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = familyToday();
     DateTime inDays(int n) => DateTime(today.year, today.month, today.day + n);
     write(
       Collections.wasteSettings,
