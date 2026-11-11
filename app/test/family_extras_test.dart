@@ -338,14 +338,19 @@ void main() {
 
   testWidgets('the wall display shows the day', (tester) async {
     final engine = await open(tester, memberId: 'm1');
-    final now = DateTime.now();
+    // Tomorrow: the display hides today's events once they are over, so an
+    // event later today would vanish when the test runs late in the evening.
+    final tomorrow = DateUtils.addDaysToDate(
+      DateUtils.dateOnly(DateTime.now()),
+      1,
+    );
     engine
       ..saveEvent(
         CalendarEvent(
           id: 'e1',
           title: 'Turnen',
-          start: DateTime(now.year, now.month, now.day, 23, 0),
-          end: DateTime(now.year, now.month, now.day, 23, 30),
+          start: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 9),
+          end: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 10),
         ),
       )
       ..saveShoppingList(const ShoppingList(id: 'l1', name: 'Einkauf'))
