@@ -33,7 +33,7 @@ const vaccinations = <Vaccination>[
     'RSV (Antikörper-Prophylaxe)',
     'einmalig',
     0,
-    'Vor bzw. in der ersten RSV-Saison (meist Oktober–März).',
+    'Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison.',
   ),
   Vaccination(
     'rota_1',

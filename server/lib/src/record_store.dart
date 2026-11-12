@@ -764,6 +764,9 @@ class RecordStore {
             !incoming.deleted) {
           incoming = _keepAudience(incoming, existing);
         }
+        if (role == MemberRole.child && !incoming.deleted) {
+          incoming = _childAudience(incoming, existing, userId);
+        }
         if (change.collection == Collections.shoppingItems &&
             !incoming.deleted) {
           // An item goes where its list goes, whoever writes it (older apps,
@@ -1321,6 +1324,30 @@ class RecordStore {
     }
     return incoming.copyWith(
       data: {...incoming.data, SyncRecord.visibilityKey: existing.visibleTo},
+    );
+  }
+
+  /// Children do not decide who sees something: on a record that exists,
+  /// what they write keeps the stored audience. Only what so far they alone
+  /// see they may share. Health data never gets here with a changed
+  /// audience ([mayWrite] turns that down).
+  static SyncRecord _childAudience(
+    SyncRecord incoming,
+    SyncRecord? existing,
+    String userId,
+  ) {
+    if (existing == null || existing.deleted) return incoming;
+    final before = existing.visibleTo;
+    if (before != null && before.length == 1 && before.single == userId) {
+      return incoming;
+    }
+    if (jsonEncode(incoming.visibleTo) == jsonEncode(before)) return incoming;
+    return incoming.copyWith(
+      data: {
+        for (final entry in incoming.data.entries)
+          if (entry.key != SyncRecord.visibilityKey) entry.key: entry.value,
+        SyncRecord.visibilityKey: ?before,
+      },
     );
   }
 

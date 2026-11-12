@@ -370,7 +370,10 @@ void main() {
         reminder: 1440,
         audience: [owner.id, first.id, second.id],
       );
-      final requests = assignmentRequests(record);
+      // In the family's zone, as the server reminds: on a machine two or
+      // more hours behind it, the device-zone deadline would lie after the
+      // server's one.
+      final requests = app.records.assignmentRequestsFor(record);
       app.records.writeAs(second.id, [
         response(requests[1], decision: AssignmentDecision.declined),
       ]);

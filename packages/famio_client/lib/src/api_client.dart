@@ -115,11 +115,20 @@ class TwoFactorStatus {
 /// A sign-in in the browser at the single sign-on provider: open [url],
 /// then poll with [flow] and [secret].
 class SsoFlow {
-  const SsoFlow({required this.url, required this.flow, required this.secret});
+  const SsoFlow({
+    required this.url,
+    required this.flow,
+    required this.secret,
+    this.code,
+  });
 
   final Uri url;
   final String flow;
   final String secret;
+
+  /// To type in the browser before the sign-in takes effect (servers before
+  /// 2.0.50 ask for none).
+  final String? code;
 }
 
 /// Result of a successful login or first setup.
@@ -429,6 +438,7 @@ class FamioApiClient {
       url: Uri.parse(json['url'] as String),
       flow: json['flow'] as String,
       secret: json['secret'] as String,
+      code: json['code'] as String?,
     );
   }
 

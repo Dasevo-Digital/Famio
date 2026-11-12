@@ -427,8 +427,10 @@ extension _AdminRoutes on FamioApi {
     }
     throttle.succeeded(address, '#pw:${admin.id}');
     final removeMembers = body['removeMembers'] as bool? ?? false;
-    // First, so nothing of the deletion reaches iCloud, Google & Co.
+    // First, so nothing of the deletion reaches iCloud, Google & Co., nor
+    // Bring! and Microsoft To Do.
     await caldav?.disconnectAll();
+    await lists?.disconnectAll();
     final count = records.wipe();
     final fileCount = files.deleteAll();
     locations?.deleteAll();
@@ -503,6 +505,13 @@ extension _AdminRoutes on FamioApi {
         admin,
         'hat ${_who(updated)} die Rolle ${updated.role.label} gegeben',
       );
+      // Who sees shared calendars, Paperless documents and PhotoVault
+      // pictures depends on the roles.
+      if (calendarAccess?.reapply() ?? false) {
+        hub.notifyRev(records.currentRev);
+      }
+      unawaited(paperless?.sync());
+      unawaited(photoVault?.sync());
     }
     if (before != null && before.isAdmin && !updated.isAdmin) {
       invites?.revokeBy(id);

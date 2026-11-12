@@ -492,8 +492,8 @@ const sharedEs = <String, String>{
   "Checkup|16–17 Jahre": "16–17 años",
   "Vaccination|RSV (Antikörper-Prophylaxe)": "VRS (profilaxis con anticuerpos)",
   "Vaccination|einmalig": "una vez",
-  "Vaccination|Vor bzw. in der ersten RSV-Saison (meist Oktober–März).":
-      "Antes o durante la primera temporada de VRS (normalmente octubre–marzo).",
+  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison.":
+      "Nacidos de octubre a marzo: poco después del nacimiento (U2). Nacidos de abril a septiembre: en otoño antes de la primera temporada de VRS.",
   "Vaccination|Rotaviren": "Rotavirus",
   "Vaccination|1. Dosis": "1.ª dosis",
   "Vaccination|Schluckimpfung ab 6 Wochen.":
@@ -1126,6 +1126,20 @@ const sharedEs = <String, String>{
       "Esta cuenta de inicio de sesión ya pertenece a otro miembro.",
   "Server|Verknüpft. Du kannst dieses Fenster schließen.":
       "Vinculado. Puedes cerrar esta ventana.",
+  "Server|Ein Gerät": "Un dispositivo",
+  "Server|Das Gerät „{device}“": "El dispositivo «{device}»",
+  "Server|{who} möchte dein Anmeldekonto mit seinem Famio-Konto verknüpfen.":
+      "{who} quiere vincular tu cuenta de inicio de sesión con su cuenta de Famio.",
+  "Server|{who} möchte sich mit deinem Famio-Konto anmelden.":
+      "{who} quiere iniciar sesión con tu cuenta de Famio.",
+  "Server|Nur bestätigen, wenn du das gerade selbst in der Famio-App gestartet hast. Hat dir jemand diesen Link geschickt, schließe das Fenster.":
+      "Confirma solo si acabas de iniciarlo tú en la app de Famio. Si alguien te ha enviado este enlace, cierra la ventana.",
+  "Server|Code aus der Famio-App": "Código de la app de Famio",
+  "Server|Bestätigen": "Confirmar",
+  "Server|Zu oft ein falscher Code. Bitte in der App neu starten.":
+      "Demasiados códigos incorrectos. Vuelve a empezar en la app.",
+  "Server|Der Code stimmt nicht. Bitte den Code aus der Famio-App eingeben.":
+      "El código no es correcto. Introduce el código de la app de Famio.",
   "Server|Zu diesem Anmeldekonto gibt es kein Famio-Konto. Zuerst in der App anmelden und unter Einstellungen → Anmeldung & Sicherheit „Single Sign-On verknüpfen“.":
       "No hay ninguna cuenta de Famio para esta cuenta de inicio de sesión. Inicia sesión primero en la app y elige «Vincular inicio de sesión único» en Ajustes → Inicio de sesión y seguridad.",
   "Server|Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.":

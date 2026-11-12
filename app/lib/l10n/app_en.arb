@@ -688,6 +688,7 @@
   "commonConfirm": "Confirm",
   "commonSignInWith": "Sign in with {provider}",
   "securitySigningHappensBrowserAfterwards": "Signing in happens in the browser. Afterwards it continues here automatically.",
+  "securitySsoCode": "After signing in, the browser asks for this code:",
   "securityIfYouLosePhone": "If you lose your phone, you can still get in with one of these codes – each works once. Store them safely now (password manager or printed). They are only shown this one time.",
   "securityCodesCopied": "Codes copied",
   "securitySetUpTwoFactor": "Set up two-factor",

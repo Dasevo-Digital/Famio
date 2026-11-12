@@ -301,6 +301,7 @@ class FamioApi {
       ..delete('/api/me/passkeys/<id>', _deletePasskey)
       ..post('/api/auth/sso/start', _ssoStart)
       ..get('/api/auth/sso/callback', _ssoCallback)
+      ..post('/api/auth/sso/confirm', _ssoConfirm)
       ..post('/api/auth/sso/poll', _ssoPoll)
       ..post('/api/auth/logout', _logout)
       ..get('/api/me/two-factor', _twoFactorStatus)
@@ -725,7 +726,11 @@ class FamioApi {
         if (path.startsWith('ical/')) 'cache-control': 'no-store, private',
         // Only Home Assistant (same origin through ingress) may embed it.
         if (response.mimeType == 'text/html')
-          'content-security-policy': path == 'app' || path.startsWith('app/')
+          'content-security-policy':
+              path == 'api/auth/sso/callback' || path == 'api/auth/sso/confirm'
+              // Its form posts the code back here, and nobody frames it.
+              ? ssoConfirmPolicy
+              : path == 'app' || path.startsWith('app/')
               ? WebApp.policyFor(
                   tileUrl:
                       settings.effective.mapProvider ==

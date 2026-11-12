@@ -85,6 +85,61 @@ String landingPage({
 }
 
 /// Shown in the browser after signing in with the single sign-on provider.
+/// Content-Security-Policy for the single sign-on pages: their form posts
+/// to the server itself, and no other site may frame them.
+const ssoConfirmPolicy =
+    "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; "
+    "form-action 'self'; frame-ancestors 'none'";
+
+/// Asks the browser for the code the app shows before a sign-in (or
+/// linking) takes effect: whoever completes a link someone else started
+/// learns no code, and the page says which device is asking.
+String ssoConfirmPage({
+  required String state,
+  required String? device,
+  required bool link,
+  String? error,
+}) {
+  String h(String text) => _escape.convert(text);
+  final who = device == null || device.trim().isEmpty
+      ? t('Ein Gerät')
+      : t('Das Gerät „{device}“', {'device': device.trim()});
+  final ask = link
+      ? t('{who} möchte dein Anmeldekonto mit seinem Famio-Konto verknüpfen.', {
+          'who': who,
+        })
+      : t('{who} möchte sich mit deinem Famio-Konto anmelden.', {'who': who});
+  return '''<!doctype html>
+<html lang="$requestLanguage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Famio</title>
+<style>
+  :root { color-scheme: light dark; --accent: #3f7d6e; }
+  body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem; line-height: 1.5; }
+  h1 { color: var(--accent); text-align: center; }
+  .warn { font-weight: 600; }
+  .error { color: #b3261e; font-weight: 600; }
+  input { font-size: 1.6rem; letter-spacing: .3em; width: 100%; box-sizing: border-box; padding: .5rem; text-align: center; }
+  button { margin-top: 1rem; width: 100%; padding: .7rem; font-size: 1.1rem; background: var(--accent); color: #fff; border: 0; border-radius: .5rem; }
+</style>
+</head>
+<body>
+  <h1>Famio</h1>
+  <p>${h(ask)}</p>
+  <p class="warn">${h(t('Nur bestätigen, wenn du das gerade selbst in der Famio-App gestartet hast. Hat dir jemand diesen Link geschickt, schließe das Fenster.'))}</p>
+  ${error == null ? '' : '<p class="error">${h(error)}</p>'}
+  <form method="post" action="confirm">
+    <input type="hidden" name="state" value="${h(state)}">
+    <label for="code">${h(t('Code aus der Famio-App'))}</label>
+    <input id="code" name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="12" required autofocus>
+    <button type="submit">${h(t('Bestätigen'))}</button>
+  </form>
+</body>
+</html>''';
+}
+
 String ssoResultPage({required bool ok, required String message}) =>
     '''<!doctype html>
 <html lang="$requestLanguage">

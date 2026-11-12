@@ -59,9 +59,11 @@ class _Flow {
     required this.nonce,
     required this.verifier,
     required this.secretHash,
+    required this.code,
     required this.expires,
     this.userId,
     this.device,
+    this.address,
   });
 
   final SsoMode mode;
@@ -69,13 +71,81 @@ class _Flow {
   final String nonce;
   final String verifier;
   final String secretHash;
+
+  /// Shown in the app that started the flow; the browser asks for it before
+  /// anything happens. A link someone else started and handed over is of
+  /// no use without it.
+  final String code;
   final DateTime expires;
   final String? userId;
   final String? device;
 
-  /// Set by the callback: the signed-in member (login) or linked (link).
+  /// Where the start came from: open flows are limited per address.
+  final String? address;
+
+  /// Set by the callback: what the provider vouched for, waiting for the
+  /// code in the browser.
+  _Outcome? pending;
+  int attempts = 0;
+
+  /// Set once confirmed: the signed-in member (login) or linked (link).
   String? resultUser;
   String? error;
+}
+
+/// What the browser page shows after the provider: the form asking for the
+/// app's code ([confirm] set), or a result.
+class SsoPage {
+  const SsoPage.result({required this.ok, required this.message})
+    : confirm = null,
+      device = null,
+      link = false,
+      error = null;
+
+  const SsoPage.confirm({
+    required String state,
+    this.device,
+    required this.link,
+    this.error,
+  }) : ok = true,
+       message = '',
+       confirm = state;
+
+  final bool ok;
+  final String message;
+
+  /// The flow's state for the form, if the code is still to come.
+  final String? confirm;
+
+  /// The device that asks, as the app named it.
+  final String? device;
+
+  /// Linking an account rather than signing in.
+  final bool link;
+
+  /// The previous code was wrong.
+  final String? error;
+}
+
+/// The provider's account and the member it leads to, applied only once the
+/// browser confirmed with the code.
+class _Outcome {
+  _Outcome({
+    required this.userId,
+    required this.issuer,
+    required this.subject,
+    required this.name,
+    required this.link,
+  });
+
+  final String userId;
+  final String issuer;
+  final String subject;
+  final String? name;
+
+  /// Store the provider's account for [userId] (linking, or a first login
+  /// with a matching username).
+  final bool link;
 }
 
 /// Sign-in with an OpenID Connect provider (Authentik, Keycloak, Authelia,
@@ -101,6 +171,13 @@ class SsoService {
   static const _key = 'sso';
   static const flowLifetime = Duration(minutes: 10);
   static const _maxFlows = 100;
+
+  /// Open flows one address may hold: nobody blocks the sign-in of others
+  /// by starting flows that never end.
+  static const _maxFlowsPerAddress = 5;
+
+  /// Wrong codes in the browser before the flow ends.
+  static const _maxAttempts = 5;
 
   final _flows = <String, _Flow>{};
   final _random = Random.secure();
@@ -194,11 +271,13 @@ class SsoService {
   // --- flow ----------------------------------------------------------------
 
   /// Starts a sign-in in the browser. Returns the provider's URL, the flow
-  /// id and the secret the app polls with.
-  Future<({Uri url, String flow, String secret})> start({
+  /// id, the secret the app polls with and the code it shows for the
+  /// browser.
+  Future<({Uri url, String flow, String secret, String code})> start({
     required SsoMode mode,
     String? userId,
     String? device,
+    String? address,
   }) async {
     final cfg = config;
     final redirect = redirectUri;
@@ -210,7 +289,10 @@ class SsoService {
       );
     }
     _expire();
-    if (_flows.length >= _maxFlows) {
+    if (_flows.length >= _maxFlows ||
+        (address != null &&
+            _flows.values.where((f) => f.address == address).length >=
+                _maxFlowsPerAddress)) {
       throw ApiException(
         429,
         'too_many_attempts',
@@ -223,15 +305,18 @@ class SsoService {
     final secret = _token(32);
     final state = _token(24);
     final nonce = _token(24);
+    final code = _random.nextInt(1000000).toString().padLeft(6, '0');
     _flows[flow] = _Flow(
       mode: mode,
       state: state,
       nonce: nonce,
       verifier: verifier,
       secretHash: _sha(secret),
+      code: code,
       expires: DateTime.now().add(flowLifetime),
       userId: userId,
       device: device,
+      address: address,
     );
     final url = Uri.parse(discovery['authorization_endpoint'] as String)
         .replace(
@@ -251,27 +336,33 @@ class SsoService {
             'code_challenge_method': 'S256',
           },
         );
-    return (url: url, flow: flow, secret: secret);
+    return (url: url, flow: flow, secret: secret, code: code);
   }
 
   /// The browser came back from the provider. Finds the member for the
-  /// provider's account ([resolve]) and returns a message for the page.
-  Future<({bool ok, String message})> callback(
+  /// provider's account ([memberForUsername]) and returns what the page
+  /// shows: the form asking for the app's code, or why it failed. Nothing
+  /// is signed in or linked before [confirm].
+  Future<SsoPage> callback(
     Map<String, String> query, {
     required String? Function(String username) memberForUsername,
-    required void Function(String userId, String what) audit,
   }) async {
     final flow = _flows.values
         .where((f) => f.state == query['state'])
         .firstOrNull;
     if (flow == null || flow.expires.isBefore(DateTime.now())) {
-      return (
+      return SsoPage.result(
         ok: false,
         message: t(
           'Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.',
         ),
       );
     }
+    if (flow.error case final error?) {
+      return SsoPage.result(ok: false, message: error);
+    }
+    // Reloaded: the provider's code is used up, the form is still valid.
+    if (flow.pending != null) return _confirmPage(flow);
     try {
       if (query['error'] case final error?) {
         throw ApiException.badRequest(
@@ -291,58 +382,26 @@ class SsoService {
       final name =
           (claims['preferred_username'] ?? claims['email'] ?? claims['name'])
               as String?;
-      final linked =
-          _db.select(
-                'SELECT user_id FROM sso_links WHERE issuer = ? AND subject = ?',
-                [issuer, subject],
-              ).firstOrNull?['user_id']
-              as String?;
+      final linked = _linkedTo(issuer, subject);
       switch (flow.mode) {
         case SsoMode.link:
-          if (linked != null && linked != flow.userId) {
-            throw ApiException(
-              409,
-              'sso_taken',
-              t('Dieses Anmeldekonto gehört schon zu einem anderen Mitglied.'),
-            );
-          }
-          _db.execute('DELETE FROM sso_links WHERE user_id = ?', [flow.userId]);
-          _db.execute(
-            'INSERT OR REPLACE INTO sso_links'
-            ' (issuer, subject, user_id, name, created_at) VALUES (?, ?, ?, ?, ?)',
-            [
-              issuer,
-              subject,
-              flow.userId,
-              name,
-              DateTime.now().millisecondsSinceEpoch,
-            ],
-          );
-          flow.resultUser = flow.userId;
-          audit(flow.userId!, 'hat Single Sign-On verknüpft ($name)');
-          return (
-            ok: true,
-            message: t('Verknüpft. Du kannst dieses Fenster schließen.'),
+          if (linked != null && linked != flow.userId) throw _taken();
+          flow.pending = _Outcome(
+            userId: flow.userId!,
+            issuer: issuer,
+            subject: subject,
+            name: name,
+            link: true,
           );
         case SsoMode.login:
           var userId = linked;
+          var link = false;
           if (userId == null &&
               config!.matchUsername &&
               claims['preferred_username'] is String) {
             userId = memberForUsername(claims['preferred_username'] as String);
             if (userId != null && !isLinked(userId)) {
-              _db.execute(
-                'INSERT INTO sso_links'
-                ' (issuer, subject, user_id, name, created_at)'
-                ' VALUES (?, ?, ?, ?, ?)',
-                [
-                  issuer,
-                  subject,
-                  userId,
-                  name,
-                  DateTime.now().millisecondsSinceEpoch,
-                ],
-              );
+              link = true;
             } else {
               userId = null;
             }
@@ -356,18 +415,121 @@ class SsoService {
               ),
             );
           }
-          flow.resultUser = userId;
-          return (
-            ok: true,
-            message: t(
-              'Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.',
-            ),
+          flow.pending = _Outcome(
+            userId: userId,
+            issuer: issuer,
+            subject: subject,
+            name: name,
+            link: link,
           );
       }
+      return _confirmPage(flow);
     } on ApiException catch (e) {
       flow.error = e.message;
-      return (ok: false, message: e.message);
+      return SsoPage.result(ok: false, message: e.message);
     }
+  }
+
+  /// The browser sent the code the app shows: only now is the member signed
+  /// in or the account linked. A wrong code asks again, a few times.
+  SsoPage confirm(
+    Map<String, String> form, {
+    required void Function(String userId, String what) audit,
+  }) {
+    _expire();
+    final flow = _flows.values
+        .where((f) => f.state == form['state'])
+        .firstOrNull;
+    final outcome = flow?.pending;
+    if (flow == null || outcome == null || flow.error != null) {
+      return SsoPage.result(
+        ok: false,
+        message:
+            flow?.error ??
+            t('Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.'),
+      );
+    }
+    final entered = (form['code'] ?? '').replaceAll(RegExp(r'\s'), '');
+    if (!_same(entered, flow.code)) {
+      if (++flow.attempts >= _maxAttempts) {
+        flow.pending = null;
+        flow.error = t(
+          'Zu oft ein falscher Code. Bitte in der App neu starten.',
+        );
+        return SsoPage.result(ok: false, message: flow.error!);
+      }
+      return _confirmPage(
+        flow,
+        error: t(
+          'Der Code stimmt nicht. Bitte den Code aus der Famio-App eingeben.',
+        ),
+      );
+    }
+    flow.pending = null;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (flow.mode == SsoMode.link) {
+      final linked = _linkedTo(outcome.issuer, outcome.subject);
+      if (linked != null && linked != outcome.userId) {
+        flow.error = _taken().message;
+        return SsoPage.result(ok: false, message: flow.error!);
+      }
+      _db.execute('DELETE FROM sso_links WHERE user_id = ?', [outcome.userId]);
+      _db.execute(
+        'INSERT OR REPLACE INTO sso_links'
+        ' (issuer, subject, user_id, name, created_at) VALUES (?, ?, ?, ?, ?)',
+        [outcome.issuer, outcome.subject, outcome.userId, outcome.name, now],
+      );
+      flow.resultUser = outcome.userId;
+      audit(outcome.userId, 'hat Single Sign-On verknüpft (${outcome.name})');
+      return SsoPage.result(
+        ok: true,
+        message: t('Verknüpft. Du kannst dieses Fenster schließen.'),
+      );
+    }
+    if (outcome.link && !isLinked(outcome.userId)) {
+      _db.execute(
+        'INSERT OR IGNORE INTO sso_links'
+        ' (issuer, subject, user_id, name, created_at) VALUES (?, ?, ?, ?, ?)',
+        [outcome.issuer, outcome.subject, outcome.userId, outcome.name, now],
+      );
+    }
+    flow.resultUser = outcome.userId;
+    return SsoPage.result(
+      ok: true,
+      message: t(
+        'Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.',
+      ),
+    );
+  }
+
+  SsoPage _confirmPage(_Flow flow, {String? error}) => SsoPage.confirm(
+    state: flow.state,
+    device: flow.device,
+    link: flow.mode == SsoMode.link,
+    error: error,
+  );
+
+  String? _linkedTo(String issuer, String subject) =>
+      _db.select(
+            'SELECT user_id FROM sso_links WHERE issuer = ? AND subject = ?',
+            [issuer, subject],
+          ).firstOrNull?['user_id']
+          as String?;
+
+  static ApiException _taken() => ApiException(
+    409,
+    'sso_taken',
+    t('Dieses Anmeldekonto gehört schon zu einem anderen Mitglied.'),
+  );
+
+  /// Compares in constant time.
+  static bool _same(String a, String b) {
+    if (a.length != b.length) return false;
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return diff == 0;
   }
 
   /// The app asks whether the browser part is done: null while pending,

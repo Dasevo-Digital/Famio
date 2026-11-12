@@ -688,6 +688,7 @@
   "commonConfirm": "Confirmar",
   "commonSignInWith": "Iniciar sesión con {provider}",
   "securitySigningHappensBrowserAfterwards": "El inicio de sesión se hace en el navegador. Después se continúa aquí automáticamente.",
+  "securitySsoCode": "Tras iniciar sesión, el navegador pide este código:",
   "securityIfYouLosePhone": "Si pierdes el móvil, podrás entrar igualmente con uno de estos códigos; cada uno funciona una vez. Guárdalos ahora en un lugar seguro (gestor de contraseñas o impresos). Solo se muestran esta vez.",
   "securityCodesCopied": "Códigos copiados",
   "securitySetUpTwoFactor": "Configurar la verificación en dos pasos",

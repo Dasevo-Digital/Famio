@@ -491,9 +491,11 @@ class PaperlessLink {
       Collections.externalDocuments,
       '$idPrefix${match[1]}',
     );
+    // As for its record in the sync: audience and role (no health
+    // documents for service accounts, none at all for guests).
     if (record == null ||
         record.deleted ||
-        !RecordStore.canSee(record, memberId) ||
+        !records.canAccess(record, memberId) ||
         FileRef.fromJson(record.data['file'])?.id != fileId) {
       return null;
     }

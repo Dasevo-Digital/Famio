@@ -940,9 +940,10 @@ class PhotoVaultLink {
     if (c == null || !fileId.startsWith(idPrefix)) return null;
     final recordId = fileId.substring(0, fileId.lastIndexOf('.'));
     final record = records.get(Collections.externalPhotos, recordId);
+    // As for its record in the sync: audience and role.
     if (record == null ||
         record.deleted ||
-        !RecordStore.canSee(record, memberId) ||
+        !records.canAccess(record, memberId) ||
         FileRef.fromJson(record.data['file'])?.id != fileId) {
       return null;
     }

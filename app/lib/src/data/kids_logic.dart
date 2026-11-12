@@ -156,6 +156,24 @@ List<DueItem> checkupPlan(
   ];
 }
 
+/// RSV antibodies after the STIKO recommendation: a baby born in the season
+/// (October–March) soon after birth, ideally at the U2; one born April to
+/// September in the autumn before its first season. Either way it can be
+/// caught up until that season ends in March.
+(DateTime, DateTime) rsvWindow(DateTime birth) {
+  if (birth.month >= 4 && birth.month <= 9) {
+    final autumn = DateTime(birth.year, 9, 1);
+    return (
+      birth.isAfter(autumn) ? birth : autumn,
+      DateTime(birth.year + 1, 3, 31),
+    );
+  }
+  return (
+    birth,
+    DateTime(birth.month >= 10 ? birth.year + 1 : birth.year, 3, 31),
+  );
+}
+
 List<DueItem> vaccinationPlan(
   Child child,
   List<ChildEntry> entries, [
@@ -167,9 +185,14 @@ List<DueItem> vaccinationPlan(
     for (final v in vaccinations)
       () {
         final entry = _entryFor(entries, ChildEntryKind.vaccination, v.id);
-        final from = child.ageDate(v.ageMonths);
-        // Vaccinations have no fixed window; a month counts as "due".
-        final to = DateTime(from.year, from.month, from.day + 31);
+        final (from, to) = v.id == 'rsv'
+            ? rsvWindow(child.ageDate(0))
+            : () {
+                final from = child.ageDate(v.ageMonths);
+                // Vaccinations have no fixed window; a month counts as
+                // "due".
+                return (from, DateTime(from.year, from.month, from.day + 31));
+              }();
         final state = _stateOf(
           entry,
           () => day.isBefore(from)

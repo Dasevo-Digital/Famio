@@ -853,8 +853,16 @@ void main() {
     });
   });
 
+  /// Today in the family's zone, as the allowance job counts paydays: on a
+  /// machine far east or west of it, the device date can differ.
+  DateTime familyToday() {
+    final now = tz.TZDateTime.now(app.location);
+    return DateTime(now.year, now.month, now.day);
+  }
+
   test('weekly pocket money is booked once per payday', () async {
-    final since = DateTime.now().subtract(const Duration(days: 20));
+    final today = familyToday();
+    final since = DateTime(today.year, today.month, today.day - 20);
     await mama.sync([
       _record(
         Collections.allowances,
@@ -862,7 +870,7 @@ void main() {
         Allowance(
           memberId: kind.id,
           weeklyCents: 250,
-          payday: DateTime.now().weekday,
+          payday: today.weekday,
           since: since,
         ).toData(),
       ),
@@ -892,8 +900,7 @@ void main() {
   });
 
   test('a holiday with paused pocket money books nothing in it', () async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final today = familyToday();
     await mama.sync([
       _record(
         Collections.allowances,
@@ -901,7 +908,7 @@ void main() {
         Allowance(
           memberId: kind.id,
           weeklyCents: 250,
-          payday: now.weekday,
+          payday: today.weekday,
           since: DateTime(today.year, today.month, today.day - 20),
         ).toData(),
       ),

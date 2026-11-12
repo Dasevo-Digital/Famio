@@ -331,11 +331,25 @@ class _SosCountdownState extends State<_SosCountdown> {
   late final Timer _timer = Timer.periodic(const Duration(seconds: 1), (t) {
     if (_left <= 1) {
       t.cancel();
-      Navigator.of(context).pop(true);
+      _fire();
     } else {
       setState(() => _left--);
     }
   });
+
+  /// Time is up: the countdown goes and reports the alarm, also when
+  /// something opened on top of it meanwhile (a sheet, "what's new"). A
+  /// plain pop would close that instead and swallow the alarm.
+  void _fire() {
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    final route = ModalRoute.of<bool>(context);
+    if (route == null || route.isCurrent) {
+      navigator.pop(true);
+    } else {
+      navigator.removeRoute(route, true);
+    }
+  }
 
   @override
   void initState() {

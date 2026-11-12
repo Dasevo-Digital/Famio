@@ -8,9 +8,14 @@ $ErrorActionPreference = 'Stop'
 if ($Flutter -and -not ("$(flutter --version | Select-Object -First 1)".StartsWith("Flutter $Flutter "))) {
   throw "Flutter ist nicht $Flutter"
 }
-Set-Location $env:USERPROFILE
-if (Test-Path famio) { Remove-Item famio -Recurse -Force }; New-Item -ItemType Directory famio | Out-Null; tar -xzf famio-src.tgz -C famio
-Set-Location famio\app
+# Built outside the user folder: the compiled app keeps the path of a
+# generated source file, and the package is public (no account name in it).
+$build = Join-Path $env:SystemDrive 'famio-build'
+if (Test-Path $build) { Remove-Item $build -Recurse -Force }
+New-Item -ItemType Directory $build | Out-Null
+tar -xzf (Join-Path $env:USERPROFILE 'famio-src.tgz') -C $build
+if ($LASTEXITCODE -ne 0) { throw "Quellen nicht entpackt" }
+Set-Location (Join-Path $build 'app')
 # The SQLite library of earlier builds instead of a download from github.com
 # (as tool/hook_cache.sh does elsewhere); the sqlite3 build hook checks its
 # SHA-256 and downloads it again if it does not match.

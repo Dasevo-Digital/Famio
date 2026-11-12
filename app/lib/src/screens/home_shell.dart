@@ -155,15 +155,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     OpenedFiles.listen();
     OpenedFiles.onOpened = _openedFile;
     // Kitchen tablet: straight to the wall display.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      if (AppScope.read(context).kioskAutostart) {
+      // Started for an emergency: the countdown alone, "what is new" waits
+      // for the next start.
+      final sos = await SosDevice.takeLaunch();
+      if (!mounted) return;
+      if (sos) {
+        _sosLaunch();
+      } else if (AppScope.read(context).kioskAutostart) {
         openKiosk(context);
       } else {
         // After an update, once: what is new.
         maybeShowWhatsNew(context);
       }
-      _checkSosLaunch();
       _openedFile();
     });
   }

@@ -129,26 +129,55 @@ Future<void> runSsoInBrowser(
   BuildContext context, {
   required String label,
   required Future<void> Function(
-    Future<void> Function(Uri url) open,
+    Future<void> Function(Uri url, String? code) open,
     bool Function() cancelled,
   )
   run,
 }) async {
   var cancelled = false;
+  // The browser asks for it before the sign-in takes effect: a link
+  // someone else started is of no use without the code shown here.
+  final code = ValueNotifier<String?>(null);
   final dialog = showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (context) => AlertDialog(
       title: Text(tr.commonSignInWith(label)),
-      content: Row(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 2.5),
+          Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(width: 16),
+              Expanded(child: Text(tr.securitySigningHappensBrowserAfterwards)),
+            ],
           ),
-          SizedBox(width: 16),
-          Expanded(child: Text(tr.securitySigningHappensBrowserAfterwards)),
+          ValueListenableBuilder<String?>(
+            valueListenable: code,
+            builder: (context, value, _) => value == null
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(tr.securitySsoCode),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          value,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(letterSpacing: 6),
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
         ],
       ),
       actions: [
@@ -164,7 +193,8 @@ Future<void> runSsoInBrowser(
   );
   final navigator = Navigator.of(context);
   try {
-    await run((url) async {
+    await run((url, shown) async {
+      code.value = shown;
       if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
         throw ApiError(0, 'browser', tr.commonBrowserFailed);
       }
@@ -175,6 +205,7 @@ Future<void> runSsoInBrowser(
       navigator.pop();
     }
     await dialog;
+    code.dispose();
   }
 }
 
@@ -606,7 +637,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
         label: label,
         run: (open, cancelled) async {
           final flow = await api.startSso(link: true);
-          await open(flow.url);
+          await open(flow.url, flow.code);
           final end = DateTime.now().add(const Duration(minutes: 10));
           while (!cancelled() && DateTime.now().isBefore(end)) {
             await Future<void>.delayed(const Duration(seconds: 2));

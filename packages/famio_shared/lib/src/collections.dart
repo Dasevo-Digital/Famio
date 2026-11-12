@@ -351,10 +351,11 @@ abstract final class Collections {
   };
 
   /// Whether a record with [data] holds health data: [health], and documents
-  /// filed under health.
+  /// filed under health, also those from Paperless-ngx.
   static bool isHealth(String collection, Map<String, Object?> data) =>
       health.contains(collection) ||
-      (collection == documents && data['category'] == 'health');
+      ((collection == documents || collection == externalDocuments) &&
+          data['category'] == 'health');
 
   /// Collections clients may read but never write.
   static const serverOwned = {

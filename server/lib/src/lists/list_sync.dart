@@ -334,6 +334,22 @@ class ListSync {
     }
   }
 
+  /// Ends every connection, after the runs in progress: before all family
+  /// data is deleted, so a later run does not delete the entries in the
+  /// other apps too (as CalDAV does before a wipe).
+  Future<void> disconnectAll() async {
+    _poke?.cancel();
+    while (_running.isNotEmpty) {
+      await Future.wait([
+        for (final run in _running.values) run.catchError((Object _) {}),
+      ]);
+    }
+    _deviceLogins.clear();
+    db.execute('DELETE FROM list_items');
+    db.execute('DELETE FROM list_links');
+    db.execute('DELETE FROM list_accounts');
+  }
+
   void disconnect(String id, String memberId) {
     _account(id, memberId);
     db.execute('DELETE FROM list_accounts WHERE id = ?', [id]);

@@ -1316,6 +1316,7 @@
     }
   },
   "securitySigningHappensBrowserAfterwards": "Die Anmeldung läuft im Browser. Danach geht es hier automatisch weiter.",
+  "securitySsoCode": "Im Browser fragt Famio nach der Anmeldung nach diesem Code:",
   "securityIfYouLosePhone": "Falls dein Handy verloren geht, kommst du mit einem dieser Codes trotzdem hinein – jeder funktioniert einmal. Jetzt sicher aufbewahren (Passwortmanager oder ausgedruckt). Sie werden nur dieses eine Mal angezeigt.",
   "securityCodesCopied": "Codes kopiert",
   "securitySetUpTwoFactor": "Zwei-Faktor einrichten",

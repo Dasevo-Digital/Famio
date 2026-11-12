@@ -47,8 +47,17 @@ class MainActivity : FlutterFragmentActivity() {
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
-        if (intent?.action == ACTION_SOS) SosChannel.launchPending = true
-        receiveFile(intent)
+        // Recreated after the system ended the process, or opened again from
+        // the recent apps: the activity gets the intent it was first started
+        // with. The emergency or the share it carried was handled back then
+        // and must not start the countdown or the sheet once more.
+        val flags = intent?.flags ?: 0
+        val fromHistory =
+            (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+        if (savedInstanceState == null && !fromHistory) {
+            if (intent?.action == ACTION_SOS) SosChannel.launchPending = true
+            receiveFile(intent)
+        }
         addSosShortcut()
     }
 

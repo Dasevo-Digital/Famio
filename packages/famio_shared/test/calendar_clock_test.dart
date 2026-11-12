@@ -75,11 +75,14 @@ void main() {
       ).inTimeZone('Europe/Berlin');
       expect(event.nthStart(1)!.millisecond, 123);
       expect(event.nthStart(2), isNull);
+      // Midnight in Berlin, not on the machine: east of Berlin the device's
+      // midnight is still the 26th there.
+      final berlin = tz.getLocation('Europe/Berlin');
       final midnight = CalendarEvent(
         id: 'midnight',
         title: 'Midnight',
-        start: DateTime(2027, 3, 27),
-        end: DateTime(2027, 3, 27, 1),
+        start: tz.TZDateTime(berlin, 2027, 3, 27),
+        end: tz.TZDateTime(berlin, 2027, 3, 27, 1),
         recurrence: Recurrence(
           RecurrenceFrequency.daily,
           until: DateTime(2027, 3, 27),

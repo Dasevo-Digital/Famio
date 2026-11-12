@@ -168,10 +168,11 @@ void main() {
           ],
         });
       case '/api/v1/aufnahmen/a1/miniatur':
+        // A server that claims something else: Famio still sends a picture.
         return http.Response(
           'JPEG-klein',
           200,
-          headers: {'content-type': 'image/jpeg'},
+          headers: {'content-type': 'text/html; charset=utf-8'},
         );
       case '/api/v1/aufnahmen/a1/ansicht':
         return http.Response(
@@ -329,6 +330,8 @@ void main() {
         as: mia,
       );
       expect(await thumb.readAsString(), 'JPEG-klein');
+      expect(thumb.headers['content-type'], 'image/jpeg');
+      expect(thumb.headers['content-security-policy'], contains('sandbox'));
       final full = await call('GET', 'api/files/${file.id}');
       expect(await full.readAsString(), 'JPEG-gross');
       // The viewer and the wall display ask for big previews: the picture.

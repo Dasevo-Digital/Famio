@@ -66,10 +66,25 @@ extension _PhotoVaultRoutes on FamioApi {
     if (file == null) {
       throw ApiException(404, 'not_found', t('Datei nicht gefunden'));
     }
+    // Only a picture, whatever PhotoVault claims, and sandboxed like any
+    // other file.
+    final type = file.headers['content-type']
+        ?.split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    final ref = FileRef.fromJson(
+      records
+          .get(Collections.externalPhotos, id.substring(0, id.lastIndexOf('.')))
+          ?.data['file'],
+    );
     return Response.ok(
       file.stream,
       headers: {
-        'content-type': file.headers['content-type'] ?? 'image/jpeg',
+        ..._fileHeaders(
+          ref?.name ?? id,
+          type != null && type.startsWith('image/') ? type : 'image/jpeg',
+        ),
         'content-length': ?file.contentLength?.toString(),
         'x-content-type-options': 'nosniff',
         'cache-control': 'private, max-age=86400',

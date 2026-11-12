@@ -29,6 +29,20 @@ Future<Map<String, Object?>> call(
   };
 }
 
+/// The browser's form on the confirmation page: state and code.
+Future<({int status, String html})> confirm(
+  Uri base,
+  String state,
+  String code,
+) async {
+  final response = await http.post(
+    base.resolve('api/auth/sso/confirm'),
+    headers: {'content-type': 'application/x-www-form-urlencoded'},
+    body: {'state': state, 'code': code},
+  );
+  return (status: response.statusCode, html: response.body);
+}
+
 String jwt(Map<String, Object?> claims) {
   String part(Object value) =>
       base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
@@ -393,7 +407,8 @@ void main() {
         expect(saved['clientSecret'], isNull);
       }
 
-      /// Runs the browser part and returns the poll result.
+      /// Runs the browser part, with the code the app shows, and returns
+      /// the poll result.
       Future<Map<String, Object?>> browser(
         Map<String, Object?> started, {
         String code = 'good',
@@ -401,12 +416,21 @@ void main() {
         final url = Uri.parse(started['url'] as String);
         expect(url.queryParameters['code_challenge_method'], 'S256');
         nonce = url.queryParameters['nonce'];
+        final state = url.queryParameters['state']!;
         final page = await call(
           base,
           'GET',
-          'api/auth/sso/callback?state=${url.queryParameters['state']}&code=$code',
+          'api/auth/sso/callback?state=$state&code=$code',
         );
         expect(page['html'], isA<String>());
+        if ((page['html'] as String).contains('name="code"')) {
+          final confirmed = await confirm(
+            base,
+            state,
+            started['code'] as String,
+          );
+          expect(confirmed.status, 200, reason: confirmed.html);
+        }
         return call(
           base,
           'POST',
@@ -489,6 +513,95 @@ void main() {
           body: {'flow': started['flow'], 'secret': 'guess'},
         );
         expect(stolen['_status'], 404);
+      });
+
+      test(
+        'a link someone else started signs nobody in without the code',
+        () async {
+          await configure(matchUsername: true);
+          // Someone starts a sign-in and hands the link to a family member,
+          // who completes it at the provider.
+          final started = await call(
+            base,
+            'POST',
+            'api/auth/sso/start',
+            body: {'device': 'Fremdes Handy'},
+          );
+          expect(started['code'], matches(RegExp(r'^\d{6}$')));
+          final url = Uri.parse(started['url'] as String);
+          nonce = url.queryParameters['nonce'];
+          final state = url.queryParameters['state']!;
+          final page = await call(
+            base,
+            'GET',
+            'api/auth/sso/callback?state=$state&code=good',
+          );
+          final html = page['html'] as String;
+          expect(html, contains('Fremdes Handy'));
+          expect(html, contains('name="code"'));
+          Future<Map<String, Object?>> poll() => call(
+            base,
+            'POST',
+            'api/auth/sso/poll',
+            body: {'flow': started['flow'], 'secret': started['secret']},
+          );
+          // Nothing yet, however often it asks.
+          expect((await poll())['status'], 'pending');
+          // Guessing the code ends the flow after a few tries.
+          for (var i = 0; i < 4; i++) {
+            final wrong = await confirm(base, state, '000000');
+            expect(wrong.html, contains('stimmt nicht'));
+            expect((await poll())['status'], 'pending');
+          }
+          final last = await confirm(base, state, '000000');
+          expect(last.status, 400);
+          expect((await poll())['_status'], 403);
+          final late = await confirm(base, state, started['code'] as String);
+          expect(late.status, 400);
+        },
+      );
+
+      test(
+        'the confirmation page may not be framed and posts to itself',
+        () async {
+          await configure(matchUsername: true);
+          final started = await call(
+            base,
+            'POST',
+            'api/auth/sso/start',
+            body: {},
+          );
+          final url = Uri.parse(started['url'] as String);
+          nonce = url.queryParameters['nonce'];
+          final response = await http.get(
+            base.resolve(
+              'api/auth/sso/callback?state=${url.queryParameters['state']}'
+              '&code=good',
+            ),
+          );
+          final policy = response.headers['content-security-policy']!;
+          expect(policy, contains("form-action 'self'"));
+          expect(policy, contains("frame-ancestors 'none'"));
+        },
+      );
+
+      test('one address cannot fill the table of open sign-ins', () async {
+        await configure();
+        for (var i = 0; i < 5; i++) {
+          expect(
+            (await call(
+              base,
+              'POST',
+              'api/auth/sso/start',
+              body: {},
+            ))['_status'],
+            200,
+          );
+        }
+        expect(
+          (await call(base, 'POST', 'api/auth/sso/start', body: {}))['_status'],
+          429,
+        );
       });
 
       test('usernames can match without linking; SSO counts as 2FA', () async {

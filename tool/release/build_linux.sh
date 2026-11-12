@@ -12,8 +12,11 @@ if [ -n "${2:-}" ]; then
     *) echo "Flutter in ~/flutter ist nicht $2" >&2; exit 1 ;;
   esac
 fi
-rm -rf famio-build && mkdir famio-build && tar -xzf famio-src.tgz -C famio-build
-cd famio-build
+# Built outside the home folder: the compiled app keeps paths of the build,
+# and the package is public (no account name in it).
+build=/var/tmp/famio-build
+rm -rf "$build" && mkdir "$build" && tar -xzf famio-src.tgz -C "$build"
+cd "$build"
 # The SQLite library of earlier builds instead of a download from github.com.
 bash tool/hook_cache.sh restore
 cd app

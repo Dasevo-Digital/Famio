@@ -560,12 +560,12 @@ class AppState extends ChangeNotifier {
   /// [cancelled] returns true or ten minutes pass.
   Future<void> signInSso(
     ResolvedServer server, {
-    required Future<void> Function(Uri url) open,
+    required Future<void> Function(Uri url, String? code) open,
     required bool Function() cancelled,
   }) async {
     final api = _client(server.url, server.pin);
     final flow = await api.startSso(device: deviceName);
-    await open(flow.url);
+    await open(flow.url, flow.code);
     final end = DateTime.now().add(const Duration(minutes: 10));
     while (!cancelled() && DateTime.now().isBefore(end)) {
       await Future<void>.delayed(const Duration(seconds: 2));

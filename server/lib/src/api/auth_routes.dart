@@ -470,28 +470,66 @@ extension _AuthRoutes on FamioApi {
       mode: link ? SsoMode.link : SsoMode.login,
       userId: member?.id,
       device: body['device'] as String?,
+      address: clientAddress.of(request),
     );
     return _json({
       'url': flow.url.toString(),
       'flow': flow.flow,
       'secret': flow.secret,
+      'code': flow.code,
     });
   }
 
-  /// The provider sends the browser back here.
-  Future<Response> _ssoCallback(Request request) async {
-    final result = await _sso.callback(
+  /// The provider sends the browser back here: the page asks for the code
+  /// the app shows.
+  Future<Response> _ssoCallback(Request request) async => _ssoPage(
+    await _sso.callback(
       request.url.queryParameters,
       memberForUsername: (name) => accounts
           .members()
           .where((m) => m.username.toLowerCase() == name.toLowerCase())
           .firstOrNull
           ?.id,
-      audit: (userId, what) => _audit(accounts.byId(userId)!, what),
+    ),
+  );
+
+  /// The browser confirms with the app's code (a plain form, from the page
+  /// above).
+  Future<Response> _ssoConfirm(Request request) async {
+    final length = request.contentLength;
+    if (length != null && length > 4096) {
+      throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
+    }
+    final body = await request.readAsString();
+    if (body.length > 4096) {
+      throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
+    }
+    final Map<String, String> form;
+    try {
+      form = Uri.splitQueryString(body);
+    } on FormatException {
+      throw ApiException.badRequest('bad_request', t('Ungültige Anfrage'));
+    }
+    return _ssoPage(
+      _sso.confirm(
+        form,
+        audit: (userId, what) => _audit(accounts.byId(userId)!, what),
+      ),
     );
+  }
+
+  Response _ssoPage(SsoPage page) {
+    final state = page.confirm;
     return Response(
-      result.ok ? 200 : 400,
-      body: ssoResultPage(ok: result.ok, message: result.message),
+      page.ok ? 200 : 400,
+      body: state != null
+          ? ssoConfirmPage(
+              state: state,
+              device: page.device,
+              link: page.link,
+              error: page.error,
+            )
+          : ssoResultPage(ok: page.ok, message: page.message),
       headers: {'content-type': 'text/html; charset=utf-8'},
     );
   }

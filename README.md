@@ -550,9 +550,13 @@ beim Anbieter die angezeigte Weiterleitungs-Adresse
 Authentik, Keycloak, Authelia, Zitadel, Google, Microsoft Entra u. a.; braucht
 die öffentliche Adresse. Mitglieder verknüpfen ihr Konto einmal unter
 Anmeldung & Sicherheit (oder, wenn eingeschaltet, über gleiche Benutzernamen)
-und melden sich dann mit „Mit … anmelden“ an: Die App öffnet den Browser und
-wartet, bis die Anmeldung dort fertig ist – ohne App-Links, auf allen
-Plattformen. Famio ist vertraulicher Client (Code-Austausch mit Secret und
+und melden sich dann mit „Mit … anmelden“ an: Die App öffnet den Browser,
+zeigt einen sechsstelligen Code und wartet, bis die Anmeldung dort fertig ist –
+ohne App-Links, auf allen Plattformen. Nach dem Anbieter nennt Famio im Browser
+das anfragende Gerät und fragt diesen Code ab; erst dann gilt die Anmeldung
+(bzw. Verknüpfung). Wer einen fremden Anmeldelink zugeschickt bekommt, kennt den
+Code nicht. Nach fünf falschen Codes endet der Vorgang, offene Anmeldungen sind
+je Adresse begrenzt. Famio ist vertraulicher Client (Code-Austausch mit Secret und
 PKCE, `state`, `nonce`; Aussteller, Empfänger und Ablauf des ID-Tokens werden
 geprüft). Eine SSO-Anmeldung erfüllt auch die Zwei-Faktor-Pflicht – die
 übernimmt dann der Anbieter.

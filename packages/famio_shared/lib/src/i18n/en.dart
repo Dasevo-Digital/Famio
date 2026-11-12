@@ -484,8 +484,8 @@ const sharedEn = <String, String>{
   "Checkup|16–17 Jahre": "16–17 years",
   "Vaccination|RSV (Antikörper-Prophylaxe)": "RSV (antibody prophylaxis)",
   "Vaccination|einmalig": "once",
-  "Vaccination|Vor bzw. in der ersten RSV-Saison (meist Oktober–März).":
-      "Before or during the first RSV season (usually October–March).",
+  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison.":
+      "Born October–March: soon after birth (U2). Born April–September: in the autumn before the first RSV season.",
   "Vaccination|Rotaviren": "Rotavirus",
   "Vaccination|1. Dosis": "1st dose",
   "Vaccination|Schluckimpfung ab 6 Wochen.": "Oral vaccine from 6 weeks.",
@@ -1094,6 +1094,20 @@ const sharedEn = <String, String>{
       "This sign-in account already belongs to another member.",
   "Server|Verknüpft. Du kannst dieses Fenster schließen.":
       "Linked. You can close this window.",
+  "Server|Ein Gerät": "A device",
+  "Server|Das Gerät „{device}“": "The device “{device}”",
+  "Server|{who} möchte dein Anmeldekonto mit seinem Famio-Konto verknüpfen.":
+      "{who} wants to link your sign-in account with its Famio account.",
+  "Server|{who} möchte sich mit deinem Famio-Konto anmelden.":
+      "{who} wants to sign in with your Famio account.",
+  "Server|Nur bestätigen, wenn du das gerade selbst in der Famio-App gestartet hast. Hat dir jemand diesen Link geschickt, schließe das Fenster.":
+      "Only confirm if you just started this yourself in the Famio app. If someone sent you this link, close the window.",
+  "Server|Code aus der Famio-App": "Code from the Famio app",
+  "Server|Bestätigen": "Confirm",
+  "Server|Zu oft ein falscher Code. Bitte in der App neu starten.":
+      "Wrong code too many times. Please start again in the app.",
+  "Server|Der Code stimmt nicht. Bitte den Code aus der Famio-App eingeben.":
+      "The code is not right. Please enter the code from the Famio app.",
   "Server|Zu diesem Anmeldekonto gibt es kein Famio-Konto. Zuerst in der App anmelden und unter Einstellungen → Anmeldung & Sicherheit „Single Sign-On verknüpfen“.":
       "There is no Famio account for this sign-in account. First sign in in the app and choose “Link single sign-on” under Settings → Sign-in & security.",
   "Server|Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.":

@@ -175,6 +175,10 @@ step "macOS"
 APP=app/build/macos/Build/Products/Release/Famio.app
 [ "$(defaults read "$PWD/$APP/Contents/Info.plist" CFBundleShortVersionString)" = "$V" ] ||
   fail "macOS-App hat nicht Version $V"
+# Without this the program keeps the debug entries of the build: paths of
+# the object files and sources, also in the pub cache under the home folder
+# (with the account name). Before signing: stripping breaks a signature.
+xcrun strip -S "$APP/Contents/MacOS/Famio"
 sh app/tool/sign_macos.sh --adhoc "$APP" | tail -1
 # Read first: with pipefail, grep -q ending the pipe early fails codesign.
 sig=$(codesign -dvv "$APP" 2>&1 || true)
@@ -307,6 +311,16 @@ check() {
   fi
 }
 check 'Apple Development' 'Entwicklerzertifikat'
+# The account names of the build machines, in paths of their home folders
+# (compiled-in source paths). The packages are public.
+home_check() {
+  local user="$1" where="$2"
+  [ -n "$user" ] || return 0
+  check "(/Users/|[\\\\/]Users[\\\\/]|/home/)$user([\\\\/]|\$)" "Heimatordner ($where)"
+}
+home_check "$(id -un)" "dieser Mac"
+home_check "${LINUX%%@*}" "Linux-Rechner"
+home_check "${WINDOWS%%@*}" "Windows-Rechner"
 if [ -n "$PATTERNS" ] && [ -f "$PATTERNS" ]; then
   n=0
   while IFS= read -r pattern; do

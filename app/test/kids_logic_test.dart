@@ -64,6 +64,35 @@ void main() {
     expect(next.open, isTrue);
   });
 
+  test('RSV antibodies follow the season, not the day of birth', () {
+    DueState rsv(DateTime birth, DateTime at) => vaccinationPlan(
+      Child(id: 'r', name: 'Baby', birthDate: birth),
+      const [],
+      at,
+    ).firstWhere((d) => d.id == 'rsv').state;
+
+    // Born in summer: in the autumn before the first season.
+    final may = DateTime(2026, 5, 10);
+    expect(rsv(may, DateTime(2026, 5, 12)), DueState.upcoming);
+    expect(rsv(may, DateTime(2026, 8, 31)), DueState.upcoming);
+    expect(rsv(may, DateTime(2026, 9, 15)), DueState.due);
+    expect(rsv(may, DateTime(2026, 11, 12)), DueState.due);
+    expect(rsv(may, DateTime(2027, 3, 31)), DueState.due);
+    expect(rsv(may, DateTime(2027, 4, 1)), DueState.missed);
+
+    // Born in the season: soon after birth, catch up until it ends.
+    final december = DateTime(2025, 12, 3);
+    expect(rsv(december, DateTime(2025, 12, 5)), DueState.due);
+    expect(rsv(december, DateTime(2026, 1, 10)), DueState.due);
+    expect(rsv(december, DateTime(2026, 4, 1)), DueState.missed);
+    final february = DateTime(2026, 2, 20);
+    expect(rsv(february, DateTime(2026, 3, 31)), DueState.due);
+    expect(rsv(february, DateTime(2026, 4, 1)), DueState.missed);
+
+    // Born in September: from birth on.
+    expect(rsv(DateTime(2026, 9, 20), DateTime(2026, 9, 21)), DueState.due);
+  });
+
   test('old unrecorded vaccinations and optional check-ups do not nag', () {
     final at = DateTime(2026, 9, 26); // 15 months old
     final vaccines = {
