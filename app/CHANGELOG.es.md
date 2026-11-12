@@ -4,6 +4,25 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.50 – Revisiones, fiebre e hitos más exactos
+
+- Las revisiones terminan el día exacto que marca la cartilla amarilla.
+- VRS: los niños nacidos de enero a marzo pueden recuperar la profilaxis en
+  otoño, hasta su primer cumpleaños. Las dosis siguientes se guían por la
+  fecha de la anterior.
+- Las indicaciones de fiebre cuentan el tiempo desde la primera medición; un
+  valor entre 38,0 y 38,4 °C no termina la fiebre y los valores por debajo
+  de 36 °C se llaman «bajos».
+- Los hitos importantes siguen visibles después de su periodo habitual, con
+  una indicación para la próxima revisión.
+- Vacaciones escolares 2026/27 según la Conferencia de Ministros de
+  Educación.
+- El inicio de sesión único, la visibilidad en cuentas infantiles y el acceso
+  a Paperless tras un cambio de rol son más seguros.
+- La cuenta atrás de emergencia también salta si se abre otra ventana encima.
+- La página de inicio, el calendario y el chat responden más rápido, también
+  tras una actualización del servidor.
+
 ## 2.0.49 – Recetas, importes y calendarios más exactos
 
 - El editor de recetas conserva las cantidades exactas (¼ l sigue siendo

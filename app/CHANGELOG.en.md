@@ -4,6 +4,24 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.50 – More exact check-ups, fever hints and milestones
+
+- Check-ups end on the exact day the yellow booklet sets.
+- RSV: children born January to March can catch up on the prophylaxis in
+  the autumn, until their first birthday. Follow-up vaccinations go by the
+  date of the dose before.
+- Fever hints count the time since the first reading; a value between 38.0
+  and 38.4 °C does not end the fever, values below 36 °C are called "low".
+- Important milestones stay visible after their usual period, with a word
+  about the next check-up.
+- School holidays 2026/27 from the Standing Conference of education
+  ministers.
+- Single sign-on, visibility for children's accounts and Paperless access
+  after a change of role are safer.
+- The emergency countdown also goes off when another window opens over it.
+- The start page, calendar and chat respond faster, also after a server
+  update.
+
 ## 2.0.49 – More exact recipes, amounts and calendars
 
 - The recipe editor keeps exact amounts (¼ l stays 0.25 l) and ranges like

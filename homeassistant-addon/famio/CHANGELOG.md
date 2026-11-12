@@ -2,6 +2,25 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.50 – Vorsorge, Fieber und Meilensteine genauer
+
+- U-Untersuchungen enden tagesgenau, wie es das gelbe Heft vorsieht.
+- RSV: Kinder, die von Januar bis März geboren sind, können die Prophylaxe
+  im Herbst bis zum 1. Geburtstag nachholen. Folgeimpfungen richten sich nach
+  dem Datum der vorigen Dosis.
+- Fieber-Hinweise rechnen die Dauer seit der ersten Messung; ein Wert
+  zwischen 38,0 und 38,4 °C beendet das Fieber nicht, Werte unter 36 °C
+  heißen „niedrig“.
+- Wichtige Meilensteine bleiben nach ihrem üblichen Zeitraum sichtbar, mit
+  dem Hinweis auf die nächste U-Untersuchung.
+- Schulferien 2026/27 nach der Kultusministerkonferenz.
+- SSO-Anmeldung, Sichtbarkeit bei Kinderkonten und Paperless-Zugriff nach
+  einem Rollenwechsel sind abgesichert.
+- Der Notruf-Countdown löst auch aus, wenn darüber ein anderes Fenster
+  aufgeht.
+- Startseite, Kalender und Chat reagieren schneller, auch nach einem
+  Server-Update.
+
 ## 2.0.49 – Rezepte, Beträge und Kalender genauer
 
 - Der Rezept-Editor behält genaue Mengen (¼ l bleibt 0,25 l) und Bereiche wie
