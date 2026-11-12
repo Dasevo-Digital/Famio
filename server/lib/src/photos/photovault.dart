@@ -581,6 +581,28 @@ class PhotoVaultLink {
         ],
       };
 
+  /// After a change of roles: who sees the pictures and birthdays, at once
+  /// and without asking PhotoVault; true if anything changed.
+  bool reapply() {
+    final c = config;
+    if (c == null) return false;
+    final audience = _audience(c);
+    return records.writeAsServer([
+      for (final collection in const [
+        Collections.externalPhotos,
+        Collections.externalBirthdays,
+      ])
+        for (final r in records.all(collection))
+          if (!r.deleted && jsonEncode(r.visibleTo) != jsonEncode(audience))
+            SyncRecord(
+              collection: r.collection,
+              id: r.id,
+              data: {...r.data, SyncRecord.visibilityKey: audience},
+              updatedAt: 0,
+            ),
+    ]);
+  }
+
   bool _storePhotos(Map<String, _Photo> photos, PhotoVaultConfig? c) {
     final audience = _audience(c);
     final wanted = {for (final p in photos.values) '$idPrefix${p.id}': p};

@@ -1927,6 +1927,8 @@ class _LogEditorState extends State<_LogEditor> {
                 decimal: true,
                 autofocus: _old == null,
               ),
+              const SizedBox(height: 4),
+              Text(tr.healthMeasuredRectally, style: theme.textTheme.bodySmall),
               if (advice != null && advice.level != FeverLevel.normal) ...[
                 const SizedBox(height: 8),
                 _AdviceBox(level: advice.level, text: advice.text),

@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 /// audience when they change it, only their own private things they share.
 void main() {
   late FamioServerApp app;
-  late FamilyMember mama, papa, kid;
+  late FamilyMember mama, papa, kid, guest;
   late Map<String, String> tokens;
 
   setUp(() {
@@ -26,14 +26,43 @@ void main() {
       displayName: 'Kid',
       role: MemberRole.child,
     );
+    guest = app.accounts.create(
+      username: 'oma',
+      displayName: 'Oma',
+      role: MemberRole.guest,
+    );
     tokens = {
-      for (final m in [mama, papa, kid]) m.id: app.accounts.createSession(m.id),
+      for (final m in [mama, papa, kid, guest])
+        m.id: app.accounts.createSession(m.id),
     };
   });
   tearDown(() async {
     await app.close();
     Directory(app.dataDir).deleteSync(recursive: true);
   });
+
+  Future<Map<String, Object?>> call(
+    FamilyMember who,
+    String method,
+    String path, [
+    Object? body,
+  ]) async {
+    final response = await app.handler(
+      Request(
+        method,
+        Uri.parse('http://famio.test/$path'),
+        headers: {
+          'authorization': 'Bearer ${tokens[who.id]}',
+          'content-type': 'application/json',
+        },
+        body: body == null ? null : jsonEncode(body),
+      ),
+    );
+    return {
+      '_status': response.statusCode,
+      ...(jsonDecode(await response.readAsString()) as Map).cast(),
+    };
+  }
 
   Future<SyncResponse> sync(
     FamilyMember who, {
@@ -159,5 +188,139 @@ void main() {
       mama.id,
     ]);
     expect((await sync(mama)).changes.any((r) => r.id == 'tagebuch'), isTrue);
+  });
+
+  test('a child cannot hide a family note through the bin', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await sync(
+      mama,
+      changes: [
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'n1',
+          data: {'title': 'Familienregeln', 'text': 'x'},
+          updatedAt: now,
+        ),
+      ],
+    );
+    final stored = app.records.get(Collections.notes, 'n1')!;
+    // Deleted with a local copy that only the child would see.
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'n1',
+          deleted: true,
+          data: {
+            'deletionSnapshot': {
+              'title': 'Familienregeln',
+              'text': 'x',
+              SyncRecord.visibilityKey: [kid.id],
+            },
+          },
+          updatedAt: now + 1000,
+          rev: stored.rev,
+        ),
+      ],
+    );
+    final bin = await call(mama, 'GET', 'api/trash');
+    final items = (bin['items'] as List).cast<Map>();
+    expect(items.map((i) => (i['record'] as Map)['id']), ['n1']);
+    final restored = await call(
+      kid,
+      'POST',
+      'api/trash/${items.single['id']}/restore',
+      {},
+    );
+    expect(restored['_status'], 200);
+    final after = app.records.get(Collections.notes, 'n1')!;
+    expect(after.deleted, isFalse);
+    expect(after.visibleTo, isNull);
+  });
+
+  test('a child cannot make a confidential appointment public', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final start = DateTime.now().add(const Duration(days: 1));
+    final event = {
+      'title': 'Psychotherapie',
+      'start': start.toUtc().toIso8601String(),
+      'end': start.add(const Duration(hours: 1)).toUtc().toIso8601String(),
+      'confidential': true,
+      'memberIds': [kid.id, mama.id],
+    };
+    await sync(
+      mama,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e1',
+          data: event,
+          updatedAt: now,
+        ),
+      ],
+    );
+    final stored = app.records.get(Collections.events, 'e1')!;
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e1',
+          data: {
+            ...event,
+            'confidential': false,
+            'memberIds': [kid.id, mama.id, guest.id],
+          },
+          updatedAt: now + 1000,
+          rev: stored.rev,
+        ),
+      ],
+    );
+    final after = app.records.get(Collections.events, 'e1')!;
+    expect(after.data['confidential'], isTrue);
+    expect(after.data['memberIds'], [kid.id, mama.id]);
+    expect((await sync(guest)).changes.where((r) => r.id == 'e1'), isEmpty);
+  });
+
+  test('a child assigns no one outside a task\'s audience', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await sync(
+      mama,
+      changes: [
+        SyncRecord(
+          collection: Collections.tasks,
+          id: 't1',
+          data: {
+            'title': 'Geschenk für Papa',
+            'assigneeId': kid.id,
+            'assigneeIds': [kid.id],
+            SyncRecord.visibilityKey: [mama.id, kid.id],
+          },
+          updatedAt: now,
+        ),
+      ],
+    );
+    final stored = app.records.get(Collections.tasks, 't1')!;
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.tasks,
+          id: 't1',
+          data: {
+            'title': 'Geschenk für Papa',
+            'assigneeId': kid.id,
+            'assigneeIds': [kid.id, papa.id],
+            SyncRecord.visibilityKey: [mama.id, kid.id],
+          },
+          updatedAt: now + 1000,
+          rev: stored.rev,
+        ),
+      ],
+    );
+    final after = app.records.get(Collections.tasks, 't1')!;
+    expect(after.visibleTo, isNot(contains(papa.id)));
+    expect(after.data['assigneeIds'], [kid.id]);
   });
 }

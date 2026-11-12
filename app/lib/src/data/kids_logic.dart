@@ -23,13 +23,22 @@ String ageLabel(Child child, [DateTime? at]) {
 /// Keep a short look-back window for genuinely delayed steps, but do not ask
 /// the family of a two-year-old about first steps (window ends at 18 months).
 bool milestoneIsRelevant(Milestone milestone, double ageInMonths) =>
-    milestone.toMonth >= ageInMonths - 3 &&
+    milestone.toMonth >= ageInMonths - _keptAfter(milestone) &&
     milestone.fromMonth <= ageInMonths + 12;
 
 /// An unfinished milestone whose time has passed: offered only folded away,
 /// to add it afterwards.
 bool milestoneIsPast(Milestone milestone, double ageInMonths) =>
-    milestone.toMonth < ageInMonths - 3;
+    milestone.toMonth < ageInMonths - _keptAfter(milestone);
+
+/// Whether an unfinished milestone's window is over: for a boundary step
+/// the hint to mention it at the next check-up.
+bool milestoneIsOverdue(Milestone milestone, double ageInMonths) =>
+    milestone.boundary && ageInMonths > milestone.toMonth;
+
+/// Months an unfinished milestone stays in the list after its window: a
+/// boundary step a year, so it is not folded away as "reached earlier".
+double _keptAfter(Milestone milestone) => milestone.boundary ? 12 : 3;
 
 /// Whether the timeline suggests an unfinished milestone as coming up: it
 /// starts within the next half year, never one whose time has passed.
@@ -93,6 +102,7 @@ class DueItem {
     this.entry,
     this.isCheckup = true,
     this.optional = false,
+    this.tooLate = false,
   });
 
   final String id;
@@ -107,6 +117,9 @@ class DueItem {
   /// Not covered by every insurance; never nagged about.
   final bool optional;
 
+  /// No longer given at this age: it can only be recorded afterwards.
+  final bool tooLate;
+
   bool get open => state == DueState.due || state == DueState.late;
 
   /// The booked appointment, if any.
@@ -120,16 +133,15 @@ List<DueItem> checkupPlan(
 ]) {
   final now = at ?? DateTime.now();
   final birth = child.birthDate;
-  // Calendar days: 24-hour steps end an hour off across a clock change.
-  DateTime afterBirth(int days) =>
-      DateTime(birth.year, birth.month, birth.day + days);
   return [
     for (final c in checkups)
       () {
         final entry = _entryFor(entries, ChildEntryKind.checkup, c.id);
-        final from = afterBirth(c.fromDay);
-        final to = afterBirth(c.toDay);
-        final tolerance = afterBirth(c.toleranceTo);
+        // Calendar days, weeks and months as the Kinder-Richtlinie counts
+        // them; [to] and [tolerance] are the last days that still count.
+        final from = c.from.after(birth);
+        final to = c.until.lastDayBefore(birth);
+        final tolerance = c.toleranceUntil.lastDayBefore(birth);
         final day = DateTime(now.year, now.month, now.day);
         final state = _stateOf(
           entry,
@@ -159,8 +171,10 @@ List<DueItem> checkupPlan(
 /// RSV antibodies after the STIKO recommendation: a baby born in the season
 /// (October–March) soon after birth, ideally at the U2; one born April to
 /// September in the autumn before its first season. Either way it can be
-/// caught up until that season ends in March.
-(DateTime, DateTime) rsvWindow(DateTime birth) {
+/// caught up until that season ends in March. One born January to March
+/// mostly met no RSV yet: missed, it is caught up in the next autumn, until
+/// the first birthday (RKI). [at] picks that second window after March.
+(DateTime, DateTime) rsvWindow(DateTime birth, [DateTime? at]) {
   if (birth.month >= 4 && birth.month <= 9) {
     final autumn = DateTime(birth.year, 9, 1);
     return (
@@ -168,10 +182,25 @@ List<DueItem> checkupPlan(
       DateTime(birth.year + 1, 3, 31),
     );
   }
-  return (
-    birth,
-    DateTime(birth.month >= 10 ? birth.year + 1 : birth.year, 3, 31),
+  final seasonEnd = DateTime(
+    birth.month >= 10 ? birth.year + 1 : birth.year,
+    3,
+    31,
   );
+  if (birth.month <= 3 && at != null && at.isAfter(seasonEnd)) {
+    return (
+      DateTime(birth.year, 9, 1),
+      DateTime(birth.year + 1, birth.month, birth.day - 1),
+    );
+  }
+  return (birth, seasonEnd);
+}
+
+/// [date] plus [months], on the last day of a shorter month.
+DateTime _plusMonths(DateTime date, int months) {
+  final month = DateTime(date.year, date.month + months);
+  final length = DateTime(month.year, month.month + 1, 0).day;
+  return DateTime(month.year, month.month, date.day.clamp(1, length));
 }
 
 List<DueItem> vaccinationPlan(
@@ -185,17 +214,58 @@ List<DueItem> vaccinationPlan(
     for (final v in vaccinations)
       () {
         final entry = _entryFor(entries, ChildEntryKind.vaccination, v.id);
-        final (from, to) = v.id == 'rsv'
-            ? rsvWindow(child.ageDate(0))
+        final birth = child.ageDate(0);
+        final rule = vaccinationRules[v.id];
+        DateTime? last;
+        var (from, to) = v.id == 'rsv'
+            ? rsvWindow(birth, day)
             : () {
-                final from = child.ageDate(v.ageMonths);
+                var from = switch (rule?.fromDays) {
+                  final days? => DateTime(
+                    birth.year,
+                    birth.month,
+                    birth.day + days,
+                  ),
+                  null => child.ageDate(v.ageMonths),
+                };
+                // Not before the minimum interval after the dose before,
+                // once that one is recorded with its date.
+                final before = rule?.after == null
+                    ? null
+                    : _entryFor(
+                        entries,
+                        ChildEntryKind.vaccination,
+                        rule!.after!,
+                      );
+                if (before != null && !before.planned && !before.dateUnknown) {
+                  final given = before.date;
+                  final month = _plusMonths(
+                    DateTime(given.year, given.month, given.day),
+                    rule!.gapMonths,
+                  );
+                  final earliest = DateTime(
+                    month.year,
+                    month.month,
+                    month.day + rule.gapDays,
+                  );
+                  if (earliest.isAfter(from)) from = earliest;
+                }
                 // Vaccinations have no fixed window; a month counts as
                 // "due".
                 return (from, DateTime(from.year, from.month, from.day + 31));
               }();
+        if (rule?.untilDays case final days?) {
+          last = DateTime(birth.year, birth.month, birth.day + days);
+          if (to.isAfter(last)) to = last;
+        }
+        // Past the age at which it is still given (Rotavirus).
+        final tooLate =
+            last != null && (day.isAfter(last) || from.isAfter(last));
         final state = _stateOf(
           entry,
-          () => day.isBefore(from)
+          () => tooLate
+              ? DueState.missed
+              : day.isBefore(from)
               ? DueState.upcoming
               : !day.isAfter(to)
               ? DueState.due
@@ -212,6 +282,7 @@ List<DueItem> vaccinationPlan(
           state: state,
           entry: entry,
           isCheckup: false,
+          tooLate: tooLate,
         );
       }(),
   ];

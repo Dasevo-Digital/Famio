@@ -71,16 +71,22 @@ void main() {
     for (final m in milestones) {
       expect(m.fromMonth, lessThan(m.toMonth), reason: m.id);
     }
+    final birth = DateTime(2024, 1, 31);
     for (final c in checkups) {
-      expect(
-        c.fromDay <= c.toDay && c.toDay <= c.toleranceTo,
-        isTrue,
-        reason: c.id,
-      );
+      final from = c.from.after(birth);
+      final to = c.until.lastDayBefore(birth);
+      final tolerance = c.toleranceUntil.lastDayBefore(birth);
+      expect(!from.isAfter(to) && !to.isAfter(tolerance), isTrue, reason: c.id);
     }
     // Check-ups follow each other.
     for (var i = 1; i < checkups.length; i++) {
-      expect(checkups[i].fromDay, greaterThan(checkups[i - 1].fromDay));
+      expect(
+        checkups[i].from
+            .after(birth)
+            .isAfter(checkups[i - 1].from.after(birth)),
+        isTrue,
+        reason: checkups[i].id,
+      );
     }
     expect(checkupById('U7a')!.window, '34.–36. Lebensmonat');
     expect(milestoneById('walk')!.toMonth, 18);

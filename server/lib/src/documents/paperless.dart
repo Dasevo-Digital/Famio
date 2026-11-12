@@ -447,16 +447,39 @@ class PaperlessLink {
 
   // --- Famio records ---------------------------------------------------------
 
+  /// The adults, or the members the admin chose.
+  List<String> _audience(PaperlessConfig? c) =>
+      switch (c?.memberIds ?? const <String>[]) {
+        final ids when ids.isNotEmpty => ids,
+        _ => [
+          for (final m in accounts.members())
+            if (m.isAdult) m.id,
+        ],
+      };
+
+  /// After a change of roles: who sees the documents, at once and without
+  /// asking Paperless (it may be unreachable just then); true if anything
+  /// changed.
+  bool reapply() {
+    final c = config;
+    if (c == null) return false;
+    final audience = _audience(c);
+    return records.writeAsServer([
+      for (final r in records.all(Collections.externalDocuments))
+        if (!r.deleted && jsonEncode(r.visibleTo) != jsonEncode(audience))
+          SyncRecord(
+            collection: r.collection,
+            id: r.id,
+            data: {...r.data, SyncRecord.visibilityKey: audience},
+            updatedAt: 0,
+          ),
+    ]);
+  }
+
   /// Writes [documents] (and removes the ones no longer tagged); true if
   /// anything changed.
   bool _store(List<_Document> documents, {PaperlessConfig? config}) {
-    final audience = switch (config?.memberIds ?? const <String>[]) {
-      final ids when ids.isNotEmpty => ids,
-      _ => [
-        for (final m in accounts.members())
-          if (m.isAdult) m.id,
-      ],
-    };
+    final audience = _audience(config);
     final wanted = {for (final d in documents) '$idPrefix${d.id}': d};
     return records.writeAsServer([
       for (final MapEntry(key: id, value: d) in wanted.entries)

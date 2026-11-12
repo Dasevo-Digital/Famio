@@ -507,7 +507,11 @@ extension _AdminRoutes on FamioApi {
       );
       // Who sees shared calendars, Paperless documents and PhotoVault
       // pictures depends on the roles.
-      if (calendarAccess?.reapply() ?? false) {
+      // Applied at once from what is stored; the services may be
+      // unreachable, their next run brings the rest up to date.
+      final documents = paperless?.reapply() ?? false;
+      final pictures = photoVault?.reapply() ?? false;
+      if ((calendarAccess?.reapply() ?? false) || documents || pictures) {
         hub.notifyRev(records.currentRev);
       }
       unawaited(paperless?.sync());

@@ -39,6 +39,7 @@ class Milestone {
     this.only,
     this.female,
     this.male,
+    this.boundary = false,
   });
 
   final String id;
@@ -60,6 +61,10 @@ class Milestone {
   final (double, double)? female;
   final (double, double)? male;
 
+  /// A step paediatricians look out for ("Grenzstein"): still open after
+  /// its window, it stays in sight with a word about the next check-up.
+  final bool boundary;
+
   /// This milestone with the window for a child of [sex].
   Milestone forSex(ChildSex? sex) {
     final window = switch (sex) {
@@ -76,6 +81,7 @@ class Milestone {
       window.$2,
       hint: _hint,
       only: only,
+      boundary: boundary,
     );
   }
 }
@@ -126,7 +132,14 @@ const milestones = <Milestone>[
     1,
     3,
   ),
-  Milestone('head_control', MilestoneArea.motor, 'Hält den Kopf sicher', 3, 5),
+  Milestone(
+    'head_control',
+    MilestoneArea.motor,
+    'Hält den Kopf sicher',
+    3,
+    5,
+    boundary: true,
+  ),
   Milestone(
     'roll_over',
     MilestoneArea.motor,
@@ -134,7 +147,14 @@ const milestones = <Milestone>[
     4,
     7,
   ),
-  Milestone('sit', MilestoneArea.motor, 'Sitzt frei ohne Stütze', 4, 9),
+  Milestone(
+    'sit',
+    MilestoneArea.motor,
+    'Sitzt frei ohne Stütze',
+    4,
+    9,
+    boundary: true,
+  ),
   Milestone(
     'crawl',
     MilestoneArea.motor,
@@ -152,7 +172,14 @@ const milestones = <Milestone>[
   ),
   Milestone('cruise', MilestoneArea.motor, 'Läuft an Möbeln entlang', 6, 14),
   Milestone('stand_alone', MilestoneArea.motor, 'Steht frei', 7, 17),
-  Milestone('walk', MilestoneArea.motor, 'Erste freie Schritte', 8, 18),
+  Milestone(
+    'walk',
+    MilestoneArea.motor,
+    'Erste freie Schritte',
+    8,
+    18,
+    boundary: true,
+  ),
   Milestone(
     'stairs',
     MilestoneArea.motor,
@@ -183,7 +210,16 @@ const milestones = <Milestone>[
     48,
     84,
   ),
-  Milestone('swim', MilestoneArea.motor, 'Schwimmt (Seepferdchen)', 48, 96),
+  Milestone(
+    'swim',
+    MilestoneArea.motor,
+    'Schwimmt (Seepferdchen)',
+    48,
+    96,
+    hint:
+        'Das Seepferdchen ist ein erster Schritt; sicher schwimmen Kinder '
+        'meist erst mit dem Bronze-Abzeichen.',
+  ),
   Milestone(
     'forearm_support',
     MilestoneArea.motor,
@@ -221,6 +257,7 @@ const milestones = <Milestone>[
     'Gibt Dinge von einer Hand in die andere',
     5,
     8,
+    boundary: true,
   ),
   Milestone(
     'pincer',
@@ -228,6 +265,7 @@ const milestones = <Milestone>[
     'Pinzettengriff mit Daumen und Zeigefinger',
     9,
     13,
+    boundary: true,
   ),
   Milestone(
     'tower',
@@ -290,6 +328,7 @@ const milestones = <Milestone>[
     'Brabbelt Silbenketten („ba-ba-ba“)',
     5,
     10,
+    boundary: true,
   ),
   Milestone(
     'first_word',
@@ -297,6 +336,7 @@ const milestones = <Milestone>[
     'Erstes Wort mit Bedeutung',
     9,
     15,
+    boundary: true,
   ),
   Milestone(
     'two_words',
@@ -304,6 +344,7 @@ const milestones = <Milestone>[
     'Zweiwortsätze („Mama Auto“)',
     18,
     27,
+    boundary: true,
   ),
   Milestone(
     'sentences',
@@ -420,7 +461,14 @@ const milestones = <Milestone>[
     180,
   ),
   // Gefühle & Miteinander
-  Milestone('smile', MilestoneArea.social, 'Erstes soziales Lächeln', 1, 3),
+  Milestone(
+    'smile',
+    MilestoneArea.social,
+    'Erstes soziales Lächeln',
+    1,
+    3,
+    boundary: true,
+  ),
   Milestone('laugh', MilestoneArea.social, 'Lacht laut', 3, 6),
   Milestone('stranger', MilestoneArea.social, 'Fremdelt', 6, 12),
   Milestone('wave', MilestoneArea.social, 'Winkt „Tschüss“', 8, 14),
@@ -537,7 +585,10 @@ const milestones = <Milestone>[
     'Hat das Geburtsgewicht wieder erreicht',
     0.25,
     0.5,
-    hint: 'In den ersten Tagen nehmen Neugeborene etwas ab – das ist normal.',
+    hint:
+        'In den ersten Tagen nehmen Neugeborene bis zu etwa 10 % ab – das ist '
+        'normal. Nach etwa zwei Wochen ist das Geburtsgewicht meist wieder '
+        'erreicht.',
   ),
   Milestone(
     'small_fontanelle',
@@ -551,8 +602,8 @@ const milestones = <Milestone>[
     'weight_double',
     MilestoneArea.body,
     'Geburtsgewicht verdoppelt',
-    4,
-    6,
+    3,
+    5,
   ),
   Milestone(
     'eye_colour',
@@ -575,8 +626,8 @@ const milestones = <Milestone>[
     'weight_triple',
     MilestoneArea.body,
     'Geburtsgewicht verdreifacht',
-    10,
-    14,
+    12,
+    16,
   ),
   Milestone(
     'milk_teeth',
@@ -674,6 +725,18 @@ const milestones = <Milestone>[
     180,
     only: ChildSex.female,
     hint: 'Meist etwa zwei Jahre nach Beginn der Brustentwicklung.',
+  ),
+  Milestone(
+    'testes',
+    MilestoneArea.puberty,
+    'Die Hoden beginnen zu wachsen',
+    108,
+    168,
+    only: ChildSex.male,
+    hint:
+        'Meist das erste Zeichen der Pubertät bei Jungen. Beginnt es vor dem '
+        '9. Geburtstag oder bis zum 14. noch nicht, in der Kinderarztpraxis '
+        'ansprechen.',
   ),
   Milestone(
     'voice_break',

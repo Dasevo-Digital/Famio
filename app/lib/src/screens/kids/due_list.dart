@@ -188,24 +188,29 @@ Future<void> showDueActions(
             Text(title, style: Theme.of(context).textTheme.titleLarge),
             Text(item.subtitle, style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              icon: const Icon(AppIcons.check),
-              label: Text(tr.dueDoneToday),
-              onPressed: () => Navigator.pop(context, 'today'),
-            ),
-            const SizedBox(height: 8),
+            // Past its age limit a dose can only be recorded afterwards.
+            if (!item.tooLate) ...[
+              FilledButton.icon(
+                icon: const Icon(AppIcons.check),
+                label: Text(tr.dueDoneToday),
+                onPressed: () => Navigator.pop(context, 'today'),
+              ),
+              const SizedBox(height: 8),
+            ],
             OutlinedButton.icon(
               icon: const Icon(AppIcons.calendarBlank),
               label: Text(tr.dueOtherDateMeasurementsNote),
               onPressed: () => Navigator.pop(context, 'editor'),
             ),
             const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(AppIcons.clock),
-              label: Text(tr.dueAddAppointment),
-              onPressed: () => Navigator.pop(context, 'appointment'),
-            ),
-            const SizedBox(height: 8),
+            if (!item.tooLate) ...[
+              OutlinedButton.icon(
+                icon: const Icon(AppIcons.clock),
+                label: Text(tr.dueAddAppointment),
+                onPressed: () => Navigator.pop(context, 'appointment'),
+              ),
+              const SizedBox(height: 8),
+            ],
             TextButton(
               onPressed: () => Navigator.pop(context, 'unknown'),
               child: Text(tr.dueDoneDateUnknown2),

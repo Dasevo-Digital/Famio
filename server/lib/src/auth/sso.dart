@@ -88,6 +88,11 @@ class _Flow {
   _Outcome? pending;
   int attempts = 0;
 
+  /// Hash of the key the callback gave the browser as a cookie: only that
+  /// browser may show the form again and confirm. Whoever started the flow
+  /// knows the state and the code, but never gets this key.
+  String? browserHash;
+
   /// Set once confirmed: the signed-in member (login) or linked (link).
   String? resultUser;
   String? error;
@@ -100,13 +105,15 @@ class SsoPage {
     : confirm = null,
       device = null,
       link = false,
-      error = null;
+      error = null,
+      browserKey = null;
 
   const SsoPage.confirm({
     required String state,
     this.device,
     required this.link,
     this.error,
+    this.browserKey,
   }) : ok = true,
        message = '',
        confirm = state;
@@ -125,6 +132,9 @@ class SsoPage {
 
   /// The previous code was wrong.
   final String? error;
+
+  /// To hand to the browser as a cookie (set once, by the callback).
+  final String? browserKey;
 }
 
 /// The provider's account and the member it leads to, applied only once the
@@ -346,6 +356,7 @@ class SsoService {
   Future<SsoPage> callback(
     Map<String, String> query, {
     required String? Function(String username) memberForUsername,
+    String? browserKey,
   }) async {
     final flow = _flows.values
         .where((f) => f.state == query['state'])
@@ -361,8 +372,12 @@ class SsoService {
     if (flow.error case final error?) {
       return SsoPage.result(ok: false, message: error);
     }
-    // Reloaded: the provider's code is used up, the form is still valid.
-    if (flow.pending != null) return _confirmPage(flow);
+    // Reloaded: the provider's code is used up, the form is still valid,
+    // but only in the browser that came back from the provider.
+    if (flow.pending != null) {
+      if (!_sameBrowser(flow, browserKey)) return _otherBrowser();
+      return _confirmPage(flow);
+    }
     try {
       if (query['error'] case final error?) {
         throw ApiException.badRequest(
@@ -423,7 +438,9 @@ class SsoService {
             link: link,
           );
       }
-      return _confirmPage(flow);
+      final key = _token(24);
+      flow.browserHash = _sha(key);
+      return _confirmPage(flow, browserKey: key);
     } on ApiException catch (e) {
       flow.error = e.message;
       return SsoPage.result(ok: false, message: e.message);
@@ -434,6 +451,8 @@ class SsoService {
   /// in or the account linked. A wrong code asks again, a few times.
   SsoPage confirm(
     Map<String, String> form, {
+    String? browserKey,
+    required bool Function(String userId) memberExists,
     required void Function(String userId, String what) audit,
   }) {
     _expire();
@@ -449,6 +468,7 @@ class SsoService {
             t('Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.'),
       );
     }
+    if (!_sameBrowser(flow, browserKey)) return _otherBrowser();
     final entered = (form['code'] ?? '').replaceAll(RegExp(r'\s'), '');
     if (!_same(entered, flow.code)) {
       if (++flow.attempts >= _maxAttempts) {
@@ -466,6 +486,22 @@ class SsoService {
       );
     }
     flow.pending = null;
+    // Checked again: the member may be gone, or linked meanwhile.
+    final linkedNow = _linkedTo(outcome.issuer, outcome.subject);
+    final valid =
+        memberExists(outcome.userId) &&
+        switch ((flow.mode, outcome.link)) {
+          (SsoMode.link, _) => true,
+          (SsoMode.login, true) =>
+            linkedNow == null && !isLinked(outcome.userId),
+          (SsoMode.login, false) => linkedNow == outcome.userId,
+        };
+    if (!valid) {
+      flow.error = t(
+        'Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.',
+      );
+      return SsoPage.result(ok: false, message: flow.error!);
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
     if (flow.mode == SsoMode.link) {
       final linked = _linkedTo(outcome.issuer, outcome.subject);
@@ -486,7 +522,7 @@ class SsoService {
         message: t('Verknüpft. Du kannst dieses Fenster schließen.'),
       );
     }
-    if (outcome.link && !isLinked(outcome.userId)) {
+    if (outcome.link) {
       _db.execute(
         'INSERT OR IGNORE INTO sso_links'
         ' (issuer, subject, user_id, name, created_at) VALUES (?, ?, ?, ?, ?)',
@@ -502,11 +538,25 @@ class SsoService {
     );
   }
 
-  SsoPage _confirmPage(_Flow flow, {String? error}) => SsoPage.confirm(
-    state: flow.state,
-    device: flow.device,
-    link: flow.mode == SsoMode.link,
-    error: error,
+  SsoPage _confirmPage(_Flow flow, {String? error, String? browserKey}) =>
+      SsoPage.confirm(
+        state: flow.state,
+        device: flow.device,
+        link: flow.mode == SsoMode.link,
+        error: error,
+        browserKey: browserKey,
+      );
+
+  static bool _sameBrowser(_Flow flow, String? browserKey) =>
+      flow.browserHash != null &&
+      browserKey != null &&
+      _same(_sha(browserKey), flow.browserHash!);
+
+  static SsoPage _otherBrowser() => SsoPage.result(
+    ok: false,
+    message: t(
+      'Bitte die Anmeldung in dem Browser bestätigen, in dem du dich gerade angemeldet hast.',
+    ),
   );
 
   String? _linkedTo(String issuer, String subject) =>

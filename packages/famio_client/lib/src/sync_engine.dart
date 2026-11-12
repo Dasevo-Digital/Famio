@@ -345,6 +345,7 @@ class SyncEngine {
   Future<void> _syncOnce() async {
     _setStatus(SyncState.syncing);
     _lastSync = DateTime.now();
+    _announcedAt = DateTime.now();
     try {
       bool more;
       // Downloading everything (first sync or after a reset): an old
@@ -401,6 +402,8 @@ class SyncEngine {
         e.isUnauthorized ? SyncState.unauthorized : SyncState.offline,
         e.message,
       );
+    } finally {
+      _announce();
     }
   }
 
@@ -442,6 +445,11 @@ class SyncEngine {
       }
       for (final remote in [...response.rejected, ...response.changes]) {
         final local = store.get(remote.collection, remote.id);
+        // A full download (after every server restart) brings mostly what
+        // is here already: not written again, nothing to redraw.
+        if (local != null && !local.dirty && _same(local.record, remote)) {
+          continue;
+        }
         if (local != null &&
             local.dirty &&
             !remote.deleted &&
@@ -480,8 +488,36 @@ class SyncEngine {
       store.setMeta('clockOffset', '$_clockOffset');
       _saveBlocked();
     });
-    if (changed.isNotEmpty) _changes.add(changed);
+    _changed(changed);
   }
+
+  /// Changes from the sync, told in one go per second at most: a download
+  /// of many pages would otherwise redraw the screens after each one.
+  void _changed(Set<String> collections) {
+    _unannounced.addAll(collections);
+    final now = DateTime.now();
+    if (now.difference(_announcedAt) >= const Duration(seconds: 1)) {
+      _announce();
+    }
+  }
+
+  void _announce() {
+    _announcedAt = DateTime.now();
+    if (_unannounced.isEmpty) return;
+    final collections = {..._unannounced};
+    _unannounced.clear();
+    _changes.add(collections);
+  }
+
+  final _unannounced = <String>{};
+  var _announcedAt = DateTime.fromMillisecondsSinceEpoch(0);
+
+  static bool _same(SyncRecord a, SyncRecord b) =>
+      a.rev == b.rev &&
+      a.updatedAt == b.updatedAt &&
+      a.updatedBy == b.updatedBy &&
+      a.deleted == b.deleted &&
+      jsonEncode(a.data) == jsonEncode(b.data);
 
   /// After a full download: drops what the server no longer has (its
   /// deletion was cleaned up there), unless it waits to be pushed.
@@ -495,7 +531,7 @@ class SyncEngine {
         changed.add(collection);
       }
     });
-    if (changed.isNotEmpty) _changes.add(changed);
+    _changed(changed);
   }
 
   /// Strictly newer under the server's last-writer-wins rule.

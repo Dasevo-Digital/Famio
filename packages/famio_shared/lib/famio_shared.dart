@@ -9,6 +9,7 @@ export 'src/caldav.dart';
 export 'src/catalog/checkups.dart';
 export 'src/catalog/growth_reference.dart';
 export 'src/catalog/holidays.dart';
+export 'src/catalog/school_holidays.dart';
 export 'src/catalog/development_phases.dart';
 export 'src/catalog/milestones.dart';
 export 'src/catalog/pregnancy.dart';

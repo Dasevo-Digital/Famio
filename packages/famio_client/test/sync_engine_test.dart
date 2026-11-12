@@ -76,6 +76,38 @@ void main() {
     expect(a.records(Collections.shoppingItems), isEmpty);
   });
 
+  test('a full download leaves what is unchanged as it is', () async {
+    final a = device(), b = device();
+    for (var i = 0; i < 3; i++) {
+      a.put(Collections.shoppingItems, 'item$i', {'name': 'Artikel $i'});
+    }
+    await a.sync();
+    await b.sync();
+    final before = b.store.get(Collections.shoppingItems, 'item0');
+    final events = <Set<String>>[];
+    final sub = b.changes.listen(events.add);
+    addTearDown(sub.cancel);
+    // As after a server restart: everything comes again.
+    b.store.setMeta('lastRev', '0');
+    await b.sync();
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      identical(b.store.get(Collections.shoppingItems, 'item0'), before),
+      isTrue,
+    );
+    expect(events.where((e) => e.contains(Collections.shoppingItems)), isEmpty);
+    // A real change still arrives and is told.
+    a.put(Collections.shoppingItems, 'item1', {'name': 'Geändert'});
+    await a.sync();
+    await b.sync();
+    await Future<void>.delayed(Duration.zero);
+    expect(
+      b.record(Collections.shoppingItems, 'item1')!.data['name'],
+      'Geändert',
+    );
+    expect(events.any((e) => e.contains(Collections.shoppingItems)), isTrue);
+  });
+
   test('deletions do not pile up; a device behind cleaned-up ones starts '
       'over', () async {
     final a = device(), b = device();

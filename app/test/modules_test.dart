@@ -622,7 +622,11 @@ void main() {
     await tester.tap(find.text('Zeitstrahl'));
     await tester.pumpAndSettle();
     expect(find.text('Sitzt frei ohne Stütze'), findsOneWidget);
-    expect(find.textContaining('Geburt'), findsOneWidget);
+    expect(find.text('Geburt 🎉'), findsOneWidget);
+    // Born in January without RSV antibodies: caught up this autumn.
+    if (birth.month <= 3) {
+      expect(find.textContaining('bis zum 1. Geburtstag'), findsOneWidget);
+    }
 
     // Check-ups are ticked off right in the list.
     await tester.tap(find.text('Vorsorge'));

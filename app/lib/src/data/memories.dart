@@ -40,27 +40,61 @@ bool _onThisDay(DateTime d, DateTime today) {
       d.day == 29;
 }
 
-/// What [memoriesOn] reads.
+/// What [memoriesOn] reads besides the chat (its photos are kept apart:
+/// messages come often, the rest seldom).
 const _memoryCollections = {
   Collections.childEntries,
   Collections.children,
   Collections.events,
-  Collections.chatMessages,
   Collections.externalPhotos,
 };
 
 /// [memoriesOn] for the start page: computed once per day and language
 /// until one of its collections changes (see [EngineMemo]).
-Memories memoriesToday(SyncEngine engine, DateTime now) =>
-    EngineMemo.of(engine).get(
-      'memories ${dayKey(engine.calendar.today(now))} $appLanguage',
-      _memoryCollections,
-      () => memoriesOn(engine, engine.calendar.today(now)),
-    );
+Memories memoriesToday(SyncEngine engine, DateTime now) {
+  final today = engine.calendar.today(now);
+  final key = '${dayKey(today)} $appLanguage';
+  final memo = EngineMemo.of(engine);
+  return memo.get(
+    'memories $key',
+    {..._memoryCollections, Collections.chatMessages},
+    () {
+      // A chat message only recomputes the photos of the chat.
+      final rest = memo.get(
+        'memories without chat $key',
+        _memoryCollections,
+        () => _memories(engine, today, 10),
+      );
+      final chat = memo.get('memory photos $key', const {
+        Collections.chatMessages,
+      }, () => _chatPhotos(engine, today, 10));
+      return _combine(rest.lines, [...rest.photos, ...chat]);
+    },
+  );
+}
 
 /// The memories of [today] in the last [years] years: only what the device
 /// may see (the server sends nothing else).
 Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
+  final rest = _memories(engine, today, years);
+  return _combine(rest.lines, [
+    ...rest.photos,
+    ..._chatPhotos(engine, today, years),
+  ]);
+}
+
+typedef _Photo = (DateTime, FileRef);
+
+Memories _combine(List<MemoryLine> lines, List<_Photo> photos) {
+  photos.sort((a, b) => b.$1.compareTo(a.$1));
+  return Memories(lines: lines, photos: [for (final (_, f) in photos) f]);
+}
+
+({List<MemoryLine> lines, List<_Photo> photos}) _memories(
+  SyncEngine engine,
+  DateTime today,
+  int years,
+) {
   final lines = <MemoryLine>[];
   int ago(DateTime d) => today.year - d.year;
 
@@ -82,16 +116,21 @@ Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
     ));
   }
 
-  // Trips and holidays (several days, or with a countdown) of that day.
+  // Trips and holidays (several days, or with a countdown) of that day. The
+  // events are read once: each read converts all of them into the zone.
+  final calendar = engine.calendar;
+  final trips = [
+    for (final e in engine.events)
+      if (e.allDay || e.countdown) e,
+  ];
   for (var n = 1; n <= years; n++) {
     final day = DateTime(today.year - n, today.month, today.day);
     final next = DateTime(day.year, day.month, day.day + 1);
+    final from = calendar.day(day);
+    final to = calendar.day(next);
     final seen = <String>{};
-    for (final e in engine.events) {
-      for (final o in e.occurrencesBetween(
-        engine.calendar.day(day),
-        engine.calendar.day(next),
-      )) {
+    for (final e in trips) {
+      for (final o in e.occurrencesBetween(from, to)) {
         final days = DateTime.utc(o.end.year, o.end.month, o.end.day)
             .difference(DateTime.utc(o.start.year, o.start.month, o.start.day))
             .inDays;
@@ -102,15 +141,7 @@ Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
     }
   }
 
-  final photos = <(DateTime, FileRef)>[];
-  for (final r in engine.records(Collections.chatMessages)) {
-    final m = ChatMessage.fromRecord(r);
-    final sent = m.sentAt.toLocal();
-    if (m.attachment case final a?
-        when a.isImage && _onThisDay(sent, today) && ago(sent) <= years) {
-      photos.add((sent, a));
-    }
-  }
+  final photos = <_Photo>[];
   // What PhotoVault remembers for today (the server fetches it).
   for (final r in engine.records(Collections.externalPhotos)) {
     if (r.data['memoryOf'] != dayKey(today)) continue;
@@ -119,7 +150,19 @@ Memories memoriesOn(SyncEngine engine, DateTime today, {int years = 10}) {
       photos.add((taken, f));
     }
   }
-  photos.sort((a, b) => b.$1.compareTo(a.$1));
   lines.sort((a, b) => a.yearsAgo.compareTo(b.yearsAgo));
-  return Memories(lines: lines, photos: [for (final (_, f) in photos) f]);
+  return (lines: lines, photos: photos);
 }
+
+/// Photos sent in the chat on [today]'s date in earlier years; only
+/// messages with an attachment are read.
+List<_Photo> _chatPhotos(SyncEngine engine, DateTime today, int years) => [
+  for (final r in engine.records(Collections.chatMessages))
+    if (r.data['attachment'] != null)
+      if (ChatMessage.fromRecord(r) case final m)
+        if (m.attachment case final a?
+            when a.isImage &&
+                _onThisDay(m.sentAt.toLocal(), today) &&
+                today.year - m.sentAt.toLocal().year <= years)
+          (m.sentAt.toLocal(), a),
+];

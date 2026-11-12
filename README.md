@@ -555,8 +555,9 @@ zeigt einen sechsstelligen Code und wartet, bis die Anmeldung dort fertig ist �
 ohne App-Links, auf allen Plattformen. Nach dem Anbieter nennt Famio im Browser
 das anfragende Gerät und fragt diesen Code ab; erst dann gilt die Anmeldung
 (bzw. Verknüpfung). Wer einen fremden Anmeldelink zugeschickt bekommt, kennt den
-Code nicht. Nach fünf falschen Codes endet der Vorgang, offene Anmeldungen sind
-je Adresse begrenzt. Famio ist vertraulicher Client (Code-Austausch mit Secret und
+Code nicht. Bestätigen kann nur der Browser, der vom Anbieter zurückkam (ein
+kurzlebiges Cookie nur für diese Seite). Nach fünf falschen Codes endet der
+Vorgang, offene Anmeldungen sind je Adresse begrenzt. Famio ist vertraulicher Client (Code-Austausch mit Secret und
 PKCE, `state`, `nonce`; Aussteller, Empfänger und Ablauf des ID-Tokens werden
 geprüft). Eine SSO-Anmeldung erfüllt auch die Zwei-Faktor-Pflicht – die
 übernimmt dann der Anbieter.

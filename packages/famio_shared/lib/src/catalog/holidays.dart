@@ -31,6 +31,9 @@ enum GermanState {
 
   /// The label in the language of [sharedTexts].
   String get label => sharedText('GermanState.$name', _label);
+
+  /// The German name, for texts that stay German (imported calendars).
+  String get germanName => _label;
   final String _slug;
 
   static GermanState? parse(Object? code) {

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../record_store.dart';
+import 'school_holidays.dart';
 import '../remote_url_policy.dart';
 import 'calendar_access.dart';
 import 'ics_import.dart';
@@ -138,13 +139,23 @@ class CalendarImporter {
             t('Unter dieser Adresse liegt keine Kalenderdatei (ICS)'),
           );
         }
-        final events = await importIcsIsolated(
+        var events = await importIcsIsolated(
           text,
           sourceId: sub.id,
           fallback: location(),
           from: now.subtract(_pastWindow),
           to: now.add(_futureWindow),
         );
+        // A state's school holidays: the KMK's own dates where they exist.
+        if (schoolHolidayState(sub.url) case final state?) {
+          events = withOfficialSchoolHolidays(
+            state,
+            events,
+            sourceId: sub.id,
+            from: now.subtract(_pastWindow),
+            to: now.add(_futureWindow),
+          );
+        }
         changed = _store(sub.id, events);
         count = events.length;
         _lastFull[sub.id] = now;

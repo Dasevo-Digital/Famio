@@ -251,6 +251,8 @@ const sharedEn = <String, String>{
   "Milestone|Fährt Fahrrad ohne Stützräder":
       "Rides a bike without training wheels",
   "Milestone|Schwimmt (Seepferdchen)": "Swims (first swimming badge)",
+  "Milestone|Das Seepferdchen ist ein erster Schritt; sicher schwimmen Kinder meist erst mit dem Bronze-Abzeichen.":
+      "The first badge is a first step; most children only swim safely with the bronze badge.",
   "Milestone|Greift gezielt nach Dingen": "Reaches for things on purpose",
   "Milestone|Gibt Dinge von einer Hand in die andere":
       "Passes things from one hand to the other",
@@ -353,8 +355,8 @@ const sharedEn = <String, String>{
       "In Germany children ride on the pavement until eight; the cycling test usually comes in the fourth year of school.",
   "Milestone|Nabelschnurrest fällt ab": "Umbilical stump falls off",
   "Milestone|Hat das Geburtsgewicht wieder erreicht": "Back to birth weight",
-  "Milestone|In den ersten Tagen nehmen Neugeborene etwas ab – das ist normal.":
-      "Newborns lose a little weight in the first days – that is normal.",
+  "Milestone|In den ersten Tagen nehmen Neugeborene bis zu etwa 10 % ab – das ist normal. Nach etwa zwei Wochen ist das Geburtsgewicht meist wieder erreicht.":
+      "Newborns lose up to about 10 % of their weight in the first days – that is normal. After about two weeks most are back to their birth weight.",
   "Milestone|Kleine Fontanelle am Hinterkopf geschlossen":
       "Small fontanelle at the back of the head closed",
   "Milestone|Oft ist sie schon bei der Geburt fast zu.":
@@ -392,6 +394,9 @@ const sharedEn = <String, String>{
   "Milestone|Stärkerer Schweißgeruch kommt oft schon vor den sichtbaren Zeichen der Pubertät.":
       "Stronger body odour often comes before the visible signs of puberty.",
   "Milestone|Die Brust beginnt zu wachsen": "Breasts begin to develop",
+  "Milestone|Die Hoden beginnen zu wachsen": "Testicles begin to grow",
+  "Milestone|Meist das erste Zeichen der Pubertät bei Jungen. Beginnt es vor dem 9. Geburtstag oder bis zum 14. noch nicht, in der Kinderarztpraxis ansprechen.":
+      "Usually the first sign of puberty in boys. If it starts before the 9th birthday or has not started by the 14th, mention it to the paediatrician.",
   "Milestone|Meist das erste sichtbare Zeichen der Pubertät. Beginnt sie vor dem 8. Geburtstag oder bis zum 13. noch nicht, in der Kinderarztpraxis ansprechen.":
       "Usually the first visible sign of puberty. If it starts before the 8th birthday or has not started by the 13th, mention it to the paediatrician.",
   "Milestone|Wachstumsschub der Pubertät": "Pubertal growth spurt",
@@ -484,14 +489,16 @@ const sharedEn = <String, String>{
   "Checkup|16–17 Jahre": "16–17 years",
   "Vaccination|RSV (Antikörper-Prophylaxe)": "RSV (antibody prophylaxis)",
   "Vaccination|einmalig": "once",
-  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison.":
-      "Born October–March: soon after birth (U2). Born April–September: in the autumn before the first RSV season.",
+  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison. Geboren Januar–März und noch ohne: im Herbst nachholen, bis zum 1. Geburtstag.":
+      "Born October–March: soon after birth (U2). Born April–September: in the autumn before the first RSV season. Born January–March and not yet given: catch up in the autumn, until the first birthday.",
   "Vaccination|Rotaviren": "Rotavirus",
   "Vaccination|1. Dosis": "1st dose",
-  "Vaccination|Schluckimpfung ab 6 Wochen.": "Oral vaccine from 6 weeks.",
+  "Vaccination|Schluckimpfung ab 6 Wochen, Beginn spätestens mit 12 Wochen.":
+      "Oral vaccine from 6 weeks, to be started by 12 weeks at the latest.",
   "Vaccination|2. Dosis": "2nd dose",
   "Vaccination|3. Dosis": "3rd dose",
-  "Vaccination|Je nach Impfstoff nötig.": "Needed depending on the vaccine.",
+  "Vaccination|Je nach Impfstoff nötig; die Serie endet spätestens mit 24 bzw. 32 Wochen.":
+      "Needed depending on the vaccine; the series ends by 24 or 32 weeks at the latest.",
   "Vaccination|Sechsfach (Tetanus, Diphtherie, Keuchhusten, Hib, Polio, Hepatitis B)":
       "Six-in-one (tetanus, diphtheria, whooping cough, Hib, polio, hepatitis B)",
   "Vaccination|Pneumokokken": "Pneumococcus",
@@ -1085,6 +1092,8 @@ const sharedEn = <String, String>{
   "Server|Single Sign-On ist auf diesem Server nicht eingerichtet":
       "Single sign-on is not set up on this server",
   "Server|Bitte gleich noch einmal": "Please try again in a moment",
+  "Server|Bitte die Anmeldung in dem Browser bestätigen, in dem du dich gerade angemeldet hast.":
+      "Please confirm the sign-in in the browser you just signed in with.",
   "Server|Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.":
       "This sign-in has expired. Please start again in the app.",
   "Server|Der Anbieter hat die Anmeldung abgelehnt ({error}).":

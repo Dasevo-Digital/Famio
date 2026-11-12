@@ -289,15 +289,86 @@ void main() {
     expect(feverAdvice(older, 37.8, at: at).level, FeverLevel.raised);
     expect(feverAdvice(older, 38.7, at: at).level, FeverLevel.fever);
     expect(feverAdvice(older, 40.1, at: at).level, FeverLevel.doctor);
-    // Third day of fever: see the doctor.
+    // Fever for more than three days: see the doctor.
     final days = [
-      log(LogKind.temperature, DateTime(2026, 9, 25, 8), temp: 38.9),
-      log(LogKind.temperature, DateTime(2026, 9, 26, 8), temp: 38.6),
+      log(LogKind.temperature, DateTime(2026, 9, 23, 20), temp: 38.9),
+      log(LogKind.temperature, DateTime(2026, 9, 25, 8), temp: 38.6),
+    ];
+    final advice = feverAdvice(
+      older,
+      38.6,
+      at: DateTime(2026, 9, 27, 9),
+      logs: days,
+    );
+    expect(advice.level, FeverLevel.doctor);
+    expect(advice.text, startsWith('Fieber seit 3 Tagen'));
+  });
+
+  test('fever counts the time since it began, not calendar days', () {
+    final older = Child(id: 'c1', name: 'Ben', birthDate: DateTime(2022, 1, 1));
+    // 25 hours across three calendar days: still fever.
+    final short = [
+      log(LogKind.temperature, DateTime(2026, 11, 10, 23, 30), temp: 38.6),
+      log(LogKind.temperature, DateTime(2026, 11, 11, 12), temp: 38.9),
     ];
     expect(
-      feverAdvice(older, 38.6, at: at, logs: days).level,
+      feverAdvice(
+        older,
+        38.7,
+        at: DateTime(2026, 11, 12, 0, 30),
+        logs: short,
+      ).level,
+      FeverLevel.fever,
+    );
+    // 73 hours with only two readings: more than three days.
+    final long = [
+      log(LogKind.temperature, DateTime(2026, 11, 9, 8), temp: 39.2),
+    ];
+    expect(
+      feverAdvice(older, 39.1, at: DateTime(2026, 11, 12, 9), logs: long).level,
       FeverLevel.doctor,
     );
+  });
+
+  test('a value in between does not end the fever, a normal one does', () {
+    final at = DateTime(2026, 11, 12, 12);
+    final young = Child(
+      id: 'c1',
+      name: 'Kind',
+      birthDate: DateTime(2025, 11, 1),
+    );
+    List<ChildLog> readings(double between) => [
+      log(
+        LogKind.temperature,
+        at.subtract(const Duration(hours: 30)),
+        temp: 39.0,
+      ),
+      log(
+        LogKind.temperature,
+        at.subtract(const Duration(hours: 20)),
+        temp: between,
+      ),
+    ];
+    expect(
+      feverAdvice(young, 38.8, at: at, logs: readings(38.2)).level,
+      FeverLevel.doctor,
+    );
+    expect(
+      feverAdvice(young, 38.8, at: at, logs: readings(37.4)).level,
+      FeverLevel.fever,
+    );
+  });
+
+  test('a low temperature is not called normal', () {
+    final baby = Child(
+      id: 'c1',
+      name: 'Baby',
+      birthDate: DateTime(2026, 10, 20),
+    );
+    final at = DateTime(2026, 11, 10);
+    expect(feverAdvice(baby, 35.2, at: at).level, FeverLevel.low);
+    expect(feverAdvice(baby, 36.0, at: at).level, FeverLevel.normal);
+    expect(feverAdvice(baby, 37.0, at: at).level, FeverLevel.normal);
   });
 
   test(

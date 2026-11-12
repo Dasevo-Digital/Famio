@@ -197,6 +197,13 @@ class _MilestoneRow extends StatelessWidget {
                       color: done ? c.ink : c.inkSoft,
                     ),
                   ),
+                  if (!done && milestoneIsOverdue(milestone, age)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      tr.milestonesOverdueMentionCheckup,
+                      style: theme.textTheme.bodySmall?.copyWith(color: c.ink),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -337,7 +337,7 @@
       }
     }
   },
-  "adminSchoolHolidaysStateSubscribed": "Schulferien {state} abonniert – sie erscheinen nach dem nächsten Abgleich im Kalender.",
+  "adminSchoolHolidaysStateSubscribed": "Schulferien {state} abonniert – sie erscheinen nach dem nächsten Abgleich im Kalender. Angaben ohne Gewähr; bewegliche Ferientage legt jede Schule selbst fest.",
   "@adminSchoolHolidaysStateSubscribed": {
     "placeholders": {
       "state": {
@@ -4790,6 +4790,8 @@
   },
   "healthRaisedTemperatureMeasureAgain": "Erhöhte Temperatur – später noch einmal messen.",
   "healthNormalTemperature": "Normale Temperatur.",
+  "healthLowTemperatureMeasureAgain": "Niedrige Temperatur – bitte noch einmal messen. Normal sind etwa 36,5 bis 37,5 °C.",
+  "healthMeasuredRectally": "Die Hinweise gehen von einer Messung im Po (rektal) aus; im Ohr, im Mund oder an der Stirn weichen die Werte ab.",
   "exportZipFileAllFamily": "Eine ZIP-Datei mit allen Daten der Familie: Bereiche als JSON, hochgeladene Dateien, Mitglieder (ohne Passwörter) und Einstellungen. Standortverläufe sind nicht dabei. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
   "exportZipFileEverythingYou": "Eine ZIP-Datei mit allem, was du in Famio sehen kannst, deinen Dateien und deinem Standortverlauf. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
   "exportFamioPassword": "Dein Famio-Passwort",
@@ -4817,7 +4819,8 @@
     }
   },
   "milestonesGuideValuesMostChildren": "Richtwerte: Die meisten Kinder erreichen diese Schritte im angegebenen Zeitraum – manche früher, manche später. Jedes Kind hat sein eigenes Tempo. Bei Fragen hilft die Kinderärztin oder der Kinderarzt.",
-  "milestonesReachedEarlierAdd": "Früher erreicht? Nachtragen",
+  "milestonesReachedEarlierAdd": "Noch nicht eingetragen",
+  "milestonesOverdueMentionCheckup": "Der übliche Zeitraum ist vorbei. Noch nicht so weit? Bei der nächsten U-Untersuchung ansprechen.",
   "milestones1MilestoneWhosePeriod": "1 Meilenstein, dessen Zeitraum vorbei ist",
   "milestonesCountMilestonesWhosePeriod": "{count} Meilensteine, deren Zeitraum vorbei ist",
   "@milestonesCountMilestonesWhosePeriod": {

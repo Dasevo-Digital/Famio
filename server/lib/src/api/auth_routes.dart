@@ -483,6 +483,7 @@ extension _AuthRoutes on FamioApi {
   /// The provider sends the browser back here: the page asks for the code
   /// the app shows.
   Future<Response> _ssoCallback(Request request) async => _ssoPage(
+    request,
     await _sso.callback(
       request.url.queryParameters,
       memberForUsername: (name) => accounts
@@ -490,36 +491,63 @@ extension _AuthRoutes on FamioApi {
           .where((m) => m.username.toLowerCase() == name.toLowerCase())
           .firstOrNull
           ?.id,
+      browserKey: _ssoCookie(request),
     ),
   );
+
+  /// Ties the confirmation to the browser that came back from the
+  /// provider: only it holds this cookie.
+  static const _ssoCookieName = 'famio_sso';
+
+  static String? _ssoCookie(Request request) {
+    for (final part in (request.headers['cookie'] ?? '').split(';')) {
+      final i = part.indexOf('=');
+      if (i > 0 && part.substring(0, i).trim() == _ssoCookieName) {
+        return part.substring(i + 1).trim();
+      }
+    }
+    return null;
+  }
 
   /// The browser confirms with the app's code (a plain form, from the page
   /// above).
   Future<Response> _ssoConfirm(Request request) async {
+    const limit = 4096;
     final length = request.contentLength;
-    if (length != null && length > 4096) {
+    if (length != null && length > limit) {
       throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
     }
-    final body = await request.readAsString();
-    if (body.length > 4096) {
-      throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
+    // Counted while reading: a chunked body has no length up front.
+    final bytes = BytesBuilder(copy: false);
+    await for (final chunk in request.read()) {
+      bytes.add(chunk);
+      if (bytes.length > limit) {
+        throw ApiException(413, 'too_large', t('Anfrage ist zu groß'));
+      }
     }
     final Map<String, String> form;
     try {
-      form = Uri.splitQueryString(body);
+      form = Uri.splitQueryString(utf8.decode(bytes.takeBytes()));
     } on FormatException {
       throw ApiException.badRequest('bad_request', t('Ungültige Anfrage'));
     }
     return _ssoPage(
+      request,
       _sso.confirm(
         form,
-        audit: (userId, what) => _audit(accounts.byId(userId)!, what),
+        browserKey: _ssoCookie(request),
+        memberExists: (userId) => accounts.byId(userId) != null,
+        audit: (userId, what) {
+          final member = accounts.byId(userId);
+          if (member != null) _audit(member, what);
+        },
       ),
     );
   }
 
-  Response _ssoPage(SsoPage page) {
+  Response _ssoPage(Request request, SsoPage page) {
     final state = page.confirm;
+    final key = page.browserKey;
     return Response(
       page.ok ? 200 : 400,
       body: state != null
@@ -530,7 +558,18 @@ extension _AuthRoutes on FamioApi {
               error: page.error,
             )
           : ssoResultPage(ok: page.ok, message: page.message),
-      headers: {'content-type': 'text/html; charset=utf-8'},
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+        if (key != null)
+          'set-cookie': [
+            '$_ssoCookieName=$key',
+            'Path=/api/auth/sso',
+            'Max-Age=${SsoService.flowLifetime.inSeconds}',
+            'HttpOnly',
+            'SameSite=Strict',
+            if (_encrypted(request)) 'Secure',
+          ].join('; '),
+      },
     );
   }
 

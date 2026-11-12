@@ -835,12 +835,21 @@ class RecordStore {
                 (!existing.deleted && change.rev == existing.rev)) &&
             _trashCollections.contains(incoming.collection) &&
             change.data['deletionSnapshot'] is Map) {
-          final snapshot = incoming.copyWith(
+          var snapshot = incoming.copyWith(
             deleted: false,
             data: (change.data['deletionSnapshot'] as Map)
                 .cast<String, Object?>(),
           );
           _validate(snapshot);
+          // What comes back from the bin follows the same rules as a write:
+          // a child cannot hide a family record in its own bin.
+          if (change.collection == Collections.shoppingLists ||
+              change.collection == Collections.events) {
+            snapshot = _keepAudience(snapshot, existing);
+          }
+          if (role == MemberRole.child) {
+            snapshot = _childAudience(snapshot, existing, userId);
+          }
           if (recordDataIsValid(snapshot) &&
               canAccess(snapshot, userId) &&
               mayWrite(role, userId, snapshot, existing, access: access) &&
@@ -1330,7 +1339,9 @@ class RecordStore {
   /// Children do not decide who sees something: on a record that exists,
   /// what they write keeps the stored audience. Only what so far they alone
   /// see they may share. Health data never gets here with a changed
-  /// audience ([mayWrite] turns that down).
+  /// audience ([mayWrite] turns that down). The same holds for what else
+  /// widens it: a confidential appointment stays confidential and gets no
+  /// new people taking part, a task kept to a few gets no one else assigned.
   static SyncRecord _childAudience(
     SyncRecord incoming,
     SyncRecord? existing,
@@ -1341,14 +1352,45 @@ class RecordStore {
     if (before != null && before.length == 1 && before.single == userId) {
       return incoming;
     }
-    if (jsonEncode(incoming.visibleTo) == jsonEncode(before)) return incoming;
-    return incoming.copyWith(
-      data: {
-        for (final entry in incoming.data.entries)
-          if (entry.key != SyncRecord.visibilityKey) entry.key: entry.value,
-        SyncRecord.visibilityKey: ?before,
-      },
-    );
+    final data = {...incoming.data};
+    if (jsonEncode(incoming.visibleTo) != jsonEncode(before)) {
+      data.remove(SyncRecord.visibilityKey);
+      if (before != null) data[SyncRecord.visibilityKey] = before;
+    }
+    if (incoming.collection == Collections.events &&
+        existing.data['confidential'] == true) {
+      data['confidential'] = true;
+      final reach = {
+        existing.updatedBy,
+        ...?(existing.data['memberIds'] as List?),
+        existing.data['bringerId'],
+        existing.data['pickerId'],
+      };
+      if (data['memberIds'] case final List<Object?> ids) {
+        data['memberIds'] = [
+          for (final id in ids)
+            if (reach.contains(id)) id,
+        ];
+      }
+      for (final key in const ['bringerId', 'pickerId']) {
+        if (data[key] != null && !reach.contains(data[key])) {
+          data[key] = existing.data[key];
+        }
+      }
+    }
+    if (incoming.collection == Collections.tasks && before != null) {
+      final allowed = {...before, ...Task.assigneesIn(existing.data)};
+      final ids = Task.assigneesIn(data);
+      if (ids.any((id) => !allowed.contains(id))) {
+        final kept = [
+          for (final id in ids)
+            if (allowed.contains(id)) id,
+        ];
+        data['assigneeIds'] = kept;
+        data['assigneeId'] = kept.firstOrNull;
+      }
+    }
+    return incoming.copyWith(data: data);
   }
 
   /// The live shopping list [item] belongs to, if any.

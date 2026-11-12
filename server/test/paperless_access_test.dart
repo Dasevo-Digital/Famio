@@ -11,7 +11,11 @@ import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
 
 void main() {
+  var offline = false;
   final paperless = MockClient((request) async {
+    if (offline && request.url.path != '/api/documents/11/download/') {
+      throw http.ClientException('offline');
+    }
     http.Response json(Object body, [int status = 200]) => http.Response.bytes(
       utf8.encode(jsonEncode(body)),
       status,
@@ -110,7 +114,10 @@ void main() {
     );
     admin = (jsonDecode(await setup.readAsString()) as Map)['token'] as String;
   });
-  tearDown(() => app.close());
+  tearDown(() {
+    offline = false;
+    return app.close();
+  });
 
   Future<String> member(String name, String role) async {
     final r = await call(
@@ -219,4 +226,32 @@ void main() {
       );
     },
   );
+
+  test('a role change applies even while Paperless is unreachable', () async {
+    final papaId = await member('papa', 'adult');
+    final papa = await login('papa');
+    await call(
+      'PUT',
+      'api/admin/paperless',
+      as: admin,
+      body: {'url': 'http://192.168.1.20:8000/', 'token': 'x'},
+    );
+    final doc = (await pull(
+      papa,
+    )).where((r) => r.collection == Collections.externalDocuments).single;
+    final fileId = (doc.data['file'] as Map)['id'];
+    offline = true;
+    final demote = await call(
+      'PATCH',
+      'api/admin/users/$papaId',
+      as: admin,
+      body: {'role': 'child'},
+    );
+    expect(demote.statusCode, 200);
+    expect((await call('GET', 'api/files/$fileId', as: papa)).statusCode, 404);
+    expect(
+      app.records.all(Collections.externalDocuments).single.visibleTo,
+      isNot(contains(papaId)),
+    );
+  });
 }

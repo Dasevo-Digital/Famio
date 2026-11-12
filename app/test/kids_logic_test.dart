@@ -38,6 +38,43 @@ void main() {
     );
   });
 
+  test('check-up windows end on the last day the booklet allows', () {
+    DueState state(DateTime birth, String id, DateTime at) => checkupPlan(
+      Child(id: 'k', name: 'K', birthDate: birth),
+      const [],
+      at,
+    ).firstWhere((d) => d.id == id).state;
+    // U3, 4th–5th week of life, tolerance until the end of the 8th.
+    final march = DateTime(2026, 3, 1);
+    expect(state(march, 'U3', DateTime(2026, 4, 4)), DueState.due);
+    expect(state(march, 'U3', DateTime(2026, 4, 5)), DueState.late);
+    expect(state(march, 'U3', DateTime(2026, 4, 25)), DueState.late);
+    expect(state(march, 'U3', DateTime(2026, 4, 26)), DueState.missed);
+    // U4, 3rd–4th month of life: until 30 June for a child born 1 March.
+    final u4 = checkupPlan(
+      Child(id: 'k', name: 'K', birthDate: march),
+      const [],
+      DateTime(2026, 5, 10),
+    ).firstWhere((d) => d.id == 'U4');
+    expect(u4.from, DateTime(2026, 5));
+    expect(u4.to, DateTime(2026, 6, 30));
+    // U6 tolerance until the end of the 14th month: 28 February.
+    final january = DateTime(2026, 1, 1);
+    expect(state(january, 'U6', DateTime(2027, 2, 28)), DueState.late);
+    expect(state(january, 'U6', DateTime(2027, 3, 1)), DueState.missed);
+    // Born on the 31st: a month of life ending in a shorter month ends on
+    // its last day (U5 window from 1 July, U4 until 30 May).
+    final late = DateTime(2026, 1, 31);
+    expect(state(late, 'U5', DateTime(2026, 6, 30)), DueState.upcoming);
+    expect(state(late, 'U5', DateTime(2026, 7, 1)), DueState.due);
+    expect(state(late, 'U4', DateTime(2026, 5, 30)), DueState.due);
+    expect(state(late, 'U4', DateTime(2026, 5, 31)), DueState.late);
+    // Born on 29 February: the 12th month ends on 28 February.
+    final leap = DateTime(2024, 2, 29);
+    expect(state(leap, 'U6', DateTime(2025, 2, 28)), DueState.due);
+    expect(state(leap, 'U6', DateTime(2025, 3, 1)), DueState.late);
+  });
+
   test('next due item prefers open check-ups, then vaccinations', () {
     final at = DateTime(2025, 10, 1);
     expect(nextDue(lena, const [], at)!.id, 'U4');
@@ -85,12 +122,75 @@ void main() {
     expect(rsv(december, DateTime(2025, 12, 5)), DueState.due);
     expect(rsv(december, DateTime(2026, 1, 10)), DueState.due);
     expect(rsv(december, DateTime(2026, 4, 1)), DueState.missed);
+    // Born January to March and missed: caught up in the next autumn,
+    // until the first birthday.
     final february = DateTime(2026, 2, 20);
     expect(rsv(february, DateTime(2026, 3, 31)), DueState.due);
-    expect(rsv(february, DateTime(2026, 4, 1)), DueState.missed);
+    expect(rsv(february, DateTime(2026, 4, 1)), DueState.upcoming);
+    expect(rsv(february, DateTime(2026, 9, 1)), DueState.due);
+    expect(rsv(february, DateTime(2027, 2, 19)), DueState.due);
+    expect(rsv(february, DateTime(2027, 2, 20)), DueState.missed);
+    // Born in December: the next autumn is already the second season.
+    expect(rsv(december, DateTime(2026, 9, 15)), DueState.missed);
 
     // Born in September: from birth on.
     expect(rsv(DateTime(2026, 9, 20), DateTime(2026, 9, 21)), DueState.due);
+  });
+
+  test('a dose waits for the minimum interval after the one before', () {
+    final baby = Child(id: 'v', name: 'Baby', birthDate: DateTime(2026, 9, 1));
+    ChildEntry given(String id, DateTime date) => ChildEntry(
+      id: id,
+      childId: 'v',
+      kind: ChildEntryKind.vaccination,
+      refId: id,
+      date: date,
+    );
+    DueItem item(String id, DateTime at, [List<ChildEntry> done = const []]) =>
+        vaccinationPlan(baby, done, at).firstWhere((d) => d.id == id);
+
+    // Rotavirus from 6 weeks (42 days), the 2nd dose 4 weeks after the 1st.
+    expect(item('rota_1', DateTime(2026, 10, 12)).state, DueState.upcoming);
+    expect(item('rota_1', DateTime(2026, 10, 13)).state, DueState.due);
+    final rota = [given('rota_1', DateTime(2026, 10, 27))];
+    expect(
+      item('rota_2', DateTime(2026, 11, 1), rota).state,
+      DueState.upcoming,
+    );
+    expect(item('rota_2', DateTime(2026, 11, 24), rota).state, DueState.due);
+    // The last dose of the 2+1 schedule 6 months after the 2nd.
+    final six = [given('six_2', DateTime(2027, 3, 1))];
+    expect(item('six_3', DateTime(2027, 8, 1), six).state, DueState.upcoming);
+    expect(item('six_3', DateTime(2027, 9, 1), six).state, DueState.due);
+    // Without a date the age alone counts.
+    final unknown = [
+      ChildEntry(
+        id: 'six_2',
+        childId: 'v',
+        kind: ChildEntryKind.vaccination,
+        refId: 'six_2',
+        date: DateTime(2027, 3, 1),
+        dateUnknown: true,
+      ),
+    ];
+    expect(item('six_3', DateTime(2027, 8, 1), unknown).state, DueState.due);
+  });
+
+  test('a rotavirus dose past its age limit is only recorded', () {
+    final baby = Child(id: 'v', name: 'Baby', birthDate: DateTime(2026, 9, 1));
+    final late = vaccinationPlan(
+      baby,
+      const [],
+      DateTime(2026, 11, 25), // 12 weeks and a day
+    ).firstWhere((d) => d.id == 'rota_1');
+    expect(late.state, DueState.missed);
+    expect(late.tooLate, isTrue);
+    final inTime = vaccinationPlan(
+      baby,
+      const [],
+      DateTime(2026, 10, 20),
+    ).firstWhere((d) => d.id == 'rota_1');
+    expect(inTime.tooLate, isFalse);
   });
 
   test('old unrecorded vaccinations and optional check-ups do not nag', () {
@@ -206,7 +306,9 @@ void main() {
       expect(milestoneIsRelevant(m, age), isFalse, reason: m.id);
       expect(milestoneIsUpcoming(m, months), isFalse, reason: m.id);
     }
-    // Nor about first steps (window ends at 18 months): only folded away.
+    // First steps (window ends at 18 months) are a boundary step: they
+    // stay in sight for a year, with a word about the check-up, and only
+    // then are folded away. Crawling is folded away after three months.
     final walk = milestoneById('walk')!;
     final twoToday = Child(
       id: 't',
@@ -215,9 +317,14 @@ void main() {
     );
     final twoMonths = twoToday.ageInMonths(at).toDouble();
     expect(twoMonths, 24);
-    expect(milestoneIsRelevant(walk, twoMonths), isFalse);
-    expect(milestoneIsPast(walk, twoMonths), isTrue);
+    expect(milestoneIsRelevant(walk, twoMonths), isTrue);
+    expect(milestoneIsOverdue(walk, twoMonths), isTrue);
+    expect(milestoneIsPast(walk, twoMonths), isFalse);
+    expect(milestoneIsPast(walk, 31), isTrue);
     expect(milestoneIsUpcoming(walk, twoToday.ageInMonths(at)), isFalse);
+    final crawl = milestoneById('crawl')!;
+    expect(milestoneIsPast(crawl, twoMonths), isTrue);
+    expect(milestoneIsOverdue(crawl, twoMonths), isFalse);
     // What is due now stays.
     expect(milestoneIsRelevant(milestoneById('jump')!, twoMonths), isTrue);
     // Shortly after the window a late walker is still asked.

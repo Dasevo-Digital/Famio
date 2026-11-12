@@ -62,14 +62,28 @@ void main() {
     return engine;
   }
 
-  testWidgets('a two-year-old is not asked about first steps', (tester) async {
+  testWidgets('a two-year-old sees open first steps, not baby skills', (
+    tester,
+  ) async {
     await openMilestones(tester, 24);
+    // First steps are a boundary step: still in the list, with a word
+    // about the next check-up, not folded away as "reached earlier".
+    Future<void> scrollTo(String text) => tester.scrollUntilVisible(
+      find.text(text),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await scrollTo('Erste freie Schritte');
+    expect(
+      find.textContaining('Bei der nächsten U-Untersuchung ansprechen'),
+      findsWidgets,
+    );
     // What is due now.
-    expect(find.text('Springt mit beiden Beinen'), findsWidgets);
-    expect(find.text('Zweiwortsätze („Mama Auto“)'), findsWidgets);
-    // First steps only folded away, to add them afterwards.
-    expect(find.text('Erste freie Schritte'), findsNothing);
-    final folded = find.text('Früher erreicht? Nachtragen');
+    await scrollTo('Springt mit beiden Beinen');
+    await scrollTo('Zweiwortsätze („Mama Auto“)');
+    // Crawling is only folded away, to add it afterwards.
+    expect(find.text('Krabbelt auf Händen und Knien'), findsNothing);
+    final folded = find.text('Noch nicht eingetragen');
     await tester.scrollUntilVisible(
       folded,
       300,
@@ -78,11 +92,11 @@ void main() {
     await tester.tap(folded);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Erste freie Schritte'),
+      find.text('Krabbelt auf Händen und Knien'),
       300,
       scrollable: find.byType(Scrollable).last,
     );
-    expect(find.text('Erste freie Schritte'), findsWidgets);
+    expect(find.text('Krabbelt auf Händen und Knien'), findsWidgets);
     await tester.pump(const Duration(seconds: 1));
   });
 

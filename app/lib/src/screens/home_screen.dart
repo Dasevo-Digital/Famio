@@ -160,6 +160,10 @@ class HomeScreen extends StatelessWidget {
             final hidden = AppScope.of(context).hiddenModules;
             bool on(HomeTile tile) => tile.shownWith(hidden);
             final memories = memoriesToday(engine, now);
+            // Computed once for the check and the tile.
+            final countdowns = on(HomeTile.countdown)
+                ? engine.countdowns(now)
+                : const <({Occurrence occurrence, int days})>[];
             final showMemories =
                 on(HomeTile.memories) &&
                 !memories.isEmpty &&
@@ -170,8 +174,8 @@ class HomeScreen extends StatelessWidget {
               if (on(HomeTile.today)) _TodayTile(engine: engine),
               if (on(HomeTile.weather)) WeatherTile(engine: engine),
               if (showMemories) _MemoriesTile(memories: memories),
-              if (on(HomeTile.countdown) && engine.countdowns(now).isNotEmpty)
-                _CountdownTile(engine: engine),
+              if (countdowns.isNotEmpty)
+                _CountdownTile(engine: engine, all: countdowns),
               if (on(HomeTile.waste) && engine.nextWastePickup(now) != null)
                 _WasteTile(engine: engine),
               if (on(HomeTile.tasks)) _TasksTile(engine: engine),
@@ -658,14 +662,14 @@ class _MemoriesTile extends StatelessWidget {
 }
 
 class _CountdownTile extends StatelessWidget {
-  const _CountdownTile({required this.engine});
+  const _CountdownTile({required this.engine, required this.all});
 
   final SyncEngine engine;
+  final List<({Occurrence occurrence, int days})> all;
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final all = engine.countdowns(now);
     final first = all.first;
     final c = FamioColors.of(context);
     final theme = Theme.of(context);

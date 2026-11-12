@@ -122,6 +122,8 @@ class LocalStore {
       try {
         _backend.rollback();
       } finally {
+        // Read again what the rollback restored.
+        _meta.clear();
         for (final entry in undo.entries) {
           final (collection, id) = entry.key;
           final previous = entry.value;
@@ -138,9 +140,18 @@ class LocalStore {
     }
   }
 
-  String? getMeta(String key) => _backend.getMeta(key);
+  /// Metadata read so far: some of it (the family's zone) is asked for once
+  /// or twice per appointment while drawing a calendar.
+  final _meta = <String, String?>{};
 
-  void setMeta(String key, String? value) => _backend.setMeta(key, value);
+  String? getMeta(String key) => _meta.containsKey(key)
+      ? _meta[key]
+      : (_meta[key] = _backend.getMeta(key));
+
+  void setMeta(String key, String? value) {
+    _backend.setMeta(key, value);
+    _meta[key] = value;
+  }
 
   void close() => _backend.close();
 }

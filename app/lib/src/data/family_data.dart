@@ -212,9 +212,10 @@ extension FamilyData on SyncEngine {
   /// ones first per start.
   List<Occurrence> occurrences(DateTime from, DateTime to) =>
       [
+        // Own and imported events are already in the family's zone.
+        for (final e in [...events, ...externalEvents])
+          ...e.occurrencesBetween(from, to),
         for (final e in [
-          ...events,
-          ...externalEvents,
           ...birthdayEvents(this),
           ...holidayEvents(calendar.local(from), calendar.local(to)),
         ])

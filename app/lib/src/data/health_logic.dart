@@ -282,7 +282,7 @@ List<ChildLog> recentMedications(List<ChildLog> logs) {
   ];
 }
 
-enum FeverLevel { normal, raised, fever, doctor, urgent }
+enum FeverLevel { normal, low, raised, fever, doctor, urgent }
 
 /// A cautious hint for a measured temperature. Famio does not diagnose;
 /// the texts point to the pediatrician, 116 117 or 112.
@@ -329,33 +329,36 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
         if (l.childId == child.id &&
             l.kind == LogKind.temperature &&
             l.temperatureC != null &&
-            !l.start.isAfter(now))
+            !l.start.isAfter(now) &&
+            now.difference(l.start) <= const Duration(days: 7))
           l,
     ]..sort((a, b) => b.start.compareTo(a.start));
-    final episode = <ChildLog>[];
+    // The fever lasts until a normal temperature is recorded: a value in
+    // between (37.6–38.4, say after a fever remedy) does not end it. What
+    // counts is the time since its first reading, not calendar days.
+    DateTime? since;
     for (final l in temperatures) {
-      if (l.temperatureC! < 38.5) break;
-      episode.add(l);
+      final t = l.temperatureC!;
+      if (t < 37.6) break;
+      if (t >= 38.5) since = l.start;
     }
+    final lasted = since == null ? Duration.zero : now.difference(since);
     // https://www.kindergesundheit-info.de/themen/krankes-kind/krankheitszeichen/fieber/
-    final underTwo = youngerThanMonths(24);
-    if (underTwo &&
-        episode.any((l) => now.difference(l.start) > const Duration(days: 1))) {
+    if (youngerThanMonths(24) && lasted > const Duration(days: 1)) {
       return (
         level: FeverLevel.doctor,
         text: tr.healthFeverUnderTwoDay(warnings),
       );
     }
-    final feverDays = {
-      for (final l in episode)
-        if (now.difference(l.start).inDays < 4) _dayOf(l.start),
-      _dayOf(now),
-    };
+    if (lasted > const Duration(days: 3)) {
+      return (
+        level: FeverLevel.doctor,
+        text: tr.healthFeverDaysDaysPlease(lasted.inDays, warnings),
+      );
+    }
     return (
-      level: feverDays.length >= 3 ? FeverLevel.doctor : FeverLevel.fever,
-      text: feverDays.length >= 3
-          ? tr.healthFeverDaysDaysPlease(feverDays.length, warnings)
-          : tr.healthFeverLetChildDrink(warnings),
+      level: FeverLevel.fever,
+      text: tr.healthFeverLetChildDrink(warnings),
     );
   }
   if (celsius >= 37.6) {
@@ -363,6 +366,9 @@ enum FeverLevel { normal, raised, fever, doctor, urgent }
       level: FeverLevel.raised,
       text: tr.healthRaisedTemperatureMeasureAgain,
     );
+  }
+  if (celsius < 36) {
+    return (level: FeverLevel.low, text: tr.healthLowTemperatureMeasureAgain);
   }
   return (level: FeverLevel.normal, text: tr.healthNormalTemperature);
 }

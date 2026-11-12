@@ -256,6 +256,8 @@ const sharedEs = <String, String>{
       "Se sostiene un momento sobre una pierna",
   "Milestone|Fährt Fahrrad ohne Stützräder": "Monta en bici sin ruedines",
   "Milestone|Schwimmt (Seepferdchen)": "Nada (primera insignia de natación)",
+  "Milestone|Das Seepferdchen ist ein erster Schritt; sicher schwimmen Kinder meist erst mit dem Bronze-Abzeichen.":
+      "La primera insignia es solo un primer paso; la mayoría de los niños solo nada con seguridad con la insignia de bronce.",
   "Milestone|Greift gezielt nach Dingen": "Coge cosas a propósito",
   "Milestone|Gibt Dinge von einer Hand in die andere":
       "Pasa cosas de una mano a otra",
@@ -359,8 +361,8 @@ const sharedEs = <String, String>{
   "Milestone|Nabelschnurrest fällt ab": "Se cae el resto del cordón umbilical",
   "Milestone|Hat das Geburtsgewicht wieder erreicht":
       "Recupera el peso de nacimiento",
-  "Milestone|In den ersten Tagen nehmen Neugeborene etwas ab – das ist normal.":
-      "En los primeros días los recién nacidos pierden algo de peso; es normal.",
+  "Milestone|In den ersten Tagen nehmen Neugeborene bis zu etwa 10 % ab – das ist normal. Nach etwa zwei Wochen ist das Geburtsgewicht meist wieder erreicht.":
+      "En los primeros días los recién nacidos pierden hasta un 10 % de su peso, aproximadamente; es normal. A las dos semanas, más o menos, la mayoría vuelve a su peso al nacer.",
   "Milestone|Kleine Fontanelle am Hinterkopf geschlossen":
       "Fontanela posterior cerrada",
   "Milestone|Oft ist sie schon bei der Geburt fast zu.":
@@ -398,6 +400,9 @@ const sharedEs = <String, String>{
   "Milestone|Stärkerer Schweißgeruch kommt oft schon vor den sichtbaren Zeichen der Pubertät.":
       "El olor a sudor más fuerte suele llegar antes que los signos visibles de la pubertad.",
   "Milestone|Die Brust beginnt zu wachsen": "Empieza a desarrollarse el pecho",
+  "Milestone|Die Hoden beginnen zu wachsen": "Los testículos empiezan a crecer",
+  "Milestone|Meist das erste Zeichen der Pubertät bei Jungen. Beginnt es vor dem 9. Geburtstag oder bis zum 14. noch nicht, in der Kinderarztpraxis ansprechen.":
+      "Suele ser el primer signo de la pubertad en los chicos. Si empieza antes de los 9 años o aún no ha empezado a los 14, coméntalo en la consulta pediátrica.",
   "Milestone|Meist das erste sichtbare Zeichen der Pubertät. Beginnt sie vor dem 8. Geburtstag oder bis zum 13. noch nicht, in der Kinderarztpraxis ansprechen.":
       "Suele ser el primer signo visible de la pubertad. Si empieza antes de los 8 años o aún no ha empezado a los 13, coméntalo con el pediatra.",
   "Milestone|Wachstumsschub der Pubertät": "Estirón de la pubertad",
@@ -492,15 +497,16 @@ const sharedEs = <String, String>{
   "Checkup|16–17 Jahre": "16–17 años",
   "Vaccination|RSV (Antikörper-Prophylaxe)": "VRS (profilaxis con anticuerpos)",
   "Vaccination|einmalig": "una vez",
-  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison.":
-      "Nacidos de octubre a marzo: poco después del nacimiento (U2). Nacidos de abril a septiembre: en otoño antes de la primera temporada de VRS.",
+  "Vaccination|Geboren Oktober–März: bald nach der Geburt (U2). Geboren April–September: im Herbst vor der ersten RSV-Saison. Geboren Januar–März und noch ohne: im Herbst nachholen, bis zum 1. Geburtstag.":
+      "Nacidos de octubre a marzo: poco después del nacimiento (U2). Nacidos de abril a septiembre: en otoño antes de la primera temporada de VRS. Nacidos de enero a marzo y aún sin ella: recuperarla en otoño, hasta el primer cumpleaños.",
   "Vaccination|Rotaviren": "Rotavirus",
   "Vaccination|1. Dosis": "1.ª dosis",
-  "Vaccination|Schluckimpfung ab 6 Wochen.":
-      "Vacuna oral a partir de las 6 semanas.",
+  "Vaccination|Schluckimpfung ab 6 Wochen, Beginn spätestens mit 12 Wochen.":
+      "Vacuna oral a partir de las 6 semanas; empezar como muy tarde a las 12 semanas.",
   "Vaccination|2. Dosis": "2.ª dosis",
   "Vaccination|3. Dosis": "3.ª dosis",
-  "Vaccination|Je nach Impfstoff nötig.": "Necesaria según la vacuna.",
+  "Vaccination|Je nach Impfstoff nötig; die Serie endet spätestens mit 24 bzw. 32 Wochen.":
+      "Necesaria según la vacuna; la serie termina como muy tarde a las 24 o 32 semanas.",
   "Vaccination|Sechsfach (Tetanus, Diphtherie, Keuchhusten, Hib, Polio, Hepatitis B)":
       "Hexavalente (tétanos, difteria, tos ferina, Hib, polio, hepatitis B)",
   "Vaccination|Pneumokokken": "Neumococo",
@@ -1117,6 +1123,8 @@ const sharedEs = <String, String>{
   "Server|Single Sign-On ist auf diesem Server nicht eingerichtet":
       "El inicio de sesión único no está configurado en este servidor",
   "Server|Bitte gleich noch einmal": "Inténtalo de nuevo en un momento",
+  "Server|Bitte die Anmeldung in dem Browser bestätigen, in dem du dich gerade angemeldet hast.":
+      "Confirma el inicio de sesión en el navegador con el que acabas de iniciar sesión.",
   "Server|Diese Anmeldung ist abgelaufen. Bitte in der App neu starten.":
       "Este inicio de sesión ha caducado. Vuelve a empezar en la app.",
   "Server|Der Anbieter hat die Anmeldung abgelehnt ({error}).":

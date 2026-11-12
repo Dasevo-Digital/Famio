@@ -29,15 +29,39 @@ Future<Map<String, Object?>> call(
   };
 }
 
+/// The browser comes back from the provider: the page and the cookie that
+/// ties the confirmation to this browser.
+Future<({int status, String html, String? cookie, String? setCookie})> callback(
+  Uri base,
+  String query, {
+  String? cookie,
+}) async {
+  final response = await http.get(
+    base.resolve('api/auth/sso/callback?$query'),
+    headers: {'cookie': ?cookie},
+  );
+  final set = response.headers['set-cookie'];
+  return (
+    status: response.statusCode,
+    html: response.body,
+    cookie: set == null ? cookie : set.split(';').first,
+    setCookie: set,
+  );
+}
+
 /// The browser's form on the confirmation page: state and code.
 Future<({int status, String html})> confirm(
   Uri base,
   String state,
-  String code,
-) async {
+  String code, {
+  String? cookie,
+}) async {
   final response = await http.post(
     base.resolve('api/auth/sso/confirm'),
-    headers: {'content-type': 'application/x-www-form-urlencoded'},
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      'cookie': ?cookie,
+    },
     body: {'state': state, 'code': code},
   );
   return (status: response.statusCode, html: response.body);
@@ -417,17 +441,13 @@ void main() {
         expect(url.queryParameters['code_challenge_method'], 'S256');
         nonce = url.queryParameters['nonce'];
         final state = url.queryParameters['state']!;
-        final page = await call(
-          base,
-          'GET',
-          'api/auth/sso/callback?state=$state&code=$code',
-        );
-        expect(page['html'], isA<String>());
-        if ((page['html'] as String).contains('name="code"')) {
+        final page = await callback(base, 'state=$state&code=$code');
+        if (page.html.contains('name="code"')) {
           final confirmed = await confirm(
             base,
             state,
             started['code'] as String,
+            cookie: page.cookie,
           );
           expect(confirmed.status, 200, reason: confirmed.html);
         }
@@ -531,12 +551,9 @@ void main() {
           final url = Uri.parse(started['url'] as String);
           nonce = url.queryParameters['nonce'];
           final state = url.queryParameters['state']!;
-          final page = await call(
-            base,
-            'GET',
-            'api/auth/sso/callback?state=$state&code=good',
-          );
-          final html = page['html'] as String;
+          final page = await callback(base, 'state=$state&code=good');
+          final cookie = page.cookie;
+          final html = page.html;
           expect(html, contains('Fremdes Handy'));
           expect(html, contains('name="code"'));
           Future<Map<String, Object?>> poll() => call(
@@ -549,14 +566,19 @@ void main() {
           expect((await poll())['status'], 'pending');
           // Guessing the code ends the flow after a few tries.
           for (var i = 0; i < 4; i++) {
-            final wrong = await confirm(base, state, '000000');
+            final wrong = await confirm(base, state, '000000', cookie: cookie);
             expect(wrong.html, contains('stimmt nicht'));
             expect((await poll())['status'], 'pending');
           }
-          final last = await confirm(base, state, '000000');
+          final last = await confirm(base, state, '000000', cookie: cookie);
           expect(last.status, 400);
           expect((await poll())['_status'], 403);
-          final late = await confirm(base, state, started['code'] as String);
+          final late = await confirm(
+            base,
+            state,
+            started['code'] as String,
+            cookie: cookie,
+          );
           expect(late.status, 400);
         },
       );
@@ -584,6 +606,159 @@ void main() {
           expect(policy, contains("frame-ancestors 'none'"));
         },
       );
+
+      Future<Map<String, Object?>> poll(Map<String, Object?> started) => call(
+        base,
+        'POST',
+        'api/auth/sso/poll',
+        body: {'flow': started['flow'], 'secret': started['secret']},
+      );
+
+      test(
+        'only the browser that came back from the provider confirms',
+        () async {
+          await configure();
+          final papa = (await login('papa'))['token'] as String;
+          final linked = await browser(
+            await call(
+              base,
+              'POST',
+              'api/auth/sso/start',
+              token: papa,
+              body: {'mode': 'link'},
+            ),
+          );
+          expect(linked['status'], 'done');
+          // Someone starts a sign-in: the link (with its state) and the code
+          // are theirs.
+          final started = await call(
+            base,
+            'POST',
+            'api/auth/sso/start',
+            body: {'device': 'Fremdes Handy'},
+          );
+          final url = Uri.parse(started['url'] as String);
+          nonce = url.queryParameters['nonce'];
+          final state = url.queryParameters['state']!;
+          final code = started['code'] as String;
+          // A family member opens the link, the provider vouches for them.
+          final page = await callback(base, 'state=$state&code=good');
+          expect(page.cookie, startsWith('famio_sso='));
+          expect(page.setCookie, contains('HttpOnly'));
+          expect(page.setCookie, contains('SameSite=Strict'));
+          expect(page.setCookie, contains('Path=/api/auth/sso'));
+          // State and code alone do nothing, nor does a made-up cookie.
+          expect((await confirm(base, state, code)).status, 400);
+          expect(
+            (await confirm(base, state, code, cookie: 'famio_sso=x')).status,
+            400,
+          );
+          final again = await callback(base, 'state=$state');
+          expect(again.html, isNot(contains('name="code"')));
+          expect((await poll(started))['status'], 'pending');
+          // That browser may reload the form.
+          expect(
+            (await callback(base, 'state=$state', cookie: page.cookie)).html,
+            contains('name="code"'),
+          );
+        },
+      );
+
+      test('a username match is checked again when confirming', () async {
+        await configure(matchUsername: true);
+        final started = await call(
+          base,
+          'POST',
+          'api/auth/sso/start',
+          body: {},
+        );
+        final url = Uri.parse(started['url'] as String);
+        nonce = url.queryParameters['nonce'];
+        final state = url.queryParameters['state']!;
+        final page = await callback(base, 'state=$state&code=good');
+        expect(page.html, contains('name="code"'));
+        // Meanwhile papa links his own provider account.
+        idpSubject = 'sub-2';
+        final papa = (await login('papa'))['token'] as String;
+        final linked = await browser(
+          await call(
+            base,
+            'POST',
+            'api/auth/sso/start',
+            token: papa,
+            body: {'mode': 'link'},
+          ),
+        );
+        expect(linked['status'], 'done');
+        final late = await confirm(
+          base,
+          state,
+          started['code'] as String,
+          cookie: page.cookie,
+        );
+        expect(late.status, 400);
+        expect((await poll(started))['token'], isNull);
+      });
+
+      test('a member deleted before confirming is not linked', () async {
+        await configure();
+        final papa = (await login('papa'))['token'] as String;
+        final started = await call(
+          base,
+          'POST',
+          'api/auth/sso/start',
+          token: papa,
+          body: {'mode': 'link'},
+        );
+        final url = Uri.parse(started['url'] as String);
+        nonce = url.queryParameters['nonce'];
+        final state = url.queryParameters['state']!;
+        final page = await callback(base, 'state=$state&code=good');
+        final users = await call(base, 'GET', 'api/admin/users', token: admin);
+        final papaId = (users['users'] as List).cast<Map>().firstWhere(
+          (u) => u['username'] == 'papa',
+        )['id'];
+        final deleted = await call(
+          base,
+          'DELETE',
+          'api/admin/users/$papaId',
+          token: admin,
+          body: {'password': 'tulpe-regal-7'},
+        );
+        expect(deleted['_status'], 200);
+        final late = await confirm(
+          base,
+          state,
+          started['code'] as String,
+          cookie: page.cookie,
+        );
+        expect(late.status, 400);
+        expect(app.db.select('SELECT * FROM sso_links'), isEmpty);
+      });
+
+      test('the confirmation reads only a few kilobytes', () async {
+        // Chunked, without a length, and never finished.
+        final socket = await Socket.connect(
+          InternetAddress.loopbackIPv4,
+          server.port,
+        );
+        addTearDown(socket.destroy);
+        final chunk = 'state=${'x' * 8192}';
+        socket.write(
+          'POST /api/auth/sso/confirm HTTP/1.1\r\n'
+          'Host: localhost\r\n'
+          'Content-Type: application/x-www-form-urlencoded\r\n'
+          'Transfer-Encoding: chunked\r\n\r\n'
+          '${chunk.length.toRadixString(16)}\r\n$chunk\r\n',
+        );
+        // The server stops reading: it answers or drops the connection,
+        // instead of waiting for the rest.
+        final answer = await utf8.decoder
+            .bind(socket)
+            .join()
+            .timeout(const Duration(seconds: 5));
+        expect(answer, anyOf(isEmpty, startsWith('HTTP/1.1 413')));
+      });
 
       test('one address cannot fill the table of open sign-ins', () async {
         await configure();
