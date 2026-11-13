@@ -4,6 +4,24 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.52 – Despensa, basuras y sincronización de listas más exactas
+
+- La despensa compara la palabra principal de un ingrediente: el pimiento
+  rojo no es lenteja roja y el ajo cubre los dientes de ajo.
+- Los días de recogida de basura solo se reconocen en entradas adecuadas;
+  los cumpleaños, «Kindergarten» o «Restaurant» ya no cuentan.
+- Si se interrumpe una sincronización con Microsoft To Do o Bring!, ya no se
+  pierden los cambios hechos allí. Las fechas límite son exactas al día.
+- Los eventos que solo ven algunas personas aparecen como «Ocupado» en la
+  pantalla de pared.
+- Los niños pueden marcar sus propios eventos como confidenciales. Guardar un
+  evento en una app de calendario mantiene la petición de confirmaciones.
+- Al eliminar una cuenta también se borran las listas de equipaje de sus
+  eventos privados; antes se cortan las conexiones de calendario y listas.
+- Con el apartado Ubicación oculto, nadie ve ya las últimas posiciones.
+- El resumen del año cuenta las tallas de las revisiones médicas. Home
+  Assistant avisa también de cambios en emergencias largas.
+
 ## 2.0.51 – Borrado, pantalla de pared y libro de cuentas más exactos
 
 - Al eliminar una cuenta se borra todo lo que solo esa cuenta podía ver; los

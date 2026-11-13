@@ -4,6 +4,23 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.52 – More exact pantry, bins and list sync
+
+- The pantry compares the main word of an ingredient: "red peppers" are not
+  red lentils, garlic covers garlic cloves.
+- Bin days are only recognised from matching entries; birthdays,
+  "Kindergarten" or "Restaurant" are no collection any more.
+- If a sync with Microsoft To Do or Bring! breaks off, changes made there are
+  no longer lost. Due dates are right to the day.
+- Events only some people see show as "Busy" on the wall display.
+- Children can make their own events confidential. Saving an event in a
+  calendar app keeps the request for confirmations.
+- Deleting an account also takes the packing lists of private events;
+  calendar and list connections are ended first.
+- With the location section hidden, nobody sees last positions any more.
+- The year in review counts the heights from check-ups. Home Assistant
+  reports changes of long-running emergencies too.
+
 ## 2.0.51 – More exact deleting, wall display and household book
 
 - Deleting an account takes everything only that account could see; guests

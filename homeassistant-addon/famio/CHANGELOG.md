@@ -2,6 +2,23 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.52 – Vorrat, Müllabfuhr und Listen-Abgleich genauer
+
+- Der Vorrat vergleicht das Hauptwort einer Zutat: „rote Paprika“ ist keine
+  rote Linse, Knoblauch deckt Knoblauchzehen.
+- Die Müllabfuhr erkennt nur passende Einträge; Geburtstage, „Kindergarten“
+  oder „Restaurant“ gelten nicht mehr als Abholung.
+- Bricht ein Abgleich mit Microsoft To Do oder Bring! ab, gehen Änderungen
+  von dort nicht mehr verloren. Fälligkeiten stimmen auf den Tag.
+- Termine, die nur einzelne sehen, stehen auf der Wandanzeige als „Belegt“.
+- Kinder können eigene Termine vertraulich machen. Wer einen Termin in einer
+  Kalender-App speichert, behält die Bitte um Zusagen.
+- Beim Löschen eines Kontos gehen Packlisten privater Termine mit; Kalender-
+  und Listenverbindungen werden vorher getrennt.
+- Ist der Bereich Standort ausgeblendet, sieht niemand mehr letzte Positionen.
+- Der Jahresrückblick zählt die Größen aus den U-Untersuchungen. Home
+  Assistant meldet Notfall-Änderungen auch bei langen Alarmen.
+
 ## 2.0.51 – Löschen, Wandanzeige und Haushaltsbuch genauer
 
 - Beim Löschen eines Kontos geht alles mit, was nur dieses Konto sehen
