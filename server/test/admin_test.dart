@@ -264,7 +264,7 @@ void main() {
       'PATCH',
       '/api/admin/users/${me['id']}',
       token: admin,
-      body: {'isAdmin': false},
+      body: {'isAdmin': false, 'password': 'tulpe-regal-7'},
     );
     expect(status, 400);
     expect(body['error'], 'last_admin');
@@ -280,7 +280,71 @@ void main() {
         'PATCH',
         '/api/admin/users/${me['id']}',
         token: admin,
+        body: {'isAdmin': false, 'password': 'tulpe-regal-7'},
+      )).$1,
+      200,
+    );
+  });
+
+  test('own rights are given up only with the password (#487)', () async {
+    final (admin, _, kindId) = await family();
+    final (_, me) = await call('GET', '/api/me', token: admin);
+    await call(
+      'PATCH',
+      '/api/admin/users/$kindId',
+      token: admin,
+      body: {'isAdmin': true},
+    );
+    // Wrong attempts count like wrong logins: four stay below the limit.
+    for (final (change, password) in [
+      ({'isAdmin': false}, null),
+      ({'role': 'guest', 'isAdmin': false}, null),
+      ({'role': 'child'}, null),
+      ({'isAdmin': false}, 'falsch'),
+    ]) {
+      final (status, body) = await call(
+        'PATCH',
+        '/api/admin/users/${me['id']}',
+        token: admin,
+        body: {...change, 'password': ?password},
+      );
+      expect(status, 403, reason: '$change $password');
+      expect(body['error'], 'invalid_credentials');
+    }
+    final (_, still) = await call('GET', '/api/me', token: admin);
+    expect(still['isAdmin'], isTrue);
+    expect(still['role'], 'adult');
+    // Other changes of the own account and other members need none.
+    expect(
+      (await call(
+        'PATCH',
+        '/api/admin/users/${me['id']}',
+        token: admin,
+        body: {'displayName': 'Mami', 'isAdmin': true},
+      )).$1,
+      200,
+    );
+    expect(
+      (await call(
+        'PATCH',
+        '/api/admin/users/$kindId',
+        token: admin,
         body: {'isAdmin': false},
+      )).$1,
+      200,
+    );
+    await call(
+      'PATCH',
+      '/api/admin/users/$kindId',
+      token: admin,
+      body: {'isAdmin': true},
+    );
+    expect(
+      (await call(
+        'PATCH',
+        '/api/admin/users/${me['id']}',
+        token: admin,
+        body: {'isAdmin': false, 'password': 'tulpe-regal-7'},
       )).$1,
       200,
     );

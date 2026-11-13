@@ -495,6 +495,8 @@ class _DocumentEditorState extends State<DocumentEditor> {
           createdAt: widget.existing?.createdAt ?? DateTime.now(),
           content: _content,
         ),
+        // What changed on another device meanwhile stays (#483).
+        opened: widget.existing,
       );
       if (mounted) Navigator.pop(context);
     } on ApiError catch (e) {

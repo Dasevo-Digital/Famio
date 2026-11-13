@@ -367,6 +367,238 @@ void main() {
     );
   });
 
+  test('the household book settings are for adults (#476)', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    SyncRecord settings(List<String> members, int at, {List<String>? only}) =>
+        SyncRecord(
+          collection: Collections.budgetSettings,
+          id: 'budget',
+          data: {
+            'memberIds': members,
+            'limits': <String, Object?>{},
+            SyncRecord.visibilityKey: ?only,
+          },
+          updatedAt: at,
+          rev: app.records.get(Collections.budgetSettings, 'budget')?.rev ?? 0,
+        );
+    // First: a child cannot take them for itself.
+    await sync(
+      kid,
+      changes: [
+        settings([kid.id], now, only: [kid.id]),
+      ],
+    );
+    expect(app.records.get(Collections.budgetSettings, 'budget'), isNull);
+    await sync(
+      mama,
+      changes: [
+        settings([mama.id, papa.id], now + 1000),
+      ],
+    );
+    // Later: nor change whom they are for.
+    await sync(
+      kid,
+      changes: [
+        settings([kid.id], now + 2000),
+      ],
+    );
+    final stored = app.records.get(Collections.budgetSettings, 'budget')!;
+    expect(stored.data['memberIds'], [mama.id, papa.id]);
+    expect(stored.updatedBy, mama.id);
+  });
+
+  group('whose appointment it is (#416)', () {
+    Map<String, Object?> appointment(String title, List<String> members) {
+      final start = DateTime.now().add(const Duration(days: 1));
+      return {
+        'title': title,
+        'start': start.toUtc().toIso8601String(),
+        'end': start.add(const Duration(hours: 1)).toUtc().toIso8601String(),
+        'memberIds': members,
+      };
+    }
+
+    Future<void> write(
+      FamilyMember who,
+      String id,
+      Map<String, Object?> data,
+      int updatedAt,
+    ) => sync(
+      who,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: id,
+          data: data,
+          updatedAt: updatedAt,
+          rev: app.records.get(Collections.events, id)?.rev ?? 0,
+        ),
+      ],
+    );
+
+    Future<bool> guestSeesTitle(String id) async => (await sync(
+      guest,
+    )).changes.any((r) => r.id == id && !r.deleted && r.data['title'] != null);
+
+    test('the server notes who entered it, whatever an app sends', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await write(kid, 'own', {
+        ...appointment('Training', [kid.id]),
+        CalendarEvent.createdByKey: mama.id,
+      }, now);
+      expect(
+        app.records
+            .get(Collections.events, 'own')!
+            .data[CalendarEvent.createdByKey],
+        kid.id,
+      );
+      await write(mama, 'own', {
+        ...appointment('Training (neu)', [kid.id]),
+        CalendarEvent.createdByKey: mama.id,
+      }, now + 1000);
+      final after = app.records.get(Collections.events, 'own')!;
+      expect(after.data['title'], 'Training (neu)');
+      expect(after.data[CalendarEvent.createdByKey], kid.id);
+    });
+
+    test('a note by the child does not make the parents\' appointment '
+        'the child\'s', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final secret = {
+        ...appointment('Psychotherapie', [kid.id]),
+        'confidential': true,
+      };
+      await write(mama, 'therapy', secret, now);
+      await write(kid, 'therapy', {...secret, 'notes': 'Hefte'}, now + 1000);
+      expect(app.records.get(Collections.events, 'therapy')!.updatedBy, kid.id);
+      await write(kid, 'therapy', {
+        ...secret,
+        'notes': 'Hefte',
+        'confidential': false,
+      }, now + 2000);
+      expect(
+        app.records.get(Collections.events, 'therapy')!.data['confidential'],
+        isTrue,
+      );
+      expect(await guestSeesTitle('therapy'), isFalse);
+    });
+
+    test('nor a family appointment the child changed once', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final family = appointment('Grillen', const []);
+      await write(papa, 'bbq', family, now);
+      await write(kid, 'bbq', {...family, 'notes': 'Würstchen'}, now + 1000);
+      await write(kid, 'bbq', {
+        ...family,
+        'notes': 'Würstchen',
+        'confidential': true,
+      }, now + 2000);
+      expect(
+        app.records.get(Collections.events, 'bbq')!.data['confidential'],
+        isNot(true),
+      );
+      expect(await guestSeesTitle('bbq'), isTrue);
+    });
+
+    test(
+      'a child takes only itself out of the parents\' appointment',
+      () async {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final both = appointment('Zahnarzt', [mama.id, kid.id]);
+        await write(mama, 'dentist', both, now);
+        await write(kid, 'dentist', {
+          ...both,
+          'memberIds': [kid.id],
+        }, now + 1000);
+        expect(
+          app.records.get(Collections.events, 'dentist')!.data['memberIds'],
+          [kid.id, mama.id],
+        );
+        await write(kid, 'dentist', {
+          ...both,
+          'memberIds': [kid.id],
+          'confidential': true,
+        }, now + 2000);
+        expect(
+          app.records.get(Collections.events, 'dentist')!.data['confidential'],
+          isNot(true),
+        );
+        // Taking itself out stays possible.
+        await write(kid, 'dentist', {
+          ...both,
+          'memberIds': [mama.id],
+        }, now + 3000);
+        expect(
+          app.records.get(Collections.events, 'dentist')!.data['memberIds'],
+          [mama.id],
+        );
+      },
+    );
+
+    test('nor does the bin make it the child\'s', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final secret = {
+        ...appointment('Psychotherapie', [kid.id]),
+        'confidential': true,
+      };
+      await write(mama, 'bin', secret, now);
+      await sync(
+        kid,
+        changes: [
+          SyncRecord(
+            collection: Collections.events,
+            id: 'bin',
+            deleted: true,
+            data: {
+              'deletionSnapshot': {
+                ...secret,
+                CalendarEvent.createdByKey: kid.id,
+              },
+            },
+            updatedAt: now + 1000,
+            rev: app.records.get(Collections.events, 'bin')!.rev,
+          ),
+        ],
+      );
+      final bin = await call(mama, 'GET', 'api/trash');
+      final item = (bin['items'] as List).cast<Map>().single;
+      expect(
+        (await call(
+          mama,
+          'POST',
+          'api/trash/${item['id']}/restore',
+          {},
+        ))['_status'],
+        200,
+      );
+      expect(
+        app.records
+            .get(Collections.events, 'bin')!
+            .data[CalendarEvent.createdByKey],
+        mama.id,
+      );
+    });
+
+    test('an appointment from before the note has no owner', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final old = appointment('Kieferorthopäde', [kid.id]);
+      await write(kid, 'old', old, now);
+      // As stored by a server before the key.
+      final stored = app.records.get(Collections.events, 'old')!;
+      app.records.writeAsServer([
+        stored.copyWith(
+          data: {...stored.data}..remove(CalendarEvent.createdByKey),
+          updatedAt: now + 500,
+        ),
+      ]);
+      await write(kid, 'old', {...old, 'confidential': true}, now + 1000);
+      expect(
+        app.records.get(Collections.events, 'old')!.data['confidential'],
+        isNot(true),
+      );
+    });
+  });
+
   test('a child assigns no one outside a task\'s audience', () async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await sync(

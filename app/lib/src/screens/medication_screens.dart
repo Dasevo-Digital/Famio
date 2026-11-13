@@ -370,14 +370,16 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     text: _amount(_old?.perDose ?? 1),
   );
   late final _notes = TextEditingController(text: _old?.notes);
-  late final _stock = TextEditingController(
-    text: _old?.stock == null
-        ? ''
-        : _amount(
-            _old!.left(AppScope.engineOf(context).takenSinceCount(_old)) ?? 0,
-          ),
-  );
-  late final _stockBefore = _stock.text;
+
+  /// What the stock field shows when the editor opens: what is left.
+  /// Read with the field, before anything is typed (a late field read
+  /// first at saving would hold the typed text, #480).
+  late final String _stockBefore = _old?.stock == null
+      ? ''
+      : _amount(
+          _old!.left(AppScope.engineOf(context).takenSinceCount(_old)) ?? 0,
+        );
+  late final _stock = TextEditingController(text: _stockBefore);
   late var _refillDays = _old?.refillDays ?? 7;
   late final _times = [...?_old?.times];
   late var _weekdays = {...?_old?.weekdays};
@@ -404,9 +406,11 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     final name = _name.text.trim();
     if (name.isEmpty) return;
     final engine = AppScope.engineOf(context);
-    // Only a changed count restarts the stock calculation.
-    final stock = _number(_stock.text);
+    // Only a changed count restarts the stock calculation. The field shows
+    // what is left; untouched, the stored count and its day stay, or the
+    // doses taken since would be taken off once more (#480).
     final recount = _stock.text != _stockBefore;
+    final stock = recount ? _number(_stock.text) : _old?.stock;
     engine.saveMedication(
       Medication(
         id: _old?.id ?? newId(),
@@ -429,6 +433,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
         careIds: _careIds,
         asNeeded: _asNeeded,
       ),
+      opened: _old,
     );
     Navigator.pop(context);
   }

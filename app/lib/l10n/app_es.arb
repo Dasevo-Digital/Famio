@@ -2804,5 +2804,21 @@
   "remindersSubscription": "{name}: cargo {count, plural, =1{mañana} other{en {count} días}}",
   "accountPasswordTitle": "Confirmar contraseña",
   "accountPasswordHint": "Para que nadie pueda configurar un acceso duradero desde un dispositivo ajeno o desbloqueado.",
-  "settingsPasswordChangeNote": "Las contraseñas de aplicaciones de calendario dejan de funcionar y hay que crearlas de nuevo."
+  "settingsPasswordChangeNote": "Las contraseñas de aplicaciones de calendario dejan de funcionar y hay que crearlas de nuevo.",
+  "adminRoleChangeTitle": "¿Cambiar el rol?",
+  "adminRoleChangeBody": "{name} recibe el rol «{role}». Lo que {name} ve y puede hacer cambia al momento en todos los dispositivos.",
+  "adminRoleChangeOwnBody": "Te das a ti el rol «{role}». Lo que ves y puedes hacer cambia al momento. Si así pierdes los derechos de administrador, solo otro administrador puede deshacerlo.",
+  "adminMakeAdminTitle": "¿Hacer administrador a {name}?",
+  "adminMakeAdminBody": "{name} podrá gestionar miembros, roles y ajustes del servidor.",
+  "adminMakeAdminAction": "Hacer administrador",
+  "adminTakeAdminTitle": "¿Quitar a {name} los derechos de administrador?",
+  "adminTakeAdminBody": "{name} ya no podrá gestionar miembros ni ajustes del servidor.",
+  "adminTakeOwnAdminTitle": "¿Renunciar a tus derechos de administrador?",
+  "adminTakeOwnAdminBody": "Después ya no podrás abrir la administración del servidor. Solo otro administrador puede deshacerlo.",
+  "adminTakeAdminAction": "Quitar derechos",
+  "adminUnlinkSsoTitle": "¿Desvincular el inicio de sesión único de {name}?",
+  "adminUnlinkSsoBody": "{name} solo podrá iniciar sesión con contraseña o passkey.",
+  "adminSignOutAllTitle": "¿Cerrar la sesión de {name} en todos los dispositivos?",
+  "adminSignOutOthersTitle": "¿Cerrar la sesión en todos los demás dispositivos?",
+  "adminSignOutBody": "Después los dispositivos tendrán que iniciar sesión de nuevo."
 }

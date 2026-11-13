@@ -2804,5 +2804,21 @@
   "remindersSubscription": "{name}: charge {count, plural, =1{tomorrow} other{in {count} days}}",
   "accountPasswordTitle": "Confirm password",
   "accountPasswordHint": "So nobody can set up lasting access from someone else's or an unlocked device.",
-  "settingsPasswordChangeNote": "Calendar app passwords stop working and have to be created again."
+  "settingsPasswordChangeNote": "Calendar app passwords stop working and have to be created again.",
+  "adminRoleChangeTitle": "Change role?",
+  "adminRoleChangeBody": "{name} gets the role “{role}”. What {name} sees and may do changes at once on all devices.",
+  "adminRoleChangeOwnBody": "You give yourself the role “{role}”. What you see and may do changes at once. If you lose your admin rights with it, only another admin can undo it.",
+  "adminMakeAdminTitle": "Make {name} an administrator?",
+  "adminMakeAdminBody": "{name} can then manage members, roles and server settings.",
+  "adminMakeAdminAction": "Make admin",
+  "adminTakeAdminTitle": "Take away the admin rights of {name}?",
+  "adminTakeAdminBody": "{name} can then no longer manage members and server settings.",
+  "adminTakeOwnAdminTitle": "Give up your admin rights?",
+  "adminTakeOwnAdminBody": "You can then no longer open the server administration. Only another admin can undo it.",
+  "adminTakeAdminAction": "Take away rights",
+  "adminUnlinkSsoTitle": "Unlink single sign-on for {name}?",
+  "adminUnlinkSsoBody": "{name} then signs in only with a password or passkey.",
+  "adminSignOutAllTitle": "Sign {name} out on all devices?",
+  "adminSignOutOthersTitle": "Sign out all other devices?",
+  "adminSignOutBody": "The devices then have to sign in again."
 }

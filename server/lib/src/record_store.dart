@@ -764,6 +764,9 @@ class RecordStore {
             !incoming.deleted) {
           incoming = _keepAudience(incoming, existing);
         }
+        if (change.collection == Collections.events && !incoming.deleted) {
+          incoming = _withCreator(incoming, existing, userId);
+        }
         if (role == MemberRole.child && !incoming.deleted) {
           incoming = _childAudience(incoming, existing, userId);
         }
@@ -846,6 +849,10 @@ class RecordStore {
           if (change.collection == Collections.shoppingLists ||
               change.collection == Collections.events) {
             snapshot = _keepAudience(snapshot, existing);
+          }
+          if (change.collection == Collections.events) {
+            // Who entered it comes back as stored, not as the app says.
+            snapshot = _withCreator(snapshot, existing, userId);
           }
           if (role == MemberRole.child) {
             snapshot = _childAudience(snapshot, existing, userId);
@@ -1372,15 +1379,29 @@ class RecordStore {
   /// audience ([mayWrite] turns that down). The same holds for what else
   /// widens it: a confidential appointment stays confidential and gets no
   /// new people taking part, a task kept to a few gets no one else assigned.
-  /// A child's own appointment: the child wrote it last and nobody else
-  /// takes part (an appointment the parents entered stays theirs to mark).
-  static bool childOwnsEvent(
-    Map<String, Object?> event,
-    String? updatedBy,
-    String userId,
-  ) =>
-      updatedBy == userId &&
+  /// A child's own appointment: the child entered it (see
+  /// [CalendarEvent.createdByKey]) and nobody else takes part. Who wrote it
+  /// last does not count: a child's note on the parents' appointment does
+  /// not make it the child's (#416). Appointments from before the key have
+  /// no owner here.
+  static bool childOwnsEvent(Map<String, Object?> event, String userId) =>
+      event[CalendarEvent.createdByKey] == userId &&
       [...?(event['memberIds'] as List?)].every((id) => id == userId);
+
+  /// Who entered an appointment: set when it is created, kept on every
+  /// change; what an app sends for it does not count.
+  static SyncRecord _withCreator(
+    SyncRecord incoming,
+    SyncRecord? existing,
+    String userId,
+  ) {
+    final data = {...incoming.data}..remove(CalendarEvent.createdByKey);
+    final creator = existing == null || existing.deleted
+        ? userId
+        : existing.data[CalendarEvent.createdByKey];
+    if (creator != null) data[CalendarEvent.createdByKey] = creator;
+    return incoming.copyWith(data: data);
+  }
 
   static SyncRecord _childAudience(
     SyncRecord incoming,
@@ -1398,9 +1419,12 @@ class RecordStore {
       if (before != null) data[SyncRecord.visibilityKey] = before;
     }
     final confidential = existing.data['confidential'] == true;
+    final owned =
+        incoming.collection == Collections.events &&
+        childOwnsEvent(existing.data, userId);
     if (incoming.collection == Collections.events &&
         (data['confidential'] == true) != confidential &&
-        !childOwnsEvent(existing.data, existing.updatedBy, userId)) {
+        !owned) {
       // Neither hides a family appointment nor reveals a confidential one;
       // their own appointments children mark as they like.
       if (existing.data.containsKey('confidential')) {
@@ -1427,6 +1451,16 @@ class RecordStore {
           data[key] = existing.data[key];
         }
       }
+    }
+    if (incoming.collection == Collections.events && !owned) {
+      // Who else takes part in an appointment the child did not enter
+      // stays in it: a child takes only itself out.
+      final ids = [...?(data['memberIds'] as List?)];
+      final missing = [
+        for (final id in existing.data['memberIds'] as List? ?? const [])
+          if (id != userId && !ids.contains(id)) id,
+      ];
+      if (missing.isNotEmpty) data['memberIds'] = [...ids, ...missing];
     }
     if (incoming.collection == Collections.tasks && before != null) {
       final allowed = {...before, ...Task.assigneesIn(existing.data)};

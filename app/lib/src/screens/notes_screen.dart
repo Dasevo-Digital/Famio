@@ -197,6 +197,8 @@ class _NoteEditorState extends State<_NoteEditor> {
           _Audience.selected => {..._members, engine.memberId}.toList(),
         },
       ),
+      // What changed on another device meanwhile stays (#483).
+      opened: widget.note,
     );
     Navigator.pop(context);
   }

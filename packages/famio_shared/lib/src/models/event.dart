@@ -188,6 +188,12 @@ class CalendarEvent {
   /// Reminder for the one who picks up: this long before the end.
   static const pickLead = Duration(minutes: 15);
 
+  /// Key of an appointment's data: the member who entered it. The server
+  /// sets it when the appointment is created and keeps it on every change
+  /// (whatever an app sends); older appointments have none. Children mark
+  /// only appointments they entered themselves as confidential (#416).
+  static const createdByKey = 'createdBy';
+
   final String id;
   final String title;
 

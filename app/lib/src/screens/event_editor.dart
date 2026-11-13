@@ -400,13 +400,14 @@ class _EventEditorState extends State<_EventEditor> {
     } else if (!_isSeries) {
       engine.saveEvent(
         _edited(original.id).copyWith(exceptions: original.exceptions),
+        opened: original,
       );
     } else {
       final scope = await _askScope(tr.eventSaveChange);
       if (scope == null) return;
       if (scope == _Scope.this_) {
         // Detach this occurrence as a standalone event.
-        engine.saveEvent(_skip(original, occurrence));
+        engine.saveEvent(_skip(original, occurrence), opened: original);
         engine.saveEvent(_edited(newId()).copyWith(recurrence: null));
       } else {
         // Shift the whole series by how much this occurrence was moved.
@@ -418,6 +419,7 @@ class _EventEditorState extends State<_EventEditor> {
             end: start.add(_end.difference(_start)),
             exceptions: original.exceptions,
           ),
+          opened: original,
         );
       }
     }

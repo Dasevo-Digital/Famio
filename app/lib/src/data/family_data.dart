@@ -1,6 +1,7 @@
 import 'package:famio_client/famio_client.dart';
 
 import 'birthdays.dart';
+import 'edit_merge.dart';
 import 'holidays.dart';
 import '../l10n.dart';
 
@@ -30,7 +31,14 @@ extension FamilyData on SyncEngine {
   List<Task> get tasks =>
       records(Collections.tasks).map(Task.fromRecord).toList();
 
-  void saveTask(Task task) => put(Collections.tasks, task.id, task.toData());
+  /// [opened]: the task as the editor opened it; what changed on another
+  /// device meanwhile stays (see [mergeEdit]).
+  void saveTask(Task task, {Task? opened}) => putEdited(
+    Collections.tasks,
+    task.id,
+    task.toData(),
+    opened: opened?.toData(),
+  );
 
   void deleteTask(String id) => delete(Collections.tasks, id);
 
@@ -118,8 +126,12 @@ extension FamilyData on SyncEngine {
           );
         });
 
-  void saveNote(FamilyNote note) =>
-      put(Collections.notes, note.id, note.toData());
+  void saveNote(FamilyNote note, {FamilyNote? opened}) => putEdited(
+    Collections.notes,
+    note.id,
+    note.toData(),
+    opened: opened?.toData(),
+  );
 
   void deleteNote(String id) => delete(Collections.notes, id);
 
@@ -163,8 +175,20 @@ extension FamilyData on SyncEngine {
         : CalendarEvent.fromRecord(r).inTimeZone(familyTimeZone);
   }
 
-  void saveEvent(CalendarEvent event) =>
-      put(Collections.events, event.id, event.toData());
+  /// Keeps who entered the appointment (see [CalendarEvent.createdByKey]);
+  /// the server sets it anyway, the app knows it before the next sync.
+  ///
+  /// [opened]: the appointment as the editor opened it (see [mergeEdit]).
+  void saveEvent(CalendarEvent event, {CalendarEvent? opened}) {
+    final stored = record(Collections.events, event.id);
+    final creator = stored == null
+        ? memberId
+        : stored.data[CalendarEvent.createdByKey];
+    putEdited(Collections.events, event.id, {
+      ...event.toData(),
+      CalendarEvent.createdByKey: ?creator,
+    }, opened: opened?.toData());
+  }
 
   void deleteEvent(String id) => delete(Collections.events, id);
 
@@ -374,8 +398,12 @@ extension FamilyData on SyncEngine {
       ...records(c).map(FamilyDocument.fromRecord),
   ]..sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
 
-  void saveDocument(FamilyDocument d) =>
-      put(Collections.documents, d.id, d.toData());
+  void saveDocument(FamilyDocument d, {FamilyDocument? opened}) => putEdited(
+    Collections.documents,
+    d.id,
+    d.toData(),
+    opened: opened?.toData(),
+  );
 
   void deleteDocument(String id) => delete(Collections.documents, id);
 

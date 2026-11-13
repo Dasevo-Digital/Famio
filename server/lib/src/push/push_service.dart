@@ -67,6 +67,8 @@ class PushService {
     this.onSent,
     this.retries = urgentRetries,
     this.deadline = noticeDeadline,
+    this.noticesPerSync = 10,
+    this.maxSends = 8,
   }) : _client = client ?? http.Client(),
        _ownsClient = client == null,
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
@@ -88,6 +90,14 @@ class PushService {
 
   /// How long one try may take (see [noticeDeadline]).
   final Duration deadline;
+
+  /// Notices one member gets at most for one sync of someone else; what
+  /// goes beyond is told in one more notice (#475).
+  final int noticesPerSync;
+
+  /// Notices sent to ntfy and browsers at the same time; the others wait
+  /// their turn. Emergencies never wait (#475).
+  final int maxSends;
 
   /// Completes when the server shuts down: no more tries after that.
   final _stopped = Completer<void>();
@@ -174,6 +184,10 @@ class PushService {
   void stop() {
     if (!_stopped.isCompleted) _stopped.complete();
     web?.stop();
+    // Waiting notices are not sent any more.
+    while (_turns.isNotEmpty) {
+      _turns.removeFirst().complete(false);
+    }
   }
 
   void close() {
@@ -270,12 +284,31 @@ class PushService {
 
   // --- what happened ----------------------------------------------------------
 
-  /// Changes members synced (see [RecordStore.onStored]).
+  /// Changes members synced (see [RecordStore.onStored]). Many messages of
+  /// one chat in one sync (a phone that was offline) become one notice, and
+  /// nobody gets more than [noticesPerSync] for one sync (#475).
   void stored(String userId, List<(SyncRecord, SyncRecord?)> changes) {
     final names = {for (final m in accounts.members()) m.id: m.displayName};
     String name(String? id) => names[id] ?? t('Jemand');
+    final budget = NoticeBudget(noticesPerSync);
+    final chats = <String, List<SyncRecord>>{};
+    for (final (r, before) in changes) {
+      if (r.collection == Collections.chatMessages &&
+          !r.deleted &&
+          (before == null || before.deleted)) {
+        (chats['${r.data['chatId']}'] ??= []).add(r);
+      }
+    }
     for (final (r, before) in changes) {
       if (r.deleted) continue;
+      if (r.collection == Collections.chatMessages &&
+          (chats['${r.data['chatId']}']?.length ?? 0) > 1) {
+        final messages = chats['${r.data['chatId']}']!;
+        if (identical(r, messages.last)) {
+          deliver(() => _chats(messages, userId, name), r, budget: budget);
+        }
+        continue;
+      }
       if (r.collection == Collections.assignmentResponses) {
         final parent = records.get(
           r.data['targetCollection'] as String,
@@ -312,6 +345,7 @@ class PushService {
               tag: 'clipboard',
             ),
             parent,
+            budget: budget,
           );
         }
         continue;
@@ -326,7 +360,21 @@ class PushService {
         Collections.trips => _trip(r, userId, name),
         _ => null,
       };
-      if (build() != null) deliver(() => build()!, r);
+      if (build() != null) deliver(() => build()!, r, budget: budget);
+    }
+    for (final MapEntry(key: member, value: count) in budget.skipped.entries) {
+      deliver(
+        () => PushNotice(
+          to: {member},
+          title: 'Famio',
+          body: t('{count} weitere Änderungen von {name}', {
+            'count': count,
+            'name': name(userId),
+          }),
+          brief: t('Weitere Änderungen in Famio'),
+        ),
+        null,
+      );
     }
   }
 
@@ -590,6 +638,26 @@ class PushService {
     );
   }
 
+  /// Several new messages of one chat: one notice, with the last of them.
+  PushNotice _chats(
+    List<SyncRecord> messages,
+    String author,
+    String Function(String?) name,
+  ) {
+    final last = _chat(messages.last, author, name)!;
+    final count = messages.length;
+    return PushNotice(
+      to: last.to,
+      title: last.title,
+      body: t('{count} neue Nachrichten, zuletzt: {text}', {
+        'count': count,
+        'text': last.body,
+      }),
+      brief: t('{count} neue Nachrichten', {'count': count}),
+      tag: last.tag,
+    );
+  }
+
   PushNotice? _task(SyncRecord r, SyncRecord? before, String editor) {
     final task = Task.fromRecord(r);
     if (task.done) return null;
@@ -742,12 +810,20 @@ class PushService {
   /// (all of them without [about], e.g. a direct call to one member).
   /// Sends what [build] makes to its recipients, built once per app
   /// language of the recipients.
-  void deliver(PushNotice Function() build, SyncRecord? about) {
+  /// With [budget], members who had enough for this sync are left out
+  /// (emergencies always go out).
+  void deliver(
+    PushNotice Function() build,
+    SyncRecord? about, {
+    NoticeBudget? budget,
+  }) {
     final first = build();
     if (first.to.isEmpty) return;
     final allowed = [
       for (final id in first.to)
-        if (about == null || records.canAccess(about, id)) id,
+        if ((about == null || records.canAccess(about, id)) &&
+            (budget == null || first.urgent || budget.take(id)))
+          id,
     ];
     if (allowed.isEmpty) return;
     final byLanguage = <String, List<String>>{};
@@ -779,19 +855,58 @@ class PushService {
       allowed,
     );
     for (final row in rows) {
-      _track(_send(row, notice, quiet: quiet.contains(row['member_id'])));
+      _track(
+        () => _send(row, notice, quiet: quiet.contains(row['member_id'])),
+        urgent: notice.urgent,
+      );
     }
     if (web case final web?) {
       for (final row in web.rowsFor(allowed)) {
-        _track(web.send(row, notice, quiet: quiet.contains(row['member_id'])));
+        _track(
+          () => web.send(row, notice, quiet: quiet.contains(row['member_id'])),
+          urgent: notice.urgent,
+        );
       }
     }
   }
 
-  void _track(Future<String?> send) {
+  void _track(Future<String?> Function() send, {required bool urgent}) {
     late final Future<void> f;
-    f = send.then((_) {}).whenComplete(() => _pending.remove(f));
+    f = _inTurn(send, urgent: urgent).whenComplete(() => _pending.remove(f));
     _pending.add(f);
+  }
+
+  /// Sends running now (at most [maxSends]) and those waiting for a slot.
+  var _sending = 0;
+  final _turns = Queue<Completer<bool>>();
+
+  /// Runs [send] in one of [maxSends] slots; an emergency right away.
+  Future<void> _inTurn(
+    Future<String?> Function() send, {
+    required bool urgent,
+  }) async {
+    if (urgent) {
+      await send();
+      return;
+    }
+    if (_stopped.isCompleted) return;
+    if (_sending >= maxSends) {
+      final turn = Completer<bool>();
+      _turns.add(turn);
+      // The slot of the send before is handed over; false: stopped.
+      if (!await turn.future) return;
+    } else {
+      _sending++;
+    }
+    try {
+      await send();
+    } finally {
+      if (_turns.isNotEmpty) {
+        _turns.removeFirst().complete(true);
+      } else {
+        _sending--;
+      }
+    }
   }
 
   /// Publishes via ntfy's JSON API, an urgent notice with further tries;
@@ -886,4 +1001,24 @@ class PushService {
     hasToken: row['token'] != null,
     lastError: row['last_error'] as String?,
   );
+}
+
+/// How many notices each member got for one sync, and how many were left
+/// out (see [PushService.noticesPerSync]).
+class NoticeBudget {
+  NoticeBudget(this.limit);
+
+  final int limit;
+  final _given = <String, int>{};
+  final skipped = <String, int>{};
+
+  bool take(String member) {
+    final given = _given[member] ?? 0;
+    if (given < limit) {
+      _given[member] = given + 1;
+      return true;
+    }
+    skipped[member] = (skipped[member] ?? 0) + 1;
+    return false;
+  }
 }

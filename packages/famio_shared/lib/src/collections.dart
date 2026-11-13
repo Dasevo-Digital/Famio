@@ -328,6 +328,9 @@ abstract final class Collections {
     wasteSettings,
     deadlines,
     subscriptions,
+    // Who the household book is for and its limits: a child setting them
+    // would decide who sees the parents' entries (#476).
+    budgetSettings,
   };
 
   /// Health data of adults: children, guests and service accounts (the

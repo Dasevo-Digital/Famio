@@ -92,10 +92,38 @@ Future<PickedFile> pickedFromSource({
 bool get _hasCamera => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
 
 /// Lets the user pick a file; on phones photos can also come from the
-/// camera, and letters can be scanned into a PDF.
+/// camera, and letters can be scanned into a PDF. A file over the upload
+/// limit (or one that cannot be read) is told in a dialog and gives null,
+/// so every caller shows it, also from an editor sheet (#486).
 Future<PickedFile?> pickFile(
   BuildContext context, {
   bool imagesOnly = false,
+}) async {
+  try {
+    return await _pickFile(context, imagesOnly: imagesOnly);
+  } on ApiError catch (e) {
+    if (context.mounted) await _pickFailed(context, e.message);
+    return null;
+  }
+}
+
+Future<void> _pickFailed(BuildContext context, String message) =>
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(tr.commonOk),
+          ),
+        ],
+      ),
+    );
+
+Future<PickedFile?> _pickFile(
+  BuildContext context, {
+  required bool imagesOnly,
 }) async {
   final limit = uploadLimit(AppScope.read(context).engine!);
   var fromCamera = false;
@@ -145,7 +173,7 @@ Future<PickedFile?> pickFile(
     if (choice == null) return null;
     if (choice == 'scan') {
       if (!context.mounted) return null;
-      return scanPicked(context);
+      return _scanPicked(context);
     }
     fromCamera = choice == 'camera';
   }
@@ -185,14 +213,28 @@ Future<PickedFile?> pickFile(
   );
 }
 
-/// A letter or form from the phone's document scanner, as one PDF.
+/// A letter or form from the phone's document scanner, as one PDF; one
+/// over the upload limit is told in a dialog.
 Future<PickedFile?> scanPicked(BuildContext context) async {
+  try {
+    return await _scanPicked(context);
+  } on ApiError catch (e) {
+    if (context.mounted) await _pickFailed(context, e.message);
+    return null;
+  }
+}
+
+Future<PickedFile?> _scanPicked(BuildContext context) async {
   final limit = uploadLimit(AppScope.read(context).engine!);
   try {
     final pdf = await scanDocument();
     if (pdf == null || pdf.isEmpty) return null;
     if (pdf.length > limit) {
-      throw ApiError(413, 'too_large', ClientTexts.transferTooLarge);
+      throw ApiError(
+        413,
+        'too_large',
+        tr.filesUploadLimit(fileSizeLabel(limit)),
+      );
     }
     final stamp = DateFormat('yyyy-MM-dd HH.mm').format(DateTime.now());
     return PickedFile(pdf, '${tr.filesScanName} $stamp.pdf', 'application/pdf');

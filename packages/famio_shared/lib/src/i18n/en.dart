@@ -1149,6 +1149,12 @@ const sharedEn = <String, String>{
   "Server|Anhang": "Attachment",
   "Server|{name} · Familie": "{name} · Family",
   "Server|Neue Nachricht": "New message",
+  "Server|{count} neue Nachrichten, zuletzt: {text}":
+      "{count} new messages, last: {text}",
+  "Server|{count} neue Nachrichten": "{count} new messages",
+  "Server|{count} weitere Änderungen von {name}":
+      "{count} more changes by {name}",
+  "Server|Weitere Änderungen in Famio": "More changes in Famio",
   "Server|Einkauf bei {place}": "Shopping at {place}",
   "Server|{count} offen: {items}": "{count} open: {items}",
   "Server|Offene Einkäufe": "Open shopping items",

@@ -1180,6 +1180,12 @@ const sharedEs = <String, String>{
   "Server|Anhang": "Archivo adjunto",
   "Server|{name} · Familie": "{name} · Familia",
   "Server|Neue Nachricht": "Mensaje nuevo",
+  "Server|{count} neue Nachrichten, zuletzt: {text}":
+      "{count} mensajes nuevos, el último: {text}",
+  "Server|{count} neue Nachrichten": "{count} mensajes nuevos",
+  "Server|{count} weitere Änderungen von {name}":
+      "{count} cambios más de {name}",
+  "Server|Weitere Änderungen in Famio": "Más cambios en Famio",
   "Server|Einkauf bei {place}": "Compra en {place}",
   "Server|{count} offen: {items}": "{count} pendientes: {items}",
   "Server|Offene Einkäufe": "Compras pendientes",

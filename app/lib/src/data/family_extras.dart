@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 
+import 'edit_merge.dart';
 import 'family_data.dart';
 import '../l10n.dart';
 
@@ -22,12 +23,16 @@ extension FamilyExtras on SyncEngine {
   bool get iAmGuest => myRole == MemberRole.guest;
 
   /// Whether this member may switch "Privat" for [existing] (null: a new
-  /// appointment): children only for their own, written by them with nobody
+  /// appointment): children only for their own, entered by them with nobody
   /// else taking part (the server keeps the flag of other appointments).
   bool mayChangeConfidential(CalendarEvent? existing) =>
       myRole != MemberRole.child ||
       existing == null ||
-      (record(Collections.events, existing.id)?.updatedBy == memberId &&
+      (record(
+                Collections.events,
+                existing.id,
+              )?.data[CalendarEvent.createdByKey] ==
+              memberId &&
           existing.memberIds.every((id) => id == memberId));
 
   /// Whether this member decides who sees an entry stored with
@@ -576,19 +581,26 @@ extension FamilyExtras on SyncEngine {
 
   /// Health data: only the chosen members (and the author) see it, what was
   /// taken so far included. With nobody chosen it stays the author's.
-  void saveMedication(Medication m) {
+  /// [opened]: the plan as the editor opened it; what changed on another
+  /// device meanwhile stays (see [mergeEdit]).
+  void saveMedication(Medication m, {Medication? opened}) {
     final saved = m.careIds.isEmpty ? m.withCare([memberId]) : m;
-    put(Collections.medications, m.id, saved.toData());
-    final audience = saved.careIds.toSet();
+    final data = edited(
+      Collections.medications,
+      m.id,
+      saved.toData(),
+      opened: opened?.toData(),
+    );
+    put(Collections.medications, m.id, data);
+    final careIds = [
+      for (final id in data['careIds'] as List? ?? const []) '$id',
+    ];
+    final audience = careIds.toSet();
     for (final i in intakes(m.id)) {
       final now = record(Collections.medicationIntakes, i.id)?.visibleTo;
       if (now?.toSet().containsAll(audience) != true ||
           now?.length != audience.length) {
-        put(
-          Collections.medicationIntakes,
-          i.id,
-          i.toData(visibleTo: saved.careIds),
-        );
+        put(Collections.medicationIntakes, i.id, i.toData(visibleTo: careIds));
       }
     }
   }

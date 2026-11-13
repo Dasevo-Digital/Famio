@@ -95,6 +95,87 @@ void main() {
     );
   });
 
+  group('more than one German noun, other languages (#457)', () {
+    bool has(String ingredient, String pantryItem, {String language = 'de'}) =>
+        inPantry(Ingredient(name: ingredient), [
+          PantryItem(id: 'x', name: pantryItem, amount: 1),
+        ], language: language);
+
+    test('product names from a barcode scan', () {
+      const atHome = {
+        'Haferflocken': 'Haferflocken Zart',
+        'Nudeln': 'Nudeln Penne',
+        'Penne': 'Nudeln Penne',
+        'Thunfisch': 'Thunfisch Natur',
+        'Tomaten': 'Tomaten Dose',
+        'Joghurt': 'Joghurt Griechische Art',
+        'Gemüsebrühe': 'Gemüsebrühe Pulver',
+      };
+      for (final MapEntry(key: i, value: p) in atHome.entries) {
+        expect(has(i, p), isTrue, reason: '$i / $p');
+      }
+      // A word after the name is no thing of its own.
+      expect(has('Backpulver', 'Gemüsebrühe Pulver'), isFalse);
+    });
+
+    test('a processed product is not the fresh one', () {
+      const notAtHome = {
+        'rote Paprika': 'Paprikapulver',
+        'Orangen': 'Orangensaft',
+        'Äpfel': 'Apfelsaft',
+        'Tomaten': 'Tomatensaft',
+        'frische Kräuter': 'Kräuterkäse',
+        'Zimt, gemahlen': 'Zimtstangen',
+        'Zwiebeln': 'Zwiebelringe',
+        'Ingwer': 'Ingwerpulver',
+      };
+      for (final MapEntry(key: i, value: p) in notAtHome.entries) {
+        expect(has(i, p), isFalse, reason: '$i / $p');
+      }
+      // The whole covers its part.
+      expect(has('Zimtstange', 'Zimt'), isTrue);
+      expect(has('Parmesan, gerieben', 'Parmesankäse'), isTrue);
+    });
+
+    test('alternatives count each', () {
+      expect(has('Schmand oder Crème fraîche', 'Crème fraîche'), isTrue);
+      expect(has('Schmand oder Crème fraîche', 'Schmand'), isTrue);
+      expect(has('Schmand oder Crème fraîche', 'Sahne'), isFalse);
+    });
+
+    test('English recipes', () {
+      bool en(String i, String p) => has(i, p, language: 'en');
+      expect(en('olive oil', 'Olive oil'), isTrue);
+      expect(en('chicken breasts', 'Chicken breasts'), isTrue);
+      expect(en('brown sugar', 'Brown sugar'), isTrue);
+      expect(en('milk', 'Whole milk'), isTrue);
+      expect(en('red bell pepper', 'Bell peppers'), isTrue);
+      expect(en('garlic, minced', 'Garlic'), isTrue);
+      expect(en('red lentils', 'Red bell pepper'), isFalse);
+      expect(en('chicken stock', 'Chicken breasts'), isFalse);
+      expect(en('rice', 'Ice cream'), isFalse);
+      expect(
+        inPantry(const Ingredient(name: 'salt'), const [], language: 'en'),
+        isTrue,
+      );
+    });
+
+    test('Spanish recipes', () {
+      bool es(String i, String p) => has(i, p, language: 'es');
+      expect(es('pimiento rojo', 'Pimientos'), isTrue);
+      expect(es('arroz blanco', 'Arroz'), isTrue);
+      expect(es('dientes de ajo', 'ajo'), isTrue);
+      expect(es('aceite de oliva', 'Aceite de oliva'), isTrue);
+      expect(es('cebolla roja', 'col roja'), isFalse);
+      expect(es('pimiento rojo', 'Tomate rojo'), isFalse);
+    });
+
+    test('an English name in a German app', () {
+      expect(has('olive oil', 'Olive oil'), isTrue);
+      expect(has('Chicken breasts', 'Chicken breasts'), isTrue);
+    });
+  });
+
   test('a recipe’s share', () {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),

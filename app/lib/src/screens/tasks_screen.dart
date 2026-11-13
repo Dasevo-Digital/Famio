@@ -656,6 +656,8 @@ class _TaskEditorState extends State<_TaskEditor> {
         ],
         photos: _photos,
       ),
+      // What changed on another device meanwhile stays (#483).
+      opened: widget.task,
     );
     Navigator.pop(context);
   }

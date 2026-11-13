@@ -124,13 +124,30 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _RolePicker(
             role: m.role,
-            onChanged: (r) => _run(
-              () => _api.updateUser(
-                m.id,
-                role: r,
-                isAdmin: _canAdminister(r) ? null : false,
-              ),
-            ),
+            // Asked first: one tap changes what someone sees and may do,
+            // on their own account with the password (#487).
+            onChanged: (r) {
+              if (r == m.role) return;
+              _confirmThen(
+                tr.adminRoleChangeTitle,
+                isMe
+                    ? tr.adminRoleChangeOwnBody(r.label)
+                    : tr.adminRoleChangeBody(m.displayName, r.label),
+                tr.commonChange,
+                () async {
+                  final password = isMe ? await _ownPassword() : null;
+                  if (isMe && password == null) return;
+                  await _run(
+                    () => _api.updateUser(
+                      m.id,
+                      role: r,
+                      isAdmin: _canAdminister(r) ? null : false,
+                      password: password,
+                    ),
+                  );
+                },
+              );
+            },
           ),
         ),
         if (m.isService) ...[
@@ -168,7 +185,28 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           subtitle: Text(tr.adminMayManageMembersChange),
           value: m.isAdmin,
           onChanged: _canAdminister(m.role)
-              ? (v) => _run(() => _api.updateUser(m.id, isAdmin: v))
+              ? (v) => _confirmThen(
+                  v
+                      ? tr.adminMakeAdminTitle(m.displayName)
+                      : isMe
+                      ? tr.adminTakeOwnAdminTitle
+                      : tr.adminTakeAdminTitle(m.displayName),
+                  v
+                      ? tr.adminMakeAdminBody(m.displayName)
+                      : isMe
+                      ? tr.adminTakeOwnAdminBody
+                      : tr.adminTakeAdminBody(m.displayName),
+                  v ? tr.adminMakeAdminAction : tr.adminTakeAdminAction,
+                  () async {
+                    final own = isMe && !v;
+                    final password = own ? await _ownPassword() : null;
+                    if (own && password == null) return;
+                    await _run(
+                      () =>
+                          _api.updateUser(m.id, isAdmin: v, password: password),
+                    );
+                  },
+                )
               : null,
         ),
         ListHeading(tr.sectionCalendar, color: accent),
@@ -227,9 +265,14 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
             leading: const Icon(AppIcons.logIn),
             title: Text(tr.adminLinkedSingleSign),
             trailing: TextButton(
-              onPressed: () => _run(
-                () => _api.unlinkUserSso(m.id),
-                done: tr.adminLinkRemoved,
+              onPressed: () => _confirmThen(
+                tr.adminUnlinkSsoTitle(m.displayName),
+                tr.adminUnlinkSsoBody(m.displayName),
+                tr.adminUnlink,
+                () => _run(
+                  () => _api.unlinkUserSso(m.id),
+                  done: tr.adminLinkRemoved,
+                ),
               ),
               child: Text(tr.adminUnlink),
             ),
@@ -239,11 +282,18 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
           color: accent,
           trailing: u.sessions.length > (isMe ? 1 : 0)
               ? TextButton(
-                  onPressed: () => _run(
-                    () => _api.signOutUser(m.id),
-                    done: isMe
-                        ? tr.adminSignedOutAllOther
-                        : tr.adminNameWasSignedOut(m.displayName),
+                  onPressed: () => _confirmThen(
+                    isMe
+                        ? tr.adminSignOutOthersTitle
+                        : tr.adminSignOutAllTitle(m.displayName),
+                    tr.adminSignOutBody,
+                    isMe ? tr.adminSignOutOthers : tr.adminSignOutEverywhere,
+                    () => _run(
+                      () => _api.signOutUser(m.id),
+                      done: isMe
+                          ? tr.adminSignedOutAllOther
+                          : tr.adminNameWasSignedOut(m.displayName),
+                    ),
                   ),
                   child: Text(
                     isMe ? tr.adminSignOutOthers : tr.adminSignOutEverywhere,
@@ -280,6 +330,13 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
         ],
       ],
     );
+  }
+
+  /// The password of the signed-in admin ('' without one), null when
+  /// cancelled.
+  Future<String?> _ownPassword() async {
+    if (!mounted) return null;
+    return askAccountPassword(context);
   }
 
   Future<void> _confirmThen(

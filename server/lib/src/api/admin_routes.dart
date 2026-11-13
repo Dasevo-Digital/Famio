@@ -484,6 +484,15 @@ extension _AdminRoutes on FamioApi {
     final admin = _admin(request);
     final body = await _body(request);
     final before = accounts.byId(id);
+    final role = body['role'] == null ? null : MemberRole.parse(body['role']);
+    if (id == admin.id &&
+        before != null &&
+        ((role != null && role != before.role) ||
+            (body['isAdmin'] == false && before.isAdmin))) {
+      // Who gives up their own rights confirms it with the password: a slip
+      // on the role chips does not lock them out (#487).
+      await _confirmPassword(request, admin, body: body);
+    }
     final updated = accounts.update(
       id,
       username: body['username'] as String?,
@@ -491,7 +500,7 @@ extension _AdminRoutes on FamioApi {
       isAdmin: body['isAdmin'] as bool?,
       color: body['color'] as int?,
       birthday: body.containsKey('birthday') ? body['birthday'] : _unchanged,
-      role: body['role'] == null ? null : MemberRole.parse(body['role']),
+      role: role,
       serviceAccess: body['serviceAccess'] == null
           ? null
           : ServiceAccess.parse(body['serviceAccess']),

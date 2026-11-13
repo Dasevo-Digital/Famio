@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -51,14 +52,17 @@ class _BudgetScreenState extends State<BudgetScreen> {
           onPressed: () => importBankStatement(context),
         ),
         const SizedBox(width: 8),
-        BubbleButton(
-          icon: AppIcons.gearSix,
-          tooltip: tr.budgetWhoSeesLimits,
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const _BudgetSettings()),
+        // Adults only: the server keeps the settings as they are (#476).
+        if (AppScope.engineOf(context).iAmAdult) ...[
+          BubbleButton(
+            icon: AppIcons.gearSix,
+            tooltip: tr.budgetWhoSeesLimits,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const _BudgetSettings()),
+            ),
           ),
-        ),
-        const SizedBox(width: 8),
+          const SizedBox(width: 8),
+        ],
         const SyncStatusIcon(),
       ],
       floating: AddButton(
