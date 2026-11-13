@@ -24,6 +24,32 @@ void main() {
     expect(schoolHolidayState('https://example.org/ferien.ics'), isNull);
   });
 
+  test('summer holidays that run into August stay (Bavaria)', () {
+    final feed = [
+      day('summer26', DateTime.utc(2026, 8, 3), DateTime.utc(2026, 9, 15)),
+      // Shifted a little against the KMK's 2–7 November: replaced.
+      day('autumn26', DateTime.utc(2026, 11, 3), DateTime.utc(2026, 11, 8)),
+    ];
+    final events = withOfficialSchoolHolidays(
+      GermanState.by,
+      feed,
+      sourceId: 'sub',
+      from: from,
+      to: to,
+    );
+    final ids = events.map((e) => e.id).toList();
+    expect(ids, contains('summer26'));
+    expect(ids, isNot(contains('autumn26')));
+    expect(
+      events.where(
+        (e) =>
+            e.start.isBefore(DateTime.utc(2026, 8, 11)) &&
+            e.end.isAfter(DateTime.utc(2026, 8, 10)),
+      ),
+      hasLength(1),
+    );
+  });
+
   test('official dates replace the feed for 2026/27, later ones stay', () {
     final feed = [
       day('summer26', DateTime.utc(2026, 7, 13), DateTime.utc(2026, 8, 23)),

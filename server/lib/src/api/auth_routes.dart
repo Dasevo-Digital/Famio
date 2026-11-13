@@ -561,9 +561,11 @@ extension _AuthRoutes on FamioApi {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         if (key != null)
+          // No Path: it defaults to the directory of the callback URL
+          // (…/api/auth/sso), which also holds the confirm form, under
+          // whatever path the public URL of the server has.
           'set-cookie': [
             '$_ssoCookieName=$key',
-            'Path=/api/auth/sso',
             'Max-Age=${SsoService.flowLifetime.inSeconds}',
             'HttpOnly',
             'SameSite=Strict',

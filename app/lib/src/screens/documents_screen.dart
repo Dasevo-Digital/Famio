@@ -5,6 +5,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/ocr.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -645,53 +646,60 @@ class _DocumentEditorState extends State<DocumentEditor> {
             ),
           ),
           ListHeading(tr.commonWhoMaySee),
-          SoftCard(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: RadioGroup<_Visibility>(
-              groupValue: _visibility,
-              onChanged: (v) => setState(() {
-                _visibility = v!;
-                _visibilityChosen = true;
-              }),
-              child: Column(
-                children: [
-                  RadioListTile(
-                    value: _Visibility.family,
-                    title: Text(tr.commonWholeFamily),
-                    secondary: Icon(AppIcons.usersThree),
-                  ),
-                  RadioListTile(
-                    value: _Visibility.me,
-                    title: Text(tr.docsOnlyMe),
-                    secondary: Icon(AppIcons.lockKey),
-                  ),
-                  if (others.isNotEmpty)
+          if (!engine.mayChooseAudience(
+            isNew: widget.existing == null,
+            visibleTo: widget.existing?.visibleTo,
+          ))
+            Text(tr.commonAudienceSetByAdults)
+          else ...[
+            SoftCard(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: RadioGroup<_Visibility>(
+                groupValue: _visibility,
+                onChanged: (v) => setState(() {
+                  _visibility = v!;
+                  _visibilityChosen = true;
+                }),
+                child: Column(
+                  children: [
                     RadioListTile(
-                      value: _Visibility.selected,
-                      title: Text(tr.docsMe),
-                      secondary: Icon(AppIcons.userList),
+                      value: _Visibility.family,
+                      title: Text(tr.commonWholeFamily),
+                      secondary: Icon(AppIcons.usersThree),
+                    ),
+                    RadioListTile(
+                      value: _Visibility.me,
+                      title: Text(tr.docsOnlyMe),
+                      secondary: Icon(AppIcons.lockKey),
+                    ),
+                    if (others.isNotEmpty)
+                      RadioListTile(
+                        value: _Visibility.selected,
+                        title: Text(tr.docsMe),
+                        secondary: Icon(AppIcons.userList),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (_visibility == _Visibility.selected) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final m in others)
+                    FilterChip(
+                      avatar: MemberAvatar(m, radius: 10),
+                      label: Text(m.displayName),
+                      selected: _audience.contains(m.id),
+                      onSelected: (on) => setState(
+                        () => on ? _audience.add(m.id) : _audience.remove(m.id),
+                      ),
                     ),
                 ],
               ),
-            ),
-          ),
-          if (_visibility == _Visibility.selected) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final m in others)
-                  FilterChip(
-                    avatar: MemberAvatar(m, radius: 10),
-                    label: Text(m.displayName),
-                    selected: _audience.contains(m.id),
-                    onSelected: (on) => setState(
-                      () => on ? _audience.add(m.id) : _audience.remove(m.id),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ],
           ListHeading(tr.commonNotes),
           TextField(

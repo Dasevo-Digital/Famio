@@ -193,6 +193,40 @@ void main() {
     expect(inTime.tooLate, isFalse);
   });
 
+  test('rotavirus: the first dose until its limit, the others after it', () {
+    final baby = Child(id: 'v', name: 'Baby', birthDate: DateTime(2026, 9, 1));
+    Map<String, DueItem> on(DateTime at, [List<ChildEntry> done = const []]) =>
+        {for (final d in vaccinationPlan(baby, done, at)) d.id: d};
+    // Day 80: the first dose may be given until day 84; the second waits
+    // for it.
+    var plan = on(DateTime(2026, 11, 20));
+    expect(plan['rota_1']!.state, DueState.due);
+    expect(plan['rota_1']!.tooLate, isFalse);
+    expect(plan['rota_2']!.state, DueState.upcoming);
+    expect(plan['rota_3']!.state, DueState.upcoming);
+    // Day 85: the series can no longer start.
+    plan = on(DateTime(2026, 11, 25));
+    for (final id in ['rota_1', 'rota_2', 'rota_3']) {
+      expect(plan[id]!.tooLate, isTrue, reason: id);
+      expect(plan[id]!.state, DueState.missed, reason: id);
+    }
+    plan = on(DateTime(2026, 12, 22));
+    expect(plan['rota_3']!.tooLate, isTrue);
+    // Started in time: the second dose is due 4 weeks later.
+    final first = [
+      ChildEntry(
+        id: 'r1',
+        childId: 'v',
+        kind: ChildEntryKind.vaccination,
+        refId: 'rota_1',
+        date: DateTime(2026, 11, 20),
+      ),
+    ];
+    plan = on(DateTime(2026, 12, 18), first);
+    expect(plan['rota_2']!.state, DueState.due);
+    expect(plan['rota_2']!.tooLate, isFalse);
+  });
+
   test('old unrecorded vaccinations and optional check-ups do not nag', () {
     final at = DateTime(2026, 9, 26); // 15 months old
     final vaccines = {

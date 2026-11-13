@@ -461,10 +461,14 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                   child: Text(tr.shoppingPreppSuiteMenu),
                 ),
                 PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
-                PopupMenuItem(
-                  value: 'audience',
-                  child: Text(tr.shoppingWhoSees),
-                ),
+                if (engine.mayChooseAudience(
+                  isNew: false,
+                  visibleTo: list.visibleTo,
+                ))
+                  PopupMenuItem(
+                    value: 'audience',
+                    child: Text(tr.shoppingWhoSees),
+                  ),
                 PopupMenuItem(
                   value: 'delete',
                   child: Text(tr.shoppingDeleteList),

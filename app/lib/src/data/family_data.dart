@@ -643,6 +643,34 @@ extension FamilyData on SyncEngine {
 
   void deleteBudgetEntry(String id) => delete(Collections.budgetEntries, id);
 
+  /// Stops the monthly entry [id] before [month] (its first day): the months
+  /// before keep it, other fields stay as they are. An entry that only
+  /// starts in [month] or later goes. False if there is none.
+  bool endMonthlyBudgetEntry(String id, DateTime month) {
+    final record = this.record(Collections.budgetEntries, id);
+    if (record == null) return false;
+    final entry = BudgetEntry.fromRecord(record);
+    final first = DateTime(month.year, month.month);
+    if (!entry.monthly || !entry.date.isBefore(first)) {
+      deleteBudgetEntry(id);
+      return true;
+    }
+    if (entry.until case final until? when until.isBefore(first)) return true;
+    final last = DateTime(month.year, month.month, 0);
+    put(Collections.budgetEntries, id, {
+      ...record.data,
+      'until': BudgetEntry(
+        id: id,
+        date: entry.date,
+        cents: 0,
+        category: '',
+        monthly: true,
+        until: last,
+      ).toData()['until'],
+    });
+    return true;
+  }
+
   // --- contacts -------------------------------------------------------------
 
   List<FamilyContact> get contacts =>

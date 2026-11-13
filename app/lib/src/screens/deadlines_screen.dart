@@ -579,8 +579,12 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
                         deleteWithUndo(
                           context,
                           what: existing.title,
-                          collections: const {Collections.deadlines},
-                          delete: () => engine.deleteDeadline(existing.id),
+                          collections: const {
+                            Collections.deadlines,
+                            Collections.budgetEntries,
+                          },
+                          delete: () =>
+                              engine.deleteDeadlineWithBudget(existing.id),
                         );
                       },
                     ),

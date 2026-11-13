@@ -174,6 +174,40 @@ void main() {
     expect(app.records.get(Collections.trips, kidId)?.deleted, isTrue);
   });
 
+  test('hiding the location module pauses phones and keeps nothing', () async {
+    final now = DateTime.now().toUtc();
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, now.subtract(const Duration(minutes: 5)))],
+    });
+    expect(locationOf(kidId)?.latitude, isNotNull);
+    await ok('PATCH', 'api/admin/settings', parentToken, {
+      'hiddenModules': [ServerSettings.locationModule],
+    });
+    final answer = await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(school, now)],
+    });
+    expect(answer['paused'], isTrue);
+    final hidden = locationOf(kidId);
+    expect(hidden?.latitude, isNull);
+    expect(hidden?.state, SharingState.paused);
+    expect(
+      app.db.select(
+        'SELECT count(*) AS n FROM location_points WHERE member_id = ?',
+        [kidId],
+      ).first['n'],
+      1,
+    );
+    // Shown again: the next report shares as before.
+    await ok('PATCH', 'api/admin/settings', parentToken, {
+      'hiddenModules': <String>[],
+    });
+    final again = await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(school, now.add(const Duration(minutes: 1)))],
+    });
+    expect(again['paused'], isFalse);
+    expect(locationOf(kidId)?.latitude, school.$1);
+  });
+
   test(
     'arriving at a shop tells only that member what is still open',
     () async {

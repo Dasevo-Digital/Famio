@@ -1,5 +1,6 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/data/budget_month.dart';
 import 'package:famio/src/data/deadlines.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/screens/deadlines_screen.dart';
@@ -157,6 +158,55 @@ void main() {
     ]);
   });
 
+  test('a deleted contract stops costing money from this month on', () {
+    final engine = _engine('m1');
+    final contract = Deadline(
+      id: 'c1',
+      title: 'Fitnessstudio',
+      due: DateTime(2027, 6, 30),
+      area: DeadlineArea.contract,
+      repeatMonths: 12,
+      monthlyCents: 3990,
+      inBudget: true,
+      budgetCategory: 'Freizeit',
+    );
+    engine.saveDeadlineWithBudget(contract);
+    // Added in an earlier month.
+    final entry = engine.record(Collections.budgetEntries, 'contract-c1')!;
+    engine.put(Collections.budgetEntries, 'contract-c1', {
+      ...entry.data,
+      'date': '2026-01-01',
+      'fromOtherApp': 'bleibt',
+    });
+    engine.deleteDeadlineWithBudget('c1', DateTime(2026, 11, 13));
+    expect(engine.deadlines, isEmpty);
+    int spent(int year, int month) =>
+        BudgetMonth(engine.budgetEntries, DateTime(year, month)).expenses;
+    expect(spent(2026, 10), 3990);
+    expect(spent(2026, 11), 0);
+    expect(spent(2028, 3), 0);
+    expect(
+      engine
+          .record(Collections.budgetEntries, 'contract-c1')!
+          .data['fromOtherApp'],
+      'bleibt',
+    );
+    // Added this month: it goes.
+    engine.saveDeadlineWithBudget(
+      Deadline(
+        id: 'c2',
+        title: 'Streaming',
+        due: DateTime(2027, 6, 30),
+        area: DeadlineArea.contract,
+        repeatMonths: 1,
+        monthlyCents: 999,
+        inBudget: true,
+      ),
+    );
+    engine.deleteDeadlineWithBudget('c2');
+    expect(engine.record(Collections.budgetEntries, 'contract-c2'), isNull);
+  });
+
   testWidgets('a contract with notice period, in the budget, cancelled', (
     tester,
   ) async {
@@ -219,6 +269,56 @@ void main() {
     expect(engine.deadlines.single.done, isTrue);
     entry = engine.budgetEntries.single;
     expect(entry.until, contract.due);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('undo brings back the contract and its budget entry', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    const me = FamilyMember(id: 'm1', username: 'mama', displayName: 'Mama');
+    final state = AppState();
+    await state.init();
+    final engine = _engine('m1');
+    state
+      ..me = me
+      ..engine = engine;
+    engine.saveDeadlineWithBudget(
+      Deadline(
+        id: 'c1',
+        title: 'Fitnessstudio',
+        due: DateTime.now().add(const Duration(days: 200)),
+        area: DeadlineArea.contract,
+        repeatMonths: 12,
+        monthlyCents: 3990,
+        inBudget: true,
+      ),
+    );
+    final entry = engine.record(Collections.budgetEntries, 'contract-c1')!;
+    engine.put(Collections.budgetEntries, 'contract-c1', {
+      ...entry.data,
+      'date': '2025-01-01',
+    });
+    await tester.pumpWidget(FamioApp(state: state));
+    Navigator.of(
+      tester.element(find.byType(Scaffold).first),
+    ).push(MaterialPageRoute<void>(builder: (_) => const DeadlinesScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Fitnessstudio').first);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Löschen'));
+    await tester.tap(find.text('Löschen'));
+    await tester.pumpAndSettle();
+    expect(engine.deadlines, isEmpty);
+    expect(engine.budgetEntries.single.until, isNotNull);
+    await tester.tap(find.text('Rückgängig'));
+    await tester.pumpAndSettle();
+    expect(engine.deadlines.single.id, 'c1');
+    expect(engine.budgetEntries.single.until, isNull);
     await tester.pump(const Duration(seconds: 5));
   });
 }

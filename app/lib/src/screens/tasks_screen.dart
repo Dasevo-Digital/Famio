@@ -919,64 +919,71 @@ class _TaskEditorState extends State<_TaskEditor> {
                 ],
               ),
               ListHeading(tr.commonWhoMaySee),
-              RadioGroup<_Audience>(
-                groupValue: _audience,
-                onChanged: (v) => setState(() => _audience = v!),
-                child: Column(
-                  children: [
-                    RadioListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _Audience.family,
-                      title: Text(tr.tasksWholeFamily),
-                    ),
-                    RadioListTile(
-                      contentPadding: EdgeInsets.zero,
-                      value: _Audience.me,
-                      title: Text(tr.docsOnlyMe),
-                    ),
-                    if (engine.members.length > 1)
+              if (!engine.mayChooseAudience(
+                isNew: widget.task == null,
+                visibleTo: widget.task?.visibleTo,
+              ))
+                Text(tr.commonAudienceSetByAdults)
+              else ...[
+                RadioGroup<_Audience>(
+                  groupValue: _audience,
+                  onChanged: (v) => setState(() => _audience = v!),
+                  child: Column(
+                    children: [
                       RadioListTile(
                         contentPadding: EdgeInsets.zero,
-                        value: _Audience.selected,
-                        title: Text(tr.docsMe),
+                        value: _Audience.family,
+                        title: Text(tr.tasksWholeFamily),
                       ),
-                  ],
-                ),
-              ),
-              if (_audience == _Audience.selected)
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final m in engine.members)
-                      if (m.id != engine.memberId)
-                        FilterChip(
-                          avatar: MemberAvatar(m, radius: 10),
-                          label: Text(m.displayName),
-                          selected:
-                              _seers.contains(m.id) ||
-                              _assignees.contains(m.id),
-                          selectedColor: c.tint(FamioSection.tasks),
-                          // Whoever takes care of it sees it anyway.
-                          onSelected: _assignees.contains(m.id)
-                              ? null
-                              : (on) => setState(
-                                  () => on
-                                      ? _seers.add(m.id)
-                                      : _seers.remove(m.id),
-                                ),
+                      RadioListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: _Audience.me,
+                        title: Text(tr.docsOnlyMe),
+                      ),
+                      if (engine.members.length > 1)
+                        RadioListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _Audience.selected,
+                          title: Text(tr.docsMe),
                         ),
-                  ],
+                    ],
+                  ),
                 ),
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  tr.tasksAudienceHint,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+                if (_audience == _Audience.selected)
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final m in engine.members)
+                        if (m.id != engine.memberId)
+                          FilterChip(
+                            avatar: MemberAvatar(m, radius: 10),
+                            label: Text(m.displayName),
+                            selected:
+                                _seers.contains(m.id) ||
+                                _assignees.contains(m.id),
+                            selectedColor: c.tint(FamioSection.tasks),
+                            // Whoever takes care of it sees it anyway.
+                            onSelected: _assignees.contains(m.id)
+                                ? null
+                                : (on) => setState(
+                                    () => on
+                                        ? _seers.add(m.id)
+                                        : _seers.remove(m.id),
+                                  ),
+                          ),
+                    ],
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    tr.tasksAudienceHint,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+                  ),
                 ),
-              ),
+              ],
             ],
             const SizedBox(height: 24),
             Row(

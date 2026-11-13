@@ -1200,9 +1200,11 @@ class RecordStore {
   }
 
   /// Removes what is [memberId]'s alone before their account goes: their
-  /// emergency facts and the health data nobody else may see (it would stay
-  /// on the server with no one left to read or delete it). Children's
-  /// records stay, they are the family's. Returns how many went.
+  /// emergency facts and every entry only they could see, such as private
+  /// notes, documents and health data (it would stay on the server with no
+  /// one left to read or delete it, files included). Children's records
+  /// stay, they are the family's; what the server keeps for connected
+  /// services is theirs to update. Returns how many went.
   int purgeMember(String memberId, {DateTime? now}) {
     final at = (now ?? DateTime.now()).millisecondsSinceEpoch;
     final personal = [
@@ -1213,7 +1215,7 @@ class RecordStore {
         "AND json_extract(visible_to, '\$[0]') = ?))",
         [Collections.memberEmergency, memberId, memberId],
       ))
-        if (_isPersonalHealth(_record(row))) _record(row),
+        if (_isPrivate(_record(row))) _record(row),
     ];
     _transaction(() {
       for (final r in personal) {
@@ -1235,14 +1237,15 @@ class RecordStore {
     return personal.length;
   }
 
-  static bool _isPersonalHealth(SyncRecord r) =>
+  /// Goes with the member whose audience it is alone (see [purgeMember]).
+  static bool _isPrivate(SyncRecord r) =>
       r.collection == Collections.memberEmergency ||
-      (Collections.isHealth(r.collection, r.data) &&
-          !const {
+      !(const {
             Collections.children,
             Collections.childEntries,
             Collections.childLogs,
-          }.contains(r.collection));
+          }.contains(r.collection) ||
+          Collections.serverOwned.contains(r.collection));
 
   /// Same data apart from visibility and fields of other apps.
   static bool _sameContent(SyncRecord a, SyncRecord b) {
@@ -1357,9 +1360,17 @@ class RecordStore {
       data.remove(SyncRecord.visibilityKey);
       if (before != null) data[SyncRecord.visibilityKey] = before;
     }
+    final confidential = existing.data['confidential'] == true;
     if (incoming.collection == Collections.events &&
-        existing.data['confidential'] == true) {
-      data['confidential'] = true;
+        (data['confidential'] == true) != confidential) {
+      // Neither hides a family appointment nor reveals a confidential one.
+      if (existing.data.containsKey('confidential')) {
+        data['confidential'] = existing.data['confidential'];
+      } else {
+        data.remove('confidential');
+      }
+    }
+    if (incoming.collection == Collections.events && confidential) {
       final reach = {
         existing.updatedBy,
         ...?(existing.data['memberIds'] as List?),

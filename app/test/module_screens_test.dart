@@ -81,6 +81,7 @@ void main() {
     String? section,
     Set<String> hidden = const {},
     http.Client? client,
+    String memberId = 'm1',
   }) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;
@@ -92,10 +93,10 @@ void main() {
     engine = SyncEngine(
       store: LocalStore.open(':memory:')..setMeta('members', _members),
       api: FamioApiClient('localhost:1', httpClient: client),
-      memberId: 'm1',
+      memberId: memberId,
     );
     state
-      ..me = engine.members.firstWhere((m) => m.id == 'm1')
+      ..me = engine.members.firstWhere((m) => m.id == memberId)
       ..engine = engine
       ..hiddenModules = hidden;
     await tester.pumpWidget(FamioApp(state: state));
@@ -469,6 +470,41 @@ void main() {
   });
 
   group('pinboard', () {
+    testWidgets('children choose who sees only their own private notes', (
+      tester,
+    ) async {
+      await open(tester, memberId: 'k1');
+      engine
+        ..saveNote(
+          const FamilyNote(id: 'fam', title: 'Ferienplan', text: 'für alle'),
+        )
+        ..saveNote(
+          const FamilyNote(
+            id: 'own',
+            title: 'Geheimversteck',
+            text: 'nur ich',
+            visibleTo: ['k1'],
+          ),
+        );
+      await push(tester, const NotesScreen());
+      await tester.tap(find.text('Ferienplan'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Wer diesen Eintrag sieht, legen die Erwachsenen fest.'),
+        findsOneWidget,
+      );
+      expect(find.text('Nur ich'), findsNothing);
+      Navigator.of(tester.element(find.text('Ferienplan').last)).pop();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Geheimversteck'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Wer diesen Eintrag sieht, legen die Erwachsenen fest.'),
+        findsNothing,
+      );
+      expect(find.text('Nur ich'), findsOneWidget);
+    });
+
     testWidgets('a pinned note shows on the start page', (tester) async {
       await open(tester);
       await push(tester, const NotesScreen());

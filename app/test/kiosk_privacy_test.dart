@@ -118,4 +118,65 @@ void main() {
     Navigator.of(context).pop();
     await tester.pump(const Duration(seconds: 3));
   });
+
+  void saveRestricted() => engine
+    ..saveTask(const Task(id: 't1', title: 'Müll rausbringen'))
+    ..saveTask(
+      const Task(id: 't2', title: 'Geschenk für Mia', visibleTo: ['m1', 'm2']),
+    )
+    ..saveShoppingList(
+      const ShoppingList(id: 'l1', name: 'Überraschung', visibleTo: ['m1']),
+    )
+    ..saveShoppingItem(
+      const ShoppingItem(id: 'i1', listId: 'l1', name: 'Luftballons'),
+    )
+    ..saveShoppingList(
+      const ShoppingList(id: 'l2', name: 'Wocheneinkauf', sort: 1),
+    )
+    ..saveShoppingItem(
+      const ShoppingItem(id: 'i2', listId: 'l2', name: 'Milch'),
+    )
+    ..saveDocument(
+      const FamilyDocument(
+        id: 'd1',
+        title: 'Urlaub',
+        category: DocumentCategory.photos,
+        file: FileRef(id: 'f1', name: 'a.jpg', mime: 'image/jpeg', size: 10),
+      ),
+    )
+    ..saveDocument(
+      const FamilyDocument(
+        id: 'd2',
+        title: 'Privat',
+        category: DocumentCategory.photos,
+        file: FileRef(id: 'f2', name: 'b.jpg', mime: 'image/jpeg', size: 10),
+        visibleTo: ['m1'],
+      ),
+    );
+
+  for (final byPerson in [false, true]) {
+    testWidgets(
+      'only what the whole family sees (${byPerson ? 'board' : 'topics'})',
+      (tester) async {
+        final context = await start(tester, byPerson: byPerson);
+        saveRestricted();
+        expect(familyPhotos(engine).map((f) => f.id), ['f1']);
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const KioskScreen()));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        if (byPerson) {
+          expect(find.textContaining('Müll rausbringen'), findsWidgets);
+        } else {
+          expect(find.textContaining('Milch'), findsWidgets);
+        }
+        for (final hidden in ['Geschenk', 'Luftballons', 'Überraschung']) {
+          expect(find.textContaining(hidden), findsNothing, reason: hidden);
+        }
+        Navigator.of(context).pop();
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+  }
 }

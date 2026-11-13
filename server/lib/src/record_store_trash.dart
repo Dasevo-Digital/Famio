@@ -52,7 +52,7 @@ extension RecordTrash on RecordStore {
       final audience = entry.record.visibleTo;
       if (audience?.length == 1 &&
           audience!.single == memberId &&
-          RecordStore._isPersonalHealth(entry.record)) {
+          RecordStore._isPrivate(entry.record)) {
         _db.execute('DELETE FROM trash WHERE id = ?', [entry.id]);
       }
     }

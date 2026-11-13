@@ -95,7 +95,17 @@ class _Flow {
 
   /// Set once confirmed: the signed-in member (login) or linked (link).
   String? resultUser;
+
+  /// The page shown after confirming, again if the form is sent twice.
+  String? doneMessage;
+
+  /// The app has collected [resultUser]: polling again finds nothing, but
+  /// the browser may still show [doneMessage] until the flow expires.
+  bool delivered = false;
   String? error;
+
+  /// Not waiting for the code in a browser: may make room for new flows.
+  bool get idle => pending == null;
 }
 
 /// What the browser page shows after the provider: the form asking for the
@@ -182,8 +192,10 @@ class SsoService {
   static const flowLifetime = Duration(minutes: 10);
   static const _maxFlows = 100;
 
-  /// Open flows one address may hold: nobody blocks the sign-in of others
-  /// by starting flows that never end.
+  /// Open flows one address may hold. A new start pushes out the oldest
+  /// flow of that address that is not waiting for its code, so flows that
+  /// were never finished do not block anyone; behind a proxy that does not
+  /// pass the client address, all sign-ins share one address.
   static const _maxFlowsPerAddress = 5;
 
   /// Wrong codes in the browser before the flow ends.
@@ -299,10 +311,15 @@ class SsoService {
       );
     }
     _expire();
-    if (_flows.length >= _maxFlows ||
-        (address != null &&
-            _flows.values.where((f) => f.address == address).length >=
-                _maxFlowsPerAddress)) {
+    if (address != null &&
+        !_makeRoom(_maxFlowsPerAddress, (f) => f.address == address)) {
+      throw ApiException(
+        429,
+        'too_many_attempts',
+        t('Bitte gleich noch einmal'),
+      );
+    }
+    if (!_makeRoom(_maxFlows, (_) => true)) {
       throw ApiException(
         429,
         'too_many_attempts',
@@ -459,6 +476,12 @@ class SsoService {
     final flow = _flows.values
         .where((f) => f.state == form['state'])
         .firstOrNull;
+    if (flow != null &&
+        flow.doneMessage != null &&
+        _sameBrowser(flow, browserKey)) {
+      // Sent twice (double click, reload): it worked the first time.
+      return SsoPage.result(ok: true, message: flow.doneMessage!);
+    }
     final outcome = flow?.pending;
     if (flow == null || outcome == null || flow.error != null) {
       return SsoPage.result(
@@ -516,11 +539,9 @@ class SsoService {
         [outcome.issuer, outcome.subject, outcome.userId, outcome.name, now],
       );
       flow.resultUser = outcome.userId;
+      flow.doneMessage = t('Verknüpft. Du kannst dieses Fenster schließen.');
       audit(outcome.userId, 'hat Single Sign-On verknüpft (${outcome.name})');
-      return SsoPage.result(
-        ok: true,
-        message: t('Verknüpft. Du kannst dieses Fenster schließen.'),
-      );
+      return SsoPage.result(ok: true, message: flow.doneMessage!);
     }
     if (outcome.link) {
       _db.execute(
@@ -530,12 +551,10 @@ class SsoService {
       );
     }
     flow.resultUser = outcome.userId;
-    return SsoPage.result(
-      ok: true,
-      message: t(
-        'Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.',
-      ),
+    flow.doneMessage = t(
+      'Angemeldet. Du kannst dieses Fenster schließen und zu Famio zurückkehren.',
     );
+    return SsoPage.result(ok: true, message: flow.doneMessage!);
   }
 
   SsoPage _confirmPage(_Flow flow, {String? error, String? browserKey}) =>
@@ -590,7 +609,7 @@ class SsoService {
   ) {
     _expire();
     final flow = _flows[flowId];
-    if (flow == null || flow.secretHash != _sha(secret)) {
+    if (flow == null || flow.delivered || flow.secretHash != _sha(secret)) {
       throw ApiException(
         404,
         'sso_expired',
@@ -603,7 +622,9 @@ class SsoService {
     }
     final user = flow.resultUser;
     if (user == null) return null;
-    _flows.remove(flowId);
+    // Kept until it expires, so a second submit of the browser form still
+    // shows success; it holds no further session.
+    flow.delivered = true;
     return (userId: user, mode: flow.mode, device: flow.device);
   }
 
@@ -726,6 +747,23 @@ class SsoService {
   void _expire() {
     final now = DateTime.now();
     _flows.removeWhere((_, f) => f.expires.isBefore(now));
+  }
+
+  /// Keeps fewer than [limit] flows matching [which] by dropping the oldest
+  /// idle ones (see [_Flow.idle]). False if all of them wait for a code.
+  bool _makeRoom(int limit, bool Function(_Flow flow) which) {
+    final matching = [
+      for (final e in _flows.entries)
+        if (which(e.value)) e,
+    ]..sort((a, b) => a.value.expires.compareTo(b.value.expires));
+    var count = matching.length;
+    for (final e in matching) {
+      if (count < limit) break;
+      if (!e.value.idle) continue;
+      _flows.remove(e.key);
+      count--;
+    }
+    return count < limit;
   }
 
   String _token(int bytes) => base64Url

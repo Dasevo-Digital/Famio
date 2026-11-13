@@ -389,17 +389,80 @@ class _EntryEditorState extends State<_EntryEditor> {
     nextMonth: _income ? _nextMonth : null,
   );
 
-  void _save({DateTime? until}) {
+  Future<void> _save({DateTime? until}) async {
     final cents = parseEuro(_amount.text);
     if (cents == null || cents == 0) {
       // Next to the field: a snack bar would be behind this sheet.
       setState(() => _amountError = tr.budgetPleaseEnterAmount);
       return;
     }
-    AppScope.engineOf(
-      context,
-    ).saveBudgetEntry(_entry(cents: cents, until: until));
-    Navigator.pop(context);
+    final engine = AppScope.engineOf(context);
+    final old = widget.existing;
+    final now = DateTime.now();
+    final month = DateTime(now.year, now.month);
+    // A new rent or salary usually applies from now on: the months before
+    // keep what was paid then.
+    if (until == null &&
+        old != null &&
+        old.monthly &&
+        _monthly &&
+        cents != old.cents &&
+        !old.id.startsWith('contract-') &&
+        old.date.isBefore(month) &&
+        (old.until == null || !old.until!.isBefore(month))) {
+      final fromNow = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(tr.budgetNewAmountFromWhen),
+          content: Text(
+            tr.budgetNewAmountFromWhenHint(
+              DateFormat.yMMMM(appLanguage).format(month),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr.budgetNewAmountAllMonths),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(
+                tr.budgetNewAmountFrom(
+                  DateFormat.yMMMM(appLanguage).format(month),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (fromNow == null || !mounted) return;
+      if (fromNow) {
+        engine.endMonthlyBudgetEntry(old.id, month);
+        final day = _date.day.clamp(
+          1,
+          DateUtils.getDaysInMonth(now.year, now.month),
+        );
+        final next = _entry(cents: cents);
+        engine.saveBudgetEntry(
+          BudgetEntry(
+            id: newId(),
+            date: DateTime(now.year, now.month, day),
+            cents: next.cents,
+            category: next.category,
+            income: next.income,
+            note: next.note,
+            memberId: next.memberId,
+            monthly: true,
+            until: old.until,
+            nextMonth: next.nextMonth,
+          ),
+        );
+        Navigator.pop(context);
+        return;
+      }
+    }
+    engine.saveBudgetEntry(_entry(cents: cents, until: until));
+    if (mounted) Navigator.pop(context);
   }
 
   @override

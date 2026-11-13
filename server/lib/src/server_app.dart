@@ -162,6 +162,9 @@ class FamioServerApp {
       clock: () => tz.TZDateTime.now(settings.location),
       retention: () =>
           Duration(days: settings.effective.locationHistoryDays ?? 7),
+      enabled: () => !(settings.effective.hiddenModules ?? const []).contains(
+        ServerSettings.locationModule,
+      ),
     );
     files = FileStore(
       db,

@@ -646,7 +646,10 @@ void main() {
           expect(page.cookie, startsWith('famio_sso='));
           expect(page.setCookie, contains('HttpOnly'));
           expect(page.setCookie, contains('SameSite=Strict'));
-          expect(page.setCookie, contains('Path=/api/auth/sso'));
+          // No fixed Path: the browser takes the callback's directory, so
+          // a public URL with a path (…/famio/) works too.
+          expect(page.setCookie, isNot(contains('Path=')));
+          expect(page.html, contains('action="confirm"'));
           // State and code alone do nothing, nor does a made-up cookie.
           expect((await confirm(base, state, code)).status, 400);
           expect(
@@ -760,23 +763,70 @@ void main() {
         expect(answer, anyOf(isEmpty, startsWith('HTTP/1.1 413')));
       });
 
-      test('one address cannot fill the table of open sign-ins', () async {
-        await configure();
+      test(
+        'abandoned sign-ins of one address make room for new ones',
+        () async {
+          await configure(matchUsername: true);
+          final started = [
+            for (var i = 0; i < 6; i++)
+              await call(base, 'POST', 'api/auth/sso/start', body: {}),
+          ];
+          expect(started.map((s) => s['_status']), everyElement(200));
+          // The oldest one gave way; the others are still open.
+          expect((await poll(started.first))['_status'], 404);
+          expect((await poll(started[1]))['status'], 'pending');
+          // The newest one still works.
+          expect((await browser(started.last))['status'], 'done');
+        },
+      );
+
+      test('sign-ins waiting for their code are not pushed out', () async {
+        await configure(matchUsername: true);
         for (var i = 0; i < 5; i++) {
-          expect(
-            (await call(
-              base,
-              'POST',
-              'api/auth/sso/start',
-              body: {},
-            ))['_status'],
-            200,
+          final started = await call(
+            base,
+            'POST',
+            'api/auth/sso/start',
+            body: {},
           );
+          final url = Uri.parse(started['url'] as String);
+          nonce = url.queryParameters['nonce'];
+          final page = await callback(
+            base,
+            'state=${url.queryParameters['state']}&code=good',
+          );
+          expect(page.html, contains('name="code"'));
         }
         expect(
           (await call(base, 'POST', 'api/auth/sso/start', body: {}))['_status'],
           429,
         );
+      });
+
+      test('sending the confirmation twice still shows success', () async {
+        await configure(matchUsername: true);
+        final started = await call(
+          base,
+          'POST',
+          'api/auth/sso/start',
+          body: {},
+        );
+        final url = Uri.parse(started['url'] as String);
+        nonce = url.queryParameters['nonce'];
+        final state = url.queryParameters['state']!;
+        final page = await callback(base, 'state=$state&code=good');
+        final code = started['code'] as String;
+        final first = await confirm(base, state, code, cookie: page.cookie);
+        expect(first.status, 200);
+        final second = await confirm(base, state, code, cookie: page.cookie);
+        expect(second.status, 200, reason: second.html);
+        expect((await poll(started))['status'], 'done');
+        // Also after the app collected the session, but only once for it.
+        final third = await confirm(base, state, code, cookie: page.cookie);
+        expect(third.status, 200);
+        expect((await poll(started))['_status'], 404);
+        // Another browser learns nothing.
+        expect((await confirm(base, state, code)).status, 400);
       });
 
       test('usernames can match without linking; SSO counts as 2FA', () async {

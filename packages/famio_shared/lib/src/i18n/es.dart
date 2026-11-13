@@ -1404,8 +1404,8 @@ const sharedEs = <String, String>{
   "Server|Famio im Browser öffnen": "Abrir Famio en el navegador",
   "Server|Konto löschen": "Eliminar cuenta",
   "Server|Famio-Konto löschen": "Eliminar la cuenta de Famio",
-  "Server|Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.":
-      "Puedes eliminar tu cuenta de Famio tú mismo. Se eliminan el acceso, las sesiones y las conexiones personales; las entradas compartidas de la familia se conservan para los demás miembros.",
+  "Server|Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt, ebenso alles, was nur du sehen konntest; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.":
+      "Puedes eliminar tu cuenta de Famio tú mismo. Se eliminan el acceso, las sesiones y las conexiones personales, y todo lo que solo tú podías ver; las entradas compartidas de la familia se conservan para los demás miembros.",
   "Server|Bei Famio anmelden und Konto löschen":
       "Iniciar sesión en Famio y eliminar la cuenta",
   "Server|Bitte Famio im Browser oder in der App öffnen und unter Einstellungen → Mein Konto löschen fortfahren.":

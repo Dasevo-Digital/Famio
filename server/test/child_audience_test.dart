@@ -283,6 +283,47 @@ void main() {
     expect((await sync(guest)).changes.where((r) => r.id == 'e1'), isEmpty);
   });
 
+  test('a child cannot hide a family appointment either', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final start = DateTime.now().add(const Duration(days: 1));
+    final event = {
+      'title': 'Oma holt die Kinder ab',
+      'start': start.toUtc().toIso8601String(),
+      'end': start.add(const Duration(hours: 1)).toUtc().toIso8601String(),
+      'memberIds': [kid.id],
+    };
+    await sync(
+      mama,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e2',
+          data: event,
+          updatedAt: now,
+        ),
+      ],
+    );
+    final stored = app.records.get(Collections.events, 'e2')!;
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e2',
+          data: {...event, 'confidential': true, 'memberIds': <String>[]},
+          updatedAt: now + 1000,
+          rev: stored.rev,
+        ),
+      ],
+    );
+    final after = app.records.get(Collections.events, 'e2')!;
+    expect(after.data['confidential'], isNot(true));
+    expect(
+      (await sync(guest)).changes.where((r) => r.id == 'e2' && !r.deleted),
+      isNotEmpty,
+    );
+  });
+
   test('a child assigns no one outside a task\'s audience', () async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await sync(

@@ -302,19 +302,19 @@
   "caldavYouCanChangeAny": "Das kannst du später jederzeit ändern. Ein Admin kann geteilte Kalender für einzelne Mitglieder ausblenden.",
   "caldavPrivateEventsNeverTransferred": "Vertrauliche Termine werden nie übertragen. Termine, die Famio nicht genau abbilden kann (z. B. „jeden 2. Dienstag“), erscheinen schreibgeschützt.",
   "commonConnect": "Verbinden",
-  "caldavEventsSynced": "{count} Termine abgeglichen",
+  "caldavEventsSynced": "{count, plural, =1{1 Termin abgeglichen} other{{count} Termine abgeglichen}}",
   "@caldavEventsSynced": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
-  "caldavEventsSyncedLast": "{count} Termine abgeglichen, zuletzt {when}",
+  "caldavEventsSyncedLast": "{count, plural, =1{1 Termin abgeglichen, zuletzt {when}} other{{count} Termine abgeglichen, zuletzt {when}}}",
   "@caldavEventsSyncedLast": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "when": {
         "type": "Object?"
@@ -387,11 +387,11 @@
       }
     }
   },
-  "adminMembersMembers": ", {members} Mitglieder",
+  "adminMembersMembers": "{members, plural, =1{, 1 Mitglied} other{, {members} Mitglieder}}",
   "@adminMembersMembers": {
     "placeholders": {
       "members": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -458,11 +458,11 @@
       }
     }
   },
-  "commonDaysCount": "{days} Tage",
+  "commonDaysCount": "{days, plural, =1{1 Tag} other{{days} Tage}}",
   "@commonDaysCount": {
     "placeholders": {
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -833,14 +833,14 @@
   "calendarHttpsWebcal": "https://… oder webcal://…",
   "calendarWhoSeesEvents": "Wer sieht die Termine?",
   "calendarAddressMustStartHttps": "Adresse muss mit https:// oder webcal:// beginnen",
-  "calendarNameCountEventsLoaded": "{name}: {count} Termine geladen",
+  "calendarNameCountEventsLoaded": "{count, plural, =1{{name}: 1 Termin geladen} other{{name}: {count} Termine geladen}}",
   "@calendarNameCountEventsLoaded": {
     "placeholders": {
       "name": {
         "type": "Object?"
       },
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -855,11 +855,11 @@
   "calendarImportedEventsDisappearEveryone": "Die importierten Termine verschwinden für alle, mit denen er geteilt ist. Der Originalkalender bleibt unverändert.",
   "commonRemove": "Entfernen",
   "calendarWillLoadedNextSync": "Wird beim nächsten Abgleich geladen …",
-  "calendarCountEventsUpdatedWhen": "{count} Termine · aktualisiert {when}",
+  "calendarCountEventsUpdatedWhen": "{count, plural, =1{1 Termin · aktualisiert {when}} other{{count} Termine · aktualisiert {when}}}",
   "@calendarCountEventsUpdatedWhen": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "when": {
         "type": "Object?"
@@ -1412,11 +1412,11 @@
   "mealsNextWeek": "Nächste Woche",
   "mealsPutWeekSIngredients": "Zutaten der Woche auf die Einkaufsliste",
   "commonWhichList": "Auf welche Liste?",
-  "mealsCountIngredientsListAdded": "{count} Zutaten auf „{list}“{added}",
+  "mealsCountIngredientsListAdded": "{count, plural, =1{1 Zutat auf „{list}“{added}} other{{count} Zutaten auf „{list}“{added}}}",
   "@mealsCountIngredientsListAdded": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "list": {
         "type": "Object?"
@@ -1448,11 +1448,11 @@
       }
     }
   },
-  "mealsCountIngredients": "{count} Zutaten",
+  "mealsCountIngredients": "{count, plural, =1{1 Zutat} other{{count} Zutaten}}",
   "@mealsCountIngredients": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -1952,11 +1952,11 @@
     }
   },
   "homeChangeOverlappedPleaseTake": "Eine Änderung hat sich überschnitten – bitte ansehen",
-  "homeCountChangesOverlappedPlease": "{count} Änderungen haben sich überschnitten – bitte ansehen",
+  "homeCountChangesOverlappedPlease": "{count, plural, =1{1 Änderung hat sich überschnitten – bitte ansehen} other{{count} Änderungen haben sich überschnitten – bitte ansehen}}",
   "@homeCountChangesOverlappedPlease": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -1986,11 +1986,11 @@
       }
     }
   },
-  "commonDaysLeft": "noch {days} Tage",
+  "commonDaysLeft": "{days, plural, =1{noch 1 Tag} other{noch {days} Tage}}",
   "@commonDaysLeft": {
     "placeholders": {
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -2040,29 +2040,29 @@
     }
   },
   "homeWhatDoYouWish": "Was wünscht ihr euch? Die anderen besorgen es heimlich.",
-  "homeYouCountWishes": "Du: {count} Wünsche",
+  "homeYouCountWishes": "{count, plural, =1{Du: 1 Wunsch} other{Du: {count} Wünsche}}",
   "@homeYouCountWishes": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
-  "homeFamilyCountWishes": "Familie: {count} Wünsche",
+  "homeFamilyCountWishes": "{count, plural, =1{Familie: 1 Wunsch} other{Familie: {count} Wünsche}}",
   "@homeFamilyCountWishes": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
   "commonPinboard": "Pinnwand",
   "homeNotesEveryoneWiFi": "Notizen für alle: WLAN, Babysitter, Müllabfuhr …",
-  "homeCountNotes": "{count} Notizen",
+  "homeCountNotes": "{count, plural, =1{1 Notiz} other{{count} Notizen}}",
   "@homeCountNotes": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -2075,11 +2075,11 @@
     }
   },
   "homeNoDocumentsYet": "Noch keine Dokumente.",
-  "homeCountDocumentsStoredSafely": "{count} Dokumente sicher abgelegt.",
+  "homeCountDocumentsStoredSafely": "{count, plural, =1{1 Dokument sicher abgelegt.} other{{count} Dokumente sicher abgelegt.}}",
   "@homeCountDocumentsStoredSafely": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -2124,11 +2124,11 @@
     }
   },
   "pregnancyDueDateToday": "heute ist ET",
-  "pregnancyDaysDaysPastDue": "{days} Tage über ET",
+  "pregnancyDaysDaysPastDue": "{days, plural, =1{1 Tag über ET} other{{days} Tage über ET}}",
   "@pregnancyDaysDaysPastDue": {
     "placeholders": {
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -2260,11 +2260,11 @@
   "pregnancyContractionOver": "Wehe vorbei",
   "pregnancyContractionStarts": "Wehe beginnt",
   "pregnancyLastHour": "Letzte Stunde",
-  "pregnancyCountContractionsLengthInterval": "{count} Wehen{length}{interval}",
+  "pregnancyCountContractionsLengthInterval": "{count, plural, =1{1 Wehe{length}{interval}} other{{count} Wehen{length}{interval}}}",
   "@pregnancyCountContractionsLengthInterval": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "length": {
         "type": "Object?"
@@ -2474,6 +2474,12 @@
     }
   },
   "budgetPleaseEnterAmount": "Bitte einen Betrag angeben",
+  "budgetNewAmountFromWhen": "Ab wann gilt der neue Betrag?",
+  "budgetNewAmountFromWhenHint": "Die Monate vor {month} behalten den bisherigen Betrag, wenn der neue erst ab {month} gilt.",
+  "@budgetNewAmountFromWhenHint": {"placeholders": {"month": {"type": "String"}}},
+  "budgetNewAmountFrom": "Ab {month}",
+  "@budgetNewAmountFrom": {"placeholders": {"month": {"type": "String"}}},
+  "budgetNewAmountAllMonths": "Auch für die Monate davor",
   "budgetExpense": "Ausgabe",
   "budgetIncome2": "Einnahme",
   "budgetWhatOptional": "Wofür? (optional)",
@@ -2783,11 +2789,11 @@
       }
     }
   },
-  "remindersCountStepsPoints": "{count} Schritte{points}",
+  "remindersCountStepsPoints": "{count, plural, =1{1 Schritt{points}} other{{count} Schritte{points}}}",
   "@remindersCountStepsPoints": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "points": {
         "type": "Object?"
@@ -2795,6 +2801,7 @@
     }
   },
   "remindersMedicationPerson": "{medication} für {person}",
+  "remindersMedicationIntake": "Zeit für die Einnahme",
   "@remindersMedicationPerson": {
     "placeholders": {
       "medication": {
@@ -2830,7 +2837,7 @@
     }
   },
   "remindersBestBeforeTomorrowLatest": "Mindestens haltbar bis morgen.",
-  "remindersEmojiLabelDaysDays": "{emoji} {label}: in {days} Tagen",
+  "remindersEmojiLabelDaysDays": "{days, plural, =1{{emoji} {label}: in 1 Tag} other{{emoji} {label}: in {days} Tagen}}",
   "@remindersEmojiLabelDaysDays": {
     "placeholders": {
       "emoji": {
@@ -2840,7 +2847,7 @@
         "type": "Object?"
       },
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -2873,11 +2880,11 @@
     }
   },
   "reminders1ThingLeftPack": "Noch 1 Sache packen",
-  "remindersLeftThingsLeftPack": "Noch {left} Sachen packen",
+  "remindersLeftThingsLeftPack": "{left, plural, =1{Noch 1 Sache packen} other{Noch {left} Sachen packen}}",
   "@remindersLeftThingsLeftPack": {
     "placeholders": {
       "left": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -3011,7 +3018,7 @@
       }
     }
   },
-  "settingsAccountSessionsPersonalConnections": "Dein Konto, Sitzungen und persönlichen Verbindungen werden entfernt. Geteilte Familieneinträge bleiben für die anderen Mitglieder erhalten. Als letzter Administrator musst du zuerst die Verwaltung übergeben.",
+  "settingsAccountSessionsPersonalConnections": "Dein Konto, Sitzungen und persönlichen Verbindungen werden entfernt, ebenso alles, was nur du sehen kannst. Geteilte Familieneinträge bleiben für die anderen Mitglieder erhalten. Als letzter Administrator musst du zuerst die Verwaltung übergeben.",
   "settingsAccountNameWasDeleted": "Konto {name} wurde gelöscht.",
   "@settingsAccountNameWasDeleted": {
     "placeholders": {
@@ -3109,11 +3116,11 @@
       }
     }
   },
-  "medsLastsAboutDaysDays": " · reicht ca. {days} Tage",
+  "medsLastsAboutDaysDays": " {days, plural, =1{· reicht ca. 1 Tag} other{· reicht ca. {days} Tage}}",
   "@medsLastsAboutDaysDays": {
     "placeholders": {
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -3420,11 +3427,11 @@
   "chatAnswer": "Antwort",
   "chatAllowMultipleAnswers": "Mehrere Antworten erlauben",
   "pantryFridgePantryGlanceBarcode": "Kühlschrank & Vorratsschrank im Blick – mit Barcode-Scanner",
-  "pantryCountItems": "{count} Artikel",
+  "pantryCountItems": "{count, plural, =1{1 Artikel} other{{count} Artikel}}",
   "@pantryCountItems": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -3463,11 +3470,11 @@
       }
     }
   },
-  "pantryCountItemsPutList": "{count} Artikel auf „{list}“ gesetzt",
+  "pantryCountItemsPutList": "{count, plural, =1{1 Artikel auf „{list}“ gesetzt} other{{count} Artikel auf „{list}“ gesetzt}}",
   "@pantryCountItemsPutList": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "list": {
         "type": "Object?"
@@ -3625,6 +3632,7 @@
   "docsNoExpiryDate": "Kein Ablaufdatum",
   "docsFamioRemindsYouGood": "Famio erinnert rechtzeitig vor dem Ablauf (z. B. beim Reisepass).",
   "commonWhoMaySee": "Wer darf es sehen?",
+  "commonAudienceSetByAdults": "Wer diesen Eintrag sieht, legen die Erwachsenen fest.",
   "docsOnlyMe": "Nur ich",
   "docsMe": "Ich und …",
   "docsEGIdNumber": "z. B. Ausweisnummer, Ansprechpartner …",
@@ -3859,11 +3867,11 @@
   "deadlinesEveryYear": "jedes Jahr",
   "deadlinesEvery2Years": "alle 2 Jahre",
   "deadlinesEvery3Years": "alle 3 Jahre",
-  "deadlinesEveryMonthsMonths": "alle {months} Monate",
+  "deadlinesEveryMonthsMonths": "{months, plural, =1{jeden Monat} other{alle {months} Monate}}",
   "@deadlinesEveryMonthsMonths": {
     "placeholders": {
       "months": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -3875,11 +3883,11 @@
   "deadlinesOnce": "einmalig",
   "deadlinesRemind": "Erinnern",
   "deadlinesDayItself": "am Tag selbst",
-  "deadlinesDaysDaysBefore": "{days} Tage vorher",
+  "deadlinesDaysDaysBefore": "{days, plural, =1{1 Tag vorher} other{{days} Tage vorher}}",
   "@deadlinesDaysDaysBefore": {
     "placeholders": {
       "days": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -3934,21 +3942,21 @@
   "routinesRoutinesChecklistsPicturesE": "Routinen sind Checklisten mit Bildern, z. B. für morgens:\nAnziehen, Frühstücken, Zähne putzen …",
   "routinesCreateMorningRoutine": "Morgenroutine anlegen",
   "commonEveryoneLower": "alle",
-  "routinesCountSteps": "{count} Schritte",
+  "routinesCountSteps": "{count, plural, =1{1 Schritt} other{{count} Schritte}}",
   "@routinesCountSteps": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
   "routinesNotToday": "heute nicht",
   "routinesEveningRoutineTemplate": "Abendroutine aus Vorlage",
-  "routinesDonePointsPoints": "Geschafft! 🎉 +{points} Punkte",
+  "routinesDonePointsPoints": "{points, plural, =1{Geschafft! 🎉 +1 Punkt} other{Geschafft! 🎉 +{points} Punkte}}",
   "@routinesDonePointsPoints": {
     "placeholders": {
       "points": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4012,33 +4020,33 @@
   "rewardsChooseGameNight": "Spieleabend aussuchen",
   "rewardsGoBed30Minutes": "30 Minuten später ins Bett",
   "rewardsTripCinema": "Kinobesuch",
-  "rewardsYouStillNeedPoints": "Dir fehlen noch {points} Punkte – weiter so!",
+  "rewardsYouStillNeedPoints": "{points, plural, =1{Dir fehlt noch 1 Punkt – weiter so!} other{Dir fehlen noch {points} Punkte – weiter so!}}",
   "@rewardsYouStillNeedPoints": {
     "placeholders": {
       "points": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
-  "rewardsRedeemCostPointsParents": "Für {cost} Punkte einlösen? Deine Eltern bekommen Bescheid.",
+  "rewardsRedeemCostPointsParents": "{cost, plural, =1{Für 1 Punkt einlösen? Deine Eltern bekommen Bescheid.} other{Für {cost} Punkte einlösen? Deine Eltern bekommen Bescheid.}}",
   "@rewardsRedeemCostPointsParents": {
     "placeholders": {
       "cost": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
   "rewardsWish": "Wünschen",
   "rewardsWishSent": "Wunsch gesendet 🎁",
   "rewardsWhoRedeems": "Wer löst ein?",
-  "rewardsNameOnlyHasBalance": "{name} hat nur {balance} Punkte.",
+  "rewardsNameOnlyHasBalance": "{balance, plural, =1{{name} hat nur 1 Punkt.} other{{name} hat nur {balance} Punkte.}}",
   "@rewardsNameOnlyHasBalance": {
     "placeholders": {
       "name": {
         "type": "Object?"
       },
       "balance": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4367,11 +4375,11 @@
   "importKeepOriginal": "Original an den Terminen speichern",
   "importShowOriginal": "Original ansehen",
   "importOriginalNotKept": "Das Original konnte nicht gespeichert werden.",
-  "importCountEventsAdded": "{count} Termine eingetragen",
+  "importCountEventsAdded": "{count, plural, =1{1 Termin eingetragen} other{{count} Termine eingetragen}}",
   "@importCountEventsAdded": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4408,11 +4416,11 @@
   "importEGParentsEvening": "z. B. „Elternabend am 16.10. um 19 Uhr“",
   "importFindEvents": "Termine suchen",
   "importTakeOver1Event": "1 Termin übernehmen",
-  "importTakeOverCountEvents": "{count} Termine übernehmen",
+  "importTakeOverCountEvents": "{count, plural, =1{1 Termin übernehmen} other{{count} Termine übernehmen}}",
   "@importTakeOverCountEvents": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4495,19 +4503,19 @@
       }
     }
   },
-  "choresPointsPoints": "+{points} Punkte",
+  "choresPointsPoints": "{points, plural, =1{+1 Punkt} other{+{points} Punkte}}",
   "@choresPointsPoints": {
     "placeholders": {
       "points": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
-  "choresPointsPointsBalanceBalance": "{points} Punkte · Kontostand ⭐ {balance}",
+  "choresPointsPointsBalanceBalance": "{points, plural, =1{1 Punkt · Kontostand ⭐ {balance}} other{{points} Punkte · Kontostand ⭐ {balance}}}",
   "@choresPointsPointsBalanceBalance": {
     "placeholders": {
       "points": {
-        "type": "Object?"
+        "type": "int"
       },
       "balance": {
         "type": "Object?"
@@ -4686,11 +4694,11 @@
     }
   },
   "memberCalendarsUnknown": "unbekannt",
-  "templatesCountEntries": "{count} Einträge",
+  "templatesCountEntries": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
   "@templatesCountEntries": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4802,11 +4810,11 @@
   "kidsAddChildPregnancy": "Kind oder Schwangerschaft hinzufügen",
   "kidsKeepTrackHowKids": "Halte fest, wie eure Kinder wachsen:\nerste Schritte, erste Wörter, U-Untersuchungen –\noder begleitet schon die Schwangerschaft.",
   "kidsWeekAppointmentsChecklistsContraction": "SSW, Termine, Checklisten, Wehen-Timer",
-  "kidsCountMilestones": "{count} Meilensteine",
+  "kidsCountMilestones": "{count, plural, =1{1 Meilenstein} other{{count} Meilensteine}}",
   "@kidsCountMilestones": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -4822,11 +4830,11 @@
   "milestonesReachedEarlierAdd": "Noch nicht eingetragen",
   "milestonesOverdueMentionCheckup": "Der übliche Zeitraum ist vorbei. Noch nicht so weit? Bei der nächsten U-Untersuchung ansprechen.",
   "milestones1MilestoneWhosePeriod": "1 Meilenstein, dessen Zeitraum vorbei ist",
-  "milestonesCountMilestonesWhosePeriod": "{count} Meilensteine, deren Zeitraum vorbei ist",
+  "milestonesCountMilestonesWhosePeriod": "{count, plural, =1{1 Meilenstein, dessen Zeitraum vorbei ist} other{{count} Meilensteine, deren Zeitraum vorbei ist}}",
   "@milestonesCountMilestonesWhosePeriod": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -5129,20 +5137,20 @@
   },
   "timelineFirstWeeks": "Die ersten Wochen",
   "timeline2ndYear": "Im 2. Lebensjahr",
-  "timelineYearsYears": "Mit {years} Jahren",
+  "timelineYearsYears": "{years, plural, =1{Mit 1 Jahr} other{Mit {years} Jahren}}",
   "@timelineYearsYears": {
     "placeholders": {
       "years": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
   "extrasExchangedPocketMoney": "In Taschengeld getauscht",
-  "extrasPointsPoints": "{points} Punkte",
+  "extrasPointsPoints": "{points, plural, =1{1 Punkt} other{{points} Punkte}}",
   "@extrasPointsPoints": {
     "placeholders": {
       "points": {
-        "type": "Object?"
+        "type": "int"
       }
     }
   },
@@ -5751,11 +5759,11 @@
       }
     }
   },
-  "adminPaperlessStatus": "{count} Dokumente, abgeglichen {when}",
+  "adminPaperlessStatus": "{count, plural, =1{1 Dokument, abgeglichen {when}} other{{count} Dokumente, abgeglichen {when}}}",
   "@adminPaperlessStatus": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "when": {
         "type": "Object?"
@@ -6450,7 +6458,7 @@
   "contractRenews": "Verlängert sich um",
   "contractNotice": "Kündigungsfrist",
   "contractNoticeNone": "Keine",
-  "contractNoticeWeeks": "{n} Wochen",
+  "contractNoticeWeeks": "{n, plural, =1{1 Woche} other{{n} Wochen}}",
   "@contractNoticeWeeks": {
     "placeholders": {
       "n": {
@@ -6459,7 +6467,7 @@
     }
   },
   "contractNoticeMonth": "1 Monat",
-  "contractNoticeMonths": "{n} Monate",
+  "contractNoticeMonths": "{n, plural, =1{1 Monat} other{{n} Monate}}",
   "@contractNoticeMonths": {
     "placeholders": {
       "n": {
@@ -6527,7 +6535,7 @@
       }
     }
   },
-  "remindersContractLead": "{emoji} {label}: noch {days} Tage zum Kündigen",
+  "remindersContractLead": "{days, plural, =1{{emoji} {label}: noch 1 Tag zum Kündigen} other{{emoji} {label}: noch {days} Tage zum Kündigen}}",
   "@remindersContractLead": {
     "placeholders": {
       "emoji": {
@@ -6807,7 +6815,7 @@
     }
   },
   "shoppingRhythmWeekly": "jede Woche",
-  "shoppingRhythmWeeks": "alle {weeks} Wochen",
+  "shoppingRhythmWeeks": "{weeks, plural, =1{jede Woche} other{alle {weeks} Wochen}}",
   "@shoppingRhythmWeeks": {
     "placeholders": {
       "weeks": {

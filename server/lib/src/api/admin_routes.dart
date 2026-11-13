@@ -428,9 +428,12 @@ extension _AdminRoutes on FamioApi {
     throttle.succeeded(address, '#pw:${admin.id}');
     final removeMembers = body['removeMembers'] as bool? ?? false;
     // First, so nothing of the deletion reaches iCloud, Google & Co., nor
-    // Bring! and Microsoft To Do.
+    // Bring! and Microsoft To Do; Paperless-ngx and PhotoVault would bring
+    // their documents and photos back with the next sync.
     await caldav?.disconnectAll();
     await lists?.disconnectAll();
+    await paperless?.configure(null);
+    await photoVault?.disconnect();
     final count = records.wipe();
     final fileCount = files.deleteAll();
     locations?.deleteAll();

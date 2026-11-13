@@ -3,6 +3,7 @@
 // the form stay on screen (#406).
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:famio/src/data/budget_month.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/screens/budget_screens.dart';
@@ -12,17 +13,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   setUpAll(() => initializeDateFormatting('de'));
+
+  late SyncEngine engine;
 
   Future<void> openRent(WidgetTester tester, DateTime date) async {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     final state = AppState();
     await state.init();
-    final engine = SyncEngine(
+    engine = SyncEngine(
       store: LocalStore.open(':memory:')
         ..setMeta(
           'members',
@@ -129,4 +133,40 @@ void main() {
       lessThanOrEqualTo(390),
     );
   });
+
+  for (final fromNow in [true, false]) {
+    testWidgets(
+      'a new rent ${fromNow ? 'from this month' : 'for all months'}',
+      (tester) async {
+        tester.view.physicalSize = const Size(1000, 1600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final now = DateTime.now();
+        final thisMonth = DateTime(now.year, now.month);
+        await openRent(tester, DateTime(now.year - 1, 1, 3));
+        await tester.enterText(
+          find.widgetWithText(TextField, 'Betrag'),
+          '1000',
+        );
+        await tester.tap(find.text('Speichern').last);
+        await tester.pumpAndSettle();
+        expect(find.text('Ab wann gilt der neue Betrag?'), findsOneWidget);
+        await tester.tap(
+          find.text(
+            fromNow
+                ? 'Ab ${DateFormat.yMMMM('de').format(thisMonth)}'
+                : 'Auch für die Monate davor',
+          ),
+        );
+        await tester.pumpAndSettle();
+        int rent(DateTime month) =>
+            BudgetMonth(engine.budgetEntries, month).expenses;
+        final january = DateTime(now.year - 1, 1);
+        expect(rent(january), fromNow ? 95000 : 100000);
+        expect(rent(thisMonth), 100000);
+        expect(rent(DateTime(now.year + 1, now.month)), 100000);
+        expect(engine.budgetEntries, hasLength(fromNow ? 2 : 1));
+      },
+    );
+  }
 }

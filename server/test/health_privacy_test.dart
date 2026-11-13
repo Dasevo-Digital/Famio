@@ -347,6 +347,86 @@ void main() {
     });
   });
 
+  group('deleting an account also', () {
+    test('takes what only they could see, with its files', () async {
+      final file = await app.files.save(
+        owner: papa.id,
+        name: 'kontoauszug.pdf',
+        mime: 'application/pdf',
+        body: Stream.value(utf8.encode('%PDF privat')),
+      );
+      await sync(
+        papa,
+        changes: [
+          record(
+            Collections.notes,
+            'tagebuch',
+            {'title': 'Tagebuch', 'text': 'privat'},
+            audience: [papa.id],
+          ),
+          record(
+            Collections.documents,
+            'auszug',
+            {
+              'title': 'Kontoauszug',
+              'category': 'finance',
+              'file': {
+                'id': file.id,
+                'name': 'kontoauszug.pdf',
+                'mime': 'application/pdf',
+                'size': file.size,
+              },
+            },
+            audience: [papa.id],
+          ),
+          record(Collections.notes, 'familie', {
+            'title': 'Einkaufsideen',
+            'text': 'für alle',
+          }),
+          record(
+            Collections.notes,
+            'zu-zweit',
+            {'title': 'Urlaub', 'text': 'zu zweit'},
+            audience: [papa.id, mama.id],
+          ),
+        ],
+      );
+      expect(app.records.referenced(file.id), isTrue);
+      final response = await app.handler(
+        Request(
+          'DELETE',
+          Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+          headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+        ),
+      );
+      expect(response.statusCode, 200);
+      bool gone(String c, String id) => app.records.get(c, id)?.deleted ?? true;
+      expect(gone(Collections.notes, 'tagebuch'), isTrue);
+      expect(gone(Collections.documents, 'auszug'), isTrue);
+      expect(gone(Collections.notes, 'familie'), isFalse);
+      expect(gone(Collections.notes, 'zu-zweit'), isFalse);
+      // The upload is no longer referenced: the file maintenance removes it.
+      expect(app.records.referenced(file.id), isFalse);
+    });
+
+    test('works for a guest, who deletes their own account', () async {
+      await app.accounts.setPassword(oma.id, 'tulpe-regal-7');
+      final response = await app.handler(
+        Request(
+          'DELETE',
+          Uri.parse('http://famio.test/api/me'),
+          headers: {
+            'authorization': 'Bearer ${tokens[oma.id]}',
+            'content-type': 'application/json',
+          },
+          body: jsonEncode({'password': 'tulpe-regal-7'}),
+        ),
+      );
+      expect(response.statusCode, 200, reason: await response.readAsString());
+      expect(app.accounts.byId(oma.id), isNull);
+    });
+  });
+
   group('confidential appointments', () {
     test('reach whoever takes part, and adults', () async {
       await sync(

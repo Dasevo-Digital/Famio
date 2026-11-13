@@ -259,6 +259,9 @@ class ServerSettings {
   /// In [hiddenModules]: the family does not connect lists in other apps.
   static const listSyncModule = 'listSync';
 
+  /// In [hiddenModules]: no location sharing; phones pause their reports.
+  static const locationModule = 'location';
+
   static const keys = [
     'publicUrl',
     'timeZone',

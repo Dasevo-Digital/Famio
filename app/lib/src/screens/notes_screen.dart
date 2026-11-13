@@ -273,43 +273,50 @@ class _NoteEditorState extends State<_NoteEditor> {
               onChanged: (v) => setState(() => _pinned = v),
             ),
             ListHeading(tr.commonWhoMaySee),
-            RadioGroup<_Audience>(
-              groupValue: _audience,
-              onChanged: (v) => setState(() => _audience = v!),
-              child: Column(
-                children: [
-                  RadioListTile(
-                    value: _Audience.family,
-                    title: Text(tr.notesWholeFamilyGuestsToo),
-                  ),
-                  RadioListTile(
-                    value: _Audience.me,
-                    title: Text(tr.docsOnlyMe),
-                  ),
-                  if (others.isNotEmpty)
+            if (!engine.mayChooseAudience(
+              isNew: note == null,
+              visibleTo: note?.visibleTo,
+            ))
+              Text(tr.commonAudienceSetByAdults)
+            else ...[
+              RadioGroup<_Audience>(
+                groupValue: _audience,
+                onChanged: (v) => setState(() => _audience = v!),
+                child: Column(
+                  children: [
                     RadioListTile(
-                      value: _Audience.selected,
-                      title: Text(tr.docsMe),
+                      value: _Audience.family,
+                      title: Text(tr.notesWholeFamilyGuestsToo),
                     ),
-                ],
-              ),
-            ),
-            if (_audience == _Audience.selected)
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final m in others)
-                    FilterChip(
-                      avatar: MemberAvatar(m, radius: 10),
-                      label: Text(m.displayName),
-                      selected: _members.contains(m.id),
-                      onSelected: (on) => setState(
-                        () => on ? _members.add(m.id) : _members.remove(m.id),
+                    RadioListTile(
+                      value: _Audience.me,
+                      title: Text(tr.docsOnlyMe),
+                    ),
+                    if (others.isNotEmpty)
+                      RadioListTile(
+                        value: _Audience.selected,
+                        title: Text(tr.docsMe),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
+              if (_audience == _Audience.selected)
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final m in others)
+                      FilterChip(
+                        avatar: MemberAvatar(m, radius: 10),
+                        label: Text(m.displayName),
+                        selected: _members.contains(m.id),
+                        onSelected: (on) => setState(
+                          () => on ? _members.add(m.id) : _members.remove(m.id),
+                        ),
+                      ),
+                  ],
+                ),
+            ],
             const SizedBox(height: 16),
             Row(
               children: [

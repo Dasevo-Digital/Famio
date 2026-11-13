@@ -21,6 +21,16 @@ extension FamilyExtras on SyncEngine {
 
   bool get iAmGuest => myRole == MemberRole.guest;
 
+  /// Whether this member decides who sees an entry stored with
+  /// [visibleTo]: children only for new entries and their own private ones
+  /// (the server keeps the audience of everything else as it is).
+  bool mayChooseAudience({required bool isNew, List<String>? visibleTo}) =>
+      myRole != MemberRole.child ||
+      isNew ||
+      (visibleTo != null &&
+          visibleTo.length == 1 &&
+          visibleTo.single == memberId);
+
   List<FamilyMember> get kidMembers =>
       members.where((m) => m.role == MemberRole.child).toList();
 

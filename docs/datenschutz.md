@@ -41,14 +41,19 @@ Audit-Log.
 
 - Sitzungen laufen nach 90 Tagen Inaktivität ab und können je Gerät widerrufen
   werden.
+- Ist der Bereich Standort in der Server-Verwaltung ausgeblendet, nimmt der
+  Server keine Positionen an, und die Telefone pausieren das Teilen.
 - Der Standortverlauf ist auf 1 bis 365 Tage einstellbar; Standard sind sieben
   Tage.
 - Beim Abmelden werden lokale Datenbank, Cache und Anmeldedaten des Geräts
   gelöscht.
 - Administratoren können die Familiendaten serverseitig löschen. Diese
-  Löschung wird beim nächsten Abgleich auf die Geräte übertragen.
-- Wird ein Konto gelöscht, entfernt der Server dessen Notfallangaben und die
-  Gesundheitsdaten, die nur diese Person sehen konnte; auch aus dem Papierkorb.
+  Löschung wird beim nächsten Abgleich auf die Geräte übertragen. Verbindungen
+  zu Listen-Apps, Paperless-ngx und PhotoVault werden vorher getrennt, damit
+  deren Einträge nicht zurückkommen.
+- Wird ein Konto gelöscht, entfernt der Server dessen Notfallangaben und alle
+  Einträge, die nur diese Person sehen konnte, etwa private Notizen, Dokumente
+  samt Dateien und Gesundheitsdaten; auch aus dem Papierkorb.
   Daten von Kindern bleiben als Daten der Familie erhalten. Vorhandene
   Sicherungen enthalten die gelöschten Daten bis zu ihrem Ablauf weiter.
 - Einzelne gelöschte Aufgaben, Termine, Notizen und Dokumente werden mit ihren

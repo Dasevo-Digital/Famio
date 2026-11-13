@@ -111,10 +111,12 @@ extension _AccountRoutes on FamioApi {
     return _json(updated.toJson());
   }
 
-  /// Self-service account deletion. Shared family entries deliberately stay:
-  /// removing them could erase data owned by other family members.
+  /// Self-service account deletion, also for guests. Shared family entries
+  /// deliberately stay: removing them could erase data owned by other
+  /// family members. What only this member could see goes with them.
   Future<Response> _deleteMe(Request request) async {
-    final member = _member(request);
+    final member = _auth(request);
+    _checkWriter(member);
     if (member.isAdmin && accounts.adminCount <= 1) {
       throw ApiException.badRequest(
         'last_admin',

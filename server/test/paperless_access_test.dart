@@ -254,4 +254,31 @@ void main() {
       isNot(contains(papaId)),
     );
   });
+
+  test('wiping all data ends the connection to Paperless', () async {
+    await call(
+      'PUT',
+      'api/admin/paperless',
+      as: admin,
+      body: {'url': 'http://192.168.1.20:8000/', 'token': 'x'},
+    );
+    final wipe = await call(
+      'POST',
+      'api/admin/wipe',
+      as: admin,
+      body: {'confirm': 'LÖSCHEN', 'password': 'tulpe-regal-7'},
+    );
+    expect(wipe.statusCode, 200);
+    final info = await call('GET', 'api/admin/paperless', as: admin);
+    expect(
+      (jsonDecode(await info.readAsString()) as Map)['connected'],
+      isNot(true),
+    );
+    // The periodic sync brings nothing back.
+    await app.paperless.sync();
+    expect(
+      app.records.all(Collections.externalDocuments).where((r) => !r.deleted),
+      isEmpty,
+    );
+  });
 }

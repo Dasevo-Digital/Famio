@@ -17,12 +17,20 @@ List<CalendarEvent> withOfficialSchoolHolidays(
   final official = officialSchoolHolidays[state] ?? const <SchoolHoliday>[];
   final additions = schoolHolidayAdditions[state] ?? const <SchoolHoliday>[];
   if (official.isEmpty && additions.isEmpty) return events;
-  final start = officialSchoolHolidaysFrom;
+  // From the state's first official period on: before it lie the summer
+  // holidays of the school year before, which in Bavaria and
+  // Baden-Württemberg run into August and September.
+  final start = official.isEmpty
+      ? officialSchoolHolidaysFrom
+      : official.map((h) => h.first).reduce((a, b) => a.isBefore(b) ? a : b);
   final until = official.isEmpty
       ? start
       : official.map((h) => h.end).reduce((a, b) => a.isAfter(b) ? a : b);
+  bool overlapsOfficial(CalendarEvent e) =>
+      official.any((h) => e.start.isBefore(h.end) && e.end.isAfter(h.first));
   bool replaced(CalendarEvent e) =>
-      !e.start.isBefore(start) && e.start.isBefore(until);
+      (!e.start.isBefore(start) && e.start.isBefore(until)) ||
+      overlapsOfficial(e);
   bool inWindow(SchoolHoliday h) => h.end.isAfter(from) && h.first.isBefore(to);
   CalendarEvent event(SchoolHoliday h) => CalendarEvent(
     id: sha1

@@ -210,82 +210,89 @@ List<DueItem> vaccinationPlan(
 ]) {
   final now = at ?? DateTime.now();
   final day = DateTime(now.year, now.month, now.day);
-  return [
-    for (final v in vaccinations)
-      () {
-        final entry = _entryFor(entries, ChildEntryKind.vaccination, v.id);
-        final birth = child.ageDate(0);
-        final rule = vaccinationRules[v.id];
-        DateTime? last;
-        var (from, to) = v.id == 'rsv'
-            ? rsvWindow(birth, day)
-            : () {
-                var from = switch (rule?.fromDays) {
-                  final days? => DateTime(
-                    birth.year,
-                    birth.month,
-                    birth.day + days,
-                  ),
-                  null => child.ageDate(v.ageMonths),
-                };
-                // Not before the minimum interval after the dose before,
-                // once that one is recorded with its date.
-                final before = rule?.after == null
-                    ? null
-                    : _entryFor(
-                        entries,
-                        ChildEntryKind.vaccination,
-                        rule!.after!,
-                      );
-                if (before != null && !before.planned && !before.dateUnknown) {
-                  final given = before.date;
-                  final month = _plusMonths(
-                    DateTime(given.year, given.month, given.day),
-                    rule!.gapMonths,
-                  );
-                  final earliest = DateTime(
-                    month.year,
-                    month.month,
-                    month.day + rule.gapDays,
-                  );
-                  if (earliest.isAfter(from)) from = earliest;
-                }
-                // Vaccinations have no fixed window; a month counts as
-                // "due".
-                return (from, DateTime(from.year, from.month, from.day + 31));
-              }();
-        if (rule?.untilDays case final days?) {
-          last = DateTime(birth.year, birth.month, birth.day + days);
-          if (to.isAfter(last)) to = last;
+  final birth = child.ageDate(0);
+  final planned = <String, DueItem>{};
+  for (final v in vaccinations) {
+    final entry = _entryFor(entries, ChildEntryKind.vaccination, v.id);
+    final rule = vaccinationRules[v.id];
+    // The dose before in the series, if this one waits for it.
+    final before = rule?.after == null
+        ? null
+        : _entryFor(entries, ChildEntryKind.vaccination, rule!.after!);
+    final beforeGiven = before != null && !before.planned;
+    DateTime? last;
+    var (from, to) = v.id == 'rsv'
+        ? rsvWindow(birth, day)
+        : () {
+            var from = switch (rule?.fromDays) {
+              final days? => DateTime(
+                birth.year,
+                birth.month,
+                birth.day + days,
+              ),
+              null => child.ageDate(v.ageMonths),
+            };
+            // Not before the minimum interval after the dose before,
+            // once that one is recorded with its date.
+            if (beforeGiven && !before.dateUnknown) {
+              final given = before.date;
+              final month = _plusMonths(
+                DateTime(given.year, given.month, given.day),
+                rule!.gapMonths,
+              );
+              final earliest = DateTime(
+                month.year,
+                month.month,
+                month.day + rule.gapDays,
+              );
+              if (earliest.isAfter(from)) from = earliest;
+            }
+            // Vaccinations have no fixed window; a month counts as
+            // "due".
+            return (from, DateTime(from.year, from.month, from.day + 31));
+          }();
+    // A series with an age limit (Rotavirus) is due until that limit.
+    var waiting = false;
+    var tooLate = false;
+    if (rule?.untilDays case final days?) {
+      last = DateTime(birth.year, birth.month, birth.day + days);
+      to = last;
+      tooLate = day.isAfter(last) || from.isAfter(last);
+      // Later doses follow the first: not due before it, and too late
+      // once the series can no longer start.
+      if (rule!.after != null && !beforeGiven) {
+        if (planned[rule.after!]?.tooLate ?? false) {
+          tooLate = true;
+        } else {
+          waiting = true;
         }
-        // Past the age at which it is still given (Rotavirus).
-        final tooLate =
-            last != null && (day.isAfter(last) || from.isAfter(last));
-        final state = _stateOf(
-          entry,
-          () => tooLate
-              ? DueState.missed
-              : day.isBefore(from)
-              ? DueState.upcoming
-              : !day.isAfter(to)
-              ? DueState.due
-              // Many parents never record past vaccinations: an old
-              // unrecorded dose is neutral, not an endless alarm.
-              : DueState.missed,
-        );
-        return DueItem(
-          id: v.id,
-          title: v.title,
-          subtitle: [v.dose, if (v.note.isNotEmpty) v.note].join(' · '),
-          from: from,
-          to: to,
-          state: state,
-          entry: entry,
-          isCheckup: false,
-          tooLate: tooLate,
-        );
-      }(),
-  ];
+      }
+    }
+    final state = _stateOf(
+      entry,
+      () => tooLate
+          ? DueState.missed
+          : waiting || day.isBefore(from)
+          ? DueState.upcoming
+          : !day.isAfter(to)
+          ? DueState.due
+          // Many parents never record past vaccinations: an old
+          // unrecorded dose is neutral, not an endless alarm.
+          : DueState.missed,
+    );
+    planned[v.id] = DueItem(
+      id: v.id,
+      title: v.title,
+      subtitle: [v.dose, if (v.note.isNotEmpty) v.note].join(' · '),
+      from: from,
+      to: to,
+      state: state,
+      entry: entry,
+      isCheckup: false,
+      tooLate: tooLate,
+    );
+  }
+  return planned.values.toList();
 }
 
 /// The next thing parents should look after: a booked appointment first,

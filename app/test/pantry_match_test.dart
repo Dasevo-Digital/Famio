@@ -20,6 +20,32 @@ void main() {
     expect(has('Butter'), isFalse);
   });
 
+  test('whole words and compounds, not parts of words', () {
+    bool has(String ingredient, String pantryItem) => inPantry(
+      Ingredient(name: ingredient),
+      [PantryItem(id: 'x', name: pantryItem, amount: 1)],
+    );
+    // Ice cream is no rice, no egg white and no iceberg lettuce.
+    for (final other in ['Reis', 'Basmatireis', 'Eiweiß', 'Eisbergsalat']) {
+      expect(has(other, 'Eis'), isFalse, reason: other);
+    }
+    expect(has('Erdnussbutter', 'Butter'), isFalse);
+    expect(has('Kokosmilch', 'Milch'), isFalse);
+    expect(has('Milch', 'Kokosmilch'), isFalse);
+    expect(has('Reisnudeln', 'Nudeln'), isFalse);
+    expect(has('Eis', 'Ei'), isFalse);
+    // What is the same thing.
+    expect(has('Basmatireis', 'Reis'), isTrue);
+    expect(has('Reis', 'Basmatireis'), isTrue);
+    expect(has('Milch', 'Vollmilch'), isTrue);
+    expect(has('frische Milch', 'Milch 3,5 %'), isTrue);
+    expect(has('Ei', 'Eier'), isTrue);
+    expect(has('Hühnereier', 'Eier'), isTrue);
+    expect(has('Tomaten', 'Tomate'), isTrue);
+    expect(has('Zwiebeln (rot)', 'Zwiebel'), isTrue);
+    expect(has('Bio-Eier', 'Eier'), isTrue);
+  });
+
   test('a recipe’s share', () {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),

@@ -218,6 +218,9 @@ class PhotoVaultLink {
   void stop() {
     _timer?.cancel();
     _timer = null;
+    // A sync still running ends without writing: the database may be
+    // closed by then.
+    _generation++;
   }
 
   PhotoVaultConfig? get config {

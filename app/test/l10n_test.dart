@@ -42,6 +42,42 @@ void main() {
     });
   }
 
+  for (final language in ['en', 'es']) {
+    // Many texts are joined to others ("Du: " + message, " · gelesen"):
+    // without the space of the German one the words run together.
+    test('$language texts keep the spaces at both ends', () {
+      final other = _texts('app_$language.arb');
+      final wrong = <String>[];
+      for (final MapEntry(:key, :value) in other.entries) {
+        final german = de[key]!;
+        bool space(String s, bool start) =>
+            (start ? s.characters.firstOrNull : s.characters.lastOrNull)
+                ?.trim()
+                .isEmpty ??
+            false;
+        // A colon or comma joins straight on ("Zahnpasta: producto …").
+        final joined = RegExp(r'^[:,.;]').hasMatch(value);
+        if ((space(german, true) != space(value, true) && !joined) ||
+            space(german, false) != space(value, false)) {
+          wrong.add('$key: "$value"');
+        }
+      }
+      expect(wrong, isEmpty);
+    });
+  }
+
+  test('counts of one read in the singular', () {
+    final de = lookupL10n(const Locale('de'));
+    final en = lookupL10n(const Locale('en'));
+    final es = lookupL10n(const Locale('es'));
+    expect(de.commonDaysLeft(1), 'noch 1 Tag');
+    expect(de.commonDaysLeft(3), 'noch 3 Tage');
+    expect(en.homeCountNotes(1), '1 note');
+    expect(en.homeCountNotes(2), '2 notes');
+    expect(es.importCountEventsAdded(1), '1 evento añadido');
+    expect(en.medsLastsAboutDaysDays(1), ' · lasts about 1 day');
+  });
+
   for (final language in ['de', 'en', 'es']) {
     test('app_$language.arb names every key once', () {
       // jsonDecode keeps the last of two equal keys without a word.

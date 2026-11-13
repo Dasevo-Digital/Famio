@@ -1029,7 +1029,11 @@ class _KidsTile extends StatelessWidget {
                 size: 18,
                 color: c.strong(FamioSection.kids),
               ),
-              trailing: tr.commonDaysLeft(daysToGo(p)),
+              trailing: switch (daysToGo(p)) {
+                > 0 && final left => tr.commonDaysLeft(left),
+                0 => tr.pregnancyDueDateToday,
+                final left => tr.pregnancyDaysDaysPastDue(-left),
+              },
             ),
           if (kids.isEmpty && engine.activePregnancies.isEmpty)
             _Line(tr.homeAddChildKeepTrack, dim: true),

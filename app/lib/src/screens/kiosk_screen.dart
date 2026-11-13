@@ -550,7 +550,11 @@ class _ShoppingPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final list = engine.shoppingLists.firstOrNull;
+    // The wall display hangs where everyone passes: only what the whole
+    // family may see.
+    final list = engine.shoppingLists
+        .where((l) => l.visibleTo == null)
+        .firstOrNull;
     final open = list == null
         ? <ShoppingItem>[]
         : engine.shoppingItems(list.id).where((i) => !i.checked).toList();
@@ -633,11 +637,12 @@ class _PeopleBoard extends StatelessWidget {
               .toList()
         : <Occurrence>[];
     final openTasks = on(FamioSection.tasks)
-        ? (engine.tasks.where((t) => !t.done).toList()..sort((a, b) {
-            final da = a.due, db = b.due;
-            if (da == null || db == null) return da == null ? 1 : -1;
-            return da.compareTo(db);
-          }))
+        ? (engine.tasks.where((t) => !t.done && t.visibleTo == null).toList()
+            ..sort((a, b) {
+              final da = a.due, db = b.due;
+              if (da == null || db == null) return da == null ? 1 : -1;
+              return da.compareTo(db);
+            }))
         : <Task>[];
     final members = engine.members.where((m) => !m.isService).toList();
     final ids = {for (final m in members) m.id};
@@ -840,11 +845,12 @@ class _PeopleBoard extends StatelessWidget {
   }
 }
 
-/// Images in the documents category "Fotos" the member may see, and the
-/// album the family chose in PhotoVault.
+/// Images in the documents category "Fotos" the whole family may see, and
+/// the album the family chose in PhotoVault for the wall display.
 List<FileRef> familyPhotos(SyncEngine engine) => [
   for (final d in engine.documents)
     if (d.category == DocumentCategory.photos &&
+        d.visibleTo == null &&
         d.file != null &&
         d.file!.mime.startsWith('image/'))
       d.file!,

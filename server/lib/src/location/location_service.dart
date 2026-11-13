@@ -25,8 +25,14 @@ class LocationService {
     required this.onChanged,
     DateTime Function()? clock,
     Duration Function()? retention,
+    bool Function()? enabled,
   }) : _clock = clock ?? DateTime.now,
-       _retention = retention ?? (() => defaultRetention);
+       _retention = retention ?? (() => defaultRetention),
+       _enabled = enabled ?? (() => true);
+
+  /// False while an admin has hidden the location module: phones pause and
+  /// nothing is kept.
+  final bool Function() _enabled;
 
   final Database db;
   final RecordStore records;
@@ -134,6 +140,23 @@ class LocationService {
       status = _state(member.id);
     }
     final previous = _current(member.id);
+
+    // The family switched location off altogether: the phone pauses, and
+    // neither this nor the last position stays visible.
+    if (!_enabled()) {
+      if (_publish(
+        member.id,
+        previous,
+        MemberLocation(
+          memberId: member.id,
+          state: SharingState.paused,
+          lastContact: now,
+        ),
+      )) {
+        onChanged();
+      }
+      return LocationReportResult(paused: true, intervalSeconds: 15 * 60);
+    }
 
     if (status.paused) {
       _publish(

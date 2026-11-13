@@ -18,6 +18,13 @@ extension DeadlineData on SyncEngine {
 
   void deleteDeadline(String id) => delete(Collections.deadlines, id);
 
+  /// Deletes [id] and stops its monthly amount in the household budget
+  /// from this month on; the months before keep it.
+  void deleteDeadlineWithBudget(String id, [DateTime? now]) {
+    deleteDeadline(id);
+    endMonthlyBudgetEntry('contract-$id', now ?? DateTime.now());
+  }
+
   /// Saves [d] and keeps a contract's monthly amount in the household
   /// budget (entry `contract-<id>`): from the month it was first added,
   /// until the end of the term once cancelled; removed when switched off.

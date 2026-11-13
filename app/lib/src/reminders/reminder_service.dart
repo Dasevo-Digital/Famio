@@ -805,7 +805,7 @@ List<DueReminder> familyReminders(
           m.personName.isEmpty
               ? m.name
               : tr.remindersMedicationPerson(m.name, m.personName),
-          m.dose.isEmpty ? tr.budgetIncome2 : m.dose,
+          m.dose.isEmpty ? tr.remindersMedicationIntake : m.dose,
         );
       }
     }

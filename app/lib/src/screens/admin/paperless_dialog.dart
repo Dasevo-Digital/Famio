@@ -123,7 +123,7 @@ class _PaperlessDialogState extends State<_PaperlessDialog> {
     final sync = DateTime.tryParse('${_info['lastSync'] ?? ''}');
     if (!_connected || sync == null) return null;
     return tr.adminPaperlessStatus(
-      _info['count'] ?? 0,
+      (_info['count'] as num?)?.toInt() ?? 0,
       DateFormat.yMd(appLanguage).add_jm().format(sync.toLocal()),
     );
   }
