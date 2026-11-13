@@ -2,6 +2,21 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.53 – Mitteilungen gebündelt, Änderungen bleiben erhalten
+
+- Viele Nachrichten auf einmal kommen als eine Mitteilung an. Je Abgleich
+  gibt es höchstens zehn Mitteilungen, Notrufe gehen immer sofort raus.
+- Wer einen Eintrag bearbeitet, überschreibt nicht mehr, was ein anderes
+  Gerät inzwischen geändert hat, etwa einen abgehakten Schritt.
+- Der Medikamentenvorrat sinkt beim Speichern nicht mehr ohne Grund.
+- Der Vorrat erkennt Produktnamen aus dem Barcode-Scan, englische und
+  spanische Zutaten und „oder“; Paprikapulver ist keine Paprika.
+- Kinder machen nur selbst angelegte Termine vertraulich. Die Einstellungen
+  des Haushaltsbuchs ändern nur Erwachsene.
+- Ist eine Datei zu groß, sagt Famio das.
+- Die Server-Verwaltung fragt nach, bevor sie Rollen oder
+  Administratorrechte ändert; die eigenen nur mit Passwort.
+
 ## 2.0.52 – Vorrat, Müllabfuhr und Listen-Abgleich genauer
 
 - Der Vorrat vergleicht das Hauptwort einer Zutat: „rote Paprika“ ist keine

@@ -4,6 +4,21 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.53 – Avisos agrupados, los cambios se conservan
+
+- Muchos mensajes a la vez llegan como un solo aviso. Cada sincronización
+  trae como mucho diez avisos; las emergencias salen siempre al momento.
+- Al editar una entrada ya no se sobrescribe lo que otro dispositivo cambió
+  mientras tanto, como un paso marcado.
+- El inventario de medicamentos ya no baja sin motivo al guardar.
+- La despensa reconoce nombres de productos del escáner de códigos,
+  ingredientes en inglés y español y «o»; el pimentón no es un pimiento.
+- Los niños solo marcan como confidenciales las citas que crearon ellos.
+  Solo los adultos cambian los ajustes del libro de cuentas.
+- Si un archivo es demasiado grande, Famio lo dice.
+- La administración del servidor pregunta antes de cambiar roles o
+  derechos de administrador; los propios solo con contraseña.
+
 ## 2.0.52 – Despensa, basuras y sincronización de listas más exactas
 
 - La despensa compara la palabra principal de un ingrediente: el pimiento

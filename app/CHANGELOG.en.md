@@ -4,6 +4,21 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.53 – Bundled notifications, changes are kept
+
+- Many messages at once arrive as one notification. Each sync brings at
+  most ten notifications; emergencies always go out at once.
+- Editing an entry no longer overwrites what another device changed in the
+  meantime, such as a ticked step.
+- The medication stock no longer drops for no reason when saving.
+- The pantry recognises product names from the barcode scan, English and
+  Spanish ingredients and "or"; paprika powder is no bell pepper.
+- Children mark only events they entered themselves as confidential. Only
+  adults change the household book settings.
+- If a file is too large, Famio says so.
+- The server administration asks before it changes roles or admin rights;
+  your own only with your password.
+
 ## 2.0.52 – More exact pantry, bins and list sync
 
 - The pantry compares the main word of an ingredient: "red peppers" are not
