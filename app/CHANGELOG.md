@@ -4,6 +4,22 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.51 – Löschen, Wandanzeige und Haushaltsbuch genauer
+
+- Beim Löschen eines Kontos geht alles mit, was nur dieses Konto sehen
+  konnte; auch Gäste können ihr Konto selbst löschen. „Alle Daten löschen“ trennt vorher
+  Paperless-ngx und PhotoVault.
+- Die Wandanzeige zeigt nur Aufgaben, Listen und Fotos für die ganze Familie.
+- Ein gelöschter Vertrag zählt ab diesem Monat nicht mehr im Haushaltsbuch.
+  Bei einem neuen Monatsbetrag fragt Famio, ab wann er gilt.
+- Der Vorrat ordnet Zutaten nach ganzen Wörtern zu („Eis“ ist kein Reis).
+- Rotavirus-Impfungen richten sich nach der ersten Dosis und ihrer
+  Altersgrenze. Die bayerischen Sommerferien 2026 sind wieder da.
+- Ist der Bereich Standort ausgeblendet, pausieren die Telefone das Teilen.
+- Kinderkonten wählen die Sichtbarkeit nur bei eigenen privaten Einträgen.
+  Die Anmeldung per SSO klappt auch bei einer Serveradresse mit Pfad.
+- Englische und spanische Texte mit Leerzeichen und Einzahl („1 day“).
+
 ## 2.0.50 – Vorsorge, Fieber und Meilensteine genauer
 
 - U-Untersuchungen enden tagesgenau, wie es das gelbe Heft vorsieht.

@@ -4,6 +4,25 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.51 – Borrado, pantalla de pared y libro de cuentas más exactos
+
+- Al eliminar una cuenta se borra todo lo que solo esa cuenta podía ver; los
+  invitados también pueden eliminar su cuenta. «Borrar todos los datos»
+  desconecta antes Paperless-ngx y PhotoVault.
+- La pantalla de pared solo muestra tareas, listas y fotos de toda la
+  familia.
+- Un contrato eliminado deja de contar en el libro de cuentas desde este
+  mes. Ante un nuevo importe mensual, Famio pregunta desde cuándo vale.
+- La despensa asigna los ingredientes por palabras completas.
+- Las vacunas del rotavirus se guían por la primera dosis y su límite de
+  edad. Vuelven las vacaciones de verano 2026 de Baviera.
+- Con el apartado Ubicación oculto, los teléfonos pausan el envío.
+- Las cuentas infantiles solo eligen la visibilidad en sus propias entradas
+  privadas. El inicio de sesión único también funciona con una dirección del
+  servidor con ruta.
+- Textos en inglés y español con los espacios y el singular correctos
+  («1 día»).
+
 ## 2.0.50 – Revisiones, fiebre e hitos más exactos
 
 - Las revisiones terminan el día exacto que marca la cartilla amarilla.

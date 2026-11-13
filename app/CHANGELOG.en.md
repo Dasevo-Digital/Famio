@@ -4,6 +4,22 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.51 – More exact deleting, wall display and household book
+
+- Deleting an account takes everything only that account could see; guests
+  can delete their account too. "Delete all data" disconnects Paperless-ngx
+  and PhotoVault first.
+- The wall display shows only tasks, lists and photos for the whole family.
+- A deleted contract no longer counts in the household book from this month
+  on. For a new monthly amount, Famio asks from when it applies.
+- The pantry matches ingredients by whole words ("Eis" is not rice).
+- Rotavirus vaccinations follow the first dose and its age limit. Bavaria's
+  summer holidays 2026 are back.
+- With the location section hidden, phones pause sharing.
+- Children's accounts choose the visibility only for their own private
+  entries. Single sign-on also works with a server address that has a path.
+- English and Spanish texts with the right spaces and singulars ("1 day").
+
 ## 2.0.50 – More exact check-ups, fever hints and milestones
 
 - Check-ups end on the exact day the yellow booklet sets.
