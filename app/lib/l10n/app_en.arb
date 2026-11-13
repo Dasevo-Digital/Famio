@@ -254,7 +254,7 @@
   "adminSettingsResetDefault": "Settings reset to default",
   "adminDeleteAllData": "Delete all data?",
   "adminDeletePermanently": "Delete permanently",
-  "adminDeletesAllEventsChats": "This deletes all events, chats, lists, tasks, chores, documents, photos, kids' and health data, locations, connected calendars and calendar links – on the server and, with the next sync, on all devices. This cannot be undone; make a backup of the data folder first.\n\nThe accounts, server settings and the HTTPS certificate are kept.",
+  "adminDeletesAllEventsChats": "This deletes all events, chats, lists, tasks, chores, documents, photos, kids' and health data, locations, connected calendars, calendar links and the connections to list apps, Paperless-ngx and PhotoVault – on the server and, with the next sync, on all devices. This cannot be undone; make a backup of the data folder first.\n\nThe accounts, the other server settings and the HTTPS certificate are kept. Nothing is deleted in Paperless-ngx or PhotoVault themselves.",
   "adminAlsoRemoveAllOther": "Also remove all other members",
   "adminOnlyAccountRemains": "Only your account remains",
   "commonYourPassword": "Your password",

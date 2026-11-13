@@ -372,6 +372,7 @@ extension _AdminRoutes on FamioApi {
         changes.containsKey('holidayRegion')) {
       hub.notifyMembersChanged();
     }
+    if (changes.containsKey('hiddenModules')) locations?.followModule();
     if (_syncedSettings() != before) hub.notifySettingsChanged();
     // Retention is a privacy boundary. Do not wait for the six-hour
     // housekeeping job when an administrator shortens it.
@@ -681,7 +682,7 @@ extension _AdminRoutes on FamioApi {
     return _json(member.toJson(), status: 201);
   }
 
-  Response _deleteMember(Request request, String id) {
+  Future<Response> _deleteMember(Request request, String id) async {
     final admin = _admin(request);
     if (id == admin.id) {
       throw ApiException.badRequest(
@@ -690,6 +691,10 @@ extension _AdminRoutes on FamioApi {
       );
     }
     final target = accounts.byId(id);
+    // First, so nothing of the deletion reaches their calendars and lists
+    // in other apps (as when they delete their account themselves).
+    await caldav?.disconnectUser(id);
+    await lists?.disconnectMember(id);
     records.purgeMember(id);
     invites?.revokeBy(id);
     accounts.delete(id);

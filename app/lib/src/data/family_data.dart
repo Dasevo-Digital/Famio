@@ -145,6 +145,17 @@ extension FamilyData on SyncEngine {
     Collections.events,
   ).map((r) => CalendarEvent.fromRecord(r).inTimeZone(familyTimeZone)).toList();
 
+  /// What a wall display may say about [e]: a confidential appointment or
+  /// one only some members see (a private calendar, a restricted entry)
+  /// only says it is one.
+  String wallTitle(CalendarEvent e) {
+    if (e.confidential) return tr.eventBusy;
+    final record =
+        this.record(Collections.events, e.id) ??
+        this.record(Collections.externalEvents, e.id);
+    return record?.visibleTo == null ? e.title : tr.eventBusy;
+  }
+
   CalendarEvent? event(String id) {
     final r = record(Collections.events, id);
     return r == null

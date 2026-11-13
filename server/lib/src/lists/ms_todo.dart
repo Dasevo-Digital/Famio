@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'list_provider.dart';
 import '../i18n.dart';
@@ -147,10 +148,19 @@ class MsTodoProvider implements ListProvider {
           'scope': scope,
         },
       );
-      if (response.statusCode >= 400) {
+      // 400 (invalid_grant) and 401: the sign-in is gone. Anything else
+      // (429, 5xx) is Microsoft's trouble and passes.
+      if (response.statusCode == 400 || response.statusCode == 401) {
         throw ListProviderException(
           t('Die Anmeldung bei Microsoft ist abgelaufen. Bitte neu verbinden.'),
           signedOut: true,
+        );
+      }
+      if (response.statusCode >= 300) {
+        throw ListProviderException(
+          t('Microsoft To Do antwortet mit Fehler {status}.', {
+            'status': response.statusCode,
+          }),
         );
       }
       _credentials = _tokens(
@@ -213,7 +223,7 @@ class MsTodoProvider implements ListProvider {
     while (next != null) {
       final json = await _call('GET', next);
       for (final t in (json['value'] as List?) ?? const []) {
-        if (t is Map) items.add(_item(t.cast<String, Object?>()));
+        if (t is Map) items.add(_item(t.cast<String, Object?>(), timeZone));
       }
       final link = json['@odata.nextLink'];
       next = link is String ? Uri.parse(link) : null;
@@ -221,7 +231,7 @@ class MsTodoProvider implements ListProvider {
     return items;
   }
 
-  static RemoteItem _item(Map<String, Object?> t) {
+  static RemoteItem _item(Map<String, Object?> t, String zone) {
     final body = (t['body'] as Map?) ?? const {};
     var note = '${body['content'] ?? ''}';
     if ('${body['contentType']}'.toLowerCase() == 'html') {
@@ -231,8 +241,7 @@ class MsTodoProvider implements ListProvider {
           .replaceAll('&nbsp;', ' ')
           .replaceAll('&amp;', '&');
     }
-    final due = (t['dueDateTime'] as Map?)?['dateTime'] as String?;
-    final dueDay = due == null ? null : DateTime.tryParse(due.substring(0, 10));
+    final dueDay = dueDayOf(t['dueDateTime'], zone);
     return RemoteItem(
       id: '${t['id']}',
       title: '${t['title'] ?? ''}',
@@ -247,6 +256,30 @@ class MsTodoProvider implements ListProvider {
           if (c is Map) _step(c.cast<String, Object?>()),
       ],
     );
+  }
+
+  /// The day of a Graph `dueDateTime` in [zone]. Microsoft sends the time
+  /// in UTC unless asked otherwise: a task due on 14 November in Berlin
+  /// comes as `2026-11-13T23:00:00` UTC.
+  static DateTime? dueDayOf(Object? due, String zone) {
+    if (due is! Map) return null;
+    final text = due['dateTime'];
+    if (text is! String || text.length < 10) return null;
+    final day = DateTime.tryParse(text.substring(0, 10));
+    if (day == null) return null;
+    final from = '${due['timeZone'] ?? ''}'.toUpperCase();
+    if (from == 'UTC' || from == 'ETC/UTC') {
+      final instant = DateTime.tryParse('${text.split('.').first}Z');
+      if (instant != null) {
+        try {
+          final local = tz.TZDateTime.from(instant, tz.getLocation(zone));
+          return DateTime(local.year, local.month, local.day);
+        } on tz.LocationNotFoundException {
+          // Unknown zone: the date as sent.
+        }
+      }
+    }
+    return DateTime(day.year, day.month, day.day);
   }
 
   static RemoteStep _step(Map<String, Object?> c) => RemoteStep(
@@ -273,7 +306,10 @@ class MsTodoProvider implements ListProvider {
 
   @override
   Future<RemoteItem> create(String listId, ItemDraft item) async {
-    final created = _item(await _call('POST', _tasks(listId), _body(item)));
+    final created = _item(
+      await _call('POST', _tasks(listId), _body(item)),
+      timeZone,
+    );
     if (item.steps.isEmpty) return created;
     await _writeSteps(listId, created.id, const [], item.steps);
     return created;

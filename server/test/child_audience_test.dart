@@ -324,6 +324,49 @@ void main() {
     );
   });
 
+  test('a child marks an own appointment private', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final start = DateTime.now().add(const Duration(days: 1));
+    final event = {
+      'title': 'Frauenarzt',
+      'start': start.toUtc().toIso8601String(),
+      'end': start.add(const Duration(hours: 1)).toUtc().toIso8601String(),
+      'memberIds': [kid.id],
+    };
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e3',
+          data: event,
+          updatedAt: now,
+        ),
+      ],
+    );
+    final stored = app.records.get(Collections.events, 'e3')!;
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: 'e3',
+          data: {...event, 'confidential': true},
+          updatedAt: now + 1000,
+          rev: stored.rev,
+        ),
+      ],
+    );
+    expect(
+      app.records.get(Collections.events, 'e3')!.data['confidential'],
+      isTrue,
+    );
+    expect(
+      (await sync(guest)).changes.where((r) => r.id == 'e3' && !r.deleted),
+      isEmpty,
+    );
+  });
+
   test('a child assigns no one outside a task\'s audience', () async {
     final now = DateTime.now().millisecondsSinceEpoch;
     await sync(

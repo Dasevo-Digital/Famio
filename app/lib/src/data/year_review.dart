@@ -78,8 +78,9 @@ YearReview yearReview(SyncEngine engine, int year) {
       final days = DateTime.utc(o.end.year, o.end.month, o.end.day)
           .difference(DateTime.utc(o.start.year, o.start.month, o.start.day))
           .inDays;
-      // Away for at least two nights, or counted down to.
-      if ((e.allDay && days >= 3) || e.countdown) {
+      // Away for at least two nights, or counted down to. A confidential
+      // one counts, but its title stays out of the review (and the PDF).
+      if (((e.allDay && days >= 3) || e.countdown) && !e.confidential) {
         trips.add((title: e.title, start: o.start, end: o.end));
       }
     }
@@ -141,10 +142,8 @@ ReviewChild _child(
     for (final e in entries)
       if (!e.planned && !e.dateUnknown && inYear(e.date)) e,
   ]..sort((a, b) => a.date.compareTo(b.date));
-  final heights = [
-    for (final e in mine)
-      if (e.kind == ChildEntryKind.measurement) ?e.heightCm,
-  ];
+  // Measured, also at a check-up.
+  final heights = [for (final e in mine) ?e.heightCm];
   return (
     child: child,
     milestones: [

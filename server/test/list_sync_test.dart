@@ -5,11 +5,13 @@ import 'package:famio_server/famio_server.dart';
 import 'package:famio_server/src/api_exception.dart';
 import 'package:famio_server/src/lists/list_provider.dart';
 import 'package:famio_server/src/lists/list_sync.dart';
+import 'package:famio_server/src/lists/ms_todo.dart';
 import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
+import 'package:timezone/data/latest_all.dart' as tz_data;
 
 /// Another app's list kept in memory; counts the calls Famio makes.
 class FakeProvider implements ListProvider {
@@ -348,6 +350,125 @@ void main() {
     fake.entries.clear();
     await lists.syncAccount(id);
     expect(app.records.get(Collections.tasks, 't2')!.deleted, isTrue);
+  });
+
+  test('a call failing later in a run does not undo a change there', () async {
+    final id = account();
+    write(
+      Collections.tasks,
+      't1',
+      const Task(id: 't1', title: 'Eins').toData(),
+    );
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L'},
+    ]);
+    await lists.syncAccount(id);
+    final remoteId = fake.entries.keys.single;
+    // Ticked off there; a new task here; sending it fails (like a 429).
+    fake.entries[remoteId] = RemoteItem(
+      id: remoteId,
+      title: 'Eins',
+      done: true,
+      modified: DateTime.now().add(const Duration(seconds: 1)),
+    );
+    write(
+      Collections.tasks,
+      't2',
+      const Task(id: 't2', title: 'Zwei').toData(),
+    );
+    fake.loseNextAnswer = true;
+    await lists.syncAccount(id);
+    expect(lists.accounts(mama).single['lastError'], isNotNull);
+
+    await lists.syncAccount(id);
+    expect(fake.entries[remoteId]!.done, isTrue, reason: 'not sent back');
+    expect(
+      Task.fromRecord(app.records.get(Collections.tasks, 't1')!).done,
+      isTrue,
+    );
+  });
+
+  test('a due date removed there goes here too', () async {
+    final id = account();
+    write(
+      Collections.tasks,
+      't1',
+      Task(id: 't1', title: 'Eins', due: DateTime(2026, 11, 20)).toData(),
+    );
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L'},
+    ]);
+    await lists.syncAccount(id);
+    final remoteId = fake.entries.keys.single;
+    expect(fake.entries[remoteId]!.due, DateTime(2026, 11, 20));
+    fake.entries[remoteId] = RemoteItem(
+      id: remoteId,
+      title: 'Eins',
+      modified: DateTime.now().add(const Duration(seconds: 1)),
+    );
+    await lists.syncAccount(id);
+    expect(
+      Task.fromRecord(app.records.get(Collections.tasks, 't1')!).due,
+      isNull,
+    );
+  });
+
+  test('Microsoft To Do: due dates in UTC are days in the family zone', () {
+    tz_data.initializeTimeZones();
+    expect(
+      MsTodoProvider.dueDayOf({
+        'dateTime': '2026-11-13T23:00:00.0000000',
+        'timeZone': 'UTC',
+      }, 'Europe/Berlin'),
+      DateTime(2026, 11, 14),
+    );
+    expect(
+      MsTodoProvider.dueDayOf({
+        'dateTime': '2026-11-14T00:00:00.0000000',
+        'timeZone': 'Europe/Berlin',
+      }, 'Europe/Berlin'),
+      DateTime(2026, 11, 14),
+    );
+    expect(MsTodoProvider.dueDayOf(null, 'Europe/Berlin'), isNull);
+  });
+
+  test('Microsoft To Do: a busy sign-in service is no sign-out', () async {
+    Future<ListProviderException> refreshAnswering(int status) async {
+      final provider = MsTodoProvider(
+        MockClient((_) async => http.Response('{}', status)),
+        const {'clientId': 'c', 'refresh': 'r', 'expires': 0},
+        timeZone: 'Europe/Berlin',
+      );
+      try {
+        await provider.lists();
+      } on ListProviderException catch (e) {
+        return e;
+      }
+      fail('no error');
+    }
+
+    expect((await refreshAnswering(429)).signedOut, isFalse);
+    expect((await refreshAnswering(503)).signedOut, isFalse);
+    expect((await refreshAnswering(400)).signedOut, isTrue);
+  });
+
+  test('a member\'s connections end after the run in progress', () async {
+    final id = account();
+    lists.setLinks(id, mama, [
+      {'famioList': 'tasks', 'remoteList': 'L'},
+    ]);
+    final pending = Completer<List<RemoteItem>>();
+    fake.itemsOverride = () => pending.future;
+    final run = lists.syncAccount(id);
+    var ended = false;
+    final disconnected = lists.disconnectMember(mama).then((_) => ended = true);
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+    expect(ended, isFalse, reason: 'waits for the run');
+    expect(lists.accounts(mama), isNotEmpty);
+    pending.complete(const []);
+    await run;
+    await disconnected;
+    expect(lists.accounts(mama), isEmpty);
   });
 
   test('the steps of a task travel in both directions', () async {

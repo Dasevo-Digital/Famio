@@ -58,6 +58,9 @@
     "todo": {
       "tasks": {
         "name": "Tasks"
+      },
+      "shopping_list": {
+        "name": "Shopping {name}"
       }
     },
     "sensor": {
@@ -132,6 +135,21 @@
     },
     "delete_series": {
       "message": "Please delete recurring events in the Famio app."
+    },
+    "create_series": {
+      "message": "Please create recurring events in the Famio app."
+    },
+    "task_not_found": {
+      "message": "Task not found."
+    },
+    "read_only_messages": {
+      "message": "Home Assistant’s Famio account may not write messages (give it access “Read and change” in Famio)."
+    },
+    "empty_message": {
+      "message": "The message is empty."
+    },
+    "refused": {
+      "message": "Famio refused the change (no permission)."
     }
   }
 }

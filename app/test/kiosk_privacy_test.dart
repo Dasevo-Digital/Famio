@@ -179,4 +179,33 @@ void main() {
       },
     );
   }
+
+  for (final byPerson in [false, true]) {
+    testWidgets(
+      'appointments only some see are busy (${byPerson ? 'board' : 'topics'})',
+      (tester) async {
+        final context = await start(tester, byPerson: byPerson);
+        final soon = DateTime.now().add(const Duration(hours: 1));
+        engine.put(Collections.events, 'private', {
+          ...CalendarEvent(
+            id: 'private',
+            title: 'Bewerbungsgespräch',
+            start: soon,
+            end: soon.add(const Duration(hours: 1)),
+            memberIds: const ['m1'],
+          ).toData(),
+          SyncRecord.visibilityKey: ['m1'],
+        });
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => const KioskScreen()));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        expect(find.textContaining('Bewerbungsgespräch'), findsNothing);
+        expect(find.textContaining('Belegt'), findsWidgets);
+        Navigator.of(context).pop();
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+  }
 }

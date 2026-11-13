@@ -58,6 +58,9 @@
     "todo": {
       "tasks": {
         "name": "Aufgaben"
+      },
+      "shopping_list": {
+        "name": "Einkauf {name}"
       }
     },
     "sensor": {
@@ -132,6 +135,21 @@
     },
     "delete_series": {
       "message": "Serientermine bitte in der Famio-App löschen."
+    },
+    "create_series": {
+      "message": "Serientermine bitte in der Famio-App anlegen."
+    },
+    "task_not_found": {
+      "message": "Aufgabe nicht gefunden."
+    },
+    "read_only_messages": {
+      "message": "Das Famio-Konto von Home Assistant darf keine Nachrichten schreiben (in Famio Zugriff „Lesen und ändern“ geben)."
+    },
+    "empty_message": {
+      "message": "Die Nachricht ist leer."
+    },
+    "refused": {
+      "message": "Famio hat die Änderung abgelehnt (keine Berechtigung)."
     }
   }
 }

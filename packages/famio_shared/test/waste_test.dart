@@ -19,6 +19,48 @@ void main() {
     expect(WasteKind.of('Elternabend'), isNull);
   });
 
+  test('only whole words name a bin', () {
+    for (final title in [
+      'Kindergarten geschlossen',
+      'Biologie-Klausur',
+      'Gartenparty bei Schmidts',
+      'Restaurant: Hochzeitstag',
+      'Glaserei kommt',
+      'Gelbe Karte abholen (Impfpass)',
+      '🎂 Lisa Müller',
+      'Bio-Markt',
+      'Sperrung Hauptstraße',
+      'Weihnachtsbaum schmücken',
+      'Restgutschein einlösen',
+      'Papierflieger basteln',
+      'Bin beim Arzt',
+    ]) {
+      expect(WasteKind.of(title), isNull, reason: title);
+    }
+    for (final (title, kind) in [
+      ('Gelbe Tonne', WasteKind.packaging),
+      ('Gelbe Säcke', WasteKind.packaging),
+      ('Bio-Tonne', WasteKind.organic),
+      ('Biogut', WasteKind.organic),
+      ('Biotonne', WasteKind.organic),
+      ('Papier', WasteKind.paper),
+      ('Papiertonne', WasteKind.paper),
+      ('Blaue Tonne', WasteKind.paper),
+      ('Glas', WasteKind.glass),
+      ('Glascontainer', WasteKind.glass),
+      ('Gartenabfälle', WasteKind.garden),
+      ('Sperrmüllabholung', WasteKind.bulky),
+      ('Restmülltonne (14-tägl.)', WasteKind.residual),
+      ('Graue Tonne', WasteKind.residual),
+      ('Mülltonne', WasteKind.other),
+      ('Abfuhr Tour 3', WasteKind.other),
+      ('Trash pickup', WasteKind.residual),
+      ('Residuos peligrosos', WasteKind.hazardous),
+    ]) {
+      expect(WasteKind.of(title), kind, reason: title);
+    }
+  });
+
   CalendarEvent day(String id, String title, DateTime d, {String? source}) =>
       CalendarEvent(
         id: id,
@@ -66,6 +108,27 @@ void main() {
     );
     expect(pickups.single.kinds, [WasteKind.other]);
     expect(pickups.single.titles, ['Tour 3']);
+  });
+
+  test('birthdays and holidays are never pickups', () {
+    final pickups = const WasteSettings().pickups(
+      occ([
+        day(
+          'a',
+          '🎂 Lisa Müller',
+          DateTime(2026, 10, 13),
+          source: 'birthday:members:lisa',
+        ),
+        day(
+          'b',
+          'Tag der Restmüllfahrer',
+          DateTime(2026, 10, 14),
+          source: 'holiday:BE',
+        ),
+        day('c', 'Restmüll', DateTime(2026, 10, 15)),
+      ]),
+    );
+    expect(pickups.single.titles, ['Restmüll']);
   });
 
   test('takes turns week by week', () {

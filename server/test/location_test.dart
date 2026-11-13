@@ -208,6 +208,27 @@ void main() {
     expect(locationOf(kidId)?.latitude, school.$1);
   });
 
+  test('hiding the module hides silent phones too, without alarms', () async {
+    final now = DateTime.now().toUtc();
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, now.subtract(const Duration(minutes: 5)))],
+    });
+    expect(locationOf(kidId)?.latitude, isNotNull);
+    // Mia's phone reports no more; the family hides location.
+    await ok('PATCH', 'api/admin/settings', parentToken, {
+      'hiddenModules': [ServerSettings.locationModule],
+    });
+    final hidden = locationOf(kidId);
+    expect(hidden?.latitude, isNull);
+    expect(hidden?.placeId, isNull);
+    expect(hidden?.state, SharingState.paused);
+    // Two days later: no "phone silent" for a module nobody uses.
+    expect(
+      app.locations.newlySilent(now: now.add(const Duration(days: 3))),
+      isEmpty,
+    );
+  });
+
   test(
     'arriving at a shop tells only that member what is still open',
     () async {

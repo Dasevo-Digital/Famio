@@ -24,50 +24,135 @@ enum WasteKind {
   final String emoji;
 
   /// The kind a calendar title names, or null if it names none.
+  ///
+  /// Whole words count, not parts of words: "Restmüll" and "Bio-Tonne"
+  /// name bins, "Restaurant", "Biologie", "Kindergarten", "Glaserei",
+  /// "Gelbe Karte" and "Müller" do not.
   static WasteKind? of(String title) {
-    final t = title.toLowerCase();
-    for (final (kind, words) in _words) {
-      if (words.any((w) => _has(t, w))) return kind;
+    final words = [
+      for (final w in title.toLowerCase().split(_separator))
+        if (w.isNotEmpty) w,
+    ];
+    if (words.isEmpty) return null;
+    final text = ' ${words.join(' ')} ';
+    for (final (kind, keys) in _keys) {
+      if (keys.any((k) => _matches(words, text, k))) return kind;
     }
     return null;
   }
 
-  /// "^rest" only at the start of a word ("Restmüll", not "Forest").
-  static bool _has(String text, String word) {
-    if (!word.startsWith('^')) return text.contains(word);
-    final w = word.substring(1);
-    for (var i = text.indexOf(w); i >= 0; i = text.indexOf(w, i + 1)) {
-      if (i == 0 || !RegExp('[a-zäöüß]').hasMatch(text[i - 1])) return true;
+  static final _separator = RegExp(r'[^a-z0-9äöüßáéíóúñ]+');
+
+  /// Key syntax:
+  /// - "stem": a word starts with it ("Wertstofftonne"),
+  /// - "=word": a word is exactly it ("Glas", "Papier"),
+  /// - "-stem": a word ends with it ("Hausmüll", not "Müller"),
+  /// - "*stem": a word contains it ("Müllabfuhr"),
+  /// - "+stem": the stem joined to a bin word ("Restmüll", "Biotonne") or
+  ///   followed by one ("Bio-Tonne", "Rest Müll"),
+  /// - with a space: these words in a row ("gelber sack").
+  static bool _matches(List<String> words, String text, String key) {
+    if (key.contains(' ')) return text.contains(' $key');
+    final stem = key.substring(1);
+    switch (key[0]) {
+      case '=':
+        return words.contains(stem);
+      case '-':
+        return words.any((w) => w.endsWith(stem));
+      case '*':
+        return words.any((w) => w.contains(stem));
+      case '+':
+        for (var i = 0; i < words.length; i++) {
+          final w = words[i];
+          if (!w.startsWith(stem)) continue;
+          if (w.length > stem.length && _binWord(w.substring(stem.length))) {
+            return true;
+          }
+          if (w == stem && i + 1 < words.length && _binWord(words[i + 1])) {
+            return true;
+          }
+        }
+        return false;
+      default:
+        return words.any((w) => w.startsWith(key));
     }
-    return false;
   }
+
+  /// Whether [word] starts with a word for bins or their collection
+  /// ("Biogut", but not "Restgutschein").
+  static bool _binWord(String word) =>
+      _bins.any(word.startsWith) || _shortBins.contains(word);
+
+  static const _shortBins = ['gut', 'bin', 'bins'];
+
+  static const _bins = [
+    'tonne',
+    'müll',
+    'muell',
+    'abfall',
+    'abfäll',
+    'abfaell',
+    'sack',
+    'säck',
+    'saeck',
+    'container',
+    'abfuhr',
+    'sammlung',
+    'abholung',
+    'mobil',
+    'entsorgung',
+    'leerung',
+    'behälter',
+    'collection',
+    'pickup',
+    'recycling',
+    'waste',
+  ];
 
   // Order matters: "Bioabfall" before "Abfall", "Altpapier" before others.
   // German words first, then English and Spanish ones.
-  static const _words = [
+  static const _keys = [
     (
       WasteKind.packaging,
       [
-        'gelb',
+        'gelber sack',
+        'gelbe sack',
+        'gelbe säcke',
+        'gelbe saecke',
+        'gelbe tonne',
+        '+gelb',
         'wertstoff',
         'leichtverpack',
-        '^lvp',
+        '=lvp',
         'verpackung',
         'recycl',
         'packaging',
         'envases',
-        'amarillo',
+        'contenedor amarillo',
       ],
     ),
     (
       WasteKind.paper,
-      ['papier', '^ppk', 'pappe', 'blaue tonne', 'paper', 'cardboard', 'papel'],
+      [
+        '=papier',
+        '+papier',
+        'altpapier',
+        '=ppk',
+        '=pappe',
+        '+pappe',
+        'blaue tonne',
+        '+blau',
+        '=paper',
+        'cardboard',
+        '=papel',
+      ],
     ),
     (
       WasteKind.organic,
       [
-        '^bio',
+        '+bio',
         'braune tonne',
+        '+braun',
         'kompost',
         'compost',
         'organic',
@@ -75,25 +160,32 @@ enum WasteKind {
         'orgánic',
       ],
     ),
-    (WasteKind.glass, ['glas', 'vidrio']),
+    (WasteKind.glass, ['=glas', '+glas', 'altglas', 'vidrio']),
     (
       WasteKind.garden,
       [
         'grünschnitt',
         'gruenschnitt',
-        'garten',
-        '^laub',
-        'weihnachtsbaum',
-        'tannenbaum',
+        '+garten',
+        '=laub',
+        '+laub',
+        '+weihnachtsbaum',
+        '+tannenbaum',
+        '+christbaum',
         'baumschnitt',
         'yard waste',
         'garden waste',
-        'christmas tree',
-        '^poda',
-        'jardín',
+        'christmas tree pickup',
+        'christmas tree collection',
+        '=poda',
+        'restos de jardín',
+        'residuos de jardín',
       ],
     ),
-    (WasteKind.bulky, ['sperr', 'bulky', 'voluminos', 'enseres']),
+    (
+      WasteKind.bulky,
+      ['+sperr', 'sperrgut', '=bulky', 'voluminos', '=enseres'],
+    ),
     (
       WasteKind.hazardous,
       ['schadstoff', 'problemstoff', 'sondermüll', 'hazardous', 'peligros'],
@@ -101,28 +193,37 @@ enum WasteKind {
     (
       WasteKind.residual,
       [
-        '^rest',
+        '+rest',
         'hausmüll',
         'hausmuell',
         'graue tonne',
         'schwarze tonne',
-        'trash',
-        'garbage',
-        'rubbish',
+        '+grau',
+        '+schwarz',
+        '=trash',
+        '=garbage',
+        '=rubbish',
       ],
     ),
     (
       WasteKind.other,
       [
-        'müll',
-        'muell',
-        'abfall',
-        'tonne',
-        'abfuhr',
-        'waste',
-        '^bin ',
-        'basura',
-        'residuos',
+        '-müll',
+        '-muell',
+        '+müll',
+        '+muell',
+        '*abfall',
+        '*abfäll',
+        '*abfaell',
+        '-tonne',
+        '-tonnen',
+        '*abfuhr',
+        '=waste',
+        'bin day',
+        'bin collection',
+        '=bins',
+        '=basura',
+        '=residuos',
         'contenedor',
       ],
     ),
@@ -189,15 +290,24 @@ class WasteSettings {
     return [memberIds[week % memberIds.length]];
   }
 
+  /// Whether [event] is a pickup day: any entry of the chosen calendar,
+  /// or else an all-day entry whose title names a bin. Birthdays and
+  /// public holidays never are ("🎂 Lisa Müller").
+  bool isPickup(CalendarEvent event) {
+    if (sourceId != null) return event.sourceId == sourceId;
+    final source = event.sourceId ?? '';
+    return event.allDay &&
+        !source.startsWith('birthday:') &&
+        !source.startsWith('holiday:') &&
+        WasteKind.of(event.title) != null;
+  }
+
   /// The pickups among [occurrences], one per day, in order.
   List<WastePickup> pickups(Iterable<Occurrence> occurrences) {
     final byDay = <DateTime, (Set<WasteKind>, List<String>)>{};
     for (final o in occurrences) {
-      final fromSource = sourceId != null && o.event.sourceId == sourceId;
+      if (!isPickup(o.event)) continue;
       final kind = WasteKind.of(o.event.title);
-      if (sourceId != null ? !fromSource : (kind == null || !o.event.allDay)) {
-        continue;
-      }
       final day = DateTime(o.start.year, o.start.month, o.start.day);
       final entry = byDay.putIfAbsent(day, () => ({}, []));
       entry.$1.add(kind ?? WasteKind.other);

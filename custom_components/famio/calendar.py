@@ -119,7 +119,7 @@ class FamioCalendar(FamioEntity, CalendarEntity):
     async def async_create_event(self, **kwargs: Any) -> None:
         if kwargs.get("rrule"):
             raise HomeAssistantError(
-                "Serientermine bitte in der Famio-App anlegen."
+                translation_domain=DOMAIN, translation_key="create_series"
             )
         start = kwargs["dtstart"]
         end = kwargs["dtend"]

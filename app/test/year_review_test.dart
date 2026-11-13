@@ -46,6 +46,16 @@ SyncEngine _family() {
         allDay: true,
       ),
     )
+    ..saveEvent(
+      CalendarEvent(
+        id: 'kur',
+        title: 'Reha-Klinik',
+        start: DateTime(2026, 9, 1),
+        end: DateTime(2026, 9, 15),
+        allDay: true,
+        confidential: true,
+      ),
+    )
     ..saveTask(
       Task(
         id: 't1',
@@ -107,6 +117,15 @@ SyncEngine _family() {
       id: 'e3',
       childId: 'k',
       kind: ChildEntryKind.measurement,
+      date: DateTime(2026, 6, 10),
+      heightCm: 84,
+    ),
+    // The last height of the year was taken at the U-examination.
+    ChildEntry(
+      id: 'e4',
+      childId: 'k',
+      kind: ChildEntryKind.checkup,
+      refId: 'U7a',
       date: DateTime(2026, 11, 10),
       heightCm: 87.5,
     ),
@@ -121,7 +140,7 @@ void main() {
 
   test('the year: numbers, trips, children, photos, chores', () {
     final r = yearReview(_family(), 2026);
-    expect(r.events, 2);
+    expect(r.events, 3);
     expect(r.tasksDone, 1);
     expect(r.choresDone, 3);
     expect(r.messages, 30);

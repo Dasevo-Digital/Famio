@@ -254,7 +254,7 @@
   "adminSettingsResetDefault": "Ajustes restablecidos",
   "adminDeleteAllData": "¿Borrar todos los datos?",
   "adminDeletePermanently": "Borrar definitivamente",
-  "adminDeletesAllEventsChats": "Se borran todos los eventos, chats, listas, tareas, encargos, documentos, fotos, datos de niños y de salud, ubicaciones, calendarios conectados y enlaces de calendario: en el servidor y, con la próxima sincronización, en todos los dispositivos. No se puede deshacer; haz antes una copia de seguridad de la carpeta de datos.\n\nSe conservan las cuentas, los ajustes del servidor y el certificado HTTPS.",
+  "adminDeletesAllEventsChats": "Se borran todos los eventos, chats, listas, tareas, encargos, documentos, fotos, datos de niños y de salud, ubicaciones, calendarios conectados, enlaces de calendario y las conexiones con apps de listas, Paperless-ngx y PhotoVault: en el servidor y, con la próxima sincronización, en todos los dispositivos. No se puede deshacer; haz antes una copia de seguridad de la carpeta de datos.\n\nSe conservan las cuentas, los demás ajustes del servidor y el certificado HTTPS. En Paperless-ngx y PhotoVault no se borra nada.",
   "adminAlsoRemoveAllOther": "Eliminar también a todos los demás miembros",
   "adminOnlyAccountRemains": "Solo se conserva tu cuenta",
   "commonYourPassword": "Tu contraseña",

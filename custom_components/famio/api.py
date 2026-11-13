@@ -55,20 +55,33 @@ class FamioCertificateError(FamioError):
 
 
 def normalize_url(text: str) -> str:
-    """Like the apps: a bare address means HTTPS on the home network port."""
+    """Like the apps: a bare address means HTTPS on the home network port.
+    IPv6 addresses work with brackets ("[fd00::5]:8766") and without
+    ("fd00::5"); ValueError for anything else that is no address."""
     text = text.strip().rstrip("/")
     if "://" not in text:
-        host = text
-        if ":" in host and not host.startswith("["):
+        host, port = text, ""
+        if host.startswith("["):
+            end = host.find("]")
+            if end < 0:
+                raise ValueError(text)
+            host, rest = host[: end + 1], host[end + 1 :]
+            if rest:
+                if not rest.startswith(":"):
+                    raise ValueError(text)
+                port = rest[1:]
+        elif host.count(":") > 1:
+            host = f"[{host}]"
+        elif ":" in host:
             host, _, port = host.partition(":")
-            # The plain HTTP port of the server: use its HTTPS port instead.
-            if port in ("8765", ""):
-                port = str(DEFAULT_TLS_PORT)
-            return f"https://{host}:{port}"
-        return f"https://{host}:{DEFAULT_TLS_PORT}"
+        # The plain HTTP port of the server: use its HTTPS port instead.
+        if port in ("8765", ""):
+            port = str(DEFAULT_TLS_PORT)
+        text = f"https://{host}:{port}"
     parts = urlsplit(text)
     if parts.scheme not in ("http", "https") or not parts.hostname:
         raise ValueError(text)
+    parts.port  # noqa: B018 - raises ValueError for a port that is none
     return text
 
 
@@ -174,9 +187,9 @@ class FamioClient:
         der = await fetch_certificate(self.url)
         if spki_fingerprint(der) != self.pin:
             raise FamioCertificateError(
-                "Das Zertifikat des Servers passt nicht zum bestätigten "
-                "Fingerabdruck. Wurde der Server neu eingerichtet? Dann die "
-                "Integration neu einrichten."
+                "The server's certificate does not match the confirmed "
+                "fingerprint. If the server was set up anew, set up the "
+                "integration again."
             )
         self.cert_sha256 = hashlib.sha256(der).hexdigest()
         if self._on_renewed is not None:

@@ -365,7 +365,7 @@
   "adminSettingsResetDefault": "Einstellungen auf Standard gesetzt",
   "adminDeleteAllData": "Alle Daten löschen?",
   "adminDeletePermanently": "Endgültig löschen",
-  "adminDeletesAllEventsChats": "Gelöscht werden alle Termine, Chats, Listen, Aufgaben, Ämter, Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, verbundene Kalender und Kalender-Links – auf dem Server und beim nächsten Abgleich auf allen Geräten. Das lässt sich nicht rückgängig machen; vorher eine Sicherung des Datenordners anlegen.\n\nErhalten bleiben die Konten, Server-Einstellungen und das HTTPS-Zertifikat.",
+  "adminDeletesAllEventsChats": "Gelöscht werden alle Termine, Chats, Listen, Aufgaben, Ämter, Dokumente, Fotos, Kinder- und Gesundheitsdaten, Standorte, verbundene Kalender, Kalender-Links und die Verbindungen zu Listen-Apps, Paperless-ngx und PhotoVault – auf dem Server und beim nächsten Abgleich auf allen Geräten. Das lässt sich nicht rückgängig machen; vorher eine Sicherung des Datenordners anlegen.\n\nErhalten bleiben die Konten, die übrigen Server-Einstellungen und das HTTPS-Zertifikat. In Paperless-ngx und PhotoVault selbst wird nichts gelöscht.",
   "adminAlsoRemoveAllOther": "Auch alle anderen Mitglieder entfernen",
   "adminOnlyAccountRemains": "Nur dein Konto bleibt bestehen",
   "commonYourPassword": "Dein Passwort",

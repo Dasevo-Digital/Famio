@@ -535,6 +535,41 @@ class LocationService {
     }
   }
 
+  /// The family hid location: no last position, place or battery stays
+  /// visible, also of phones that have stopped reporting (the others pause
+  /// with their next report). Returns whether anything changed.
+  bool followModule() {
+    if (_enabled()) return false;
+    var changed = false;
+    for (final r in records.all(Collections.memberLocations)) {
+      if (r.deleted) continue;
+      final l = MemberLocation.fromRecord(r);
+      if (l.state == SharingState.paused &&
+          !l.hasPosition &&
+          l.placeId == null &&
+          l.battery == null &&
+          l.device == null) {
+        continue;
+      }
+      changed =
+          records.writeAsServer([
+            SyncRecord(
+              collection: Collections.memberLocations,
+              id: l.memberId,
+              data: MemberLocation(
+                memberId: l.memberId,
+                state: SharingState.paused,
+                lastContact: l.lastContact,
+              ).toData(),
+              updatedAt: 0,
+            ),
+          ]) ||
+          changed;
+    }
+    if (changed) onChanged();
+    return changed;
+  }
+
   /// Publishes [next] unless it only differs from [previous] by a small
   /// move or a recent heartbeat. Returns whether anything was written.
   bool _publish(
@@ -783,6 +818,8 @@ class LocationService {
   /// [silentAfter], with their last contact – each silence only once; a
   /// report from the device ends it.
   List<(FamilyMember, DateTime)> newlySilent({DateTime? now}) {
+    // Location is hidden: a phone that stopped reporting is no news.
+    if (!_enabled()) return const [];
     now ??= _clock();
     final rows = db.select('SELECT value FROM settings WHERE key = ?', [
       _silentKey,

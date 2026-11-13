@@ -380,6 +380,9 @@ ParsedEvent parseEventComponents(
       pickerId: existing?.pickerId,
       countdown: existing?.countdown ?? false,
       files: existing?.files ?? const [],
+      // Nor confirmations: asking for them stays as it was.
+      assignmentConfirmation:
+          existing?.assignmentConfirmation ?? const AssignmentSettings(),
       recurrence: recurrence,
       exceptions: exceptions,
       reminderMinutes: reminder,

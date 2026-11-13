@@ -46,6 +46,55 @@ void main() {
     expect(has('Bio-Eier', 'Eier'), isTrue);
   });
 
+  test('the main noun counts, not adjectives or phrases', () {
+    bool has(String ingredient, String pantryItem) => inPantry(
+      Ingredient(name: ingredient),
+      [PantryItem(id: 'x', name: pantryItem, amount: 1)],
+    );
+    const notAtHome = {
+      'rote Paprika': 'Rote Linsen',
+      'Zwiebel, rot': 'Rote Linsen',
+      'frische Petersilie': 'Frische Hefe',
+      'weiße Schokolade': 'Weiße Bohnen',
+      'saure Sahne': 'Saure Gurken',
+      'grüne Paprika': 'Grüne Bohnen',
+      'getrocknete Kräuter': 'Getrocknete Tomaten',
+      'Tomaten, gehackt': 'Gehackte Haselnüsse',
+      'Hackfleisch, gemischt': 'Gemischte Kräuter',
+      'Butter, weich': 'Weiche Brötchen',
+      'Tomaten aus der Dose': 'Mais aus der Dose',
+      'Saft einer Zitrone': 'Orangensaft',
+      'Mehl Type 405': 'Type 550',
+    };
+    for (final MapEntry(key: i, value: p) in notAtHome.entries) {
+      expect(has(i, p), isFalse, reason: '$i / $p');
+    }
+    const atHome = {
+      'Knoblauchzehen': 'Knoblauch',
+      'Knoblauchzehe': 'Knoblauch',
+      'Hähnchenbrustfilet': 'Hähnchenbrust',
+      'Parmesan': 'Parmesankäse',
+      'Speckwürfel': 'Speck',
+      'Zimtstange': 'Zimt',
+      'Lorbeerblätter': 'Lorbeer',
+      'Zitronensaft': 'Zitronen',
+      'Tomaten, passiert': 'Passierte Tomaten',
+      'Kartoffeln, festkochend': 'Kartoffeln',
+      'Sahne, süß': 'Süße Sahne',
+      'Mehl Type 405': 'Mehl',
+      'Eier (Größe M)': 'Bio-Eier',
+    };
+    for (final MapEntry(key: i, value: p) in atHome.entries) {
+      expect(has(i, p), isTrue, reason: '$i / $p');
+    }
+    // Basics are there whatever the recipe calls them.
+    expect(inPantry(const Ingredient(name: 'Öl zum Braten'), const []), isTrue);
+    expect(
+      inPantry(const Ingredient(name: 'schwarzer Pfeffer'), const []),
+      isTrue,
+    );
+  });
+
   test('a recipe’s share', () {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),

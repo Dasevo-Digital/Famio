@@ -5,6 +5,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
@@ -629,9 +630,15 @@ class _EventEditorState extends State<_EventEditor> {
                 contentPadding: EdgeInsets.zero,
                 secondary: const Icon(AppIcons.lock),
                 title: Text(tr.commonPrivate),
-                subtitle: Text(tr.eventNotCalendarSubscriptionsGoogle),
+                subtitle: Text(
+                  engine.mayChangeConfidential(_original)
+                      ? tr.eventNotCalendarSubscriptionsGoogle
+                      : tr.commonAudienceSetByAdults,
+                ),
                 value: _confidential,
-                onChanged: (v) => setState(() => _confidential = v),
+                onChanged: engine.mayChangeConfidential(_original)
+                    ? (v) => setState(() => _confidential = v)
+                    : null,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

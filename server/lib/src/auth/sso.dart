@@ -64,9 +64,10 @@ class _Flow {
     this.userId,
     this.device,
     this.address,
-  });
+  }) : started = DateTime.now();
 
   final SsoMode mode;
+  final DateTime started;
   final String state;
   final String nonce;
   final String verifier;
@@ -104,8 +105,16 @@ class _Flow {
   bool delivered = false;
   String? error;
 
-  /// Not waiting for the code in a browser: may make room for new flows.
-  bool get idle => pending == null;
+  /// Done with or given up on: may make room for new flows. A member who
+  /// is still signing in at the provider (the first `providerGrace`),
+  /// typing the code, or whose app has not collected the result yet keeps
+  /// the flow.
+  bool spare(DateTime now, Duration providerGrace) =>
+      delivered ||
+      error != null ||
+      (pending == null &&
+          resultUser == null &&
+          now.difference(started) > providerGrace);
 }
 
 /// What the browser page shows after the provider: the form asking for the
@@ -183,6 +192,10 @@ class SsoService {
     : _http = client ?? http.Client();
 
   final Database _db;
+
+  /// How long a flow that has not come back from the provider is kept
+  /// from being made room for: the member may still be signing in there.
+  Duration providerGrace = const Duration(minutes: 2);
   final http.Client _http;
 
   /// The server's public address; the callback must be reachable there.
@@ -750,8 +763,9 @@ class SsoService {
   }
 
   /// Keeps fewer than [limit] flows matching [which] by dropping the oldest
-  /// idle ones (see [_Flow.idle]). False if all of them wait for a code.
+  /// spare ones (see [_Flow.spare]). False if all of them are in use.
   bool _makeRoom(int limit, bool Function(_Flow flow) which) {
+    final now = DateTime.now();
     final matching = [
       for (final e in _flows.entries)
         if (which(e.value)) e,
@@ -759,7 +773,7 @@ class SsoService {
     var count = matching.length;
     for (final e in matching) {
       if (count < limit) break;
-      if (!e.value.idle) continue;
+      if (!e.value.spare(now, providerGrace)) continue;
       _flows.remove(e.key);
       count--;
     }

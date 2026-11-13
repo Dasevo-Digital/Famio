@@ -350,6 +350,31 @@ class ListSync {
     db.execute('DELETE FROM list_accounts');
   }
 
+  /// Ends [memberId]'s connections, after their runs in progress: before
+  /// their account and private entries go, so no run deletes those entries
+  /// in the other apps as well.
+  Future<void> disconnectMember(String memberId) async {
+    final ids = [
+      for (final row in db.select(
+        'SELECT id FROM list_accounts WHERE user_id = ?',
+        [memberId],
+      ))
+        row['id'] as String,
+    ];
+    for (final id in ids) {
+      Future<void>? waited;
+      for (
+        var run = _running[id];
+        run != null && !identical(run, waited);
+        run = _running[id]
+      ) {
+        waited = run;
+        await run.catchError((Object _) {});
+      }
+    }
+    db.execute('DELETE FROM list_accounts WHERE user_id = ?', [memberId]);
+  }
+
   void disconnect(String id, String memberId) {
     _account(id, memberId);
     db.execute('DELETE FROM list_accounts WHERE id = ?', [id]);
@@ -587,6 +612,11 @@ class ListSync {
         _State.ofRemote(r, dueDates: dueDates, steps: steps);
 
     final famioWrites = <SyncRecord>[];
+    // Links that describe what Famio will hold once [famioWrites] are
+    // stored. They wait for it: if a later call fails (Microsoft's 429,
+    // say), the next run must still see Famio's old state as the linked
+    // one, or it would take that for a change here and send it back.
+    final afterWrite = <void Function()>[];
     void link(String itemId, String remoteId, _State state) => db.execute(
       'INSERT INTO list_items (account_id, famio_list, item_id, remote_id,'
       ' hash) VALUES (?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET'
@@ -627,9 +657,11 @@ class ListSync {
           famioList,
           isTasks,
           steps: steps,
+          dueDates: dueDates,
         ),
       );
-      link(itemId, there.id, remoteState(there));
+      final state = remoteState(there);
+      afterWrite.add(() => link(itemId, there.id, state));
     }
 
     // Bring! keeps one entry per name. Several entries here linked to the
@@ -653,7 +685,7 @@ class ListSync {
             famioWrites.add(_tombstone(r));
             stats.merged++;
           }
-          unlink(id);
+          afterWrite.add(() => unlink(id));
           links.remove(id);
         }
       }
@@ -705,7 +737,7 @@ class ListSync {
           famioWrites.add(_tombstone(record));
           stats.deleted++;
         }
-        unlink(itemId);
+        afterWrite.add(() => unlink(itemId));
       } else {
         pull(itemId, there);
       }
@@ -766,7 +798,7 @@ class ListSync {
             famioWrites.add(_tombstone(other));
             stats.merged++;
           }
-          unlink(otherId);
+          afterWrite.add(() => unlink(otherId));
           linkedTitles[title] = record.id;
           await push(
             record.id,
@@ -806,8 +838,16 @@ class ListSync {
       pull(newId(), there);
     }
 
-    if (famioWrites.isEmpty) return false;
+    if (famioWrites.isEmpty) {
+      for (final apply in afterWrite) {
+        apply();
+      }
+      return false;
+    }
     records.writeAs(memberId, famioWrites);
+    for (final apply in afterWrite) {
+      apply();
+    }
     if (isTasks) {
       advanceRepeatingTasks(records, [
         for (final w in famioWrites) w.id,
@@ -868,6 +908,7 @@ class ListSync {
     String famioList,
     bool isTasks, {
     required bool steps,
+    required bool dueDates,
   }) {
     final live = previous != null && !previous.deleted ? previous : null;
     final Map<String, Object?> data;
@@ -878,7 +919,9 @@ class ListSync {
             title: there.title,
             notes: there.note,
             done: there.done,
-            due: there.due ?? (live == null ? null : task!.due),
+            // An app with due dates says when (or that there is none);
+            // without them Famio keeps its own.
+            due: dueDates ? there.due : task?.due,
             completedAt: there.done
                 ? (task?.completedAt ?? DateTime.now())
                 : null,

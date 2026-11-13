@@ -18,7 +18,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from .api import FamioError
-from .const import SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
+from .const import DOMAIN, SHOPPING_ITEMS, SHOPPING_LISTS, TASKS
 from .coordinator import FamioConfigEntry, FamioCoordinator, assignees
 from .entity import FamioEntity, FamioMemberEntity
 
@@ -174,7 +174,9 @@ class FamioTasks(FamioEntity, TodoListEntity):
     async def async_update_todo_item(self, item: TodoItem) -> None:
         existing = self.coordinator.data.collection(TASKS).get(item.uid or "")
         if existing is None:
-            raise HomeAssistantError("Aufgabe nicht gefunden")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="task_not_found"
+            )
         done = item.status == TodoItemStatus.COMPLETED
         data = {
             **existing,
@@ -215,14 +217,26 @@ class FamioShoppingList(FamioEntity, TodoListEntity):
     def supported_features(self) -> TodoListEntityFeature:
         return _NONE if self.coordinator.data.access == "readOnly" else _ALL
 
+    # "Shopping {name}" in Home Assistant's language.
+    _attr_translation_key = "shopping_list"
+
     def __init__(self, coordinator: FamioCoordinator, list_id: str) -> None:
         super().__init__(coordinator, f"shopping_{list_id}")
         self._list_id = list_id
+        self._attr_translation_placeholders = {"name": self._list_name()}
 
-    @property
-    def name(self) -> str:
+    def _list_name(self) -> str:
         shopping = self.coordinator.data.collection(SHOPPING_LISTS).get(self._list_id)
-        return f"Einkauf {(shopping or {}).get('name') or ''}".strip()
+        return (shopping or {}).get("name") or ""
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        # Renamed in Famio: the name follows.
+        if (name := self._list_name()) != self._attr_translation_placeholders["name"]:
+            self._attr_translation_placeholders = {"name": name}
+            # Home Assistant keeps the name until it is told otherwise.
+            self.__dict__.pop("name", None)
+        super()._handle_coordinator_update()
 
     @property
     def available(self) -> bool:

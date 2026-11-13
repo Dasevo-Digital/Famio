@@ -1217,15 +1217,40 @@ class RecordStore {
       ))
         if (_isPrivate(_record(row))) _record(row),
     ];
+    // What hangs on them goes too: the packing list of a private
+    // appointment (it would keep the departed account as its audience) and
+    // the entries of the lists that go.
+    final going = {for (final r in personal) '${r.collection}/${r.id}'};
+    void add(SyncRecord r) {
+      if (going.add('${r.collection}/${r.id}')) personal.add(r);
+    }
+
+    for (final r in [...personal]) {
+      if (r.collection == Collections.events) _packingLists(r).forEach(add);
+    }
+    for (final r in [...personal]) {
+      if (r.collection != Collections.shoppingLists) continue;
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE collection = ? AND deleted = 0'
+        " AND json_extract(data, '\$.listId') = ?",
+        [Collections.shoppingItems, r.id],
+      )) {
+        add(_record(row));
+      }
+    }
     _transaction(() {
-      for (final r in personal) {
+      for (final listed in personal) {
+        // As it is now: deleting an appointment may have just changed its
+        // packing list's audience.
+        final r = get(listed.collection, listed.id) ?? listed;
+        if (r.deleted) continue;
         _put(
           SyncRecord(
             collection: r.collection,
             id: r.id,
             data: {SyncRecord.visibilityKey: ?r.visibleTo},
             deleted: true,
-            updatedAt: at,
+            updatedAt: at > r.updatedAt ? at : r.updatedAt + 1,
             updatedBy: serverMemberId,
           ),
           previous: r,
@@ -1244,6 +1269,8 @@ class RecordStore {
             Collections.children,
             Collections.childEntries,
             Collections.childLogs,
+            // A child's timetable, even when only one parent keeps it.
+            Collections.timetables,
           }.contains(r.collection) ||
           Collections.serverOwned.contains(r.collection));
 
@@ -1345,6 +1372,16 @@ class RecordStore {
   /// audience ([mayWrite] turns that down). The same holds for what else
   /// widens it: a confidential appointment stays confidential and gets no
   /// new people taking part, a task kept to a few gets no one else assigned.
+  /// A child's own appointment: the child wrote it last and nobody else
+  /// takes part (an appointment the parents entered stays theirs to mark).
+  static bool childOwnsEvent(
+    Map<String, Object?> event,
+    String? updatedBy,
+    String userId,
+  ) =>
+      updatedBy == userId &&
+      [...?(event['memberIds'] as List?)].every((id) => id == userId);
+
   static SyncRecord _childAudience(
     SyncRecord incoming,
     SyncRecord? existing,
@@ -1362,8 +1399,10 @@ class RecordStore {
     }
     final confidential = existing.data['confidential'] == true;
     if (incoming.collection == Collections.events &&
-        (data['confidential'] == true) != confidential) {
-      // Neither hides a family appointment nor reveals a confidential one.
+        (data['confidential'] == true) != confidential &&
+        !childOwnsEvent(existing.data, existing.updatedBy, userId)) {
+      // Neither hides a family appointment nor reveals a confidential one;
+      // their own appointments children mark as they like.
       if (existing.data.containsKey('confidential')) {
         data['confidential'] = existing.data['confidential'];
       } else {

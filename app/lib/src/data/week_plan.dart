@@ -91,12 +91,7 @@ WeekPlan buildWeekPlan(SyncEngine engine, DateTime monday) {
   final waste = engine.wasteConfigured ? engine.wasteSettings : null;
   final events = <DateTime, List<(Occurrence, bool)>>{};
   for (final o in engine.occurrencesForDays(monday, end)) {
-    if (waste != null &&
-        (waste.sourceId != null
-            ? o.event.sourceId == waste.sourceId
-            : o.event.allDay && WasteKind.of(o.event.title) != null)) {
-      continue;
-    }
+    if (waste != null && waste.isPickup(o.event)) continue;
     final first = DateTime(o.start.year, o.start.month, o.start.day);
     // End is exclusive; a timed entry ending at midnight stays on its day.
     final lastMoment = o.end.isAfter(o.start)

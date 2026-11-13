@@ -767,6 +767,8 @@ void main() {
         'abandoned sign-ins of one address make room for new ones',
         () async {
           await configure(matchUsername: true);
+          // Abandoned: longer at the provider than a sign-in takes.
+          app.sso.providerGrace = Duration.zero;
           final started = [
             for (var i = 0; i < 6; i++)
               await call(base, 'POST', 'api/auth/sso/start', body: {}),
@@ -779,6 +781,50 @@ void main() {
           expect((await browser(started.last))['status'], 'done');
         },
       );
+
+      test('a sign-in still at the provider is not pushed out', () async {
+        await configure(matchUsername: true);
+        final first = await call(base, 'POST', 'api/auth/sso/start', body: {});
+        for (var i = 0; i < 4; i++) {
+          await call(base, 'POST', 'api/auth/sso/start', body: {});
+        }
+        expect(
+          (await call(base, 'POST', 'api/auth/sso/start', body: {}))['_status'],
+          429,
+        );
+        expect((await browser(first))['status'], 'done');
+      });
+
+      test('a confirmed sign-in waits for its app', () async {
+        await configure(matchUsername: true);
+        app.sso.providerGrace = Duration.zero;
+        final first = await call(base, 'POST', 'api/auth/sso/start', body: {});
+        final url = Uri.parse(first['url'] as String);
+        nonce = url.queryParameters['nonce'];
+        final state = url.queryParameters['state']!;
+        final page = await callback(base, 'state=$state&code=good');
+        final confirmed = await confirm(
+          base,
+          state,
+          first['code'] as String,
+          cookie: page.cookie,
+        );
+        expect(confirmed.status, 200);
+        // Five more starts from the same address: older abandoned ones go,
+        // the confirmed one stays for its app.
+        for (var i = 0; i < 5; i++) {
+          expect(
+            (await call(
+              base,
+              'POST',
+              'api/auth/sso/start',
+              body: {},
+            ))['_status'],
+            200,
+          );
+        }
+        expect((await poll(first))['status'], 'done');
+      });
 
       test('sign-ins waiting for their code are not pushed out', () async {
         await configure(matchUsername: true);

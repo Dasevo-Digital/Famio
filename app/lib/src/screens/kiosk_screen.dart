@@ -270,7 +270,7 @@ class _KioskScreenState extends State<KioskScreen> {
                                         vertical: 12,
                                       ),
                                       child: Text(
-                                        '🎉 ${e.occurrence.event.publicTitle}: '
+                                        '🎉 ${engine.wallTitle(e.occurrence.event)}: '
                                         '${countdownLabel(e.occurrence, e.days, _now)}',
                                         style: theme.textTheme.titleLarge,
                                       ),
@@ -422,7 +422,7 @@ class _EventsPanel extends StatelessWidget {
         if (items.isEmpty) _BigLine(tr.kioskNothingPlanned, dim: true),
         for (final o in items.take(6))
           _BigLine(
-            o.event.publicTitle,
+            engine.wallTitle(o.event),
             leading: SizedBox(
               width: 56,
               child: Text(
@@ -686,7 +686,7 @@ class _PeopleBoard extends StatelessWidget {
     }
 
     Widget eventLine(Occurrence o) => _BigLine(
-      o.event.publicTitle,
+      engine.wallTitle(o.event),
       leading: SizedBox(
         width: 56,
         child: Text(
@@ -957,7 +957,7 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
                 ),
                 if (next != null)
                   Text(
-                    '${DateFormat.jm(appLanguage).format(next.start)} ${next.event.publicTitle}',
+                    '${DateFormat.jm(appLanguage).format(next.start)} ${widget.engine.wallTitle(next.event)}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       shadows: shadow,

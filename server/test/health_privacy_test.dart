@@ -409,6 +409,56 @@ void main() {
       expect(app.records.referenced(file.id), isFalse);
     });
 
+    test(
+      'takes the packing list of a private appointment, not timetables',
+      () async {
+        await sync(
+          papa,
+          changes: [
+            record(
+              Collections.events,
+              'praxis',
+              {
+                'title': 'Praxis',
+                'start': '2026-12-01T09:00:00.000Z',
+                'end': '2026-12-01T10:00:00.000Z',
+              },
+              audience: [papa.id],
+            ),
+            record(Collections.shoppingLists, 'pack', {
+              'name': '🧳 Praxis',
+              'eventId': 'praxis',
+            }),
+            record(Collections.shoppingItems, 'karte', {
+              'listId': 'pack',
+              'name': 'Versichertenkarte',
+            }),
+            record(
+              Collections.timetables,
+              'mia',
+              {'periods': const [], 'lessons': const []},
+              audience: [papa.id],
+            ),
+          ],
+        );
+        final response = await app.handler(
+          Request(
+            'DELETE',
+            Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+            headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+          ),
+        );
+        expect(response.statusCode, 200);
+        bool gone(String c, String id) =>
+            app.records.get(c, id)?.deleted ?? true;
+        expect(gone(Collections.events, 'praxis'), isTrue);
+        expect(gone(Collections.shoppingLists, 'pack'), isTrue);
+        expect(gone(Collections.shoppingItems, 'karte'), isTrue);
+        // A child's timetable stays, even if only this parent kept it.
+        expect(gone(Collections.timetables, 'mia'), isFalse);
+      },
+    );
+
     test('works for a guest, who deletes their own account', () async {
       await app.accounts.setPassword(oma.id, 'tulpe-regal-7');
       final response = await app.handler(

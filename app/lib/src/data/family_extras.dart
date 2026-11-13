@@ -21,6 +21,15 @@ extension FamilyExtras on SyncEngine {
 
   bool get iAmGuest => myRole == MemberRole.guest;
 
+  /// Whether this member may switch "Privat" for [existing] (null: a new
+  /// appointment): children only for their own, written by them with nobody
+  /// else taking part (the server keeps the flag of other appointments).
+  bool mayChangeConfidential(CalendarEvent? existing) =>
+      myRole != MemberRole.child ||
+      existing == null ||
+      (record(Collections.events, existing.id)?.updatedBy == memberId &&
+          existing.memberIds.every((id) => id == memberId));
+
   /// Whether this member decides who sees an entry stored with
   /// [visibleTo]: children only for new entries and their own private ones
   /// (the server keeps the audience of everything else as it is).

@@ -58,6 +58,9 @@
     "todo": {
       "tasks": {
         "name": "Tareas"
+      },
+      "shopping_list": {
+        "name": "Compra {name}"
       }
     },
     "sensor": {
@@ -132,6 +135,21 @@
     },
     "delete_series": {
       "message": "Borra los eventos periódicos en la app de Famio."
+    },
+    "create_series": {
+      "message": "Crea los eventos periódicos en la app de Famio."
+    },
+    "task_not_found": {
+      "message": "No se encontró la tarea."
+    },
+    "read_only_messages": {
+      "message": "La cuenta de Famio de Home Assistant no puede escribir mensajes (en Famio, dale el acceso «Leer y cambiar»)."
+    },
+    "empty_message": {
+      "message": "El mensaje está vacío."
+    },
+    "refused": {
+      "message": "Famio rechazó el cambio (sin permiso)."
     }
   }
 }

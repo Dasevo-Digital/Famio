@@ -146,7 +146,10 @@ extension _AccountRoutes on FamioApi {
       throw ApiException(403, 'reauth_required', t('Bestätigungscode falsch'));
     }
     throttle.succeeded(address, '#delete:${member.id}');
+    // First, so nothing of the deletion reaches their calendars and lists
+    // in other apps.
     await caldav?.disconnectUser(member.id);
+    await lists?.disconnectMember(member.id);
     locations?.memberDeleted(member.id);
     records.purgeMember(member.id);
     invites?.revokeBy(member.id);

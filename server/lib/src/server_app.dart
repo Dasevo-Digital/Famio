@@ -166,6 +166,8 @@ class FamioServerApp {
         ServerSettings.locationModule,
       ),
     );
+    // Hidden before this server version kept the last positions.
+    locations.followModule();
     files = FileStore(
       db,
       blobs:

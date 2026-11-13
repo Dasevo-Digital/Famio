@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import FamioConfigEntry
 from .api import FamioError
-from .const import CHAT_MESSAGES, FAMILY_CHAT
+from .const import CHAT_MESSAGES, DOMAIN, FAMILY_CHAT
 from .coordinator import FamioCoordinator
 from .entity import FamioEntity, FamioMemberEntity
 
@@ -44,11 +44,12 @@ async def _send(
 ) -> None:
     if coordinator.data.access != "full":
         raise HomeAssistantError(
-            "Das Famio-Konto von Home Assistant darf keine Nachrichten "
-            "schreiben (in Famio Zugriff „Lesen und ändern“ geben)."
+            translation_domain=DOMAIN, translation_key="read_only_messages"
         )
     if not text.strip():
-        raise HomeAssistantError("Leere Nachricht")
+        raise HomeAssistantError(
+            translation_domain=DOMAIN, translation_key="empty_message"
+        )
     data = {
         "chatId": chat_id,
         "authorId": coordinator.member_id,

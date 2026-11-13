@@ -19,7 +19,7 @@ import aiohttp
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
@@ -156,8 +156,14 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
         if collection == SOS_ALERTS:
             when = data.get("startedAt")
             state = data.get("state") or "active"
-            if self._announced.get(record_id) == state or not _recent(when):
-                self._announced.setdefault(record_id, state)
+            seen = self._announced.get(record_id)
+            if seen == state:
+                return
+            # Old alerts first seen now (after a restart) stay quiet; a known
+            # one tells every change ("coming", "resolved"), however long it
+            # has been running.
+            if seen is None and not _recent(when):
+                self._announced[record_id] = state
                 return
             self._announced[record_id] = state
             member_id = data.get("memberId")
@@ -219,7 +225,9 @@ class FamioCoordinator(DataUpdateCoordinator[FamioData]):
             r["collection"] == collection and r["id"] == record_id
             for r in answer.get("rejected", [])
         ):
-            raise FamioError("Famio hat die Änderung abgelehnt (keine Berechtigung).")
+            raise HomeAssistantError(
+                translation_domain=DOMAIN, translation_key="refused"
+            )
         self.async_set_updated_data(self._state)
 
     # --- live updates -----------------------------------------------------------
