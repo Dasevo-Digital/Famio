@@ -2224,7 +2224,7 @@
     }
   },
   "pregnancyBabyHere": "Baby ist da!",
-  "pregnancySizesAveragesWhatCounts": "Größenangaben sind Durchschnittswerte. Maßgeblich sind Hebamme, Frauenarzt und Mutterpass.",
+  "pregnancySizesAveragesWhatCounts": "Größenangaben sind Durchschnittswerte, Fristen wie der Mutterschutz gelten für Deutschland. Maßgeblich sind Hebamme, Frauenarzt und Mutterpass.",
   "pregnancyNow": "jetzt",
   "pregnancyOverdue": "überfällig",
   "pregnancySoon": "demnächst",
@@ -3316,7 +3316,7 @@
   "locationTurnSharing": "Freigabe aktivieren",
   "locationYouShareOwnLocation": "Den eigenen Standort teilt man mit der Famio-App auf dem Handy (Android oder iPhone). Hier siehst du, wo die anderen sind.",
   "locationShareMyLocation": "Meinen Standort teilen",
-  "locationFamilySeesMapWhere": "Deine Familie sieht auf der Karte, wo du bist, und bekommt Bescheid, wenn du an einem Ort ankommst. Positionen werden nach 7 Tagen gelöscht. Pausieren geht nur mit dem Eltern-Code.",
+  "locationFamilySeesMapWhere": "Deine Familie sieht auf der Karte, wo du bist, und bekommt Bescheid, wenn du an einem Ort ankommst. Den Verlauf löscht der Server nach der eingestellten Zeit (Standard: 7 Tage). Pausieren geht nur mit dem Eltern-Code.",
   "locationShareLocation": "Standort teilen",
   "locationLocationAccessMissingTap": "Standortzugriff fehlt – antippen zum Erlauben",
   "locationBackgroundLocationNotActive": "Hintergrundortung ist nicht aktiv – der Standort wird nur bei geöffneter App zuverlässig aktualisiert",
@@ -4143,8 +4143,8 @@
       }
     }
   },
-  "kidsPeriodsGermanChildHealth": "Zeiträume laut gelbem Kinderuntersuchungsheft. Den Termin am besten früh beim Kinderarzt vereinbaren.",
-  "kidsBasedStikoVaccinationCalendar": "Orientierung nach dem STIKO-Impfkalender (Stand 2026). Maßgeblich sind Kinderarzt und Impfpass.",
+  "kidsPeriodsGermanChildHealth": "Zeiträume laut gelbem Kinderuntersuchungsheft (Deutschland). Den Termin am besten früh beim Kinderarzt vereinbaren.",
+  "kidsBasedStikoVaccinationCalendar": "Orientierung nach dem STIKO-Impfkalender für Deutschland (Stand 2026). Maßgeblich sind Kinderarzt und Impfpass.",
   "kidsWhatDone": "{what} erledigt",
   "@kidsWhatDone": {
     "placeholders": {
@@ -4800,7 +4800,7 @@
   "healthNormalTemperature": "Normale Temperatur.",
   "healthLowTemperatureMeasureAgain": "Niedrige Temperatur – bitte noch einmal messen. Normal sind etwa 36,5 bis 37,5 °C.",
   "healthMeasuredRectally": "Die Hinweise gehen von einer Messung im Po (rektal) aus; im Ohr, im Mund oder an der Stirn weichen die Werte ab.",
-  "exportZipFileAllFamily": "Eine ZIP-Datei mit allen Daten der Familie: Bereiche als JSON, hochgeladene Dateien, Mitglieder (ohne Passwörter) und Einstellungen. Standortverläufe sind nicht dabei. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
+  "exportZipFileAllFamily": "Eine vollständige Sicherung des Servers: alle Bereiche als JSON, auch private Einträge, Direktnachrichten und Gesundheitsdaten der anderen, hochgeladene Dateien, Mitglieder (ohne Passwörter), letzte Positionen und Einstellungen. Standortverläufe sind nicht dabei. Die anderen Erwachsenen bekommen eine Mitteilung. Bewahre die Datei sicher auf, sie ist nicht verschlüsselt.",
   "exportZipFileEverythingYou": "Eine ZIP-Datei mit allem, was du in Famio sehen kannst, deinen Dateien und deinem Standortverlauf. Bewahre sie sicher auf, sie ist nicht verschlüsselt.",
   "exportFamioPassword": "Dein Famio-Passwort",
   "exportSaveExport": "Export sichern",
@@ -7236,5 +7236,20 @@
   "settingsLastAdminOthers": "Mach zuerst ein anderes erwachsenes Mitglied zum Administrator (Server-Verwaltung → Mitglieder). Danach kannst du dein Konto hier löschen.",
   "settingsLastAdminAlone": "Ohne Administrator ließe sich der Server nicht mehr verwalten. Wenn du Famio nicht mehr nutzt: In der Server-Verwaltung entfernt „Alle Daten löschen“ die Daten der Familie; danach kann der Server abgeschaltet werden.",
   "settingsOpenAdministration": "Zur Server-Verwaltung",
-  "appLocalDataUnreadable": "Die Daten auf diesem Gerät ließen sich nicht öffnen. Bitte neu anmelden; Famio lädt sie dann vom Server."
+  "eventSingleDatesByCreator": "Einzelne Termine dieser Serie ändert, wer sie eingetragen hat.",
+  "pairOtherServerKey": "Der Server zeigt einen anderen Schlüssel als im Code. Famio hat abgebrochen und nichts gesendet. Lass den Code auf dem anderen Gerät neu anzeigen und prüfe die Server-Adresse.",
+  "appSessionNotResumed": "Famio konnte die Anmeldung auf diesem Gerät nicht fortsetzen. Bitte neu anmelden.",
+  "appLocalDataSetAside": "Die Daten auf diesem Gerät ließen sich nicht öffnen und liegen jetzt beiseite. Famio lädt alles neu vom Server; was dieses Gerät noch nicht übertragen hatte, fehlt hier.",
+  "healthBabySignsWithoutFever": "Babys unter 3 Monaten können auch ohne Fieber ernsthaft krank sein: Wirkt es schlapp, trinkt es schlecht oder verändert sich die Hautfarbe, umgehend ärztlich abklären lassen.",
+  "healthVeryLowTemperature": "Sehr niedrige Temperatur – bitte gleich noch einmal messen. Bleibt sie unter 35 °C, sofort ärztliche Hilfe holen (116 117, bei Warnzeichen 112). {warnings}",
+  "@healthVeryLowTemperature": {"placeholders": {"warnings": {"type": "String"}}},
+  "kidsLogPaleStoolHint": "Weißlicher, grauer oder sehr blasser Stuhl kann bei Babys auf eine Erkrankung der Leber hinweisen. Laut Stuhlfarbkarte im gelben Kinderuntersuchungsheft bitte innerhalb von 24 Stunden kinderärztlich abklären lassen.",
+  "sourcesTitle": "Quellen der Gesundheitsinhalte",
+  "sourcesSubtitle": "Impfungen, Vorsorge, Fieber, Wachstum, Schwangerschaft",
+  "sourcesIntro": "Famio richtet Fristen und Hinweise nach diesen Quellen für Deutschland aus, mit ihrem Stand. Sie dienen der Orientierung und ersetzen keine ärztliche Beratung.",
+  "sourcesVaccinations": "Impfungen und RSV",
+  "sourcesCheckups": "Vorsorge-Untersuchungen und Stuhlfarbe",
+  "sourcesFever": "Fieber",
+  "sourcesGrowth": "Wachstum und Entwicklung",
+  "sourcesPregnancy": "Schwangerschaft, Mutterschutz und Elternzeit"
 }

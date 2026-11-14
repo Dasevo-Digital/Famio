@@ -3,6 +3,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'platform/browser_copy.dart' as browser;
 import 'platform/platform.dart';
 import 'snapshot_codec.dart';
+import 'unreadable.dart';
 
 /// A record in the local store plus whether it still has to be pushed.
 class LocalRecord {
@@ -34,13 +35,13 @@ class LocalStore {
 
   /// Opens the store at [path], encrypted with [hexKey]; pass `:memory:`
   /// for tests. In the browser everything stays in memory.
-  /// [resetUnreadable]: see [openDeviceDatabase].
+  /// [unreadable]: see [openDeviceDatabase].
   factory LocalStore.open(
     String path, {
     String? hexKey,
-    bool resetUnreadable = false,
+    UnreadableDatabase unreadable = UnreadableDatabase.fail,
   }) => LocalStore._(
-    openRecordBackend(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+    openRecordBackend(path, hexKey: hexKey, unreadable: unreadable),
   );
 
   /// Opens the store at [path]; in the browser starting from the copy kept

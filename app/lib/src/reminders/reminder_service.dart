@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:crypto/crypto.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -359,8 +360,15 @@ class ReminderService {
     };
   }
 
-  String _signature(DueReminder r) =>
-      '${r.at.millisecondsSinceEpoch}|${_title(r)}|${_text(r)}';
+  /// What a scheduled reminder looked like, to tell a changed one. Only a
+  /// hash is kept: the texts name medications, children and appointments,
+  /// and the preferences are plain files that go into device backups
+  /// (#514).
+  String _signature(DueReminder r) => sha256
+      .convert(
+        utf8.encode('${r.at.millisecondsSinceEpoch}|${_title(r)}|${_text(r)}'),
+      )
+      .toString();
 
   static const _scheduledCollections = {
     Collections.events,

@@ -582,6 +582,36 @@ void main() {
       },
     );
 
+    test('nor does taking a single date out of the series', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final series = {
+        ...appointment('Psychotherapie', [kid.id]),
+        'confidential': true,
+        'recurrence': {'freq': 'weekly'},
+      };
+      await write(mama, 'series', series, now);
+      await write(kid, 'series', {
+        ...series,
+        'exceptions': ['2026-11-16'],
+      }, now + 1000);
+      final stored = app.records.get(Collections.events, 'series')!;
+      expect(stored.data.containsKey('exceptions'), isFalse);
+      // In its own series the child takes dates out as it likes.
+      await write(kid, 'own-series', {
+        ...appointment('Training', [kid.id]),
+        'recurrence': {'freq': 'weekly'},
+      }, now + 2000);
+      await write(kid, 'own-series', {
+        ...appointment('Training', [kid.id]),
+        'recurrence': {'freq': 'weekly'},
+        'exceptions': ['2026-11-16'],
+      }, now + 3000);
+      expect(
+        app.records.get(Collections.events, 'own-series')!.data['exceptions'],
+        ['2026-11-16'],
+      );
+    });
+
     test('nor does the bin make it the child\'s', () async {
       final now = DateTime.now().millisecondsSinceEpoch;
       final secret = {
@@ -639,6 +669,22 @@ void main() {
         ),
       ],
     );
+
+    test('over a tombstone long gone from the bin the writer is new', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await write(kid, 'old', appointment('Training', [kid.id]), now);
+      await remove(kid, 'old', now + 1000);
+      app.records.expireTrash(
+        now: DateTime.now().add(const Duration(days: 40)),
+      );
+      await write(kid, 'old', {
+        ...appointment('Arzt', [kid.id]),
+        'confidential': true,
+      }, now + 2000);
+      final stored = app.records.get(Collections.events, 'old')!;
+      expect(stored.data[CalendarEvent.createdByKey], kid.id);
+      expect(stored.data['confidential'], isTrue);
+    });
 
     test('deleting and undoing does not make it the child\'s', () async {
       final now = DateTime.now().millisecondsSinceEpoch;

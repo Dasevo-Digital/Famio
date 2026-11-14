@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:famio/src/design/theme.dart';
 import 'package:famio/src/security/app_lock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -377,4 +378,39 @@ void main() {
       expect(find.text('Medikamente').hitTestable(), findsOneWidget);
     });
   });
+
+  test(
+    'the iPhone cover hears whether Famio came back locked (#512)',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      const channel = MethodChannel('famio/privacy');
+      final calls = <MethodCall>[];
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        calls.add(call);
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      final l = await lock(platform: TargetPlatform.iOS, delaySeconds: 60);
+      await Future<void>.delayed(Duration.zero);
+      expect(calls.first.method, 'setSecure');
+      expect(calls.first.arguments, isTrue);
+      await l.unlock();
+      calls.clear();
+      // Back after a moment: not locked, the cover goes.
+      back(l);
+      await Future<void>.delayed(Duration.zero);
+      expect(calls.single.method, 'resumed');
+      expect(calls.single.arguments, {'locked': false});
+      calls.clear();
+      // Back after the delay: locked, what iOS shows over Famio closes.
+      l.didChangeAppLifecycleState(AppLifecycleState.hidden);
+      now = now.add(const Duration(minutes: 2));
+      l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      l.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      await Future<void>.delayed(Duration.zero);
+      expect(calls.single.arguments, {'locked': true});
+    },
+  );
 }

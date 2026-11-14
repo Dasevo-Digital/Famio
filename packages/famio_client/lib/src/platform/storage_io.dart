@@ -8,21 +8,22 @@ import 'package:sqlite3/sqlite3.dart';
 import '../encrypted_db.dart';
 import '../snapshot_codec.dart';
 import 'storage.dart';
+import '../unreadable.dart';
 
 RecordBackend openRecordBackend(
   String path, {
   String? hexKey,
-  bool resetUnreadable = false,
+  UnreadableDatabase unreadable = UnreadableDatabase.fail,
 }) => _SqliteRecords(
-  openDeviceDatabase(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+  openDeviceDatabase(path, hexKey: hexKey, unreadable: unreadable),
 );
 
 BlobBackend openBlobBackend(
   String path, {
   String? hexKey,
-  bool resetUnreadable = false,
+  UnreadableDatabase unreadable = UnreadableDatabase.fail,
 }) => _SqliteBlobs(
-  openDeviceDatabase(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+  openDeviceDatabase(path, hexKey: hexKey, unreadable: unreadable),
 );
 
 /// Writes a plain copy of a file for another app (PDF viewer …); returns

@@ -47,6 +47,11 @@ extension FamilyExtras on SyncEngine {
           )?.data[CalendarEvent.createdByKey] ==
           memberId;
 
+  /// Whether this member may change or delete single dates of the series
+  /// [existing]: children only of series they entered (#416).
+  bool mayChangeOccurrences(CalendarEvent? existing) =>
+      mayRemoveParticipants(existing);
+
   /// Whether this member decides who sees an entry stored with
   /// [visibleTo]: children only for new entries and their own private ones
   /// (the server keeps the audience of everything else as it is).

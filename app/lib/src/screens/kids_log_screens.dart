@@ -910,8 +910,10 @@ class _StoolSheetState extends State<_StoolSheet> {
 
   void _change(ChildLog next) {
     widget.update(next);
+    // A pale stool stays open: its hint must be read (#520).
     if (next.stool != null &&
         next.stoolColor != null &&
+        next.stoolColor != StoolColor.pale &&
         next.stoolAmount != null) {
       Navigator.pop(context);
     } else {
@@ -1049,6 +1051,36 @@ class _StoolChoices extends StatelessWidget {
             ),
           ),
         ),
+        // The stool colour card of the yellow check-up booklet (G-BA): a
+        // pale stool in a baby is a reason to see the doctor within a day.
+        // A hint as the booklet gives it, no diagnosis (#520).
+        if (color == StoolColor.pale)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  AppIcons.info,
+                  size: 20,
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    tr.kidsLogPaleStoolHint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -1774,7 +1806,7 @@ class _LogEditorState extends State<_LogEditor> {
     final dateTime = DateFormat.Md(appLanguage).add_jm();
     final temp = _parse(_temp);
     final advice =
-        kind == LogKind.temperature && temp != null && temp >= 35 && temp <= 45
+        kind == LogKind.temperature && temp != null && temp >= 30 && temp <= 45
         ? feverAdvice(widget.child, temp, at: _start, logs: logs)
         : null;
     final nextDose =

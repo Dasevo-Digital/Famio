@@ -651,12 +651,15 @@ void main() {
     test('read and write like adults, but never become admin', () async {
       final ha = await addMember('homeassistant', MemberRole.service);
       await mama.sync([
+        _record(Collections.notes, 'n1', {'title': 'WLAN', 'text': 'Router'}),
         _record(Collections.documents, 'd1', {'title': 'Pass'}),
       ]);
       await ha.sync([
         _record(Collections.shoppingItems, 's1', {'name': 'Milch'}),
       ]);
-      expect(ha.seen.containsKey('documents/d1'), isTrue);
+      expect(ha.seen.containsKey('notes/n1'), isTrue);
+      // Documents are not for service accounts (#507).
+      expect(ha.seen.containsKey('documents/d1'), isFalse);
       await mama.sync();
       expect(mama.seen['shopping_items/s1']!.data['name'], 'Milch');
       final promote = await mama.call('PATCH', 'api/admin/users/${ha.id}', {
@@ -1071,6 +1074,29 @@ void main() {
         expect(pushed.single['title'], 'mama · Familie');
       },
     );
+
+    test('the other adults hear of a family export (#509)', () async {
+      final papa = await addMember('papa', MemberRole.adult);
+      await papa.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
+        'url': 'https://push.example/papa',
+        'details': true,
+      });
+      pushed.clear();
+      final export = await http.post(
+        base.resolve('api/admin/export'),
+        headers: {
+          'authorization': 'Bearer ${mama.token}',
+          'content-type': 'application/json',
+        },
+        body: jsonEncode({'password': 'tulpe-regal-7'}),
+      );
+      expect(export.statusCode, 200);
+      await app.push.idle;
+      expect(pushed.single['topic'], 'papa');
+      expect(pushed.single['title'], 'Daten der Familie exportiert');
+      expect(pushed.single['message'], contains('mama'));
+    });
 
     test('a sign-in on another device is told to the member', () async {
       await kind.call('POST', 'api/me/push', {

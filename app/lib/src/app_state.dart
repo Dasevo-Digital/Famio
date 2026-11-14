@@ -266,6 +266,10 @@ class AppState extends ChangeNotifier {
   /// Message for the login screen, e.g. why the session ended.
   String? notice;
 
+  /// The local copy did not open and was set aside on this start (#490):
+  /// the home screen says so once.
+  bool localDataSetAside = false;
+
   /// Tile server for maps set by the admins; null uses OpenStreetMap.
   String? mapTileUrl;
 
@@ -364,10 +368,10 @@ class AppState extends ChangeNotifier {
           pin: await vault.read('certPin'),
         );
       } catch (e, stack) {
-        // Not a blank screen when the local copy cannot be opened (#490):
+        // Not a blank screen when the session cannot be resumed (#490):
         // the sign-in page, which says why.
         debugPrint('Famio: session not restored: $e\n$stack');
-        notice = tr.appLocalDataUnreadable;
+        notice = tr.appSessionNotResumed;
       }
     }
   }
@@ -881,13 +885,19 @@ class AppState extends ChangeNotifier {
     final path = p.join(support, 'famio_${member.id}.db');
     final keep = kIsWeb && keepWebData;
     // Phones keep the key in the keystore of this one device, which a
-    // backup does not take along: a copy restored onto another phone is
-    // unreadable and starts anew from the server (#490). Desktops may get
-    // their keystore back later, so there it stays an error.
+    // backup does not take along: a copy restored onto another phone, met
+    // by a key just made, is unreadable for good and starts anew from the
+    // server. Anything else that does not open (a damaged file, another
+    // version's) is set aside, not deleted, and the app starts anew (#490).
     final phone = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
+    final unreadable = kIsWeb
+        ? UnreadableDatabase.fail
+        : phone && vault.deviceKeyCreated
+        ? UnreadableDatabase.reset
+        : UnreadableDatabase.setAside;
     final store = keep
         ? await LocalStore.openWithBrowserCopy(path)
-        : LocalStore.open(path, hexKey: key, resetUnreadable: phone);
+        : LocalStore.open(path, hexKey: key, unreadable: unreadable);
     if (kIsWeb) {
       if (keep) {
         store.keepInBrowser(true);
@@ -934,16 +944,28 @@ class AppState extends ChangeNotifier {
       if (legacyCache.existsSync()) legacyCache.deleteSync(recursive: true);
     }
     final cachePath = p.join(support, 'files_${member.id}.db');
-    files = FileCache.open(
-      cachePath,
-      api,
-      hexKey: key,
-      tempDir: kIsWeb ? '' : await _openedFilesDir(),
-      resetUnreadable: phone,
-    )..clearTemp();
-    // Nor does an iPhone's backup take the copies along.
+    try {
+      files = FileCache.open(
+        cachePath,
+        api,
+        hexKey: key,
+        tempDir: kIsWeb ? '' : await _openedFilesDir(),
+        unreadable: unreadable,
+      )..clearTemp();
+    } catch (_) {
+      store.close();
+      rethrow;
+    }
+    // Set aside: what this device had not sent yet is gone from view.
+    if (takeSetAsideDatabases().isNotEmpty) {
+      localDataSetAside = true;
+    }
+    // Nor does an iPhone's backup take the copies along, with the journal
+    // files they have while open.
     for (final file in [path, cachePath]) {
-      unawaited(excludeFromBackup(file));
+      for (final suffix in const ['', '-wal', '-shm']) {
+        unawaited(excludeFromBackup('$file$suffix'));
+      }
     }
     serverUrl = normalized;
     certificatePin = pin;

@@ -92,6 +92,9 @@ class RecordStore {
       if (event != null && !_canSee(event, userId)) return false;
     }
     final role = _role(userId);
+    if (role == MemberRole.service && _serviceHidden.contains(r.collection)) {
+      return false;
+    }
     if (role != MemberRole.adult &&
         (Collections.adultReadable.contains(r.collection) ||
             !_mayReceive(r, userId, role))) {
@@ -102,6 +105,16 @@ class RecordStore {
             (Collections.guestReadable.contains(r.collection) &&
                 _guestMaySee(r, userId)));
   }
+
+  /// What a service account (Home Assistant, a wall display) has no use for
+  /// and so never gets: scanned letters, insurance cards and contracts are
+  /// often health data before anyone files them (#507). Their files follow
+  /// ([FileStore] asks [canAccess] of what refers to them).
+  static const _serviceHidden = {
+    Collections.documents,
+    Collections.externalDocuments,
+    Collections.inbox,
+  };
 
   /// What everyone but adults may not receive although nothing restricts
   /// it: health data unless they are named (service accounts never), and
@@ -267,7 +280,8 @@ class RecordStore {
     // Service accounts neither receive health data nor see what confidential
     // appointments are about, so they cannot sensibly change them.
     if (role == MemberRole.service &&
-        (health(incoming) ||
+        (_serviceHidden.contains(collection) ||
+            health(incoming) ||
             health(existing) ||
             incoming.data['confidential'] == true ||
             existing?.data['confidential'] == true)) {
@@ -401,6 +415,10 @@ class RecordStore {
   /// Clients may be a little ahead of the server clock, but not much; a
   /// far-future timestamp would otherwise win every conflict forever.
   static const _maxClockSkew = Duration(minutes: 2);
+
+  /// How far a device that has seen "delete all data" may be behind the
+  /// deletion with what it writes after it (see [sync]).
+  static const _resetGrace = Duration(seconds: 10);
 
   /// `updatedAt` of tombstones for revoked records: beats any local copy, so
   /// the record disappears even if the member edited it offline.
@@ -596,11 +614,6 @@ class RecordStore {
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     final blocked = <SyncWriteIssue>[];
-    // A device that has received the deletion marks of "delete all data"
-    // has dropped what was written before it on its side; what it sends now
-    // was written after, also when its clock is behind or the server's
-    // marks are ahead of it (#491).
-    final sawReset = resetRev > 0 && request.since >= resetRev;
     // A client ahead of the server means the server database was reset:
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
@@ -618,6 +631,17 @@ class RecordStore {
             (!request.full &&
                 (request.since < purgedRev || request.since > currentRev)));
     final since = request.since > currentRev || reset ? 0 : request.since;
+    // A device that has received the deletion marks of "delete all data"
+    // saves its settings again over their marks, which lie ahead of the
+    // deletion (#491). Its clock is corrected by the server's, so what it
+    // wrote a moment before the deletion by that clock also counts as
+    // after. What it holds from well before (more than a batch of offline
+    // changes) still goes. A device ahead of the server or from another
+    // instance has not seen this deletion.
+    final sawReset = resetRev > 0 && !reset && since >= resetRev;
+    final writtenAfter = sawReset
+        ? resetAt - _resetGrace.inMilliseconds
+        : resetAt;
     // Newer clients may know collections this server does not; skip those
     // instead of failing the whole sync.
     final accepted = <SyncRecord>[];
@@ -701,9 +725,26 @@ class RecordStore {
           );
           continue;
         }
-        if (!sawReset &&
-            (existing == null || existing.deleted) &&
-            incoming.updatedAt < resetAt) {
+        if (role == MemberRole.child) {
+          final checked = _childHealthWrite(incoming, existing, userId);
+          if (checked == null) {
+            rejected.add(
+              existing ??
+                  SyncRecord(
+                    collection: change.collection,
+                    id: change.id,
+                    data: const {},
+                    deleted: true,
+                    updatedAt: revokedAt,
+                    updatedBy: serverMemberId,
+                  ),
+            );
+            continue;
+          }
+          incoming = checked;
+        }
+        if ((existing == null || existing.deleted) &&
+            incoming.updatedAt < writtenAfter) {
           // Written offline before an admin deleted all data: gone too.
           rejected.add(
             SyncRecord(
@@ -1036,7 +1077,7 @@ class RecordStore {
 
   /// Raised when members other than adults receive less than before: their
   /// next sync is a full one, which takes the rest off their devices.
-  static const _accessRules = 5;
+  static const _accessRules = 6;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 
@@ -1305,8 +1346,54 @@ class RecordStore {
         );
       }
       _forgetTrashOf(memberId);
+      _handOnChildren(memberId, at);
     });
     return personal.length;
+  }
+
+  /// What stays of a departed member: children's records and timetables
+  /// they were named for lose them as guardian and audience. Where no
+  /// adult remains, the record is for the whole family, as a child without
+  /// guardians is in the apps; else nobody could see or change it (#506).
+  void _handOnChildren(String memberId, int at) {
+    const kept = [
+      Collections.children,
+      Collections.childEntries,
+      Collections.childLogs,
+      Collections.timetables,
+    ];
+    final rows = _db.select(
+      'SELECT * FROM records WHERE deleted = 0 AND collection IN (?, ?, ?, ?)',
+      kept,
+    );
+    for (final row in rows) {
+      final r = _record(row);
+      final audience = r.visibleTo;
+      final guardians = r.collection == Collections.children
+          ? [for (final g in r.data['guardianIds'] as List? ?? const []) '$g']
+          : const <String>[];
+      if (!(audience?.contains(memberId) ?? false) &&
+          !guardians.contains(memberId)) {
+        continue;
+      }
+      final rest = [...?audience]..remove(memberId);
+      final keepsAdult = rest.any((id) => _role(id) == MemberRole.adult);
+      _put(
+        r.copyWith(
+          data: {
+            for (final e in r.data.entries)
+              if (e.key != SyncRecord.visibilityKey) e.key: e.value,
+            if (guardians.contains(memberId))
+              'guardianIds': [...guardians]..remove(memberId),
+            if (keepsAdult) SyncRecord.visibilityKey: rest,
+          },
+          updatedAt: at > r.updatedAt ? at : r.updatedAt + 1,
+          updatedBy: serverMemberId,
+        ),
+        previous: r,
+        trash: false,
+      );
+    }
   }
 
   /// Goes with the member whose audience it is alone (see [purgeMember]).
@@ -1401,6 +1488,43 @@ class RecordStore {
   /// Apps before 2.0.15 know nothing of who sees a shopping list, and no app
   /// of who sees an appointment from a shared calendar: they leave the key
   /// out, and their changes keep the stored audience.
+  /// What a child logs or ticks off belongs to a child or plan it is named
+  /// for, goes to whoever sees that, and is in its own name. What someone
+  /// else entered (a vaccination, a dose, a measurement) stays as they
+  /// entered it (#505). Null when the write is not allowed.
+  SyncRecord? _childHealthWrite(
+    SyncRecord incoming,
+    SyncRecord? existing,
+    String userId,
+  ) {
+    final (parentCollection, parentKey) = switch (incoming.collection) {
+      Collections.childEntries ||
+      Collections.childLogs => (Collections.children, 'childId'),
+      Collections.medicationIntakes => (
+        Collections.medications,
+        'medicationId',
+      ),
+      _ => (null, null),
+    };
+    if (parentCollection == null) return incoming;
+    if (existing != null && !existing.deleted && existing.updatedBy != userId) {
+      return null;
+    }
+    if (incoming.deleted) return incoming;
+    final parent = _get(parentCollection, '${incoming.data[parentKey]}');
+    if (parent == null || parent.deleted || !canAccess(parent, userId)) {
+      return null;
+    }
+    return incoming.copyWith(
+      data: {
+        ...incoming.data,
+        if (incoming.collection == Collections.medicationIntakes)
+          'byId': userId,
+        SyncRecord.visibilityKey: parent.data[SyncRecord.visibilityKey],
+      },
+    );
+  }
+
   static SyncRecord _keepAudience(SyncRecord incoming, SyncRecord? existing) {
     if (incoming.data.containsKey(SyncRecord.visibilityKey) ||
         existing == null ||
@@ -1430,18 +1554,18 @@ class RecordStore {
 
   /// Who entered an appointment: set when it is created, kept on every
   /// change; what an app sends for it does not count. [existing] is the
-  /// stored version or, over a deletion, the last live one; a tombstone
-  /// whose live version is gone has no known creator.
+  /// stored version or, over a deletion, the last live one; over a
+  /// tombstone whose live version is gone, the writer.
   static SyncRecord _withCreator(
     SyncRecord incoming,
     SyncRecord? existing,
     String userId,
   ) {
     final data = {...incoming.data}..remove(CalendarEvent.createdByKey);
-    final creator = existing == null
+    // Over a tombstone whose live version has left the bin nothing of the
+    // earlier appointment is left: what is written now is new.
+    final creator = existing == null || existing.deleted
         ? userId
-        : existing.deleted
-        ? null
         : existing.data[CalendarEvent.createdByKey];
     if (creator != null) data[CalendarEvent.createdByKey] = creator;
     return incoming.copyWith(data: data);
@@ -1507,6 +1631,13 @@ class RecordStore {
           if (id != userId && !ids.contains(id)) id,
       ];
       if (missing.isNotEmpty) data['memberIds'] = [...ids, ...missing];
+      // Nor does it take single dates out of such a series: "only this
+      // date" would make the date the child's own copy (#416).
+      if (existing.data.containsKey('exceptions')) {
+        data['exceptions'] = existing.data['exceptions'];
+      } else {
+        data.remove('exceptions');
+      }
     }
     if (incoming.collection == Collections.tasks && before != null) {
       final allowed = {...before, ...Task.assigneesIn(existing.data)};

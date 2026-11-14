@@ -247,10 +247,20 @@ List<DueItem> vaccinationPlan(
               );
               if (earliest.isAfter(from)) from = earliest;
             }
-            // Vaccinations have no fixed window; a month counts as
-            // "due".
+            // The recommended age, else a month, counts as "due".
+            final until = rule?.dueUntilMonths;
+            if (until != null) {
+              final end = child.ageDate(until);
+              return (from, DateTime(end.year, end.month, end.day - 1));
+            }
             return (from, DateTime(from.year, from.month, from.day + 31));
           }();
+    // After the recommended age, until the catch-up limit, it can still be
+    // done ("noch nachholbar").
+    final catchUp = switch (rule?.catchUpUntilMonths) {
+      final months? => child.ageDate(months),
+      null => null,
+    };
     // A series with an age limit (Rotavirus) is due until that limit.
     var waiting = false;
     var tooLate = false;
@@ -276,6 +286,8 @@ List<DueItem> vaccinationPlan(
           ? DueState.upcoming
           : !day.isAfter(to)
           ? DueState.due
+          : catchUp != null && day.isBefore(catchUp)
+          ? DueState.late
           // Many parents never record past vaccinations: an old
           // unrecorded dose is neutral, not an endless alarm.
           : DueState.missed,

@@ -7,6 +7,9 @@ import android.content.Intent
 /** Starts location sharing and notifications again after a restart or an app update. */
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // After an update the emergency widgets get the button that starts
+        // the alarm again (see MainActivity.isOwnSos).
+        MainActivity.refreshSosWidgets(context)
         val prefs = context.getSharedPreferences(LocationService.PREFS, Context.MODE_PRIVATE)
         if (prefs.getBoolean("enabled", false)) {
             try {

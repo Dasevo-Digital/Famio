@@ -30,8 +30,50 @@ class MainActivity : FlutterFragmentActivity() {
         private const val MAX_SHARED_FILES = 10
         private const val MAX_SHARED_BYTES = 100L * 1024 * 1024
 
+        private const val SOS_PREFS = "famio_sos_launch"
+        private const val EXTRA_SOS_TOKEN = "de.status403.famio.SOS_TOKEN"
+
+        /**
+         * A secret of this installation that only Famio's own emergency
+         * buttons (widget, tile, shortcut) carry: the activity is open to
+         * other apps for sharing, and none of them may start the alarm
+         * (#516).
+         */
+        private fun sosToken(context: Context): String {
+            val prefs = context.getSharedPreferences(SOS_PREFS, Context.MODE_PRIVATE)
+            prefs.getString("token", null)?.let { return it }
+            val bytes = ByteArray(16).also { java.security.SecureRandom().nextBytes(it) }
+            val token = bytes.joinToString("") { "%02x".format(it) }
+            prefs.edit().putString("token", token).apply()
+            return token
+        }
+
         fun sosIntent(context: Context) =
-            Intent(context, MainActivity::class.java).setAction(ACTION_SOS)
+            Intent(context, MainActivity::class.java)
+                .setAction(ACTION_SOS)
+                .putExtra(EXTRA_SOS_TOKEN, sosToken(context))
+
+        /** Whether [intent] comes from one of Famio's emergency buttons. */
+        fun isOwnSos(context: Context, intent: Intent?): Boolean {
+            if (intent?.action != ACTION_SOS) return false
+            val sent = runCatching { intent.getStringExtra(EXTRA_SOS_TOKEN) }.getOrNull()
+                ?: return false
+            return java.security.MessageDigest.isEqual(
+                sent.toByteArray(),
+                sosToken(context).toByteArray(),
+            )
+        }
+
+        /** Gives the emergency widgets the button with the current secret. */
+        fun refreshSosWidgets(context: Context) {
+            runCatching {
+                val manager = android.appwidget.AppWidgetManager.getInstance(context)
+                val ids = manager.getAppWidgetIds(
+                    android.content.ComponentName(context, SosWidgetProvider::class.java),
+                )
+                if (ids.isNotEmpty()) SosWidgetProvider().onUpdate(context, manager, ids)
+            }
+        }
     }
 
     private var permissionResult: MethodChannel.Result? = null
@@ -55,15 +97,16 @@ class MainActivity : FlutterFragmentActivity() {
         val fromHistory =
             (flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
         if (savedInstanceState == null && !fromHistory) {
-            if (intent?.action == ACTION_SOS) SosChannel.launchPending = true
+            if (isOwnSos(this, intent)) SosChannel.launchPending = true
             receiveFile(intent)
         }
         addSosShortcut()
+        refreshSosWidgets(this)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.action == ACTION_SOS) {
+        if (isOwnSos(this, intent)) {
             SosChannel.launchPending = true
             sos?.announceLaunch()
         }

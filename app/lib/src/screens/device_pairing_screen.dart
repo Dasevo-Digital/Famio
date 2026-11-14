@@ -169,18 +169,29 @@ class _JoinPairedDeviceScreenState extends State<JoinPairedDeviceScreen> {
       _error = null;
     });
     String fold(String value) => value.replaceAll(':', '').toUpperCase();
+    var mismatch = false;
     try {
       final state = AppScope.read(context);
       final resolved = await state.resolveServer(
         link.server,
-        trust: (fingerprint) async =>
-            (link.pin != null && fold(link.pin!) == fold(fingerprint)) ||
-            await confirmCertificate(context, fingerprint),
+        // A code with a key is only for the server with that key: another
+        // one could pass the one-time secret on (#513). Nothing to confirm.
+        trust: (fingerprint) async {
+          if (link.pin != null) {
+            mismatch = fold(link.pin!) != fold(fingerprint);
+            return !mismatch;
+          }
+          return confirmCertificate(context, fingerprint);
+        },
       );
       await state.pairDevice(resolved, secret: link.secret);
       if (mounted) Navigator.of(context).popUntil((route) => route.isFirst);
     } on ApiError catch (error) {
-      if (mounted) setState(() => _error = error.message);
+      if (mounted) {
+        setState(
+          () => _error = mismatch ? tr.pairOtherServerKey : error.message,
+        );
+      }
     } on FormatException {
       if (mounted) setState(() => _error = tr.settingsInvalidServerAddress);
     } finally {

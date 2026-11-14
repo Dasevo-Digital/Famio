@@ -4,6 +4,24 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('young babies: signs count without fever, low values too (#522)', () {
+    final baby = Child(id: 'b', name: 'Baby', birthDate: DateTime(2026, 10, 1));
+    final at = DateTime(2026, 10, 22); // three weeks old
+    for (final celsius in [37.8, 35.5]) {
+      final advice = feverAdvice(baby, celsius, at: at);
+      expect(advice.text, contains('ohne Fieber'), reason: '$celsius');
+      expect(advice.text, contains('112'), reason: '$celsius');
+    }
+    expect(feverAdvice(baby, 34.8, at: at).level, FeverLevel.doctor);
+    // Older children: the plain hints, without the baby's.
+    final older = Child(id: 'o', name: 'Ben', birthDate: DateTime(2020, 1, 1));
+    expect(
+      feverAdvice(older, 37.8, at: at).text,
+      isNot(contains('ohne Fieber')),
+    );
+    expect(feverAdvice(older, 34.5, at: at).level, FeverLevel.doctor);
+  });
+
   test(
     'fever age boundaries use calendar months instead of fixed day counts',
     () {

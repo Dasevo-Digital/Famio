@@ -170,6 +170,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         maybeShowWhatsNew(context);
       }
       _openedFile();
+      final state = AppScope.read(context);
+      if (state.localDataSetAside) {
+        state.localDataSetAside = false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(tr.appLocalDataSetAside),
+            duration: const Duration(seconds: 12),
+          ),
+        );
+      }
     });
   }
 

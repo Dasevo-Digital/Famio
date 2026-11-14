@@ -77,7 +77,13 @@ const vaccinations = <Vaccination>[
   Vaccination('menb_2', 'Meningokokken B', '2. Dosis', 4),
   Vaccination('menb_3', 'Meningokokken B', '3. Dosis', 12),
   Vaccination('mmrv_1', 'Masern, Mumps, Röteln, Windpocken', '1. Dosis', 11),
-  Vaccination('menacwy', 'Meningokokken A, C, W, Y', 'einmalig', 144),
+  Vaccination(
+    'menacwy',
+    'Meningokokken A, C, W, Y',
+    'einmalig',
+    144,
+    'Mit 12–14 Jahren, nachholen bis zum 25. Geburtstag.',
+  ),
   Vaccination(
     'mmrv_2',
     'Masern, Mumps, Röteln, Windpocken',
@@ -97,7 +103,7 @@ const vaccinations = <Vaccination>[
     'HPV (Humane Papillomviren)',
     '1. Dosis',
     108,
-    'Mit 9–14 Jahren, für alle Kinder.',
+    'Mit 9–14 Jahren, für alle Kinder, nachholen bis zum 18. Geburtstag.',
   ),
   Vaccination(
     'hpv_2',
@@ -123,6 +129,8 @@ class VaccinationRule {
     this.gapMonths = 0,
     this.gapDays = 0,
     this.untilDays,
+    this.dueUntilMonths,
+    this.catchUpUntilMonths,
   });
 
   /// The earliest age in days, where months are too coarse (6 weeks).
@@ -136,6 +144,15 @@ class VaccinationRule {
 
   /// The last age in days at which the dose is still given (Rotavirus).
   final int? untilDays;
+
+  /// The age in months the recommended window ends with, exclusive ("mit
+  /// 5–6 Jahren": up to the day before the 7th birthday, 84). Without it a
+  /// dose counts as due for a month.
+  final int? dueUntilMonths;
+
+  /// The age in months up to which a missed dose is caught up, exclusive
+  /// (HPV until the 18th birthday, 216).
+  final int? catchUpUntilMonths;
 }
 
 /// Minimum intervals and age limits (STIKO-Impfkalender 2026).
@@ -150,7 +167,20 @@ const vaccinationRules = <String, VaccinationRule>{
   'menb_2': VaccinationRule(after: 'menb_1', gapMonths: 2),
   'menb_3': VaccinationRule(after: 'menb_2', gapMonths: 6),
   'mmrv_2': VaccinationRule(after: 'mmrv_1', gapDays: 28),
-  'hpv_2': VaccinationRule(after: 'hpv_1', gapMonths: 5),
+  'hpv_2': VaccinationRule(
+    after: 'hpv_1',
+    gapMonths: 5,
+    dueUntilMonths: 180,
+    catchUpUntilMonths: 216,
+  ),
+  // Epid. Bull. 4/2026: "5 bis 6 Jahre" is the 5th birthday up to the day
+  // before the 7th; HPV with 9–14, caught up until the 18th birthday;
+  // Tdap-IPV with 9–16; MenACWY with 12–14, caught up until the 25th
+  // birthday (#521).
+  'tdap_1': VaccinationRule(dueUntilMonths: 84),
+  'hpv_1': VaccinationRule(dueUntilMonths: 180, catchUpUntilMonths: 216),
+  'tdap_ipv': VaccinationRule(dueUntilMonths: 204),
+  'menacwy': VaccinationRule(dueUntilMonths: 180, catchUpUntilMonths: 300),
 };
 
 /// Labels for previously documented doses, outside today's recommendations.

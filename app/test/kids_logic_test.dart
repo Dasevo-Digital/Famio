@@ -227,6 +227,31 @@ void main() {
     expect(plan['rota_2']!.tooLate, isFalse);
   });
 
+  test('school-age vaccinations are due for their whole age (#521)', () {
+    final kid = Child(id: 'k', name: 'K', birthDate: DateTime(2014, 3, 15));
+    DueState state(String id, DateTime at) =>
+        vaccinationPlan(kid, const [], at).firstWhere((v) => v.id == id).state;
+    // Tdap with 5–6 years: up to the day before the 7th birthday.
+    expect(state('tdap_1', DateTime(2020, 9, 1)), DueState.due);
+    expect(state('tdap_1', DateTime(2021, 3, 14)), DueState.due);
+    expect(state('tdap_1', DateTime(2021, 3, 15)), DueState.missed);
+    // HPV with 9–14, caught up until the 18th birthday.
+    expect(state('hpv_1', DateTime(2024, 11, 14)), DueState.due);
+    expect(state('hpv_1', DateTime(2029, 3, 14)), DueState.due);
+    expect(state('hpv_1', DateTime(2030, 1, 1)), DueState.late);
+    expect(state('hpv_1', DateTime(2032, 3, 15)), DueState.missed);
+    // Tdap-IPV with 9–16.
+    expect(state('tdap_ipv', DateTime(2026, 11, 14)), DueState.due);
+    expect(state('tdap_ipv', DateTime(2031, 3, 15)), DueState.missed);
+    // MenACWY with 12–14, caught up until the 25th birthday.
+    expect(state('menacwy', DateTime(2027, 6, 1)), DueState.due);
+    expect(state('menacwy', DateTime(2028, 11, 14)), DueState.due);
+    expect(state('menacwy', DateTime(2035, 1, 1)), DueState.late);
+    expect(state('menacwy', DateTime(2039, 3, 15)), DueState.missed);
+    // And so the reminder of what is next does not stop after a month.
+    expect(nextDue(kid, const [], DateTime(2024, 11, 14))?.id, 'hpv_1');
+  });
+
   test('old unrecorded vaccinations and optional check-ups do not nag', () {
     final at = DateTime(2026, 9, 26); // 15 months old
     final vaccines = {

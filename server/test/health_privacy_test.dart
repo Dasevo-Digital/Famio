@@ -140,7 +140,8 @@ void main() {
       );
       expect(await sees(papa), containsAll(['open', 'befund', 'mia']));
       expect(await sees(kid), {'rechnung'});
-      expect(await sees(ha), {'rechnung'});
+      // Documents are not for service accounts at all (#507).
+      expect(await sees(ha), isEmpty);
       expect(await sees(oma), isEmpty);
     });
 
@@ -175,6 +176,52 @@ void main() {
       expect(app.records.canAccess(r, kid.id), isFalse);
     });
   });
+
+  test(
+    'service accounts get no documents, inbox or their files (#507)',
+    () async {
+      final card = await app.files.save(
+        owner: mama.id,
+        name: 'versichertenkarte.jpg',
+        mime: 'image/jpeg',
+        body: Stream.value([1, 2, 3]),
+      );
+      final letter = await app.files.save(
+        owner: mama.id,
+        name: 'arztbrief.pdf',
+        mime: 'application/pdf',
+        body: Stream.value([4, 5, 6]),
+      );
+      await sync(
+        mama,
+        changes: [
+          record(Collections.documents, 'karte', {
+            'title': 'Versichertenkarte',
+            'category': 'insurance',
+            'file': card.toJson(),
+          }),
+          record(Collections.inbox, 'scan', {
+            'title': 'Arztbrief',
+            'files': [letter.toJson()],
+          }),
+        ],
+      );
+      final ids = {for (final r in (await sync(ha)).changes) r.id};
+      expect(ids, isNot(contains('karte')));
+      expect(ids, isNot(contains('scan')));
+      expect(app.files.mayRead(card, ha.id), isFalse);
+      expect(app.files.mayRead(letter, ha.id), isFalse);
+      // Adults still have them.
+      expect(app.files.mayRead(card, papa.id), isTrue);
+      final answer = await sync(
+        ha,
+        changes: [
+          record(Collections.inbox, 'von-ha', {'title': 'Notiz'}),
+        ],
+      );
+      expect(answer.rejected.map((r) => r.id), ['von-ha']);
+    },
+  );
 
   group('a photo in the child log', () {
     Future<StoredFile> photo(FamilyMember owner) => app.files.save(
@@ -240,6 +287,16 @@ void main() {
 
     test('a child who may log keeps the audience as it is', () async {
       final audience = [mama.id, kid.id];
+      // Logs belong to a child the kid is named for (#505).
+      await sync(
+        mama,
+        changes: [
+          record(Collections.children, 'baby', {
+            'name': 'Baby',
+            'birthDate': '2026-01-01',
+          }, audience: audience),
+        ],
+      );
       SyncRecord log(String id, {List<String>? to}) =>
           record(Collections.childLogs, id, {
             'childId': 'baby',
@@ -294,6 +351,75 @@ void main() {
   });
 
   group('deleting an account', () {
+    test('hands a child kept only by them on to the family (#506)', () async {
+      await sync(
+        papa,
+        changes: [
+          record(
+            Collections.children,
+            'mia',
+            {
+              'name': 'Mia',
+              'birthDate': '2020-01-01',
+              'guardianIds': [papa.id],
+            },
+            audience: [papa.id],
+          ),
+          record(
+            Collections.childLogs,
+            'log',
+            {'childId': 'mia', 'kind': 'note'},
+            audience: [papa.id],
+          ),
+          record(
+            Collections.children,
+            'ben',
+            {
+              'name': 'Ben',
+              'birthDate': '2018-01-01',
+              'guardianIds': [papa.id, mama.id],
+            },
+            audience: [papa.id, mama.id],
+          ),
+          record(
+            Collections.timetables,
+            'mia',
+            {'periods': const <Object?>[]},
+            audience: [papa.id],
+          ),
+        ],
+      );
+      final response = await app.handler(
+        Request(
+          'DELETE',
+          Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+          headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+        ),
+      );
+      expect(response.statusCode, 200);
+      final mia = app.records.get(Collections.children, 'mia')!;
+      expect(mia.deleted, isFalse);
+      expect(mia.visibleTo, isNull);
+      expect(mia.data['guardianIds'], isEmpty);
+      expect(app.records.get(Collections.childLogs, 'log')!.visibleTo, isNull);
+      expect(app.records.get(Collections.timetables, 'mia')!.visibleTo, isNull);
+      final ben = app.records.get(Collections.children, 'ben')!;
+      expect(ben.visibleTo, [mama.id]);
+      expect(ben.data['guardianIds'], [mama.id]);
+      final mamaSees = {
+        for (final r in (await sync(mama)).changes)
+          if (!r.deleted) '${r.collection}/${r.id}',
+      };
+      expect(
+        mamaSees,
+        containsAll([
+          '${Collections.children}/mia',
+          '${Collections.childLogs}/log',
+          '${Collections.timetables}/mia',
+        ]),
+      );
+    });
+
     test('takes their own health data, leaves the shared', () async {
       await sync(
         papa,

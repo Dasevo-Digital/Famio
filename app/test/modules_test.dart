@@ -331,7 +331,12 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'geformt'));
     await tester.pumpAndSettle();
     expect(find.text('Wie war der Stuhl?'), findsOneWidget);
+    // A pale stool keeps the sheet open with the booklet's hint (#520).
     await tester.tap(find.widgetWithText(ChoiceChip, 'weißlich/grau'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wie war der Stuhl?'), findsOneWidget);
+    expect(find.textContaining('innerhalb von 24 Stunden'), findsOneWidget);
+    await tester.tap(find.text('Fertig'));
     await tester.pumpAndSettle();
     expect(find.text('Wie war der Stuhl?'), findsNothing);
     final full = logs().firstWhere((l) => l.stoolColor == StoolColor.pale);

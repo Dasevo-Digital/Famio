@@ -13,5 +13,6 @@ export 'src/google_login.dart'
 export 'src/local_store.dart';
 export 'src/reminders.dart';
 export 'src/sync_engine.dart';
+export 'src/unreadable.dart';
 export 'src/encrypted_db.dart'
     if (dart.library.js_interop) 'src/encrypted_db_web.dart';

@@ -75,4 +75,61 @@ void main() {
     expect(answer.rejected, isNotEmpty);
     expect(stored()!.deleted, isTrue);
   });
+
+  SyncRecord note(String id, int at) => SyncRecord(
+    collection: Collections.notes,
+    id: id,
+    data: {'title': 'offline $id'},
+    updatedAt: at,
+  );
+
+  int live(String prefix) => [
+    for (final r in app.records.all(Collections.notes))
+      if (r.id.startsWith(prefix) && !r.deleted) r,
+  ].length;
+
+  test('offline notes from before the deletion stay gone in later batches', () {
+    final papa = app.accounts.create(username: 'papa', displayName: 'Papa');
+    final before = DateTime.now().millisecondsSinceEpoch - 60000;
+    app.records.sync(
+      SyncRequest(since: 0, changes: [note('family', before)]),
+      mama.id,
+    );
+    var since = app.records.sync(const SyncRequest(since: 0), papa.id).rev;
+    final dirty = [for (var i = 0; i < 600; i++) note('papa-$i', before + i)];
+    app.records.wipe();
+    // As the apps send them: 500 per request, each with the rev of the
+    // answer before, so the second batch comes after the marks.
+    while (dirty.isNotEmpty) {
+      final batch = dirty.take(500).toList();
+      final answer = app.records.sync(
+        SyncRequest(since: since, changes: batch, resettable: true),
+        papa.id,
+      );
+      expect(answer.rejected, hasLength(batch.length));
+      dirty.removeRange(0, batch.length);
+      since = answer.rev;
+    }
+    expect(live('papa-'), 0);
+  });
+
+  test('a device ahead of the server has not seen the deletion', () {
+    final before = DateTime.now().millisecondsSinceEpoch - 60000;
+    app.records.sync(
+      SyncRequest(since: 0, changes: [note('family', before)]),
+      mama.id,
+    );
+    app.records.wipe();
+    final answer = app.records.sync(
+      SyncRequest(
+        since: app.records.currentRev + 5000,
+        changes: [note('ahead', before)],
+        resettable: true,
+        scope: 'another-instance',
+      ),
+      mama.id,
+    );
+    expect(answer.rejected, hasLength(1));
+    expect(live('ahead'), 0);
+  });
 }

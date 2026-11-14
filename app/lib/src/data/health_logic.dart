@@ -361,14 +361,30 @@ enum FeverLevel { normal, low, raised, fever, doctor, urgent }
       text: tr.healthFeverLetChildDrink(warnings),
     );
   }
+  // Young babies can be seriously ill without fever, and get cold rather
+  // than hot (kindergesundheit-info.de "Fieber", 04.05.2026, #522).
+  final baby = youngerThanMonths(3) ? ' ${tr.healthBabySignsWithoutFever}' : '';
   if (celsius >= 37.6) {
     return (
       level: FeverLevel.raised,
-      text: tr.healthRaisedTemperatureMeasureAgain,
+      text: baby.isEmpty
+          ? tr.healthRaisedTemperatureMeasureAgain
+          : '${tr.healthRaisedTemperatureMeasureAgain}$baby $warnings',
+    );
+  }
+  if (celsius < 35) {
+    return (
+      level: FeverLevel.doctor,
+      text: tr.healthVeryLowTemperature(warnings),
     );
   }
   if (celsius < 36) {
-    return (level: FeverLevel.low, text: tr.healthLowTemperatureMeasureAgain);
+    return (
+      level: FeverLevel.low,
+      text: baby.isEmpty
+          ? tr.healthLowTemperatureMeasureAgain
+          : '${tr.healthLowTemperatureMeasureAgain}$baby $warnings',
+    );
   }
   return (level: FeverLevel.normal, text: tr.healthNormalTemperature);
 }

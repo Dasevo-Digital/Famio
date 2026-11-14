@@ -7,6 +7,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'api_client.dart';
 import 'client_texts.dart';
 import 'platform/platform.dart';
+import 'unreadable.dart';
 
 /// Keeps downloaded files on the device, so photos and documents opened once
 /// are available offline. Files never change (new upload = new id), so a
@@ -36,9 +37,9 @@ class FileCache {
     required String tempDir,
     int maxBytes = defaultMaxBytes,
     Duration copyTimeout = const Duration(minutes: 2),
-    bool resetUnreadable = false,
+    UnreadableDatabase unreadable = UnreadableDatabase.fail,
   }) => FileCache._(
-    openBlobBackend(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+    openBlobBackend(path, hexKey: hexKey, unreadable: unreadable),
     api,
     tempDir,
     maxBytes,

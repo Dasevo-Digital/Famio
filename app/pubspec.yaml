@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+  crypto: ^3.0.7
   path_provider: ^2.1.6
   shared_preferences: ^2.5.5
   path: ^1.9.1
@@ -82,7 +83,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  crypto: ^3.0.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -2,17 +2,18 @@ import 'dart:io';
 
 import 'package:sqlite3/sqlite3.dart';
 
+import 'unreadable.dart';
+
 /// Opens the on-device database at [path], encrypted with [hexKey]
 /// (SQLite3MultipleCiphers). A plain database from an older app version is
 /// encrypted in place. `:memory:` or no key: unencrypted (tests).
 ///
-/// [resetUnreadable]: a database this key does not open (encrypted on
-/// another device, restored from its backup, #490) is started anew; the
-/// server has what it held. Without it that is an error.
+/// [unreadable]: what happens when this key does not open the database, see
+/// [UnreadableDatabase].
 Database openDeviceDatabase(
   String path, {
   String? hexKey,
-  bool resetUnreadable = false,
+  UnreadableDatabase unreadable = UnreadableDatabase.fail,
 }) {
   if (path == ':memory:') return sqlite3.openInMemory();
   final file = File(path);
@@ -30,14 +31,33 @@ Database openDeviceDatabase(
     return db;
   } on SqliteException catch (e) {
     db.close();
-    if (!resetUnreadable || plain || e.resultCode != 26) rethrow;
-    for (final suffix in const ['', '-wal', '-shm', '-journal']) {
-      final part = File('$path$suffix');
-      if (part.existsSync()) part.deleteSync();
+    // 26: not a database for this key; 11: damaged.
+    final unopened = e.resultCode == 26 || e.resultCode == 11;
+    if (plain || !unopened) rethrow;
+    switch (unreadable) {
+      case UnreadableDatabase.fail:
+        rethrow;
+      case UnreadableDatabase.reset when e.resultCode == 26:
+        for (final suffix in _parts) {
+          final part = File('$path$suffix');
+          if (part.existsSync()) part.deleteSync();
+        }
+      case UnreadableDatabase.reset || UnreadableDatabase.setAside:
+        // One copy set aside per database: an older one goes.
+        final aside = '$path.unreadable';
+        for (final suffix in _parts) {
+          final old = File('$aside$suffix');
+          if (old.existsSync()) old.deleteSync();
+          final part = File('$path$suffix');
+          if (part.existsSync()) part.renameSync('$aside$suffix');
+        }
+        noteSetAside(aside);
     }
     return openDeviceDatabase(path, hexKey: hexKey);
   }
 }
+
+const _parts = ['', '-wal', '-shm', '-journal'];
 
 bool _isPlain(File file) {
   final raf = file.openSync();

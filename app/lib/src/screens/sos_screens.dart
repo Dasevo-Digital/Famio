@@ -19,6 +19,7 @@ import 'deferred_sections.dart';
 import '../l10n.dart';
 import '../widgets/open_in_maps.dart';
 import '../environment.dart';
+import '../security/app_lock.dart';
 
 /// The red of every emergency screen.
 const sosRed = Color(0xFFD32F2F);
@@ -321,7 +322,7 @@ class _SosCountdown extends StatefulWidget {
   State<_SosCountdown> createState() => _SosCountdownState();
 }
 
-class _SosCountdownState extends State<_SosCountdown> {
+class _SosCountdownState extends State<_SosCountdown> with OverLock {
   var _left = 5;
   late final Timer _timer = Timer.periodic(const Duration(seconds: 1), (t) {
     if (_left <= 1) {
@@ -361,6 +362,7 @@ class _SosCountdownState extends State<_SosCountdown> {
 
   @override
   Widget build(BuildContext context) {
+    overLock(context);
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: sosRed,
@@ -466,7 +468,7 @@ class SosActiveScreen extends StatefulWidget {
   State<SosActiveScreen> createState() => _SosActiveScreenState();
 }
 
-class _SosActiveScreenState extends State<SosActiveScreen> {
+class _SosActiveScreenState extends State<SosActiveScreen> with OverLock {
   SosController get _c => widget.controller;
 
   @override
@@ -491,6 +493,7 @@ class _SosActiveScreenState extends State<SosActiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    overLock(context);
     final theme = Theme.of(context);
     return DataBuilder(
       collections: const {Collections.sosAlerts, 'members'},

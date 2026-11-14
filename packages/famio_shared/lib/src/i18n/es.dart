@@ -521,8 +521,10 @@ const sharedEs = <String, String>{
   "Vaccination|Auffrischung": "Refuerzo",
   "Vaccination|Mit 5–6 Jahren.": "A los 5–6 años.",
   "Vaccination|HPV (Humane Papillomviren)": "VPH (virus del papiloma humano)",
-  "Vaccination|Mit 9–14 Jahren, für alle Kinder.":
-      "A los 9–14 años, para todos los niños.",
+  "Vaccination|Mit 9–14 Jahren, für alle Kinder, nachholen bis zum 18. Geburtstag.":
+      "A los 9–14 años, para todos los niños; recuperar hasta los 18 años.",
+  "Vaccination|Mit 12–14 Jahren, nachholen bis zum 25. Geburtstag.":
+      "A los 12–14 años; recuperar hasta los 25 años.",
   "Vaccination|Mindestens 5 Monate nach der 1. Dosis.":
       "Al menos 5 meses después de la 1.ª dosis.",
   "Vaccination|Tetanus, Diphtherie, Keuchhusten, Polio":
@@ -1434,4 +1436,13 @@ const sharedEs = <String, String>{
   'Client|Übertragung abgebrochen': 'Transferencia cancelada',
   "Client|Die Datei konnte nicht gespeichert oder geöffnet werden. Bitte Speicherplatz und Zugriffsrechte prüfen.":
       "No se pudo guardar o abrir el archivo. Comprueba el espacio disponible y los permisos de acceso.",
+  "Server|Dienstkonten entfernt ein Administrator.":
+      "Las cuentas de servicio las elimina un administrador.",
+  "Server|Neues Familienmitglied": "Nuevo miembro de la familia",
+  "Server|{name} hat Famio über Home Assistant geöffnet und ist als Gast dabei. Die Rolle legst du in der Server-Verwaltung fest.":
+      "{name} ha abierto Famio desde Home Assistant y se ha unido como invitado. El rol lo decides en la administración del servidor.",
+  "Server|Nur für Erwachsene": "Solo para adultos",
+  "Server|Daten der Familie exportiert": "Datos de la familia exportados",
+  "Server|{name} hat alle Daten der Familie exportiert, auch private Einträge.":
+      "{name} ha exportado todos los datos de la familia, también las entradas privadas.",
 };

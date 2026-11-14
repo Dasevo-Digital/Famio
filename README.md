@@ -519,7 +519,9 @@ Uploads werden nach 24 Stunden gelöscht.
 Eigene Konten mit Passwort (PBKDF2) und Session-Token. Beim ersten Start legt
 die App das Admin-Konto an. Im Home-Assistant-Add-on werden HA-Benutzer, die
 Famio über die Seitenleiste (Ingress) öffnen, automatisch angelegt und können
-dort ein Passwort für die App setzen. Die Ingress-Header werden nur von der
+dort ein Passwort für die App setzen. Der erste wird Administrator, alle
+weiteren kommen als Gast dazu, bis ein Administrator ihre Rolle festlegt
+(die Administratoren bekommen dazu eine Mitteilung). Die Ingress-Header werden nur von der
 Supervisor-Adresse `172.30.32.2` akzeptiert.
 
 Ein neues Passwort braucht mindestens 8 Zeichen und darf nicht leicht zu
@@ -595,17 +597,17 @@ Die folgende technische Übersicht ergänzt die ausführlichen
 
 | Bereich | Schutz |
 |---|---|
-| Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App pinnt nach Bestätigung des Fingerabdrucks den Schlüssel des Servers; Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
+| Transport | HTTPS ist auch im Heimnetz Standard (Port 8766 mit eigener Zertifizierungsstelle); die App vertraut nach Bestätigung des Fingerabdrucks dem Schlüssel des Servers (Server mit öffentlichem Zertifikat prüft sie wie jeder Browser); Klartext-API aus dem Netz ist standardmäßig gesperrt (`FAMIO_REQUIRE_TLS`); HSTS hinter dem Proxy; Token nur im `Authorization`-Header |
 | Anmeldung | PBKDF2-SHA256 mit 310 000 Runden (im eigenen Isolate), Drosselung bei Fehlversuchen (pro Adresse, pro Konto; Adressen mit erfolgreicher Anmeldung sperrt ein Fremder nicht aus), Einrichtungscode für den ersten Admin auch im Heimnetz; optional Zwei-Faktor (TOTP, auf Wunsch Pflicht), Passkeys (WebAuthn) und Single Sign-On per OpenID Connect |
 | Sitzungen | Nur gehasht gespeichert, Ablauf nach 90 Tagen Inaktivität, Geräte einzeln abmeldbar, Passwortänderung meldet andere Geräte ab; ein neues Gerät kann einmalig per fünf Minuten gültigem QR-Code gekoppelt werden; meldet sich jemand mit einem schon angemeldeten Konto auf einem weiteren Gerät an, bekommen die anderen Geräte eine Mitteilung; „Das war ich nicht“ unter „Meine Geräte“ meldet das fremde Gerät ab und führt zum Passwortwechsel |
-| Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien; Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Gesundheitsdaten gehen unabhängig von `visibleTo` nie an Dienstkonten und an Kinderkonten nur, wenn sie benannt sind (`Collections.health`, auch Dokumente der Kategorie Gesundheit); wird ein Konto gelöscht, geht alles mit, was nur diese Person sehen konnte (auch Dateien); Wetter nur nach Zustimmung mit gerundeten Koordinaten |
+| Zugriff | Sichtbarkeit pro Datensatz serverseitig (`visibleTo`), gilt auch für Admins und Dateien (der Familien-Export der Server-Verwaltung ist eine vollständige Sicherung samt privater Einträge; die anderen Erwachsenen bekommen dabei eine Mitteilung); Kinderdaten (inkl. Protokoll, Notfalldaten, Schwangerschaft) nur für Sorgeberechtigte; Gesundheitsdaten gehen unabhängig von `visibleTo` nie an Dienstkonten und an Kinderkonten nur, wenn sie benannt sind (`Collections.health`, auch Dokumente der Kategorie Gesundheit); wird ein Konto gelöscht, geht alles mit, was nur diese Person sehen konnte (auch Dateien); Wetter nur nach Zustimmung mit gerundeten Koordinaten |
 | Browser | Uploads nie als HTML/SVG ausgeliefert (`attachment`, CSP `sandbox`), CSRF-Schutz über `application/json`, `nosniff`, `no-store`; die Web-App darf außer dem eigenen Server nur Open-Meteo, Open Food Facts, GitHubs Release-Liste und den eingestellten Kartendienst ansprechen (CSP `connect-src`), Rezeptseiten und ihre Fotos holt der Server (ohne private Ziele, auch nicht über Weiterleitungen) |
 | Server | Datenbank und Dateien verschlüsselt (SQLite3MultipleCiphers, ChaCha20-Poly1305), Schlüssel getrennt von den Daten (`FAMIO_KEY_FILE`); nur für den Famio-Benutzer lesbar (umask 077), redigiertes Request-Log, Audit-Log, Größenlimits |
 | Betrieb | Docker read-only ohne Capabilities; systemd-Sandbox (`systemd-analyze security`: 3.0 OK) |
 | Geräte | Lokale Datenbank und Dateicache verschlüsselt, Schlüssel und Anmeldung im Schlüsselbund des Systems (Keychain, Android Keystore, Windows DPAPI, KWallet/GNOME); beim Abmelden gelöscht; Android ohne Cloud-Backup, Sperrbildschirm ohne Inhalt; optionale App-Sperre mit Fingerabdruck, Gesicht oder Geräte-PIN (sofort oder nach 1, 5 oder 15 Minuten im Hintergrund, Kamera, Dateiauswahl und Scanner frühestens nach einer Minute; unter Einstellungen → Dieses Gerät; nicht unter Windows, Linux und im Browser), dazu verdeckt in der App-Übersicht und unter Android ohne Bildschirmfotos; „Inhalte anzeigen“ aus lässt auch Erinnerungen nichts mehr verraten; Kopien für andere Apps werden nach einer Stunde entfernt, unter Linux liegen sie im eigenen Benutzerordner |
 | Kalender-Abos | Termine lassen sich als *vertraulich* markieren (nie im Abo, nie bei iCloud & Co., in Mitteilungen ohne Titel); Abos auf Wunsch nur als „Belegt“ ohne Details |
 | CalDAV | Eigenes App-Passwort pro Kalender-App (80 Bit, einzeln widerrufbar, Drosselung, nur mit dem Kontopasswort anzulegen, endet mit dem Passwortwechsel), Passwörter für iCloud & Co. nur verschlüsselt auf dem Server |
-| Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 1–365 Tage, nur für Eltern und die Person selbst; Pausieren nur mit Eltern-Code |
+| Standort | Nur nach Einschalten auf dem eigenen Handy, dauerhaft sichtbare Benachrichtigung; Token des Handys kann nur Positionen melden; Verlauf 1–365 Tage, nur für Administratoren und die Person selbst; Pausieren nur mit Eltern-Code |
 
 Bewusst offen bzw. Aufgabe des Betriebs:
 
@@ -623,11 +625,14 @@ Bewusst offen bzw. Aufgabe des Betriebs:
   Termine. Google/Apple speichern die abonnierten Termine – vertrauliche
   Termine sind nie enthalten.
 - **Geöffnete Dokumente:** Zum Anzeigen in einer anderen App (PDF-Viewer)
-  entsteht kurz eine unverschlüsselte Kopie im Temp-Ordner; sie wird beim
-  nächsten Start gelöscht.
+  entsteht kurz eine unverschlüsselte Kopie im Temp-Ordner; sie wird nach
+  spätestens einer Stunde beim nächsten Aufräumen gelöscht. Fotos und Dateien
+  aus Kamera, Auswahl und Scanner legt das Betriebssystem ebenfalls kurz
+  unverschlüsselt im Zwischenspeicher der App ab.
 - **Kartenkacheln** lädt die App standardmäßig von OpenStreetMap; die
-  OSM-Server sehen dabei IP-Adresse und Kartenausschnitt, nicht aber, wer
-  wo ist. Mit eigenem Kachelserver bleibt auch das im Haus.
+  OSM-Server sehen dabei IP-Adresse und Kartenausschnitt; weil die Karte
+  den Positionen der Familie folgt, lässt sich daraus ungefähr ableiten, wo
+  jemand ist. Mit eigenem Kachelserver bleibt auch das im Haus.
 - **Administratoren** können Passwörter zurücksetzen und sich so Zugang
   verschaffen – das steht im Audit-Log (`docker logs famio | grep audit`).
 

@@ -471,10 +471,18 @@ class _EventEditorState extends State<_EventEditor> {
     builder: (context) => SimpleDialog(
       title: Text(title),
       children: [
-        SimpleDialogOption(
-          onPressed: () => Navigator.pop(context, _Scope.this_),
-          child: Text(tr.eventOnlyEvent),
-        ),
+        // Single dates of a series somebody else entered stay as they are:
+        // the server would keep its exceptions (#416).
+        if (AppScope.engineOf(context).mayChangeOccurrences(_original))
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, _Scope.this_),
+            child: Text(tr.eventOnlyEvent),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text(tr.eventSingleDatesByCreator),
+          ),
         SimpleDialogOption(
           onPressed: () => Navigator.pop(context, _Scope.all),
           child: Text(tr.eventAllEventsSeries),

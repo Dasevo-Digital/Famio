@@ -208,6 +208,18 @@ void main() {
       expect(app.accounts.byId(papa.id), isNull);
     });
 
+    test('a service account is removed by an administrator', () async {
+      final ha = app.accounts.create(
+        username: 'ha',
+        displayName: 'HA',
+        role: MemberRole.service,
+      );
+      tokens[ha.id] = app.accounts.createSession(ha.id);
+      final r = await call(ha, 'DELETE', 'api/me', const <String, Object?>{});
+      expect(r.statusCode, 403);
+      expect(app.accounts.byId(ha.id), isNotNull);
+    });
+
     test('the last administrator hands over first', () async {
       final r = await call(mama, 'DELETE', 'api/me', {'password': password});
       expect(r.statusCode, 400);

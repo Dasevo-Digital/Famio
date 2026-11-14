@@ -137,6 +137,61 @@ void main() {
       'Ganze Familie': true,
     });
   });
+  testWidgets('single dates only in a series the child entered', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final store = LocalStore.open(':memory:')..setMeta('members', _members);
+    CalendarEvent series(String id) => appointment(id, [
+      'k1',
+    ]).copyWith(recurrence: const Recurrence(RecurrenceFrequency.weekly));
+    engine('m1', store).saveEvent(series('parents'));
+    final mia = engine('k1', store)..saveEvent(series('own'));
+    final state = AppState();
+    await state.init();
+    state
+      ..me = mia.members.last
+      ..engine = mia;
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pump();
+    final context = tester.element(find.byType(Scaffold).first);
+
+    Future<bool> offersSingleDate(String id) async {
+      final event = mia.events.firstWhere((e) => e.id == id);
+      unawaited(
+        showEventEditor(
+          context,
+          occurrence: Occurrence(event, event.start, event.end),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(find.text('Änderung speichern'), findsOneWidget);
+      final offered = find.text('Nur dieser Termin').evaluate().isNotEmpty;
+      if (!offered) {
+        expect(
+          find.text(
+            'Einzelne Termine dieser Serie ändert, wer sie eingetragen hat.',
+          ),
+          findsOneWidget,
+        );
+      }
+      // Leave dialog and editor without saving.
+      Navigator.of(tester.element(find.text('Änderung speichern'))).pop();
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.text('Mia').first)).pop();
+      await tester.pumpAndSettle();
+      return offered;
+    }
+
+    expect(await offersSingleDate('parents'), isFalse);
+    expect(await offersSingleDate('own'), isTrue);
+  });
 }
 
 bool _selectable(Widget chip) =>

@@ -117,6 +117,15 @@ extension _AccountRoutes on FamioApi {
   Future<Response> _deleteMe(Request request) async {
     final member = _auth(request);
     _checkWriter(member);
+    // A service account (Home Assistant, a wall display) has no password and
+    // is set up by an admin; it is removed there, not with its own token.
+    if (member.role == MemberRole.service) {
+      throw ApiException(
+        403,
+        'forbidden',
+        t('Dienstkonten entfernt ein Administrator.'),
+      );
+    }
     if (member.isAdmin && accounts.adminCount <= 1) {
       throw ApiException.badRequest(
         'last_admin',

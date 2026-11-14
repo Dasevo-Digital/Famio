@@ -115,9 +115,9 @@ void main() {
       }
       // A word after the name is no thing of its own.
       expect(has('Backpulver', 'Gemüsebrühe Pulver'), isFalse);
-      // Spaced nouns are one compound, the last names the thing: "Nudeln
-      // Penne" is Penne, as "Penne" alone would be no "Nudeln" either.
-      expect(has('Nudeln', 'Nudeln Penne'), isFalse);
+      // A shop's name with the kind after it: "Nudeln Penne" are pasta
+      // and penne (#457).
+      expect(has('Nudeln', 'Nudeln Penne'), isTrue);
     });
 
     test('spaced compounds and basics with another word (2.0.53)', () {

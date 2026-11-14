@@ -49,11 +49,34 @@ extension _ExportRoutes on FamioApi {
     return _zip(file, 'famio-meine-daten-${_today()}.zip');
   }
 
+  /// Everything on the server, also what is private to others: a backup
+  /// for moving servers. So it is for adult admins only, and the other
+  /// adults hear of it (#509).
   Future<Response> _exportFamily(Request request) async {
     final admin = _admin(request);
+    if (admin.role != MemberRole.adult) {
+      throw ApiException(403, 'forbidden', t('Nur für Erwachsene'));
+    }
     await _confirmPassword(request, admin);
     final file = await _exports.family();
     _audit(admin, 'hat alle Daten der Familie exportiert');
+    final others = {
+      for (final m in accounts.members())
+        if (m.role == MemberRole.adult && m.id != admin.id) m.id,
+    };
+    push?.deliver(
+      () => PushNotice(
+        to: others,
+        title: t('Daten der Familie exportiert'),
+        body: t(
+          '{name} hat alle Daten der Familie exportiert, auch private Einträge.',
+          {'name': admin.displayName},
+        ),
+        brief: t('Daten der Familie exportiert'),
+        tag: 'package',
+      ),
+      null,
+    );
     return _zip(file, 'famio-familie-${_today()}.zip');
   }
 }

@@ -122,10 +122,15 @@ class SecureVault {
     _secrets = next;
   }
 
+  /// Whether [deviceKey] made the key in this run of the app: whatever
+  /// local data exists was encrypted with another one (#490).
+  bool deviceKeyCreated = false;
+
   /// Key for the encrypted local database and file cache (created once).
   Future<String> deviceKey() async {
     final existing = await read('deviceKey');
     if (existing != null) return existing;
+    deviceKeyCreated = true;
     final random = Random.secure();
     final key = List.generate(
       32,

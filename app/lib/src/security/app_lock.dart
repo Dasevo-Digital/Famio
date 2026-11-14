@@ -172,6 +172,7 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
                 (allowed == Duration.zero ||
                     _now().difference(left) >= allowed));
         covered = false;
+        if (hide) unawaited(_resumedOnIos());
       case AppLifecycleState.inactive:
         covered = hide;
       case AppLifecycleState.hidden:
@@ -248,16 +249,38 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
       return await _device.unlock(tr.appLockReason);
     } finally {
       _asking = false;
+      // Face ID makes Famio inactive for a moment, which puts the iPhone's
+      // cover up; the answer takes it down again.
+      if (_platform == TargetPlatform.iOS && !kIsWeb) {
+        unawaited(_resumedOnIos());
+      }
     }
   }
 
-  /// Android: no screenshots and a blank tile in the app overview.
+  /// Android: no screenshots and a blank tile in the app overview. iPhone:
+  /// a cover over everything while Famio is away, also over documents open
+  /// in iOS's preview, which Flutter's lock screen does not reach (#512).
   Future<void> _applySecure() async {
-    if (kIsWeb || _platform != TargetPlatform.android) return;
+    if (kIsWeb ||
+        (_platform != TargetPlatform.android &&
+            _platform != TargetPlatform.iOS)) {
+      return;
+    }
     try {
       await _privacy.invokeMethod('setSecure', enabled);
     } on MissingPluginException {
       // Tests.
+    }
+  }
+
+  /// Tells the iPhone's cover whether Famio came back locked: then what
+  /// iOS shows over Famio (a document's preview) closes, and the lock
+  /// screen is what remains.
+  Future<void> _resumedOnIos() async {
+    try {
+      await _privacy.invokeMethod('resumed', {'locked': locked});
+    } on MissingPluginException {
+      // Tests, older builds.
     }
   }
 
@@ -322,6 +345,47 @@ class AppLockDelayTile extends StatelessWidget {
   }
 }
 
+/// Emergency screens that show over the lock: the countdown before an
+/// alarm and the running alarm. An emergency needs no unlocking, and the
+/// countdown must stay cancellable (#516). Only while such a screen is on
+/// top; behind it the lock stays.
+abstract final class EmergencyOverLock {
+  static final shown = ValueNotifier(false);
+  static final _owners = <Object>{};
+
+  /// [owner] is on top ([on]) or no longer.
+  static void set(Object owner, bool on) {
+    if (on) {
+      _owners.add(owner);
+    } else {
+      _owners.remove(owner);
+    }
+    shown.value = _owners.isNotEmpty;
+  }
+}
+
+/// For the state of an emergency screen: shows it over the lock while its
+/// route is the current one (see [EmergencyOverLock]). Call [overLock] in
+/// `build`.
+mixin OverLock<T extends StatefulWidget> on State<T> {
+  bool? _onTop;
+
+  void overLock(BuildContext context) {
+    final onTop = ModalRoute.of(context)?.isCurrent ?? true;
+    if (onTop == _onTop) return;
+    _onTop = onTop;
+    // Not while building: the gate above would be marked during it.
+    scheduleMicrotask(() => EmergencyOverLock.set(this, onTop && mounted));
+  }
+
+  @override
+  void dispose() {
+    final owner = this;
+    scheduleMicrotask(() => EmergencyOverLock.set(owner, false));
+    super.dispose();
+  }
+}
+
 /// Puts [lock]'s screen over everything, dialogs included, while [active]
 /// (somebody is signed in). [child] stays where it was underneath.
 class AppLockGate extends StatelessWidget {
@@ -340,10 +404,13 @@ class AppLockGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: lock,
+    listenable: Listenable.merge([lock, EmergencyOverLock.shown]),
     child: child,
     builder: (context, child) {
-      final shown = active && (lock.locked || lock.covered);
+      final shown =
+          active &&
+          (lock.locked || lock.covered) &&
+          !EmergencyOverLock.shown.value;
       return Stack(
         fit: StackFit.expand,
         children: [

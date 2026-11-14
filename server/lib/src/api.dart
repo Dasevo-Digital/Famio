@@ -666,8 +666,31 @@ class FamioApi {
       haUserId: haId,
       haUsername: request.headers['x-remote-user-name'] ?? '',
       displayName: request.headers['x-remote-user-display-name'] ?? '',
+      onJoined: _announceJoin,
     );
     return member;
+  }
+
+  /// A Home Assistant user joined as a guest: the admins decide their role.
+  void _announceJoin(FamilyMember member) {
+    _audit(member, 'ist über Home Assistant als Gast beigetreten');
+    final admins = {
+      for (final m in accounts.members())
+        if (m.isAdmin) m.id,
+    };
+    push?.deliver(
+      () => PushNotice(
+        to: admins,
+        title: t('Neues Familienmitglied'),
+        body: t(
+          '{name} hat Famio über Home Assistant geöffnet und ist als Gast dabei. Die Rolle legst du in der Server-Verwaltung fest.',
+          {'name': member.displayName},
+        ),
+        brief: t('Neues Familienmitglied'),
+        tag: 'bust_in_silhouette',
+      ),
+      null,
+    );
   }
 
   /// JSON bodies above this size are refused (sync batches stay far below).

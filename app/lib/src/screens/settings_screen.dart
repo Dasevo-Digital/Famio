@@ -44,6 +44,7 @@ import 'device_pairing_screen.dart';
 import 'trash_screen.dart';
 import '../widgets/famio_tour.dart';
 import '../security/app_lock.dart';
+import 'health_sources_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -466,6 +467,16 @@ class SettingsScreen extends StatelessWidget {
             onTap: () => launchUrl(
               Uri.parse(AppEnv.privacyUrl),
               mode: LaunchMode.externalApplication,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(AppIcons.stethoscope),
+            title: Text(tr.sourcesTitle),
+            subtitle: Text(tr.sourcesSubtitle),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const HealthSourcesScreen(),
+              ),
             ),
           ),
           ListTile(

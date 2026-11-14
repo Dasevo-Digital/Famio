@@ -45,6 +45,9 @@ import VisionKit
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioScan") {
       DocumentScanner.shared.register(with: registrar)
     }
+    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioPrivacy") {
+      PrivacyCover.shared.register(with: registrar)
+    }
     if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "FamioProfile") {
       // When iOS stops opening this build (see ProvisioningProfile).
       let profile = FlutterMethodChannel(
@@ -1231,4 +1234,96 @@ func subjectPublicKeyInfo(_ data: Data) -> Data? {
   }
   guard let spki = read(offset) else { return nil }
   return Data(der[offset..<spki.end])
+}
+
+/// The app lock's cover on the iPhone (#512): while Famio is away it lies
+/// over everything, also over a document open in iOS's preview, which
+/// Flutter's lock screen does not reach, and so over the picture in the app
+/// switcher. Back again, Flutter says whether Famio is locked; then what iOS
+/// shows over Famio closes and the lock screen is what remains.
+final class PrivacyCover: NSObject {
+  static let shared = PrivacyCover()
+
+  private static let enabledKey = "famio.privacyCover"
+  private var enabled = UserDefaults.standard.bool(forKey: PrivacyCover.enabledKey)
+  private var covers: [UIView] = []
+  private var fallback: DispatchWorkItem?
+
+  func register(with registrar: FlutterPluginRegistrar) {
+    let channel = FlutterMethodChannel(
+      name: "famio/privacy", binaryMessenger: registrar.messenger())
+    channel.setMethodCallHandler { [weak self] call, result in
+      switch call.method {
+      case "setSecure":
+        self?.setEnabled(call.arguments as? Bool ?? false)
+        result(nil)
+      case "resumed":
+        let locked = (call.arguments as? [String: Any])?["locked"] as? Bool ?? false
+        self?.resumed(locked: locked)
+        result(nil)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
+    ) { [weak self] _ in self?.cover() }
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      // Flutter answers with "resumed"; without an answer the cover goes.
+      let item = DispatchWorkItem { self?.uncover() }
+      self?.fallback?.cancel()
+      self?.fallback = item
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: item)
+    }
+  }
+
+  private func setEnabled(_ value: Bool) {
+    enabled = value
+    UserDefaults.standard.set(value, forKey: PrivacyCover.enabledKey)
+    if !value { uncover() }
+  }
+
+  private var windows: [UIWindow] {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .flatMap { $0.windows }
+      .filter { !$0.isHidden }
+  }
+
+  private func cover() {
+    guard enabled, covers.isEmpty else { return }
+    for window in windows {
+      let view = UIView(frame: window.bounds)
+      view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+      view.backgroundColor = UIColor(named: "LaunchBackground") ?? .systemBackground
+      if let image = UIImage(named: "LaunchImage") {
+        let icon = UIImageView(image: image)
+        icon.center = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
+        icon.autoresizingMask = [
+          .flexibleLeftMargin, .flexibleRightMargin, .flexibleTopMargin, .flexibleBottomMargin,
+        ]
+        view.addSubview(icon)
+      }
+      window.addSubview(view)
+      covers.append(view)
+    }
+  }
+
+  private func uncover() {
+    fallback?.cancel()
+    fallback = nil
+    covers.forEach { $0.removeFromSuperview() }
+    covers = []
+  }
+
+  private func resumed(locked: Bool) {
+    if locked {
+      for window in windows {
+        window.rootViewController?.presentedViewController?.dismiss(animated: false)
+      }
+    }
+    uncover()
+  }
 }

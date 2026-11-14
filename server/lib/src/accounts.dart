@@ -467,10 +467,15 @@ class Accounts {
 
   /// Finds or creates the member linked to a Home Assistant user.
   /// The very first member becomes admin.
+  /// A Home Assistant user who opens Famio for the first time joins as a
+  /// guest: who they are in the family (and so what of the children's and
+  /// health data they get) an admin decides (#508). The first one sets the
+  /// server up and becomes its admin. [onJoined] hears of a new member.
   FamilyMember fromHomeAssistant({
     required String haUserId,
     required String haUsername,
     required String displayName,
+    void Function(FamilyMember member)? onJoined,
   }) {
     final rows = _db.select('SELECT * FROM users WHERE ha_user_id = ?', [
       haUserId,
@@ -482,12 +487,16 @@ class Accounts {
     for (var n = 2; _usernameTaken(candidate); n++) {
       candidate = '$username$n';
     }
-    return create(
+    final first = !hasUsers;
+    final member = create(
       username: candidate,
       displayName: displayName,
-      isAdmin: !hasUsers,
+      isAdmin: first,
       haUserId: haUserId,
+      role: first ? MemberRole.adult : MemberRole.guest,
     );
+    if (!first) onJoined?.call(member);
+    return member;
   }
 
   /// Creates a session and returns its bearer token (only stored hashed).

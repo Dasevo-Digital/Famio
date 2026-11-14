@@ -3,6 +3,7 @@ import 'browser_copy_web.dart' as raw;
 import 'storage.dart';
 import 'memory_records.dart';
 import 'package:famio_shared/famio_shared.dart';
+import '../unreadable.dart';
 
 // By default the web app keeps nothing in the browser: records and files
 // live in memory for the visit and are loaded from the server again next
@@ -19,7 +20,7 @@ void restoreCopy(String path, StoreSnapshot snapshot) =>
 RecordBackend openRecordBackend(
   String path, {
   String? hexKey,
-  bool resetUnreadable = false,
+  UnreadableDatabase unreadable = UnreadableDatabase.fail,
 }) => MemoryRecordBackend(
   path,
   _restored.remove(path),
@@ -32,7 +33,7 @@ RecordBackend openRecordBackend(
 BlobBackend openBlobBackend(
   String path, {
   String? hexKey,
-  bool resetUnreadable = false,
+  UnreadableDatabase unreadable = UnreadableDatabase.fail,
 }) => _MemoryBlobs();
 
 Future<String> writeTempFile(String dir, String name, List<int> data) =>

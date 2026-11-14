@@ -287,13 +287,20 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
       _error = null;
     });
     String fold(String s) => s.replaceAll(':', '').toUpperCase();
+    var mismatch = false;
     try {
       final resolved = await state.resolveServer(
         _server.text,
-        // From the QR code: the certificate the inviting admin trusts.
-        trust: (fingerprint) async =>
-            (_pin != null && fold(_pin!) == fold(fingerprint)) ||
-            await confirmCertificate(context, fingerprint),
+        // From the QR code: the certificate the inviting admin trusts. A
+        // server with another key gets neither the code nor the new
+        // password; nothing to confirm (#513).
+        trust: (fingerprint) async {
+          if (_pin != null) {
+            mismatch = fold(_pin!) != fold(fingerprint);
+            return !mismatch;
+          }
+          return confirmCertificate(context, fingerprint);
+        },
       );
       final invite = await AppState.clientFor(
         resolved,
@@ -306,7 +313,7 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
         _username.text = suggestUsername(invite.displayName, taken);
       });
     } on ApiError catch (e) {
-      setState(() => _error = e.message);
+      setState(() => _error = mismatch ? tr.pairOtherServerKey : e.message);
     } on FormatException {
       setState(() => _error = tr.settingsInvalidServerAddress);
     } finally {

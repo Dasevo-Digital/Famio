@@ -54,7 +54,10 @@ sind 64-Bit-Systeme mit Intel/AMD (amd64) und ARM (aarch64, z. B. Raspberry Pi
 
 Weitere Familienmitglieder öffnen Famio einfach ebenfalls über die
 Seitenleiste, oder ein Administrator legt sie in der App unter
-*Einstellungen → Familie* an.
+*Einstellungen → Familie* an. Wer über die Seitenleiste neu dazukommt, ist
+zunächst Gast und sieht weder Kinder- noch Gesundheitsdaten; die
+Administratoren bekommen eine Mitteilung und legen die Rolle in der
+Server-Verwaltung fest.
 
 ## Optionen
 

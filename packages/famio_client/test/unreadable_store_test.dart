@@ -33,12 +33,20 @@ void main() {
       throwsA(isA<SqliteException>()),
       reason: 'only when asked to',
     );
-    final store = LocalStore.open(path, hexKey: mine, resetUnreadable: true);
+    final store = LocalStore.open(
+      path,
+      hexKey: mine,
+      unreadable: UnreadableDatabase.reset,
+    );
     expect(store.get(Collections.notes, 'n1'), isNull);
     store
       ..put(note('n2'), dirty: false)
       ..close();
-    final again = LocalStore.open(path, hexKey: mine, resetUnreadable: true);
+    final again = LocalStore.open(
+      path,
+      hexKey: mine,
+      unreadable: UnreadableDatabase.reset,
+    );
     expect(again.get(Collections.notes, 'n2'), isNotNull);
     again.close();
   });
@@ -57,8 +65,41 @@ void main() {
       api,
       hexKey: mine,
       tempDir: '${dir.path}/tmp',
-      resetUnreadable: true,
+      unreadable: UnreadableDatabase.reset,
     );
     cache.close();
+  });
+
+  test('a damaged copy with this key is set aside, not deleted', () {
+    final path = '${dir.path}/famio_m1.db';
+    LocalStore.open(path, hexKey: mine)
+      ..put(note('n1'), dirty: true)
+      ..close();
+    // Damage the first page, size unchanged.
+    final raf = File(path).openSync(mode: FileMode.append);
+    raf.setPositionSync(16);
+    raf.writeFromSync(List.filled(48, 0));
+    raf.closeSync();
+    takeSetAsideDatabases();
+    final store = LocalStore.open(
+      path,
+      hexKey: mine,
+      unreadable: UnreadableDatabase.setAside,
+    );
+    expect(store.get(Collections.notes, 'n1'), isNull);
+    store.close();
+    expect(takeSetAsideDatabases(), ['$path.unreadable']);
+    expect(File('$path.unreadable').existsSync(), isTrue);
+    expect(takeSetAsideDatabases(), isEmpty);
+  });
+
+  test('without a choice it stays an error', () {
+    final path = '${dir.path}/famio_m1.db';
+    LocalStore.open(path, hexKey: other).close();
+    expect(
+      () => LocalStore.open(path, hexKey: mine),
+      throwsA(isA<SqliteException>()),
+    );
+    expect(File(path).existsSync(), isTrue);
   });
 }
