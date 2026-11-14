@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'invite_screens.dart';
 import 'device_pairing_screen.dart';
 import '../design/app_icons.dart';
@@ -444,6 +445,15 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         ],
                         const SizedBox(height: 20),
                         _VersionLine(app: _app, server: server),
+                        Center(
+                          child: TextButton(
+                            onPressed: () => launchUrl(
+                              Uri.parse(AppEnv.privacyUrl),
+                              mode: LaunchMode.externalApplication,
+                            ),
+                            child: Text(tr.settingsPrivacy),
+                          ),
+                        ),
                       ],
                     ),
                   ),

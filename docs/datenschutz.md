@@ -22,6 +22,8 @@ verarbeitet werden, entscheidet die Familie beziehungsweise der Betreiber.
 
 Serverdaten und Dateien sind verschlüsselt. Die Geräte halten eine ebenfalls
 verschlüsselte lokale Datenbank und einen Dateicache für den Offlinebetrieb.
+Ihr Schlüssel bleibt im Schlüsselbund des Geräts; auf iPhone und iPad sind
+beide von der Gerätesicherung ausgenommen.
 Öffnet jemand ein Dokument in einer anderen App, entsteht dafür eine
 unverschlüsselte Kopie auf dem Gerät; sie wird nach spätestens einer Stunde beim
 nächsten Aufräumen entfernt.

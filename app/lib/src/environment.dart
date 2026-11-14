@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 /// Which Famio this build is: the released app for the family or the
@@ -35,4 +36,13 @@ abstract final class AppEnv {
 
   /// Where the family can support Famio's development.
   static const supportUrl = 'https://ko-fi.com/superkuh86';
+
+  /// Famio's privacy information, also named in the app stores.
+  static const privacyUrl =
+      'https://github.com/Dasevo-Digital/Famio/blob/main/docs/datenschutz.md';
+
+  /// iPhone and iPad: Apple's rules keep other platforms and their stores
+  /// out of what the app shows (App Review 2.3.10).
+  static bool get onIos =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 }

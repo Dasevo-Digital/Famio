@@ -14,6 +14,7 @@ import '../platform/web_push.dart';
 import '../push/own_push.dart';
 import '../l10n.dart';
 import '../widgets/account_password.dart';
+import '../environment.dart';
 
 /// Push notifications: directly from the Famio server (own push) or
 /// through ntfy.
@@ -120,7 +121,11 @@ class _PushSettingsScreenState extends State<PushSettingsScreen> {
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 6),
-                    Text(tr.push1InstallFreeApp),
+                    Text(
+                      AppEnv.onIos
+                          ? tr.push1InstallFreeAppStore
+                          : tr.push1InstallFreeApp,
+                    ),
                     Align(
                       alignment: Alignment.centerLeft,
                       child: TextButton.icon(

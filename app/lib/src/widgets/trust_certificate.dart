@@ -43,6 +43,7 @@ Future<bool> confirmCertificate(
                 lines.join('\n'),
                 style: const TextStyle(
                   fontFamily: 'monospace',
+                  fontFamilyFallback: monoFallback,
                   fontSize: 13,
                   height: 1.5,
                 ),

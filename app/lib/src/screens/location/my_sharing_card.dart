@@ -109,7 +109,11 @@ class _MySharingCardState extends State<MySharingCard>
       context: context,
       builder: (context) => AlertDialog(
         title: Text(tr.locationShareLocationBackgroundToo),
-        content: Text(tr.locationSoThatFamioCan),
+        content: Text(
+          AppEnv.onIos
+              ? tr.locationSoThatFamioCanApple
+              : tr.locationSoThatFamioCan,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -122,7 +126,13 @@ class _MySharingCardState extends State<MySharingCard>
         ],
       ),
     );
-    if (ok == true) await LocationSharing.requestPermission(background: true);
+    if (ok != true) return;
+    final status = await LocationSharing.requestPermission(background: true);
+    // iOS asks for "always" only once; after that only its settings change
+    // it (#498).
+    if (AppEnv.onIos && status.permission == LocationPermission.foreground) {
+      await LocationSharing.openAppSettings();
+    }
   }
 
   @override

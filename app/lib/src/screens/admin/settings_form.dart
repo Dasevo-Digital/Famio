@@ -641,17 +641,20 @@ class _SettingsFormState extends State<_SettingsForm> {
                   : null,
               open: showPhotoVaultDialog,
             ),
-            _IntegrationTile(
-              icon: AppIcons.cloudArrowDown,
-              title: tr.adminAppUpdates,
-              subtitle: tr.adminAppUpdatesSubtitle,
-              enabled: !_busy,
-              load: (api) => api.appUpdates(),
-              state: (info) => info['enabled'] == true
-                  ? tr.adminIntegrationOn(_appUpdatesReady(info))
-                  : null,
-              open: showAppUpdatesDialog,
-            ),
+            // The packages are for the other platforms; an iPhone updates
+            // through the App Store (App Review 2.3.10).
+            if (!AppEnv.onIos)
+              _IntegrationTile(
+                icon: AppIcons.cloudArrowDown,
+                title: tr.adminAppUpdates,
+                subtitle: tr.adminAppUpdatesSubtitle,
+                enabled: !_busy,
+                load: (api) => api.appUpdates(),
+                state: (info) => info['enabled'] == true
+                    ? tr.adminIntegrationOn(_appUpdatesReady(info))
+                    : null,
+                open: showAppUpdatesDialog,
+              ),
             ListHeading(tr.adminAreas, color: accent),
             ListTile(
               contentPadding: EdgeInsets.zero,

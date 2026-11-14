@@ -45,6 +45,21 @@ extension RecordTrash on RecordStore {
     );
   }
 
+  /// The last live version of a deleted record, from the bin (null when
+  /// it is not kept there or expired).
+  SyncRecord? _lastLive(String collection, String id) {
+    if (!_trashCollections.contains(collection)) return null;
+    final row = _db.select(
+      'SELECT snapshot FROM trash WHERE collection = ? AND record_id = ? '
+      'ORDER BY deleted_rev DESC LIMIT 1',
+      [collection, id],
+    ).firstOrNull;
+    if (row == null) return null;
+    return SyncRecord.fromJson(
+      (jsonDecode(row['snapshot'] as String) as Map).cast(),
+    );
+  }
+
   /// Health documents in the bin that only [memberId] could get back.
   void _forgetTrashOf(String memberId) {
     for (final row in _db.select('SELECT * FROM trash')) {

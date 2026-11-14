@@ -383,6 +383,16 @@ class _EventEditorState extends State<_EventEditor> {
     }
   }
 
+  /// Others taking part whom this member may not take out (see
+  /// [FamilyExtras.mayRemoveParticipants]).
+  Set<String> _keptParticipants(SyncEngine engine) =>
+      engine.mayRemoveParticipants(_original)
+      ? const {}
+      : {
+          for (final id in _original?.memberIds ?? const <String>[])
+            if (id != engine.memberId) id,
+        };
+
   Future<void> _save() async {
     if (_uploading) return;
     if (_title.text.trim().isEmpty) {
@@ -702,17 +712,26 @@ class _EventEditorState extends State<_EventEditor> {
                     avatar: const Icon(AppIcons.usersThree, size: 18),
                     label: Text(tr.commonWholeFamily),
                     selected: _memberIds.isEmpty,
-                    onSelected: (_) => setState(_memberIds.clear),
+                    onSelected: _keptParticipants(engine).isEmpty
+                        ? (_) => setState(_memberIds.clear)
+                        : null,
                   ),
                   for (final m in engine.members)
                     FilterChip(
                       avatar: MemberAvatar(m, radius: 10),
                       label: Text(m.displayName),
                       selected: _memberIds.contains(m.id),
-                      onSelected: (on) => setState(
-                        () =>
-                            on ? _memberIds.add(m.id) : _memberIds.remove(m.id),
-                      ),
+                      // Children take only themselves out of appointments
+                      // they did not enter (#416).
+                      onSelected:
+                          _memberIds.contains(m.id) &&
+                              _keptParticipants(engine).contains(m.id)
+                          ? null
+                          : (on) => setState(
+                              () => on
+                                  ? _memberIds.add(m.id)
+                                  : _memberIds.remove(m.id),
+                            ),
                     ),
                 ],
               ),

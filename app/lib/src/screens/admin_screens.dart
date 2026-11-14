@@ -25,6 +25,7 @@ import '../widgets/setup_checklist.dart';
 import 'home_tiles.dart';
 import 'invite_screens.dart' show InviteScreen;
 import 'settings_screen.dart' show showChangePasswordDialog;
+import '../environment.dart';
 import '../l10n.dart';
 
 part 'admin/app_updates_dialog.dart';

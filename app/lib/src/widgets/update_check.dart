@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../environment.dart';
 import '../l10n.dart';
 
 /// The public list of Famio releases; asked only when an admin taps
@@ -74,7 +75,9 @@ Future<void> showUpdateCheck(
           );
         } else {
           latest = snapshot.data![0] as LatestRelease;
-          final appVersion = snapshot.data![1] as String?;
+          // An iPhone gets Famio through the App Store, not from the release
+          // page (App Review 2.3.10): only the server is compared there.
+          final appVersion = AppEnv.onIos ? null : snapshot.data![1] as String?;
           final serverOld = compareVersions(serverVersion, latest.version) < 0;
           final appOld =
               appVersion != null &&
@@ -109,7 +112,10 @@ Future<void> showUpdateCheck(
                 ),
               if (serverOld || appOld) ...[
                 const SizedBox(height: 8),
-                Text(tr.updateWhatSNewHow, style: theme.textTheme.bodySmall),
+                Text(
+                  AppEnv.onIos ? tr.updateServerHow : tr.updateWhatSNewHow,
+                  style: theme.textTheme.bodySmall,
+                ),
               ],
             ],
           );
@@ -118,7 +124,7 @@ Future<void> showUpdateCheck(
           title: Text(tr.updateFamioVersion),
           content: body,
           actions: [
-            if (latest != null)
+            if (latest != null && !AppEnv.onIos)
               TextButton(
                 onPressed: () => launchUrl(
                   latest!.url,

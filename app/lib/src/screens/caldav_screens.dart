@@ -20,6 +20,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../widgets/section_header.dart';
 import '../l10n.dart';
 import '../security/app_lock.dart';
+import '../environment.dart';
 
 // --- calendar apps connecting to Famio (CalDAV server) ----------------------
 
@@ -255,7 +256,11 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
           title: Text(label),
           subtitle: SelectableText(
             base.resolve('dav/').toString(),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontFamilyFallback: monoFallback,
+              fontSize: 12,
+            ),
           ),
           trailing: IconButton(
             icon: const Icon(AppIcons.copy),
@@ -303,6 +308,7 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
                           state.certificatePin!,
                           style: const TextStyle(
                             fontFamily: 'monospace',
+                            fontFamilyFallback: monoFallback,
                             fontSize: 11,
                           ),
                         ),
@@ -355,12 +361,13 @@ class _CalDavAppsSectionState extends State<CalDavAppsSection> {
               tr.caldavDeleteProfileFileAfterwards,
               tr.caldavGoOnlyWorksInternet,
             ]),
-            HelpSteps(tr.caldavHowWorksAndroidDavx, [
-              tr.caldavInstallDavxPlayStore,
-              tr.caldavLoginUrlUserName,
-              tr.caldavBaseUrlAddressAbove(user),
-              tr.caldavSelectFamioCalendarThen,
-            ]),
+            if (!AppEnv.onIos)
+              HelpSteps(tr.caldavHowWorksAndroidDavx, [
+                tr.caldavInstallDavxPlayStore,
+                tr.caldavLoginUrlUserName,
+                tr.caldavBaseUrlAddressAbove(user),
+                tr.caldavSelectFamioCalendarThen,
+              ]),
             if (passwords.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -394,6 +401,7 @@ class _SecretDialog extends StatelessWidget {
             secret,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontFamily: 'monospace',
+              fontFamilyFallback: monoFallback,
               letterSpacing: 1.5,
             ),
           ),

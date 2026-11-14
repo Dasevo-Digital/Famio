@@ -152,7 +152,11 @@ class _StatusView extends StatelessWidget {
                     for (var i = 0; i < fp.split(':').length; i += 8)
                       fp.split(':').skip(i).take(8).join(':'),
                   ].join('\n'),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontFamilyFallback: monoFallback,
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ],

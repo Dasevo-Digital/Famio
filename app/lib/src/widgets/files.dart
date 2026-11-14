@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:mime/mime.dart';
 import 'package:open_filex/open_filex.dart';
 import '../design/app_icons.dart';
@@ -21,6 +20,8 @@ import '../design/palette.dart';
 import '../format.dart';
 import '../l10n.dart';
 import '../security/app_lock.dart';
+import '../environment.dart';
+import 'camera.dart';
 
 /// A file picked by the user, ready for upload.
 class PickedFile {
@@ -179,13 +180,8 @@ Future<PickedFile?> _pickFile(
   }
 
   if (fromCamera) {
-    final photo = await AppLock.picking(
-      () => ImagePicker().pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85,
-        maxWidth: 2560,
-      ),
-    );
+    if (!context.mounted) return null;
+    final photo = await takePhoto(context, imageQuality: 85, maxWidth: 2560);
     if (photo == null) return null;
     return pickedFromSource(
       name: photo.name,
@@ -244,7 +240,11 @@ Future<PickedFile?> _scanPicked(BuildContext context) async {
       await showDialog<void>(
         context: context,
         builder: (context) => AlertDialog(
-          content: Text(tr.filesScanUnavailable),
+          content: Text(
+            AppEnv.onIos
+                ? tr.filesScanUnavailableHere
+                : tr.filesScanUnavailable,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

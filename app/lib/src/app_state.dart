@@ -356,12 +356,19 @@ class AppState extends ChangeNotifier {
     final meJson = _prefs.getString('me');
     if (serverUrl != null && token != null && meJson != null) {
       final member = FamilyMember.fromJson((jsonDecode(meJson) as Map).cast());
-      await _startSession(
-        serverUrl!,
-        token,
-        member,
-        pin: await vault.read('certPin'),
-      );
+      try {
+        await _startSession(
+          serverUrl!,
+          token,
+          member,
+          pin: await vault.read('certPin'),
+        );
+      } catch (e, stack) {
+        // Not a blank screen when the local copy cannot be opened (#490):
+        // the sign-in page, which says why.
+        debugPrint('Famio: session not restored: $e\n$stack');
+        notice = tr.appLocalDataUnreadable;
+      }
     }
   }
 
@@ -431,6 +438,7 @@ class AppState extends ChangeNotifier {
   ///   user confirmed its fingerprint ([trust]).
   /// * A home network address without scheme is tried with HTTPS on
   ///   [defaultTlsPort] first, then falls back to plain HTTP (older servers).
+  /// * An internet name without scheme is tried with HTTPS.
   /// * Plain HTTP to internet addresses is refused.
   Future<ResolvedServer> resolveServer(
     String input, {
@@ -438,6 +446,16 @@ class AppState extends ChangeNotifier {
   }) async {
     final uri = FamioApiClient.normalizeUrl(input);
     final explicitHttp = input.trim().toLowerCase().startsWith('http://');
+    if (!input.contains('://') &&
+        FamioApiClient.transportSecurity(uri) == TransportSecurity.insecure) {
+      // A name on the internet without "https://": Famio is reached there
+      // through HTTPS, on the port typed or the usual one (#498).
+      final typed = Uri.parse('http://${input.trim()}').hasPort;
+      return _resolveHttps(
+        uri.replace(scheme: 'https', port: typed ? uri.port : 443),
+        trust,
+      );
+    }
     if (uri.scheme == 'http' &&
         !explicitHttp &&
         FamioApiClient.transportSecurity(uri) ==
@@ -862,9 +880,14 @@ class AppState extends ChangeNotifier {
     final support = kIsWeb ? '' : await _supportDir();
     final path = p.join(support, 'famio_${member.id}.db');
     final keep = kIsWeb && keepWebData;
+    // Phones keep the key in the keystore of this one device, which a
+    // backup does not take along: a copy restored onto another phone is
+    // unreadable and starts anew from the server (#490). Desktops may get
+    // their keystore back later, so there it stays an error.
+    final phone = !kIsWeb && (Platform.isIOS || Platform.isAndroid);
     final store = keep
         ? await LocalStore.openWithBrowserCopy(path)
-        : LocalStore.open(path, hexKey: key);
+        : LocalStore.open(path, hexKey: key, resetUnreadable: phone);
     if (kIsWeb) {
       if (keep) {
         store.keepInBrowser(true);
@@ -910,12 +933,18 @@ class AppState extends ChangeNotifier {
       final legacyCache = Directory(p.join(support, 'files_${member.id}'));
       if (legacyCache.existsSync()) legacyCache.deleteSync(recursive: true);
     }
+    final cachePath = p.join(support, 'files_${member.id}.db');
     files = FileCache.open(
-      p.join(support, 'files_${member.id}.db'),
+      cachePath,
       api,
       hexKey: key,
       tempDir: kIsWeb ? '' : await _openedFilesDir(),
+      resetUnreadable: phone,
     )..clearTemp();
+    // Nor does an iPhone's backup take the copies along.
+    for (final file in [path, cachePath]) {
+      unawaited(excludeFromBackup(file));
+    }
     serverUrl = normalized;
     certificatePin = pin;
     if (fresh) lock.signedIn();

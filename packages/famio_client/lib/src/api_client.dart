@@ -199,6 +199,10 @@ class FamioApiClient {
     var text = input.trim();
     if (!text.contains('://')) text = 'http://$text';
     var uri = Uri.parse(text);
+    // "https://" alone would only fail deep in the connection (#498).
+    if (uri.host.isEmpty) {
+      throw const FormatException('The address has no host');
+    }
     // A typed address without port means Famio's port; the web app gets
     // the full address of its own page.
     if (!uri.hasPort && uri.scheme == 'http' && !_web) {

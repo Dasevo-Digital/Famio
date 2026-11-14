@@ -57,6 +57,16 @@ import VisionKit
           // "iPhone", "iPad": iOS 16 and later answer every host name
           // question with "localhost" and keep the device's own name.
           result(UIDevice.current.model)
+        case "excludeFromBackup":
+          // The local copy opens only with this device's key, which no
+          // backup holds: on another phone it would be unreadable (#490).
+          if let path = (call.arguments as? [String: Any])?["path"] as? String {
+            var url = URL(fileURLWithPath: path)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try? url.setResourceValues(values)
+          }
+          result(nil)
         default:
           result(FlutterMethodNotImplemented)
         }
@@ -445,6 +455,10 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   private var fixTask: UIBackgroundTaskIdentifier = .invalid
   private var lastFixUpload = Date.distantPast
   private var permissionWaiters: [FlutterResult] = []
+  /// For a pending "always" request: whether iOS showed its prompt (the app
+  /// goes inactive for it).
+  private var awaitingAlways = false
+  private var promptShown = false
   private static let diagnosticKeys = [
     "lastFixAt", "lastSuccessfulUploadAt", "lastServerResponseAt",
     "lastServerStatus", "lastErrorAt", "lastError",
@@ -470,6 +484,21 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     manager.pausesLocationUpdatesAutomatically = true
     manager.activityType = .other
     UIDevice.current.isBatteryMonitoringEnabled = true
+    let center = NotificationCenter.default
+    center.addObserver(
+      forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      guard let self, self.awaitingAlways else { return }
+      self.promptShown = true
+    }
+    // Back from the prompt: "keep while using" changes nothing, so no
+    // authorization callback would answer.
+    center.addObserver(
+      forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      guard let self, self.awaitingAlways, self.promptShown else { return }
+      self.answerPermissionWaiters()
+    }
   }
 
   private func key(_ name: String) -> String { "famio.location.\(name)" }
@@ -600,11 +629,19 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
     }
     permissionWaiters.append(result)
     if background {
+      awaitingAlways = true
+      promptShown = false
       manager.requestAlwaysAuthorization()
+      // iOS asks for "always" only once per installation; without a prompt
+      // nothing would answer (#498).
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+        guard let self, self.awaitingAlways, !self.promptShown else { return }
+        self.answerPermissionWaiters()
+      }
     } else {
       manager.requestWhenInUseAuthorization()
     }
-    // iOS may decide without asking; do not wait forever.
+    // Nor wait forever if iOS decides otherwise.
     DispatchQueue.main.asyncAfter(deadline: .now() + 60) { [weak self] in
       self?.answerPermissionWaiters()
     }
@@ -613,6 +650,8 @@ final class LocationReporter: NSObject, CLLocationManagerDelegate, URLSessionDel
   private func answerPermissionWaiters() {
     let waiters = permissionWaiters
     permissionWaiters = []
+    awaitingAlways = false
+    promptShown = false
     let answer = status()
     for waiter in waiters { waiter(answer) }
   }

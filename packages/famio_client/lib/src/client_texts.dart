@@ -45,8 +45,34 @@ abstract final class ClientTexts {
   static String uploadFailed(Object? error) =>
       _t('Upload fehlgeschlagen ({error})', {'error': error});
 
-  static String unreachable(Object? error) =>
-      _t('Server nicht erreichbar ({error})', {'error': error});
+  /// Why a connection failed, in words for the family (#498): the usual
+  /// causes by name, anything else with the technical reason.
+  static String unreachable(Object? error) {
+    final text = '$error';
+    String? cause;
+    if (text.contains('Failed host lookup') ||
+        text.contains('nodename nor servname') ||
+        text.contains('No address associated')) {
+      cause = _t(
+        'Die Adresse wurde nicht gefunden. Ist sie richtig geschrieben?',
+      );
+    } else if (text.contains('Connection refused')) {
+      cause = _t('Unter dieser Adresse antwortet kein Famio-Server.');
+    } else if (text.contains('timed out') ||
+        text.contains('TimeoutException') ||
+        text.contains('Transfer deadline')) {
+      cause = _t(
+        'Der Server antwortet nicht. Ist das Gerät im richtigen Netz?',
+      );
+    } else if (text.contains('Network is unreachable') ||
+        text.contains('No route to host') ||
+        text.contains('not connected to the internet')) {
+      cause = _t('Keine Netzverbindung zum Server.');
+    }
+    return cause == null
+        ? _t('Server nicht erreichbar ({error})', {'error': error})
+        : _t('Server nicht erreichbar: {cause}', {'cause': cause});
+  }
 
   static String unexpectedAnswer(int status) =>
       _t('Unerwartete Antwort vom Server (HTTP {status})', {'status': status});
@@ -70,6 +96,10 @@ abstract final class ClientTexts {
     fileStorageFailed,
     uploadFailed(''),
     unreachable(''),
+    unreachable('Failed host lookup'),
+    unreachable('Connection refused'),
+    unreachable('timed out'),
+    unreachable('No route to host'),
     unexpectedAnswer(0),
     error(0),
   ];

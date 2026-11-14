@@ -184,4 +184,34 @@ void main() {
       expect(r.statusCode, 200);
     });
   });
+
+  group('deleting the own account (#500)', () {
+    test('works without a password where the account has none', () async {
+      final r = await call(sso, 'DELETE', 'api/me', const <String, Object?>{});
+      expect(r.statusCode, 200);
+      expect(app.accounts.byId(sso.id), isNull);
+    });
+
+    test('still needs the password where there is one', () async {
+      final without = await call(
+        papa,
+        'DELETE',
+        'api/me',
+        const <String, Object?>{},
+      );
+      expect(without.statusCode, 403);
+      expect(app.accounts.byId(papa.id), isNotNull);
+      final withIt = await call(papa, 'DELETE', 'api/me', {
+        'password': password,
+      });
+      expect(withIt.statusCode, 200);
+      expect(app.accounts.byId(papa.id), isNull);
+    });
+
+    test('the last administrator hands over first', () async {
+      final r = await call(mama, 'DELETE', 'api/me', {'password': password});
+      expect(r.statusCode, 400);
+      expect(app.accounts.byId(mama.id), isNotNull);
+    });
+  });
 }

@@ -435,6 +435,7 @@ class RecordStore {
   );
 
   static const _resetKey = 'dataResetAt';
+  static const _resetRevKey = 'dataResetRev';
   static const _purgedKey = 'purgedRev';
 
   /// Highest revision of a deletion mark that was cleaned up: a client
@@ -501,6 +502,21 @@ class RecordStore {
     return removed;
   }
 
+  /// The revision of the last deletion mark of [wipe]: a device that has
+  /// synced up to it knows that all data was deleted (#491).
+  late int resetRev =
+      int.tryParse(
+        _db
+                    .select('SELECT value FROM settings WHERE key = ?', [
+                      _resetRevKey,
+                    ])
+                    .firstOrNull
+                    ?.columnAt(0)
+                as String? ??
+            '',
+      ) ??
+      0;
+
   /// When an admin last deleted all data (ms since epoch, 0: never).
   late int resetAt =
       int.tryParse(
@@ -545,11 +561,14 @@ class RecordStore {
         ]);
       }
       update.close();
-      _db.execute(
-        'INSERT INTO settings (key, value) VALUES (?, ?)'
-        ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-        [_resetKey, '$now'],
-      );
+      for (final (key, value) in [(_resetKey, now), (_resetRevKey, rev)]) {
+        _db.execute(
+          'INSERT INTO settings (key, value) VALUES (?, ?)'
+          ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+          [key, '$value'],
+        );
+      }
+      resetRev = rev;
       count = rows.length;
       _db.execute('DELETE FROM trash');
       _db.execute('DELETE FROM assignment_reminders');
@@ -557,6 +576,13 @@ class RecordStore {
     resetAt = now;
     return count;
   }
+
+  /// Whether [record] is a deletion mark of [wipe].
+  bool _wipeMark(SyncRecord record) =>
+      record.deleted &&
+      record.updatedBy == serverMemberId &&
+      record.rev <= resetRev &&
+      record.updatedAt == resetAt + _maxClockSkew.inMilliseconds;
 
   /// Applies [request] for [userId] and returns the pull part of the answer.
   /// Runs synchronously, so concurrent requests cannot interleave.
@@ -570,6 +596,11 @@ class RecordStore {
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     final blocked = <SyncWriteIssue>[];
+    // A device that has received the deletion marks of "delete all data"
+    // has dropped what was written before it on its side; what it sends now
+    // was written after, also when its clock is behind or the server's
+    // marks are ahead of it (#491).
+    final sawReset = resetRev > 0 && request.since >= resetRev;
     // A client ahead of the server means the server database was reset:
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
@@ -670,7 +701,8 @@ class RecordStore {
           );
           continue;
         }
-        if ((existing == null || existing.deleted) &&
+        if (!sawReset &&
+            (existing == null || existing.deleted) &&
             incoming.updatedAt < resetAt) {
           // Written offline before an admin deleted all data: gone too.
           rejected.add(
@@ -748,7 +780,9 @@ class RecordStore {
           _validate(canonical);
           incoming = canonical;
         }
-        if (existing != null && !incoming.winsOver(existing)) {
+        if (existing != null &&
+            !incoming.winsOver(existing) &&
+            !(sawReset && _wipeMark(existing))) {
           _keepConflict(
             lost: incoming,
             kept: existing,
@@ -764,11 +798,17 @@ class RecordStore {
             !incoming.deleted) {
           incoming = _keepAudience(incoming, existing);
         }
+        // What comes back over a deletion ("Rückgängig", the same id written
+        // again) is judged against the last live version from the bin, not
+        // against the empty tombstone: it is no new record (#416).
+        final prior = existing != null && existing.deleted
+            ? _lastLive(change.collection, change.id) ?? existing
+            : existing;
         if (change.collection == Collections.events && !incoming.deleted) {
-          incoming = _withCreator(incoming, existing, userId);
+          incoming = _withCreator(incoming, prior, userId);
         }
         if (role == MemberRole.child && !incoming.deleted) {
-          incoming = _childAudience(incoming, existing, userId);
+          incoming = _childAudience(incoming, prior, userId);
         }
         if (change.collection == Collections.shoppingItems &&
             !incoming.deleted) {
@@ -1389,15 +1429,19 @@ class RecordStore {
       [...?(event['memberIds'] as List?)].every((id) => id == userId);
 
   /// Who entered an appointment: set when it is created, kept on every
-  /// change; what an app sends for it does not count.
+  /// change; what an app sends for it does not count. [existing] is the
+  /// stored version or, over a deletion, the last live one; a tombstone
+  /// whose live version is gone has no known creator.
   static SyncRecord _withCreator(
     SyncRecord incoming,
     SyncRecord? existing,
     String userId,
   ) {
     final data = {...incoming.data}..remove(CalendarEvent.createdByKey);
-    final creator = existing == null || existing.deleted
+    final creator = existing == null
         ? userId
+        : existing.deleted
+        ? null
         : existing.data[CalendarEvent.createdByKey];
     if (creator != null) data[CalendarEvent.createdByKey] = creator;
     return incoming.copyWith(data: data);
@@ -1452,9 +1496,11 @@ class RecordStore {
         }
       }
     }
-    if (incoming.collection == Collections.events && !owned) {
+    if (incoming.collection == Collections.events &&
+        existing.data[CalendarEvent.createdByKey] != userId) {
       // Who else takes part in an appointment the child did not enter
-      // stays in it: a child takes only itself out.
+      // stays in it: a child takes only itself out. In its own the child
+      // adds and removes people freely.
       final ids = [...?(data['memberIds'] as List?)];
       final missing = [
         for (final id in existing.data['memberIds'] as List? ?? const [])

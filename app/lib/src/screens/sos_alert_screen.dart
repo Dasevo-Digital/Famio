@@ -10,6 +10,7 @@ import '../data/family_extras.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../l10n.dart';
+import '../widgets/open_in_maps.dart';
 import '../widgets/data_builder.dart';
 import 'location_screens.dart' show tileLayer;
 import 'member_emergency_screen.dart';
@@ -161,24 +162,15 @@ class SosAlertScreen extends StatelessWidget {
                   onPressed: () => showMemberEmergency(context, a.memberId),
                 ),
               ],
-              if (a.mapLink != null) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  icon: const Icon(AppIcons.mapPin),
-                  label: Text(tr.sosOpenInMaps),
-                  onPressed: () =>
-                      launchUrl(
-                        Uri.parse(
-                          'geo:${a.latitude},${a.longitude}?q=${a.latitude},${a.longitude}',
-                        ),
-                      ).catchError(
-                        (Object _) => launchUrl(
-                          Uri.parse(a.mapLink!),
-                          mode: LaunchMode.externalApplication,
-                        ),
-                      ),
-                ),
-              ],
+              if (a.latitude case final lat?)
+                if (a.longitude case final lng?) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    icon: const Icon(AppIcons.mapPin),
+                    label: Text(tr.sosOpenInMaps),
+                    onPressed: () => openInMaps(lat, lng),
+                  ),
+                ],
               if (a.open) ...[
                 const SizedBox(height: 8),
                 TextButton(

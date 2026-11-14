@@ -262,3 +262,7 @@ const famioPalette = [
   0xFF1AA3A3,
   0xFFB07A3C,
 ];
+
+/// Fixed-width text (addresses, codes, fingerprints): "monospace" names such
+/// a font on Android, Linux and the web; iPhone, iPad and Mac know Menlo.
+const monoFallback = ['Menlo', 'Courier New', 'Courier'];

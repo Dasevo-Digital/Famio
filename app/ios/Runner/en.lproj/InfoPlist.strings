@@ -1,7 +1,8 @@
 /* Permission texts (en); German is also in Info.plist. */
 "NSLocationWhenInUseUsageDescription" = "Famio shows your family where you are – only when you turn on “Share location” or press the emergency button.";
 "NSLocationAlwaysAndWhenInUseUsageDescription" = "So that your family also sees your location when Famio is closed. Pausing works with the parents' code.";
-"NSCameraUsageDescription" = "For photos in the chat, with documents and memories, and to scan barcodes for the pantry.";
-"NSPhotoLibraryUsageDescription" = "To share photos in the chat and with documents.";
+"NSCameraUsageDescription" = "For photos in the chat, with documents, recipes and memories, and to scan documents, QR codes (invitations, pairing a device) and barcodes for the pantry.";
+"NSPhotoLibraryUsageDescription" = "To share photos in the chat, with documents, recipes and in the children's log, and to take appointments from a photo.";
+"NSPhotoLibraryAddUsageDescription" = "So you can save photos and pictures from Famio to your photo library.";
 "NSLocalNetworkUsageDescription" = "Famio connects to the Famio server in your home network.";
 "NSFaceIDUsageDescription" = "So you can unlock Famio with Face ID when you turn on the app lock.";

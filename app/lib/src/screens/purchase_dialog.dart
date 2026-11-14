@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../app_state.dart';
 import '../data/budget_month.dart';
@@ -15,6 +14,7 @@ import '../design/palette.dart';
 import '../l10n.dart';
 import '../widgets/undo_delete.dart';
 import '../security/app_lock.dart';
+import '../widgets/camera.dart';
 
 /// Whether the member may put a purchase into the household budget: it is
 /// switched on, and they are among those who see it (never guests).
@@ -109,10 +109,7 @@ class _PurchaseDialogState extends State<_PurchaseDialog> {
   Future<void> _scan() async {
     String? path;
     if (Platform.isAndroid || Platform.isIOS) {
-      final shot = await AppLock.picking(
-        () =>
-            ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 3000),
-      );
+      final shot = await takePhoto(context, maxWidth: 3000);
       path = shot?.path;
     } else {
       final picked = await AppLock.picking(

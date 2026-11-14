@@ -1,0 +1,8 @@
+// Bundle id of the iOS app: devices, TestFlight and App Store. App Store
+// Connect fixes it for good once the app is created there.
+FAMIO_BUNDLE_ID = de.dasevo.famio
+
+// Signing of this Mac's builds, e.g. the team of the Apple developer account.
+// Optional and not part of the repository (Flutter/Signing.xcconfig):
+//   DEVELOPMENT_TEAM = <team id>
+#include? "Signing.xcconfig"

@@ -458,6 +458,25 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+          ListTile(
+            leading: const Icon(AppIcons.shieldCheck),
+            title: Text(tr.settingsPrivacy),
+            subtitle: Text(tr.settingsPrivacySubtitle),
+            trailing: const Icon(AppIcons.arrowSquareOut, size: 18),
+            onTap: () => launchUrl(
+              Uri.parse(AppEnv.privacyUrl),
+              mode: LaunchMode.externalApplication,
+            ),
+          ),
+          ListTile(
+            leading: const Icon(AppIcons.fileText),
+            title: Text(tr.settingsLicenses),
+            subtitle: Text(tr.settingsLicensesSubtitle),
+            onTap: () => showLicensePage(
+              context: context,
+              applicationName: AppEnv.appName,
+            ),
+          ),
           // A payment page: only for adults, and not in store builds.
           if (me.isAdult && !AppEnv.storeBuild)
             ListTile(
@@ -478,6 +497,47 @@ class SettingsScreen extends StatelessWidget {
   Future<void> _deleteAccount(BuildContext context) async {
     final state = AppScope.read(context);
     final me = state.me!;
+    final engine = state.engine!;
+    // The server keeps the last administrator (#500): say why and what to
+    // do before asking for a password.
+    final admins = engine.members.where((m) => m.isAdmin && !m.isService);
+    if (me.isAdmin && admins.length <= 1) {
+      final others = engine.members.any((m) => m.id != me.id && m.isAdult);
+      final open = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(tr.settingsLastAdminTitle),
+          content: Text(
+            others ? tr.settingsLastAdminOthers : tr.settingsLastAdminAlone,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(tr.commonClose),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(tr.settingsOpenAdministration),
+            ),
+          ],
+        ),
+      );
+      if (open == true && context.mounted) {
+        await Navigator.of(
+          context,
+        ).push(MaterialPageRoute<void>(builder: (_) => adminPage()));
+      }
+      return;
+    }
+    // Accounts that sign in without a password (SSO, passkey) have none to
+    // type in.
+    var hasPassword = true;
+    try {
+      hasPassword = await engine.api.hasPassword();
+    } on ApiError {
+      // Offline: the deletion itself will tell.
+    }
+    if (!context.mounted) return;
     final password = TextEditingController();
     final code = TextEditingController();
     var confirmed = false;
@@ -489,18 +549,19 @@ class SettingsScreen extends StatelessWidget {
         controllers: [password, code],
         fields: [
           Text(tr.settingsAccountSessionsPersonalConnections),
-          PasswordReveal(
-            builder: (_, obscure, toggle) => TextField(
-              controller: password,
-              obscureText: obscure,
-              contextMenuBuilder: PasswordReveal.contextMenu,
-              autofocus: true,
-              decoration: InputDecoration(
-                suffixIcon: toggle,
-                labelText: context.l10n.settingsPasswordConfirm,
+          if (hasPassword)
+            PasswordReveal(
+              builder: (_, obscure, toggle) => TextField(
+                controller: password,
+                obscureText: obscure,
+                contextMenuBuilder: PasswordReveal.contextMenu,
+                autofocus: true,
+                decoration: InputDecoration(
+                  suffixIcon: toggle,
+                  labelText: context.l10n.settingsPasswordConfirm,
+                ),
               ),
             ),
-          ),
           TextField(
             controller: code,
             keyboardType: TextInputType.number,
@@ -1098,7 +1159,11 @@ class _AppLockTile extends StatelessWidget {
                   SwitchListTile(
                     secondary: const Icon(AppIcons.lockKey),
                     title: Text(context.l10n.appLockTitle),
-                    subtitle: Text(context.l10n.appLockSubtitle),
+                    subtitle: Text(
+                      AppEnv.onIos
+                          ? context.l10n.appLockSubtitleApple
+                          : context.l10n.appLockSubtitle,
+                    ),
                     value: lock.enabled,
                     onChanged: (v) async {
                       final messenger = ScaffoldMessenger.of(context);

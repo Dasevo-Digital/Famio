@@ -17,6 +17,7 @@ local.properties
 *.mobileconfig
 zugang.txt
 app/macos/Runner/Configs/Signing.xcconfig
+app/ios/Flutter/Signing.xcconfig
 # Build output (app/build is a link to build.noindex, see tool/mac_install.sh)
 build.noindex/
 app/build

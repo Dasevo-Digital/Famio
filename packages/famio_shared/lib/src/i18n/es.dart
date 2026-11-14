@@ -776,6 +776,15 @@ const sharedEs = <String, String>{
   "Client|Das ist kein Famio-Server": "Esto no es un servidor de Famio",
   "Client|Upload fehlgeschlagen ({error})": "Error al subir ({error})",
   "Client|Server nicht erreichbar ({error})": "Servidor no accesible ({error})",
+  "Client|Die Adresse wurde nicht gefunden. Ist sie richtig geschrieben?":
+      "No se encontró la dirección. ¿Está bien escrita?",
+  "Client|Unter dieser Adresse antwortet kein Famio-Server.":
+      "Ningún servidor de Famio responde en esta dirección.",
+  "Client|Der Server antwortet nicht. Ist das Gerät im richtigen Netz?":
+      "El servidor no responde. ¿Está el dispositivo en la red correcta?",
+  "Client|Keine Netzverbindung zum Server.":
+      "No hay conexión de red con el servidor.",
+  "Client|Server nicht erreichbar: {cause}": "Servidor no accesible: {cause}",
   "Client|Unerwartete Antwort vom Server (HTTP {status})":
       "Respuesta inesperada del servidor (HTTP {status})",
   "Client|Fehler {status}": "Error {status}",

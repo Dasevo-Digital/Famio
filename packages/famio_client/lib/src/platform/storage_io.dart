@@ -9,11 +9,21 @@ import '../encrypted_db.dart';
 import '../snapshot_codec.dart';
 import 'storage.dart';
 
-RecordBackend openRecordBackend(String path, {String? hexKey}) =>
-    _SqliteRecords(openDeviceDatabase(path, hexKey: hexKey));
+RecordBackend openRecordBackend(
+  String path, {
+  String? hexKey,
+  bool resetUnreadable = false,
+}) => _SqliteRecords(
+  openDeviceDatabase(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+);
 
-BlobBackend openBlobBackend(String path, {String? hexKey}) =>
-    _SqliteBlobs(openDeviceDatabase(path, hexKey: hexKey));
+BlobBackend openBlobBackend(
+  String path, {
+  String? hexKey,
+  bool resetUnreadable = false,
+}) => _SqliteBlobs(
+  openDeviceDatabase(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+);
 
 /// Writes a plain copy of a file for another app (PDF viewer …); returns
 /// its path.

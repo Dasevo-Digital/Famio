@@ -753,6 +753,15 @@ const sharedEn = <String, String>{
   "Client|Das ist kein Famio-Server": "This is not a Famio server",
   "Client|Upload fehlgeschlagen ({error})": "Upload failed ({error})",
   "Client|Server nicht erreichbar ({error})": "Server not reachable ({error})",
+  "Client|Die Adresse wurde nicht gefunden. Ist sie richtig geschrieben?":
+      "The address was not found. Is it spelled correctly?",
+  "Client|Unter dieser Adresse antwortet kein Famio-Server.":
+      "No Famio server answers at this address.",
+  "Client|Der Server antwortet nicht. Ist das Gerät im richtigen Netz?":
+      "The server does not answer. Is the device on the right network?",
+  "Client|Keine Netzverbindung zum Server.":
+      "No network connection to the server.",
+  "Client|Server nicht erreichbar: {cause}": "Server not reachable: {cause}",
   "Client|Unerwartete Antwort vom Server (HTTP {status})":
       "Unexpected answer from the server (HTTP {status})",
   "Client|Fehler {status}": "Error {status}",

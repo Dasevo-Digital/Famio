@@ -110,6 +110,127 @@ void main() {
     });
   });
 
+  group('mergeEdit with real entries (2.0.53)', () {
+    const f1 = FileRef(id: 'f1', name: 'a.jpg', mime: 'image/jpeg', size: 1);
+    const f2 = FileRef(id: 'f2', name: 'b.jpg', mime: 'image/jpeg', size: 1);
+    Map<String, Object?> merge(Task opened, Task edited, Task current) =>
+        mergeEdit(
+          opened: opened.toData(),
+          edited: edited.toData(),
+          current: current.toData(),
+        );
+    List<String?> steps(Map<String, Object?> data) => [
+      for (final s in data['checklist'] as List? ?? const []) (s as Map)['id'],
+    ];
+
+    test('both devices add the first steps', () {
+      const opened = Task(id: 't', title: 'Einkauf');
+      final merged = merge(
+        opened,
+        opened.copyWith(
+          checklist: const [TaskStep(id: 'brot', text: 'Brot')],
+        ),
+        opened.copyWith(
+          checklist: const [TaskStep(id: 'milch', text: 'Milch')],
+        ),
+      );
+      expect(steps(merged), ['brot', 'milch']);
+    });
+
+    test('all steps removed here, one added there', () {
+      const opened = Task(
+        id: 't',
+        title: 'Einkauf',
+        checklist: [TaskStep(id: 'eier', text: 'Eier')],
+      );
+      final merged = merge(
+        opened,
+        opened.copyWith(checklist: const []),
+        opened.copyWith(
+          checklist: const [
+            TaskStep(id: 'eier', text: 'Eier'),
+            TaskStep(id: 'butter', text: 'Butter'),
+          ],
+        ),
+      );
+      expect(steps(merged), ['butter']);
+    });
+
+    test('both devices attach the first photo', () {
+      const opened = Task(id: 't', title: 'Rechnung');
+      final merged = merge(
+        opened,
+        opened.copyWith(photos: const [f2]),
+        opened.copyWith(photos: const [f1]),
+      );
+      expect(Task.fromRecord(_record(merged)).photos.map((f) => f.id), [
+        'f2',
+        'f1',
+      ]);
+    });
+
+    test('people: changed there and here, both count', () {
+      const opened = Task(id: 't', title: 'Müll', assigneeIds: ['A']);
+      final merged = merge(
+        opened,
+        opened.copyWith(assigneeIds: ['A', 'C']),
+        opened.copyWith(assigneeIds: ['B']),
+      );
+      expect(Task.assigneesIn(merged), ['B', 'C']);
+      expect(merged['assigneeId'], 'B');
+    });
+
+    test('a series skipped on both devices', () {
+      final opened = CalendarEvent(
+        id: 'e',
+        title: 'Schwimmen',
+        start: DateTime(2026, 11, 2, 16),
+        end: DateTime(2026, 11, 2, 17),
+        recurrence: const Recurrence(RecurrenceFrequency.weekly),
+      );
+      final merged = mergeEdit(
+        opened: opened.toData(),
+        edited: opened.copyWith(exceptions: {DateTime(2026, 11, 9)}).toData(),
+        current: opened.copyWith(exceptions: {DateTime(2026, 11, 16)}).toData(),
+      );
+      expect(merged['exceptions'], hasLength(2));
+    });
+
+    test('a file removed here, another added there', () {
+      final opened = CalendarEvent(
+        id: 'e',
+        title: 'Arzt',
+        start: DateTime(2026, 11, 2, 16),
+        end: DateTime(2026, 11, 2, 17),
+        files: const [f1],
+      );
+      final merged = mergeEdit(
+        opened: opened.toData(),
+        edited: opened.copyWith(files: const []).toData(),
+        current: opened.copyWith(files: const [f1, f2]).toData(),
+      );
+      expect(
+        [for (final f in merged['files'] as List) (f as Map)['id']],
+        ['f2'],
+      );
+    });
+
+    test('no audience is everyone, not an empty set', () {
+      expect(
+        mergeEdit(
+          opened: {'visibleTo': null},
+          edited: {
+            'visibleTo': ['A'],
+          },
+          current: {
+            'visibleTo': ['A', 'B'],
+          },
+        )['visibleTo'],
+        ['A'],
+      );
+    });
+  });
+
   testWidgets('the task editor keeps a step ticked meanwhile', (tester) async {
     await open(tester, const TasksScreen());
     engine.saveTask(
@@ -279,3 +400,10 @@ void main() {
     });
   });
 }
+
+SyncRecord _record(Map<String, Object?> data) => SyncRecord(
+  collection: Collections.tasks,
+  id: 't',
+  data: data,
+  updatedAt: 0,
+);

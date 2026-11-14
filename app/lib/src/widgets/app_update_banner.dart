@@ -8,6 +8,7 @@ import '../data/app_update.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import '../environment.dart';
 import '../l10n.dart';
 
 /// What the start page says about this app's version: a package the
@@ -92,7 +93,15 @@ class _AppUpdateBannerState extends State<AppUpdateBanner> {
                       ),
                       Text(
                         offer == null
-                            ? tr.appOutdatedText(notice.app, notice.server)
+                            ? (AppEnv.onIos && AppEnv.storeBuild
+                                  ? tr.appOutdatedTextStore(
+                                      notice.app,
+                                      notice.server,
+                                    )
+                                  : tr.appOutdatedText(
+                                      notice.app,
+                                      notice.server,
+                                    ))
                             : tr.appUpdateFromServer,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),

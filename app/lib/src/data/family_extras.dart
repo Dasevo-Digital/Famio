@@ -35,6 +35,18 @@ extension FamilyExtras on SyncEngine {
               memberId &&
           existing.memberIds.every((id) => id == memberId));
 
+  /// Whether this member may take others out of [existing] (null: a new
+  /// appointment): children only in appointments they entered (the server
+  /// puts the others back otherwise).
+  bool mayRemoveParticipants(CalendarEvent? existing) =>
+      myRole != MemberRole.child ||
+      existing == null ||
+      record(
+            Collections.events,
+            existing.id,
+          )?.data[CalendarEvent.createdByKey] ==
+          memberId;
+
   /// Whether this member decides who sees an entry stored with
   /// [visibleTo]: children only for new entries and their own private ones
   /// (the server keeps the audience of everything else as it is).

@@ -4,7 +4,6 @@ import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
@@ -18,6 +17,8 @@ import '../widgets/data_builder.dart';
 import '../widgets/dispose_with.dart';
 import 'deferred_sections.dart';
 import '../l10n.dart';
+import '../widgets/open_in_maps.dart';
+import '../environment.dart';
 
 /// The red of every emergency screen.
 const sosRed = Color(0xFFD32F2F);
@@ -256,13 +257,7 @@ class RecentCheckIns extends StatelessWidget {
                 : IconButton(
                     tooltip: tr.sosOpenInMaps,
                     icon: const Icon(AppIcons.arrowSquareOut),
-                    onPressed: () => launchUrl(
-                      Uri.parse(
-                        'https://www.openstreetmap.org/?mlat=${a.latitude}'
-                        '&mlon=${a.longitude}#map=17/${a.latitude}/${a.longitude}',
-                      ),
-                      mode: LaunchMode.externalApplication,
-                    ),
+                    onPressed: () => openInMaps(a.latitude!, a.longitude!),
                   ),
           ),
       ],
@@ -804,8 +799,16 @@ class SosSettingsScreen extends StatelessWidget {
               ),
               SwitchListTile(
                 secondary: const Icon(AppIcons.chatsCircle),
-                title: Text(tr.sosTextMessageWithoutInternet),
-                subtitle: Text(tr.sosIfPhoneOfflineText),
+                title: Text(
+                  AppEnv.onIos
+                      ? tr.sosTextMessageWithoutInternetShort
+                      : tr.sosTextMessageWithoutInternet,
+                ),
+                subtitle: Text(
+                  AppEnv.onIos
+                      ? tr.sosIfPhoneOfflineTextApple
+                      : tr.sosIfPhoneOfflineText,
+                ),
                 value: s.sms,
                 onChanged: mayEdit ? (v) => save(s.copyWith(sms: v)) : null,
               ),

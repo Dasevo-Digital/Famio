@@ -33,3 +33,16 @@ Future<String?> appleDeviceModel() async {
     return null;
   }
 }
+
+/// iPhone and iPad: keeps [path] out of the device's backups. The local
+/// copies open only with this device's key, which no backup holds (#490).
+Future<void> excludeFromBackup(String path) async {
+  if (kIsWeb || !Platform.isIOS) return;
+  try {
+    await const MethodChannel(
+      'famio/profile',
+    ).invokeMethod<void>('excludeFromBackup', {'path': path});
+  } catch (_) {
+    // Older build without the method: it stays in the backup.
+  }
+}

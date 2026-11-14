@@ -367,6 +367,53 @@ void main() {
     );
   });
 
+  test('a child cannot hide a family note by deleting and undoing', () async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await sync(
+      mama,
+      changes: [
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'rules',
+          data: {'title': 'Familienregeln', 'text': 'x'},
+          updatedAt: now,
+        ),
+      ],
+    );
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'rules',
+          data: const {},
+          deleted: true,
+          updatedAt: now + 1000,
+          rev: app.records.get(Collections.notes, 'rules')!.rev,
+        ),
+      ],
+    );
+    await sync(
+      kid,
+      changes: [
+        SyncRecord(
+          collection: Collections.notes,
+          id: 'rules',
+          data: {
+            'title': 'Familienregeln',
+            'text': 'x',
+            SyncRecord.visibilityKey: [kid.id],
+          },
+          updatedAt: now + 2000,
+          rev: app.records.get(Collections.notes, 'rules')!.rev,
+        ),
+      ],
+    );
+    final after = app.records.get(Collections.notes, 'rules')!;
+    expect(after.deleted, isFalse);
+    expect(after.visibleTo, isNull);
+  });
+
   test('the household book settings are for adults (#476)', () async {
     final now = DateTime.now().millisecondsSinceEpoch;
     SyncRecord settings(List<String> members, int at, {List<String>? only}) =>
@@ -576,6 +623,83 @@ void main() {
             .get(Collections.events, 'bin')!
             .data[CalendarEvent.createdByKey],
         mama.id,
+      );
+    });
+
+    Future<void> remove(FamilyMember who, String id, int updatedAt) => sync(
+      who,
+      changes: [
+        SyncRecord(
+          collection: Collections.events,
+          id: id,
+          data: const {},
+          deleted: true,
+          updatedAt: updatedAt,
+          rev: app.records.get(Collections.events, id)!.rev,
+        ),
+      ],
+    );
+
+    test('deleting and undoing does not make it the child\'s', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final secret = {
+        ...appointment('Psychotherapie', [kid.id]),
+        'confidential': true,
+      };
+      await write(mama, 'undo', secret, now);
+      await remove(kid, 'undo', now + 1000);
+      // "Rückgängig" writes the same id again, then the child un-marks it.
+      await write(kid, 'undo', secret, now + 2000);
+      await write(kid, 'undo', {...secret, 'confidential': false}, now + 3000);
+      final after = app.records.get(Collections.events, 'undo')!;
+      expect(after.deleted, isFalse);
+      expect(after.data[CalendarEvent.createdByKey], mama.id);
+      expect(after.data['confidential'], isTrue);
+      expect(await guestSeesTitle('undo'), isFalse);
+      // Nor does the child's undo with a changed flag reveal it at once.
+      await remove(kid, 'undo', now + 4000);
+      await write(kid, 'undo', {...secret, 'confidential': false}, now + 5000);
+      expect(
+        app.records.get(Collections.events, 'undo')!.data['confidential'],
+        isTrue,
+      );
+    });
+
+    test('nor an adult\'s undo the parents\' of a child\'s own one', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final own = appointment('Frauenarzt', [kid.id]);
+      await write(kid, 'mine', own, now);
+      await remove(mama, 'mine', now + 1000);
+      await write(mama, 'mine', own, now + 2000);
+      expect(
+        app.records
+            .get(Collections.events, 'mine')!
+            .data[CalendarEvent.createdByKey],
+        kid.id,
+      );
+      await write(kid, 'mine', {...own, 'confidential': true}, now + 3000);
+      expect(
+        app.records.get(Collections.events, 'mine')!.data['confidential'],
+        isTrue,
+      );
+    });
+
+    test('in its own appointment a child takes others out again', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final own = appointment('Kino', [kid.id]);
+      await write(kid, 'cinema', own, now);
+      await write(kid, 'cinema', {
+        ...own,
+        'memberIds': [kid.id, mama.id],
+      }, now + 1000);
+      await write(kid, 'cinema', own, now + 2000);
+      expect(app.records.get(Collections.events, 'cinema')!.data['memberIds'], [
+        kid.id,
+      ]);
+      await write(kid, 'cinema', {...own, 'confidential': true}, now + 3000);
+      expect(
+        app.records.get(Collections.events, 'cinema')!.data['confidential'],
+        isTrue,
       );
     });
 

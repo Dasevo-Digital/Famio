@@ -104,7 +104,6 @@ void main() {
     test('product names from a barcode scan', () {
       const atHome = {
         'Haferflocken': 'Haferflocken Zart',
-        'Nudeln': 'Nudeln Penne',
         'Penne': 'Nudeln Penne',
         'Thunfisch': 'Thunfisch Natur',
         'Tomaten': 'Tomaten Dose',
@@ -116,6 +115,88 @@ void main() {
       }
       // A word after the name is no thing of its own.
       expect(has('Backpulver', 'Gemüsebrühe Pulver'), isFalse);
+      // Spaced nouns are one compound, the last names the thing: "Nudeln
+      // Penne" is Penne, as "Penne" alone would be no "Nudeln" either.
+      expect(has('Nudeln', 'Nudeln Penne'), isFalse);
+    });
+
+    test('spaced compounds and basics with another word (2.0.53)', () {
+      // (ingredient, pantry item or '' for a basic, language, at home)
+      const cases = <(String, String, String, bool)>[
+        ('Tomaten', 'Tomaten Ketchup', 'de', false),
+        ('Ketchup', 'Tomaten Ketchup', 'de', true),
+        ('Kartoffeln, festkochend', 'Kartoffel Püree', 'de', false),
+        ('Kartoffeln', 'Pfanni Kartoffel Püree', 'de', false),
+        ('Kartoffelpüree', 'Pfanni Kartoffel Püree', 'de', true),
+        ('Knoblauch', 'Knoblauch Pulver', 'de', false),
+        ('Knoblauchzehen', 'Knoblauch Pulver', 'de', false),
+        ('Erdbeeren', 'Erdbeer Joghurt', 'de', false),
+        ('Zitronen', 'Zitronen Tee', 'de', false),
+        ('Orangen', 'Orangen Saft', 'de', false),
+        ('Orangensaft', 'Orangen Saft', 'de', true),
+        ('Paprika, rot', 'Paprika Pulver', 'de', false),
+        ('Ingwer', 'Ingwer Tee', 'de', false),
+        ('Gemüse', 'Gemüse Brühe', 'de', false),
+        ('Hähnchenbrust', 'Hühner Brühe', 'de', false),
+        ('Äpfel', 'Apfel Mus', 'de', false),
+        ('Spaghetti', 'Knorr Fix Spaghetti Bolognese', 'de', false),
+        ('Mais', 'Mais Chips', 'de', false),
+        ('Erdnüsse', 'Erdnuss Flips', 'de', false),
+        ('Haferflocken', 'Haferflocken Zart', 'de', true),
+        ('Joghurt', 'Joghurt Griechische Art', 'de', true),
+        ('Milch', 'Milch 3,5 %', 'de', true),
+        ('Butter', 'Kerrygold Butter', 'de', true),
+        ('Zwiebelringe', 'Zwiebeln', 'de', true),
+        ('Zwiebeln', 'Zwiebelringe', 'de', false),
+        ('Saft von 1 Zitrone', 'Zitronen', 'de', true),
+        ('Kräuter', 'Kräuterkäse', 'de', false),
+        ('Paprikapulver', 'Paprika', 'de', false),
+        ('Paprika edelsüß', 'Paprikapulver', 'de', true),
+        ('2 Eier Größe M', 'Eier', 'de', true),
+        ('Zucker Erbsen', '', 'de', false),
+        ('Salz-Brezeln', '', 'de', false),
+        ('Puderzucker', '', 'de', false),
+        ('Meersalz', '', 'de', true),
+        ('Olivenöl', '', 'de', true),
+        ('red pepper', '', 'en', false),
+        ('1 green pepper, diced', '', 'en', false),
+        ('bell pepper', '', 'en', false),
+        ('Red Bell Pepper', '', 'en', false),
+        ('coconut water', '', 'en', false),
+        ('sesame oil', '', 'en', false),
+        ('black pepper', '', 'en', true),
+        ('olive oil', '', 'en', true),
+        ('Peanut Butter', 'Peanuts', 'en', false),
+        ('egg', 'Eggs', 'en', true),
+        ('2 tomatoes', 'tomato', 'en', true),
+        ('juice of 1 lemon', 'lemons', 'en', true),
+        ('sweet potatoes', 'potatoes', 'en', false),
+        ('chicken breasts', 'Turkey breasts', 'en', false),
+        ('1 can cream of mushroom soup', 'cream', 'en', false),
+        ('red pepper', '', 'de', false),
+        ('olive oil', '', 'de', true),
+        ('zumo de limón', 'limones', 'es', true),
+        ('2 dientes de ajo', 'ajos', 'es', true),
+        ('agua de coco', '', 'es', false),
+        ('aceite de oliva', '', 'es', true),
+        ('leche de coco', 'leche', 'es', false),
+        ('leche', 'leche de coco', 'es', false),
+        ('pan rallado', 'pan', 'es', false),
+        ('queso rallado', 'queso', 'es', true),
+        ('salsa de tomate', 'tomates', 'es', false),
+        ('caldo de pollo', 'pollo', 'es', false),
+        ('harina de almendras', 'almendras', 'es', false),
+        ('Butter oder Öl', 'Butter', 'de', true),
+      ];
+      final wrong = [
+        for (final (i, p, language, want) in cases)
+          if (inPantry(Ingredient(name: i), [
+                if (p.isNotEmpty) PantryItem(id: 'x', name: p, amount: 1),
+              ], language: language) !=
+              want)
+            '$language "$i" / "$p" should be $want',
+      ];
+      expect(wrong, isEmpty);
     });
 
     test('a processed product is not the fresh one', () {

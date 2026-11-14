@@ -16,17 +16,24 @@ final _restored = <String, StoreSnapshot>{};
 void restoreCopy(String path, StoreSnapshot snapshot) =>
     _restored[path] = snapshot;
 
-RecordBackend openRecordBackend(String path, {String? hexKey}) =>
-    MemoryRecordBackend(
-      path,
-      _restored.remove(path),
-      enableCopy: raw.enableBrowserCopy,
-      writeCopy: (name, snapshot, lease) =>
-          raw.writeBrowserCopy(name, encodeSnapshot(snapshot), lease),
-      deleteCopy: raw.deleteBrowserCopy,
-    );
+RecordBackend openRecordBackend(
+  String path, {
+  String? hexKey,
+  bool resetUnreadable = false,
+}) => MemoryRecordBackend(
+  path,
+  _restored.remove(path),
+  enableCopy: raw.enableBrowserCopy,
+  writeCopy: (name, snapshot, lease) =>
+      raw.writeBrowserCopy(name, encodeSnapshot(snapshot), lease),
+  deleteCopy: raw.deleteBrowserCopy,
+);
 
-BlobBackend openBlobBackend(String path, {String? hexKey}) => _MemoryBlobs();
+BlobBackend openBlobBackend(
+  String path, {
+  String? hexKey,
+  bool resetUnreadable = false,
+}) => _MemoryBlobs();
 
 Future<String> writeTempFile(String dir, String name, List<int> data) =>
     throw UnsupportedError('No files in the browser – download instead.');

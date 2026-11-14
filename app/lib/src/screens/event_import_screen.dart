@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
@@ -22,6 +21,7 @@ import '../widgets/files.dart';
 import 'event_editor.dart';
 import 'ics_import_screen.dart';
 import '../security/app_lock.dart';
+import '../widgets/camera.dart';
 
 /// Appointments from a photo of a letter, an invitation or pasted text:
 /// recognised on the device, checked by hand, then added. Calendar files
@@ -134,10 +134,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
 
   Future<void> _photo({required bool camera}) async {
     if (camera) {
-      final shot = await AppLock.picking(
-        () =>
-            ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 3000),
-      );
+      final shot = await takePhoto(context, maxWidth: 3000);
       if (shot == null) return;
       await _recognise(_Source(shot.path, shot.name, mime: 'image/jpeg'));
       return;

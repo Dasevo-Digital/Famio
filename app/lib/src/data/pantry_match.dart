@@ -24,6 +24,68 @@ const _staples = {
   'aceite',
 };
 
+/// What a basic may be called besides its name: "schwarzer Pfeffer",
+/// "olive oil", "Meersalz", "aceite de oliva" are still basics; "red
+/// pepper", "sesame oil", "Puderzucker", "agua de coco" are not (#457).
+const _stapleWords = {
+  'schwarz',
+  'weiss',
+  'bunt',
+  'gemahlen',
+  'grob',
+  'fein',
+  'frisch',
+  'braun',
+  'brown',
+  'black',
+  'white',
+  'ground',
+  'coarse',
+  'fine',
+  'sea',
+  'table',
+  'kosher',
+  'olive',
+  'vegetable',
+  'sunflower',
+  'rapeseed',
+  'canola',
+  'neutral',
+  'virgin',
+  'extra',
+  'cane',
+  'tap',
+  'cold',
+  'warm',
+  'negr',
+  'blanc',
+  'molid',
+  'grues',
+  'oliva',
+  'girasol',
+  'virgen',
+  'moren',
+  'caliente',
+  'tibi',
+};
+
+/// Prefixes that leave a basic a basic ("Olivenöl", "Meersalz").
+const _staplePrefixes = {
+  'oliven',
+  'olive',
+  'raps',
+  'sonnenblumen',
+  'speise',
+  'pflanzen',
+  'meer',
+  'jod',
+  'kristall',
+  'rohr',
+  'tafel',
+  'mineral',
+  'stein',
+};
+
 /// How much of a recipe the pantry covers.
 class RecipeStock {
   const RecipeStock(this.have, this.missing);
@@ -36,55 +98,176 @@ class RecipeStock {
 }
 
 /// Whether [ingredient] is at home: a pantry item with some left that
-/// names the same thing. The nouns count, not adjectives ("rote Paprika"
-/// is Paprika, so "Rote Linsen" are no red pepper), units ("Dose") or
-/// phrases ("zum Braten"). Nouns match in the singular or the plural ("Ei",
-/// "Eier"), as the end of a compound ("Milch" covers "Vollmilch", "Reis"
-/// covers "Basmatireis"), and the whole covers its part ("Knoblauch" covers
-/// "Knoblauchzehen", "Zitronen" cover "Zitronensaft"), not the other way
-/// round ("Paprikapulver" is no bell pepper). Alternatives ("Schmand oder
-/// Crème fraîche") count each. [language] says which word of a phrase in
-/// lower case is the noun: the last in English and German ("olive oil",
-/// "rote paprika"), the first in Spanish ("pimiento rojo").
+/// names the same thing (#457). What counts is the word that names the
+/// thing, not adjectives ("rote Paprika" is Paprika, so "Rote Linsen" are
+/// no red pepper), units ("Dose") or phrases ("zum Braten"):
+///
+/// * in German the nouns as one compound, the last naming the thing:
+///   "Tomaten Ketchup" is ketchup like "Tomatenketchup", "Knoblauch
+///   Pulver" no fresh garlic, "Kerrygold Butter" butter;
+/// * in English the last word ("chicken breasts"), in Spanish the first
+///   ("pimiento rojo"); words before or after it must be there too, and a
+///   word that makes it another product ("coconut", "coco", "sweet") on
+///   both sides alike;
+/// * "of", "von", "de" join a part to its thing: "Saft einer Zitrone",
+///   "dientes de ajo" want the fruit and the garlic; otherwise the thing
+///   is "salsa" in "salsa de tomate".
+///
+/// Nouns match in the singular or the plural ("Ei", "Eier"), as the end of
+/// a compound ("Milch" covers "Vollmilch", "Reis" covers "Basmatireis"),
+/// and the whole covers its part ("Knoblauch" covers "Knoblauchzehen",
+/// "Zitronen" cover "Zitronensaft"), not the other way round
+/// ("Paprikapulver" is no bell pepper). Alternatives ("Schmand oder Crème
+/// fraîche") count each. [language] is the recipe's language, which says
+/// where the noun of a phrase in lower case is.
 bool inPantry(
   Ingredient ingredient,
   Iterable<PantryItem> pantry, {
   String? language,
 }) {
   final lang = language ?? appLanguage;
-  for (final wanted in ingredientNouns(ingredient.name, lang)) {
-    if (wanted.any(_staples.contains)) return true;
+  for (final wanted in _things(ingredient.name, lang)) {
+    if (wanted.isStaple) return true;
     for (final p in pantry) {
       if (p.amount <= 0) continue;
-      for (final have in ingredientNouns(p.name, lang)) {
-        if (have.any((h) => wanted.any((w) => _sameThing(h, w)))) return true;
+      for (final have in _things(p.name, lang)) {
+        if (have.covers(wanted)) return true;
       }
     }
   }
   return false;
 }
 
-/// The main noun of [name] (see [ingredientNouns]), or ''.
+/// The word that names the thing in [name], folded ("Äpfel" as "apfel"),
+/// or ''.
 String mainNoun(String name, {String? language}) =>
-    ingredientNouns(name, language ?? appLanguage).firstOrNull?.firstOrNull ??
-    '';
+    _things(name, language ?? appLanguage).firstOrNull?.head ?? '';
 
-final _nouns = <String, List<List<String>>>{};
+/// One thing a name stands for: its head word, the other nouns and the
+/// adjectives that come with it.
+class _Thing {
+  _Thing(this.head, this.nouns, this.adjectives);
 
-/// The nouns of an ingredient or pantry name, folded ("Äpfel" and
-/// "Aepfel" alike): one list per alternative ("A oder B"), the main noun
-/// first. Remembered, as recipe lists ask for it again and again.
-List<List<String>> ingredientNouns(String name, String language) {
-  if (_nouns.length > 4000) _nouns.clear();
-  return _nouns.putIfAbsent('$language|$name', () {
+  /// The word naming the thing; in German the whole compound.
+  final String head;
+
+  /// Other nouns of an English or Spanish name ("chicken" breasts).
+  final Set<String> nouns;
+  final Set<String> adjectives;
+
+  late final Set<String> kinds = {
+    for (final w in {...nouns, ...adjectives})
+      if (_kindWords.any((k) => _kindWord(w, k))) _kindOf(w),
+  };
+
+  bool get isStaple {
+    if (kinds.isNotEmpty) return false;
+    if (!nouns.every(_stapleWord) || !adjectives.every(_stapleWord)) {
+      return false;
+    }
+    if (_staples.contains(head)) return true;
+    for (final staple in _staples) {
+      if (staple.length >= 3 &&
+          head.endsWith(staple) &&
+          _staplePrefixes.contains(
+            head.substring(0, head.length - staple.length),
+          )) {
+        return true;
+      }
+    }
+    return head.endsWith('ol') &&
+        _staplePrefixes.contains(head.substring(0, head.length - 2));
+  }
+
+  /// Whether this, at home, is what [wanted] asks for.
+  bool covers(_Thing wanted) =>
+      _sameThing(head, wanted.head) &&
+      wanted.nouns.every(
+        (n) => nouns.any((m) => m == n || _samePlural(m, n)),
+      ) &&
+      _sameKinds(kinds, wanted.kinds);
+}
+
+bool _stapleWord(String w) => _stapleWords.any(
+  (s) => w == s || (w.startsWith(s) && w.length - s.length <= 2),
+);
+
+bool _sameKinds(Set<String> a, Set<String> b) =>
+    a.length == b.length && a.every(b.contains);
+
+/// Words that make another product of the thing they describe: "coconut
+/// milk", "leche de coco", "sweet potatoes", "harina de almendras".
+const _kindWords = {
+  'kokos',
+  'coconut',
+  'coco',
+  'mandel',
+  'almond',
+  'almendra',
+  'hafer',
+  'oat',
+  'avena',
+  'soja',
+  'soy',
+  'reis',
+  'rice',
+  'arroz',
+  'erdnuss',
+  'peanut',
+  'cacahuete',
+  'mani',
+  'cashew',
+  'anacardo',
+  'haselnuss',
+  'hazelnut',
+  'avellana',
+  'kakao',
+  'cocoa',
+  'cacao',
+  'sweet',
+  'dulce',
+};
+
+/// Whether [w] is the kind word [k], also as plural or adjective ("dulces").
+bool _kindWord(String w, String k) =>
+    w.startsWith(k) && w.length - k.length <= 2;
+
+/// One word for a kind in every language.
+String _kindOf(String w) {
+  // The longest first: "cocoa" is no "coco".
+  for (final k in _kindWords.toList()..sort((a, b) => b.length - a.length)) {
+    if (_kindWord(w, k)) {
+      return switch (k) {
+        'coconut' || 'coco' => 'kokos',
+        'almond' || 'almendra' => 'mandel',
+        'oat' || 'avena' => 'hafer',
+        'soy' => 'soja',
+        'rice' || 'arroz' => 'reis',
+        'peanut' || 'cacahuete' || 'mani' => 'erdnuss',
+        'anacardo' => 'cashew',
+        'hazelnut' || 'avellana' => 'haselnuss',
+        'cocoa' || 'cacao' => 'kakao',
+        'dulce' => 'sweet',
+        _ => k,
+      };
+    }
+  }
+  return w;
+}
+
+final _names = <String, List<_Thing>>{};
+
+/// The things an ingredient or pantry name stands for: one per alternative
+/// ("A oder B"), remembered, as recipe lists ask again and again.
+List<_Thing> _things(String name, String language) {
+  if (_names.length > 4000) _names.clear();
+  return _names.putIfAbsent('$language|$name', () {
     final core = name.split(RegExp(r'[,(;/]')).first;
     return [
       for (final alternative in core.split(
         RegExp(r'\s(?:oder|or|o|bzw\.?)\s', caseSensitive: false),
       ))
-        if (_nounsOf(alternative, language) case final nouns
-            when nouns.isNotEmpty)
-          nouns,
+        ?_thingOf(alternative, language),
     ];
   });
 }
@@ -96,69 +279,93 @@ final _phrase = RegExp(
   caseSensitive: false,
 );
 
-/// Joins two nouns of which the last names the thing: "Saft einer
-/// Zitrone", "juice of a lemon", "dientes de ajo".
+/// Joins two nouns: "Saft einer Zitrone", "juice of a lemon", "dientes de
+/// ajo", "salsa de tomate".
 final _ofPhrase = RegExp(
   r'\s(?:einer|eines|einem|eine|ein|der|des|vom|von|of|de|del)\s',
   caseSensitive: false,
 );
 
-List<String> _nounsOf(String phrase, String language) {
-  final core = phrase.split(_phrase).first;
-  final parts = core.split(_ofPhrase);
-  final nouns = <String>[];
-  void add(String word) {
-    if (word.isNotEmpty && !nouns.contains(word)) nouns.add(word);
-  }
-
-  // The last part names the thing; a part before it counts too unless it
-  // is a unit or a part ("Saft", "dientes", "cucharadas").
-  final main = _phraseNouns(parts.last, language);
-  main.forEach(add);
-  for (final part in parts.sublist(0, parts.length - 1)) {
-    for (final w in _phraseNouns(part, language)) {
-      if (!_parts.contains(w) && !_partWords.contains(w)) add(w);
-    }
-  }
-  return nouns;
+_Thing? _thingOf(String phrase, String language) {
+  final parts = phrase.split(_phrase).first.split(_ofPhrase);
+  if (parts.length == 1) return _phraseThing(parts.single, language);
+  // "Saft einer Zitrone", "a pinch of salt", "dientes de ajo": a part or a
+  // measure before "of" wants what comes after it.
+  final first = _phraseThing(parts.first, language);
+  final last = _phraseThing(parts.last, language);
+  if (first == null || _partWords.contains(first.head)) return last;
+  if (last == null) return first;
+  // German and English "of": the thing is at the end ("cream of mushroom
+  // soup"); Spanish "de" describes what comes before it ("salsa de
+  // tomate", "aceite de oliva").
+  final (thing, rest) = language == 'es' ? (first, last) : (last, first);
+  return _Thing(
+    thing.head,
+    {...thing.nouns, if (language != 'de') rest.head, ...rest.nouns},
+    {...thing.adjectives, ...rest.adjectives},
+  );
 }
 
-/// The nouns of one phrase without "of": in German all capitalised words
-/// but adjectives ("Rote Linsen", "Haferflocken Zart", "Nudeln Penne"),
-/// otherwise the noun by [language].
-List<String> _phraseNouns(String phrase, String language) {
+/// The thing of one phrase without "of" (see [inPantry]).
+_Thing? _phraseThing(String phrase, String language) {
   final raw = [
     for (final w in phrase.trim().split(RegExp(r'[\s\-]+')))
       if (w.isNotEmpty) w,
   ];
-  bool kept(String w) =>
-      !RegExp(r'\d').hasMatch(w) && !_notTheThing(_fold(w)) && _fold(w) != '';
-  bool capital(String w) => w[0] != w[0].toLowerCase();
-  if (raw.skip(1).any(capital)) {
-    // German nouns are capitalised; the last one names the thing.
-    final nouns = [
-      for (final w in raw)
-        if (capital(w) && kept(w)) _fold(w),
-    ];
-    return nouns.reversed.toList();
+  final adjectives = <String>{};
+  final nouns = <String>[];
+  for (final w in raw) {
+    if (RegExp(r'\d').hasMatch(w)) continue;
+    final f = _fold(w);
+    if (f.length < 2 || _fillers.contains(f)) continue;
+    if (_adjective(f)) {
+      adjectives.add(f);
+    } else if (!nouns.contains(f)) {
+      nouns.add(f);
+    }
   }
-  final words = [
-    for (final w in raw)
-      if (kept(w)) _fold(w),
-  ];
-  if (words.length <= 1) return words;
-  return switch (language) {
-    'es' => [words.first],
-    // "Paprika rot" names Paprika; "Olive oil" from an English recipe oil.
-    'de' when capital(raw.first) => [words.first, words.last],
-    _ => [words.last],
-  };
+  if (nouns.isEmpty) return null;
+  if (language == 'de') {
+    // Nouns spaced like "Tomaten Ketchup" are one compound, as in German.
+    return _Thing(_formOf(nouns.join()), const {}, adjectives);
+  }
+  var head = language == 'es' ? nouns.first : nouns.last;
+  // Breadcrumbs are no bread; grated cheese is cheese.
+  if (head == 'pan' && adjectives.any((a) => a.startsWith('rallad'))) {
+    head = 'panrallado';
+  }
+  return _Thing(_formOf(head), {
+    for (final n in nouns)
+      if (n != head) n,
+  }, adjectives);
+}
+
+/// The thing a few names really are: paprika "edelsüß" is the powder,
+/// broth as powder is still broth.
+String _formOf(String head) {
+  if (head.startsWith('paprika') &&
+      {
+        'paprikaedelsuss',
+        'paprikarosenscharf',
+        'paprikadelikatess',
+      }.contains(head)) {
+    return 'paprikapulver';
+  }
+  for (final form in ['pulver', 'granulat']) {
+    if (head.endsWith(form)) {
+      final stem = head.substring(0, head.length - form.length);
+      if (stem.endsWith('bruhe') ||
+          stem.endsWith('bouillon') ||
+          stem.endsWith('fond')) {
+        return stem;
+      }
+    }
+  }
+  return head;
 }
 
 /// Units, amounts, articles and words that describe a product rather
 /// than name it, folded.
-bool _notTheThing(String w) => _fillers.contains(w) || _adjective(w);
-
 const _fillers = {
   // German
   'type', 'typ', 'tk', 'bio', 'gr', 'ca', 'etwa', 'evtl', 'optional',
@@ -168,7 +375,6 @@ const _fillers = {
   'flasche', 'flaschen', 'kg', 'g', 'ml', 'l', 'liter', 'gramm', 'art',
   'natur',
   'zart',
-  'pulver',
   'klassisch',
   'classic',
   'original',
@@ -275,6 +481,7 @@ const _parts = {
   'zweige',
   'spalten',
   'streifen',
+  'ringe',
   'kase',
 };
 
@@ -328,8 +535,10 @@ bool _samePlural(String a, String b) {
   if (!long.startsWith(short)) return false;
   return switch (long.substring(short.length)) {
     'n' || 'en' || 'er' || 'e' => true,
-    // "Ei" + s is "Eis": only for longer words.
-    's' => short.length >= 4,
+    // "Ei" + s is "Eis": not for the shortest words.
+    's' => short.length >= 3,
+    // Spanish: "limón", "limones".
+    'es' => short.length >= 3,
     _ => false,
   };
 }

@@ -16,6 +16,7 @@ import '../widgets/section_header.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 import '../widgets/account_password.dart';
+import '../environment.dart';
 
 /// Connects Famio with Google Calendar, Apple Calendar & co. via ICS links:
 /// publishing Famio events (feeds) and showing external calendars
@@ -37,7 +38,9 @@ class CalendarConnectScreen extends StatelessWidget {
             children: [
               SectionHeader(
                 tr.calendarConnectCalendarAppsDirectly,
-                tr.calendarAppleCalendarMacIphone,
+                AppEnv.onIos
+                    ? tr.calendarAppleCalendarApple
+                    : tr.calendarAppleCalendarMacIphone,
               ),
               CalDavAppsSection(),
               Divider(height: 40),
@@ -315,7 +318,11 @@ class _FeedTile extends StatelessWidget {
       subtitle: SelectableText(
         url.toString(),
         maxLines: 1,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        style: const TextStyle(
+          fontFamily: 'monospace',
+          fontFamilyFallback: monoFallback,
+          fontSize: 12,
+        ),
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

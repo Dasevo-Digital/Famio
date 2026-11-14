@@ -34,8 +34,14 @@ class LocalStore {
 
   /// Opens the store at [path], encrypted with [hexKey]; pass `:memory:`
   /// for tests. In the browser everything stays in memory.
-  factory LocalStore.open(String path, {String? hexKey}) =>
-      LocalStore._(openRecordBackend(path, hexKey: hexKey));
+  /// [resetUnreadable]: see [openDeviceDatabase].
+  factory LocalStore.open(
+    String path, {
+    String? hexKey,
+    bool resetUnreadable = false,
+  }) => LocalStore._(
+    openRecordBackend(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
+  );
 
   /// Opens the store at [path]; in the browser starting from the copy kept
   /// there ([keepInBrowser]), so the web app shows the family's data at

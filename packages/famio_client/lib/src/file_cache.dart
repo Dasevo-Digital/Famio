@@ -36,8 +36,9 @@ class FileCache {
     required String tempDir,
     int maxBytes = defaultMaxBytes,
     Duration copyTimeout = const Duration(minutes: 2),
+    bool resetUnreadable = false,
   }) => FileCache._(
-    openBlobBackend(path, hexKey: hexKey),
+    openBlobBackend(path, hexKey: hexKey, resetUnreadable: resetUnreadable),
     api,
     tempDir,
     maxBytes,

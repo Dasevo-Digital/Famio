@@ -128,7 +128,10 @@ extension _AccountRoutes on FamioApi {
     final body = await _body(request);
     final address = clientAddress.of(request);
     _checkThrottle(address, '#delete:${member.id}');
-    if (!accounts.hasPassword(member.id) ||
+    // An account without a password (SSO, passkey) has none to confirm:
+    // like the other confirmations, its session and second factor count
+    // (#500).
+    if (accounts.hasPassword(member.id) &&
         !await accounts.checkPassword(
           member.id,
           body['password'] as String? ?? '',
