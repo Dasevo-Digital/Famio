@@ -220,21 +220,20 @@ class _MedicationCard extends StatelessWidget {
   List<ShoppingList> get _lists =>
       engine.shoppingLists.where((l) => !l.packing).toList();
 
-  /// On a list everyone who cares for the plan sees; with none such, the
-  /// member picks one (#544: the first list could be a private one).
+  /// On a list everyone who cares for the plan sees, a list kept to some
+  /// before the family's (a medicine is health data, the family's list also
+  /// reaches guests and Home Assistant); with none such, the member picks
+  /// one (#544: the first list could be a private one).
   Future<void> _toShopping(BuildContext context) async {
     final lists = _lists;
     if (lists.isEmpty) return;
     final messenger = ScaffoldMessenger.of(context);
     final care = medication.careIds;
+    bool reachesAll(ShoppingList l) =>
+        l.visibleTo == null || care.every((id) => l.visibleTo!.contains(id));
     final list =
-        lists
-            .where(
-              (l) =>
-                  l.visibleTo == null ||
-                  care.every((id) => l.visibleTo!.contains(id)),
-            )
-            .firstOrNull ??
+        lists.where((l) => l.visibleTo != null && reachesAll(l)).firstOrNull ??
+        lists.where(reachesAll).firstOrNull ??
         (lists.length == 1
             ? lists.single
             : await showDialog<ShoppingList>(
@@ -375,7 +374,7 @@ class _MedicationCard extends StatelessWidget {
 
 /// Why the plan cannot be saved yet, below the choice it is about.
 class _Error extends StatelessWidget {
-  const _Error(this.text);
+  const _Error(this.text, {super.key});
 
   final String text;
 
@@ -457,8 +456,28 @@ class _MedicationEditorState extends State<_MedicationEditor> {
   double? _number(String text) =>
       double.tryParse(text.trim().replaceAll(',', '.'));
 
-  /// What keeps the plan from being saved, shown where it is (#544).
+  /// What keeps the plan from being saved, shown where it is (#544); the
+  /// editor scrolls to the first such message, which may be out of sight.
   String? _nameError, _timesError, _endError;
+  final _nameKey = GlobalKey(), _timesKey = GlobalKey(), _endKey = GlobalKey();
+
+  void _showFirstError() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = _nameError != null
+          ? _nameKey
+          : _timesError != null
+          ? _timesKey
+          : _endKey;
+      final at = key.currentContext;
+      if (at != null && at.mounted) {
+        Scrollable.ensureVisible(
+          at,
+          alignment: 0.3,
+          duration: const Duration(milliseconds: 250),
+        );
+      }
+    });
+  }
 
   void _save() {
     final name = _name.text.trim();
@@ -471,6 +490,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           : null;
     });
     if (_nameError != null || _timesError != null || _endError != null) {
+      _showFirstError();
       return;
     }
     final engine = AppScope.engineOf(context);
@@ -569,238 +589,253 @@ class _MedicationEditorState extends State<_MedicationEditor> {
           onPressed: _save,
         ),
       ],
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 40),
-        children: [
-          TextField(
-            controller: _name,
-            autofocus: _old == null,
-            textCapitalization: TextCapitalization.sentences,
-            onChanged: (_) {
-              if (_nameError != null) setState(() => _nameError = null);
-            },
-            decoration: InputDecoration(
-              labelText: tr.kidsLogMedication,
-              errorText: _nameError,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextField(
+              key: _nameKey,
+              controller: _name,
+              autofocus: _old == null,
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: (_) {
+                if (_nameError != null) setState(() => _nameError = null);
+              },
+              decoration: InputDecoration(
+                labelText: tr.kidsLogMedication,
+                errorText: _nameError,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _person,
-            textCapitalization: TextCapitalization.words,
-            decoration: InputDecoration(labelText: tr.medsWhom),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final p in people)
-                ActionChip(
-                  label: Text(p),
-                  onPressed: () => setState(() => _person.text = p),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _dose,
-            decoration: InputDecoration(
-              labelText: tr.medsDosePrescribed,
-              hintText: tr.medsEG1Tablet,
-              helperText: tr.medsPrescribedDoctorPackageLeaflet,
+            const SizedBox(height: 12),
+            TextField(
+              controller: _person,
+              textCapitalization: TextCapitalization.words,
+              decoration: InputDecoration(labelText: tr.medsWhom),
             ),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(tr.medsOnlyNeeded),
-            subtitle: Text(tr.medsWithoutFixedTimesReminders),
-            value: _asNeeded,
-            onChanged: (v) => setState(() => _asNeeded = v),
-          ),
-          if (!_asNeeded) ...[
-            ListHeading(tr.medsTimesTakeReminder),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final t in _times..sort())
-                  InputChip(
-                    avatar: const Icon(AppIcons.alarm, size: 18),
-                    label: Text(t),
-                    onDeleted: () => setState(() => _times.remove(t)),
-                  ),
-                ActionChip(
-                  avatar: const Icon(AppIcons.plus, size: 18),
-                  label: Text(tr.commonTime),
-                  onPressed: _addTime,
-                ),
-              ],
-            ),
-            if (_timesError != null && _times.isEmpty) _Error(_timesError!),
-            const SizedBox(height: 10),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
-                for (var d = 1; d <= 7; d++)
-                  FilterChip(
-                    label: Text(_weekdayShort[d - 1]),
-                    showCheckmark: false,
-                    selectedColor: tint,
-                    selected: _weekdays.isEmpty || _weekdays.contains(d),
-                    onSelected: (on) {
-                      final days = _weekdays.isEmpty
-                          ? {1, 2, 3, 4, 5, 6, 7}
-                          : {..._weekdays};
-                      on ? days.add(d) : days.remove(d);
-                      if (days.isEmpty) return;
-                      setState(() => _weekdays = days.length == 7 ? {} : days);
-                    },
+                for (final p in people)
+                  ActionChip(
+                    label: Text(p),
+                    onPressed: () => setState(() => _person.text = p),
                   ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _dose,
+              decoration: InputDecoration(
+                labelText: tr.medsDosePrescribed,
+                hintText: tr.medsEG1Tablet,
+                helperText: tr.medsPrescribedDoctorPackageLeaflet,
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(tr.medsOnlyNeeded),
+              subtitle: Text(tr.medsWithoutFixedTimesReminders),
+              value: _asNeeded,
+              onChanged: (v) => setState(() => _asNeeded = v),
+            ),
+            if (!_asNeeded) ...[
+              ListHeading(tr.medsTimesTakeReminder),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final t in _times..sort())
+                    InputChip(
+                      avatar: const Icon(AppIcons.alarm, size: 18),
+                      label: Text(t),
+                      onDeleted: () => setState(() => _times.remove(t)),
+                    ),
+                  ActionChip(
+                    avatar: const Icon(AppIcons.plus, size: 18),
+                    label: Text(tr.commonTime),
+                    onPressed: _addTime,
+                  ),
+                ],
+              ),
+              if (_timesError != null && _times.isEmpty)
+                _Error(_timesError!, key: _timesKey),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (var d = 1; d <= 7; d++)
+                    FilterChip(
+                      label: Text(_weekdayShort[d - 1]),
+                      showCheckmark: false,
+                      selectedColor: tint,
+                      selected: _weekdays.isEmpty || _weekdays.contains(d),
+                      onSelected: (on) {
+                        final days = _weekdays.isEmpty
+                            ? {1, 2, 3, 4, 5, 6, 7}
+                            : {..._weekdays};
+                        on ? days.add(d) : days.remove(d);
+                        if (days.isEmpty) return;
+                        setState(
+                          () => _weekdays = days.length == 7 ? {} : days,
+                        );
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  InputChip(
+                    label: Text(tr.medsDate(day.format(_start))),
+                    onPressed: () async {
+                      final d = await _pickDay(_start);
+                      if (d != null) setState(() => _start = d);
+                    },
+                  ),
+                  InputChip(
+                    label: Text(
+                      _end == null
+                          ? tr.medsPermanently
+                          : tr.medsUntilDate(day.format(_end!)),
+                    ),
+                    onPressed: () async {
+                      // The last day cannot lie before the first.
+                      final d = await _pickDay(
+                        _end ?? _start,
+                        notBefore: _start,
+                      );
+                      if (d != null) {
+                        setState(() {
+                          _end = d;
+                          _endError = null;
+                        });
+                      }
+                    },
+                    onDeleted: _end == null
+                        ? null
+                        : () => setState(() {
+                            _end = null;
+                            _endError = null;
+                          }),
+                  ),
+                ],
+              ),
+              if (_endError != null && _end != null && _end!.isBefore(_start))
+                _Error(_endError!, key: _endKey),
+            ],
+            ListHeading(tr.conflictsPantry),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _stock,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.medsPiecesStock,
+                      helperText: tr.medsLeaveEmptyIfDoesn,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _perDose,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: tr.medsPiecesPerDose,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(child: Text(tr.medsWarnWhenSupplyLasts)),
+                DropdownButton<int>(
+                  value: _refillDays,
+                  items: [
+                    for (final d in [3, 5, 7, 10, 14, 21])
+                      DropdownMenuItem(
+                        value: d,
+                        child: Text(tr.commonDaysCount(d)),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _refillDays = v ?? 7),
+                ),
+              ],
+            ),
+            ListHeading(tr.medsWhoSeesGetsReminded),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                InputChip(
-                  label: Text(tr.medsDate(day.format(_start))),
-                  onPressed: () async {
-                    final d = await _pickDay(_start);
-                    if (d != null) setState(() => _start = d);
-                  },
-                ),
-                InputChip(
-                  label: Text(
-                    _end == null
-                        ? tr.medsPermanently
-                        : tr.medsUntilDate(day.format(_end!)),
+                for (final m in engine.members.where(
+                  (m) => !m.isGuest && !m.isService,
+                ))
+                  FilterChip(
+                    avatar: MemberAvatar(m, radius: 10),
+                    label: Text(m.displayName),
+                    selectedColor: tint,
+                    selected: _careIds.contains(m.id),
+                    // Someone has to stay: nobody chosen is not "everyone".
+                    onSelected: !_careIds.contains(m.id) || _careIds.length > 1
+                        ? (on) => setState(
+                            () =>
+                                on ? _careIds.add(m.id) : _careIds.remove(m.id),
+                          )
+                        : null,
                   ),
-                  onPressed: () async {
-                    // The last day cannot lie before the first.
-                    final d = await _pickDay(_end ?? _start, notBefore: _start);
-                    if (d != null) {
-                      setState(() {
-                        _end = d;
-                        _endError = null;
-                      });
-                    }
-                  },
-                  onDeleted: _end == null
-                      ? null
-                      : () => setState(() {
-                          _end = null;
-                          _endError = null;
-                        }),
-                ),
               ],
             ),
-            if (_endError != null && _end != null && _end!.isBefore(_start))
-              _Error(_endError!),
-          ],
-          ListHeading(tr.conflictsPantry),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _stock,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: tr.medsPiecesStock,
-                    helperText: tr.medsLeaveEmptyIfDoesn,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _perDose,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(labelText: tr.medsPiecesPerDose),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(child: Text(tr.medsWarnWhenSupplyLasts)),
-              DropdownButton<int>(
-                value: _refillDays,
-                items: [
-                  for (final d in [3, 5, 7, 10, 14, 21])
-                    DropdownMenuItem(
-                      value: d,
-                      child: Text(tr.commonDaysCount(d)),
-                    ),
-                ],
-                onChanged: (v) => setState(() => _refillDays = v ?? 7),
-              ),
-            ],
-          ),
-          ListHeading(tr.medsWhoSeesGetsReminded),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final m in engine.members.where(
-                (m) => !m.isGuest && !m.isService,
-              ))
-                FilterChip(
-                  avatar: MemberAvatar(m, radius: 10),
-                  label: Text(m.displayName),
-                  selectedColor: tint,
-                  selected: _careIds.contains(m.id),
-                  // Someone has to stay: nobody chosen is not "everyone".
-                  onSelected: !_careIds.contains(m.id) || _careIds.length > 1
-                      ? (on) => setState(
-                          () => on ? _careIds.add(m.id) : _careIds.remove(m.id),
-                        )
-                      : null,
-                ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            tr.medsHealthDataOnlyThose,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _notes,
-            minLines: 2,
-            maxLines: 5,
-            textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(
-              labelText: tr.commonNotes,
-              hintText: tr.medsEGFoodPrescribed,
+            const SizedBox(height: 4),
+            Text(
+              tr.medsHealthDataOnlyThose,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-          ),
-          if (_old != null) ...[
-            ListHeading(tr.pregnancyHistory),
-            for (final i in engine.intakes(_old.id).take(20))
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  i.skipped ? AppIcons.x : AppIcons.check,
-                  color: i.skipped ? c.inkSoft : c.strong(FamioSection.health),
-                ),
-                title: Text(
-                  i.skipped
-                      ? tr.medsSkippedTime(timeLabel(i.scheduled ?? i.at))
-                      : tr.medsTakenTime2(dateTimeLabel(i.at)),
-                ),
-                subtitle: Text(engine.member(i.byId)?.displayName ?? ''),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _notes,
+              minLines: 2,
+              maxLines: 5,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                labelText: tr.commonNotes,
+                hintText: tr.medsEGFoodPrescribed,
               ),
+            ),
+            if (_old != null) ...[
+              ListHeading(tr.pregnancyHistory),
+              for (final i in engine.intakes(_old.id).take(20))
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    i.skipped ? AppIcons.x : AppIcons.check,
+                    color: i.skipped
+                        ? c.inkSoft
+                        : c.strong(FamioSection.health),
+                  ),
+                  title: Text(
+                    i.skipped
+                        ? tr.medsSkippedTime(timeLabel(i.scheduled ?? i.at))
+                        : tr.medsTakenTime2(dateTimeLabel(i.at)),
+                  ),
+                  subtitle: Text(engine.member(i.byId)?.displayName ?? ''),
+                ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

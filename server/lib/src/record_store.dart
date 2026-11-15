@@ -882,6 +882,9 @@ class RecordStore {
         if (role == MemberRole.child && !incoming.deleted) {
           incoming = _childAudience(incoming, prior, userId);
         }
+        if (change.collection == Collections.events && !incoming.deleted) {
+          incoming = _withConfidentialBy(incoming, prior, userId);
+        }
         if (change.collection == Collections.shoppingItems &&
             !incoming.deleted) {
           // An item goes where its list goes, whoever writes it (older apps,
@@ -983,6 +986,9 @@ class RecordStore {
           }
           if (role == MemberRole.child) {
             snapshot = _childAudience(snapshot, existing, userId);
+          }
+          if (change.collection == Collections.events) {
+            snapshot = _withConfidentialBy(snapshot, existing, userId);
           }
           if (recordDataIsValid(snapshot) &&
               canAccess(snapshot, userId) &&
@@ -1132,6 +1138,25 @@ class RecordStore {
 
   /// Until 2.0.3 guests saw every task. Once, takes the tasks of the whole
   /// family that are not assigned to them off their devices.
+  static const _budgetAudienceKey = 'budgetAudience1';
+
+  /// Once after upgrading: entries an older server kept open although the
+  /// household book was restricted (an adult outside it, HAU-162) follow
+  /// the current settings.
+  void followBudgetSettings() {
+    if (_setting(_budgetAudienceKey) != null) return;
+    _transaction(() {
+      for (final settings in all(Collections.budgetSettings)) {
+        _budgetFollow(settings, null);
+      }
+      _db.execute(
+        'INSERT INTO settings (key, value) VALUES (?, ?)'
+        ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+        [_budgetAudienceKey, '1'],
+      );
+    });
+  }
+
   void restrictGuestTasks() {
     if (_setting(_guestTasksKey) != null) return;
     final members = memberIds();
@@ -1277,6 +1302,9 @@ class RecordStore {
   /// writing one.
   void _budgetFollow(SyncRecord settings, SyncRecord? previous) {
     if (settings.collection != Collections.budgetSettings) return;
+    // Gone settings (e.g. with the only member who saw the book) open
+    // nothing: every entry keeps whom it reaches.
+    if (settings.deleted) return;
     final audience = _budgetAudience(settings);
     if (previous != null &&
         jsonEncode(_budgetAudience(previous)) == jsonEncode(audience)) {
@@ -1648,9 +1676,10 @@ class RecordStore {
   /// last does not count: a child's note on the parents' appointment does
   /// not make it the child's (#416). Appointments from before the key have
   /// no owner here.
+  /// One an adult made confidential is not the child's here either (see
+  /// [CalendarEvent.childOwns]).
   static bool childOwnsEvent(Map<String, Object?> event, String userId) =>
-      event[CalendarEvent.createdByKey] == userId &&
-      [...?(event['memberIds'] as List?)].every((id) => id == userId);
+      CalendarEvent.childOwns(event, userId);
 
   /// Who entered an appointment: set when it is created, kept on every
   /// change; what an app sends for it does not count. [existing] is the
@@ -1661,13 +1690,38 @@ class RecordStore {
     SyncRecord? existing,
     String userId,
   ) {
-    final data = {...incoming.data}..remove(CalendarEvent.createdByKey);
+    final data = {...incoming.data}
+      ..remove(CalendarEvent.createdByKey)
+      ..remove(CalendarEvent.confidentialByKey);
     // Over a tombstone whose live version has left the bin nothing of the
     // earlier appointment is left: what is written now is new.
     final creator = existing == null || existing.deleted
         ? userId
         : existing.data[CalendarEvent.createdByKey];
     if (creator != null) data[CalendarEvent.createdByKey] = creator;
+    if (existing != null && !existing.deleted) {
+      final by = existing.data[CalendarEvent.confidentialByKey];
+      if (by != null) data[CalendarEvent.confidentialByKey] = by;
+    }
+    return incoming.copyWith(data: data);
+  }
+
+  /// Who made an appointment confidential, after what a child may change
+  /// was settled ([_childAudience]): who switches it on, kept while it
+  /// stays on, gone with it.
+  static SyncRecord _withConfidentialBy(
+    SyncRecord incoming,
+    SyncRecord? existing,
+    String userId,
+  ) {
+    final data = {...incoming.data};
+    if (data['confidential'] != true) {
+      data.remove(CalendarEvent.confidentialByKey);
+    } else if (existing == null ||
+        existing.deleted ||
+        existing.data['confidential'] != true) {
+      data[CalendarEvent.confidentialByKey] = userId;
+    }
     return incoming.copyWith(data: data);
   }
 
@@ -1701,12 +1755,12 @@ class RecordStore {
         data.remove('confidential');
       }
     }
-    // A confidential appointment someone else entered gets no new people
-    // taking part; one the child entered itself it shares with whom it
-    // likes (KAL-046).
+    // A confidential appointment someone else entered or made confidential
+    // gets no new people taking part; one the child entered and made
+    // confidential itself it shares with whom it likes (KAL-046).
     if (incoming.collection == Collections.events &&
         confidential &&
-        existing.data[CalendarEvent.createdByKey] != userId) {
+        !CalendarEvent.childEntered(existing.data, userId)) {
       final reach = {
         existing.updatedBy,
         ...?(existing.data['memberIds'] as List?),
@@ -1726,7 +1780,7 @@ class RecordStore {
       }
     }
     if (incoming.collection == Collections.events &&
-        existing.data[CalendarEvent.createdByKey] != userId) {
+        !CalendarEvent.childEntered(existing.data, userId)) {
       // Who else takes part in an appointment the child did not enter
       // stays in it: a child takes only itself out. In its own the child
       // adds and removes people freely.

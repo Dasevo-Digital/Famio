@@ -188,6 +188,61 @@ void main() {
     expect(live(await sync(kid), Collections.budgetEntries), {'alt'});
   });
 
+  test(
+    'settings gone with the only member who saw the book open nothing',
+    () async {
+      await sync(
+        mama,
+        changes: [
+          settings([mama.id]),
+        ],
+      );
+      await sync(papa, changes: [entry('bei-papa')]);
+      app.records.purgeMember(mama.id);
+      expect(
+        app.records.get(Collections.budgetEntries, 'bei-papa')!.visibleTo,
+        unorderedEquals([mama.id, papa.id]),
+      );
+      expect(live(await sync(kid), Collections.budgetEntries), isEmpty);
+      expect(live(await sync(ha), Collections.budgetEntries), isEmpty);
+      expect(live(await sync(papa), Collections.budgetEntries), {'bei-papa'});
+    },
+  );
+
+  test('entries an older server kept open follow the settings once', () async {
+    await sync(
+      mama,
+      changes: [
+        settings([mama.id]),
+      ],
+    );
+    // As stored before the server set the audience itself (HAU-162).
+    app.records.writeAsServer([
+      SyncRecord(
+        collection: Collections.budgetEntries,
+        id: 'alt-offen',
+        data: const {
+          'date': '2026-11-01',
+          'cents': 900,
+          'category': 'Sonstiges',
+        },
+        updatedAt: tick(),
+      ),
+    ]);
+    expect(
+      app.records.get(Collections.budgetEntries, 'alt-offen')!.visibleTo,
+      isNull,
+    );
+    app.db.execute('DELETE FROM settings WHERE key = ?', ['budgetAudience1']);
+    app.records.followBudgetSettings();
+    // Written by the server: only the household book's members.
+    expect(app.records.get(Collections.budgetEntries, 'alt-offen')!.visibleTo, [
+      mama.id,
+    ]);
+    expect(live(await sync(kid), Collections.budgetEntries), isEmpty);
+    expect(live(await sync(ha), Collections.budgetEntries), isEmpty);
+  });
+
   test('a subscription goes where the household book goes', () async {
     await sync(
       mama,

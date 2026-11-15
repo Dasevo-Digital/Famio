@@ -3540,9 +3540,10 @@ void main() {
           kitAdminName,
           f.bea.displayName,
           f.carl.displayName,
-          f.kid.displayName,
         ]),
       );
+      // Children do not take care of deadlines (ALL-201), guests neither.
+      expect(who, isNot(contains(f.kid.displayName)));
       expect(who, isNot(contains(f.guest.displayName)));
       await tap(tester, find.text(f.bea.displayName).last);
       await tester.pump(const Duration(milliseconds: 600));

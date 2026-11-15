@@ -104,6 +104,7 @@ class FamioServerApp {
       },
     );
     records.restrictGuestTasks();
+    records.followBudgetSettings();
     calendarAccess = CalendarAccess(
       db,
       records: records,

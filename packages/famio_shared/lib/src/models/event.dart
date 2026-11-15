@@ -194,6 +194,31 @@ class CalendarEvent {
   /// only appointments they entered themselves as confidential (#416).
   static const createdByKey = 'createdBy';
 
+  /// Key of an appointment's data: the member who made it confidential.
+  /// Kept by the server like [createdByKey]; appointments made confidential
+  /// before it have none.
+  static const confidentialByKey = 'confidentialBy';
+
+  /// Whether the child [userId] decides about the appointment [data] like
+  /// its owner (who takes part, single dates): it entered it, and if it is
+  /// confidential, the child made it so. An adult who made it confidential
+  /// keeps that say, also in an appointment the child entered (#416). From
+  /// before [confidentialByKey], only while nobody else takes part.
+  static bool childEntered(Map<String, Object?> data, String userId) {
+    if (data[createdByKey] != userId) return false;
+    if (data['confidential'] != true) return true;
+    final by = data[confidentialByKey];
+    return by == null ? _onlyChild(data, userId) : by == userId;
+  }
+
+  /// Whether the child [userId] may switch "Privat" for [data]: one it
+  /// decides about ([childEntered]) with nobody else taking part.
+  static bool childOwns(Map<String, Object?> data, String userId) =>
+      childEntered(data, userId) && _onlyChild(data, userId);
+
+  static bool _onlyChild(Map<String, Object?> data, String userId) =>
+      [...?(data['memberIds'] as List?)].every((id) => id == userId);
+
   final String id;
   final String title;
 

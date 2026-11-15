@@ -239,6 +239,25 @@ void main() {
       expect(find.text('Mia'), findsNothing);
       expect(find.text('Oma'), findsNothing);
     });
+
+    testWidgets('a child chosen before is still shown as chosen', (
+      tester,
+    ) async {
+      await open(tester, 'm1', const DeadlinesScreen(), seed: deadline);
+      await tester.tap(find.text('Zahnarzt-Termin machen'));
+      await tester.pumpAndSettle();
+      final who = find.widgetWithText(
+        DropdownButtonFormField<String?>,
+        tr.tasksWhoTakesCare,
+      );
+      await tester.ensureVisible(who);
+      await tester.pumpAndSettle();
+      // Shown is what is saved: Mia, not "Erwachsene".
+      expect(
+        find.descendant(of: who, matching: find.text('Mia')),
+        findsOneWidget,
+      );
+    });
   });
 
   group('documents (HAU-157, HAU-115)', () {

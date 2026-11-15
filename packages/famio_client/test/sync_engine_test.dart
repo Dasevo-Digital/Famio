@@ -38,12 +38,16 @@ void main() {
     await server.close(force: true);
   });
 
-  SyncEngine device({Duration pollInterval = const Duration(minutes: 1)}) {
+  SyncEngine device({
+    Duration pollInterval = const Duration(minutes: 1),
+    Duration connectedPollInterval = const Duration(minutes: 10),
+  }) {
     final engine = SyncEngine(
       store: LocalStore.open(':memory:'),
       api: FamioApiClient(url, token: token),
       memberId: memberId,
       pollInterval: pollInterval,
+      connectedPollInterval: connectedPollInterval,
     );
     engines.add(engine);
     return engine;
@@ -555,6 +559,41 @@ void main() {
         .firstWhere((s) => s.state == SyncState.idle && b.store.dirty.isEmpty)
         .timeout(const Duration(seconds: 5));
     expect(app.records.get(Collections.tasks, 'later'), isNotNull);
+  });
+
+  test('a lasting error is retried less and less often', () async {
+    final b = device(
+      pollInterval: const Duration(milliseconds: 100),
+      connectedPollInterval: const Duration(milliseconds: 800),
+    );
+    b.start();
+    await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+    for (var i = 0; i < 200 && !b.live; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(b.live, isTrue);
+    final realHandler = app.handler;
+    var attempts = 0;
+    final port = server.port;
+    await server.close(force: true);
+    server = await io.serve(
+      (request) {
+        if (request.url.path != 'api/sync') return realHandler(request);
+        attempts++;
+        return Response(413);
+      },
+      InternetAddress.loopbackIPv4,
+      port,
+    );
+    b.put(Collections.tasks, 'too-big', {'title': 'Zu groß'});
+    await b.statusChanges
+        .firstWhere((s) => s.state == SyncState.offline)
+        .timeout(const Duration(seconds: 5));
+    final first = attempts;
+    await Future<void>.delayed(const Duration(milliseconds: 1700));
+    // Every tick would be 17 more; waiting 100, 200, 400, 800, 800 ms
+    // leaves a handful.
+    expect(attempts - first, inInclusiveRange(2, 7));
   });
 
   test('own push: a waiting fetch gets the next message', () async {

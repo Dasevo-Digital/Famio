@@ -547,6 +547,76 @@ void main() {
       );
     });
 
+    test('one the child entered but an adult made confidential stays the '
+        'adult\'s say', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final plain = appointment('Termin', [kid.id]);
+      await write(kid, 'made-secret', plain, now);
+      final secret = {
+        ...plain,
+        'title': 'Kinderpsychologin',
+        'memberIds': [kid.id, mama.id],
+        'confidential': true,
+      };
+      await write(mama, 'made-secret', secret, now + 1000);
+      expect(
+        app.records
+            .get(Collections.events, 'made-secret')!
+            .data[CalendarEvent.confidentialByKey],
+        mama.id,
+      );
+      // Nobody new …
+      await write(kid, 'made-secret', {
+        ...secret,
+        'memberIds': [kid.id, mama.id, papa.id],
+      }, now + 2000);
+      expect(
+        app.records.get(Collections.events, 'made-secret')!.data['memberIds'],
+        [kid.id, mama.id],
+      );
+      // … no taking Mama out, so it never becomes the child's alone …
+      await write(kid, 'made-secret', {
+        ...secret,
+        'memberIds': [kid.id],
+      }, now + 3000);
+      expect(
+        app.records.get(Collections.events, 'made-secret')!.data['memberIds'],
+        unorderedEquals([kid.id, mama.id]),
+      );
+      // … and it stays confidential.
+      await write(kid, 'made-secret', {
+        ...secret,
+        'confidential': false,
+      }, now + 4000);
+      expect(
+        app.records
+            .get(Collections.events, 'made-secret')!
+            .data['confidential'],
+        isTrue,
+      );
+      expect(await guestSeesTitle('made-secret'), isFalse);
+    });
+
+    test('an app cannot claim who made it confidential', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final secret = {
+        ...appointment('Arzt', [kid.id, mama.id]),
+        'confidential': true,
+      };
+      await write(mama, 'claimed', secret, now);
+      await write(kid, 'claimed', {
+        ...secret,
+        CalendarEvent.confidentialByKey: kid.id,
+        'note': 'x',
+      }, now + 1000);
+      expect(
+        app.records
+            .get(Collections.events, 'claimed')!
+            .data[CalendarEvent.confidentialByKey],
+        mama.id,
+      );
+    });
+
     test('a note by the child does not make the parents\' appointment '
         'the child\'s', () async {
       final now = DateTime.now().millisecondsSinceEpoch;

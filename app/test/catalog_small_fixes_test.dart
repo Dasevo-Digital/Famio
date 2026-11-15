@@ -231,6 +231,14 @@ void main() {
       'https://beispiel.de:8080/k',
     );
     expect(webLink('localhost:3000').toString(), 'https://localhost:3000');
+    // A host in the home network without a dot (HAU-101 review).
+    expect(webLink('nas:5000/rezept').toString(), 'https://nas:5000/rezept');
+    expect(
+      webLink('homeassistant:8123').toString(),
+      'https://homeassistant:8123',
+    );
+    expect(webLink('tel:110'), isNull);
+    expect(webLink('tel:+49 30 1234'), isNull);
     for (final other in [
       'mailto:x@y',
       'MAILTO:x@y',

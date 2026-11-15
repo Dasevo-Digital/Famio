@@ -133,6 +133,18 @@ class SyncEngine {
               4096 * 1024 * 1024)
           .clamp(1, 4096 * 1024 * 1024);
   var _lastSync = DateTime.fromMillisecondsSinceEpoch(0);
+
+  /// The last attempt and how many failed in a row: a lasting error is
+  /// retried less and less often while the WebSocket is up.
+  var _lastAttempt = DateTime.fromMillisecondsSinceEpoch(0);
+  var _failedSyncs = 0;
+
+  /// 1, 2, 4, 8 minutes after failed attempts, then [connectedPollInterval].
+  Duration get _retryWait {
+    final wait = pollInterval * (1 << (max(_failedSyncs, 1) - 1).clamp(0, 4));
+    return wait < connectedPollInterval ? wait : connectedPollInterval;
+  }
+
   var _reconnectDelay = const Duration(seconds: 2);
 
   /// Emits the set of collection names whose content changed.
@@ -291,10 +303,14 @@ class SyncEngine {
     _poll = Timer.periodic(pollInterval, (_) {
       // The WebSocket's hints replace polling only while syncing works;
       // a failed attempt is retried on every tick (#534).
-      if (_socketUp &&
-          lastError == null &&
-          DateTime.now().difference(_lastSync) < connectedPollInterval) {
-        return;
+      if (_socketUp) {
+        final now = DateTime.now();
+        if (lastError == null
+            ? now.difference(_lastSync) < connectedPollInterval
+            // A little slack: the tick may come a moment early.
+            : now.difference(_lastAttempt) < _retryWait - pollInterval ~/ 10) {
+          return;
+        }
       }
       sync();
     });
@@ -385,6 +401,7 @@ class SyncEngine {
     // Only a successful sync is a recent one: after a failed attempt the
     // poll retries even while the WebSocket is up (#534).
     final started = DateTime.now();
+    _lastAttempt = started;
     _announcedAt = DateTime.now();
     try {
       bool more;
@@ -431,6 +448,7 @@ class SyncEngine {
         }
       } while (more);
       lastError = null;
+      _failedSyncs = 0;
       _lastSync = started;
       _setStatus(
         blockedChanges.isEmpty ? SyncState.idle : SyncState.attention,
@@ -439,6 +457,7 @@ class SyncEngine {
       );
     } on ApiError catch (e) {
       lastError = e;
+      _failedSyncs++;
       _setStatus(
         e.isUnauthorized ? SyncState.unauthorized : SyncState.offline,
         e.message,

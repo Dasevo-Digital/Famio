@@ -290,8 +290,14 @@ class InboxScreen extends StatelessWidget {
             end: start.add(const Duration(days: 1)),
             allDay: true,
             // Appointments have no audience of their own: one the children
-            // were not given stays private to them ("Belegt").
-            confidential: !item.forChildren,
+            // were not given stays private to them ("Belegt"); a child who
+            // filed it takes part.
+            confidential: inboxHidden(engine, item),
+            memberIds: [
+              if (inboxHidden(engine, item) &&
+                  engine.member(item.createdBy ?? '')?.isChild == true)
+                item.createdBy!,
+            ],
           ),
         );
       case _InboxAction.note:
@@ -381,9 +387,9 @@ class _DocumentDialogState extends State<_DocumentDialog> {
 
   /// Whom the entry reached: everyone when shared with the children, else
   /// the adults (and the child who filed it).
-  late var _audience = widget.item.forChildren
-      ? _Audience.family
-      : _Audience.adults;
+  late var _audience = inboxHidden(widget.engine, widget.item)
+      ? _Audience.adults
+      : _Audience.family;
   var _chosen = false;
 
   SyncEngine get _engine => widget.engine;
@@ -531,7 +537,15 @@ List<String> inboxAdults(SyncEngine engine, InboxItem item) => {
   if (engine.member(item.createdBy ?? '') case final m? when m.isChild) m.id,
 }.toList();
 
-/// Whom a task or note filed from [item] reaches: the family if the entry was
-/// shared with the children, else [inboxAdults].
+/// Whether what is filed from [item] is kept from children: it was not
+/// shared with them and there are children (besides one who filed it).
+/// Without children nothing is narrowed, so guests and later members still
+/// get it.
+bool inboxHidden(SyncEngine engine, InboxItem item) =>
+    !item.forChildren &&
+    engine.members.any((m) => m.isChild && m.id != item.createdBy);
+
+/// Whom a task or note filed from [item] reaches: the family unless
+/// [inboxHidden], then [inboxAdults].
 List<String>? inboxReach(SyncEngine engine, InboxItem item) =>
-    item.forChildren ? null : inboxAdults(engine, item);
+    inboxHidden(engine, item) ? inboxAdults(engine, item) : null;

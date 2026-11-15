@@ -522,6 +522,39 @@ void main() {
       await done(tester);
     });
 
+    testWidgets('#539 a child does not stop what an adult started', (
+      tester,
+    ) async {
+      final sleep = ChildLog(
+        id: 'l2',
+        childId: 'c1',
+        kind: LogKind.sleep,
+        start: DateTime.now().subtract(const Duration(minutes: 40)),
+        by: mama.id,
+      );
+      await boot(
+        tester,
+        me: kid,
+        seed: (mama) => mama
+          ..saveChild(emil)
+          ..saveChildLog(sleep),
+      );
+      await open(
+        tester,
+        Scaffold(
+          body: ChildLogView(child: emil, logs: engine.childLogs('c1')),
+        ),
+      );
+      // No stop on the running card …
+      expect(find.text(tr.kidsLogStop), findsNothing);
+      // … and "Aufgewacht" explains instead of ending Mama's entry.
+      await tester.tap(find.text(tr.kidsLogWokeUp));
+      await tester.pump();
+      expect(find.text(tr.kidsOnlyAuthorOrAdult), findsOneWidget);
+      expect(engine.childLogs('c1').single.end, isNull);
+      await done(tester);
+    });
+
     testWidgets('#539 a child may not change a log an adult wrote', (
       tester,
     ) async {
@@ -645,6 +678,25 @@ void main() {
   });
 
   group('medication plans', () {
+    testWidgets('KIN-096 in a small window the editor shows the message', (
+      tester,
+    ) async {
+      await boot(tester, size: const Size(800, 420));
+      await open(tester);
+      unawaited(showMedicationEditor(page));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, tr.kidsLogMedication),
+        'Fiebersaft',
+      );
+      await tester.tap(find.byTooltip(tr.commonSave));
+      await tester.pumpAndSettle();
+      // Below the fold at first: the editor scrolls to it.
+      expect(find.text(tr.medsTimesMissing).hitTestable(), findsOneWidget);
+      expect(engine.medications, isEmpty);
+      await done(tester);
+    });
+
     testWidgets('KIN-096 no name, no times, an end before the start', (
       tester,
     ) async {
@@ -728,6 +780,35 @@ void main() {
       expect(engine.shoppingItems('all').single.name, 'Saft (Apotheke)');
       expect(engine.shoppingItems('mine'), isEmpty);
       expect(engine.shoppingItems('pack'), isEmpty);
+      await done(tester);
+    });
+
+    testWidgets('KIN-103 a list kept to those who care comes first', (
+      tester,
+    ) async {
+      await boot(tester);
+      engine
+        ..saveShoppingList(const ShoppingList(id: 'all', name: 'Aaa Familie'))
+        ..saveShoppingList(
+          const ShoppingList(
+            id: 'care',
+            name: 'Zett Eltern',
+            visibleTo: ['m1', 'm2'],
+          ),
+        )
+        ..saveMedication(low(const ['m1', 'm2']));
+      await open(tester, const MedicationScreen());
+      final buy = find.text(tr.medsBuyMore);
+      await tester.scrollUntilVisible(
+        buy,
+        200,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.tap(buy);
+      await tester.pumpAndSettle();
+      // A medicine stays off the family's list (guests, Home Assistant).
+      expect(engine.shoppingItems('care').single.name, 'Saft (Apotheke)');
+      expect(engine.shoppingItems('all'), isEmpty);
       await done(tester);
     });
 

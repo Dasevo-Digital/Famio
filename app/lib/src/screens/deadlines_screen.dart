@@ -357,7 +357,8 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
     final adults = [
       for (final m in engine.members)
         // Children do not take care of deadlines: they may not change them.
-        if (m.isAdult) m,
+        // A child chosen before stays shown, so what is shown is saved.
+        if (m.isAdult || m.id == widget.existing?.assigneeId) m,
     ];
     final contract = _area == DeadlineArea.contract;
     return DisposeWith(

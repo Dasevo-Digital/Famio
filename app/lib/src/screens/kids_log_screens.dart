@@ -422,6 +422,11 @@ class _RunningCard extends StatelessWidget {
         },
       ),
     ];
+    // A child stops only what it started itself (#539): the server keeps
+    // the others' running entries.
+    if (!engine.mayChangeHealthRecord(Collections.childLogs, log.id)) {
+      buttons.clear();
+    }
     // Large text: the buttons go below, the time keeps its line.
     final stacked = MediaQuery.textScalerOf(context).scale(14) / 14 > 1.3;
     return SoftCard(
@@ -628,6 +633,13 @@ class _QuickButtons extends StatelessWidget {
             logLook(LogKind.sleep).$2,
             () {
               if (sleeping != null) {
+                if (!engine.mayChangeHealthRecord(
+                  Collections.childLogs,
+                  sleeping.id,
+                )) {
+                  snack(tr.kidsOnlyAuthorOrAdult);
+                  return;
+                }
                 engine.saveChildLog(sleeping.copyWith(end: DateTime.now()));
               } else {
                 quick(LogKind.sleep);
@@ -727,6 +739,13 @@ class _QuickButtons extends StatelessWidget {
             logLook(LogKind.walk).$2,
             () {
               if (walking != null) {
+                if (!engine.mayChangeHealthRecord(
+                  Collections.childLogs,
+                  walking.id,
+                )) {
+                  snack(tr.kidsOnlyAuthorOrAdult);
+                  return;
+                }
                 engine.saveChildLog(walking.copyWith(end: DateTime.now()));
               } else {
                 quick(LogKind.walk);

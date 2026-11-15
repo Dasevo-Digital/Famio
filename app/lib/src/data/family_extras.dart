@@ -40,24 +40,22 @@ extension FamilyExtras on SyncEngine {
   bool mayChangeConfidential(CalendarEvent? existing) =>
       myRole != MemberRole.child ||
       existing == null ||
-      (record(
-                Collections.events,
-                existing.id,
-              )?.data[CalendarEvent.createdByKey] ==
-              memberId &&
-          existing.memberIds.every((id) => id == memberId));
+      CalendarEvent.childOwns(
+        record(Collections.events, existing.id)?.data ?? const {},
+        memberId,
+      );
 
   /// Whether this member may take others out of [existing] (null: a new
-  /// appointment): children only in appointments they entered (the server
-  /// puts the others back otherwise).
+  /// appointment): children only in appointments they decide about, i.e.
+  /// entered and, if confidential, made so themselves (the server puts the
+  /// others back otherwise).
   bool mayRemoveParticipants(CalendarEvent? existing) =>
       myRole != MemberRole.child ||
       existing == null ||
-      record(
-            Collections.events,
-            existing.id,
-          )?.data[CalendarEvent.createdByKey] ==
-          memberId;
+      CalendarEvent.childEntered(
+        record(Collections.events, existing.id)?.data ?? const {},
+        memberId,
+      );
 
   /// Whether this member may change or delete single dates of the series
   /// [existing]: children only of series they entered (#416).

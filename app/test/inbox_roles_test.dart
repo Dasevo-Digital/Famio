@@ -16,6 +16,12 @@ const _members =
     '{"id":"m2","username":"papa","displayName":"Papa"},'
     '{"id":"k1","username":"mia","displayName":"Mia","role":"child"}]';
 
+const _twoChildren =
+    '[{"id":"m1","username":"mama","displayName":"Mama","isAdmin":true},'
+    '{"id":"m2","username":"papa","displayName":"Papa"},'
+    '{"id":"k1","username":"mia","displayName":"Mia","role":"child"},'
+    '{"id":"k2","username":"ben","displayName":"Ben","role":"child"}]';
+
 const _letter = FileRef(
   id: 'f1',
   name: 'arztbrief.pdf',
@@ -31,7 +37,11 @@ void main() {
 
   late SyncEngine engine;
 
-  Future<void> open(WidgetTester tester, {String me = 'm1'}) async {
+  Future<void> open(
+    WidgetTester tester, {
+    String me = 'm1',
+    String members = _members,
+  }) async {
     tester.view.physicalSize = const Size(900, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -40,7 +50,7 @@ void main() {
     final state = AppState();
     await state.init();
     engine = SyncEngine(
-      store: LocalStore.open(':memory:')..setMeta('members', _members),
+      store: LocalStore.open(':memory:')..setMeta('members', members),
       api: FamioApiClient('localhost:1'),
       memberId: me,
     );
@@ -218,7 +228,7 @@ void main() {
   }
 
   testWidgets('a task or note keeps it from the children', (tester) async {
-    await open(tester);
+    await open(tester, members: _twoChildren);
     engine.saveInboxItem(
       const InboxItem(id: 'e5', title: 'Rezept abholen', createdBy: 'm1'),
     );
@@ -260,5 +270,45 @@ void main() {
     await tester.pumpAndSettle();
     // Appointments have no audience: the children see "Belegt".
     expect(engine.events.single.confidential, isTrue);
+  });
+
+  testWidgets('without children nothing filed is narrowed', (tester) async {
+    await open(
+      tester,
+      members:
+          '[{"id":"m1","username":"mama","displayName":"Mama","isAdmin":true},'
+          '{"id":"m2","username":"papa","displayName":"Papa"},'
+          '{"id":"g1","username":"oma","displayName":"Oma","role":"guest"}]',
+    );
+    engine.saveInboxItem(
+      const InboxItem(id: 'e9', title: 'Müll rausbringen', createdBy: 'm1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonTask);
+    expect(engine.tasks.single.visibleTo, isNull);
+    engine.saveInboxItem(
+      const InboxItem(id: 'e10', title: 'Elternabend', createdBy: 'm1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonEvent);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(engine.events.single.confidential, isFalse);
+  });
+
+  testWidgets('a child who filed an appointment takes part in it', (
+    tester,
+  ) async {
+    await open(tester, members: _twoChildren);
+    engine.saveInboxItem(
+      const InboxItem(id: 'e11', title: 'Zahnarzt', createdBy: 'k1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonEvent);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    final event = engine.events.single;
+    expect(event.confidential, isTrue);
+    expect(event.memberIds, ['k1']);
   });
 }

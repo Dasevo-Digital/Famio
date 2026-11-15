@@ -15,15 +15,19 @@ Uri? webLink(String text) {
   return uri;
 }
 
-/// "mailto:…", "tel:…" or "https://…", but not "beispiel.de:8080" or
-/// "localhost:3000", whose colon starts a port.
+/// "mailto:…", "tel:…" or "https://…", but not "beispiel.de:8080",
+/// "localhost:3000" or "nas:5000/rezept", whose colon starts a port. Only
+/// link kinds that take numbers ("tel:110") keep a number after the colon.
 bool _hasScheme(String text) {
   final match = RegExp(
-    r'^([a-z][a-z0-9+.-]*):(.?)',
+    r'^([a-z][a-z0-9+.-]*):(.*)$',
     caseSensitive: false,
+    dotAll: true,
   ).firstMatch(text);
   if (match == null) return false;
   final name = match[1]!.toLowerCase();
-  final port = RegExp(r'\d').hasMatch(match[2]!);
-  return !port || (!name.contains('.') && name != 'localhost');
+  final port = RegExp(r'^\d{1,5}(?:[/?#]|$)').hasMatch(match[2]!);
+  return !port || _numbered.contains(name);
 }
+
+const _numbered = {'tel', 'sms', 'fax', 'callto', 'facetime', 'geo'};

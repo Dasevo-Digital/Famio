@@ -427,7 +427,6 @@ class _SecretDialog extends StatelessWidget {
 
 // --- Famio syncing with other calendars (CalDAV client) ---------------------
 
-/// Two-way sync with iCloud, Nextcloud & co., run by the Famio server.
 /// What a guest sees instead of connected calendars and subscriptions: the
 /// server keeps them for the family (no "Nur mit Verbindung" error, no
 /// subscription that is never saved).
@@ -441,6 +440,7 @@ class CalendarsNotForGuests extends StatelessWidget {
   );
 }
 
+/// Two-way sync with iCloud, Nextcloud & co., run by the Famio server.
 class CalDavAccountsSection extends StatefulWidget {
   const CalDavAccountsSection({super.key});
 
