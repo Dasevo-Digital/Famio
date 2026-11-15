@@ -12,7 +12,11 @@ class Birthday {
         : partial != null
         ? (null, int.parse(partial[1]!), int.parse(partial[2]!))
         : (null, 0, 0);
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    if (month < 1 || month > 12 || day < 1) return null;
+    // The day has to exist in its month (no 30 February); without a year
+    // 29 February is possible (SIC-092).
+    final days = DateTime.utc(year ?? 2000, month + 1, 0).day;
+    if (day > days) return null;
     return Birthday(month, day, year);
   }
 

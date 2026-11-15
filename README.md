@@ -437,7 +437,8 @@ jedem Sync durchsetzt:
   verwalten; erledigte Ämter und Belohnungswünsche sind Anfragen, die ein
   Erwachsener bestätigt. Gesundheitsdaten erhält es nur, wenn es dafür
   ausgewählt ist; es darf dann eintragen und abhaken, aber weder Medikationspläne
-  und Kinderprofile ändern noch festlegen, wer etwas sieht.
+  und Kinderprofile ändern noch festlegen, wer etwas sieht. Sein Konto löscht
+  es nicht selbst; das macht ein Erwachsener in der Server-Verwaltung.
 - **Gast:** bekommt nur Kalender, Termin-Kommentare, Chat, Einkauf,
   Aufgaben, Essen, Kontakte, Ämter und Vorrat; schreiben darf er nur Chat,
   Einkaufsartikel, Aufgaben, Kommentare und Umfrage-Stimmen. Von den

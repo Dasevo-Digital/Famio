@@ -614,6 +614,16 @@ class RecordStore {
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     final blocked = <SyncWriteIssue>[];
+    // Edits this member may not make at all: the app says so once (#539).
+    final refused = <SyncWriteIssue>[];
+    void refuse(SyncRecord change) => refused.add(
+      SyncWriteIssue(
+        collection: change.collection,
+        id: change.id,
+        updatedAt: change.updatedAt,
+        code: 'not_allowed',
+      ),
+    );
     // A client ahead of the server means the server database was reset:
     // send it everything again. One behind cleaned-up deletion marks gets
     // everything too and drops what it does not receive (newer apps only;
@@ -723,11 +733,13 @@ class RecordStore {
                   updatedBy: serverMemberId,
                 ),
           );
+          refuse(change);
           continue;
         }
         if (role == MemberRole.child) {
           final checked = _childHealthWrite(incoming, existing, userId);
           if (checked == null) {
+            refuse(change);
             rejected.add(
               existing ??
                   SyncRecord(
@@ -765,15 +777,22 @@ class RecordStore {
         }
         if (change.collection == Collections.calendarSubscriptions) {
           // Connected calendars belong to whoever added them; the others
-          // may see them (if shared) but not change or remove them.
+          // may see them (if shared) but not change or remove them. One for
+          // the whole family (no owner, such as the school holidays) is
+          // the adults' (#538).
           final owner = existing?.data['ownerId'];
-          if (owner != null && owner != userId && !existing!.deleted) {
+          if (existing != null &&
+              !existing.deleted &&
+              (owner == null ? role != MemberRole.adult : owner != userId)) {
             rejected.add(existing);
+            refuse(change);
             continue;
           }
           if (!incoming.deleted &&
-              incoming.data['ownerId'] != null &&
+              (incoming.data['ownerId'] != null || role != MemberRole.adult) &&
               incoming.data['ownerId'] != userId) {
+            // A child's new one is its own, not one it could no longer
+            // change once it is the family's.
             incoming = incoming.copyWith(
               data: {...incoming.data, 'ownerId': userId},
             );
@@ -857,6 +876,7 @@ class RecordStore {
           // Bring!, CalDAV); into a list they cannot see nobody writes.
           final list = _listOf(incoming);
           if (list != null && !_canSee(list, userId)) {
+            refuse(change);
             rejected.add(
               existing ??
                   SyncRecord(
@@ -889,6 +909,20 @@ class RecordStore {
               },
             );
           }
+        }
+        if (_budgetCollections.contains(change.collection) &&
+            !incoming.deleted) {
+          // Who sees the household book is set once, in its settings; an
+          // entry goes there whoever writes it (an adult outside it whose
+          // app has no settings, an older app). Its writer is added below.
+          incoming = incoming.copyWith(
+            data: {
+              ...incoming.data,
+              SyncRecord.visibilityKey: _budgetAudience(
+                _get(Collections.budgetSettings, BudgetSettings.recordId),
+              ),
+            },
+          );
         }
         if (incoming.deleted) {
           // Tombstones keep the old audience: only they need to know.
@@ -988,6 +1022,7 @@ class RecordStore {
       reset: reset,
       scope: scope,
       blocked: blocked,
+      refused: refused,
       zoneKey: request.timeZoneKey,
     );
   }
@@ -1002,6 +1037,7 @@ class RecordStore {
     bool reset = false,
     required String scope,
     List<SyncWriteIssue> blocked = const [],
+    List<SyncWriteIssue> refused = const [],
     String? zoneKey,
   }) {
     // Guests only get their collections (names are constants, no input).
@@ -1061,6 +1097,7 @@ class RecordStore {
       reset: reset,
       scope: scope,
       blocked: blocked,
+      refused: refused,
       timeZone: zone?.name,
       timeZoneRules: _zoneRulesFor(zone, zoneKey),
       maxUploadBytes: maxUploadBytes?.call(),
@@ -1203,6 +1240,56 @@ class RecordStore {
 
     rewrite(Collections.eventComments, 'eventId', event.id);
     rewrite(Collections.shoppingLists, 'eventId', event.id);
+  }
+
+  /// What the household book's settings decide who sees (#538).
+  static const _budgetCollections = {
+    Collections.budgetEntries,
+    Collections.subscriptions,
+  };
+
+  /// Who sees the household book by its [settings]: null (everyone the
+  /// collections reach) when it is open to all.
+  static List<String>? _budgetAudience(SyncRecord? settings) {
+    if (settings == null || settings.deleted) return null;
+    final ids = [
+      for (final id in settings.data['memberIds'] as List? ?? const [])
+        if (id is String) id,
+    ];
+    return ids.isEmpty ? null : ids;
+  }
+
+  /// New settings move every entry and subscription along, also those an
+  /// app did not move itself (written offline, by an older app, or in a
+  /// later batch than the settings). Their writer keeps them, as when
+  /// writing one.
+  void _budgetFollow(SyncRecord settings, SyncRecord? previous) {
+    if (settings.collection != Collections.budgetSettings) return;
+    final audience = _budgetAudience(settings);
+    if (previous != null &&
+        jsonEncode(_budgetAudience(previous)) == jsonEncode(audience)) {
+      return;
+    }
+    for (final collection in _budgetCollections) {
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE collection = ? AND deleted = 0',
+        [collection],
+      )) {
+        final r = _record(row);
+        final writer = r.updatedBy;
+        final wanted = audience == null
+            ? null
+            : {
+                ...audience,
+                if (writer != null && writer != serverMemberId) writer,
+              }.toList();
+        if (jsonEncode(r.visibleTo) == jsonEncode(wanted)) continue;
+        _put(
+          r.copyWith(data: {...r.data, SyncRecord.visibilityKey: wanted}),
+          previous: r,
+        );
+      }
+    }
   }
 
   /// What decides who gets an appointment: besides the audience, for a
@@ -1459,6 +1546,7 @@ class RecordStore {
     if (trash) _rememberDeletion(r, deletionSnapshot ?? previous, rev);
     _assignmentsFollow(r);
     _attachedFollow(r, previous);
+    _budgetFollow(r, previous);
 
     final audience = _audience(r);
     if (audience == null) {
@@ -1601,7 +1689,12 @@ class RecordStore {
         data.remove('confidential');
       }
     }
-    if (incoming.collection == Collections.events && confidential) {
+    // A confidential appointment someone else entered gets no new people
+    // taking part; one the child entered itself it shares with whom it
+    // likes (KAL-046).
+    if (incoming.collection == Collections.events &&
+        confidential &&
+        existing.data[CalendarEvent.createdByKey] != userId) {
       final reach = {
         existing.updatedBy,
         ...?(existing.data['memberIds'] as List?),

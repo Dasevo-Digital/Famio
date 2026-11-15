@@ -242,6 +242,14 @@ void main() {
       token: kind,
     );
     expect(status, 400);
+    // A day its month does not have (SIC-092).
+    (status, body) = await call(
+      'PATCH',
+      '/api/admin/users/$kindId',
+      body: {'birthday': '1985-02-30'},
+      token: admin,
+    );
+    expect(status, 400);
     (status, body) = await call(
       'PATCH',
       '/api/me',

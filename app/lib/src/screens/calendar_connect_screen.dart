@@ -578,7 +578,10 @@ class _SubscriptionsSection extends StatelessWidget {
                                 ? '–'
                                 : dateTimeLabel(status.lastSync!),
                           );
-                final mine = sub.editableBy(engine.memberId);
+                final mine = sub.editableBy(
+                  engine.memberId,
+                  adult: engine.iAmAdult,
+                );
                 final owner = sub.ownerId == null
                     ? null
                     : sub.ownerId == engine.memberId

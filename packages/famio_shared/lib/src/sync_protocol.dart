@@ -69,6 +69,7 @@ class SyncResponse {
     this.reset = false,
     this.scope,
     this.blocked = const [],
+    this.refused = const [],
     this.timeZone,
     this.timeZoneRules,
     this.maxUploadBytes,
@@ -98,6 +99,10 @@ class SyncResponse {
     timeZone: json['timeZone'] as String?,
     timeZoneRules: (json['timeZoneRules'] as Map?)?.cast(),
     maxUploadBytes: json['maxUploadBytes'] as int?,
+    refused: [
+      for (final issue in json['refused'] as List? ?? const [])
+        SyncWriteIssue.fromJson((issue as Map).cast()),
+    ],
   );
 
   /// Revision the client has caught up to after applying [changes].
@@ -135,6 +140,11 @@ class SyncResponse {
   /// Pending edits that need repair; their contents were not stored.
   final List<SyncWriteIssue> blocked;
 
+  /// Pushed edits this member may not make (code `not_allowed`); the stored
+  /// version (or a tombstone) is in [rejected]. Absent on older servers;
+  /// older clients ignore it.
+  final List<SyncWriteIssue> refused;
+
   Map<String, Object?> toJson() => {
     'rev': rev,
     'serverTime': serverTime,
@@ -149,6 +159,8 @@ class SyncResponse {
     if (timeZone != null) 'timeZone': timeZone,
     if (timeZoneRules != null) 'timeZoneRules': timeZoneRules,
     if (maxUploadBytes != null) 'maxUploadBytes': maxUploadBytes,
+    if (refused.isNotEmpty)
+      'refused': [for (final issue in refused) issue.toJson()],
   };
 }
 

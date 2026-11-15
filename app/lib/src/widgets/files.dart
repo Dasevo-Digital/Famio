@@ -263,7 +263,20 @@ Future<FileRef> uploadPicked(BuildContext context, PickedFile file) async {
   return uploadPickedState(AppScope.read(context), file);
 }
 
+/// Every failure ends as an [ApiError], so the callers (which show its
+/// message) also tell a broken file stream or a full disk (#533).
 Future<FileRef> uploadPickedState(AppState state, PickedFile file) async {
+  try {
+    return await _uploadPicked(state, file);
+  } on ApiError {
+    rethrow;
+  } catch (e, stack) {
+    debugPrint('Famio: upload of a picked file failed: $e\n$stack');
+    throw ApiError(0, 'upload_failed', tr.filesUploadFailed);
+  }
+}
+
+Future<FileRef> _uploadPicked(AppState state, PickedFile file) async {
   final engine = state.engine!;
   final cache = state.files;
   final limit = uploadLimit(engine);

@@ -2919,10 +2919,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (zweimal reproduziert): „1985-02-30“ wird als Geburtstag
-  // angenommen (HTTP 200); Birthday.tryParse prüft den Tag nur auf 1 bis 31,
-  // nicht gegen den Monat
-  // (packages/famio_shared/lib/src/models/birthday.dart:15).
+  // „1985-02-30“ wird als Geburtstag abgelehnt: Birthday.tryParse prüft den
+  // Tag gegen den Monat (29. Februar nur im Schaltjahr oder ohne Jahr).
   testWidgets('SIC-092 an impossible birthday (30 February) is turned down', (
     tester,
   ) async {
@@ -2937,7 +2935,7 @@ void main() {
       400,
     );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   /// A member signed in on this device with documents, a child, a booking
   /// and a medicine; then the admin makes them a guest.
@@ -3062,15 +3060,11 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (zweimal reproduziert): Nach dem Rollenwechsel zum Gast bleiben
-  // Dokumente, Kinder, Buchungen und Medikamente auf dem Gerät (die
-  // Startseite zeigt dem Gast weiter die Kachel „Finanzen“), bis irgendetwas anderes in der
-  // Familie geändert wird oder der Rückfall-Abgleich läuft (mit offener
-  // Verbindung erst nach 10 Minuten). Der Server schickt beim Rollenwechsel
-  // nur den Hinweis „members“ (server/lib/src/api/admin_routes.dart:544),
-  // die App lädt darauf nur die Mitglieder neu, ohne abzugleichen
-  // (packages/famio_client/lib/src/sync_engine.dart:591-592; Rückfall
-  // connectedPollInterval 10 min, :31 und :272).
+  // Nach dem Rollenwechsel zum Gast verschwinden Dokumente, Kinder,
+  // Buchungen und Medikamente sofort vom Gerät (#535): Auf den Hinweis
+  // „members“ lädt die App die Mitglieder neu und gleicht ab, wenn sich die
+  // eigene Rolle geändert hat; der Server bemerkt den neuen
+  // Berechtigungsumfang und schickt alles neu, der Rest wird entfernt.
   testWidgets(
     'SIC-095 the data goes with the new role, without another change',
     (tester) async {
@@ -3082,7 +3076,6 @@ void main() {
       expect(left(), isEmpty, reason: 'still on the device after 60 s');
       await finish(tester, state);
     },
-    skip: true,
   );
 
   testWidgets('SIC-096 giving and taking admin rights', (tester) async {

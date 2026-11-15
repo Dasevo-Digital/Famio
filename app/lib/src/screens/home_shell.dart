@@ -13,6 +13,7 @@ import '../data/family_data.dart';
 import '../design/components.dart';
 import '../widgets/famio_glyph.dart';
 import '../widgets/pixel_snap.dart';
+import '../widgets/refused_changes.dart';
 import '../widgets/section_shown.dart';
 import '../widgets/section_tips.dart';
 import '../widgets/trust_certificate.dart';
@@ -445,7 +446,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 
     // Android's back button: first the open page of the current section,
     // then from another section to the start page; only there it leaves.
-    return PopScope(
+    final page = PopScope(
       canPop: _section == FamioSection.home && !_deeper.contains(_section),
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) return;
@@ -510,6 +511,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
         ),
       ),
     );
+    // Own edits the server turned down are told once (#539).
+    final engine = AppScope.of(context).engine;
+    return engine == null
+        ? page
+        : RefusedChangesNotice(engine: engine, child: page);
   }
 }
 

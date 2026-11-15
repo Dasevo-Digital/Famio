@@ -2377,8 +2377,8 @@ void main() {
     );
 
     // The server back. That Famio sends on its own is checked in the test
-    // "GRU-098 GRU-100 offline changes go by themselves" below (Befund);
-    // here the tap on "Jetzt synchronisieren" sends at once.
+    // "GRU-098 GRU-100 offline changes go by themselves" below; here the
+    // tap on "Jetzt synchronisieren" sends at once.
     gate.restore();
     await eventually(
       tester,
@@ -2571,7 +2571,7 @@ void main() {
     await openSection(tester, 'Aufgaben');
     await waitFor(tester, find.text('E2E Offline neu'));
     // The server back: Bea's devices get it (that it goes without a tap:
-    // see "GRU-098 GRU-100 offline changes go by themselves", Befund).
+    // see "GRU-098 GRU-100 offline changes go by themselves").
     gate.restore();
     await eventually(
       tester,
@@ -2594,17 +2594,11 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (three times: here, and in the first runs of GRU-098 and
-  // GRU-100): changes made offline are not sent when the connection comes
-  // back after a short outage. The WebSocket is up again, yet 150 s later
-  // the change still waits and the state stays "offline" (red cloud) – only
-  // the next change, a tap or the poll after up to 10 minutes sends it.
-  // sync_engine.dart:347 counts every attempt (also a failed one offline) as
-  // the last sync; :271-272 skips the poll while the WebSocket is up and the
-  // last attempt is under 10 minutes old; :581-584 does not sync on
-  // reconnecting, and the server's first hint (hub.dart:16) carries the
-  // unchanged revision.
-  testWidgets('GRU-098 GRU-100 offline changes go by themselves', skip: true, (
+  // Changes made offline go by themselves when the connection comes back
+  // after a short outage (#534): the engine syncs once the WebSocket is up
+  // again and something waits or the last attempt failed, and only a
+  // successful sync keeps the poll quiet while the WebSocket is up.
+  testWidgets('GRU-098 GRU-100 offline changes go by themselves', (
     tester,
   ) async {
     tall(tester);
@@ -4280,33 +4274,66 @@ void main() {
     },
   );
 
-  testWidgets('GRU-134 a guest and a child delete their accounts', (
+  // A guest deletes the own account; a child's is removed by an adult in
+  // the server administration (decided so): the app offers it no deletion
+  // but says who does, and the server turns it down.
+  testWidgets('GRU-134 a guest deletes the account, a child is told who does', (
     tester,
   ) async {
     tall(tester);
     final f = await theFamily();
-    for (final (user, name, role) in [
-      ('e2e-gast-weg', 'E2E Gast weg', MemberRole.guest),
-      ('e2e-kind-weg', 'E2E Kind weg', MemberRole.child),
-    ]) {
-      final m = await freshMember(user, name, role: role);
-      final state = await start(tester, user: user);
-      await openSettingsItem(tester, de.settingsDeleteAccount);
-      await waitFor(tester, inDialog(field(de.settingsPasswordConfirm)));
-      await enter(tester, field(de.settingsPasswordConfirm), kitMemberPassword);
-      await submit(tester, de.settingsDeleteAccountButton);
-      await waitFor(
-        tester,
-        find.text(de.settingsAccountNameWasDeleted(name)),
-        timeout: const Duration(seconds: 45),
-      );
-      expect(
-        (await f.admin.adminUsers()).any((u) => u.member.id == m.id),
-        isFalse,
-        reason: name,
-      );
-      await finish(tester, state);
-    }
+    final guest = await freshMember(
+      'e2e-gast-weg',
+      'E2E Gast weg',
+      role: MemberRole.guest,
+    );
+    var state = await start(tester, user: 'e2e-gast-weg');
+    await openSettingsItem(tester, de.settingsDeleteAccount);
+    await waitFor(tester, inDialog(field(de.settingsPasswordConfirm)));
+    await enter(tester, field(de.settingsPasswordConfirm), kitMemberPassword);
+    await submit(tester, de.settingsDeleteAccountButton);
+    await waitFor(
+      tester,
+      find.text(de.settingsAccountNameWasDeleted('E2E Gast weg')),
+      timeout: const Duration(seconds: 45),
+    );
+    expect(
+      (await f.admin.adminUsers()).any((u) => u.member.id == guest.id),
+      isFalse,
+    );
+    await finish(tester, state);
+
+    final kid = await freshMember(
+      'e2e-kind-weg',
+      'E2E Kind weg',
+      role: MemberRole.child,
+    );
+    state = await start(tester, user: 'e2e-kind-weg');
+    await openSection(tester, 'Einstellungen');
+    await scrollTo(
+      tester,
+      find.text(de.settingsDeleteAccountChildHint),
+      at: listPoint(tester),
+    );
+    final tile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text(de.settingsDeleteAccount),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(tile.enabled, isFalse);
+    expect(tile.onTap, isNull);
+    final api = await sessionOf(kid);
+    await expectLater(
+      api.deleteMyAccount(password: kitMemberPassword),
+      throwsA(isA<ApiError>().having((e) => e.status, 'status', 403)),
+    );
+    expect(
+      (await f.admin.adminUsers()).any((u) => u.member.id == kid.id),
+      isTrue,
+    );
+    await finish(tester, state);
+    await f.admin.deleteMember(kid.id);
   });
 
   testWidgets('GRU-132 the only administrator: with others, then alone', (

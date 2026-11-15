@@ -77,6 +77,8 @@ ein Administrator die Rolle festlegt.
   Löschung wird beim nächsten Abgleich auf die Geräte übertragen. Verbindungen
   zu Listen-Apps, Paperless-ngx und PhotoVault werden vorher getrennt, damit
   deren Einträge nicht zurückkommen.
+- Erwachsene und Gäste können ihr Konto in der App selbst löschen;
+  Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.
 - Wird ein Konto gelöscht, entfernt der Server dessen Notfallangaben und alle
   Einträge, die nur diese Person sehen konnte, etwa private Notizen, Dokumente
   samt Dateien und Gesundheitsdaten; auch aus dem Papierkorb.

@@ -2884,5 +2884,8 @@
   "shareAllOnListAlready": "Everything is on “{list}” already",
   "birthdayTurnsAge": "{name} turns {age}",
   "birthdayHasBirthday": "It's {name}'s birthday",
-  "birthdayBornIn": "Born {year}"
+  "birthdayBornIn": "Born {year}",
+  "filesUploadFailed": "The file could not be uploaded. Please try again.",
+  "settingsDeleteAccountChildHint": "An adult can remove your account in the server administration.",
+  "syncChangesRefused": "{count, plural, =1{A change is not allowed for your account and was undone.} other{{count} changes are not allowed for your account and were undone.}}"
 }

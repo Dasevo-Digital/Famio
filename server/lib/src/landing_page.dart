@@ -176,5 +176,6 @@ h1,a { color:var(--accent); } a { font-weight:600; }
 <p>${h(t('Du kannst dein Famio-Konto selbst löschen. Dabei werden Zugang, Sitzungen und persönliche Verbindungen entfernt, ebenso alles, was nur du sehen konntest; gemeinsam genutzte Familieneinträge bleiben für die anderen Mitglieder erhalten.'))}</p>
 ${webApp ? '<p><a href="app/">${h(t('Bei Famio anmelden und Konto löschen'))}</a></p>' : '<p>${h(t('Bitte Famio im Browser oder in der App öffnen und unter Einstellungen → Mein Konto löschen fortfahren.'))}</p>'}
 <p>${h(t('Zur Bestätigung brauchst du dein Passwort und, falls aktiviert, deinen Zwei-Faktor-Code. Als letzter Administrator musst du die Verwaltung zuerst an ein anderes Mitglied übertragen.'))}</p>
+<p>${h(t('Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.'))}</p>
 </body></html>''';
 }

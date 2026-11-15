@@ -1447,4 +1447,6 @@ const sharedEs = <String, String>{
   "Server|Daten der Familie exportiert": "Datos de la familia exportados",
   "Server|{name} hat alle Daten der Familie exportiert, auch private Einträge.":
       "{name} ha exportado todos los datos de la familia, también las entradas privadas.",
+  "Server|Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.":
+      "Las cuentas infantiles las elimina un adulto en la administración del servidor.",
 };

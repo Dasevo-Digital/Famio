@@ -2523,49 +2523,41 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: a person the child adds to its own confidential appointment is
-  // dropped by the server without a word, so the switch never locks:
-  // RecordStore._childAudience keeps only the "reach" of the stored version
-  // for every confidential appointment a child writes, its own included
-  // (server/lib/src/record_store.dart:1604-1616).
-  testWidgets(
-    'KAL-046 with somebody else in it the switch is locked',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final state = await startApp(tester, user: 'e2e-kind');
-      final engine = state.engine!;
-      final id = await ownSecret(tester, f, state, 'E2E Geheimnis mit Bea');
-      await openEvent(tester, 'E2E Geheimnis mit Bea');
-      await scrollTo(
-        tester,
-        find.widgetWithText(FilterChip, f.bea.displayName),
-      );
-      await tap(tester, find.widgetWithText(FilterChip, f.bea.displayName));
-      expect(person(tester, f.bea.displayName).selected, isTrue);
-      expect(person(tester, f.kid.displayName).selected, isTrue);
-      await save(tester);
-      await engine.sync();
-      await tester.pump(const Duration(seconds: 2));
-      await eventually(
-        tester,
-        'Bea is in the child\'s own confidential appointment',
-        () async =>
-            ((await eventOf(f.admin, id))?.data['memberIds'] as List? ??
-                    const [])
-                .contains(f.bea.id),
-        timeout: const Duration(seconds: 20),
-      );
-      await openEvent(tester, 'E2E Geheimnis mit Bea');
-      await scrollTo(
-        tester,
-        find.widgetWithText(SwitchListTile, de.commonPrivate),
-      );
-      expect(switchOf(tester, de.commonPrivate).onChanged, isNull);
-      await closeEditor(tester);
-      await finish(tester, state);
-    },
-  );
+  // A person the child adds to its own confidential appointment stays in
+  // it (RecordStore._childAudience keeps the reach only of appointments
+  // somebody else entered), and with somebody else in it the switch locks.
+  testWidgets('KAL-046 with somebody else in it the switch is locked', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final state = await startApp(tester, user: 'e2e-kind');
+    final engine = state.engine!;
+    final id = await ownSecret(tester, f, state, 'E2E Geheimnis mit Bea');
+    await openEvent(tester, 'E2E Geheimnis mit Bea');
+    await scrollTo(tester, find.widgetWithText(FilterChip, f.bea.displayName));
+    await tap(tester, find.widgetWithText(FilterChip, f.bea.displayName));
+    expect(person(tester, f.bea.displayName).selected, isTrue);
+    expect(person(tester, f.kid.displayName).selected, isTrue);
+    await save(tester);
+    await engine.sync();
+    await tester.pump(const Duration(seconds: 2));
+    await eventually(
+      tester,
+      'Bea is in the child\'s own confidential appointment',
+      () async =>
+          ((await eventOf(f.admin, id))?.data['memberIds'] as List? ?? const [])
+              .contains(f.bea.id),
+      timeout: const Duration(seconds: 20),
+    );
+    await openEvent(tester, 'E2E Geheimnis mit Bea');
+    await scrollTo(
+      tester,
+      find.widgetWithText(SwitchListTile, de.commonPrivate),
+    );
+    expect(switchOf(tester, de.commonPrivate).onChanged, isNull);
+    await closeEditor(tester);
+    await finish(tester, state);
+  });
 
   testWidgets(
     'KAL-050 KAL-051 the guest changes no appointments, sees no subscriptions',

@@ -2884,5 +2884,8 @@
   "shareAllOnListAlready": "Ya está todo en «{list}»",
   "birthdayTurnsAge": "{name} cumple {age}",
   "birthdayHasBirthday": "{name} cumple años",
-  "birthdayBornIn": "Nació en {year}"
+  "birthdayBornIn": "Nació en {year}",
+  "filesUploadFailed": "No se ha podido subir el archivo. Inténtalo de nuevo.",
+  "settingsDeleteAccountChildHint": "Un adulto puede eliminar tu cuenta en la administración del servidor.",
+  "syncChangesRefused": "{count, plural, =1{Un cambio no está permitido para tu cuenta y se ha deshecho.} other{{count} cambios no están permitidos para tu cuenta y se han deshecho.}}"
 }

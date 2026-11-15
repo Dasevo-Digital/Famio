@@ -111,9 +111,9 @@ extension _AccountRoutes on FamioApi {
     return _json(updated.toJson());
   }
 
-  /// Self-service account deletion, also for guests. Shared family entries
-  /// deliberately stay: removing them could erase data owned by other
-  /// family members. What only this member could see goes with them.
+  /// Self-service account deletion for adults and guests. Shared family
+  /// entries deliberately stay: removing them could erase data owned by
+  /// other family members. What only this member could see goes with them.
   Future<Response> _deleteMe(Request request) async {
     final member = _auth(request);
     _checkWriter(member);
@@ -124,6 +124,15 @@ extension _AccountRoutes on FamioApi {
         403,
         'forbidden',
         t('Dienstkonten entfernt ein Administrator.'),
+      );
+    }
+    // A child's account (its log, its points, its school things) is the
+    // parents' to remove, in the server administration (GRU-134).
+    if (member.role == MemberRole.child) {
+      throw ApiException(
+        403,
+        'child_account',
+        t('Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.'),
       );
     }
     if (member.isAdmin && accounts.adminCount <= 1) {

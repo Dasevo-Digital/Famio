@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:famio_client/famio_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -175,6 +176,55 @@ void main() {
       },
     );
   }
+  test(
+    'a file picker stream of Uint8List over 8 MiB is uploaded and kept',
+    () async {
+      const chunk = 1024 * 1024, chunks = 9;
+      final ref = FileRef(
+        id: newId(),
+        name: 'big.bin',
+        mime: 'application/octet-stream',
+        size: chunk * chunks,
+      );
+      var received = 0;
+      final api = FamioApiClient(
+        'http://localhost',
+        httpClient: MockClient.streaming((_, input) async {
+          await for (final part in input) {
+            received += part.length;
+          }
+          return http.StreamedResponse(
+            Stream.value(utf8.encode(jsonEncode(ref.toJson()))),
+            200,
+          );
+        }),
+      );
+      final cache = FileCache.open(':memory:', api, tempDir: 'unused');
+      addTearDown(() {
+        cache.close();
+        api.close();
+      });
+      // Like PlatformFile.readAsByteStream: the element type is Uint8List.
+      Stream<Uint8List> picked() async* {
+        for (var i = 0; i < chunks; i++) {
+          yield Uint8List(chunk)..fillRange(0, chunk, i);
+        }
+      }
+
+      final result = await cache
+          .uploadStream(
+            openRead: picked,
+            name: ref.name,
+            mime: ref.mime,
+            length: ref.size,
+            maxBytes: ref.size,
+          )
+          .timeout(const Duration(seconds: 20));
+      expect(result.id, ref.id);
+      expect(received, ref.size);
+      expect(cache.size, greaterThanOrEqualTo(ref.size));
+    },
+  );
   for (final close in [false, true]) {
     test(
       '${close ? 'close' : 'clear'} actively cancels a direct stalled cache writer',

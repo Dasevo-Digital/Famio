@@ -1328,16 +1328,11 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: a file over 8 MB from the system's file picker is not attached.
-  // The picker hands it over as a stream of Uint8List (file_picker_darwin
-  // via cross_file: openRead().map(Uint8List.fromList)); FileCache.uploadStream
-  // puts a StreamTransformer<List<int>, List<int>> on it
-  // (packages/famio_client/lib/src/file_cache.dart:473, _digesting), which
-  // throws a TypeError. _addFile (event_editor.dart:368-383) catches only
-  // ApiError: no message, no attachment.
-  testWidgets('KAL-065 a photo over 8 MB from the file picker', skip: true, (
-    tester,
-  ) async {
+  // A file over 8 MB from the system's file picker comes as a stream of
+  // Uint8List (file_picker_darwin via cross_file); FileCache._digesting
+  // widens it before hashing (#533), and any other failure of the upload
+  // ends as a message.
+  testWidgets('KAL-065 a photo over 8 MB from the file picker', (tester) async {
     await setUpFamily(tester);
     final picker = fakePicker();
     final day = inDays(2);
@@ -3250,36 +3245,33 @@ void main() {
     },
   );
 
-  // Befund (Hinweis KAL-125): the error reads "Import fehlgeschlagen:
-  // ApiException(400 unsafe_remote_url: Externe Ziele brauchen eine
-  // HTTPS-Adresse …)": calendar_importer.dart:182 wraps the ApiException of
-  // RemoteUrlPolicy in its catch-all instead of passing on its message.
-  testWidgets(
-    'KAL-125 the error of a private address reads like one',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final id = await addSubscription(
-        f.admin,
-        'E2E Privat lesbar',
-        owner: f.adminMember.id,
-        url: 'http://192.168.1.50/kal.ics',
-      );
-      final state = await startApp(tester);
-      final engine = state.engine!;
-      await eventually(
-        tester,
-        'the fetch failed',
-        () async => engine.subscriptionStatus(id)?.error != null,
-      );
-      final error = engine.subscriptionStatus(id)!.error!;
-      debugPrint('E2E-INFO error of the subscription: $error');
-      expect(error, contains('HTTPS'));
-      expect(error, isNot(contains('ApiException')));
-      expect(error, isNot(contains('unsafe_remote_url')));
-      await finish(tester, state);
-    },
-  );
+  // The error of a refused address is the message of RemoteUrlPolicy
+  // ("Externe Ziele brauchen eine HTTPS-Adresse …"), not "Import
+  // fehlgeschlagen: ApiException(…)".
+  testWidgets('KAL-125 the error of a private address reads like one', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final id = await addSubscription(
+      f.admin,
+      'E2E Privat lesbar',
+      owner: f.adminMember.id,
+      url: 'http://192.168.1.50/kal.ics',
+    );
+    final state = await startApp(tester);
+    final engine = state.engine!;
+    await eventually(
+      tester,
+      'the fetch failed',
+      () async => engine.subscriptionStatus(id)?.error != null,
+    );
+    final error = engine.subscriptionStatus(id)!.error!;
+    debugPrint('E2E-INFO error of the subscription: $error');
+    expect(error, contains('HTTPS'));
+    expect(error, isNot(contains('ApiException')));
+    expect(error, isNot(contains('unsafe_remote_url')));
+    await finish(tester, state);
+  });
 
   testWidgets(
     'KAL-127 KAL-128 who sees a subscription, only its owner changes it',
@@ -3393,57 +3385,49 @@ void main() {
     },
   );
 
-  // Befund (Hinweis KAL-128): a subscription without an owner (the admin's
-  // school holidays, settings_form.dart:71-77) shows the child a remove
-  // button (CalendarSubscription.editableBy, calendar_sync.dart:81), and the
-  // server takes the child's renaming and removal (record_store.dart:766-772
-  // checks only subscriptions with an owner).
-  testWidgets(
-    'KAL-128 a family subscription without an owner stays the adults\'',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final kid = await sessionOf(f.kid);
-      final id = await addSubscription(
-        f.admin,
-        'E2E Schulferien ohne Besitzer',
-      );
-      final state = await startApp(tester, user: 'e2e-kind');
-      await openConnect(tester);
-      await scrollTo(tester, find.text('E2E Schulferien ohne Besitzer'));
-      final removable = find
-          .descendant(
-            of: listTile('E2E Schulferien ohne Besitzer'),
-            matching: find.byTooltip(de.commonRemove),
-          )
-          .evaluate()
-          .isNotEmpty;
-      final record = (await pull(kid, Collections.calendarSubscriptions))[id]!;
-      final changed = await put(kid, Collections.calendarSubscriptions, {
-        id: {...record.data, 'name': 'E2E Vom Kind umbenannt'},
-      });
-      final afterChange = (await pull(
-        f.admin,
-        Collections.calendarSubscriptions,
-      ))[id];
-      final removed = await remove(kid, Collections.calendarSubscriptions, [
-        id,
-      ]);
-      final afterRemoval = (await pull(
-        f.admin,
-        Collections.calendarSubscriptions,
-      ))[id];
-      debugPrint(
-        'E2E-INFO the child and the family\'s subscription: remove button=$removable, '
-        'change rejected=${changed.rejected.isNotEmpty} name=${afterChange?.data['name']}, '
-        'removal rejected=${removed.rejected.isNotEmpty} still there=${afterRemoval != null}',
-      );
-      expect(removable, isFalse);
-      expect(afterChange?.data['name'], 'E2E Schulferien ohne Besitzer');
-      expect(afterRemoval, isNotNull);
-      await finish(tester, state);
-    },
-  );
+  // A subscription without an owner (the admin's school holidays) is the
+  // adults' (#538): the child sees no remove button
+  // (CalendarSubscription.editableBy), and the server turns down its
+  // renaming and removal.
+  testWidgets('KAL-128 a family subscription without an owner stays the adults\'', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final kid = await sessionOf(f.kid);
+    final id = await addSubscription(f.admin, 'E2E Schulferien ohne Besitzer');
+    final state = await startApp(tester, user: 'e2e-kind');
+    await openConnect(tester);
+    await scrollTo(tester, find.text('E2E Schulferien ohne Besitzer'));
+    final removable = find
+        .descendant(
+          of: listTile('E2E Schulferien ohne Besitzer'),
+          matching: find.byTooltip(de.commonRemove),
+        )
+        .evaluate()
+        .isNotEmpty;
+    final record = (await pull(kid, Collections.calendarSubscriptions))[id]!;
+    final changed = await put(kid, Collections.calendarSubscriptions, {
+      id: {...record.data, 'name': 'E2E Vom Kind umbenannt'},
+    });
+    final afterChange = (await pull(
+      f.admin,
+      Collections.calendarSubscriptions,
+    ))[id];
+    final removed = await remove(kid, Collections.calendarSubscriptions, [id]);
+    final afterRemoval = (await pull(
+      f.admin,
+      Collections.calendarSubscriptions,
+    ))[id];
+    debugPrint(
+      'E2E-INFO the child and the family\'s subscription: remove button=$removable, '
+      'change rejected=${changed.rejected.isNotEmpty} name=${afterChange?.data['name']}, '
+      'removal rejected=${removed.rejected.isNotEmpty} still there=${afterRemoval != null}',
+    );
+    expect(removable, isFalse);
+    expect(afterChange?.data['name'], 'E2E Schulferien ohne Besitzer');
+    expect(afterRemoval, isNotNull);
+    await finish(tester, state);
+  });
 
   testWidgets('KAL-131 school holidays subscribed twice', (tester) async {
     final f = await setUpFamily(tester);

@@ -6,6 +6,7 @@ import 'package:famio_shared/famio_shared.dart';
 import 'package:http/http.dart' as http;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../api_exception.dart';
 import '../record_store.dart';
 import 'school_holidays.dart';
 import '../remote_url_policy.dart';
@@ -178,6 +179,10 @@ class CalendarImporter {
       error = t('Ungültige Adresse oder Daten: {message}', {
         'message': e.message,
       });
+    } on ApiException catch (e) {
+      // The address check (http, a private address …) says what is wrong
+      // in words; not "Import fehlgeschlagen: ApiException(400 …)" (KAL-125).
+      error = e.message;
     } catch (e) {
       error = t('Import fehlgeschlagen: {error}', {'error': e});
     }

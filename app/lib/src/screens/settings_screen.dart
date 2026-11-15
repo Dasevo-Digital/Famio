@@ -422,15 +422,24 @@ class SettingsScreen extends StatelessWidget {
                 await state.signOut();
               },
             ),
-          ListTile(
-            leading: Icon(AppIcons.userMinus, color: c.danger),
-            title: Text(
-              context.l10n.settingsDeleteAccount,
-              style: TextStyle(color: c.danger),
+          // A child's account is removed by an adult (GRU-134).
+          if (state.me?.isChild ?? false)
+            ListTile(
+              enabled: false,
+              leading: const Icon(AppIcons.userMinus),
+              title: Text(context.l10n.settingsDeleteAccount),
+              subtitle: Text(tr.settingsDeleteAccountChildHint),
+            )
+          else
+            ListTile(
+              leading: Icon(AppIcons.userMinus, color: c.danger),
+              title: Text(
+                context.l10n.settingsDeleteAccount,
+                style: TextStyle(color: c.danger),
+              ),
+              subtitle: Text(context.l10n.settingsDeleteAccountSubtitle),
+              onTap: () => _deleteAccount(context),
             ),
-            subtitle: Text(context.l10n.settingsDeleteAccountSubtitle),
-            onTap: () => _deleteAccount(context),
-          ),
           ListHeading(context.l10n.settingsAbout, color: accent),
           VersionTile(api: engine.api),
           ListTile(

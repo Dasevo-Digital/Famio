@@ -4297,17 +4297,13 @@ void main() {
     }
   });
 
-  // Befund (reproduced twice): a file over 8 MiB picked with the file
-  // picker does not upload. The picker hands a Stream<Uint8List>
-  // (PlatformFile.readAsByteStream, files.dart:204); FileCache._digesting
-  // (famio_client/lib/src/file_cache.dart:473) puts a
-  // StreamTransformer<List<int>, List<int>> on it: TypeError, the upload
-  // ends without a word (chat_screens.dart:347 only catches ApiError).
-  // Last in the file: the uncaught error leaves the binding broken for the
+  // A file over 8 MiB from the file picker: the picker hands a
+  // Stream<Uint8List> (PlatformFile.readAsByteStream), which
+  // FileCache._digesting widens before hashing (#533); any other failure
+  // of an upload ends as a message. Last in the file: should the upload
+  // break again, an uncaught error would leave the binding broken for the
   // tests after it.
-  testWidgets('ALL-165 a file over 8 MiB from the picker', skip: true, (
-    tester,
-  ) async {
+  testWidgets('ALL-165 a file over 8 MiB from the picker', (tester) async {
     tall(tester);
     await theFamily();
     await cleanChat();

@@ -508,6 +508,45 @@ void main() {
       expect(after.data[CalendarEvent.createdByKey], kid.id);
     });
 
+    test('the child adds somebody to its own confidential appointment '
+        '(KAL-046), not to the parents\'', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final own = {
+        ...appointment('Arzt', [kid.id]),
+        'confidential': true,
+      };
+      await write(kid, 'own-secret', own, now);
+      await write(kid, 'own-secret', {
+        ...own,
+        'memberIds': [kid.id, papa.id],
+      }, now + 1000);
+      final stored = app.records.get(Collections.events, 'own-secret')!;
+      expect(stored.data['memberIds'], [kid.id, papa.id]);
+      expect(stored.data['confidential'], isTrue);
+      expect(
+        (await sync(papa)).changes.any(
+          (r) => r.id == 'own-secret' && r.data['title'] == 'Arzt',
+        ),
+        isTrue,
+      );
+      expect(await guestSeesTitle('own-secret'), isFalse);
+
+      // The parents' confidential appointment gets nobody new.
+      final theirs = {
+        ...appointment('Psychotherapie', [mama.id, kid.id]),
+        'confidential': true,
+      };
+      await write(mama, 'their-secret', theirs, now + 2000);
+      await write(kid, 'their-secret', {
+        ...theirs,
+        'memberIds': [mama.id, kid.id, papa.id],
+      }, now + 3000);
+      expect(
+        app.records.get(Collections.events, 'their-secret')!.data['memberIds'],
+        [mama.id, kid.id],
+      );
+    });
+
     test('a note by the child does not make the parents\' appointment '
         'the child\'s', () async {
       final now = DateTime.now().millisecondsSinceEpoch;

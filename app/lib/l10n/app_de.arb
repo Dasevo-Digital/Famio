@@ -7294,5 +7294,9 @@
   "birthdayHasBirthday": "{name} hat Geburtstag",
   "@birthdayHasBirthday": {"placeholders": {"name": {"type": "String"}}},
   "birthdayBornIn": "Geboren {year}",
-  "@birthdayBornIn": {"placeholders": {"year": {"type": "int"}}}
+  "@birthdayBornIn": {"placeholders": {"year": {"type": "int"}}},
+  "filesUploadFailed": "Die Datei konnte nicht hochgeladen werden. Bitte noch einmal versuchen.",
+  "settingsDeleteAccountChildHint": "Ein Erwachsener kann dein Konto in der Server-Verwaltung entfernen.",
+  "syncChangesRefused": "{count, plural, =1{Eine Änderung ist für dein Konto nicht erlaubt und wurde zurückgenommen.} other{{count} Änderungen sind für dein Konto nicht erlaubt und wurden zurückgenommen.}}",
+  "@syncChangesRefused": {"placeholders": {"count": {"type": "int"}}}
 }

@@ -220,6 +220,44 @@ void main() {
       expect(app.accounts.byId(ha.id), isNotNull);
     });
 
+    test('a child account is removed by an adult (GRU-134)', () async {
+      final kid = app.accounts.create(
+        username: 'kid',
+        displayName: 'Kind',
+        role: MemberRole.child,
+      );
+      await app.accounts.setPassword(kid.id, password);
+      tokens[kid.id] = app.accounts.createSession(kid.id);
+      final r = await call(kid, 'DELETE', 'api/me', {'password': password});
+      expect(r.statusCode, 403);
+      expect(
+        (jsonDecode(await r.readAsString()) as Map)['error'],
+        'child_account',
+      );
+      expect(app.accounts.byId(kid.id), isNotNull);
+      // A guest still may.
+      final guest = app.accounts.create(
+        username: 'oma',
+        displayName: 'Oma',
+        role: MemberRole.guest,
+      );
+      await app.accounts.setPassword(guest.id, password);
+      tokens[guest.id] = app.accounts.createSession(guest.id);
+      final g = await call(guest, 'DELETE', 'api/me', {'password': password});
+      expect(g.statusCode, 200);
+      expect(app.accounts.byId(guest.id), isNull);
+    });
+
+    test('the deletion page says who removes a child account', () async {
+      final page = await app.handler(
+        Request('GET', Uri.parse('http://famio.test/delete-account')),
+      );
+      expect(
+        await page.readAsString(),
+        contains('Kinderkonten entfernt ein Erwachsener'),
+      );
+    });
+
     test('the last administrator hands over first', () async {
       final r = await call(mama, 'DELETE', 'api/me', {'password': password});
       expect(r.statusCode, 400);

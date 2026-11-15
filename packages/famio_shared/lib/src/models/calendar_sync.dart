@@ -77,8 +77,10 @@ class CalendarSubscription {
   /// profiles set by an admin).
   final CalendarSharing sharing;
 
-  /// Only the owner may change it; family subscriptions everyone.
-  bool editableBy(String memberId) => ownerId == null || ownerId == memberId;
+  /// Only the owner may change it; family subscriptions (no owner) the
+  /// adults, as the server keeps to (#538).
+  bool editableBy(String memberId, {required bool adult}) =>
+      ownerId == null ? adult : ownerId == memberId;
 
   Map<String, Object?> toData() => {
     'name': name,

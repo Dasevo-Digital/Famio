@@ -2869,10 +2869,11 @@ void main() {
     });
     expect(answer.rejected.map((r) => r.id), isEmpty, reason: 'own booking');
     expect(await bookings(bea), containsAll(['E2E Einkauf A', 'E2E Kind Eis']));
-    // HAU-160: open to all, the service account gets them like a member.
-    // Whether it should is a question (hint): recorded, not judged.
+    // HAU-160: open to all, the service account gets them like a member
+    // (decided so: an open household book is the whole family's).
     final forService = await bookings(ha);
     debugPrint('E2E HAU-160 open budget, service account gets $forService');
+    expect(forService, containsAll(['E2E Einkauf A', 'E2E Kind Eis']));
 
     final state = await start(tester);
     await openBudget(tester);
@@ -2934,10 +2935,10 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Wer nicht in der Zielgruppe ist, bekommt die Budget-Einstellungen
-  // nicht; seine App legt neue Buchungen deshalb ohne Einschränkung an
-  // (family_data.dart:637 _budgetAudience → null, Zeile 680), und der Server
-  // erzwingt die Zielgruppe nicht: die Buchung geht an alle, auch ans Kind.
+  // Wer nicht in der Zielgruppe ist, bekommt die Budget-Einstellungen nicht
+  // und seine App legt Buchungen ohne Einschränkung an; der Server setzt die
+  // Zielgruppe aus den Einstellungen (dazu den Schreibenden), die Buchung
+  // erreicht das Kind nicht (#538).
   testWidgets('HAU-162 an adult outside the audience of the budget', (
     tester,
   ) async {
@@ -2974,7 +2975,7 @@ void main() {
     debugPrint('E2E HAU-162 the child gets $forKid');
     expect(forKid, isNot(contains('E2E Bea Kino')));
     await finish(tester, state);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Subscriptions

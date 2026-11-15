@@ -70,4 +70,38 @@ void main() {
       importer.stop();
     },
   );
+
+  test('a refused address reads like one (KAL-125)', () async {
+    final app = FamioServerApp.inMemory();
+    addTearDown(() async {
+      await app.close();
+      Directory(app.dataDir).deleteSync(recursive: true);
+    });
+    app.records.writeAsServer([
+      SyncRecord(
+        collection: Collections.calendarSubscriptions,
+        id: 'lan',
+        updatedAt: 1,
+        data: const CalendarSubscription(
+          id: 'lan',
+          name: 'LAN',
+          url: 'http://192.168.1.50/kal.ics',
+        ).toData(),
+      ),
+    ]);
+    final importer = CalendarImporter(
+      records: app.records,
+      location: () => app.location,
+      onChanged: () {},
+      client: HangingFeeds(),
+    );
+    await importer.refreshAll().timeout(const Duration(seconds: 5));
+    final error =
+        app.records.get(Collections.calendarSyncStatus, 'lan')!.data['error']
+            as String;
+    expect(error, isNot(contains('ApiException')));
+    expect(error, isNot(contains('Import fehlgeschlagen')));
+    expect(error, contains('HTTPS'));
+    importer.stop();
+  });
 }

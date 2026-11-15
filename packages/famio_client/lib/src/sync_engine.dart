@@ -77,6 +77,20 @@ class SyncEngine {
 
   final _changes = StreamController<Set<String>>.broadcast();
   final _status = StreamController<SyncStatus>.broadcast();
+  final _refusals = StreamController<void>.broadcast();
+  final _refused = <SyncWriteIssue>[];
+
+  /// Own edits the server turned down (this member may not make them) since
+  /// they were last taken; their stored versions are back on the device.
+  /// Older servers do not tell (#539).
+  List<SyncWriteIssue> takeRefusedChanges() {
+    final taken = [..._refused];
+    _refused.clear();
+    return taken;
+  }
+
+  /// Fires when [takeRefusedChanges] has something new.
+  Stream<void> get refusedChanges => _refusals.stream;
 
   var _currentStatus = const SyncStatus(SyncState.idle);
 
@@ -135,6 +149,13 @@ class SyncEngine {
   ];
 
   List<FamilyMember> get allMembers => _members;
+
+  FamilyMember? get _own {
+    for (final m in _members) {
+      if (m.id == memberId) return m;
+    }
+    return null;
+  }
 
   int get lastRev => int.tryParse(store.getMeta('lastRev') ?? '') ?? 0;
 
@@ -268,7 +289,10 @@ class SyncEngine {
     if (_started) return;
     _started = true;
     _poll = Timer.periodic(pollInterval, (_) {
+      // The WebSocket's hints replace polling only while syncing works;
+      // a failed attempt is retried on every tick (#534).
       if (_socketUp &&
+          lastError == null &&
           DateTime.now().difference(_lastSync) < connectedPollInterval) {
         return;
       }
@@ -306,16 +330,30 @@ class SyncEngine {
     await stop();
     await _changes.close();
     await _status.close();
+    await _refusals.close();
   }
 
   Future<void> refreshMembers() async {
     try {
+      final before = _own;
       _members = await api.members();
       store.setMeta(
         'members',
         jsonEncode([for (final m in _members) m.toJson()]),
       );
       _changes.add({'members'});
+      final after = _own;
+      // A new role (or service access) changes what this device may keep:
+      // syncing now lets the server notice the new scope, send everything
+      // again and the engine drop what is no longer allowed (#535). Only
+      // while syncing in the background, as for the server's other hints.
+      if (_started &&
+          before != null &&
+          after != null &&
+          (before.role != after.role ||
+              before.serviceAccess != after.serviceAccess)) {
+        unawaited(sync());
+      }
     } on ApiError catch (e) {
       if (e.isUnauthorized) _setStatus(SyncState.unauthorized, e.message);
     }
@@ -344,7 +382,9 @@ class SyncEngine {
 
   Future<void> _syncOnce() async {
     _setStatus(SyncState.syncing);
-    _lastSync = DateTime.now();
+    // Only a successful sync is a recent one: after a failed attempt the
+    // poll retries even while the WebSocket is up (#534).
+    final started = DateTime.now();
     _announcedAt = DateTime.now();
     try {
       bool more;
@@ -391,6 +431,7 @@ class SyncEngine {
         }
       } while (more);
       lastError = null;
+      _lastSync = started;
       _setStatus(
         blockedChanges.isEmpty ? SyncState.idle : SyncState.attention,
         null,
@@ -489,6 +530,20 @@ class SyncEngine {
       _saveBlocked();
     });
     _changed(changed);
+    final refused = [
+      for (final issue in response.refused)
+        if (pushed.any(
+          (r) =>
+              r.collection == issue.collection &&
+              r.id == issue.id &&
+              r.updatedAt == issue.updatedAt,
+        ))
+          issue,
+    ];
+    if (refused.isNotEmpty) {
+      _refused.addAll(refused);
+      if (!_refusals.isClosed) _refusals.add(null);
+    }
   }
 
   /// Changes from the sync, told in one go per second at most: a download
@@ -553,6 +608,9 @@ class SyncEngine {
   /// While [_connect] waits for a browser ticket.
   var _connecting = false;
 
+  /// The WebSocket was up before: the next time it comes up is a return.
+  var _wasConnected = false;
+
   Future<void> _connect() async {
     if (!_started || _connecting) return;
     final WebSocketChannel socket;
@@ -579,8 +637,16 @@ class SyncEngine {
     }
     _socket = socket;
     socket.ready.then((_) {
-      if (_socket == socket) _socketUp = true;
+      if (_socket != socket) return;
+      _socketUp = true;
       _reconnectDelay = const Duration(seconds: 2);
+      // Back after a gap: the server's greeting only tells about its own
+      // changes, so send what waits here or retry what failed (#534).
+      if (lastError != null || _pushable.isNotEmpty) sync();
+      // Hints about the members (a new role among them, #535) sent during
+      // the gap are lost; [start] already fetched them the first time.
+      if (_wasConnected) refreshMembers();
+      _wasConnected = true;
     }, onError: (_) {});
     socket.stream.listen(
       (message) {

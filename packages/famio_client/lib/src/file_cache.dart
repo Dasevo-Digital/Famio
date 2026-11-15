@@ -470,7 +470,9 @@ Stream<List<int>> _digesting(
   final hash = sha256.startChunkedConversion(result);
   // A transformer forwards cancellation directly to the source. An async
   // generator waiting for the next event can defer that cancellation.
-  return input.transform(
+  // File pickers hand over a Stream<Uint8List>; a transformer for List<int>
+  // only fits a stream of exactly that type, so widen the element type first.
+  return input.cast<List<int>>().transform(
     StreamTransformer<List<int>, List<int>>.fromHandlers(
       handleData: (chunk, output) {
         hash.add(chunk);

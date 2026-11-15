@@ -21,6 +21,7 @@ void main() {
     WidgetTester tester, {
     required String members,
     bool hasPassword = true,
+    bool tap = true,
   }) async {
     tester.view.physicalSize = const Size(900, 1800);
     tester.view.devicePixelRatio = 1;
@@ -54,12 +55,40 @@ void main() {
     ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Mein Konto löschen'), 300);
+    if (!tap) return;
     await tester.tap(find.text('Mein Konto löschen'));
     await tester.pumpAndSettle();
   }
 
   const mama =
       '{"id":"m1","username":"mama","displayName":"Mama","isAdmin":true}';
+  const mama2 =
+      '{"id":"m2","username":"mama","displayName":"Mama","isAdmin":true}';
+
+  testWidgets('a child is told that an adult removes its account '
+      '(GRU-134)', (tester) async {
+    const kid =
+        '{"id":"m1","username":"kid","displayName":"Kind","role":"child"}';
+    await openDelete(tester, members: '[$kid,$mama2]', tap: false);
+    expect(
+      find.text(
+        'Ein Erwachsener kann dein Konto in der Server-Verwaltung '
+        'entfernen.',
+      ),
+      findsOneWidget,
+    );
+    final tile = tester.widget<ListTile>(
+      find.ancestor(
+        of: find.text('Mein Konto löschen'),
+        matching: find.byType(ListTile),
+      ),
+    );
+    expect(tile.enabled, isFalse);
+    expect(tile.onTap, isNull);
+    await tester.tap(find.text('Mein Konto löschen'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('Konto wirklich löschen?'), findsNothing);
+  });
 
   testWidgets('the only administrator hands over first', (tester) async {
     await openDelete(

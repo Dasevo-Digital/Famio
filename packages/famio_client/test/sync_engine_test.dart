@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:famio_server/famio_server.dart';
+import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as io;
 import 'package:test/test.dart';
 
@@ -365,6 +366,196 @@ void main() {
       expect(syncs, before + 1);
     },
   );
+
+  test(
+    'an offline edit goes by itself once the server is back (#534)',
+    () async {
+      final b = device();
+      b.start();
+      await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+      for (var i = 0; i < 200 && !b.live; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      expect(b.live, isTrue);
+
+      // The server goes away for a moment, connections and all.
+      final port = server.port;
+      await server.close(force: true);
+      await app.hub.close();
+      b.put(Collections.tasks, 'offline', {'title': 'Offline gemacht'});
+      await b.statusChanges
+          .firstWhere((s) => s.state == SyncState.offline)
+          .timeout(const Duration(seconds: 5));
+
+      server = await io.serve(app.handler, InternetAddress.loopbackIPv4, port);
+      // The WebSocket comes back within its first retry (two seconds);
+      // neither the minute's poll nor another edit may be needed.
+      await b.statusChanges
+          .firstWhere((s) => s.state == SyncState.idle && b.store.dirty.isEmpty)
+          .timeout(const Duration(seconds: 10));
+      expect(app.records.get(Collections.tasks, 'offline'), isNotNull);
+    },
+  );
+
+  test('a new role clears what it no longer allows at once (#535)', () async {
+    final admin = FamioApiClient(url, token: token);
+    final bea = await admin.createMember(
+      username: 'bea',
+      displayName: 'Bea',
+      password: 'tulpe-regal-7',
+    );
+    final login = await FamioApiClient(
+      url,
+    ).login(username: 'bea', password: 'tulpe-regal-7');
+    final b = SyncEngine(
+      store: LocalStore.open(':memory:'),
+      api: FamioApiClient(url, token: login.token),
+      memberId: bea.id,
+    );
+    engines.add(b);
+    final papa = device();
+    papa.put(Collections.documents, 'passport', {'title': 'Reisepass'});
+    await papa.sync();
+    b.start();
+    await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+    for (var i = 0; i < 200 && !b.live; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(b.live, isTrue);
+    expect(b.record(Collections.documents, 'passport'), isNotNull);
+
+    final gone = b.changes.firstWhere((c) => c.contains(Collections.documents));
+    await admin.updateUser(bea.id, role: MemberRole.guest);
+    // No other change in the family, no poll: the hint is enough.
+    await gone.timeout(const Duration(seconds: 5));
+    expect(b.store.get(Collections.documents, 'passport'), isNull);
+  });
+
+  test(
+    'a new role while the device was away clears on return (#535)',
+    () async {
+      final admin = FamioApiClient(url, token: token);
+      final bea = await admin.createMember(
+        username: 'bea',
+        displayName: 'Bea',
+        password: 'tulpe-regal-7',
+      );
+      final login = await FamioApiClient(
+        url,
+      ).login(username: 'bea', password: 'tulpe-regal-7');
+      final b = SyncEngine(
+        store: LocalStore.open(':memory:'),
+        api: FamioApiClient(url, token: login.token),
+        memberId: bea.id,
+      );
+      engines.add(b);
+      final papa = device();
+      papa.put(Collections.documents, 'passport', {'title': 'Reisepass'});
+      await papa.sync();
+      b.start();
+      await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+      for (var i = 0; i < 200 && !b.live; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 25));
+      }
+      expect(b.record(Collections.documents, 'passport'), isNotNull);
+
+      // The connection drops; meanwhile the role changes (its hint is lost).
+      final port = server.port;
+      await server.close(force: true);
+      await app.hub.close();
+      app.accounts.update(bea.id, role: MemberRole.guest);
+      server = await io.serve(app.handler, InternetAddress.loopbackIPv4, port);
+      await b.changes
+          .firstWhere((c) => c.contains(Collections.documents))
+          .timeout(const Duration(seconds: 10));
+      expect(b.store.get(Collections.documents, 'passport'), isNull);
+    },
+  );
+
+  test('an edit the server refuses is told once (#539)', () async {
+    final admin = FamioApiClient(url, token: token);
+    final kid = await admin.createMember(
+      username: 'kid',
+      displayName: 'Kind',
+      password: 'tulpe-regal-7',
+      role: MemberRole.child,
+    );
+    final login = await FamioApiClient(
+      url,
+    ).login(username: 'kid', password: 'tulpe-regal-7');
+    final papa = device();
+    papa.put(Collections.calendarSubscriptions, 'ferien', {
+      'name': 'Schulferien',
+      'url': 'https://ferien.example.com/ferien.ics',
+    });
+    papa.put(Collections.notes, 'note', {'title': 'Familienregeln'});
+    await papa.sync();
+    final b = SyncEngine(
+      store: LocalStore.open(':memory:'),
+      api: FamioApiClient(url, token: login.token),
+      memberId: kid.id,
+    );
+    engines.add(b);
+    await b.sync();
+    var told = 0;
+    final listening = b.refusedChanges.listen((_) => told++);
+    addTearDown(listening.cancel);
+
+    // Allowed: no word.
+    b.put(Collections.notes, 'own', {'title': 'Meine Notiz'});
+    await b.sync();
+    await Future<void>.delayed(Duration.zero);
+    expect(told, 0);
+    expect(b.takeRefusedChanges(), isEmpty);
+
+    // Not allowed (a family subscription is the adults', #538).
+    b.delete(Collections.calendarSubscriptions, 'ferien');
+    await b.sync();
+    await Future<void>.delayed(Duration.zero);
+    expect(told, 1);
+    final refused = b.takeRefusedChanges();
+    expect(refused.map((i) => (i.collection, i.id)), [
+      (Collections.calendarSubscriptions, 'ferien'),
+    ]);
+    expect(refused.single.code, 'not_allowed');
+    // It is back on the device, and told only once.
+    expect(b.record(Collections.calendarSubscriptions, 'ferien'), isNotNull);
+    await b.sync();
+    expect(b.takeRefusedChanges(), isEmpty);
+    expect(told, 1);
+  });
+
+  test('a failed sync does not count as a recent one (#534)', () async {
+    final b = device(pollInterval: const Duration(milliseconds: 100));
+    b.start();
+    await b.statusChanges.firstWhere((s) => s.state == SyncState.idle);
+    for (var i = 0; i < 200 && !b.live; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 25));
+    }
+    expect(b.live, isTrue);
+    // The WebSocket stays up, but syncing fails (the server refuses it).
+    final realHandler = app.handler;
+    var refuse = true;
+    final port = server.port;
+    await server.close(force: true);
+    server = await io.serve(
+      (request) => refuse && request.url.path == 'api/sync'
+          ? Response(503)
+          : realHandler(request),
+      InternetAddress.loopbackIPv4,
+      port,
+    );
+    b.put(Collections.tasks, 'later', {'title': 'Später'});
+    await b.statusChanges
+        .firstWhere((s) => s.state == SyncState.offline)
+        .timeout(const Duration(seconds: 5));
+    refuse = false;
+    // The next poll retries, the socket being up does not stop it.
+    await b.statusChanges
+        .firstWhere((s) => s.state == SyncState.idle && b.store.dirty.isEmpty)
+        .timeout(const Duration(seconds: 5));
+    expect(app.records.get(Collections.tasks, 'later'), isNotNull);
+  });
 
   test('own push: a waiting fetch gets the next message', () async {
     // A second member, who is notified about the first one's message.

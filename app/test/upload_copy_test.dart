@@ -144,4 +144,77 @@ void main() {
       },
     );
   }
+  test('a picker stream of Uint8List over 8 MiB is uploaded (#533)', () async {
+    const chunk = 1024 * 1024, chunks = 9;
+    final ref = FileRef(
+      id: newId(),
+      name: 'picked.bin',
+      mime: 'application/octet-stream',
+      size: chunk * chunks,
+    );
+    final api = FamioApiClient(
+      'http://localhost',
+      httpClient: MockClient((request) async {
+        expect(request.bodyBytes.length, ref.size);
+        return http.Response(jsonEncode(ref.toJson()), 200);
+      }),
+    );
+    final store = LocalStore.open(':memory:');
+    final engine = SyncEngine(store: store, api: api, memberId: 'fixture');
+    final cache = FileCache.open(':memory:', api, tempDir: 'unused');
+    final state = AppState()
+      ..engine = engine
+      ..files = cache;
+    addTearDown(() async {
+      await engine.dispose();
+      store.close();
+      cache.close();
+      api.close();
+    });
+    // What file_picker hands over (PlatformFile.readAsByteStream).
+    Stream<Uint8List> read() async* {
+      for (var i = 0; i < chunks; i++) {
+        yield Uint8List(chunk)..fillRange(0, chunk, i);
+      }
+    }
+
+    final picked = await pickedFromSource(
+      name: ref.name,
+      openRead: read,
+      length: () async => ref.size,
+      maxBytes: ref.size,
+    );
+    expect(picked.bytes, isNull);
+    expect((await uploadPickedState(state, picked)).id, ref.id);
+  });
+  test('any other upload failure becomes a message (#533)', () async {
+    final api = FamioApiClient(
+      'http://localhost',
+      httpClient: MockClient((request) async {
+        return http.Response('{}', 200);
+      }),
+    );
+    final store = LocalStore.open(':memory:');
+    final engine = SyncEngine(store: store, api: api, memberId: 'fixture');
+    final cache = FileCache.open(':memory:', api, tempDir: 'unused');
+    final state = AppState()
+      ..engine = engine
+      ..files = cache;
+    addTearDown(() async {
+      await engine.dispose();
+      store.close();
+      cache.close();
+      api.close();
+    });
+    final broken = PickedFile.stream(
+      () => throw StateError('source gone'),
+      'broken.bin',
+      'application/octet-stream',
+      sourceLength: 9 * 1024 * 1024,
+    );
+    await expectLater(
+      uploadPickedState(state, broken),
+      throwsA(isA<ApiError>().having((e) => e.message, 'message', isNotEmpty)),
+    );
+  });
 }

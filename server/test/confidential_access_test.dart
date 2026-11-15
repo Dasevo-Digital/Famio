@@ -774,10 +774,21 @@ void main() {
     });
 
     test('follow the audience of the budget', () async {
+      // The server takes it from the budget's settings, not from what an
+      // app sends with the subscription (#538).
       await sync(
         mama,
         changes: [
-          abo('s2', audience: [mama.id]),
+          SyncRecord(
+            collection: Collections.budgetSettings,
+            id: BudgetSettings.recordId,
+            data: {
+              ...BudgetSettings(memberIds: [mama.id]).toData(),
+              SyncRecord.visibilityKey: [mama.id],
+            },
+            updatedAt: clock += 1000,
+          ),
+          abo('s2'),
         ],
       );
       expect(await has(mama, 's2'), isTrue);
