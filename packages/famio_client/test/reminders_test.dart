@@ -148,4 +148,41 @@ void main() {
     expect((back.bringerId, back.pickerId), ('papa', 'mama'));
     expect(back.copyWith(pickerId: null).pickerId, isNull);
   });
+
+  test('lift reminders speak the app\'s language, with the same key', () {
+    final lift = CalendarEvent(
+      id: 'e',
+      title: 'Training',
+      start: DateTime(2026, 10, 8, 17),
+      end: DateTime(2026, 10, 8, 18, 30),
+      bringerId: 'papa',
+      pickerId: 'papa',
+    );
+    List<(String, String)> reminders() => [
+      for (final r in upcomingReminders(
+        events: [lift],
+        tasks: const [],
+        memberId: 'papa',
+        from: DateTime(2026, 10, 8),
+        to: DateTime(2026, 10, 9),
+      ))
+        (r.key, r.title),
+    ];
+    final german = reminders();
+    final before = sharedTexts;
+    addTearDown(() => sharedTexts = before);
+    for (final (language, bring, pick) in [
+      ('en', '🚗 Drop off: Training', '🚗 Pick up: Training'),
+      ('es', '🚗 Llevar: Training', '🚗 Recoger: Training'),
+    ]) {
+      sharedTexts = (key, german) => sharedTranslation(language, key) ?? german;
+      final shown = reminders();
+      expect([for (final (_, title) in shown) title], [bring, pick]);
+      // Rescheduling in another language replaces no notification.
+      expect(
+        [for (final (key, _) in shown) key],
+        [for (final (key, _) in german) key],
+      );
+    }
+  });
 }

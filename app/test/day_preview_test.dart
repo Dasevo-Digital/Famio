@@ -1,5 +1,6 @@
 import 'package:famio/src/data/day_preview.dart';
 import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/data/waste.dart';
 import 'package:famio/src/weather/weather.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -76,6 +77,53 @@ void main() {
       '14:00 🚗 bringen: Turnier',
       '🍽 Essen: Pfannkuchen',
       '2 Aufgaben fällig: Rasen mähen, Steuer',
+    ]);
+  });
+
+  test('birthdays and bins once, and not counted as appointments', () {
+    final engine = newEngine()
+      ..saveChild(
+        Child(id: 'k', name: 'Lea', birthDate: DateTime(2020, 10, 25)),
+      )
+      ..saveEvent(
+        CalendarEvent(
+          id: 'a',
+          title: 'Brunch',
+          start: DateTime(2026, 10, 25, 10),
+          end: DateTime(2026, 10, 25, 12),
+        ),
+      )
+      ..saveCalendarSubscription(
+        const CalendarSubscription(
+          id: 'abfall',
+          name: 'Abfall',
+          url: 'https://example.org/a.ics',
+        ),
+      )
+      ..saveWasteSettings(const WasteSettings(sourceId: 'abfall'));
+    // The bin calendar as the server imports it.
+    engine.store.put(
+      SyncRecord(
+        collection: Collections.externalEvents,
+        id: 'rest',
+        data: CalendarEvent(
+          id: 'rest',
+          title: 'Restmüll',
+          start: day,
+          end: DateTime(2026, 10, 26),
+          allDay: true,
+          sourceId: 'abfall',
+        ).toData(),
+        updatedAt: 1,
+      ),
+      dirty: false,
+    );
+    final p = buildDayPreview(engine, day)!;
+    expect(p.title, 'Dein Tag · 1 Termin');
+    expect(p.lines, [
+      '10:00 Brunch',
+      '🎂 Geburtstag: Lea',
+      '🗑 Abfall: ⚫ Restmüll',
     ]);
   });
 

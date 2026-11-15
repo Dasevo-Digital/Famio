@@ -2874,5 +2874,15 @@
   "medsPharmacyItem": "{name} (pharmacy)",
   "choresPaused": "paused",
   "choresTodayName": "today: {name}",
-  "choresAccountsGuests": "Only family members see points and pocket money, not guests."
+  "choresAccountsGuests": "Only family members see points and pocket money, not guests.",
+  "eventRepeatEveryDays": "{n, plural, =1{Daily} other{Every {n} days}}",
+  "eventRepeatEveryWeeks": "{n, plural, =1{Weekly} other{Every {n} weeks}}",
+  "eventRepeatEveryMonths": "{n, plural, =1{Monthly} other{Every {n} months}}",
+  "eventRepeatEveryYears": "{n, plural, =1{Yearly} other{Every {n} years}}",
+  "eventGuestReadOnly": "As a guest you can look at appointments and comment on them, but not change them.",
+  "calendarNotForGuests": "Connected calendars and calendar subscriptions are not available to guests.",
+  "shareAllOnListAlready": "Everything is on “{list}” already",
+  "birthdayTurnsAge": "{name} turns {age}",
+  "birthdayHasBirthday": "It's {name}'s birthday",
+  "birthdayBornIn": "Born {year}"
 }

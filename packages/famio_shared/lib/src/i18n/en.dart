@@ -767,6 +767,8 @@ const sharedEn = <String, String>{
   "Client|Unerwartete Antwort vom Server (HTTP {status})":
       "Unexpected answer from the server (HTTP {status})",
   "Client|Fehler {status}": "Error {status}",
+  "Client|🚗 Bringen: {title}": "🚗 Drop off: {title}",
+  "Client|🚗 Abholen: {title}": "🚗 Pick up: {title}",
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Too many failed attempts. Please try again in {minutes} minute(s).",
   "Server|Nicht angemeldet": "Not signed in",

@@ -2874,5 +2874,15 @@
   "medsPharmacyItem": "{name} (farmacia)",
   "choresPaused": "en pausa",
   "choresTodayName": "hoy: {name}",
-  "choresAccountsGuests": "Solo los miembros de la familia ven los puntos y la paga, no los invitados."
+  "choresAccountsGuests": "Solo los miembros de la familia ven los puntos y la paga, no los invitados.",
+  "eventRepeatEveryDays": "{n, plural, =1{Cada día} other{Cada {n} días}}",
+  "eventRepeatEveryWeeks": "{n, plural, =1{Cada semana} other{Cada {n} semanas}}",
+  "eventRepeatEveryMonths": "{n, plural, =1{Cada mes} other{Cada {n} meses}}",
+  "eventRepeatEveryYears": "{n, plural, =1{Cada año} other{Cada {n} años}}",
+  "eventGuestReadOnly": "Como invitado puedes ver las citas y comentarlas, pero no cambiarlas.",
+  "calendarNotForGuests": "Los calendarios conectados y las suscripciones de calendario no están disponibles para invitados.",
+  "shareAllOnListAlready": "Ya está todo en «{list}»",
+  "birthdayTurnsAge": "{name} cumple {age}",
+  "birthdayHasBirthday": "{name} cumple años",
+  "birthdayBornIn": "Nació en {year}"
 }

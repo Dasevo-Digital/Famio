@@ -215,6 +215,34 @@ void main() {
     expect([for (final d in plan.days) d.chores.length], [2, 1, 1, 2, 1, 0, 0]);
   });
 
+  test('what only some see is busy on the fridge (KAL-144)', () {
+    final engine = _family();
+    // As from a private calendar: not confidential, but only for Mama.
+    engine.put(Collections.events, 'privat', {
+      ...CalendarEvent(
+        id: 'privat',
+        title: 'Bewerbungsgespräch',
+        start: _day(2, 11),
+        end: _day(2, 12),
+      ).toData(),
+      SyncRecord.visibilityKey: ['m1'],
+    });
+    engine.saveEvent(
+      CalendarEvent(
+        id: 'vertraulich',
+        title: 'Therapie',
+        start: _day(2, 15),
+        end: _day(2, 16),
+        confidential: true,
+      ),
+    );
+    final plan = buildWeekPlan(engine, _monday);
+    expect(
+      [for (final e in plan.days[2].events) '${e.time} ${e.title}'],
+      ['11:00 Belegt', '15:00 Belegt'],
+    );
+  });
+
   test('an empty week is still a plan to write on', () {
     final empty = SyncEngine(
       store: LocalStore.open(':memory:')..setMeta('members', _members),

@@ -21,6 +21,10 @@ import '../l10n.dart';
 /// [occurrence] (which may be one appearance of a series).
 /// [start], [end], [allDay], [title] and [memberIds] prefill a new
 /// appointment (e.g. a free time found for several people, a quick entry).
+///
+/// A guest reads an appointment and may comment on it, but enters and
+/// changes none (the server keeps guests' changes out): [occurrence]
+/// opens for reading, a new one not at all. Returns whether it was saved.
 Future<bool> showEventEditor(
   BuildContext context, {
   DateTime? day,
@@ -34,6 +38,10 @@ Future<bool> showEventEditor(
   List<FileRef>? files,
   Set<String>? memberIds,
 }) async {
+  if (AppScope.read(context).engine?.iAmGuest ?? false) {
+    if (occurrence != null) await _showEventDetails(context, occurrence);
+    return false;
+  }
   final saved = await Navigator.of(context).push<bool>(
     MaterialPageRoute(
       fullscreenDialog: true,
@@ -54,39 +62,148 @@ Future<bool> showEventEditor(
   return saved ?? false;
 }
 
-enum _Repeat {
-  none(null, 1),
-  daily(RecurrenceFrequency.daily, 1),
-  weekly(RecurrenceFrequency.weekly, 1),
-  biweekly(RecurrenceFrequency.weekly, 2),
-  monthly(RecurrenceFrequency.monthly, 1),
-  yearly(RecurrenceFrequency.yearly, 1);
+Future<void> _showEventDetails(BuildContext context, Occurrence occurrence) =>
+    showModalBottomSheet<void>(
+      context: context,
+      // Above the floating navigation bar.
+      useRootNavigator: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      builder: (_) => _EventDetails(occurrence: occurrence),
+    );
 
-  const _Repeat(this.frequency, this.interval);
+/// An appointment for reading: when, where, who, its files and comments.
+class _EventDetails extends StatelessWidget {
+  const _EventDetails({required this.occurrence});
 
-  String get label => switch (this) {
-    none => tr.eventRepeatNever,
-    daily => tr.eventRepeatDaily,
-    weekly => tr.eventRepeatWeekly,
-    biweekly => tr.eventRepeatBiweekly,
-    monthly => tr.eventRepeatMonthly,
-    yearly => tr.eventRepeatYearly,
-  };
+  final Occurrence occurrence;
+
+  String get _when {
+    final o = occurrence;
+    if (o.event.allDay) {
+      final last = DateTime(o.end.year, o.end.month, o.end.day - 1);
+      return DateUtils.isSameDay(last, o.start) || last.isBefore(o.start)
+          ? dayLabel(o.start)
+          : '${dayLabel(o.start)} – ${dayLabel(last)}';
+    }
+    return DateUtils.isSameDay(o.start, o.end)
+        ? '${dateTimeLabel(o.start)} – ${timeLabel(o.end)}'
+        : '${dateTimeLabel(o.start)} – ${dateTimeLabel(o.end)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final c = FamioColors.of(context);
+    final engine = AppScope.engineOf(context);
+    final e = occurrence.event;
+    final who = e.memberIds.isEmpty
+        ? tr.commonWholeFamily
+        : [
+            for (final id in e.memberIds) ?engine.member(id)?.displayName,
+          ].join(', ');
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        0,
+        24,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(e.title, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 8),
+          Text(_when),
+          if (e.location.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(e.location),
+          ],
+          const SizedBox(height: 4),
+          Text(who, style: TextStyle(color: c.inkSoft)),
+          if (engine.liftsLabel(e) case final lifts?) ...[
+            const SizedBox(height: 4),
+            Text(lifts, style: TextStyle(color: c.inkSoft)),
+          ],
+          if (e.notes.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            SelectableText(e.notes),
+          ],
+          if (e.files.isNotEmpty) ...[
+            ListHeading(tr.tasksPhotos),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final file in e.files)
+                  FileThumb(
+                    file: file,
+                    gallery: e.files,
+                    section: FamioSection.calendar,
+                  ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Text(
+            tr.eventGuestReadOnly,
+            style: theme.textTheme.bodySmall?.copyWith(color: c.inkSoft),
+          ),
+          const SizedBox(height: 8),
+          EventComments(eventId: e.id),
+        ],
+      ),
+    );
+  }
+}
+
+/// A repetition the editor offers: the presets, and the one a series
+/// already has if it is none of them (every 3 weeks from a calendar app or
+/// an .ics file), so saving keeps it.
+@immutable
+class _Repeat {
+  const _Repeat(this.frequency, [this.interval = 1]);
+
+  static _Repeat of(Recurrence? r) =>
+      r == null ? none : _Repeat(r.frequency, r.interval < 1 ? 1 : r.interval);
+
+  static const none = _Repeat(null);
+
+  static const presets = [
+    none,
+    _Repeat(RecurrenceFrequency.daily),
+    _Repeat(RecurrenceFrequency.weekly),
+    _Repeat(RecurrenceFrequency.weekly, 2),
+    _Repeat(RecurrenceFrequency.monthly),
+    _Repeat(RecurrenceFrequency.yearly),
+  ];
 
   final RecurrenceFrequency? frequency;
   final int interval;
 
-  static _Repeat of(Recurrence? r) => r == null
-      ? none
-      : values.firstWhere(
-          (v) => v.frequency == r.frequency && v.interval == r.interval,
-          orElse: () => switch (r.frequency) {
-            RecurrenceFrequency.daily => daily,
-            RecurrenceFrequency.weekly => weekly,
-            RecurrenceFrequency.monthly => monthly,
-            RecurrenceFrequency.yearly => yearly,
-          },
-        );
+  String get label => switch ((frequency, interval)) {
+    (null, _) => tr.eventRepeatNever,
+    (RecurrenceFrequency.daily, 1) => tr.eventRepeatDaily,
+    (RecurrenceFrequency.weekly, 1) => tr.eventRepeatWeekly,
+    (RecurrenceFrequency.weekly, 2) => tr.eventRepeatBiweekly,
+    (RecurrenceFrequency.monthly, 1) => tr.eventRepeatMonthly,
+    (RecurrenceFrequency.yearly, 1) => tr.eventRepeatYearly,
+    (RecurrenceFrequency.daily, final n) => tr.eventRepeatEveryDays(n),
+    (RecurrenceFrequency.weekly, final n) => tr.eventRepeatEveryWeeks(n),
+    (RecurrenceFrequency.monthly, final n) => tr.eventRepeatEveryMonths(n),
+    (RecurrenceFrequency.yearly, final n) => tr.eventRepeatEveryYears(n),
+  };
+
+  @override
+  bool operator ==(Object other) =>
+      other is _Repeat &&
+      other.frequency == frequency &&
+      other.interval == interval;
+
+  @override
+  int get hashCode => Object.hash(frequency, interval);
 }
 
 Map<int, String> get _timedReminders => {
@@ -172,6 +289,14 @@ class _EventEditorState extends State<_EventEditor> {
   var _confirmation = const AssignmentSettings();
 
   bool get _isSeries => _original?.recurrence != null;
+
+  /// The presets, and the series' own repetition if it is none of them.
+  late final _repeats = [
+    ..._Repeat.presets,
+    if (_Repeat.of(_original?.recurrence) case final own
+        when !_Repeat.presets.contains(own))
+      own,
+  ];
 
   @override
   void initState() {
@@ -574,7 +699,7 @@ class _EventEditorState extends State<_EventEditor> {
                   prefixIcon: Icon(AppIcons.repeat),
                 ),
                 items: [
-                  for (final r in _Repeat.values)
+                  for (final r in _repeats)
                     DropdownMenuItem(value: r, child: Text(r.label)),
                 ],
                 onChanged: (r) => setState(() => _repeat = r ?? _Repeat.none),

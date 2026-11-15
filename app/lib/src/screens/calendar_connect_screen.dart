@@ -7,6 +7,7 @@ import '../app_state.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../format.dart';
 import '../widgets/calendar_sharing.dart';
 import '../widgets/data_builder.dart';
@@ -548,6 +549,10 @@ class _SubscriptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Guests get no subscriptions, and a new one would never be saved.
+    if (AppScope.engineOf(context).iAmGuest) {
+      return const CalendarsNotForGuests();
+    }
     return DataBuilder(
       collections: const {
         Collections.calendarSubscriptions,

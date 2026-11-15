@@ -100,7 +100,9 @@ Future<void> showShareTarget(
                   FamioSection.meals,
                   tr.shareAsRecipe,
                 ),
-              if (files.isEmpty && lines.isNotEmpty)
+              if (files.isEmpty &&
+                  lines.isNotEmpty &&
+                  !state.hiddenModules.contains(FamioSection.shopping.name))
                 option(
                   _Target.shopping,
                   AppIcons.basket,
@@ -114,7 +116,8 @@ Future<void> showShareTarget(
                 FamioSection.tasks,
                 tr.shareAsTask,
               ),
-              if (files.isEmpty)
+              // Guests write no notes (the server keeps them out).
+              if (files.isEmpty && !me.isGuest)
                 option(
                   _Target.note,
                   AppIcons.note,
@@ -171,12 +174,22 @@ Future<void> showShareTarget(
       case _Target.shopping:
         final list = await _pickList(context, engine);
         if (list == null) break;
+        // What is open on the list already stays as it is (see putOnList).
+        var added = 0;
         for (final line in lines) {
-          engine.putOnList(newShoppingItem(engine, list.id, line));
+          if (!engine.putOnList(newShoppingItem(engine, list.id, line))) {
+            added++;
+          }
         }
         go(FamioSection.shopping);
         messenger.showSnackBar(
-          SnackBar(content: Text(tr.shareAddedToList(lines.length, list.name))),
+          SnackBar(
+            content: Text(
+              added == 0
+                  ? tr.shareAllOnListAlready(list.name)
+                  : tr.shareAddedToList(added, list.name),
+            ),
+          ),
         );
       case _Target.task:
         final refs = await _upload(context, files);

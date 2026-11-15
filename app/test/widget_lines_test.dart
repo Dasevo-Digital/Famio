@@ -66,4 +66,41 @@ void main() {
       ],
     );
   });
+
+  test('appointments only some see are busy, packing lists no shopping', () {
+    final engine = SyncEngine(
+      store: LocalStore.open(':memory:'),
+      api: FamioApiClient('localhost:1'),
+      memberId: 'm1',
+    );
+    final now = DateTime(2026, 9, 28, 9);
+    // "Nur ich", as from a private calendar: not confidential, but on a
+    // home screen others pass by (GRU-150).
+    engine
+      ..put(Collections.events, 'mine', {
+        ...CalendarEvent(
+          id: 'mine',
+          title: 'Bewerbungsgespräch',
+          start: DateTime(2026, 9, 28, 11),
+          end: DateTime(2026, 9, 28, 12),
+        ).toData(),
+        SyncRecord.visibilityKey: ['m1'],
+      })
+      ..saveShoppingList(const ShoppingList(id: 'l', name: 'Einkauf'))
+      ..saveShoppingItem(
+        const ShoppingItem(id: 'i', listId: 'l', name: 'Milch'),
+      )
+      // Things to pack are nothing to buy (GRU-149).
+      ..saveShoppingList(
+        const ShoppingList(id: 'p', name: '🧳 Ostsee', packing: true),
+      );
+    for (final name in ['Badehose', 'Sonnencreme', 'Handtuch']) {
+      engine.saveShoppingItem(ShoppingItem(id: name, listId: 'p', name: name));
+    }
+    final (_, lines) = widgetLines(engine, now);
+    expect(
+      [for (final l in lines) (l.kind, l.text)],
+      [('event', 'Belegt'), ('shopping', '1 Sache einkaufen')],
+    );
+  });
 }

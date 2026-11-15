@@ -1,5 +1,7 @@
 import 'package:famio_shared/famio_shared.dart';
 
+import 'client_texts.dart';
+
 /// A notification this device should show at [at].
 class DueReminder {
   const DueReminder({
@@ -71,11 +73,24 @@ List<DueReminder> upcomingReminders({
     }
   }
   // Lifts: the one who brings and the one who picks up, whatever the
-  // event's own reminder.
+  // event's own reminder. [verb] is part of the stable key, the title is in
+  // the app's language.
   for (final event in events) {
-    for (final (who, lead, verb, fromEnd) in [
-      (event.bringerId, CalendarEvent.bringLead, 'Bringen', false),
-      (event.pickerId, CalendarEvent.pickLead, 'Abholen', true),
+    for (final (who, lead, verb, title, fromEnd) in [
+      (
+        event.bringerId,
+        CalendarEvent.bringLead,
+        'Bringen',
+        ClientTexts.liftDropOff,
+        false,
+      ),
+      (
+        event.pickerId,
+        CalendarEvent.pickLead,
+        'Abholen',
+        ClientTexts.liftPickUp,
+        true,
+      ),
     ]) {
       if (who != memberId || event.allDay) continue;
       for (final o in event.occurrencesBetween(
@@ -88,7 +103,7 @@ List<DueReminder> upcomingReminders({
           DueReminder(
             key: 'lift:$verb:${o.key}',
             at: at,
-            title: '🚗 $verb: ${event.title}',
+            title: title(event.title),
             occurrence: o,
           ),
         );

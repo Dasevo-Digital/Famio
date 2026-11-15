@@ -32,9 +32,14 @@ DayPreview? buildDayPreview(
   final end = DateTime(day.year, day.month, day.day + 1);
   final me = engine.memberId;
   final time = DateFormat.jm(appLanguage);
+  final bins = engine.wasteConfigured ? engine.wasteSettings : null;
+  // Birthdays and the bins have their own lines below: not twice, and no
+  // appointments in the title's count.
   final events = [
     for (final o in engine.occurrencesForDays(day, end))
       if (!o.start.isBefore(engine.calendar.day(day)) &&
+          !isBirthdaySource(o.event.sourceId) &&
+          !(bins?.isPickup(o.event) ?? false) &&
           (o.event.involves(me) ||
               o.event.bringerId == me ||
               o.event.pickerId == me))

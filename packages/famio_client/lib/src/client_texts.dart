@@ -79,6 +79,13 @@ abstract final class ClientTexts {
 
   static String error(int status) => _t('Fehler {status}', {'status': status});
 
+  /// Reminders of a lift: the one who brings, the one who picks up.
+  static String liftDropOff(String title) =>
+      _t('🚗 Bringen: {title}', {'title': title});
+
+  static String liftPickUp(String title) =>
+      _t('🚗 Abholen: {title}', {'title': title});
+
   /// Every message once, for the translation check.
   static List<String> all() => [
     googleCanceled,
@@ -102,5 +109,7 @@ abstract final class ClientTexts {
     unreachable('No route to host'),
     unexpectedAnswer(0),
     error(0),
+    liftDropOff(''),
+    liftPickUp(''),
   ];
 }

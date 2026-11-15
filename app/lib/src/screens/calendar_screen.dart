@@ -8,6 +8,7 @@ import '../app_state.dart';
 import '../data/birthdays.dart';
 import '../data/holidays.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/week_plan.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -143,18 +144,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
+    // Guests read the calendar; appointments are entered by the family.
+    final guest = AppScope.engineOf(context).iAmGuest;
     return SectionPage(
       section: FamioSection.calendar,
       title: tr.sectionCalendar,
       subtitle: DateFormat.MMMMEEEEd(appLanguage).format(_selected),
       actions: [
-        BubbleButton(
-          icon: AppIcons.scanBarcode,
-          tooltip: tr.calendarRecognizeEventsPhotoText,
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const EventImportScreen()),
+        if (!guest)
+          BubbleButton(
+            icon: AppIcons.scanBarcode,
+            tooltip: tr.calendarRecognizeEventsPhotoText,
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const EventImportScreen(),
+              ),
+            ),
           ),
-        ),
         BubbleButton(
           icon: AppIcons.calendarSearch,
           tooltip: tr.freeTimeTitle,
@@ -186,11 +192,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         const SyncStatusIcon(),
       ],
-      floating: AddButton(
-        color: c.strong(FamioSection.calendar),
-        tooltip: tr.eventNewEvent,
-        onPressed: () => showEventEditor(context, day: _selected),
-      ),
+      floating: guest
+          ? null
+          : AddButton(
+              color: c.strong(FamioSection.calendar),
+              tooltip: tr.eventNewEvent,
+              onPressed: () => showEventEditor(context, day: _selected),
+            ),
       body: DataBuilder(
         collections: const {
           Collections.events,
@@ -322,6 +330,9 @@ class _MonthGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final start = _CalendarScreenState._gridStart(month);
+    // The family's today, as "Heute" picks it: the device may be in
+    // another zone (and on another date).
+    final today = DateUtils.dateOnly(engine.calendar.today());
     final weekdays = [
       for (var i = 0; i < 7; i++)
         DateFormat.E(
@@ -392,6 +403,7 @@ class _MonthGrid extends StatelessWidget {
                                 start.day + week * 7 + d,
                               ),
                               month: month,
+                              today: today,
                               selected: selected,
                               occurrences:
                                   byDay[DateTime(
@@ -421,6 +433,7 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.month,
+    required this.today,
     required this.selected,
     required this.occurrences,
     required this.detailed,
@@ -430,6 +443,9 @@ class _DayCell extends StatelessWidget {
 
   final DateTime day;
   final DateTime month;
+
+  /// The family's today (see [FamilyCalendar.today]).
+  final DateTime today;
   final DateTime selected;
   final List<Occurrence> occurrences;
   final bool detailed;
@@ -439,7 +455,7 @@ class _DayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final isToday = DateUtils.isSameDay(day, DateTime.now());
+    final isToday = DateUtils.isSameDay(day, today);
     final isSelected = day == selected;
     final inMonth = day.month == month.month;
     const maxShown = 3;

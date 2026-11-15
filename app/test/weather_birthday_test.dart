@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:famio/src/data/birthdays.dart';
 import 'package:famio/src/data/family_data.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio/src/weather/weather.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -201,5 +202,33 @@ void main() {
       const Birthday(2, 29, 2020).next(DateTime(2026, 2, 1)),
       DateTime(2026, 2, 28),
     );
+  });
+
+  test("birthdays speak the app's language (KAL-136)", () {
+    addTearDown(() => useLanguage('de'));
+    const mia = FamilyBirthday(
+      of: BirthdayOf.child,
+      id: 'c1',
+      name: 'Mia',
+      birthday: Birthday(11, 2, 2018),
+    );
+    const oma = FamilyBirthday(
+      of: BirthdayOf.contact,
+      id: 'o',
+      name: 'Oma Inge',
+      birthday: Birthday(12, 24),
+    );
+    final on = DateTime(2026, 11, 2);
+    expect(
+      [mia.headline(on), oma.headline(on)],
+      ['Mia wird 8', 'Oma Inge hat Geburtstag'],
+    );
+    useLanguage('en');
+    expect(
+      [mia.headline(on), oma.headline(on)],
+      ['Mia turns 8', "It's Oma Inge's birthday"],
+    );
+    useLanguage('es');
+    expect(mia.headline(on), 'Mia cumple 8');
   });
 }

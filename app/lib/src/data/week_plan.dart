@@ -118,7 +118,9 @@ WeekPlan buildWeekPlan(SyncEngine engine, DateTime monday) {
     final everyone = e.memberIds.isEmpty;
     return (
       time: e.allDay || !firstDay ? null : time.format(o.start),
-      title: e.publicTitle,
+      // The plan hangs on the fridge: what is confidential or only for
+      // some (a private calendar) only says it is busy.
+      title: engine.wallTitle(e),
       people: [
         if (!everyone) names(e.memberIds).join(', '),
         if (e.bringerId != null && name(e.bringerId!).isNotEmpty)

@@ -790,6 +790,8 @@ const sharedEs = <String, String>{
   "Client|Unerwartete Antwort vom Server (HTTP {status})":
       "Respuesta inesperada del servidor (HTTP {status})",
   "Client|Fehler {status}": "Error {status}",
+  "Client|🚗 Bringen: {title}": "🚗 Llevar: {title}",
+  "Client|🚗 Abholen: {title}": "🚗 Recoger: {title}",
   "Server|Zu viele Fehlversuche. Bitte in {minutes} Minute(n) erneut versuchen.":
       "Demasiados intentos fallidos. Inténtalo de nuevo dentro de {minutes} minuto(s).",
   "Server|Nicht angemeldet": "Sesión no iniciada",

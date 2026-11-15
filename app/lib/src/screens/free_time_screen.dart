@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/free_slots.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
@@ -52,6 +53,7 @@ class _FreeTimeScreenState extends State<FreeTimeScreen> {
         'members',
       },
       builder: (context, engine) {
+        final guest = engine.iAmGuest;
         final people = [
           for (final m in engine.members)
             if (!m.isService) m,
@@ -158,13 +160,18 @@ class _FreeTimeScreenState extends State<FreeTimeScreen> {
                         title: Text(
                           '${time.format(s.start)} – ${time.format(s.end)}',
                         ),
-                        trailing: Icon(AppIcons.plus, color: color),
-                        onTap: () => showEventEditor(
-                          context,
-                          start: s.start,
-                          end: s.end,
-                          memberIds: who,
-                        ),
+                        // Guests enter no appointments.
+                        trailing: guest
+                            ? null
+                            : Icon(AppIcons.plus, color: color),
+                        onTap: guest
+                            ? null
+                            : () => showEventEditor(
+                                context,
+                                start: s.start,
+                                end: s.end,
+                                memberIds: who,
+                              ),
                       ),
                     ),
                   ),

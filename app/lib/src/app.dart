@@ -77,10 +77,48 @@ class FamioApp extends StatelessWidget {
             );
           },
           home: const _Root(),
+          // Famio has no named pages: an address the platform still hands
+          // over as one (deep linking is off) is dropped, not an error.
+          onUnknownRoute: _DroppedRoute.new,
         ),
       ),
     );
   }
+}
+
+/// A route for an address Famio has no page for: shows nothing and removes
+/// itself right away.
+class _DroppedRoute extends PageRouteBuilder<void> {
+  _DroppedRoute(RouteSettings settings)
+    : super(
+        settings: settings,
+        opaque: false,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        pageBuilder: (_, _, _) => const _Drop(),
+      );
+}
+
+class _Drop extends StatefulWidget {
+  const _Drop();
+
+  @override
+  State<_Drop> createState() => _DropState();
+}
+
+class _DropState extends State<_Drop> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final route = ModalRoute.of(context);
+      if (route != null && route.isActive) route.navigator?.removeRoute(route);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
 /// German and Spanish write times with 24 hours, also on a phone set to 12.

@@ -93,4 +93,31 @@ void main() {
     expect(memoriesOn(e, DateTime(2028, 2, 29)).photos, hasLength(1));
     expect(memoriesOn(e, DateTime(2025, 2, 28)).oneYearAgo, isTrue);
   });
+
+  test('a confidential trip stays out, as in the year review (HAU-149)', () {
+    final e = _engine()
+      ..saveEvent(
+        CalendarEvent(
+          id: 'geheim',
+          title: 'Geheimreise',
+          start: DateTime(2025, 10, 18),
+          end: DateTime(2025, 10, 25),
+          allDay: true,
+          confidential: true,
+        ),
+      )
+      ..saveEvent(
+        CalendarEvent(
+          id: 'ostsee',
+          title: 'Ostsee',
+          start: DateTime(2024, 10, 18),
+          end: DateTime(2024, 10, 25),
+          allDay: true,
+        ),
+      );
+    expect(
+      [for (final l in memoriesOn(e, DateTime(2026, 10, 20, 9)).lines) l.text],
+      ['Ostsee'],
+    );
+  });
 }

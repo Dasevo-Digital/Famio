@@ -907,21 +907,19 @@ void main() {
         'Brot',
         'Eier',
       });
-      // The hint: shared again, the notice counts the lines anew.
+      // Shared again: all open on the list already, and the notice says so.
       await snackGone(tester);
       await share('- Milch\n2. Brot\n[ ] Eier');
       await tap(tester, find.text(de.shareToShopping));
-      await waitFor(tester, find.textContaining('Artikel auf'));
-      final again = find
-          .textContaining('Artikel auf')
-          .evaluate()
-          .map((e) => (e.widget as Text).data)
-          .join();
+      await waitFor(
+        tester,
+        find.text(de.shareAllOnListAlready(de.sectionShopping)),
+      );
       final milk = engine
           .shoppingItems(first.id)
           .where((i) => i.name == 'Milch' && !i.checked)
           .length;
-      note('ALL-132 hint: second share says "$again", open Milch: $milk');
+      expect(milk, 1, reason: 'ALL-132: not twice on the list');
 
       // GRU-086: with two lists Famio asks which one, then shows it.
       final b = ShoppingList(id: uid('list'), name: 'E2E Liste B');
@@ -1091,7 +1089,7 @@ void main() {
   androidTest('GRU-088 HAU-023 sharing as a guest', (tester) async {
     await hostOk('grant');
     final f = await theFamily();
-    // The hint: an area switched off stays in the sheet.
+    // An area switched off is not offered (was a hint).
     await f.admin.updateServerSettings({
       'hiddenModules': [FamioSection.shopping.name],
     });
@@ -1111,12 +1109,10 @@ void main() {
       expect(offered(de.shareAsDocument), isFalse);
       expect(offered(de.shareAsTask), isTrue);
       expect(offered(de.shareToChat), isTrue);
-      final shopping = offered(de.shareToShopping);
-      final noteOffered = offered(de.shareAsNote);
-      note(
-        'GRU-088 hint: shopping offered with the area off: $shopping, '
-        'note offered to a guest: $noteOffered',
-      );
+      // Was a hint: the shopping list with the area off, and a note, which
+      // guests may not write.
+      expect(offered(de.shareToShopping), isFalse);
+      expect(offered(de.shareAsNote), isFalse);
       await tester.tapAt(const Offset(200, 60));
     } finally {
       await f.admin.updateServerSettings({'hiddenModules': null});
@@ -1170,10 +1166,12 @@ void main() {
         findsWidgets,
         reason: 'Famio switched to the calendar',
       );
-      // Android also hands the file's address to Flutter as a deep link.
+      // Android no longer hands the file's address to Flutter as a deep
+      // link (was a hint).
       await idle(tester, const Duration(seconds: 2));
       final deepLink = tester.takeException();
       note('KAL-095 deep link: $deepLink');
+      expect(deepLink, isNull);
       expect((await hostOk('tasks')), '1 1');
       await tester.tapAt(const Offset(200, 60));
       await idle(tester, const Duration(seconds: 1));
@@ -1194,10 +1192,8 @@ void main() {
 
   // --- what the catalog's hints suspected ------------------------------------
 
-  // Befund (ALL-132): putOnList returns whether an item was open already,
-  // share_target.dart:175-179 ignores that and always says
-  // "<Zahl der Zeilen> Artikel auf „Liste“": shared again, nothing is added
-  // and Famio still reports three.
+  // Was a Befund (ALL-132): shared again, nothing was added and Famio still
+  // reported three. Now it says everything is on the list already.
   androidTest('ALL-132 hint: lines already on the list count as added', (
     tester,
   ) async {
@@ -1224,12 +1220,8 @@ void main() {
         timeout: const Duration(minutes: 1),
       );
       await tap(tester, find.text(de.shareToShopping));
-      await waitFor(tester, find.textContaining('Artikel auf'));
-      final said = find
-          .textContaining('Artikel auf')
-          .evaluate()
-          .map((e) => (e.widget as Text).data)
-          .join();
+      await waitFor(tester, find.text(de.shareAllOnListAlready('E2E Hinweis')));
+      final said = de.shareAllOnListAlready('E2E Hinweis');
       final open = engine
           .shoppingItems(list.id)
           .where((i) => !i.checked)
@@ -1245,16 +1237,13 @@ void main() {
     } finally {
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
-  // Befund (GRU-088): "Als Notiz auf die Pinnwand" is offered to guests
-  // (share_target.dart:117-124, no isGuest check), the editor opens and
-  // saves, but guests may not write notes (Collections.guestWritable,
-  // collections.dart:296; record_store.dart:344): the server turns it down
-  // and the app drops it (sync_engine.dart:446-463) without a word.
+  // Was a Befund (GRU-088): "Als Notiz auf die Pinnwand" was offered to
+  // guests, and the note they saved vanished without a word (guests may not
+  // write notes). Now it is not offered.
   androidTest('GRU-088 hint: a guest\'s shared text as a note', (tester) async {
     await hostOk('grant');
-    final f = await theFamily();
     final state = await startApp(tester, user: 'e2e-gast');
     try {
       await hostOk('text-share ${b64('E2E Gast Notiz\nZweite Zeile')}');
@@ -1263,39 +1252,17 @@ void main() {
         find.text(de.shareTitle),
         timeout: const Duration(minutes: 1),
       );
-      if (find.text(de.shareAsNote).evaluate().isEmpty) return;
-      await tap(tester, find.text(de.shareAsNote));
-      await waitFor(tester, fieldWith('E2E Gast Notiz'));
-      await save(tester);
-      await state.engine!.sync();
-      await idle(tester, const Duration(seconds: 3));
-      await state.engine!.sync();
-      final onServer = (await titlesOf(
-        f.admin,
-        Collections.notes,
-      )).contains('E2E Gast Notiz');
-      final inApp = state.engine!.notes.any((n) => n.title == 'E2E Gast Notiz');
-      note(
-        'GRU-088 hint: offered, saved; on the server $onServer, in the app '
-        '$inApp, sync ${state.engine!.status.state}, on screen: ${onScreen()}',
-      );
-      expect(
-        onServer || inApp,
-        isTrue,
-        reason: 'offered to a guest, the note vanished without a word',
-      );
+      expect(find.text(de.shareAsNote), findsNothing);
+      expect(find.text(de.shareAsTask), findsOneWidget);
+      await tester.tapAt(const Offset(200, 60));
     } finally {
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
-  // Befund (KAL-095): a calendar file opened with Famio also reaches
-  // Flutter as a deep link (Flutter's default flutter_deeplinking_enabled,
-  // not switched off in AndroidManifest.xml): the route
-  // "/document/raw:/storage/…/x.ics" has no generator in the app
-  // (app.dart:28, MaterialApp without onGenerateRoute/onUnknownRoute), so
-  // every opened file throws "Could not find a generator for route". The
-  // import sheet itself shows.
+  // Was a Befund (KAL-095): a calendar file opened with Famio also reached
+  // Flutter as a deep link and threw "Could not find a generator for
+  // route". Deep linking is off now, and an unknown route is dropped.
   androidTest('KAL-095 hint: opening a file is no deep link', (tester) async {
     await hostOk('grant');
     await hostOk('file e2e-link.ics ${b64(_oneEvent('E2E Tiefer Link'))}');
@@ -1314,7 +1281,7 @@ void main() {
     } finally {
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
   // --- the home screen widget -------------------------------------------------
 
@@ -1409,12 +1376,14 @@ void main() {
       // Two appointments, the meal, the tasks, the shopping: five rows.
       expect(lines.skip(1), everyElement(isNotNull));
       expect(lines[1], de.eventBusy, reason: 'confidential first (GRU-150)');
-      note('GRU-150 hint: "Nur ich" event shows as "${lines[2]}"');
+      // Was a hint: "Nur ich" showed its title, now it is busy as well.
+      expect(lines[2], de.eventBusy, reason: '"Nur ich" (GRU-150)');
+      expect(lines.contains('E2E Nur ich Termin'), isFalse);
       expect(lines, contains(de.widgetTasksToday(1)));
       expect(lines, contains(de.widgetThingsToBuy(2)));
       expect(lines.contains('E2E Psychotherapie'), isFalse);
       // A packing list is nothing to buy (the shop's notice leaves it out
-      // too): does the widget count it?
+      // too), and the widget does not count it (was a hint).
       final packing = ShoppingList(
         id: uid('list'),
         name: 'E2E Packliste',
@@ -1428,7 +1397,8 @@ void main() {
       }
       await idle(tester, const Duration(seconds: 5));
       final withPacking = await widget();
-      note('GRU-149 hint: with a packing list of 3: $withPacking');
+      note('GRU-149 with a packing list of 3: $withPacking');
+      expect(withPacking, contains(de.widgetThingsToBuy(2)));
       for (final i in engine.shoppingItems(packing.id)) {
         engine.delete(Collections.shoppingItems, i.id);
       }
@@ -1498,11 +1468,9 @@ void main() {
 
   // --- notifications -------------------------------------------------------------
 
-  // Befund (GRU-150): an appointment only some members see ("Nur ich",
-  // a private calendar) shows its title on the home screen widget
-  // (widget_sync.dart:34 uses publicTitle, which only knows "confidential"),
-  // while the wall display says "Belegt" (FamilyData.wallTitle,
-  // family_data.dart:163). Seen in both runs of the widget test.
+  // Was a Befund (GRU-150): an appointment only some members see ("Nur
+  // ich", a private calendar) showed its title on the home screen widget.
+  // Now it says "Belegt", as the wall display does.
   androidTest('GRU-150 hint: restricted appointments in the widget', (
     tester,
   ) async {
@@ -1533,7 +1501,7 @@ void main() {
     } finally {
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
   androidTest('GRU-119 SIC-071 KAL-032 KAL-033 KAL-054 GRU-120 SIC-073 own '
       'push, reminders, contents on and off', (tester) async {
@@ -1785,8 +1753,7 @@ void main() {
       }
       note('lock screen: ${await hostOk('notifications-private')}');
 
-      // The hint (KAL-054): in English the lift reminders still say
-      // "Bringen".
+      // KAL-054 in English: "Drop off" (was a hint: still "Bringen").
       await state.setLanguage('en');
       final english = upcomingReminders(
         events: [
@@ -1802,9 +1769,8 @@ void main() {
         from: DateTime.now(),
         to: DateTime.now().add(const Duration(hours: 2)),
       );
-      note(
-        'KAL-054 hint, English title: ${english.map((r) => r.title).toList()}',
-      );
+      note('KAL-054 English title: ${english.map((r) => r.title).toList()}');
+      expect(english.map((r) => r.title), ['🚗 Drop off: E2E Lift']);
       await state.setLanguage('de');
       await tap(tester, contents);
     } finally {
@@ -2197,10 +2163,17 @@ void main() {
       expect(lines, contains(de.dayPreviewTasks(1, 'E2E Steuer')));
       expect(lines.any((l) => l.contains('E2E Bea Yoga')), isFalse);
       expect(lines.length, lessThanOrEqualTo(8));
-      note(
-        'KAL-159 hint: lines with the birthday '
-        '${lines.where((l) => l.contains('E2E Lea')).length}, with the bin '
-        '${lines.where((l) => l.contains('Restmüll')).length}',
+      // Was a hint: birthday and bin twice, and counted as appointments.
+      expect(lines.where((l) => l.contains('E2E Lea')), hasLength(1));
+      expect(lines.where((l) => l.contains('Restmüll')), hasLength(1));
+      // Zahnarzt and Schwimmkurs (and a public holiday, if today is one).
+      final holidays = engine
+          .occurrencesOn(day)
+          .where((o) => (o.event.sourceId ?? '').startsWith('holiday:'))
+          .length;
+      expect(
+        overview.title,
+        '${de.dayPreviewTitle} · ${de.dayPreviewEvents(2 + holidays)}',
       );
       expect(
         DateTime.now().isAfter(at.subtract(const Duration(seconds: 59))),
@@ -3532,12 +3505,13 @@ void main() {
         isEmpty,
       );
 
-      // The hint (KAL-136): the headline stays German in English.
+      // KAL-136 in English: the headline too (was a hint: stayed German).
       await state.setLanguage('en');
       final english = familyBirthdays(
         engine,
       ).where((b) => b.name == 'E2E Mia').map((b) => b.headline(next)).toList();
-      note('KAL-136 hint, English: $english');
+      note('KAL-136 English: $english');
+      expect(english, ['E2E Mia turns 8']);
       await state.setLanguage('de');
       await tap(tester, weekSwitch);
     } finally {

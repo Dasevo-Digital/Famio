@@ -957,11 +957,10 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: the filled circle of "heute" follows the device's date while
-  // "Heute", the selection and the day list follow the family's: with the
-  // family a day ahead of the device the circle sits on the day before the
-  // one "Heute" picks (calendar_screen.dart:442).
-  testWidgets('KAL-008 today circle and the family today agree', skip: true, (
+  // Was a Befund: the filled circle of "heute" followed the device's date
+  // while "Heute", the selection and the day list follow the family's. Now
+  // it marks the family's today as well.
+  testWidgets('KAL-008 today circle and the family today agree', (
     tester,
   ) async {
     final f = await setUpFamily(tester);
@@ -1820,51 +1819,54 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: an interval the editor has no choice for (every 3 weeks from
-  // an .ics file or a calendar app) shows as "Wöchentlich" and is saved
-  // with interval 1, also when only the title changed: the series then
-  // comes every week (event_editor.dart:79-89 _Repeat.of falls back to
-  // weekly, 341-346 writes _repeat.interval).
-  testWidgets(
-    'KAL-030 a series every three weeks keeps its interval',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final s = inDays(2);
-      final id = await addEvent(
-        f.admin,
-        'E2E Drei Wochen',
-        at(s, 10),
-        recurrence: const Recurrence(RecurrenceFrequency.weekly, interval: 3),
-      );
-      final state = await startApp(tester);
-      await openCalendar(tester);
-      await selectDay(tester, state, s);
-      await waitFor(tester, find.text('E2E Drei Wochen'));
-      await openEvent(tester, 'E2E Drei Wochen');
-      await scrollTo(tester, dropdownOf(de.eventRepeat));
-      debugPrint('E2E repeat shows ${valueOf(tester, de.eventRepeat)}');
-      await scrollTo(tester, titleField, up: true);
-      await enter(tester, titleField, 'E2E Drei Wochen neu');
-      await save(tester, scope: de.eventAllEventsSeries);
-      await state.engine!.sync();
-      await eventually(
-        tester,
-        'the new title on the server',
-        () async =>
-            (await eventOf(f.admin, id))?.data['title'] ==
-            'E2E Drei Wochen neu',
-      );
-      final stored = CalendarEvent.fromRecord((await eventOf(f.admin, id))!);
-      expect(stored.recurrence?.interval, 3, reason: 'still every 3 weeks');
-      await selectDay(tester, state, DateUtils.addDaysToDate(s, 7));
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(agenda(), isNot(contains('E2E Drei Wochen neu')));
-      await selectDay(tester, state, DateUtils.addDaysToDate(s, 21));
-      await waitFor(tester, find.text('E2E Drei Wochen neu'));
-      await finish(tester, state);
-    },
-  );
+  // Was a Befund: an interval the editor had no choice for (every 3 weeks
+  // from an .ics file or a calendar app) showed as "Wöchentlich" and was
+  // saved with interval 1. Now the editor offers "Alle 3 Wochen" and keeps
+  // it.
+  testWidgets('KAL-030 a series every three weeks keeps its interval', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final s = inDays(2);
+    final id = await addEvent(
+      f.admin,
+      'E2E Drei Wochen',
+      at(s, 10),
+      recurrence: const Recurrence(RecurrenceFrequency.weekly, interval: 3),
+    );
+    final state = await startApp(tester);
+    await openCalendar(tester);
+    await selectDay(tester, state, s);
+    await waitFor(tester, find.text('E2E Drei Wochen'));
+    await openEvent(tester, 'E2E Drei Wochen');
+    await scrollTo(tester, dropdownOf(de.eventRepeat));
+    expect(
+      find.descendant(
+        of: dropdownOf(de.eventRepeat),
+        matching: find.text(de.eventRepeatEveryWeeks(3)),
+      ),
+      findsWidgets,
+      reason: 'offered as it is, not as "Wöchentlich"',
+    );
+    await scrollTo(tester, titleField, up: true);
+    await enter(tester, titleField, 'E2E Drei Wochen neu');
+    await save(tester, scope: de.eventAllEventsSeries);
+    await state.engine!.sync();
+    await eventually(
+      tester,
+      'the new title on the server',
+      () async =>
+          (await eventOf(f.admin, id))?.data['title'] == 'E2E Drei Wochen neu',
+    );
+    final stored = CalendarEvent.fromRecord((await eventOf(f.admin, id))!);
+    expect(stored.recurrence?.interval, 3, reason: 'still every 3 weeks');
+    await selectDay(tester, state, DateUtils.addDaysToDate(s, 7));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(agenda(), isNot(contains('E2E Drei Wochen neu')));
+    await selectDay(tester, state, DateUtils.addDaysToDate(s, 21));
+    await waitFor(tester, find.text('E2E Drei Wochen neu'));
+    await finish(tester, state);
+  });
 
   // --- Erinnerungen und Mitteilungen -------------------------------------------
 
@@ -2599,34 +2601,31 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       expect(agenda(), ['E2E Gastfamilie'], reason: 'KAL-039 for the guest');
 
-      // KAL-050: a new one …
-      expect(find.byTooltip(de.eventNewEvent), findsOneWidget);
-      await newEvent(tester, 'E2E Gast neu');
-      await save(tester);
-      await engine.sync();
-      await waitGone(tester, find.text('E2E Gast neu'));
-      expect(engine.events.where((e) => e.title == 'E2E Gast neu'), isEmpty);
-      // … a changed title …
-      await openEvent(tester, 'E2E Gastfamilie');
-      await enter(tester, titleField, 'E2E Gastfamilie geändert');
-      await save(tester);
-      await engine.sync();
-      await waitFor(tester, find.text('E2E Gastfamilie'));
-      expect(find.text('E2E Gastfamilie geändert'), findsNothing);
-      // … a deletion: undone by the server.
-      await openEvent(tester, 'E2E Gastfamilie');
-      await scrollTo(tester, find.text(de.eventDelete));
-      await tap(tester, find.text(de.eventDelete).last);
-      await waitGone(tester, editorOpen);
+      // KAL-050: no new appointment …
+      expect(find.byTooltip(de.eventNewEvent), findsNothing);
+      // … the appointment opens for reading, without saving or deleting …
       await snackGone(tester);
+      await tap(tester, find.text('E2E Gastfamilie').last);
+      await waitFor(tester, find.text(de.eventGuestReadOnly));
+      expect(editorOpen, findsNothing);
+      expect(find.text(de.commonSave), findsNothing);
+      expect(find.text(de.eventDelete), findsNothing);
+      // … and a comment is the guest's to write.
+      await enter(tester, find.byType(TextField).last, 'E2E Gast kommt mit');
+      await tap(tester, find.byTooltip(de.commonSend).last);
       await engine.sync();
-      await waitFor(tester, find.text('E2E Gastfamilie'));
-      // Nothing of it reaches the others.
+      await tester.tapAt(const Offset(20, 20));
+      await waitGone(tester, find.text(de.eventGuestReadOnly));
+      expect(engine.events.map((e) => e.title), contains('E2E Gastfamilie'));
       final forBea = await pull(bea, Collections.events);
       expect(forBea[family]?.data['title'], 'E2E Gastfamilie');
-      expect(
-        forBea.values.where((r) => r.data['title'] == 'E2E Gast neu'),
-        isEmpty,
+      await eventually(
+        tester,
+        'the guest\'s comment reaches the others',
+        () async => (await pull(
+          bea,
+          Collections.eventComments,
+        )).values.any((r) => r.data['text'] == 'E2E Gast kommt mit'),
       );
 
       // KAL-051

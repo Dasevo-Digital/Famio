@@ -31,7 +31,12 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
     final future = _api.setMemberCalendars(widget.member.id, hidden);
     try {
       await future;
-      if (mounted) setState(() => _calendars = future);
+      // A block: an arrow would hand setState the future (an assertion).
+      if (mounted) {
+        setState(() {
+          _calendars = future;
+        });
+      }
       await engine.sync();
     } on ApiError catch (e) {
       if (mounted) {
@@ -57,9 +62,9 @@ class _MemberCalendarsState extends State<_MemberCalendars> {
             leading: const Icon(AppIcons.cloudSlash),
             title: Text(tr.commonOnlyWithServer),
             trailing: TextButton(
-              onPressed: () => setState(
-                () => _calendars = _api.memberCalendars(widget.member.id),
-              ),
+              onPressed: () => setState(() {
+                _calendars = _api.memberCalendars(widget.member.id);
+              }),
               child: Text(tr.commonAgain),
             ),
           );

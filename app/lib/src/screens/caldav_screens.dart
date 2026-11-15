@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/family_extras.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -427,6 +428,19 @@ class _SecretDialog extends StatelessWidget {
 // --- Famio syncing with other calendars (CalDAV client) ---------------------
 
 /// Two-way sync with iCloud, Nextcloud & co., run by the Famio server.
+/// What a guest sees instead of connected calendars and subscriptions: the
+/// server keeps them for the family (no "Nur mit Verbindung" error, no
+/// subscription that is never saved).
+class CalendarsNotForGuests extends StatelessWidget {
+  const CalendarsNotForGuests({super.key});
+
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: const Icon(AppIcons.info),
+    title: Text(tr.calendarNotForGuests),
+  );
+}
+
 class CalDavAccountsSection extends StatefulWidget {
   const CalDavAccountsSection({super.key});
 
@@ -541,7 +555,10 @@ class _CalDavAccountsSectionState extends State<CalDavAccountsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final api = AppScope.of(context).engine!.api;
+    final engine = AppScope.of(context).engine!;
+    // Not asked at all: the server refuses guests (403).
+    if (engine.iAmGuest) return const CalendarsNotForGuests();
+    final api = engine.api;
     final c = FamioColors.of(context);
     final dateFormat = DateFormat.Md(appLanguage).add_jm();
     return FutureBuilder(

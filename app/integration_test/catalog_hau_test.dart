@@ -4086,9 +4086,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Die Kachel „Heute vor einem Jahr“/„An diesem Tag“ zeigt den
-  // Titel vertraulicher Reisen (memories.dart:138 nimmt e.title ohne Prüfung
-  // auf confidential); der Jahresrückblick lässt sie weg.
+  // War ein Befund: Die Kachel „Heute vor einem Jahr“/„An diesem Tag“
+  // zeigte den Titel vertraulicher Reisen. Jetzt lässt sie sie weg wie der
+  // Jahresrückblick.
   testWidgets('HAU-149 a confidential trip among the memories', (tester) async {
     await reset({Collections.events, Collections.childEntries});
     final f = await theFamily();
@@ -4129,7 +4129,7 @@ void main() {
     debugPrint('E2E HAU-149 start page: ${onScreen()}');
     expect(find.text('E2E Geheimreise'), findsNothing, reason: 'memories');
     await finish(tester, state);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Nutrients

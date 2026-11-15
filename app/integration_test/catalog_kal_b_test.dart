@@ -2998,15 +2998,12 @@ void main() {
 
   // --- Verbundene Kalender, Abos -----------------------------------------------
 
-  // Befund: a guest gets no hint that connected calendars and subscriptions
-  // are not for guests. "Mit Google, iCloud, Nextcloud & Co. abgleichen"
-  // shows "Nur mit Verbindung zum Server verfügbar" (caldav_screens.dart:550,
-  // any error; the server answers 403, calendar_routes.dart:146 `_member`),
-  // and "Kalender abonnieren" closes as if saved while the subscription never
-  // appears (the server takes no guest writes, record_store.dart:344).
+  // Was a Befund: a guest got no hint that connected calendars and
+  // subscriptions are not for guests ("Nur mit Verbindung zum Server
+  // verfügbar", and "Kalender abonnieren" closed as if saved). Now both
+  // sections say so, and there is nothing to subscribe.
   testWidgets(
     'KAL-121 a guest learns that connected calendars are not for guests',
-    skip: true,
     (tester) async {
       final f = await setUpFamily(tester);
       final guest = await sessionOf(f.guest);
@@ -3016,32 +3013,15 @@ void main() {
       await scrollTo(tester, find.text(de.calendarSyncGoogleIcloudNextcloud));
       await tester.pump(const Duration(seconds: 2));
       debugPrint('E2E-INFO the guest sees: ${onScreen()}');
-      // What a guest can do there: a subscription …
-      await scrollTo(tester, find.text(de.calendarSubscribeCalendar));
-      await tap(tester, find.text(de.calendarSubscribeCalendar));
-      await enter(tester, field(de.commonName), 'E2E Gast-Abo');
-      await enter(
-        tester,
-        field(de.calendarIcsAddress),
-        'https://127.0.0.1:9/gast.ics',
-      );
-      await leaveField(tester);
-      await tap(tester, inDialog(find.text(de.commonSave)));
-      await dialogClosed(tester);
-      final shownAfterSave = find.text('E2E Gast-Abo').evaluate().isNotEmpty;
-      await engine.sync();
-      await tester.pump(const Duration(seconds: 3));
-      await engine.sync();
-      await tester.pump(const Duration(seconds: 1));
-      debugPrint(
-        'E2E-INFO guest subscription: shown after saving=$shownAfterSave, '
-        'after the sync=${find.text('E2E Gast-Abo').evaluate().isNotEmpty}, '
-        'on the server=${(await pull(guest, Collections.calendarSubscriptions)).isNotEmpty}',
-      );
-      // Soll: a clear hint for guests, not an error of the connection.
-      await scrollTo(tester, find.text(de.calendarSyncGoogleIcloudNextcloud));
       expect(find.text(de.commonOnlyWithServer), findsNothing);
-      expect(find.textContaining('Gäste'), findsWidgets);
+      expect(find.text(de.calendarNotForGuests), findsWidgets);
+      // Nothing to subscribe that would never be saved.
+      await scrollTo(tester, find.text(de.calendarShowOtherCalendarsFamio));
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.text(de.calendarSubscribeCalendar), findsNothing);
+      expect(find.text(de.calendarNotForGuests), findsWidgets);
+      await engine.sync();
+      expect(await pull(guest, Collections.calendarSubscriptions), isEmpty);
       await finish(tester, state);
     },
   );
@@ -3577,40 +3557,37 @@ void main() {
     },
   );
 
-  // Befund: the switch of a shared calendar on a member's page throws
+  // Was a Befund: the switch of a shared calendar on a member's page threw
   // "setState() callback argument returned a Future" (debug builds) and the
-  // page keeps showing it on: member_calendars.dart:34 writes
-  // `setState(() => _calendars = future)`, an arrow that returns the Future.
-  testWidgets(
-    'KAL-132 a shared calendar switched off on the member\'s page',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final kid = await sessionOf(f.kid);
-      addTearDown(() => f.admin.setMemberCalendars(f.kid.id, const []));
-      final club = await addSubscription(
-        f.admin,
-        'E2E Vereinskalender',
-        owner: f.adminMember.id,
-      );
-      final state = await startApp(tester);
-      await openUser(tester, f.kid.displayName);
-      final toggle = find.widgetWithText(SwitchListTile, 'E2E Vereinskalender');
-      await scrollTo(tester, toggle);
-      expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
-      final errors = <Object>[];
-      await tapGuarded(tester, toggle, errors);
-      await tester.pump(const Duration(seconds: 2));
-      debugPrint('E2E-INFO switching it off threw: $errors');
-      await eventually(tester, 'gone from the child\'s devices', () async {
-        final subs = await pull(kid, Collections.calendarSubscriptions);
-        return !subs.containsKey(club);
-      });
-      expect(errors, isEmpty);
-      expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
-      await finish(tester, state);
-    },
-  );
+  // page kept showing it on.
+  testWidgets('KAL-132 a shared calendar switched off on the member\'s page', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final kid = await sessionOf(f.kid);
+    addTearDown(() => f.admin.setMemberCalendars(f.kid.id, const []));
+    final club = await addSubscription(
+      f.admin,
+      'E2E Vereinskalender',
+      owner: f.adminMember.id,
+    );
+    final state = await startApp(tester);
+    await openUser(tester, f.kid.displayName);
+    final toggle = find.widgetWithText(SwitchListTile, 'E2E Vereinskalender');
+    await scrollTo(tester, toggle);
+    expect(tester.widget<SwitchListTile>(toggle).value, isTrue);
+    final errors = <Object>[];
+    await tapGuarded(tester, toggle, errors);
+    await tester.pump(const Duration(seconds: 2));
+    debugPrint('E2E-INFO switching it off threw: $errors');
+    await eventually(tester, 'gone from the child\'s devices', () async {
+      final subs = await pull(kid, Collections.calendarSubscriptions);
+      return !subs.containsKey(club);
+    });
+    expect(errors, isEmpty);
+    expect(tester.widget<SwitchListTile>(toggle).value, isFalse);
+    await finish(tester, state);
+  });
 
   // --- Geburtstage und Feiertage -----------------------------------------------
 
@@ -4097,42 +4074,37 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (Hinweis KAL-144, #519): an appointment only the admin sees (an
-  // audience, as from a private calendar) is printed with its title on the
-  // plan for the fridge: week_plan.dart:121 hides only confidential ones
-  // (publicTitle), not those with visibleTo.
-  testWidgets(
-    'KAL-144 a private calendar\'s appointment on the week plan',
-    skip: true,
-    (tester) async {
-      final f = await setUpFamily(tester);
-      final picker = fakePicker();
-      final now = today();
-      final private = await addEvent(
-        f.admin,
-        'E2E Privattermin',
-        at(now, 12),
-        visibleTo: [f.adminMember.id],
-      );
-      expect(
-        (await pull(
-          await sessionOf(f.bea),
-          Collections.events,
-        )).containsKey(private),
-        isFalse,
-        reason: 'only the admin sees it',
-      );
-      final state = await startApp(tester);
-      await openCalendar(tester);
-      final text = await weekPlanText(
-        tester,
-        picker,
-        de.weekPlanThisWeekOption,
-      );
-      expect(text, isNot(contains('E2E Privattermin')));
-      await finish(tester, state);
-    },
-  );
+  // Was a Befund (Hinweis KAL-144, #519): an appointment only the admin
+  // sees (an audience, as from a private calendar) was printed with its
+  // title on the plan for the fridge. Now it says "Belegt", as the wall
+  // display does.
+  testWidgets('KAL-144 a private calendar\'s appointment on the week plan', (
+    tester,
+  ) async {
+    final f = await setUpFamily(tester);
+    final picker = fakePicker();
+    final now = today();
+    final private = await addEvent(
+      f.admin,
+      'E2E Privattermin',
+      at(now, 12),
+      visibleTo: [f.adminMember.id],
+    );
+    expect(
+      (await pull(
+        await sessionOf(f.bea),
+        Collections.events,
+      )).containsKey(private),
+      isFalse,
+      reason: 'only the admin sees it',
+    );
+    final state = await startApp(tester);
+    await openCalendar(tester);
+    final text = await weekPlanText(tester, picker, de.weekPlanThisWeekOption);
+    expect(text, isNot(contains('E2E Privattermin')));
+    expect(text, contains(de.eventBusy));
+    await finish(tester, state);
+  });
 
   // --- Stundenplan und Schulranzen ---------------------------------------------
 

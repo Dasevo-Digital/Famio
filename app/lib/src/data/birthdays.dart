@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 
+import '../l10n.dart';
 import 'family_data.dart';
 
 /// Whose birthday: a member, a child, a contact, or someone of PhotoVault's
@@ -31,7 +32,9 @@ class FamilyBirthday {
   /// "Oma Inge wird 70" or "Oma Inge hat Geburtstag".
   String headline(DateTime on) {
     final age = birthday.ageOn(on);
-    return age == null || age <= 0 ? '$name hat Geburtstag' : '$name wird $age';
+    return age == null || age <= 0
+        ? tr.birthdayHasBirthday(name)
+        : tr.birthdayTurnsAge(name, age);
   }
 }
 
@@ -109,7 +112,9 @@ List<CalendarEvent> birthdayEvents(SyncEngine engine) => [
           lastDayIfMissing: true,
         ),
         sourceId: b.sourceId,
-        notes: b.birthday.year == null ? '' : 'Geboren ${b.birthday.year}',
+        notes: b.birthday.year == null
+            ? ''
+            : tr.birthdayBornIn(b.birthday.year!),
       );
     }(),
 ];

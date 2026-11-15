@@ -16,7 +16,8 @@ typedef WidgetLine = ({String kind, String lead, String text});
 
 /// The date and up to five rows for the "Famio heute" widget: today's
 /// events, meals, own tasks, shopping and a sleeping baby. Nothing more
-/// private – a home screen can be seen by others.
+/// private – a home screen can be seen by others: an appointment that is
+/// confidential or only some see says it is one, as on the wall display.
 (String, List<WidgetLine>) widgetLines(SyncEngine engine, DateTime now) {
   final today = DateTime(now.year, now.month, now.day);
   // Not today + 24 h: on the day the clocks change that is 23:00 or 01:00.
@@ -31,7 +32,7 @@ typedef WidgetLine = ({String kind, String lead, String text});
     lines.add((
       kind: 'event',
       lead: o.event.allDay ? '📅' : time.format(o.start),
-      text: o.event.publicTitle,
+      text: engine.wallTitle(o.event),
     ));
   }
   for (final m in engine.plannedMeals(today, tomorrow).take(1)) {
@@ -54,8 +55,10 @@ typedef WidgetLine = ({String kind, String lead, String text});
   if (tasks > 0) {
     lines.add((kind: 'tasks', lead: '✅', text: tr.widgetTasksToday(tasks)));
   }
+  // What there is to buy: packing lists are things to pack, not to buy.
   var open = 0;
   for (final l in engine.shoppingLists) {
+    if (l.packing) continue;
     open += engine.shoppingItems(l.id).where((i) => !i.checked).length;
   }
   if (open > 0) {

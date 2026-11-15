@@ -117,11 +117,13 @@ Memories _combine(List<MemoryLine> lines, List<_Photo> photos) {
   }
 
   // Trips and holidays (several days, or with a countdown) of that day. The
-  // events are read once: each read converts all of them into the zone.
+  // events are read once: each read converts all of them into the zone. A
+  // confidential one stays out, as in the year review: the start page can
+  // be seen by others.
   final calendar = engine.calendar;
   final trips = [
     for (final e in engine.events)
-      if (e.allDay || e.countdown) e,
+      if ((e.allDay || e.countdown) && !e.confidential) e,
   ];
   for (var n = 1; n <= years; n++) {
     final day = DateTime(today.year - n, today.month, today.day);
