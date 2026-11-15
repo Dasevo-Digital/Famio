@@ -246,9 +246,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Future<void> _importCalendarFile(
     ({String name, Uint8List bytes}) file,
   ) async {
-    final api = AppScope.read(context).engine?.api;
-    if (api == null) return;
+    final engine = AppScope.read(context).engine;
+    final api = engine?.api;
+    if (engine == null || api == null) return;
     final messenger = ScaffoldMessenger.of(context);
+    // Guests read appointments only: the server would drop the import.
+    if (!engine.mayWrite(Collections.events)) {
+      messenger.showSnackBar(SnackBar(content: Text(tr.eventGuestReadOnly)));
+      return;
+    }
     if (file.bytes.length > 10 * 1024 * 1024) {
       messenger.showSnackBar(SnackBar(content: Text(tr.importIcsTooLarge)));
       return;

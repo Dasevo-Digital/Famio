@@ -209,4 +209,56 @@ void main() {
     expect(engine.documents, isEmpty);
     expect(engine.inboxItems, hasLength(1));
   });
+
+  Future<void> fileAs(WidgetTester tester, String what) async {
+    await tester.tap(find.byTooltip(tr.inboxFileAs));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(what).last);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a task or note keeps it from the children', (tester) async {
+    await open(tester);
+    engine.saveInboxItem(
+      const InboxItem(id: 'e5', title: 'Rezept abholen', createdBy: 'm1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonTask);
+    expect(engine.tasks.single.visibleTo, unorderedEquals(['m1', 'm2']));
+    engine.saveInboxItem(
+      const InboxItem(id: 'e6', title: 'Impfpass', createdBy: 'k1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonNote);
+    // A child who filed it keeps it.
+    expect(engine.notes.single.visibleTo, unorderedEquals(['m1', 'm2', 'k1']));
+    expect(engine.inboxItems, isEmpty);
+  });
+
+  testWidgets('shared with the children, a task goes to the family', (
+    tester,
+  ) async {
+    await open(tester);
+    engine.saveInboxItem(
+      const InboxItem(id: 'e7', title: 'Turnbeutel', forChildren: true),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonTask);
+    expect(engine.tasks.single.visibleTo, isNull);
+  });
+
+  testWidgets('an appointment not shared with the children is private', (
+    tester,
+  ) async {
+    await open(tester);
+    engine.saveInboxItem(
+      const InboxItem(id: 'e8', title: 'Kardiologie', createdBy: 'm1'),
+    );
+    await tester.pumpAndSettle();
+    await fileAs(tester, tr.commonEvent);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    // Appointments have no audience: the children see "Belegt".
+    expect(engine.events.single.confidential, isTrue);
+  });
 }

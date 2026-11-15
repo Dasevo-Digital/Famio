@@ -810,7 +810,9 @@ class _PasskeysSectionState extends State<_PasskeysSection> {
       AppScope.read(context).panelMode == 'browser' &&
       passkeysSupported;
 
-  void _reload() => setState(() => _list = _api.passkeys());
+  void _reload() => setState(() {
+    _list = _api.passkeys();
+  });
 
   void _say(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));

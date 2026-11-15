@@ -268,6 +268,7 @@ class InboxScreen extends StatelessWidget {
             notes: item.text,
             photos: item.files,
             createdAt: DateTime.now(),
+            visibleTo: inboxReach(engine, item),
           ),
         );
       case _InboxAction.event:
@@ -288,11 +289,19 @@ class InboxScreen extends StatelessWidget {
             start: start,
             end: start.add(const Duration(days: 1)),
             allDay: true,
+            // Appointments have no audience of their own: one the children
+            // were not given stays private to them ("Belegt").
+            confidential: !item.forChildren,
           ),
         );
       case _InboxAction.note:
         engine.saveNote(
-          FamilyNote(id: newId(), title: item.title, text: item.text),
+          FamilyNote(
+            id: newId(),
+            title: item.title,
+            text: item.text,
+            visibleTo: inboxReach(engine, item),
+          ),
         );
       case _InboxAction.recipe:
         // Stays in the inbox unless the recipe is saved.
@@ -388,14 +397,7 @@ class _DocumentDialogState extends State<_DocumentDialog> {
   List<String>? get _visibleTo => switch (_audience) {
     _Audience.family => null,
     _Audience.me => [_engine.memberId],
-    _Audience.adults => {
-      for (final m in _engine.members)
-        if (m.isAdult) m.id,
-      _engine.memberId,
-      if (_engine.member(widget.item.createdBy ?? '') case final m?
-          when m.isChild)
-        m.id,
-    }.toList(),
+    _Audience.adults => inboxAdults(_engine, widget.item),
   };
 
   @override
@@ -519,3 +521,17 @@ Future<ShoppingList?> _pickShoppingList(
     ),
   );
 }
+
+/// The adults, this member and a child who filed [item]: whom an entry not
+/// shared with the children reaches (GRU-084).
+List<String> inboxAdults(SyncEngine engine, InboxItem item) => {
+  for (final m in engine.members)
+    if (m.isAdult) m.id,
+  engine.memberId,
+  if (engine.member(item.createdBy ?? '') case final m? when m.isChild) m.id,
+}.toList();
+
+/// Whom a task or note filed from [item] reaches: the family if the entry was
+/// shared with the children, else [inboxAdults].
+List<String>? inboxReach(SyncEngine engine, InboxItem item) =>
+    item.forChildren ? null : inboxAdults(engine, item);
