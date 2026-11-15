@@ -13,6 +13,8 @@
 # stay untouched.
 # On Linux it needs a display and a keyring (CI: xvfb-run and
 # gnome-keyring in a dbus session).
+# FAMIO_E2E_ARGS goes to `flutter test` as it is, e.g.
+# FAMIO_E2E_ARGS='--plain-name KIN-012' to run single tests of a file.
 set -euo pipefail
 
 DEVICE="${1:?usage: tool/integration_tests.sh <linux|macos> [test]…}"
@@ -32,9 +34,13 @@ if [ ${#TESTS[@]} -eq 0 ]; then
   )
 fi
 
-TEST_ID=de.status403.famio.e2e
+# FAMIO_E2E_SLOT=<n> runs beside other runs: bundle id, data and keychain
+# entry of their own (each slot needs its own copy of the repo, as the build
+# folder is shared otherwise).
+SLOT=${FAMIO_E2E_SLOT:-}
+TEST_ID=de.status403.famio.e2e$SLOT
 if [ "$DEVICE" = macos ]; then
-  export FLUTTER_XCODE_FAMIO_APP_NAME="Famio E2E"
+  export FLUTTER_XCODE_FAMIO_APP_NAME="Famio E2E${SLOT:+ $SLOT}"
   export FLUTTER_XCODE_FAMIO_BUNDLE_ID=$TEST_ID
   export FLUTTER_XCODE_FAMIO_APP_ICON=AppIconDev
 fi
@@ -62,6 +68,14 @@ SERVER_BIN=$(find "$WORK/server" -type f -name server -perm -u+x | head -1)
 [ -x "$SERVER_BIN" ] || { echo "Server-Binary nicht gefunden" >&2; exit 1; }
 
 PASSWORD="ci-$(python3 -c 'import secrets; print(secrets.token_urlsafe(18))')"
+
+# A throwaway key pair for tests that need a server with another certificate
+# (catalog_gru_b_test.dart); made for each run, never kept in the repository.
+openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -noenc \
+  -keyout "$WORK/other.key" -out "$WORK/other.crt" -days 2 -subj /CN=localhost \
+  >/dev/null 2>&1
+OTHER_CERT=$(base64 < "$WORK/other.crt" | tr -d '\n')
+OTHER_KEY=$(base64 < "$WORK/other.key" | tr -d '\n')
 failed=()
 
 for test in "${TESTS[@]}"; do
@@ -94,7 +108,11 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_NEW_URL="https://localhost:$tls_port" \
     --dart-define=FAMIO_USER=admin \
     --dart-define=FAMIO_PASSWORD="$PASSWORD" \
-    --dart-define=FAMIO_ALLOW_WIPE=yes; then
+    --dart-define=FAMIO_ALLOW_WIPE=yes \
+    --dart-define=FAMIO_E2E_SLOT="$SLOT" \
+    --dart-define=FAMIO_OTHER_CERT="$OTHER_CERT" \
+    --dart-define=FAMIO_OTHER_KEY="$OTHER_KEY" \
+    ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS}; then
     echo "== OK: $test"
   else
     echo "== FEHLER: $test" >&2

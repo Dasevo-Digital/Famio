@@ -12,13 +12,18 @@ abstract final class AppEnv {
   /// keychain entry, so a test never replaces the session of "Famio Dev".
   static const isE2e = name == 'e2e';
 
+  /// Several throwaway-server runs side by side
+  /// (`--dart-define=FAMIO_E2E_SLOT=2`), each with its own bundle id and
+  /// keychain entry.
+  static const _e2eSlot = String.fromEnvironment('FAMIO_E2E_SLOT');
+
   /// Also the Android build variant (`--flavor dev`).
   static const isDev = name == 'dev' || isE2e || appFlavor == 'dev';
 
   /// The app's entry in the system keychain. On macOS all builds share the
   /// login keychain, so each variant needs its own.
   static const vaultEntry = isE2e
-      ? 'famio-e2e'
+      ? 'famio-e2e$_e2eSlot'
       : isDev
       ? 'famio-dev'
       : 'famio';
