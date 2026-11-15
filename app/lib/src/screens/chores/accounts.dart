@@ -8,9 +8,20 @@ class _AccountsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final people = _people(engine);
+    // Guests receive no points, pocket money or its settings: zeros would
+    // look like real balances (#545).
+    final guest = engine.iAmGuest;
     return ListView(
       padding: EdgeInsets.only(bottom: listBottomPadding(context)),
       children: [
+        if (guest)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 12),
+            child: Text(
+              tr.choresAccountsGuests,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
         for (final m in people)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
@@ -34,24 +45,26 @@ class _AccountsTab extends StatelessWidget {
                           m.displayName,
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        Text(
-                          _allowanceLabel(engine.allowance(m.id)),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                        if (!guest)
+                          Text(
+                            _allowanceLabel(engine.allowance(m.id)),
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _PointsChip(engine.pointBalance(m.id)),
-                      const SizedBox(height: 4),
-                      Text(
-                        formatEuro(engine.moneyBalance(m.id)),
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                    ],
-                  ),
+                  if (!guest)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        _PointsChip(engine.pointBalance(m.id)),
+                        const SizedBox(height: 4),
+                        Text(
+                          formatEuro(engine.moneyBalance(m.id)),
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),

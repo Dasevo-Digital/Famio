@@ -1,4 +1,6 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:intl/intl.dart';
+
 import '../l10n.dart';
 
 /// "3 Wochen", "5 Monate", "1 Jahr und 3 Monate", "6 Jahre".
@@ -322,4 +324,16 @@ DueItem? nextDue(Child child, List<ChildEntry> entries, [DateTime? at]) {
       ups.where((d) => d.open).firstOrNull ??
       vacs.where((d) => d.open).firstOrNull ??
       ups.where((d) => d.state == DueState.upcoming).firstOrNull;
+}
+
+/// [next] (from [nextDue]) when it is not open: "U4 am 29.11." for a booked
+/// appointment, "U5 ab 1.12." when its period has not begun yet. Check-ups
+/// by their name, vaccinations as such, never by the internal id (#544).
+String dueLater(DueItem next) {
+  final what = next.isCheckup ? next.id : tr.commonVaccination;
+  final day = DateFormat.Md(appLanguage);
+  return switch (next.appointment) {
+    final a? => tr.homeWhatDate(what, day.format(a.date)),
+    null => tr.kidsWhatFrom(what, day.format(next.from)),
+  };
 }

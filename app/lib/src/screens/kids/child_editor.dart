@@ -84,7 +84,7 @@ class _ChildEditorState extends State<_ChildEditor> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (d) => AlertDialog(
-        title: Text('${widget.existing!.name} entfernen?'),
+        title: Text(tr.kidsRemoveChildName(widget.existing!.name)),
         content: Text(tr.kidsAllEntriesMilestonesMeasurements),
         actions: [
           TextButton(

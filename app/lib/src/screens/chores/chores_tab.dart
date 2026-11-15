@@ -43,10 +43,15 @@ class _ChoresTab extends StatelessWidget {
                         Text(
                           [
                             _choreSchedule(chore, engine),
-                            if (chore.paused) 'pausiert',
+                            if (chore.paused) tr.choresPaused,
                             if (chore.dueOn(today) &&
                                 chore.assigneeOn(today) != null)
-                              'heute: ${engine.member(chore.assigneeOn(today))?.displayName ?? '?'}',
+                              tr.choresTodayName(
+                                engine
+                                        .member(chore.assigneeOn(today))
+                                        ?.displayName ??
+                                    '?',
+                              ),
                           ].join(' · '),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),

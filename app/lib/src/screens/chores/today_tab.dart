@@ -101,8 +101,9 @@ class _PendingTile extends StatelessWidget {
                 Text(
                   entry.points > 0
                       ? tr.choresPointsPoints(entry.points)
+                      // A wish takes points off: it costs what it says.
                       : tr.choresPointsPointsBalanceBalance(
-                          entry.points,
+                          entry.points.abs(),
                           engine.pointBalance(entry.memberId),
                         ),
                   style: Theme.of(context).textTheme.bodySmall,
@@ -188,7 +189,8 @@ class _PersonToday extends StatelessWidget {
                   ],
                 ),
               ),
-              _PointsChip(engine.pointBalance(person.id)),
+              // Guests receive no points: no balance of zero (#545).
+              if (!engine.iAmGuest) _PointsChip(engine.pointBalance(person.id)),
             ],
           ),
         ),

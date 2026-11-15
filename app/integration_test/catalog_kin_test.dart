@@ -733,11 +733,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: the empty list offers "Hinzufügen" to a child account (only the
-  // floating button checks the role) and the start page asks it to add a
-  // child; the server turns the new child down (record_store.dart:346,
-  // children are adultOnly) and the app drops it without a word
-  // (kids_screens.dart:94, home_screen.dart:1039).
+  // Children are adultOnly (record_store.dart): an empty list offers a child
+  // account no "Hinzufügen" and the start page does not ask it to add a
+  // child (#539).
   testWidgets('KIN-134 child account: an empty list offers no way to add', (
     tester,
   ) async {
@@ -749,6 +747,7 @@ void main() {
     if (await anywhere(tester, find.text(de.homeAddChildKeepTrack))) {
       problems.add('start page: "${de.homeAddChildKeepTrack}"');
     }
+    expect(await anywhere(tester, find.text(de.kidsNoneYet)), isTrue);
     await kidsList(tester);
     expect(find.byTooltip(de.kidsAddChildPregnancy), findsNothing);
     if (find.text(de.commonAdd).evaluate().isNotEmpty) {
@@ -770,9 +769,10 @@ void main() {
         '${(await pull(await adminApi(), Collections.children)).values.any((r) => r.data['name'] == 'E2E Kindversuch')}',
       );
     }
+    expect(find.textContaining(de.kidsNoneYet), findsOneWidget);
     expect(problems, isEmpty);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets(
     'KIN-134 KIN-138 child account: no editing of the child or its emergency data',
@@ -822,73 +822,39 @@ void main() {
     },
   );
 
-  // Befund: a child account named for a pregnancy is offered the ticks,
-  // the contraction timer and "Baby ist da!"; the server turns the change
-  // down and it disappears without a word (pregnancy_screens.dart:309,
-  // 403, 489, 266).
+  // Pregnancies are adultOnly: a child account named for one reads it, but
+  // is offered no ticks, no contraction timer, no clearing and no "Baby ist
+  // da!" (#539).
   testWidgets('KIN-140 child account and the pregnancy', (tester) async {
     final f = await theFamily();
-    final id = await seedPregnancy(
+    await seedPregnancy(
       'E2E Kindsicht',
       inDays(70),
       guardians: [f.adminMember.id, f.kid.id],
     );
     final state = await start(tester, user: 'e2e-kind');
-    final problems = <String>[];
     await openPregnancy(tester, 'E2E Kindsicht');
     expect(find.byTooltip(de.commonEdit), findsNothing);
-    if (await anywhere(tester, find.text(de.pregnancyBabyHere))) {
-      problems.add('"${de.pregnancyBabyHere}" offered');
-    }
+    expect(await anywhere(tester, find.text(de.pregnancyBabyHere)), isFalse);
 
     await tab(tester, de.pregnancyChecklists);
-    final box = find.byType(CheckboxListTile).first;
-    await waitFor(tester, box);
-    if (tester.widget<CheckboxListTile>(box).onChanged != null) {
-      problems.add('checklist offered');
-      await tap(tester, box);
-      await synced(tester, state);
-      await synced(tester, state);
-      final done = state.engine!.pregnancy(id)!.done;
-      problems.add(
-        'checklist after sync: kept $done, message: '
-        '${find.byType(SnackBar).evaluate().isNotEmpty}',
-      );
+    final boxes = find.byType(CheckboxListTile);
+    await waitFor(tester, boxes.first);
+    for (final e in boxes.evaluate()) {
+      expect((e.widget as CheckboxListTile).onChanged, isNull);
     }
     await tab(tester, de.commonEvents);
-    final check = find.byType(RoundCheck).first;
-    await waitFor(tester, check);
-    if (tester.widget<RoundCheck>(check).onChanged != null) {
-      problems.add('appointment ticks offered');
+    final checks = find.byType(RoundCheck);
+    await waitFor(tester, checks.first);
+    for (final e in checks.evaluate()) {
+      expect((e.widget as RoundCheck).onChanged, isNull);
     }
     await tab(tester, de.pregnancyContractions);
-    final timer = find.ancestor(
-      of: find.text(de.pregnancyContractionStarts),
-      matching: find.byType(FilledButton),
-    );
-    await waitFor(tester, timer);
-    if (tester.widget<FilledButton>(timer).onPressed != null) {
-      problems.add('contraction timer offered');
-    }
-    await tap(tester, timer);
-    await synced(tester, state);
-    await synced(tester, state);
-    final stored = Pregnancy.fromRecord(
-      (await pull(await adminApi(), Collections.pregnancies))[id]!,
-    );
-    problems.add(
-      'server keeps: done ${stored.done}, contractions '
-      '${stored.contractions.length}; app shows '
-      '${state.engine!.pregnancy(id)!.contractions.length} contractions, '
-      'message: ${find.byType(SnackBar).evaluate().isNotEmpty}',
-    );
-    expect(
-      problems.where((p) => !p.startsWith('server keeps')),
-      isEmpty,
-      reason: problems.join('\n'),
-    );
+    await waitFor(tester, find.text(de.pregnancyAdultsEnter));
+    expect(find.text(de.pregnancyContractionStarts), findsNothing);
+    expect(find.text(de.pregnancyClearHistory), findsNothing);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets(
     'KIN-141 guest and service account get no children or health data',
@@ -1443,8 +1409,7 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: a memory (with its photos) goes at once, without asking and
-  // without "Rückgängig" (entry_editor.dart:409).
+  // A memory (with its photos) goes with "Rückgängig" on the page (#544).
   testWidgets('KIN-016 deleting a memory asks or can be undone', (
     tester,
   ) async {
@@ -1479,8 +1444,16 @@ void main() {
       isTrue,
       reason: 'deleted without asking and without undo (gone: $gone)',
     );
+    expect(gone, isTrue);
+    await undo(tester);
+    await until(
+      tester,
+      () =>
+          state.engine!.childEntries(id).any((e) => e.title == 'E2E Löschmich'),
+      'memory back',
+    );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('KIN-017 KIN-036 coming up in the timeline, vaccination list', (
     tester,
@@ -1915,10 +1888,8 @@ void main() {
     },
   );
 
-  // Befund (the catalog's hint): the time of a booked appointment begins
-  // with a space (" um {time} Uhr", app_de.arb "remindersTime"), so the
-  // timeline row reads "<Datum> ·  um 09:30 Uhr · Termin" with two spaces
-  // (timeline.dart:37 joined with " · " at timeline.dart:276-281).
+  // The time of a booked appointment (" um {time} Uhr", app_de.arb
+  // "remindersTime") is joined with single spaces (#544).
   testWidgets(
     'KIN-018 the appointment time in the timeline has single spaces',
     (tester) async {
@@ -1947,7 +1918,6 @@ void main() {
       expect(shown, isNot(contains('  ')), reason: 'two spaces in "$shown"');
       await finish(tester, state);
     },
-    skip: true,
   );
 
   testWidgets('KIN-034 earlier check-ups and vaccinations at once', (
@@ -2016,11 +1986,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: with all four choices the sheet of a vaccination does not fit
-  // the Mac app's own default window (800 × 600, MainMenu.xib:338) when its
-  // subtitle wraps: it overflows by 2.5 pixels, the last button is cut
-  // (due_list.dart:177/184: a Column without scrolling in a sheet of at
-  // most 9/16 of the height). The other tests run in a taller view.
+  // With all four choices the sheet of a vaccination fits the Mac app's own
+  // default window (800 × 600, MainMenu.xib:338): it scrolls when its
+  // subtitle wraps (#544). The other tests run in a taller view.
   testWidgets('KIN-029 the due sheet fits the default window', (tester) async {
     await seedChild('E2E Fensterkind', born(days: 28));
     final state = await startApp(tester);
@@ -2034,13 +2002,13 @@ void main() {
     debugPrint('E2E KIN-029 sheet of rota_1');
     await tickCard(tester, 'Rotaviren – 1. Dosis');
     await waitFor(tester, find.text(de.dueDoneToday));
+    await scrollTo(tester, inSheet(find.text(de.dueDoneDateUnknown2)));
     await closeSheet(tester);
     await finish(tester, state);
-  }, skip: true);
+  });
 
-  // Befund: with a booked vaccination the card's chip shows the internal id
-  // and the window ("rota_1 ab …") instead of "Impfung" and the date
-  // (kids_screens.dart:275; the start page does it right).
+  // With a booked vaccination the card's chip shows "Impfung" and the date,
+  // as the start page does, not the internal id (#544).
   testWidgets('KIN-035 chip of the child card: next due, booked appointment', (
     tester,
   ) async {
@@ -2095,7 +2063,7 @@ void main() {
       reason: 'card shows: $texts',
     );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets(
     'KIN-038 KIN-042 rotavirus past its limit, recorded with a photo',
@@ -2609,9 +2577,8 @@ void main() {
     },
   );
 
-  // Befund (the catalog's hint): an amount with a decimal comma ("120,5")
-  // is dropped without a word; the bottle is saved without an amount
-  // (kids_log_screens.dart:1751, int.tryParse; the field takes the comma).
+  // An amount with a decimal comma ("120,5") is rounded to whole ml, not
+  // dropped (#544).
   testWidgets('KIN-057 a decimal amount is not dropped silently', (
     tester,
   ) async {
@@ -2637,8 +2604,9 @@ void main() {
       isTrue,
       reason: '"120,5" ml: saved amounts $amounts, message: $told',
     );
+    expect(amounts, [121]);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('KIN-073 diapers and diarrhoea in the day card', (tester) async {
     final f = await theFamily();
@@ -2707,10 +2675,9 @@ void main() {
     },
   );
 
-  // Befund (two in the chart "Verlauf"): one diaper with pee and poo counts
-  // twice (kids_log_screens.dart:1322), and a temperature below 36 °C is
-  // shown as "–" like a day without measuring (kids_log_screens.dart:1391,
-  // 1477).
+  // In the chart "Verlauf" one diaper with pee and poo counts once, and a
+  // temperature below 36 °C is drawn with its value, not as "–" like a day
+  // without measuring (#544).
   testWidgets('KIN-074 KIN-084 the chart counts diapers and low temperatures', (
     tester,
   ) async {
@@ -2741,7 +2708,7 @@ void main() {
     if (shown != '35,2') problems.add('35,2 °C is shown as "$shown"');
     expect(problems, isEmpty);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('KIN-089 KIN-092 day totals and the chart', (tester) async {
     final now = DateTime.now();
@@ -3708,40 +3675,29 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: an empty name closes nothing and says nothing
-  // (medication_screens.dart:407), a plan with neither times nor "Nur bei
-  // Bedarf" is saved without a word although it never shows under "Heute",
-  // and so is one that ends before it begins (the hint, #481;
-  // medication_screens.dart:405-430 checks neither).
+  // The editor says at the field what keeps a plan from being saved: no
+  // name, neither times nor "Nur bei Bedarf" (it would never show under
+  // "Heute"), an end before the start; the end cannot be picked before the
+  // start (#544).
   testWidgets('KIN-096 plan without name or times', (tester) async {
     final state = await start(tester);
-    final problems = <String>[];
     await openSection(tester, 'Medizin');
     await tap(tester, find.byTooltip(de.medsAddMedication));
     await waitFor(tester, find.text(de.medsNewMedication));
     await tap(tester, find.byTooltip(de.commonSave));
-    await tester.pump(const Duration(seconds: 1));
+    await waitFor(tester, find.text(de.kidsLogPleaseEnterMedication));
     expect(find.text(de.medsNewMedication), findsOneWidget);
-    if (find.byType(SnackBar).evaluate().isEmpty &&
-        find.byType(AlertDialog).evaluate().isEmpty) {
-      problems.add('no message without a name');
-    }
-    await snackGone(tester);
     await enter(tester, field(de.kidsLogMedication), 'E2E Zeitlos');
     await tap(tester, find.byTooltip(de.commonSave));
-    await tester.pump(const Duration(seconds: 1));
-    final saved = state.engine!.medications.any((m) => m.name == 'E2E Zeitlos');
-    if (saved &&
-        find.byType(SnackBar).evaluate().isEmpty &&
-        find.byType(AlertDialog).evaluate().isEmpty) {
-      problems.add('saved without times and without a word');
-    }
-    // The hint: an end before the start (#481).
-    await snackGone(tester);
-    if (find.text(de.medsNewMedication).evaluate().isNotEmpty) {
-      await back(tester);
-    }
+    await waitFor(tester, find.text(de.medsTimesMissing));
+    expect(find.text(de.medsNewMedication), findsOneWidget);
+    expect(
+      state.engine!.medications.any((m) => m.name == 'E2E Zeitlos'),
+      isFalse,
+    );
+    await back(tester);
     await waitFor(tester, find.byTooltip(de.medsAddMedication));
+
     await tap(tester, find.byTooltip(de.medsAddMedication));
     await waitFor(tester, find.text(de.medsNewMedication));
     await enter(tester, field(de.kidsLogMedication), 'E2E Rückwärts');
@@ -3749,27 +3705,26 @@ void main() {
     final permanently = find.widgetWithText(InputChip, de.medsPermanently);
     await scrollTo(tester, permanently);
     await tap(tester, permanently);
-    await pickDate(tester, inDays(-1));
+    await pickDate(tester, inDays(2));
     await waitFor(
       tester,
-      find.widgetWithText(InputChip, de.medsUntilDate(yMd(inDays(-1)))),
+      find.widgetWithText(InputChip, de.medsUntilDate(yMd(inDays(2)))),
     );
+    // A start after the end.
+    await tap(
+      tester,
+      find.widgetWithText(InputChip, de.medsDate(yMd(today()))),
+    );
+    await pickDate(tester, inDays(5));
     await tap(tester, find.byTooltip(de.commonSave));
-    await tester.pump(const Duration(seconds: 1));
-    final backwards = state.engine!.medications.where(
-      (m) => m.name == 'E2E Rückwärts',
+    await waitFor(tester, find.text(de.commonEndBeforeStart));
+    expect(
+      state.engine!.medications.any((m) => m.name == 'E2E Rückwärts'),
+      isFalse,
     );
-    if (backwards.isNotEmpty &&
-        find.byType(SnackBar).evaluate().isEmpty &&
-        find.byType(AlertDialog).evaluate().isEmpty) {
-      problems.add(
-        'saved with the end ${backwards.single.end} before the start '
-        '${backwards.single.start}, without a word',
-      );
-    }
-    expect(problems, isEmpty, reason: problems.join('\n'));
+    await back(tester);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('KIN-097 weekdays, start and end', (tester) async {
     final state = await start(tester);
@@ -3966,10 +3921,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (the catalog's hint, #376): "Nachkaufen" takes the first
-  // shopping list, also one only the admin sees; Bea, who cares for the
-  // plan as well, never gets the item (medication_screens.dart:215-218,
-  // lists.first).
+  // "Nachkaufen" puts the item on a list all who care for the plan see, not
+  // on the first one (which may be the admin's own, #544, #376).
   testWidgets(
     'KIN-103 buying more goes on a list all who care for the plan see',
     (tester) async {
@@ -4036,15 +3989,12 @@ void main() {
       );
       await finish(tester, state);
     },
-    skip: true,
   );
 
-  // Befund (the catalog's hints): texts written into the code in German
-  // stay German in English: "… entfernen?" (child_editor.dart:87),
-  // "rota_1 ab …" (kids_screens.dart:275), "Menge (ml)", "Temperatur (°C)",
-  // "z. B. Fiebersaft", "Mindestabstand (h)" (kids_log_screens.dart:1910,
-  // 1958, 1978, 2017), "bis …" and "(Apotheke)" (medication_screens.dart:246,
-  // 219).
+  // Texts once written into the code in German are translated: "…
+  // entfernen?", the chip "rota_1 ab …", "Menge (ml)", "Temperatur (°C)",
+  // "z. B. Fiebersaft", "Mindestabstand (h)", "bis …" and "(Apotheke)"
+  // (#544).
   testWidgets(
     'KIN-011 KIN-035 KIN-057 KIN-075 KIN-085 KIN-097 KIN-103 texts in English',
     (tester) async {
@@ -4205,7 +4155,6 @@ void main() {
       expect(german, isEmpty, reason: german.join('\n'));
       await finish(tester, state);
     },
-    skip: true,
   );
 
   // =========================================================================
@@ -4488,8 +4437,7 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: "Verlauf leeren" removes all contractions at once, without
-  // asking and without "Rückgängig" (pregnancy_screens.dart:577).
+  // "Verlauf leeren" asks before it removes all contractions (#544).
   testWidgets('KIN-125 clearing the contraction history', (tester) async {
     final id = await seedPregnancy('E2E Wehen', inDays(14));
     final state = await start(tester);
@@ -4519,8 +4467,22 @@ void main() {
           'cleared without asking and without undo: '
           '${state.engine!.pregnancy(id)!.contractions.length} left',
     );
+    expect(find.text(de.pregnancyClearHistoryQuestion), findsOneWidget);
+    await tap(tester, find.text(de.commonCancel).last);
+    await dialogClosed(tester);
+    expect(state.engine!.pregnancy(id)!.contractions, hasLength(2));
+    await tap(tester, find.text(de.pregnancyClearHistory));
+    await tap(
+      tester,
+      find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text(de.pregnancyClearHistory),
+      ),
+    );
+    await dialogClosed(tester);
+    expect(state.engine!.pregnancy(id)!.contractions, isEmpty);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Large text, last: it changes the window.

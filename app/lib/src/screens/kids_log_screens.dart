@@ -7,6 +7,7 @@ import 'package:intl/intl.dart' hide TextDirection;
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/health_logic.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
@@ -1319,10 +1320,18 @@ class _HistoryChartState extends State<_HistoryChart> {
           _Series.drinks => s.drinkMl.toDouble(),
           _Series.feedings => s.feedings.toDouble(),
           _Series.sleep => s.sleep.inMinutes / 60,
-          _Series.diapers => (s.wet + s.dirty).toDouble(),
+          _Series.diapers => s.diapers.toDouble(),
           _Series.temperature => s.maxTemperature ?? 0,
         },
     ];
+    // Temperatures start above a baseline; below 36 °C it moves down so
+    // that a low value is drawn, not shown as "–" like a day without one.
+    final lowest = values.where((v) => v > 0).fold(double.infinity, math.min);
+    final baseline = _series != _Series.temperature
+        ? 0.0
+        : lowest > 36
+        ? 36.0
+        : lowest.floorToDouble() - 1;
     final color = switch (_series) {
       _Series.milk => logLook(LogKind.bottle).$2,
       _Series.drinks => logLook(LogKind.drink).$2,
@@ -1388,7 +1397,7 @@ class _HistoryChartState extends State<_HistoryChart> {
                     : _series == _Series.sleep
                     ? decimal(v)
                     : v.round().toString(),
-                baseline: _series == _Series.temperature ? 36 : 0,
+                baseline: baseline,
               ),
             ),
           ),
@@ -1629,6 +1638,7 @@ class _LogEditorState extends State<_LogEditor> {
   late StoolAmount? _stoolAmount = _old?.stoolAmount;
   late final _photos = [...?_old?.photos];
   var _uploading = false;
+  String? _amountError;
   late final _amount = TextEditingController(
     text: _old?.amountMl?.toString() ?? '',
   );
@@ -1728,6 +1738,19 @@ class _LogEditorState extends State<_LogEditor> {
       _snack(tr.commonEndBeforeStart);
       return;
     }
+    // "120,5" ml is rounded, not dropped; what is no amount at all is said
+    // at the field (a message would stay hidden behind the sheet, #544).
+    final amount = _parse(_amount);
+    final withAmount =
+        kind == LogKind.bottle ||
+        kind == LogKind.pumping ||
+        kind == LogKind.drink;
+    if (withAmount &&
+        _amount.text.trim().isNotEmpty &&
+        (amount == null || !(amount >= 0 && amount <= 10000))) {
+      setState(() => _amountError = tr.kidsLogAmountInvalid);
+      return;
+    }
     final interval = _parse(_interval);
     DateTime? remindAt;
     if (_feeding && _remindHours != null) {
@@ -1744,12 +1767,7 @@ class _LogEditorState extends State<_LogEditor> {
       side: kind == LogKind.breast || kind == LogKind.pumping ? _side : null,
       milk: kind == LogKind.bottle ? _milk : null,
       drink: kind == LogKind.drink ? _drink : null,
-      amountMl:
-          kind == LogKind.bottle ||
-              kind == LogKind.pumping ||
-              kind == LogKind.drink
-          ? int.tryParse(_amount.text.trim())
-          : null,
+      amountMl: withAmount ? amount?.round() : null,
       diaper: kind == LogKind.diaper ? _diaper : null,
       stool: kind == LogKind.diaper && _diaper.poo ? _stool : null,
       stoolColor: kind == LogKind.diaper && _diaper.poo ? _stoolColor : null,
@@ -1822,12 +1840,15 @@ class _LogEditorState extends State<_LogEditor> {
       String label, {
       bool decimal = false,
       bool autofocus = false,
+      String? error,
     }) => TextField(
       controller: c,
       autofocus: autofocus,
       keyboardType: TextInputType.numberWithOptions(decimal: decimal),
-      onChanged: (_) => setState(() {}),
-      decoration: InputDecoration(labelText: label),
+      onChanged: (_) => setState(() {
+        if (c == _amount) _amountError = null;
+      }),
+      decoration: InputDecoration(labelText: label, errorText: error),
     );
 
     return Padding(
@@ -1907,7 +1928,12 @@ class _LogEditorState extends State<_LogEditor> {
             if (kind == LogKind.bottle ||
                 kind == LogKind.pumping ||
                 kind == LogKind.drink) ...[
-              numberField(_amount, 'Menge (ml)', autofocus: _old == null),
+              numberField(
+                _amount,
+                tr.kidsLogAmountMl,
+                autofocus: _old == null,
+                error: _amountError,
+              ),
               const SizedBox(height: 8),
               Wrap(
                 spacing: 6,
@@ -1955,7 +1981,7 @@ class _LogEditorState extends State<_LogEditor> {
             if (kind == LogKind.temperature) ...[
               numberField(
                 _temp,
-                'Temperatur (°C)',
+                tr.kidsLogTemperatureC,
                 decimal: true,
                 autofocus: _old == null,
               ),
@@ -1975,7 +2001,7 @@ class _LogEditorState extends State<_LogEditor> {
                 onChanged: (_) => setState(() {}),
                 decoration: InputDecoration(
                   labelText: tr.kidsLogMedication,
-                  hintText: 'z. B. Fiebersaft',
+                  hintText: tr.kidsLogMedicationExample,
                 ),
               ),
               if (_old == null)
@@ -2014,7 +2040,7 @@ class _LogEditorState extends State<_LogEditor> {
                   Expanded(
                     child: numberField(
                       _interval,
-                      'Mindestabstand (h)',
+                      tr.kidsLogMinIntervalHours,
                       decimal: true,
                     ),
                   ),
@@ -2163,37 +2189,42 @@ class _LogEditorState extends State<_LogEditor> {
               ),
             ],
             const SizedBox(height: 20),
-            // Side by side; stacked when large text leaves no room.
-            OverflowBar(
-              alignment: MainAxisAlignment.spaceBetween,
-              overflowAlignment: OverflowBarAlignment.end,
-              overflowSpacing: 8,
-              children: [
-                if (_old != null)
-                  TextButton.icon(
-                    icon: const Icon(AppIcons.trash, size: 18),
-                    label: Text(tr.commonDelete),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: () {
-                      deleteWithUndo(
-                        context,
-                        collections: const {Collections.childLogs},
-                        delete: () => engine.deleteChildLog(_old.id),
-                      );
-                      Navigator.pop(context);
-                    },
-                  )
-                else
-                  const SizedBox.shrink(),
-                ColorButton(
-                  label: tr.commonSave,
-                  color: color,
-                  onPressed: _uploading ? null : _save,
-                ),
-              ],
-            ),
+            // Children change only what they wrote themselves (#539).
+            if (_old != null &&
+                !engine.mayChangeHealthRecord(Collections.childLogs, _old.id))
+              Text(tr.kidsOnlyAuthorOrAdult, style: theme.textTheme.bodySmall)
+            else
+              // Side by side; stacked when large text leaves no room.
+              OverflowBar(
+                alignment: MainAxisAlignment.spaceBetween,
+                overflowAlignment: OverflowBarAlignment.end,
+                overflowSpacing: 8,
+                children: [
+                  if (_old != null)
+                    TextButton.icon(
+                      icon: const Icon(AppIcons.trash, size: 18),
+                      label: Text(tr.commonDelete),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                      onPressed: () {
+                        deleteWithUndo(
+                          context,
+                          collections: const {Collections.childLogs},
+                          delete: () => engine.deleteChildLog(_old.id),
+                        );
+                        Navigator.pop(context);
+                      },
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  ColorButton(
+                    label: tr.commonSave,
+                    color: color,
+                    onPressed: _uploading ? null : _save,
+                  ),
+                ],
+              ),
           ],
         ),
       ),

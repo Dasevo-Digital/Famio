@@ -31,6 +31,10 @@ class DaySummary {
   var wet = 0;
   var dirty = 0;
 
+  /// Diapers changed: one with pee and poo is in [wet] and [dirty], here
+  /// it counts once.
+  var diapers = 0;
+
   /// Diapers with watery stool (diarrhoea), part of [dirty].
   var diarrhea = 0;
 
@@ -92,6 +96,7 @@ DaySummary summarize(List<ChildLog> logs, DateTime day, [DateTime? now]) {
         if (inDay) s.feedings++;
       case LogKind.diaper:
         if (inDay) {
+          s.diapers++;
           if (l.diaper != DiaperKind.dirty) s.wet++;
           if (l.diaper?.poo ?? true) {
             s.dirty++;

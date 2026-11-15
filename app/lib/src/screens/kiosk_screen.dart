@@ -474,72 +474,99 @@ class _ChoresPanel extends StatelessWidget {
       children: [
         if (engine.chores.isEmpty && engine.routines.isEmpty)
           _BigLine(tr.kioskNoChoresYet, dim: true),
-        for (final p in people) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 6, bottom: 2),
-            child: Row(
-              children: [
-                MemberAvatar(p, radius: 14),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    p.displayName,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+        for (final p in people) ..._person(context, p, today, c, canTick),
+      ],
+    );
+  }
+
+  /// [p]'s routines and chores of [today]. Away, routines rest and chores
+  /// are done by whoever covers, or not at all, as under "Heute" (#545).
+  List<Widget> _person(
+    BuildContext context,
+    FamilyMember p,
+    DateTime today,
+    FamioColors c,
+    bool canTick,
+  ) {
+    final absence = engine.absenceOf(p.id, today);
+    final away = absence != null && absence.substituteId == null;
+    final doneBy = engine.effectiveAssignee(p.id, today) ?? p.id;
+    return [
+      Padding(
+        padding: const EdgeInsets.only(top: 6, bottom: 2),
+        child: Row(
+          children: [
+            MemberAvatar(p, radius: 14),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                p.displayName,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Text(
+              '⭐ ${engine.pointBalance(p.id)}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ],
+        ),
+      ),
+      if (absence != null)
+        _BigLine(
+          absence.substituteId == null
+              ? tr.absenceAway
+              : tr.absenceRepresentedBy(
+                  engine.member(absence.substituteId!)?.displayName ??
+                      tr.absenceUnknownMember,
                 ),
-                Text(
-                  '⭐ ${engine.pointBalance(p.id)}',
+          dim: true,
+        ),
+      if (absence == null)
+        for (final r in engine.routinesFor(p.id, today))
+          () {
+            final run = engine.routineRun(r, today, p.id);
+            final done = r.steps.where((s) => run.done.contains(s.id)).length;
+            return InkWell(
+              onTap: () => openRoutine(context, r, p.id),
+              child: _BigLine(
+                '${r.emoji} ${r.title}',
+                trailing: Text(
+                  done == r.steps.length ? '🎉' : '$done/${r.steps.length}',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
-              ],
-            ),
-          ),
-          for (final r in engine.routinesFor(p.id, today))
+              ),
+            );
+          }(),
+      if (!away)
+        for (final ch in engine.chores)
+          if (engine.choreDue(ch, today) &&
+              ch.memberIds.isNotEmpty &&
+              ch.isFor(p.id, today))
             () {
-              final run = engine.routineRun(r, today, p.id);
-              final done = r.steps.where((s) => run.done.contains(s.id)).length;
-              return InkWell(
-                onTap: () => openRoutine(context, r, p.id),
-                child: _BigLine(
-                  '${r.emoji} ${r.title}',
-                  trailing: Text(
-                    done == r.steps.length ? '🎉' : '$done/${r.steps.length}',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
+              final done = engine.choreCompletion(ch, today);
+              return _BigLine(
+                '${ch.emoji} ${ch.title}',
+                dim: done != null,
+                trailing: RoundCheck(
+                  label: ch.title,
+                  value: done != null,
+                  size: 34,
+                  color: done?.status == PointStatus.pending
+                      ? c.inkSoft
+                      : c.strong(FamioSection.chores),
+                  onChanged: (_) {
+                    if (!canTick) return;
+                    if (done == null) {
+                      // Shared screen: adults confirm the points.
+                      engine.completeChore(ch, today, doneBy, asRequest: true);
+                    } else if (done.status == PointStatus.pending) {
+                      engine.undoChore(ch, today);
+                    }
+                  },
                 ),
               );
             }(),
-          for (final ch in engine.chores)
-            if (engine.choreDue(ch, today) &&
-                ch.memberIds.isNotEmpty &&
-                ch.isFor(p.id, today))
-              () {
-                final done = engine.choreCompletion(ch, today);
-                return _BigLine(
-                  '${ch.emoji} ${ch.title}',
-                  dim: done != null,
-                  trailing: RoundCheck(
-                    label: ch.title,
-                    value: done != null,
-                    size: 34,
-                    color: done?.status == PointStatus.pending
-                        ? c.inkSoft
-                        : c.strong(FamioSection.chores),
-                    onChanged: (_) {
-                      if (!canTick) return;
-                      if (done == null) {
-                        // Shared screen: adults confirm the points.
-                        engine.completeChore(ch, today, p.id, asRequest: true);
-                      } else if (done.status == PointStatus.pending) {
-                        engine.undoChore(ch, today);
-                      }
-                    },
-                  ),
-                );
-              }(),
-        ],
-      ],
-    );
+    ];
   }
 }
 

@@ -34,7 +34,8 @@ class _Timeline extends StatelessWidget {
             subtitle: a.date.isBefore(today)
                 ? tr.timelineAppointmentWasDone
                 : [
-                    if (a.time != null) tr.remindersTime(a.time),
+                    // The text begins with a space for joining after a date.
+                    if (a.time != null) tr.remindersTime(a.time).trim(),
                     tr.commonEvent,
                   ].join(' · '),
             icon: d.isCheckup ? AppIcons.stethoscope : AppIcons.syringe,

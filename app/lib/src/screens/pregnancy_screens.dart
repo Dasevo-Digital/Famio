@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
 import '../design/app_icons.dart';
@@ -141,7 +142,7 @@ class _PregnancyScreenState extends State<PregnancyScreen> {
             _date.format(p.dueDate),
           ),
           actions: [
-            if (!(AppScope.of(context).me?.isChild ?? false))
+            if (engine.iAmAdult)
               BubbleButton(
                 icon: AppIcons.pencilSimple,
                 tooltip: tr.commonEdit,
@@ -259,7 +260,8 @@ class _WeekView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 20),
-        if (w >= 20)
+        // Pregnancies are for adults to change (#539).
+        if (w >= 20 && AppScope.engineOf(context).iAmAdult)
           Align(
             alignment: Alignment.centerLeft,
             child: ColorButton(
@@ -306,11 +308,13 @@ class _TaskCard extends StatelessWidget {
             label: t.title,
             value: done,
             color: const Color(0xFF2A9D6E),
-            onChanged: (v) => AppScope.engineOf(context).savePregnancy(
-              p.copyWith(
-                done: v ? {...p.done, t.id} : ({...p.done}..remove(t.id)),
-              ),
-            ),
+            onChanged: !AppScope.engineOf(context).iAmAdult
+                ? null
+                : (v) => AppScope.engineOf(context).savePregnancy(
+                    p.copyWith(
+                      done: v ? {...p.done, t.id} : ({...p.done}..remove(t.id)),
+                    ),
+                  ),
           ),
           const SizedBox(width: 6),
           Expanded(
@@ -400,13 +404,15 @@ class _ChecklistsView extends StatelessWidget {
                       value: p.done.contains(item.id),
                       title: Text(item.title),
                       controlAffinity: ListTileControlAffinity.leading,
-                      onChanged: (v) => engine.savePregnancy(
-                        p.copyWith(
-                          done: v == true
-                              ? {...p.done, item.id}
-                              : ({...p.done}..remove(item.id)),
-                        ),
-                      ),
+                      onChanged: !engine.iAmAdult
+                          ? null
+                          : (v) => engine.savePregnancy(
+                              p.copyWith(
+                                done: v == true
+                                    ? {...p.done, item.id}
+                                    : ({...p.done}..remove(item.id)),
+                              ),
+                            ),
                     ),
                 ],
               ),
@@ -463,6 +469,8 @@ class _ContractionsViewState extends State<_ContractionsView> {
           (c) => c.role == ContactRole.midwife || c.role == ContactRole.clinic,
         )
         .toList();
+    // Children see the pregnancy; adults tick and time (#539).
+    final adult = engine.iAmAdult;
     void toggle() {
       final t = DateTime.now();
       engine.savePregnancy(
@@ -477,38 +485,41 @@ class _ContractionsViewState extends State<_ContractionsView> {
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
       children: [
-        SizedBox(
-          height: 150,
-          child: FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: running ? theme.colorScheme.error : _color,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
-              ),
-            ),
-            onPressed: toggle,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  running
-                      ? tr.pregnancyContractionOver
-                      : tr.pregnancyContractionStarts,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
-                  ),
+        if (!adult)
+          Text(tr.pregnancyAdultsEnter, style: theme.textTheme.bodyMedium)
+        else
+          SizedBox(
+            height: 150,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: running ? theme.colorScheme.error : _color,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(32),
                 ),
-                if (running)
+              ),
+              onPressed: toggle,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Text(
-                    _mmss(now.difference(list.last.start)),
-                    style: theme.textTheme.displaySmall?.copyWith(
+                    running
+                        ? tr.pregnancyContractionOver
+                        : tr.pregnancyContractionStarts,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       color: Colors.white,
                     ),
                   ),
-              ],
+                  if (running)
+                    Text(
+                      _mmss(now.difference(list.last.start)),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 12),
         SoftCard(
           color: call ? theme.colorScheme.error.withValues(alpha: 0.14) : null,
@@ -573,14 +584,44 @@ class _ContractionsViewState extends State<_ContractionsView> {
                       ),
                     ),
             ),
-          TextButton(
-            onPressed: () => engine.savePregnancy(p.copyWith(contractions: [])),
-            child: Text(tr.pregnancyClearHistory),
-          ),
+          if (adult)
+            TextButton(
+              onPressed: () => _clearHistory(context, engine, p),
+              child: Text(tr.pregnancyClearHistory),
+            ),
         ],
       ],
     );
   }
+}
+
+/// Clears the contractions after asking (#544).
+Future<void> _clearHistory(
+  BuildContext context,
+  SyncEngine engine,
+  Pregnancy p,
+) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text(tr.pregnancyClearHistoryQuestion),
+      content: Text(tr.pregnancyClearHistoryText),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: Text(tr.commonCancel),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: Text(tr.pregnancyClearHistory),
+        ),
+      ],
+    ),
+  );
+  if (ok != true) return;
+  // The pregnancy as it is now: a contraction may have been added meanwhile.
+  final now = engine.pregnancy(p.id);
+  if (now != null) engine.savePregnancy(now.copyWith(contractions: []));
 }
 
 /// Creates the child from the pregnancy and opens it.

@@ -180,6 +180,37 @@ class _EntryEditorState extends State<_EntryEditor> {
     Navigator.pop(context);
   }
 
+  /// Memories and measurements are deleted; a milestone, check-up or
+  /// vaccination marked as done is reset.
+  bool get _deletes =>
+      widget.kind == ChildEntryKind.memory ||
+      widget.kind == ChildEntryKind.measurement;
+
+  /// Children change only what they entered themselves (#539).
+  bool get _mayChange =>
+      widget.existing == null ||
+      AppScope.engineOf(
+        context,
+      ).mayChangeHealthRecord(Collections.childEntries, widget.existing!.id);
+
+  /// Gone at once, with "Rückgängig" on the page below the sheet (#544).
+  void _delete() {
+    final entry = widget.existing!;
+    final engine = AppScope.engineOf(context);
+    deleteWithUndo(
+      context,
+      collections: const {Collections.childEntries},
+      delete: () => engine.deleteChildEntry(entry.id),
+      what: _deletes ? entry.title : '',
+      message: entry.planned
+          ? tr.dueWhatCanceled(_appointmentLabel(entry))
+          : _deletes
+          ? null
+          : tr.kidsEntryWhatReset(_heading),
+    );
+    Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -387,43 +418,38 @@ class _EntryEditorState extends State<_EntryEditor> {
               ),
             ],
             const SizedBox(height: 20),
-            Row(
-              children: [
-                if (widget.existing != null)
-                  TextButton.icon(
-                    icon: const Icon(AppIcons.trash, size: 18),
-                    label: Text(
-                      widget.existing!.planned
-                          ? tr.eventDelete
-                          : widget.kind == ChildEntryKind.memory ||
-                                widget.kind == ChildEntryKind.measurement
-                          ? tr.commonDelete
-                          : tr.commonReset,
+            if (!_mayChange)
+              Text(tr.kidsOnlyAuthorOrAdult, style: theme.textTheme.bodySmall)
+            else
+              Row(
+                children: [
+                  if (widget.existing != null)
+                    TextButton.icon(
+                      icon: const Icon(AppIcons.trash, size: 18),
+                      label: Text(
+                        widget.existing!.planned
+                            ? tr.eventDelete
+                            : _deletes
+                            ? tr.commonDelete
+                            : tr.commonReset,
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: theme.colorScheme.error,
+                      ),
+                      onPressed: _delete,
                     ),
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                    ),
-                    onPressed: () {
-                      AppScope.engineOf(
-                        context,
-                      ).deleteChildEntry(widget.existing!.id);
-                      Navigator.pop(context);
-                    },
+                  const Spacer(),
+                  ColorButton(
+                    label: _planned
+                        ? tr.kidsSaveAppointment
+                        : widget.existing == null && !_deletes
+                        ? tr.kidsDone
+                        : tr.commonSave,
+                    color: color,
+                    onPressed: _uploading ? null : _save,
                   ),
-                const Spacer(),
-                ColorButton(
-                  label: _planned
-                      ? tr.kidsSaveAppointment
-                      : widget.existing == null &&
-                            widget.kind != ChildEntryKind.memory &&
-                            widget.kind != ChildEntryKind.measurement
-                      ? tr.kidsDone
-                      : tr.commonSave,
-                  color: color,
-                  onPressed: _uploading ? null : _save,
-                ),
-              ],
-            ),
+                ],
+              ),
           ],
         ),
       ),

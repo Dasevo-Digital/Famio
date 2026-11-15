@@ -62,6 +62,13 @@ extension FamilyExtras on SyncEngine {
           visibleTo.length == 1 &&
           visibleTo.single == memberId);
 
+  /// Whether this member may change or delete the stored record [id] of a
+  /// child's entries or log, or an intake: children only what they wrote
+  /// themselves (the server keeps what others wrote, #539).
+  bool mayChangeHealthRecord(String collection, String id) =>
+      myRole != MemberRole.child ||
+      record(collection, id)?.updatedBy == memberId;
+
   List<FamilyMember> get kidMembers =>
       members.where((m) => m.role == MemberRole.child).toList();
 

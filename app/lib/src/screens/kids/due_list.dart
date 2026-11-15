@@ -161,8 +161,12 @@ Future<void> showDueActions(
   final kind = item.isCheckup
       ? ChildEntryKind.checkup
       : ChildEntryKind.vaccination;
-  if (item.appointment != null) {
-    return _showAppointmentActions(context, child, item, item.appointment!);
+  final engine = AppScope.engineOf(context);
+  // Children cannot change an appointment someone else booked (#539): they
+  // see it in the editor, which says so.
+  if (item.appointment case final a?
+      when engine.mayChangeHealthRecord(Collections.childEntries, a.id)) {
+    return _showAppointmentActions(context, child, item, a);
   }
   if (item.entry != null) {
     return showEntryEditor(
@@ -172,14 +176,15 @@ Future<void> showDueActions(
       existing: item.entry,
     );
   }
-  final engine = AppScope.engineOf(context);
   final title = item.isCheckup ? item.title : tr.dueVaccination(item.title);
   final choice = await showModalBottomSheet<String>(
     context: context,
     // Above the floating navigation bar.
     useRootNavigator: true,
     builder: (context) => SafeArea(
-      child: Padding(
+      // A small window (the Mac app's 800 × 600) leaves the sheet too
+      // little height for all choices (#544).
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -266,7 +271,9 @@ Future<void> _showAppointmentActions(
     context: context,
     useRootNavigator: true,
     builder: (context) => SafeArea(
-      child: Padding(
+      // A small window (the Mac app's 800 × 600) leaves the sheet too
+      // little height for all choices (#544).
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,

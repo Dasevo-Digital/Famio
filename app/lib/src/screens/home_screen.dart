@@ -361,20 +361,30 @@ class _ChoresTile extends StatelessWidget {
         children: [
           for (final p in people.take(4))
             () {
+              // As under "Heute": away without anyone covering, nothing is
+              // open for them (#545).
+              final absence = engine.absenceOf(p.id, today);
+              final away = absence != null && absence.substituteId == null;
               final open = [
-                for (final ch in engine.chores)
-                  if (engine.choreDue(ch, today) &&
-                      ch.isFor(p.id, today) &&
-                      ch.memberIds.isNotEmpty &&
-                      engine.choreCompletion(ch, today) == null)
-                    ch,
+                if (!away)
+                  for (final ch in engine.chores)
+                    if (engine.choreDue(ch, today) &&
+                        ch.isFor(p.id, today) &&
+                        ch.memberIds.isNotEmpty &&
+                        engine.choreCompletion(ch, today) == null)
+                      ch,
               ];
               return _Line(
-                open.isEmpty
+                away
+                    ? '${p.displayName}: ${tr.absenceAway}'
+                    : open.isEmpty
                     ? tr.homeNameAllDone(p.displayName)
                     : '${p.displayName}: ${open.map((c) => '${c.emoji} ${c.title}').join(', ')}',
                 leading: MemberAvatar(p, radius: 11),
-                trailing: '⭐ ${engine.pointBalance(p.id)}',
+                // Guests receive no points.
+                trailing: engine.iAmGuest
+                    ? null
+                    : '⭐ ${engine.pointBalance(p.id)}',
               );
             }(),
         ],
@@ -1036,7 +1046,11 @@ class _KidsTile extends StatelessWidget {
               },
             ),
           if (kids.isEmpty && engine.activePregnancies.isEmpty)
-            _Line(tr.homeAddChildKeepTrack, dim: true),
+            // Only adults add children (#539).
+            _Line(
+              engine.iAmAdult ? tr.homeAddChildKeepTrack : tr.kidsNoneYet,
+              dim: true,
+            ),
           for (final k in kids)
             () {
               final next = nextDue(k, engine.childEntries(k.id));
@@ -1082,7 +1096,7 @@ class _KidsTile extends StatelessWidget {
                     ? tr.homeWhatDue(
                         next.isCheckup ? next.id : tr.commonVaccination,
                       )
-                    : '${next.id} ab ${DateFormat.Md(appLanguage).format(next.from)}',
+                    : dueLater(next),
               );
             }(),
         ],

@@ -194,7 +194,11 @@ class _DoseTile extends StatelessWidget {
               icon: const Icon(AppIcons.check, color: Colors.white),
               onPressed: () => engine.recordIntake(medication, scheduled: at),
             ),
-          ] else
+          ] else if (engine.mayChangeHealthRecord(
+            Collections.medicationIntakes,
+            intake.id,
+          ))
+            // Children take back only what they ticked off (#539).
             IconButton(
               tooltip: tr.commonUndo,
               icon: const Icon(AppIcons.rotateCcw),
@@ -212,15 +216,45 @@ class _MedicationCard extends StatelessWidget {
   final Medication medication;
   final SyncEngine engine;
 
-  void _toShopping(BuildContext context) {
-    final lists = engine.shoppingLists;
+  /// Shopping lists, not packing lists.
+  List<ShoppingList> get _lists =>
+      engine.shoppingLists.where((l) => !l.packing).toList();
+
+  /// On a list everyone who cares for the plan sees; with none such, the
+  /// member picks one (#544: the first list could be a private one).
+  Future<void> _toShopping(BuildContext context) async {
+    final lists = _lists;
     if (lists.isEmpty) return;
-    engine.addToShoppingList(lists.first.id, [
-      Ingredient(name: '${medication.name} (Apotheke)'),
+    final messenger = ScaffoldMessenger.of(context);
+    final care = medication.careIds;
+    final list =
+        lists
+            .where(
+              (l) =>
+                  l.visibleTo == null ||
+                  care.every((id) => l.visibleTo!.contains(id)),
+            )
+            .firstOrNull ??
+        (lists.length == 1
+            ? lists.single
+            : await showDialog<ShoppingList>(
+                context: context,
+                builder: (context) => SimpleDialog(
+                  title: Text(tr.commonWhichList),
+                  children: [
+                    for (final l in lists)
+                      SimpleDialogOption(
+                        onPressed: () => Navigator.pop(context, l),
+                        child: Text(l.name),
+                      ),
+                  ],
+                ),
+              ));
+    if (list == null) return;
+    engine.addToShoppingList(list.id, [
+      Ingredient(name: tr.medsPharmacyItem(medication.name)),
     ]);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(tr.medsList(lists.first.name))));
+    messenger.showSnackBar(SnackBar(content: Text(tr.medsList(list.name))));
   }
 
   @override
@@ -243,7 +277,7 @@ class _MedicationCard extends StatelessWidget {
                   .map((d) => _weekdayShort[d - 1])
                   .join(', '),
             if (m.end != null)
-              'bis ${DateFormat.yMd(appLanguage).format(m.end!)}',
+              tr.medsCardUntil(DateFormat.yMd(appLanguage).format(m.end!)),
           ].join(' · ');
     return SoftCard(
       onTap: engine.me?.isChild ?? false
@@ -308,7 +342,7 @@ class _MedicationCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (low && engine.shoppingLists.isNotEmpty)
+                if (low && _lists.isNotEmpty)
                   TextButton(
                     onPressed: () => _toShopping(context),
                     child: Text(tr.medsBuyMore),
@@ -334,6 +368,27 @@ class _MedicationCard extends StatelessWidget {
               ],
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Why the plan cannot be saved yet, below the choice it is about.
+class _Error extends StatelessWidget {
+  const _Error(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.error,
+        ),
       ),
     );
   }
@@ -402,9 +457,22 @@ class _MedicationEditorState extends State<_MedicationEditor> {
   double? _number(String text) =>
       double.tryParse(text.trim().replaceAll(',', '.'));
 
+  /// What keeps the plan from being saved, shown where it is (#544).
+  String? _nameError, _timesError, _endError;
+
   void _save() {
     final name = _name.text.trim();
-    if (name.isEmpty) return;
+    setState(() {
+      _nameError = name.isEmpty ? tr.kidsLogPleaseEnterMedication : null;
+      // Without times and not "only as needed" a plan never shows up.
+      _timesError = !_asNeeded && _times.isEmpty ? tr.medsTimesMissing : null;
+      _endError = !_asNeeded && _end != null && _end!.isBefore(_start)
+          ? tr.commonEndBeforeStart
+          : null;
+    });
+    if (_nameError != null || _timesError != null || _endError != null) {
+      return;
+    }
     final engine = AppScope.engineOf(context);
     // Only a changed count restarts the stock calculation. The field shows
     // what is left; untouched, the stored count and its day stay, or the
@@ -450,12 +518,15 @@ class _MedicationEditorState extends State<_MedicationEditor> {
     if (!_times.contains(text)) setState(() => _times.add(text));
   }
 
-  Future<DateTime?> _pickDay(DateTime initial) => showFamioDatePicker(
-    context: context,
-    initialDate: initial,
-    firstDate: DateTime(initial.year - 2),
-    lastDate: DateTime(initial.year + 3),
-  );
+  Future<DateTime?> _pickDay(DateTime initial, {DateTime? notBefore}) {
+    final first = notBefore ?? DateTime(initial.year - 2);
+    return showFamioDatePicker(
+      context: context,
+      initialDate: initial.isBefore(first) ? first : initial,
+      firstDate: first,
+      lastDate: DateTime(initial.year + 3),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -505,7 +576,13 @@ class _MedicationEditorState extends State<_MedicationEditor> {
             controller: _name,
             autofocus: _old == null,
             textCapitalization: TextCapitalization.sentences,
-            decoration: InputDecoration(labelText: tr.kidsLogMedication),
+            onChanged: (_) {
+              if (_nameError != null) setState(() => _nameError = null);
+            },
+            decoration: InputDecoration(
+              labelText: tr.kidsLogMedication,
+              errorText: _nameError,
+            ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -560,6 +637,7 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                 ),
               ],
             ),
+            if (_timesError != null && _times.isEmpty) _Error(_timesError!),
             const SizedBox(height: 10),
             Wrap(
               spacing: 6,
@@ -601,15 +679,26 @@ class _MedicationEditorState extends State<_MedicationEditor> {
                         : tr.medsUntilDate(day.format(_end!)),
                   ),
                   onPressed: () async {
-                    final d = await _pickDay(_end ?? _start);
-                    if (d != null) setState(() => _end = d);
+                    // The last day cannot lie before the first.
+                    final d = await _pickDay(_end ?? _start, notBefore: _start);
+                    if (d != null) {
+                      setState(() {
+                        _end = d;
+                        _endError = null;
+                      });
+                    }
                   },
                   onDeleted: _end == null
                       ? null
-                      : () => setState(() => _end = null),
+                      : () => setState(() {
+                          _end = null;
+                          _endError = null;
+                        }),
                 ),
               ],
             ),
+            if (_endError != null && _end != null && _end!.isBefore(_start))
+              _Error(_endError!),
           ],
           ListHeading(tr.conflictsPantry),
           Row(

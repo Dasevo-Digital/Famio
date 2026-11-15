@@ -2821,8 +2821,7 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (hint of ALL-065, reproduced twice): in English the list of chores
-  // still says "pausiert" and "heute: …" (chores_tab.dart:46, :49).
+  // In English the list of chores says "paused" and "today: …" (#545).
   testWidgets('ALL-065 hint: "pausiert" and "heute:" in English', (
     tester,
   ) async {
@@ -2857,7 +2856,7 @@ void main() {
       reason: lines.join('\n'),
     );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets(
     'ALL-067 ALL-068 adults tick off: points at once, "Wer hat es erledigt?"',
@@ -3259,10 +3258,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (hint of ALL-075, reproduced twice): guests get no points, pocket
-  // money or its settings (Collections.guestReadable), yet the tab "Konto"
-  // shows them "⭐ 0", "0,00 €" and "Kein Taschengeld eingestellt" for the
-  // children (accounts.dart:38, :47, :50).
+  // Guests get no points, pocket money or its settings
+  // (Collections.guestReadable): the tab "Konto" says so instead of showing
+  // "⭐ 0", "0,00 €" and "Kein Taschengeld eingestellt" (#545).
   testWidgets('ALL-075 hint: the account tab shows guests the balances', (
     tester,
   ) async {
@@ -3281,8 +3279,9 @@ void main() {
       isFalse,
       reason: 'real balances ⭐ 7 and ${formatEuro(1000)}, shown: $texts',
     );
+    expect(find.text(de.choresAccountsGuests), findsOneWidget);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets(
     'ALL-076 "Heute" per role; without children everyone but the guests',
@@ -3815,9 +3814,8 @@ void main() {
     },
   );
 
-  // Befund (reproduced twice): the adults read "-10 Punkte · Kontostand ⭐ 20"
-  // for a wish of 10 points; the negative points of the redemption go into
-  // the text as they are (today_tab.dart:102-106).
+  // The adults read "10 Punkte · Kontostand ⭐ 20" for a wish of 10 points,
+  // not the negative points of the redemption (#545).
   testWidgets(
     'ALL-088 the wish shows what it costs: "10 Punkte · Kontostand ⭐ n"',
     (tester) async {
@@ -3856,7 +3854,6 @@ void main() {
       expect(lines, contains(de.choresPointsPointsBalanceBalance(10, 20)));
       await finish(tester, state);
     },
-    skip: true,
   );
 
   // Befund (hint of ALL-089, known as #377, reproduced twice): open wishes do
@@ -4632,10 +4629,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (hint of ALL-108, reproduced twice): the tile "Ämter" on the start
-  // page lists the chore of an absent child as open, although "Heute" leaves
-  // it out (home_screen.dart:366-369 asks for no absence; the wall display
-  // likewise, from the code: kiosk_screen.dart:497, :513).
+  // The tile "Ämter" on the start page says the absent child is away instead
+  // of listing its chore as open, as "Heute" does (#545; the wall display
+  // likewise).
   testWidgets(
     'ALL-108 hint: the start page leaves out chores of an absent child',
     (tester) async {
@@ -4646,7 +4642,7 @@ void main() {
       final state = await start(tester);
       await openSection(tester, 'Start');
       final busy = find.text('${f.kid.displayName}: 🧹 E2E Abwesend Start');
-      final free = find.text(de.homeNameAllDone(f.kid.displayName));
+      final free = find.text('${f.kid.displayName}: ${de.absenceAway}');
       await until(
         tester,
         () => busy.evaluate().isNotEmpty || free.evaluate().isNotEmpty,
@@ -4657,9 +4653,9 @@ void main() {
         '${busy.evaluate().isNotEmpty ? 'chore listed' : 'all done'}',
       );
       expect(busy, findsNothing, reason: 'the child is away');
+      expect(free, findsOneWidget);
       await finish(tester, state);
     },
-    skip: true,
   );
 
   testWidgets('ALL-109 absences are for adults to manage', (tester) async {

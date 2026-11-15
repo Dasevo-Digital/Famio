@@ -7,6 +7,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -67,12 +68,14 @@ class KidsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(FamioSection.kids);
+    // Children and pregnancies are for adults to add (#539).
+    final mayAdd = AppScope.of(context).me?.isAdult ?? true;
     return SectionPage(
       section: FamioSection.kids,
       title: tr.sectionKids,
       subtitle: tr.kidsGrowingUpStepStep,
       actions: const [SyncStatusIcon()],
-      floating: AppScope.of(context).me?.isChild ?? false
+      floating: !mayAdd
           ? null
           : AddButton(
               color: color,
@@ -85,17 +88,20 @@ class KidsScreen extends StatelessWidget {
           final kids = engine.children;
           final expecting = engine.activePregnancies;
           if (kids.isEmpty && expecting.isEmpty) {
+            final intro = !mayAdd ? tr.kidsNoneYet : tr.kidsKeepTrackHowKids;
             return EmptyHint(
               icon: AppIcons.baby,
               color: color,
               text: _otherAdults(engine)
-                  ? '${tr.kidsKeepTrackHowKids}\n\n${tr.kidsMissingChildHint}'
-                  : tr.kidsKeepTrackHowKids,
-              action: ColorButton(
-                label: tr.commonAdd,
-                color: color,
-                onPressed: () => _add(context),
-              ),
+                  ? '$intro\n\n${tr.kidsMissingChildHint}'
+                  : intro,
+              action: !mayAdd
+                  ? null
+                  : ColorButton(
+                      label: tr.commonAdd,
+                      color: color,
+                      onPressed: () => _add(context),
+                    ),
             );
           }
           final cards = [
@@ -272,7 +278,7 @@ class _ChildCard extends StatelessWidget {
                                           ? next.id
                                           : tr.commonVaccination,
                                     )
-                                  : '${next.id} ab ${DateFormat.Md(appLanguage).format(next.from)}',
+                                  : dueLater(next),
                               color: next.open
                                   ? theme.colorScheme.error
                                   : c.inkSoft,
