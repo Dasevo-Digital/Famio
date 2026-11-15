@@ -3858,10 +3858,17 @@ void main() {
           .visibleTo,
       contains(f.kid.id),
     );
-    final server = await pull(f.admin, Collections.documents);
+    // "Ganze Familie" is not offered: it is the child's alone ("Nur ich"),
+    // on the server too, and the adults do not get it.
+    final server = await pull(await sessionOf(f.kid), Collections.documents);
     expect(
       server.values.where((r) => r.data['title'] == 'E2E Befund Kind'),
       hasLength(1),
+    );
+    final adults = await pull(f.admin, Collections.documents);
+    expect(
+      adults.values.where((r) => r.data['title'] == 'E2E Befund Kind'),
+      isEmpty,
     );
     await finish(tester, state);
   });
@@ -3944,7 +3951,18 @@ void main() {
     expect(find.byTooltip(de.pantryOneMore), findsNothing);
     expect(find.byTooltip(de.pantryOneLess), findsNothing);
     expect(find.byTooltip(de.pantryAddItem), findsNothing);
-    await waitFor(tester, inTile('E2E Reis', find.text('2')));
+    // A guest's card opens nothing, so it is no tappable tile.
+    await waitFor(
+      tester,
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('E2E Reis'),
+          matching: find.byType(SoftCard),
+        ),
+        matching: find.text('2'),
+      ),
+    );
+    expect(tile('E2E Reis'), findsNothing);
 
     // The adults see none of it.
     expect(await titlesOf(bea, Collections.recipes), {'E2E Gastsuppe'});
