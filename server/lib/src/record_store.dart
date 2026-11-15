@@ -121,6 +121,9 @@ class RecordStore {
   /// confidential appointments they have no part in. A service account
   /// keeps those as busy times, without what they are about ([_shown]).
   bool _mayReceive(SyncRecord r, String userId, MemberRole role) {
+    if (_hiddenFromChildren(r) && role == MemberRole.child) {
+      return (r.data['createdBy'] ?? r.updatedBy) == userId;
+    }
     if (Collections.isHealth(r.collection, r.data)) {
       return role != MemberRole.service &&
           (r.visibleTo?.contains(userId) ?? false);
@@ -137,6 +140,14 @@ class RecordStore {
           event.data['pickerId'],
         ].contains(userId);
   }
+
+  /// An entry of the family inbox nobody shared with the children: scanned
+  /// letters are often about health or money before anyone files them.
+  /// Children receive only what they filed themselves (GRU-084).
+  static bool _hiddenFromChildren(SyncRecord r) =>
+      r.collection == Collections.inbox &&
+      !r.deleted &&
+      r.data[InboxItem.forChildrenKey] != true;
 
   /// The confidential appointment [r] is, comments on or is packed for.
   SyncRecord? _confidentialEvent(SyncRecord r) {
@@ -241,16 +252,17 @@ class RecordStore {
     final health = Collections.isHealth(r.collection, r.data);
     final within = r.deleted ? null : _attachedEvent(r)?.visibleTo;
     final confidential = _confidentialEvent(r) != null;
+    final notForChildren = _hiddenFromChildren(r);
     if (r.visibleTo case final ids?) {
       return [
         for (final id in ids)
           if ((!health || _role(id) != MemberRole.service) &&
               (within == null || within.contains(id)) &&
-              (!confidential || canAccess(r, id)))
+              (!(confidential || notForChildren) || canAccess(r, id)))
             id,
       ];
     }
-    if (health || confidential || within != null) {
+    if (health || confidential || notForChildren || within != null) {
       return [
         for (final m in memberIds())
           if (canAccess(r, m)) m,
@@ -1114,7 +1126,7 @@ class RecordStore {
 
   /// Raised when members other than adults receive less than before: their
   /// next sync is a full one, which takes the rest off their devices.
-  static const _accessRules = 6;
+  static const _accessRules = 7;
 
   static const _guestTasksKey = 'guestTasksRestricted';
 

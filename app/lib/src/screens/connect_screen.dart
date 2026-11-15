@@ -264,31 +264,42 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         ),
                         const SizedBox(height: 24),
                         if (state.webServer == null)
-                          TextFormField(
-                            controller: _url,
-                            enabled: server == null && !_busy,
-                            keyboardType: TextInputType.url,
-                            autocorrect: false,
-                            decoration: InputDecoration(
-                              labelText: tr.connectServerAddress,
-                              hintText: tr.settingsFamioExampleCom192,
-                              prefixIcon: const Icon(AppIcons.hardDrives),
-                              suffixIcon: server == null
-                                  ? null
-                                  : IconButton(
-                                      icon: const Icon(
-                                        AppIcons.pencilSimple,
-                                        size: 18,
-                                      ),
-                                      tooltip: tr.connectChangeServer,
-                                      onPressed: () =>
-                                          setState(() => _resolved = null),
-                                    ),
-                            ),
-                            validator: (v) => (v ?? '').trim().isEmpty
-                                ? tr.connectPleaseEnterAddress
-                                : null,
-                            onFieldSubmitted: (_) => _submit(),
+                          // A disabled field takes no taps, its icons
+                          // neither: the pencil lies on top of it (GRU-002).
+                          Stack(
+                            alignment: Alignment.centerRight,
+                            children: [
+                              TextFormField(
+                                controller: _url,
+                                enabled: server == null && !_busy,
+                                keyboardType: TextInputType.url,
+                                autocorrect: false,
+                                decoration: InputDecoration(
+                                  labelText: tr.connectServerAddress,
+                                  hintText: tr.settingsFamioExampleCom192,
+                                  prefixIcon: const Icon(AppIcons.hardDrives),
+                                  // Room for the pencil.
+                                  suffixIcon: server == null
+                                      ? null
+                                      : const SizedBox.square(dimension: 48),
+                                ),
+                                validator: (v) => (v ?? '').trim().isEmpty
+                                    ? tr.connectPleaseEnterAddress
+                                    : null,
+                                onFieldSubmitted: (_) => _submit(),
+                              ),
+                              if (server != null)
+                                IconButton(
+                                  icon: const Icon(
+                                    AppIcons.pencilSimple,
+                                    size: 18,
+                                  ),
+                                  tooltip: tr.connectChangeServer,
+                                  onPressed: _busy
+                                      ? null
+                                      : () => setState(() => _resolved = null),
+                                ),
+                            ],
                           ),
                         if (_resolved case final resolved?
                             when state.webServer == null)

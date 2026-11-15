@@ -2887,5 +2887,11 @@
   "birthdayBornIn": "Nació en {year}",
   "filesUploadFailed": "No se ha podido subir el archivo. Inténtalo de nuevo.",
   "settingsDeleteAccountChildHint": "Un adulto puede eliminar tu cuenta en la administración del servidor.",
-  "syncChangesRefused": "{count, plural, =1{Un cambio no está permitido para tu cuenta y se ha deshecho.} other{{count} cambios no están permitidos para tu cuenta y se han deshecho.}}"
+  "syncChangesRefused": "{count, plural, =1{Un cambio no está permitido para tu cuenta y se ha deshecho.} other{{count} cambios no están permitidos para tu cuenta y se han deshecho.}}",
+  "inboxForChildren": "También lo ven los niños",
+  "inboxForChildrenHint": "Las cartas y los escaneos suelen tratar de salud o de dinero. Sin esta opción, los niños no ven la entrada; lo que un niño guarda él mismo lo ve siempre.",
+  "inboxDocumentTitle": "Guardar como documento",
+  "inboxDocumentAdults": "Adultos",
+  "docsChildHealthAudience": "Los documentos de salud solo los guardas para ti y para las personas que elijas.",
+  "mealsWebAddressNeeded": "Introduce la dirección de una página web (https://…)."
 }

@@ -1730,13 +1730,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (zweimal reproduziert): Ist für das Kind „Notruf 112“ oder „Nicht
-  // anrufen“ gewählt, heißt der erste Eintrag „Elternteil (keiner mit
-  // Nummer)“, obwohl E2E Bea eine Nummer hat; der Name wird mit der
-  // aktuellen Wahl statt mit der Standardregel berechnet
-  // (app/lib/src/screens/sos_screens.dart:870 s.callMember(m.id, adults);
-  // callMember gibt für emergency/none null zurück,
-  // packages/famio_shared/lib/src/models/sos.dart:57-59).
+  // Der erste Eintrag „Elternteil (…)“ nennt, wen die Standardregel anruft,
+  // auch wenn für das Kind gerade „Notruf 112“ oder „Nicht anrufen“ gewählt
+  // ist (#547).
   testWidgets(
     'SIC-026 the parent entry names the parent while another choice is set',
     (tester) async {
@@ -1771,7 +1767,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
       await finish(tester, state);
     },
-    skip: true,
   );
 
   testWidgets('SIC-024 SIC-027 children see the button settings, no more', (

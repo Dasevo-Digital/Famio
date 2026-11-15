@@ -2887,5 +2887,11 @@
   "birthdayBornIn": "Born {year}",
   "filesUploadFailed": "The file could not be uploaded. Please try again.",
   "settingsDeleteAccountChildHint": "An adult can remove your account in the server administration.",
-  "syncChangesRefused": "{count, plural, =1{A change is not allowed for your account and was undone.} other{{count} changes are not allowed for your account and were undone.}}"
+  "syncChangesRefused": "{count, plural, =1{A change is not allowed for your account and was undone.} other{{count} changes are not allowed for your account and were undone.}}",
+  "inboxForChildren": "Children can see it too",
+  "inboxForChildrenHint": "Letters and scans are often about health or money. Without this, children do not see the entry; what a child files itself it always sees.",
+  "inboxDocumentTitle": "File as a document",
+  "inboxDocumentAdults": "Adults",
+  "docsChildHealthAudience": "You file health documents only for yourself and people you choose.",
+  "mealsWebAddressNeeded": "Please enter the address of a web page (https://…)."
 }

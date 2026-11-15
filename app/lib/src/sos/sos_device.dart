@@ -59,6 +59,11 @@ class SosDevice {
   /// Android can text without asking each time.
   static bool get canSms => !kIsWeb && Platform.isAndroid;
 
+  /// The position service exists on Android only (by the target platform,
+  /// which tests can set).
+  static bool get _androidService =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+
   /// A fresh position, or null without permission, signal or support.
   static Future<SosFix?> currentFix({
     Duration timeout = const Duration(seconds: 20),
@@ -110,7 +115,7 @@ class SosDevice {
     required String alertId,
     required DateTime until,
   }) async {
-    if (kIsWeb || !Platform.isAndroid) return false;
+    if (!_androidService) return false;
     try {
       return await _channel.invokeMethod<bool>('startLive', {
             'url': serverUrl.endsWith('/') ? serverUrl : '$serverUrl/',
@@ -127,7 +132,7 @@ class SosDevice {
   }
 
   static Future<void> stopLiveService() async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    if (!_androidService) return;
     try {
       await _channel.invokeMethod('stopLive');
     } catch (_) {}

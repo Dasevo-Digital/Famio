@@ -1551,13 +1551,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: at 200 % text the side rail of the computer layout overflows:
-  // the logo with the app's name (home_shell.dart:610-640, _Logo) gets a box
-  // at most 88 high (home_shell.dart:552, logoExtent) and is 50 pixels too
-  // tall – "A RenderFlex overflowed by 50 pixels on the bottom" (twice).
-  testWidgets('GRU-092 the side rail at 200 % text', skip: true, (
-    tester,
-  ) async {
+  // At 200 % text the logo's name and the labels of the computer layout's
+  // side rail shrink to their boxes instead of running over (#547).
+  testWidgets('GRU-092 the side rail at 200 % text', (tester) async {
     tall(tester);
     final state = await start(tester);
     await openSettingsItem(tester, de.trashTitle);
@@ -1567,6 +1563,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await tester.pump(const Duration(seconds: 1));
     expect(find.text(de.trashHint), findsOneWidget);
+    expect(tester.takeException(), isNull);
     tester.platformDispatcher.clearTextScaleFactorTestValue();
     await tester.pump(const Duration(milliseconds: 500));
     await finish(tester, state);
@@ -1691,23 +1688,26 @@ void main() {
           (await titlesOf(bea, Collections.inbox)).contains('E2E Zettel Kita'),
     );
 
-    // Hint: without a title the first line is one, without anything
-    // "Ohne Titel".
+    // Without a title the first line is one; without anything there is no
+    // entry at all: "Speichern" stays off (#541).
     await openInbox(tester);
     await add(notes: 'Erste Zeile\nZweite Zeile');
     await waitFor(tester, find.text('Erste Zeile'));
-    await add();
-    await waitFor(tester, find.text(de.inboxUntitled));
-    final empty = engine.inboxItems.singleWhere(
-      (i) => i.title == de.inboxUntitled,
+    await tap(tester, find.byTooltip(de.inboxAdd));
+    await waitFor(tester, inDialog(field(de.commonTitle)));
+    final save = inDialog(find.widgetWithText(FilledButton, de.commonSave));
+    expect(tester.widget<FilledButton>(save).onPressed, isNull);
+    await tap(tester, inDialog(find.text(de.commonCancel)));
+    await dialogClosed(tester);
+    expect(find.text(de.inboxUntitled), findsNothing);
+    expect(
+      engine.inboxItems.where((i) => i.title == de.inboxUntitled),
+      isEmpty,
     );
-    expect(empty.text, isEmpty);
-    expect(empty.files, isEmpty);
-    await eventually(
-      tester,
-      'the empty one reaches Bea too',
-      () async =>
-          (await titlesOf(bea, Collections.inbox)).contains(de.inboxUntitled),
+    await engine.sync();
+    expect(
+      await titlesOf(bea, Collections.inbox),
+      isNot(contains(de.inboxUntitled)),
     );
     await clearInbox(engine);
     await finish(tester, state);
@@ -1853,6 +1853,17 @@ void main() {
       tester,
       find.descendant(of: _menuItems, matching: find.text(de.commonDocument)),
     );
+    // Category and audience are chosen; it starts with the adults, whom the
+    // entry reached (not shared with the children, #541).
+    await waitFor(tester, find.text(de.inboxDocumentTitle));
+    await tap(tester, inDialog(find.text(DocumentCategory.health.label)));
+    // A health letter starts out as one's own, as in the document editor.
+    await tap(tester, inDialog(find.text(de.inboxDocumentAdults)));
+    await tap(
+      tester,
+      inDialog(find.widgetWithText(FilledButton, de.commonSave)),
+    );
+    await dialogClosed(tester);
     await waitFor(tester, find.text(de.inboxFiled));
     final docs = engine.documents
         .where((d) => d.title.startsWith('e2e-befund-'))
@@ -1862,11 +1873,10 @@ void main() {
       'e2e-befund-2.pdf',
     });
     for (final d in docs) {
-      expect(d.category, DocumentCategory.other);
-      expect(d.category.label, 'Sonstiges');
+      expect(d.category, DocumentCategory.health);
       expect(d.notes, 'Zwei Seiten');
-      // Hint: no audience – the whole family gets them.
-      expect(d.visibleTo, isNull);
+      expect(d.visibleTo, containsAll([state.me!.id, f.bea.id]));
+      expect(d.visibleTo, isNot(contains(f.kid.id)));
     }
     await eventually(
       tester,
@@ -1875,6 +1885,11 @@ void main() {
         bea,
         Collections.documents,
       )).containsAll({'e2e-befund-1.pdf', 'e2e-befund-2.pdf'}),
+    );
+    final kid = await sessionOf(f.kid);
+    expect(
+      await titlesOf(kid, Collections.documents),
+      isNot(contains('e2e-befund-1.pdf')),
     );
     for (final d in docs) {
       engine.delete(Collections.documents, d.id);
@@ -1894,8 +1909,18 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('E2E Wegwerfzettel'), findsNothing);
     expect(find.byType(AlertDialog), findsNothing);
-    expect(find.byType(SnackBar), findsNothing);
-    expect(find.text(de.commonUndo), findsNothing);
+    // Gone at once, with "Rückgängig" (#541).
+    await waitFor(tester, find.text(de.undoWhatDeleted('E2E Wegwerfzettel')));
+    await tap(tester, find.text(de.commonUndo));
+    await waitFor(tester, find.text('E2E Wegwerfzettel'));
+    expect(
+      engine.inboxItems.map((i) => i.title),
+      contains('E2E Wegwerfzettel'),
+    );
+    await snackGone(tester);
+    await fileAs(tester, 'E2E Wegwerfzettel', de.commonDelete);
+    await waitFor(tester, find.text(de.undoWhatDeleted('E2E Wegwerfzettel')));
+    expect(find.text('E2E Wegwerfzettel'), findsNothing);
     await engine.sync();
     expect(await trashTitles(engine.api), isNot(contains('E2E Wegwerfzettel')));
     await finish(tester, state);
@@ -1947,12 +1972,17 @@ void main() {
     await finish(tester, state);
   });
 
+  // Children see an inbox entry only when the one filing it shared it with
+  // them ("Auch für Kinder sichtbar"), and always their own (decision on
+  // GRU-084, #541).
   testWidgets('GRU-084 a child and the family inbox', (tester) async {
     tall(tester);
     final f = await theFamily();
     final bea = await sessionOf(f.bea);
     final ref = await uploadAs(bea, 'e2e-arztbrief-kind.pdf', _pdf);
+    final shared = await uploadAs(bea, 'e2e-ausflug-kind.pdf', _pdf);
     final id = _uid('inbox');
+    final sharedId = _uid('inbox');
     await put(bea, Collections.inbox, {
       id: InboxItem(
         id: id,
@@ -1961,17 +1991,31 @@ void main() {
         createdAt: DateTime.now(),
         createdBy: f.bea.id,
       ).toData(),
+      sharedId: InboxItem(
+        id: sharedId,
+        title: 'E2E Ausflug von Bea',
+        files: [shared],
+        createdAt: DateTime.now(),
+        createdBy: f.bea.id,
+        forChildren: true,
+      ).toData(),
     });
+    // Not the letter, nor its file.
+    final kid = await sessionOf(f.kid);
+    expect((await pull(kid, Collections.inbox)).keys, isNot(contains(id)));
+    await expectLater(kid.downloadFile(ref.id), throwsA(isA<ApiError>()));
     final state = await start(tester, user: 'e2e-kind');
     final engine = state.engine!;
     await openInbox(tester);
-    // Hint: no audience – the child sees the scanned letter and opens it.
-    await waitFor(tester, find.text('E2E Arztbrief von Bea'));
+    // The shared one: seen and opened.
+    await waitFor(tester, find.text('E2E Ausflug von Bea'));
+    expect(find.text('E2E Arztbrief von Bea'), findsNothing);
+    expect(engine.inboxItems.map((i) => i.id), isNot(contains(id)));
     _launcher.opened.clear();
-    await tap(tester, find.text('E2E Arztbrief von Bea'));
+    await tap(tester, find.text('E2E Ausflug von Bea'));
     await eventually(
       tester,
-      'the letter opens',
+      'the shared one opens',
       () async => _launcher.opened.isNotEmpty,
     );
     // It can put something in and file it.
@@ -1984,6 +2028,10 @@ void main() {
     );
     await dialogClosed(tester);
     await waitFor(tester, find.text('E2E Vom Kind'));
+    // Its own entry stays with the child after the sync.
+    await engine.sync();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('E2E Vom Kind'), findsOneWidget);
     await fileAs(tester, 'E2E Vom Kind', de.commonNote);
     await waitFor(tester, find.text(de.inboxFiled));
     await eventually(
@@ -1995,7 +2043,7 @@ void main() {
     for (final n in engine.notes.where((n) => n.title == 'E2E Vom Kind')) {
       engine.deleteNote(n.id);
     }
-    await remove(bea, Collections.inbox, [id]);
+    await remove(bea, Collections.inbox, [id, sharedId]);
     await finish(tester, state);
   });
 

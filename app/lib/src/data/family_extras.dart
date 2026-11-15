@@ -22,6 +22,18 @@ extension FamilyExtras on SyncEngine {
 
   bool get iAmGuest => myRole == MemberRole.guest;
 
+  /// Whether this member may change [collection] at all: the server undoes
+  /// the rest after the next sync without a word (`RecordStore.mayWrite`),
+  /// so the app does not offer it. Guests tick off and chat, children do
+  /// not manage what [Collections.adultOnly] holds.
+  bool mayWrite(String collection) => switch (myRole) {
+    MemberRole.adult || MemberRole.service => true,
+    MemberRole.guest =>
+      collection == Collections.tasks ||
+          Collections.guestWritable.contains(collection),
+    MemberRole.child => !Collections.adultOnly.contains(collection),
+  };
+
   /// Whether this member may switch "Privat" for [existing] (null: a new
   /// appointment): children only for their own, entered by them with nobody
   /// else taking part (the server keeps the flag of other appointments).

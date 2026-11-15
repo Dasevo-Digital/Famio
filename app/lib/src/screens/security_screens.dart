@@ -209,6 +209,24 @@ Future<void> runSsoInBrowser(
   }
 }
 
+/// The new recovery codes, once. Scrolls when the window is too low for all
+/// ten and "Kopieren" (GRU-023).
+Future<void> showNewRecoveryCodes(BuildContext context, List<String> codes) =>
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        scrollable: true,
+        title: Text(tr.securityNewRecoveryCodes),
+        content: SizedBox(width: 380, child: RecoveryCodes(codes)),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(tr.securitySaved),
+          ),
+        ],
+      ),
+    );
+
 /// Recovery codes, shown once after setting up two-factor login.
 class RecoveryCodes extends StatelessWidget {
   const RecoveryCodes(this.codes, {super.key});
@@ -219,6 +237,7 @@ class RecoveryCodes extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(tr.securityIfYouLosePhone, style: TextStyle(color: c.inkSoft)),
@@ -610,19 +629,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     try {
       final codes = await _api.newRecoveryCodes(code);
       if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(tr.securityNewRecoveryCodes),
-          content: SizedBox(width: 380, child: RecoveryCodes(codes)),
-          actions: [
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(tr.securitySaved),
-            ),
-          ],
-        ),
-      );
+      await showNewRecoveryCodes(context, codes);
     } on ApiError catch (e) {
       _say(e.message);
     }

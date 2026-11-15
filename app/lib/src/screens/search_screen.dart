@@ -139,7 +139,15 @@ class _SearchScreenState extends State<SearchScreen> {
         return;
       case SearchKind.contact:
         final c = engine.contacts.where((c) => c.id == hit.id).firstOrNull;
-        if (c != null) await showContactEditor(context, existing: c);
+        if (c == null) return;
+        if (engine.mayWrite(Collections.contacts)) {
+          await showContactEditor(context, existing: c);
+        } else {
+          // Guests call from the list; they do not edit (ALL-179).
+          await Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const ContactsScreen()),
+          );
+        }
       case SearchKind.medication:
         final m = engine.medications.where((m) => m.id == hit.id).firstOrNull;
         if (m != null) await openMedicationEditor(context, m);

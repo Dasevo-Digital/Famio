@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 
 import 'birthdays.dart';
 import 'edit_merge.dart';
+import 'family_extras.dart';
 import 'holidays.dart';
 import '../l10n.dart';
 
@@ -143,12 +144,18 @@ extension FamilyData on SyncEngine {
 
   void deleteShoppingItem(String id) => delete(Collections.shoppingItems, id);
 
-  /// Deletes the list together with its items.
-  void deleteShoppingList(String id) {
-    for (final item in shoppingItems(id)) {
+  /// Deletes the list together with its items; false (and nothing deleted)
+  /// for members who may not delete lists. Guests may delete items but not
+  /// the list: deleting the items first would leave the family an empty list
+  /// (#537).
+  bool deleteShoppingList(String id) {
+    if (!mayWrite(Collections.shoppingLists)) return false;
+    final items = shoppingItems(id);
+    delete(Collections.shoppingLists, id);
+    for (final item in items) {
       deleteShoppingItem(item.id);
     }
-    delete(Collections.shoppingLists, id);
+    return true;
   }
 
   // --- calendar -------------------------------------------------------------

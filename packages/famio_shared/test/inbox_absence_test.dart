@@ -34,6 +34,25 @@ void main() {
     expect(Collections.all, contains(Collections.inbox));
   });
 
+  test('inbox items are for adults unless shared with the children', () {
+    const item = InboxItem(id: 'inbox-2', title: 'Arztbrief');
+    expect(item.toData(), isNot(contains(InboxItem.forChildrenKey)));
+    SyncRecord record(InboxItem i) => SyncRecord(
+      collection: Collections.inbox,
+      id: i.id,
+      data: i.toData(),
+      updatedAt: 1,
+    );
+    expect(InboxItem.fromRecord(record(item)).forChildren, isFalse);
+    const shared = InboxItem(
+      id: 'inbox-3',
+      title: 'Ausflug',
+      forChildren: true,
+    );
+    expect(shared.toData()[InboxItem.forChildrenKey], isTrue);
+    expect(InboxItem.fromRecord(record(shared)).forChildren, isTrue);
+  });
+
   test('absence covers inclusive local days and selects the substitute', () {
     final absence = MemberAbsence(
       id: 'away-1',

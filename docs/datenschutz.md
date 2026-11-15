@@ -46,6 +46,9 @@ Kinder-Protokolls, etwa von einem Ausschlag, folgen denselben Regeln. Dienstkont
 Wandanzeige, erhalten sie nie, Kinderkonten nur, wenn sie ausgewählt sind.
 Vertrauliche Termine sehen Gäste und Kinderkonten nur, wenn sie beteiligt sind;
 Dienstkonten erfahren nur die belegte Zeit. Mitteilungen nennen sie ohne Titel.
+Einträge des Familien-Eingangs (oft gescannte Briefe) erhalten Kinderkonten nur,
+wenn sie beim Ablegen „Auch für Kinder sichtbar“ bekommen haben, und immer, was
+sie selbst abgelegt haben; Gäste und Dienstkonten erhalten den Eingang nie.
 Administratoren können Konten und Passwörter verwalten und dadurch technisch
 Zugang zu Familiendaten erlangen; entsprechende Vorgänge erscheinen im
 Audit-Log. Sie können außerdem den Standortverlauf jedes Mitglieds abrufen und

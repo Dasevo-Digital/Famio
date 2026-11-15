@@ -7298,5 +7298,11 @@
   "filesUploadFailed": "Die Datei konnte nicht hochgeladen werden. Bitte noch einmal versuchen.",
   "settingsDeleteAccountChildHint": "Ein Erwachsener kann dein Konto in der Server-Verwaltung entfernen.",
   "syncChangesRefused": "{count, plural, =1{Eine Änderung ist für dein Konto nicht erlaubt und wurde zurückgenommen.} other{{count} Änderungen sind für dein Konto nicht erlaubt und wurden zurückgenommen.}}",
-  "@syncChangesRefused": {"placeholders": {"count": {"type": "int"}}}
+  "@syncChangesRefused": {"placeholders": {"count": {"type": "int"}}},
+  "inboxForChildren": "Auch für Kinder sichtbar",
+  "inboxForChildrenHint": "Briefe und Scans betreffen oft Gesundheit oder Geld. Ohne diese Freigabe sehen Kinder den Eintrag nicht; was ein Kind selbst ablegt, sieht es immer.",
+  "inboxDocumentTitle": "Als Dokument ablegen",
+  "inboxDocumentAdults": "Erwachsene",
+  "docsChildHealthAudience": "Gesundheitsdokumente legst du nur für dich und ausgewählte Personen ab.",
+  "mealsWebAddressNeeded": "Bitte die Adresse einer Webseite eingeben (https://…)."
 }

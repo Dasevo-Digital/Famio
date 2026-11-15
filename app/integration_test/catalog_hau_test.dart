@@ -1470,9 +1470,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Ohne Rezept auf der Seite steht die Adresse nicht in „Quelle“:
-  // _import (meals_screens.dart:954–998) übergibt sie nur an _fetch, nur
-  // initState (Zeile 931) trägt sie bei importFrom ein.
+  // Ohne Rezept auf der Seite steht die eingegebene Adresse trotzdem in
+  // „Quelle“ (#547).
   testWidgets('HAU-013 a page without a recipe keeps its address', (
     tester,
   ) async {
@@ -1490,10 +1489,10 @@ void main() {
     await waitFor(tester, snackText(de.mealsNoRecipeWasFound));
     expect(textOf(tester, field(de.mealsSourceOptional)), page);
     await finish(tester, state);
-  }, skip: true);
+  });
 
-  // Befund: Eine Adresse ohne http(s) wird still verworfen: _import
-  // (meals_screens.dart:997) kehrt bei !uri.hasScheme ohne Meldung zurück.
+  // Eine Adresse ohne http(s) wird mit https:// versucht, statt still
+  // verworfen zu werden (#547).
   testWidgets('HAU-015 an address without http(s)', (tester) async {
     await reset(_meals);
     final state = await start(tester);
@@ -1516,8 +1515,12 @@ void main() {
           find.byType(CircularProgressIndicator).evaluate().isNotEmpty;
     }
     expect(answered, isTrue, reason: 'nothing happened');
+    expect(
+      textOf(tester, field(de.mealsSourceOptional)),
+      'https://e2e.invalid/rezept',
+    );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('HAU-022 "Rezept" only for inbox entries with a link', (
     tester,
@@ -3146,9 +3149,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: _openLink (subscriptions_screen.dart:542) setzt vor alles ohne
-  // "://" ein "https://"; aus "mailto:x@y" wird https://mailto:x@y (Host
-  // "y"), das geöffnet wird, statt „Dieser Link lässt sich nicht öffnen“.
+  // Eine Adresse ohne Schema wird zu https://…; andere Links wie "mailto:"
+  // werden erkannt und nicht als https://mailto:… geöffnet (#547).
   testWidgets('HAU-101 the link to manage a subscription', (tester) async {
     await reset(_budget);
     final launcher = fakeLauncher();
@@ -3173,7 +3175,7 @@ void main() {
     expect(inSheet(find.text(de.subscriptionsLinkInvalid)), findsOneWidget);
     await closeSheet(tester);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('HAU-104 subscriptions hidden for the whole family', (
     tester,
@@ -3438,9 +3440,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Ein „Nur ich“-Dokument öffnet im Editor als „Ich und …“
-  // (documents_screen.dart:400–403: bestehende Dokumente mit visibleTo != null
-  // bekommen immer _Visibility.selected). Speichern lässt visibleTo gleich.
+  // Ein „Nur ich“-Dokument öffnet im Editor als „Nur ich“, nicht als
+  // „Ich und …“ (#539).
   testWidgets('HAU-115 an only-me document opens as only me', (tester) async {
     await reset({Collections.documents});
     final f = await theFamily();
@@ -3466,7 +3467,7 @@ void main() {
     expect(engine.documents.single.visibleTo, [f.adminMember.id]);
     expect(chosen, endsWith('.me'), reason: '"Nur ich" chosen');
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('HAU-111 HAU-116 HAU-118 documents: filter and search, valid '
       'until, opened', (tester) async {
@@ -3801,10 +3802,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Ein Kind darf „Gesundheit“ + „Ganze Familie“ wählen; der Server
-  // lehnt neue Gesundheitsdaten eines Kindes ohne es selbst in visibleTo ab
-  // (record_store.dart:352) und schickt eine Löschmarke, die App entfernt das
-  // Dokument dann ohne Meldung (sync_engine.dart:464).
+  // Der Server lehnt neue Gesundheitsdaten eines Kindes ohne es selbst in
+  // visibleTo ab; die App bietet Kindern bei „Gesundheit“ deshalb „Ganze
+  // Familie“ nicht an und sagt es (#539).
   testWidgets('HAU-157 a child files a health document for the family', (
     tester,
   ) async {
@@ -3822,6 +3822,8 @@ void main() {
       find.widgetWithText(ChoiceChip, DocumentCategory.health.label),
     );
     await scrollTo(tester, find.text(de.commonWholeFamily));
+    expect(find.text(de.docsChildHealthAudience), findsOneWidget);
+    // Off: the tap changes nothing.
     await tap(tester, find.text(de.commonWholeFamily));
     // Saved on the device; it may go with the very next sync, so the tap
     // is without the kit's pause and the device is looked at often.
@@ -3850,8 +3852,19 @@ void main() {
         find.byType(AlertDialog).evaluate().isNotEmpty;
     debugPrint('E2E HAU-157 kept: $kept, told: $told');
     expect(kept || told, isTrue, reason: 'gone without a word');
+    expect(
+      engine.documents
+          .singleWhere((d) => d.title == 'E2E Befund Kind')
+          .visibleTo,
+      contains(f.kid.id),
+    );
+    final server = await pull(f.admin, Collections.documents);
+    expect(
+      server.values.where((r) => r.data['title'] == 'E2E Befund Kind'),
+      hasLength(1),
+    );
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('HAU-158 a child edits a family document', (tester) async {
     await reset({Collections.documents});
@@ -3913,48 +3926,25 @@ void main() {
     await tap(tester, find.text('E2E Gastsuppe'));
     await waitFor(tester, find.byType(RecipeScreen));
     expect(inRecipe(find.text('Brühe')), findsOneWidget);
+    // Changing the recipe, a favourite, planning it: not offered (#539).
+    expect(find.byTooltip(de.commonEdit), findsNothing);
+    expect(find.byTooltip(de.mealsFavorite), findsNothing);
+    expect(find.text(de.mealsSchedule), findsNothing);
     await back(tester);
 
-    // A recipe of its own (the app offers the button): gone after the sync.
-    await tap(tester, find.byTooltip(de.mealsAddRecipe));
-    await waitFor(tester, find.text(de.mealsNewRecipe));
-    await enter(tester, field(de.commonTitle), 'E2E Gastrezept');
-    await tap(tester, find.text(de.commonSave).last);
-    await waitGone(tester, find.text(de.mealsNewRecipe));
-    await arrives(
-      tester,
-      state,
-      (e) => !e.recipes.any((r) => r.title == 'E2E Gastrezept'),
-      'own recipe undone',
-    );
-    await waitGone(tester, find.text('E2E Gastrezept'));
-    // A meal.
+    // No recipe of its own: the server would undo it after the sync.
+    expect(find.byTooltip(de.mealsAddRecipe), findsNothing);
+    // No meal either.
     await tab(tester, de.mealsWeekPlan);
-    await tap(tester, inDay(now, find.byTooltip(de.mealsPlanMeal)));
-    await enter(tester, inSheet(field(de.mealsWhatSDinner)), 'E2E Gastessen');
-    await tap(tester, inSheet(find.text(de.commonSave)));
-    await sheetClosed(tester);
-    await arrives(
-      tester,
-      state,
-      (e) => !e
-          .plannedMeals(now, DateUtils.addDaysToDate(now, 1))
-          .any((m) => m.title == 'E2E Gastessen'),
-      'own meal undone',
-    );
-    await waitGone(tester, inDay(now, find.text('E2E Gastessen')));
-    // One more rice.
+    expect(find.byTooltip(de.mealsPlanMeal), findsNothing);
+    expect(find.text(de.mealsSuggestWeek), findsNothing);
+    // The pantry: what is there, without counting.
     await openPantry(tester);
     await waitFor(tester, find.text('E2E Reis'));
-    await tap(tester, inTile('E2E Reis', find.byTooltip(de.pantryOneMore)));
-    await arrives(
-      tester,
-      state,
-      (e) => e.pantryItems.single.amount == 2,
-      'the amount as before',
-    );
+    expect(find.byTooltip(de.pantryOneMore), findsNothing);
+    expect(find.byTooltip(de.pantryOneLess), findsNothing);
+    expect(find.byTooltip(de.pantryAddItem), findsNothing);
     await waitFor(tester, inTile('E2E Reis', find.text('2')));
-    expect(find.byType(SnackBar), findsNothing, reason: 'no message (hint)');
 
     // The adults see none of it.
     expect(await titlesOf(bea, Collections.recipes), {'E2E Gastsuppe'});

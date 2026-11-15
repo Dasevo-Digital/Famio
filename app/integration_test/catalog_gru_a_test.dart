@@ -855,11 +855,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (reproduced twice): the pencil "Server ändern" sits in the
-  // address field, which is disabled once a server is known; a disabled
-  // TextField ignores pointers (IgnorePointer in Flutter's TextField), so a
-  // click or tap on the pencil does nothing (connect_screen.dart:270 and
-  // :276-287). Only a new start leads back to the address.
+  // The address field is disabled once a server is known, and a disabled
+  // TextField ignores pointers: the pencil "Server ändern" lies on top of
+  // it, outside the field (#546).
   testWidgets('GRU-002 "Server ändern" makes the address editable again', (
     tester,
   ) async {
@@ -887,7 +885,7 @@ void main() {
     expect(find.text(de.commonConnect), findsOneWidget);
     expect(find.text(de.commonSignIn), findsNothing);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('GRU-005 GRU-004 own certificate: cancel, then confirm', (
     tester,
@@ -1023,11 +1021,8 @@ void main() {
     },
   );
 
-  // Befund (reproduced twice): an ordinary web server answering with HTML
-  // (router, NAS) gives "Unerwartete Antwort vom Server (HTTP 404)" instead
-  // of "Das ist kein Famio-Server": health() checks the name only after
-  // _decode, which turns any non-JSON answer into "invalid_response"
-  // (packages/famio_client/lib/src/api_client.dart:1588-1598, :215-219).
+  // An ordinary web server answering with HTML (router, NAS) is no Famio
+  // server, not an "unexpected answer" (#546).
   testWidgets('GRU-008 an ordinary web page is no Famio server', (
     tester,
   ) async {
@@ -1055,8 +1050,9 @@ void main() {
     );
     debugPrint('E2E-INFO other web server: ${onScreen()}');
     expect(find.textContaining('Das ist kein Famio-Server'), findsOneWidget);
+    expect(find.textContaining('Unerwartete Antwort'), findsNothing);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   // --- Server einrichten -------------------------------------------------------
 
@@ -1407,10 +1403,8 @@ void main() {
     },
   );
 
-  // Befund (reproduced twice): in a window 600 pixels high the dialog
-  // "Neue Wiederherstellungscodes" overflows by 69 pixels: its content
-  // (RecoveryCodes, a Column of hint, ten codes and "Kopieren") is not
-  // scrollable in the AlertDialog (security_screens.dart:613-624, :213-250).
+  // In a window 600 pixels high the dialog "Neue Wiederherstellungscodes"
+  // scrolls instead of running over (#546).
   testWidgets('GRU-023 new recovery codes in a window 600 pixels high', (
     tester,
   ) async {
@@ -1442,13 +1436,16 @@ void main() {
       matching: find.text(de.commonCopy),
     );
     expect(copy, findsOneWidget);
-    expect(tester.getBottomLeft(copy).dy, lessThanOrEqualTo(600));
     expect(tester.takeException(), isNull);
+    // "Kopieren" may need a scroll, but is reachable within the window.
+    await tester.ensureVisible(copy);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(tester.getBottomLeft(copy).dy, lessThanOrEqualTo(600));
     await tap(tester, dialogText(de.securitySaved));
     await dialogClosed(tester);
     await back(tester);
     await finish(tester, state);
-  }, skip: true);
+  });
   testWidgets('GRU-025 two-factor required for adults, not for children', (
     tester,
   ) async {

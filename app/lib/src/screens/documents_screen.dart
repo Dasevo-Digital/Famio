@@ -396,11 +396,14 @@ class _DocumentEditorState extends State<DocumentEditor> {
       widget.existing?.category ?? widget.category ?? DocumentCategory.other;
   late final _about = {...?widget.existing?.memberIds};
   late DateTime? _expires = widget.existing?.expiresAt;
-  late var _visibility = widget.existing == null
-      ? _startingVisibility(_category)
-      : widget.existing!.visibleTo == null
-      ? _Visibility.family
-      : _Visibility.selected;
+  late var _visibility = switch (widget.existing?.visibleTo) {
+    _ when widget.existing == null => _startingVisibility(_category),
+    null => _Visibility.family,
+    // Only the one who filed it: "Nur ich", not "Ich und …" (HAU-115).
+    [final only] when only == AppScope.read(context).engine!.memberId =>
+      _Visibility.me,
+    _ => _Visibility.selected,
+  };
   late final _audience = {...?widget.existing?.visibleTo};
   var _saving = false;
   var _visibilityChosen = false;
@@ -445,6 +448,11 @@ class _DocumentEditorState extends State<DocumentEditor> {
   static _Visibility _startingVisibility(DocumentCategory category) =>
       category == DocumentCategory.health ? _Visibility.me : _Visibility.family;
 
+  /// A child files health documents only for itself and the people it
+  /// chooses: the server refuses them for the whole family (HAU-157).
+  bool _familyAllowed(SyncEngine engine) =>
+      engine.myRole != MemberRole.child || _category != DocumentCategory.health;
+
   /// An existing file: fetched (or from the cache) and read.
   void _readExisting(FileRef file) {
     final files = AppScope.read(context).files!;
@@ -478,6 +486,7 @@ class _DocumentEditorState extends State<DocumentEditor> {
           ? widget.existing?.file
           : await uploadPicked(context, widget.picked!);
       final visibleTo = switch (_visibility) {
+        _Visibility.family when !_familyAllowed(engine) => [engine.memberId],
         _Visibility.family => null,
         _Visibility.me => [engine.memberId],
         _Visibility.selected => {..._audience, engine.memberId}.toList(),
@@ -595,6 +604,10 @@ class _DocumentEditorState extends State<DocumentEditor> {
                       _visibility = _startingVisibility(cat);
                     }
                     _category = cat;
+                    if (!_familyAllowed(engine) &&
+                        _visibility == _Visibility.family) {
+                      _visibility = _Visibility.me;
+                    }
                   }),
                 ),
             ],
@@ -666,7 +679,11 @@ class _DocumentEditorState extends State<DocumentEditor> {
                   children: [
                     RadioListTile(
                       value: _Visibility.family,
+                      enabled: _familyAllowed(engine),
                       title: Text(tr.commonWholeFamily),
+                      subtitle: _familyAllowed(engine)
+                          ? null
+                          : Text(tr.docsChildHealthAudience),
                       secondary: Icon(AppIcons.usersThree),
                     ),
                     RadioListTile(

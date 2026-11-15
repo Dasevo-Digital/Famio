@@ -1457,45 +1457,23 @@ void main() {
             items['e2e-i-gast-Milch']?.data['checked'] == true;
       });
 
-      // Renaming: back as it was after the sync.
-      await listMenu(tester, de.commonRename);
-      await enter(tester, field(de.commonName), 'E2E Umbenannt');
-      await leaveField(tester);
-      await tap(tester, inDialog(find.text(de.commonOk)));
-      await dialogClosed(tester);
-      await engine.sync();
-      await until(
-        tester,
-        () => engine.shoppingList(listId)?.name == 'E2E Gästeliste',
-        'the old name back',
-      );
+      // Renaming, who sees it and deleting are not offered: the server would
+      // undo them after the sync without a word (#537).
+      await openMenu(tester);
+      expect(find.text(de.commonRename), findsNothing);
+      expect(find.text(de.shoppingWhoSees), findsNothing);
+      expect(find.text(de.shoppingDeleteList), findsNothing);
+      await closeMenu(tester);
       expect(
         (await pull(f.admin, Collections.shoppingLists))[listId]?.data['name'],
         'E2E Gästeliste',
       );
       await back(tester);
 
-      // A new list: gone after the sync (often before its page is up).
+      // No new lists either, nor lists from a template.
       await snackGone(tester);
-      await tap(tester, find.byTooltip(de.shoppingNewList));
-      await waitFor(tester, find.text(de.shoppingNewShoppingList));
-      await enter(tester, field(de.commonName), 'E2E Gastliste');
-      await leaveField(tester);
-      await tap(tester, inDialog(find.text(de.commonOk)));
-      await dialogClosed(tester);
-      await engine.sync();
-      await waitFor(tester, find.text(de.shoppingListNoLongerExists));
-      expect(
-        engine.shoppingLists.where((l) => l.name == 'E2E Gastliste'),
-        isEmpty,
-      );
-      expect(
-        (await pull(
-          f.admin,
-          Collections.shoppingLists,
-        )).values.where((r) => r.data['name'] == 'E2E Gastliste'),
-        isEmpty,
-      );
+      expect(find.byTooltip(de.shoppingNewList), findsNothing);
+      expect(find.byTooltip(de.shoppingListTemplate), findsNothing);
       expect(
         (await pull(
           f.admin,
@@ -1508,11 +1486,11 @@ void main() {
     },
   );
 
-  // Befund (hint of ALL-130, reproduced twice): a guest's "Liste löschen"
-  // deletes every item one by one (guests may delete items), the deletion
-  // of the list is refused: the list stays, empty – the items are lost for
-  // the whole family (family_data.dart:147, shopping_screens.dart:473).
-  testWidgets('ALL-130 a guest deletes a list: nothing is lost', skip: true, (
+  // A guest's "Liste löschen" deleted every item one by one (guests may
+  // delete items) before the refused deletion of the list: the list stayed
+  // empty. Now guests get no "Liste löschen", and deleting a list as a guest
+  // deletes nothing (#537).
+  testWidgets('ALL-130 a guest deletes a list: nothing is lost', (
     tester,
   ) async {
     tall(tester);
@@ -1536,9 +1514,11 @@ void main() {
     await tap(tester, find.text('E2E Gästeliste 2'));
     await waitFor(tester, find.byTooltip(de.commonAdd));
     expect(find.text(de.shoppingDeleteList), findsNothing);
-    await listMenu(tester, de.shoppingDeleteList);
-    await tap(tester, inDialog(find.text(de.commonDelete)));
-    await dialogClosed(tester);
+    await openMenu(tester);
+    expect(find.text(de.shoppingDeleteList), findsNothing);
+    await closeMenu(tester);
+    // Not even from elsewhere in the app.
+    expect(engine.deleteShoppingList(listId), isFalse);
     await engine.sync();
     await settle(tester, 2000);
     await engine.sync();
@@ -3019,35 +2999,16 @@ void main() {
       ).toData(),
     });
     final state = await startApp(tester, user: 'e2e-gast');
-    final engine = state.engine!;
     await openSection(tester, 'Kontakte');
     await waitFor(tester, find.text('E2E Hausarzt Dr. Weiß'));
-    // A new contact: not kept by the server.
-    await tap(tester, find.byTooltip(de.contactsAdd));
-    await waitFor(tester, find.text(de.contactsNewContact));
-    await enter(tester, field(de.commonName), 'E2E Gastkontakt');
-    await leaveField(tester);
-    await tap(tester, find.text(de.commonSave).last);
-    await waitGone(tester, find.text(de.contactsNewContact));
-    await engine.sync();
-    await until(
-      tester,
-      () => engine.contacts.every((c) => c.name != 'E2E Gastkontakt'),
-      'the guest\'s contact gone again',
-    );
-    // A change: back as it was.
+    // Guests call; adding and changing, which the server would undo, are
+    // not offered (#539).
+    expect(find.byTooltip(de.contactsAdd), findsNothing);
+    expect(find.byTooltip(de.contactsCallPhone('030 4711')), findsOneWidget);
     await tap(tester, find.text('E2E Hausarzt Dr. Weiß'));
-    await waitFor(tester, find.text(de.commonContact));
-    await enter(tester, field(de.contactsPhone), '0000');
-    await leaveField(tester);
-    await tap(tester, find.text(de.commonSave).last);
-    await waitGone(tester, find.text(de.contactsBelongs));
-    await engine.sync();
-    await until(
-      tester,
-      () => engine.contacts.any((c) => c.phone == '030 4711'),
-      'the old number back',
-    );
+    await settle(tester);
+    expect(find.text(de.commonContact), findsNothing);
+    expect(field(de.contactsPhone), findsNothing);
     final server = await pull(f.admin, Collections.contacts);
     expect(server.keys, ['e2e-c-arzt']);
     expect(server['e2e-c-arzt']!.data['phone'], '030 4711');
@@ -3706,7 +3667,8 @@ void main() {
       await scrollTo(tester, soon);
       final c = FamioColors.of(tester.element(soon));
       expect(styleOf(tester, soon)?.color, c.strong(FamioSection.tasks));
-      expect(styleOf(tester, soon)?.fontWeight, FontWeight.w600);
+      // Bolder than the body text, which is w600 already (#547).
+      expect(styleOf(tester, soon)?.fontWeight, FontWeight.w800);
       await scrollTo(tester, late);
       expect(
         styleOf(tester, late)?.color,
@@ -3724,13 +3686,9 @@ void main() {
     },
   );
 
-  // Befund (reproduced twice): soon-due deadlines are not bold beside the
-  // others. deadlines_screen.dart:156 sets FontWeight.w600 for them, but the
-  // theme's body text has w600 already (design/theme.dart:71), so only the
-  // colour tells them apart.
-  testWidgets('ALL-194 soon due ones stand out in bold', skip: true, (
-    tester,
-  ) async {
+  // Soon-due deadlines are bolder than the others; the theme's body text has
+  // w600 already, so they get w800 (#547).
+  testWidgets('ALL-194 soon due ones stand out in bold', (tester) async {
     tall(tester);
     final f = await theFamily();
     await cleanDeadlines();
@@ -3995,61 +3953,62 @@ void main() {
     await cleanDeadlines();
   });
 
-  // Befund (hint of ALL-201, reproduced twice): children can be chosen under
-  // "Wer kümmert sich?" (deadlines_screen.dart:354) and see "Erledigt"
-  // (:213), but the server lets children write no deadline
-  // (Collections.adultOnly): the sync sets the completion back without a
-  // word, the adults never see it.
-  testWidgets(
-    'ALL-201 a child in charge of a deadline ticks it off',
-    skip: true,
-    (tester) async {
-      tall(tester);
-      final f = await theFamily();
-      await cleanDeadlines();
-      final due = inDays(10);
-      await seed(f.admin, Collections.deadlines, {
-        'e2e-dl-kind': Deadline(
-          id: 'e2e-dl-kind',
-          title: 'E2E Rauchmelder testen',
-          due: due,
-          area: DeadlineArea.home,
-          repeatMonths: 12,
-          assigneeId: f.kid.id,
-        ).toData(),
-      });
-      final state = await startApp(tester, user: 'e2e-kind');
-      final engine = state.engine!;
-      await openDeadlines(tester);
-      await waitFor(tester, find.text('E2E Rauchmelder testen'));
-      await tap(
-        tester,
-        find.descendant(
-          of: cardOf('E2E Rauchmelder testen'),
-          matching: find.text(de.commonDoneCap),
-        ),
-      );
-      await waitFor(
-        tester,
-        find.text(de.deadlinesNextTimeDate(day.format(addMonths(today(), 12)))),
-      );
-      await engine.sync();
-      await settle(tester, 2000);
-      await engine.sync();
-      final mine = deadlineNamed(engine, 'E2E Rauchmelder testen');
-      final server = Deadline.fromRecord(
-        (await pull(f.admin, Collections.deadlines))['e2e-dl-kind']!,
-      );
-      debugPrint(
-        'E2E-INFO after the sync: child sees due ${mine.due}, '
-        'the adults ${server.due} (asked ${addMonths(today(), 12)})',
-      );
-      expect(mine.due, isNot(due), reason: 'stays done for the child');
-      expect(server.due, isNot(due), reason: 'the adults see it done');
-      await finish(tester, state);
-      await cleanDeadlines();
-    },
-  );
+  // The server lets children write no deadline (Collections.adultOnly): the
+  // app no longer offers children under "Wer kümmert sich?", and a child
+  // named there before sees the deadline without "Erledigt" (#539).
+  testWidgets('ALL-201 a child in charge of a deadline ticks it off', (
+    tester,
+  ) async {
+    tall(tester);
+    final f = await theFamily();
+    await cleanDeadlines();
+    final due = inDays(10);
+    await seed(f.admin, Collections.deadlines, {
+      'e2e-dl-kind': Deadline(
+        id: 'e2e-dl-kind',
+        title: 'E2E Rauchmelder testen',
+        due: due,
+        area: DeadlineArea.home,
+        repeatMonths: 12,
+        assigneeId: f.kid.id,
+      ).toData(),
+    });
+    final state = await startApp(tester, user: 'e2e-kind');
+    final engine = state.engine!;
+    await openDeadlines(tester);
+    await waitFor(tester, find.text('E2E Rauchmelder testen'));
+    expect(
+      find.descendant(
+        of: cardOf('E2E Rauchmelder testen'),
+        matching: find.text(de.commonDoneCap),
+      ),
+      findsNothing,
+    );
+    expect(deadlineNamed(engine, 'E2E Rauchmelder testen').due, due);
+    await finish(tester, state);
+
+    // The adults: the child is not offered as the one in charge.
+    final adult = await startApp(tester);
+    await openDeadlines(tester);
+    await waitFor(tester, find.text('E2E Rauchmelder testen'));
+    await tap(tester, find.byTooltip(de.deadlinesAddDeadline));
+    final who = find.widgetWithText(
+      DropdownButtonFormField<String?>,
+      de.tasksWhoTakesCare,
+    );
+    await tap(tester, who);
+    await settle(tester);
+    expect(find.text(f.bea.displayName), findsWidgets);
+    expect(find.text(f.kid.displayName), findsNothing);
+    await closeMenu(tester);
+    await closeMenu(tester);
+    await finish(tester, adult);
+    final server = Deadline.fromRecord(
+      (await pull(f.admin, Collections.deadlines))['e2e-dl-kind']!,
+    );
+    expect(server.due, due);
+    await cleanDeadlines();
+  });
 
   // --- Rechte ---------------------------------------------------------------------
 

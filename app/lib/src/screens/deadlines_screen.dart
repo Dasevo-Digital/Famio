@@ -153,7 +153,9 @@ class _DeadlineCard extends StatelessWidget {
                           : urgent
                           ? c.strong(FamioSection.tasks)
                           : c.inkSoft,
-                      fontWeight: urgent ? FontWeight.w600 : null,
+                      // Soon or overdue (urgent covers both): bolder than
+                      // the body text, which is w600 already (ALL-194).
+                      fontWeight: urgent ? FontWeight.w800 : null,
                     ),
                   ),
                   if (d.repeatMonths != null ||
@@ -175,9 +177,11 @@ class _DeadlineCard extends StatelessWidget {
               MemberAvatar(who, radius: 14),
               const SizedBox(width: 8),
             ],
+            // Only adults change deadlines; the server undoes a child's
+            // "Erledigt" (ALL-201).
             if (!d.done &&
                 d.isContract &&
-                (engine.iAmAdult || d.assigneeId == engine.memberId))
+                engine.mayWrite(Collections.deadlines))
               PopupMenuButton<bool>(
                 tooltip: tr.commonDoneCap,
                 itemBuilder: (_) => [
@@ -209,8 +213,7 @@ class _DeadlineCard extends StatelessWidget {
                 },
                 child: Chip(label: Text(tr.commonDoneCap)),
               )
-            else if (!d.done &&
-                (engine.iAmAdult || d.assigneeId == engine.memberId))
+            else if (!d.done && engine.mayWrite(Collections.deadlines))
               FilledButton.tonal(
                 onPressed: () {
                   final next = d.completed(DateTime.now());
@@ -353,7 +356,8 @@ class _DeadlineEditorState extends State<_DeadlineEditor> {
     final existing = widget.existing;
     final adults = [
       for (final m in engine.members)
-        if (!m.isGuest && !m.isService) m,
+        // Children do not take care of deadlines: they may not change them.
+        if (m.isAdult) m,
     ];
     final contract = _area == DeadlineArea.contract;
     return DisposeWith(

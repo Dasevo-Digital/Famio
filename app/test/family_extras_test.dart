@@ -453,6 +453,8 @@ void main() {
     );
     // The focused field still loses its focus while the dialog closes.
     await tester.enterText(title.first, 'Elternbrief');
+    // "Speichern" turns on with the next frame, once something is typed.
+    await tester.pump();
     await tester.tap(find.text(tr.commonSave));
     await tester.pumpAndSettle();
     expect(find.byType(AlertDialog), findsNothing);

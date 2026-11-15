@@ -439,9 +439,9 @@ Future<void> resolveAll(FamioApiClient api) async {
 }
 
 /// Android's service for the alarm's positions (SosLocationService) runs
-/// in the foreground. Ending an alarm before that crashes Famio (see the
-/// skipped test "SIC-021 hint"), so the tests wait for it like a person
-/// who needs a few seconds to read the screen.
+/// in the foreground. Ending an alarm before that crashed Famio until #536
+/// (see the test "SIC-021 hint"); the other tests still wait for it like a
+/// person who needs a few seconds to read the screen.
 Future<void> liveServiceRunning(WidgetTester tester) async {
   await untilAsync(tester, 'the alarm\'s position service', () async {
     final services = await hostOk('services');
@@ -2717,20 +2717,12 @@ void main() {
     }
   });
 
-  // Befund (SIC-021, SIC-016): an alarm ended within its first seconds
-  // ("Ich bin sicher – Alarm beenden" right after "Alarm gesendet") crashes
-  // Famio about three seconds later: logcat "FATAL EXCEPTION …
-  // ForegroundServiceDidNotStartInTimeException: Context.startForegroundService()
-  // did not then call Service.startForeground(): SosLocationService", after
-  // "Bringing down service while still waiting for start foreground". Seen
-  // twice (runs android-cat2 08:51:20 and android-cat4 09:36:02); the
-  // integration test dies with the app ("did not complete"). The alarm itself
-  // is ended on the server. SosController.trigger
-  // (app/lib/src/sos/sos_controller.dart:68-70) starts the service only after
-  // the GPS fix and a token request (startForegroundService,
-  // SosLocationService.kt:51), while resolve/stop (sos_controller.dart:166-178)
-  // send STOP at once; SosLocationService.finish (SosLocationService.kt:186-195)
-  // calls stopSelf() while that start still waits for startForeground.
+  // An alarm ended within its first seconds ("Ich bin sicher – Alarm
+  // beenden" right after "Alarm gesendet") crashed Famio about three seconds
+  // later (ForegroundServiceDidNotStartInTimeException of SosLocationService:
+  // STOP came before the service was in the foreground). Now no service
+  // starts for an alarm that is over, a STOP is only sent to a service that
+  // runs, and a STOP before startForeground calls it first (#536).
   androidTest('SIC-021 hint: an alarm ended at once', (tester) async {
     await hostOk('grant');
     final f = await theFamily();
@@ -2759,7 +2751,7 @@ void main() {
       await resolveAll(f.admin);
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
   // --- the app lock ---------------------------------------------------------------
 

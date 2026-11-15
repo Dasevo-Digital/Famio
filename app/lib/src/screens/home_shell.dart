@@ -635,12 +635,19 @@ class _Logo extends StatelessWidget {
         ),
         if (showName) ...[
           const SizedBox(height: 4),
-          PixelSnap(
-            child: Text(
-              AppEnv.appName,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontSize: (size * 0.36).clamp(14.0, 18.0).toDouble(),
+          // Large text would not fit below the glyph in the rail's box: the
+          // name shrinks instead of running over (GRU-092).
+          Flexible(
+            child: PixelSnap(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  AppEnv.appName,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontSize: (size * 0.36).clamp(14.0, 18.0).toDouble(),
+                  ),
+                ),
               ),
             ),
           ),
@@ -712,27 +719,30 @@ class _RailItem extends StatelessWidget {
                       height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
                     ),
                     // Long names such as "Einstellungen" shrink a little
-                    // instead of being cut off at the rail's edge.
-                    PixelSnap(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: AnimatedDefaultTextStyle(
-                            duration: _railAnimationDuration(context),
-                            curve: Curves.easeOutCubic,
-                            maxLines: 1,
-                            overflow: TextOverflow.fade,
-                            softWrap: false,
-                            style: Theme.of(context).textTheme.labelSmall!
-                                .copyWith(
-                                  color: selected ? c.ink : c.inkSoft,
-                                  fontSize: labelSize,
-                                  fontWeight: selected
-                                      ? FontWeight.w800
-                                      : FontWeight.w700,
-                                ),
-                            child: Text(section.title(context)),
+                    // instead of being cut off at the rail's edge, and so
+                    // does large text in a low item (GRU-092).
+                    Flexible(
+                      child: PixelSnap(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: AnimatedDefaultTextStyle(
+                              duration: _railAnimationDuration(context),
+                              curve: Curves.easeOutCubic,
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              softWrap: false,
+                              style: Theme.of(context).textTheme.labelSmall!
+                                  .copyWith(
+                                    color: selected ? c.ink : c.inkSoft,
+                                    fontSize: labelSize,
+                                    fontWeight: selected
+                                        ? FontWeight.w800
+                                        : FontWeight.w700,
+                                  ),
+                              child: Text(section.title(context)),
+                            ),
                           ),
                         ),
                       ),

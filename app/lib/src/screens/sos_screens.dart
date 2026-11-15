@@ -864,10 +864,12 @@ class SosSettingsScreen extends StatelessWidget {
                     items: [
                       DropdownMenuItem(
                         value: '',
+                        // Whom the default calls, whatever is chosen now
+                        // (SIC-026).
                         child: Text(
                           tr.sosParentName(
                             engine
-                                    .member(s.callMember(m.id, adults))
+                                    .member(s.defaultCallMember(m.id, adults))
                                     ?.displayName ??
                                 tr.sosNobodyNumber,
                           ),

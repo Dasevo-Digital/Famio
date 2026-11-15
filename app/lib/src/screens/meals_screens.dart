@@ -9,6 +9,7 @@ import '../data/pantry_match.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../data/recipe_import.dart';
+import '../data/web_link.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -67,18 +68,27 @@ class _MealsScreenState extends State<MealsScreen> {
   @override
   Widget build(BuildContext context) {
     final color = FamioColors.of(context).strong(FamioSection.meals);
+    // Guests read along; plans and recipes are for the family (HAU-151).
+    final mayAdd = AppScope.engineOf(
+      context,
+    ).mayWrite(_tab == _Tab.week ? Collections.mealPlan : Collections.recipes);
     return SectionPage(
       section: FamioSection.meals,
       title: tr.sectionMeals,
       subtitle: tr.mealsWeekPlanFamilyRecipes,
       actions: const [SyncStatusIcon()],
-      floating: AddButton(
-        color: color,
-        tooltip: _tab == _Tab.week ? tr.mealsPlanMeal : tr.mealsAddRecipe,
-        onPressed: () => _tab == _Tab.week
-            ? showMealEditor(context, day: DateUtils.dateOnly(DateTime.now()))
-            : showRecipeEditor(context),
-      ),
+      floating: mayAdd
+          ? AddButton(
+              color: color,
+              tooltip: _tab == _Tab.week ? tr.mealsPlanMeal : tr.mealsAddRecipe,
+              onPressed: () => _tab == _Tab.week
+                  ? showMealEditor(
+                      context,
+                      day: DateUtils.dateOnly(DateTime.now()),
+                    )
+                  : showRecipeEditor(context),
+            )
+          : null,
       body: Column(
         children: [
           PillTabs<_Tab>(
@@ -127,6 +137,7 @@ class _WeekPlan extends StatelessWidget {
     final meals = engine.plannedMeals(week, end);
     final today = DateUtils.dateOnly(DateTime.now());
     final withRecipes = meals.where((m) => engine.recipe(m.recipeId) != null);
+    final mayPlan = engine.mayWrite(Collections.mealPlan);
     return ListView(
       padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
       children: [
@@ -158,7 +169,7 @@ class _WeekPlan extends StatelessWidget {
           spacing: 4,
           children: [
             // Not for weeks that are over.
-            if (end.isAfter(today))
+            if (mayPlan && end.isAfter(today))
               TextButton.icon(
                 icon: const Icon(AppIcons.magicWand, size: 18),
                 label: Text(tr.mealsSuggestWeek),
@@ -196,11 +207,12 @@ class _WeekPlan extends StatelessWidget {
                             style: theme.textTheme.titleMedium,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(AppIcons.plus),
-                          tooltip: tr.mealsPlanMeal,
-                          onPressed: () => showMealEditor(context, day: day),
-                        ),
+                        if (mayPlan)
+                          IconButton(
+                            icon: const Icon(AppIcons.plus),
+                            tooltip: tr.mealsPlanMeal,
+                            onPressed: () => showMealEditor(context, day: day),
+                          ),
                       ],
                     ),
                     if (ofDay.isEmpty)
@@ -208,8 +220,8 @@ class _WeekPlan extends StatelessWidget {
                     for (final m in ofDay)
                       InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap: () => engine.recipe(m.recipeId) != null
-                            ? Navigator.of(context).push(
+                        onTap: engine.recipe(m.recipeId) != null
+                            ? () => Navigator.of(context).push(
                                 MaterialPageRoute<void>(
                                   builder: (_) => RecipeScreen(
                                     recipeId: m.recipeId!,
@@ -217,9 +229,14 @@ class _WeekPlan extends StatelessWidget {
                                   ),
                                 ),
                               )
-                            : showMealEditor(context, day: day, existing: m),
-                        onLongPress: () =>
-                            showMealEditor(context, day: day, existing: m),
+                            : mayPlan
+                            ? () =>
+                                  showMealEditor(context, day: day, existing: m)
+                            : null,
+                        onLongPress: mayPlan
+                            ? () =>
+                                  showMealEditor(context, day: day, existing: m)
+                            : null,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
@@ -239,18 +256,19 @@ class _WeekPlan extends StatelessWidget {
                                   style: theme.textTheme.bodyLarge,
                                 ),
                               ),
-                              IconButton(
-                                icon: const Icon(
-                                  AppIcons.pencilSimple,
-                                  size: 18,
+                              if (mayPlan)
+                                IconButton(
+                                  icon: const Icon(
+                                    AppIcons.pencilSimple,
+                                    size: 18,
+                                  ),
+                                  tooltip: tr.commonChange,
+                                  onPressed: () => showMealEditor(
+                                    context,
+                                    day: day,
+                                    existing: m,
+                                  ),
                                 ),
-                                tooltip: tr.commonChange,
-                                onPressed: () => showMealEditor(
-                                  context,
-                                  day: day,
-                                  existing: m,
-                                ),
-                              ),
                             ],
                           ),
                         ),
@@ -377,11 +395,13 @@ class _RecipeList extends StatelessWidget {
             icon: AppIcons.cookingPot,
             color: color,
             text: tr.mealsCollectFavoriteRecipesWritten,
-            action: ColorButton(
-              label: tr.mealsAddRecipe,
-              color: color,
-              onPressed: () => showRecipeEditor(context),
-            ),
+            action: engine.mayWrite(Collections.recipes)
+                ? ColorButton(
+                    label: tr.mealsAddRecipe,
+                    color: color,
+                    onPressed: () => showRecipeEditor(context),
+                  )
+                : null,
           );
         }
         return ListView(
@@ -504,19 +524,23 @@ class _RecipeScreenState extends State<RecipeScreen> {
             if (r.source.isNotEmpty) r.source,
           ].join(' · '),
           actions: [
-            BubbleButton(
-              icon: AppIcons.heart,
-              color: r.favorite ? const Color(0xFFDB4A7E) : null,
-              tooltip: r.favorite ? tr.mealsNoLongerFavorite : tr.mealsFavorite,
-              onPressed: () =>
-                  engine.saveRecipe(r.copyWith(favorite: !r.favorite)),
-            ),
-            const SizedBox(width: 8),
-            BubbleButton(
-              icon: AppIcons.pencilSimple,
-              tooltip: tr.commonEdit,
-              onPressed: () => showRecipeEditor(context, existing: r),
-            ),
+            if (engine.mayWrite(Collections.recipes)) ...[
+              BubbleButton(
+                icon: AppIcons.heart,
+                color: r.favorite ? const Color(0xFFDB4A7E) : null,
+                tooltip: r.favorite
+                    ? tr.mealsNoLongerFavorite
+                    : tr.mealsFavorite,
+                onPressed: () =>
+                    engine.saveRecipe(r.copyWith(favorite: !r.favorite)),
+              ),
+              const SizedBox(width: 8),
+              BubbleButton(
+                icon: AppIcons.pencilSimple,
+                tooltip: tr.commonEdit,
+                onPressed: () => showRecipeEditor(context, existing: r),
+              ),
+            ],
           ],
           body: ListView(
             padding: EdgeInsets.only(
@@ -638,16 +662,17 @@ class _RecipeScreenState extends State<RecipeScreen> {
                     onPressed: () =>
                         _toShopping(context, engine, _scaled(r, servings)),
                   ),
-                  OutlinedButton.icon(
-                    icon: const Icon(AppIcons.calendarBlank),
-                    label: Text(tr.mealsSchedule),
-                    onPressed: () => showMealEditor(
-                      context,
-                      day: DateUtils.dateOnly(DateTime.now()),
-                      recipe: r,
-                      servings: servings,
+                  if (engine.mayWrite(Collections.mealPlan))
+                    OutlinedButton.icon(
+                      icon: const Icon(AppIcons.calendarBlank),
+                      label: Text(tr.mealsSchedule),
+                      onPressed: () => showMealEditor(
+                        context,
+                        day: DateUtils.dateOnly(DateTime.now()),
+                        recipe: r,
+                        servings: servings,
+                      ),
                     ),
-                  ),
                 ],
               ),
               RecipeNutrition(recipe: r),
@@ -993,8 +1018,17 @@ class _RecipeEditorState extends State<_RecipeEditor> {
         ),
       ),
     );
-    final uri = Uri.tryParse(address ?? '');
-    if (uri == null || !uri.hasScheme || !mounted) return;
+    if (address == null || address.isEmpty || !mounted) return;
+    // "www.chefkoch.de/…" without https:// is a web address too (HAU-015).
+    final uri = webLink(address);
+    if (uri == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(tr.mealsWebAddressNeeded)));
+      return;
+    }
+    // Without a recipe on the page the address at least stays (HAU-013).
+    _source.text = '$uri';
     await _fetch(uri);
   }
 

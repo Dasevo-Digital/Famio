@@ -62,17 +62,22 @@ class ShoppingListsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(FamioSection.shopping);
+    // Guests tick off and add items; lists are for the family (#537).
+    final mayCreate = AppScope.engineOf(
+      context,
+    ).mayWrite(Collections.shoppingLists);
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.shopping,
       title: tr.sectionShopping,
       subtitle: tr.shoppingWhatDoWeNeed,
       actions: [
-        BubbleButton(
-          icon: AppIcons.template,
-          tooltip: tr.shoppingListTemplate,
-          onPressed: () => showTemplatePicker(context),
-        ),
+        if (mayCreate)
+          BubbleButton(
+            icon: AppIcons.template,
+            tooltip: tr.shoppingListTemplate,
+            onPressed: () => showTemplatePicker(context),
+          ),
         if (canConnectLists(AppScope.of(context)))
           BubbleButton(
             icon: AppIcons.arrowsLeftRight,
@@ -85,11 +90,13 @@ class ShoppingListsScreen extends StatelessWidget {
           ),
         const SyncStatusIcon(),
       ],
-      floating: AddButton(
-        color: color,
-        tooltip: tr.shoppingNewList,
-        onPressed: () => _create(context),
-      ),
+      floating: mayCreate
+          ? AddButton(
+              color: color,
+              tooltip: tr.shoppingNewList,
+              onPressed: () => _create(context),
+            )
+          : null,
       body: DataBuilder(
         collections: _shopping,
         builder: (context, engine) {
@@ -105,11 +112,13 @@ class ShoppingListsScreen extends StatelessWidget {
                   icon: AppIcons.basket,
                   color: color,
                   text: tr.homeNoShoppingListYet,
-                  action: ColorButton(
-                    label: tr.shoppingCreateFirstList,
-                    color: color,
-                    onPressed: () => _create(context),
-                  ),
+                  action: mayCreate
+                      ? ColorButton(
+                          label: tr.shoppingCreateFirstList,
+                          color: color,
+                          onPressed: () => _create(context),
+                        )
+                      : null,
                 ),
               ],
             );
@@ -384,6 +393,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
             !list.packing &&
             done.isNotEmpty &&
             canBookPurchase(AppScope.of(context), engine);
+        // Renaming, deleting and who sees it: not for guests (#537).
+        final mayManage = engine.mayWrite(Collections.shoppingLists);
 
         return SectionPage(
           maxBodyWidth: 960,
@@ -451,28 +462,32 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
                     _canShare ? tr.shoppingShareText : tr.shoppingCopyText,
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'template',
-                  enabled: items.isNotEmpty,
-                  child: Text(tr.shoppingSaveTemplate),
-                ),
+                if (engine.mayWrite(Collections.listTemplates))
+                  PopupMenuItem(
+                    value: 'template',
+                    enabled: items.isNotEmpty,
+                    child: Text(tr.shoppingSaveTemplate),
+                  ),
                 PopupMenuItem(
                   value: 'preppsuite',
                   child: Text(tr.shoppingPreppSuiteMenu),
                 ),
-                PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
-                if (engine.mayChooseAudience(
-                  isNew: false,
-                  visibleTo: list.visibleTo,
-                ))
+                if (mayManage)
+                  PopupMenuItem(value: 'rename', child: Text(tr.commonRename)),
+                if (mayManage &&
+                    engine.mayChooseAudience(
+                      isNew: false,
+                      visibleTo: list.visibleTo,
+                    ))
                   PopupMenuItem(
                     value: 'audience',
                     child: Text(tr.shoppingWhoSees),
                   ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Text(tr.shoppingDeleteList),
-                ),
+                if (mayManage)
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: Text(tr.shoppingDeleteList),
+                  ),
               ],
             ),
           ],

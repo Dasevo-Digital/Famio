@@ -58,6 +58,12 @@ class SosSettings {
     final chosen = call[memberId];
     if (chosen == emergency || chosen == none) return null;
     if (chosen != null && phones.containsKey(chosen)) return chosen;
+    return defaultCallMember(memberId, adults);
+  }
+
+  /// Whom [memberId]'s button calls without a choice of its own: the first
+  /// adult (in [adults] order) with a phone number, else null.
+  String? defaultCallMember(String memberId, List<FamilyMember> adults) {
     for (final a in adults) {
       if (a.id != memberId && phones.containsKey(a.id)) return a.id;
     }

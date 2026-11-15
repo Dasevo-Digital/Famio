@@ -41,6 +41,17 @@ class SosLocationService : Service() {
         private const val INTERVAL_MS = 20_000L
         private const val STOP = "de.status403.famio.STOP_SOS_LIVE"
 
+        /**
+         * Starts asked for with startForegroundService whose onStartCommand
+         * has not run yet: until it calls startForeground, stopping the
+         * service makes Android end the whole app
+         * (ForegroundServiceDidNotStartInTimeException, SIC-021).
+         */
+        private var pendingStarts = 0
+
+        /** Whether the service runs or a start is on its way. */
+        private var running = false
+
         fun start(context: Context, url: String, token: String, pin: String?, alertId: String, untilMs: Long) {
             val intent = Intent(context, SosLocationService::class.java)
                 .putExtra("url", url)
@@ -48,13 +59,24 @@ class SosLocationService : Service() {
                 .putExtra("pin", pin)
                 .putExtra("alert", alertId)
                 .putExtra("until", untilMs)
-            if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent) else context.startService(intent)
+            running = true
+            if (Build.VERSION.SDK_INT >= 26) {
+                pendingStarts++
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
 
         fun stop(context: Context) {
+            // Nothing to stop: a STOP would only start the service to end it.
+            if (!running) return
             context.startService(Intent(context, SosLocationService::class.java).setAction(STOP))
         }
     }
+
+    /** Whether startForeground was called in this instance. */
+    private var inForeground = false
 
     private val main = Handler(Looper.getMainLooper())
     private var url: String? = null
@@ -71,11 +93,17 @@ class SosLocationService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        running = true
         if (intent?.action == STOP) {
+            // A start still waiting for its startForeground must get it
+            // before the service goes, or Android ends the app.
+            if (pendingStarts > 0 && !inForeground) runCatching { startInForeground() }
             finish()
             return START_NOT_STICKY
         }
+        if (pendingStarts > 0) pendingStarts--
         val extras = intent ?: run {
+            if (pendingStarts > 0 && !inForeground) runCatching { startInForeground() }
             stopSelf()
             return START_NOT_STICKY
         }
@@ -130,6 +158,7 @@ class SosLocationService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        inForeground = true
     }
 
     @Suppress("MissingPermission")
@@ -231,6 +260,10 @@ class SosLocationService : Service() {
     override fun onDestroy() {
         main.removeCallbacks(stopLater)
         if (listening) runCatching { getSystemService(LocationManager::class.java).removeUpdates(listener) }
+        // Starts not handled yet go with this instance.
+        pendingStarts = 0
+        running = false
+        inForeground = false
         super.onDestroy()
     }
 }

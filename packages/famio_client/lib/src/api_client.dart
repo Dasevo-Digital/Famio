@@ -213,7 +213,18 @@ class FamioApiClient {
   }
 
   Future<ServerInfo> health() async {
-    final json = await _send('GET', 'api/health');
+    final Map<String, Object?> json;
+    try {
+      json = await _send('GET', 'api/health');
+    } on ApiError catch (e) {
+      // Another web server in the house (a router, a NAS): a page instead
+      // of JSON, or no such address at all. A Famio server that cannot be
+      // reached through its proxy (502, 503 …) stays what it is (GRU-008).
+      if ((e.code == 'invalid_response' && e.status < 500) || e.status == 404) {
+        throw ApiError(e.status, 'not_famio', ClientTexts.notFamio);
+      }
+      rethrow;
+    }
     if (json['name'] != 'famio') {
       throw ApiError(0, 'not_famio', ClientTexts.notFamio);
     }

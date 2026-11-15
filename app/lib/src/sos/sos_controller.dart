@@ -44,6 +44,10 @@ class SosController extends ChangeNotifier {
   DateTime? _liveUntil;
   bool _disposed = false;
 
+  /// Ended on this device ([stop]): what is still on its way (the token for
+  /// the service) starts nothing any more.
+  bool _stopped = false;
+
   SosSettings get settings => SosSettings.fromRecord(
     engine.record(Collections.sosSettings, SosSettings.recordId),
   );
@@ -67,7 +71,7 @@ class SosController extends ChangeNotifier {
       step = SosStep.sent;
       _notify();
       unawaited(_sendPosition(await fix));
-      if (!await _startService()) _startLive();
+      if (!await _startService() && !_stopped) _startLive();
     } on ApiError catch (e) {
       step = e.code == 'network' ? SosStep.offline : SosStep.failed;
       _notify();
@@ -130,11 +134,20 @@ class SosController extends ChangeNotifier {
   Future<bool> _startService() async {
     final url = serverUrl;
     final id = alertId;
-    if (url == null || id == null) return false;
+    if (url == null || id == null || _stopped) return false;
     try {
+      final token = await engine.api.sosDeviceToken(device);
+      if (_stopped) {
+        // Ended while the token was on its way ("Ich bin sicher" right
+        // away): a service started now would run for an alarm that is over,
+        // and Android ends the app when it is stopped before it is in the
+        // foreground (SIC-021). The token is signed out again.
+        unawaited(_signOut(url, token));
+        return false;
+      }
       return await SosDevice.startLiveService(
         serverUrl: url,
-        token: await engine.api.sosDeviceToken(device),
+        token: token,
         pin: pin,
         alertId: id,
         until: DateTime.now().add(SosAlert.live),
@@ -143,6 +156,28 @@ class SosController extends ChangeNotifier {
       return false;
     }
   }
+
+  /// Signs out [token], which nothing uses.
+  Future<void> _signOut(String url, String token) async {
+    try {
+      await (signOutClient ?? FamioApiClient.new)(
+        url,
+        token: token,
+        pinnedCertificate: pin,
+      ).logout();
+    } on ApiError {
+      // It can only send positions of this alarm, which is over.
+    }
+  }
+
+  /// For tests: the client that signs out an unused token.
+  @visibleForTesting
+  static FamioApiClient Function(
+    String url, {
+    String? token,
+    String? pinnedCertificate,
+  })?
+  signOutClient;
 
   void _startLive() {
     _liveUntil = DateTime.now().add(SosAlert.live);
@@ -172,6 +207,7 @@ class SosController extends ChangeNotifier {
 
   /// Stops siren and position updates on this device.
   void stop() {
+    _stopped = true;
     _live?.cancel();
     _live = null;
     unawaited(SosDevice.stopLiveService());

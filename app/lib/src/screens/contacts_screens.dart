@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../data/family_data.dart';
+import '../data/family_extras.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -39,17 +40,21 @@ class ContactsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = FamioColors.of(context).strong(FamioSection.contacts);
+    // Guests call and write; the numbers are kept by the family (ALL-179).
+    final mayEdit = AppScope.engineOf(context).mayWrite(Collections.contacts);
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.contacts,
       title: tr.sectionContacts,
       subtitle: tr.contactsPediatricianDaycareBabysitterCo,
       actions: const [SyncStatusIcon()],
-      floating: AddButton(
-        color: color,
-        tooltip: tr.contactsAdd,
-        onPressed: () => showContactEditor(context),
-      ),
+      floating: mayEdit
+          ? AddButton(
+              color: color,
+              tooltip: tr.contactsAdd,
+              onPressed: () => showContactEditor(context),
+            )
+          : null,
       body: DataBuilder(
         collections: _contactCollections,
         builder: (context, engine) {
@@ -59,11 +64,13 @@ class ContactsScreen extends StatelessWidget {
               icon: AppIcons.bookUser,
               color: color,
               text: tr.contactsImportantNumbersOnePlace,
-              action: ColorButton(
-                label: tr.contactsAdd,
-                color: color,
-                onPressed: () => showContactEditor(context),
-              ),
+              action: mayEdit
+                  ? ColorButton(
+                      label: tr.contactsAdd,
+                      color: color,
+                      onPressed: () => showContactEditor(context),
+                    )
+                  : null,
             );
           }
           final roles = [
@@ -108,7 +115,9 @@ class ContactCard extends StatelessWidget {
     final kids = [for (final id in contact.childIds) ?engine.child(id)?.name];
     return SoftCard(
       padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-      onTap: () => showContactEditor(context, existing: contact),
+      onTap: engine.mayWrite(Collections.contacts)
+          ? () => showContactEditor(context, existing: contact)
+          : null,
       child: Row(
         children: [
           IconBlob(contactIcon(contact.role), color: strong),

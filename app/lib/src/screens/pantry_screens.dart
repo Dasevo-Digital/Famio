@@ -185,13 +185,17 @@ class _PantryScreenState extends State<PantryScreen> {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(FamioSection.shopping);
+    // Guests see what is there; counting is for the family (HAU-151).
+    final mayCount = AppScope.engineOf(
+      context,
+    ).mayWrite(Collections.pantryItems);
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.shopping,
       title: tr.conflictsPantry,
       subtitle: tr.pantryWhatSStillThere,
       actions: [
-        if (scannerAvailable)
+        if (scannerAvailable && mayCount)
           BubbleButton(
             icon: AppIcons.scanBarcode,
             tooltip: tr.pantryScanBarcode,
@@ -199,18 +203,20 @@ class _PantryScreenState extends State<PantryScreen> {
           ),
         const SyncStatusIcon(),
       ],
-      floating: AddButton(
-        color: color,
-        tooltip: tr.pantryAddItem,
-        onPressed: () => showPantryEditor(
-          context,
-          initial: PantryItem(
-            id: newId(),
-            name: '',
-            place: _place ?? PantryPlace.pantry,
-          ),
-        ),
-      ),
+      floating: mayCount
+          ? AddButton(
+              color: color,
+              tooltip: tr.pantryAddItem,
+              onPressed: () => showPantryEditor(
+                context,
+                initial: PantryItem(
+                  id: newId(),
+                  name: '',
+                  place: _place ?? PantryPlace.pantry,
+                ),
+              ),
+            )
+          : null,
       body: DataBuilder(
         collections: _collections,
         builder: (context, engine) {
@@ -292,6 +298,7 @@ class _PantryTile extends StatelessWidget {
     final c = FamioColors.of(context);
     final theme = Theme.of(context);
     final days = item.daysLeft(DateTime.now());
+    final mayCount = engine.mayWrite(Collections.pantryItems);
     final expiry = days == null
         ? null
         : days < 0
@@ -307,7 +314,9 @@ class _PantryTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: SoftCard(
         padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-        onTap: () => showPantryEditor(context, initial: item, existing: true),
+        onTap: mayCount
+            ? () => showPantryEditor(context, initial: item, existing: true)
+            : null,
         child: Row(
           children: [
             Text(item.place.emoji, style: const TextStyle(fontSize: 22)),
@@ -330,17 +339,18 @@ class _PantryTile extends StatelessWidget {
                 ],
               ),
             ),
-            IconButton(
-              tooltip: tr.pantryOneLess,
-              icon: const Icon(AppIcons.minus),
-              onPressed: item.amount <= 0
-                  ? null
-                  : () => engine.savePantryItem(
-                      item.copyWith(
-                        amount: (item.amount - 1).clamp(0, 99999).toDouble(),
+            if (mayCount)
+              IconButton(
+                tooltip: tr.pantryOneLess,
+                icon: const Icon(AppIcons.minus),
+                onPressed: item.amount <= 0
+                    ? null
+                    : () => engine.savePantryItem(
+                        item.copyWith(
+                          amount: (item.amount - 1).clamp(0, 99999).toDouble(),
+                        ),
                       ),
-                    ),
-            ),
+              ),
             SizedBox(
               width: 96,
               child: FittedBox(
@@ -352,12 +362,14 @@ class _PantryTile extends StatelessWidget {
                 ),
               ),
             ),
-            IconButton(
-              tooltip: tr.pantryOneMore,
-              icon: const Icon(AppIcons.plus),
-              onPressed: () =>
-                  engine.savePantryItem(item.copyWith(amount: item.amount + 1)),
-            ),
+            if (mayCount)
+              IconButton(
+                tooltip: tr.pantryOneMore,
+                icon: const Icon(AppIcons.plus),
+                onPressed: () => engine.savePantryItem(
+                  item.copyWith(amount: item.amount + 1),
+                ),
+              ),
           ],
         ),
       ),

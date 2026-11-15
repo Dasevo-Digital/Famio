@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app_state.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
+import '../data/web_link.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
@@ -538,9 +539,8 @@ class _EditorState extends State<_Editor> {
   }
 
   Future<void> _openLink() async {
-    final text = _url.text.trim();
-    final uri = Uri.tryParse(text.contains('://') ? text : 'https://$text');
-    if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
+    final uri = webLink(_url.text);
+    if (uri == null) {
       setState(() => _linkError = tr.subscriptionsLinkInvalid);
       return;
     }
