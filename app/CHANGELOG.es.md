@@ -12,20 +12,23 @@ están en las versiones publicadas.
 - Las vacunas indican plazos para ponerse al día. La fiebre en bebés de
   menos de tres meses, una temperatura muy baja y las heces claras reciben
   un aviso. Una página propia nombra las fuentes de los contenidos de salud.
-- El aviso de privacidad y las licencias están en la app. En el iPhone,
-  los lugares se abren en Apple Mapas.
-- Los archivos de más de 8 MiB vuelven a subirse. Tras una breve
-  interrupción, la app sincroniza al momento.
-- Niños e invitados ya no ven botones que no les corresponden. Si el
-  servidor rechaza algo o solo lo guarda en parte, Famio lo dice.
+- El aviso de privacidad y las licencias están en la app, los lugares se
+  abren en Apple Mapas en el iPhone. Los lectores de pantalla llegan a la
+  barra lateral.
+- Los archivos de más de 8 MiB vuelven a subirse, tras una interrupción la
+  app sincroniza al momento. Al cerrar sesión sin conexión, Famio pregunta
+  antes; los cambios pendientes ya no se pierden sin aviso.
+- Niños e invitados ya no ven botones que no les corresponden. Los
+  invitados cambian sus propias tareas, los deseos abiertos cuentan contra
+  los puntos.
 - La bandeja de entrada archiva las cartas con el público adecuado; los
-  niños solo ven las entradas compartidas con ellos.
-- Calendario: la marca de hoy sigue la hora de la familia, el intervalo de
-  repetición se mantiene al editar, el resumen del día no repite nada. Las
-  citas que solo ven algunos aparecen como «Ocupado» en el widget y en el
-  resumen del día.
-- Quien cambia los ajustes del libro de cuentas ya no quita a otros sus
-  apuntes.
+  niños solo ven las entradas compartidas con ellos. El libro de cuentas
+  conserva las categorías propias y los apuntes de otros.
+- Calendario: la marca de hoy y las citas de un texto siguen la hora de la
+  familia, el intervalo de repetición se mantiene, el resumen del día no
+  repite nada. Las citas que solo ven algunos aparecen como «Ocupado».
+- «Deshacer» y los avisos aparecen también sobre hojas abiertas, la hoja de
+  un documento se desplaza con notas largas.
 
 ## 2.0.53 – Avisos agrupados, los cambios se conservan
 

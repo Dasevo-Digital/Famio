@@ -12,19 +12,21 @@ stehen bei den Releases.
 - Impfungen nennen Nachholzeiträume. Fieber bei Babys unter drei Monaten,
   sehr niedrige Temperatur und weißlicher Stuhl bekommen einen Hinweis.
   Eine eigene Seite nennt die Quellen der Gesundheitsinhalte.
-- Datenschutzhinweise und Lizenzen sind in der App erreichbar. Auf dem
-  iPhone öffnen Orte in Apple Karten.
-- Dateien über 8 MiB werden wieder hochgeladen. Nach einer kurzen
-  Unterbrechung gleicht die App sofort ab.
-- Kinder und Gäste sehen keine Knöpfe mehr, die nicht für sie gelten.
-  Lehnt der Server etwas ab oder übernimmt es nur teilweise, sagt Famio das.
+- Datenschutzhinweise und Lizenzen sind in der App erreichbar, Orte öffnen
+  auf dem iPhone in Apple Karten. Screenreader erreichen die Seitenleiste.
+- Dateien über 8 MiB werden wieder hochgeladen, nach einer Unterbrechung
+  gleicht die App sofort ab. Wer offline abmeldet, wird vorher gefragt;
+  wartende Änderungen gehen nicht mehr still verloren.
+- Kinder und Gäste sehen keine Knöpfe mehr, die nicht für sie gelten. Gäste
+  ändern ihre eigenen Aufgaben, offene Wünsche zählen gegen den Punktestand.
 - Der Eingang legt Briefe mit passender Zielgruppe ab; Kinder sehen nur
-  freigegebene Einträge.
-- Kalender: Heute-Markierung nach Familienzeit, Serienabstand bleibt beim
-  Bearbeiten, Tagesüberblick ohne Doppelungen. Termine, die nur einige
-  sehen, stehen in Widget und Tagesüberblick als „Belegt“.
-- Wer die Einstellungen des Haushaltsbuchs ändert, nimmt anderen ihre
-  Buchungen nicht mehr weg.
+  freigegebene Einträge. Im Haushaltsbuch bleiben eigene Kategorien und die
+  Buchungen anderer erhalten.
+- Kalender: Heute-Markierung und Termine aus Text in Familienzeit,
+  Serienabstand bleibt, Tagesüberblick ohne Doppelungen. Termine, die nur
+  einige sehen, stehen in Widget und Tagesüberblick als „Belegt“.
+- „Rückgängig“ und Hinweise erscheinen auch über geöffneten Blättern, das
+  Dokument-Blatt scrollt bei langen Notizen.
 
 ## 2.0.53 – Mitteilungen gebündelt, Änderungen bleiben erhalten
 

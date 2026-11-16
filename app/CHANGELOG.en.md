@@ -12,19 +12,21 @@ with the releases.
 - Vaccinations name catch-up periods. Fever in babies under three months,
   very low temperatures and pale stool get a hint. A page of its own names
   the sources of the health content.
-- The privacy notice and licences are reachable in the app. On the iPhone,
-  places open in Apple Maps.
-- Files over 8 MiB upload again. After a short interruption the app syncs
-  at once.
-- Children and guests no longer see buttons that do not apply to them. If
-  the server refuses something or keeps it only partly, Famio says so.
+- The privacy notice and licences are reachable in the app, places open in
+  Apple Maps on the iPhone. Screen readers reach the side rail.
+- Files over 8 MiB upload again, after an interruption the app syncs at
+  once. Signing out offline asks first; waiting changes are no longer lost
+  silently.
+- Children and guests no longer see buttons that do not apply to them.
+  Guests change their own tasks, open wishes count against the points.
 - The inbox files letters with a fitting audience; children see only
-  entries shared with them.
-- Calendar: today's mark follows the family's time zone, the repeat
-  interval stays when editing, the day overview shows nothing twice. Events
-  only some members see show as "Busy" in the widget and the day overview.
-- Changing the household book settings no longer takes others' entries
-  away from them.
+  entries shared with them. The household book keeps own categories and
+  other people's entries.
+- Calendar: today's mark and events from text follow the family's time
+  zone, the repeat interval stays, the day overview shows nothing twice.
+  Events only some members see show as "Busy" in the widget and overview.
+- "Undo" and hints also show above open sheets, the document sheet scrolls
+  with long notes.
 
 ## 2.0.53 – Bundled notifications, changes are kept
 
