@@ -535,6 +535,87 @@ void main() {
       expect(app.records.referenced(file.id), isFalse);
     });
 
+    // SIC-104: what "the file maintenance removes it" means – the upload of
+    // the private document stays until its grace has passed (and is in the
+    // family export until then), then the server's maintenance run deletes
+    // it with its blocks; the upload of a family document stays.
+    test(
+      'the file maintenance deletes the private upload after its grace',
+      () async {
+        Future<StoredFile> upload(String name) => app.files.save(
+          owner: papa.id,
+          name: name,
+          mime: 'application/pdf',
+          body: Stream.value(utf8.encode('%PDF $name')),
+        );
+        final private = await upload('kontoauszug.pdf');
+        final shared = await upload('mietvertrag.pdf');
+        await sync(
+          papa,
+          changes: [
+            record(
+              Collections.documents,
+              'auszug',
+              {
+                'title': 'Kontoauszug',
+                'category': 'finance',
+                'file': private.toJson(),
+              },
+              audience: [papa.id],
+            ),
+            record(Collections.documents, 'miete', {
+              'title': 'Mietvertrag',
+              'category': 'home',
+              'file': shared.toJson(),
+            }),
+          ],
+        );
+        final response = await app.handler(
+          Request(
+            'DELETE',
+            Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+            headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+          ),
+        );
+        expect(response.statusCode, 200);
+        int blocks(String id) =>
+            app.files.blobs.select(
+                  'SELECT count(*) AS n FROM blobs WHERE id = ?',
+                  [id],
+                ).first['n']
+                as int;
+        Set<String> stored() => {for (final f in app.files.all()) f.id};
+        expect(blocks(private.id), greaterThan(0));
+
+        // Within its grace (a day) the maintenance keeps it.
+        expect(await app.files.collectGarbageAsync(), 0);
+        expect(app.files.get(private.id), isNotNull);
+        expect(stored(), containsAll([private.id, shared.id]));
+
+        // A day later: gone, with its blocks; the family's stays.
+        app.db.execute('UPDATE files SET created_at = ?', [
+          DateTime.now()
+              .subtract(FileStore.orphanGrace + const Duration(minutes: 1))
+              .millisecondsSinceEpoch,
+        ]);
+        expect(await app.files.collectGarbageAsync(), 1);
+        expect(app.files.get(private.id), isNull);
+        expect(blocks(private.id), 0);
+        expect(stored(), {shared.id});
+        expect(app.files.get(shared.id), isNotNull);
+        expect(blocks(shared.id), greaterThan(0));
+        // The download of the gone upload ends in 404 for the admin.
+        final download = await app.handler(
+          Request(
+            'GET',
+            Uri.parse('http://famio.test/api/files/${private.id}'),
+            headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+          ),
+        );
+        expect(download.statusCode, 404);
+      },
+    );
+
     test(
       'takes the packing list of a private appointment, not timetables',
       () async {

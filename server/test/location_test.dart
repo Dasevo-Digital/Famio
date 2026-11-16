@@ -229,6 +229,53 @@ void main() {
     );
   });
 
+  // SIC-069: the server's hourly check (server_app.dart: newlySilent, then
+  // sos.deviceSilent) tells the adults nothing about a phone that went
+  // quiet while location was hidden – not then, and not once location is
+  // shown again (the phone stays paused until it reports). A phone that
+  // reports again is told as before when it goes quiet.
+  test('a phone quiet while location is hidden is never told', () async {
+    final now = DateTime.now();
+    await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(home, now.toUtc())],
+    });
+    await ok('PATCH', 'api/admin/settings', parentToken, {
+      'hiddenModules': [ServerSettings.locationModule],
+    });
+    Future<void> hourly(DateTime at) async {
+      for (final (member, since) in app.locations.newlySilent(now: at)) {
+        app.sos.deviceSilent(member, since, now: at);
+      }
+      await app.push.idle;
+    }
+
+    List<Object?> silentNotices() => [
+      for (final n in app.notices.after(parentId, 0))
+        if (n['title'] == 'Mias Handy meldet sich nicht') n['title'],
+    ];
+    for (final days in [2, 3, 5, 9]) {
+      await hourly(now.add(Duration(days: days)));
+    }
+    expect(silentNotices(), isEmpty);
+
+    // Shown again: still paused until the phone reports, still nothing.
+    await ok('PATCH', 'api/admin/settings', parentToken, {
+      'hiddenModules': <String>[],
+    });
+    expect(locationOf(kidId)?.state, SharingState.paused);
+    await hourly(now.add(const Duration(days: 10)));
+    expect(silentNotices(), isEmpty);
+
+    // The phone reports again; when it goes quiet now, that is told.
+    final answer = await ok('POST', 'api/location/report', kidToken, {
+      'fixes': [fix(school, DateTime.now().toUtc())],
+    });
+    expect(answer['paused'], isFalse);
+    expect(locationOf(kidId)?.state, SharingState.active);
+    await hourly(DateTime.now().add(const Duration(days: 3)));
+    expect(silentNotices(), hasLength(1));
+  });
+
   test(
     'arriving at a shop tells only that member what is still open',
     () async {

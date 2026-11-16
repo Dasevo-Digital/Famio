@@ -2819,21 +2819,80 @@ void main() {
     },
   );
 
-  testWidgets('GRU-104 plain HTTP in the home network is named', (
+  // "Jetzt verschlüsseln" tries the server's HTTPS port: in this build the
+  // throwaway server's (FAMIO_E2E_TLS_PORT from tool/integration_tests.sh),
+  // never the development server's 8776. Without an HTTPS port:
+  // catalog_server_off_test.dart.
+  testWidgets('GRU-104 plain HTTP in the home network, then encrypted', (
     tester,
   ) async {
     tall(tester);
+    final tls = Uri.parse(_tlsUrl);
+    expect(AppState.defaultTlsPort, tls.port, reason: 'the test server\'s');
+    expect(AppState.defaultTlsPort, isNot(8776));
+    final admin = await kitAdminApi();
+    final overview = await admin.adminOverview();
+    expect(overview.tlsPort, tls.port);
     final state = await start(tester);
+    final before = state.serverUrl!;
+    expect(Uri.parse(before).scheme, 'http');
+    final token = await state.vault.read('token');
+    final sessions = (await admin.mySessions()).length;
     await openSection(tester, 'Einstellungen');
     await scrollTo(tester, find.text(de.settingsUnencryptedLan));
     expect(
       subtitleOf(tester, de.settingsUnencryptedLan),
       de.settingsUnencryptedLanHint,
     );
+    await tap(tester, find.widgetWithText(FilledButton, de.settingsEncryptNow));
+    // The server's own certificate, to compare with its status page.
+    await waitFor(tester, find.text(de.trustMatches));
+    final groups = overview.tlsFingerprint!.split(':');
+    final lines = [
+      for (var i = 0; i < groups.length; i += 8)
+        groups.skip(i).take(8).join(':'),
+    ].join('\n');
+    debugPrint('E2E-INFO the certificate to compare: ${onScreen()}');
     expect(
-      find.widgetWithText(FilledButton, de.settingsEncryptNow),
+      find.byWidgetPredicate(
+        (w) =>
+            (w is Text && w.data == lines) ||
+            (w is SelectableText && w.data == lines),
+      ),
       findsOneWidget,
     );
+    await tap(tester, find.text(de.trustMatches));
+    await waitFor(tester, find.text(de.settingsNowEncrypted));
+    expect(
+      state.serverUrl,
+      FamioApiClient.normalizeUrl(
+        Uri.parse(before).replace(scheme: 'https', port: tls.port).toString(),
+      ).toString(),
+    );
+    expect(state.certificatePin, overview.tlsFingerprint);
+    await scrollTo(tester, find.text(de.settingsConnectionEncrypted));
+    expect(
+      subtitleOf(tester, de.settingsConnectionEncrypted),
+      de.settingsHttpsServerSConfirmed(
+        overview.tlsFingerprint!.substring(0, 11),
+      ),
+    );
+    expect(find.text(de.settingsUnencryptedLan), findsNothing);
+    // No new sign-in: the same session goes on over HTTPS.
+    expect(state.me, isNotNull);
+    expect(field(de.connectServerAddress), findsNothing);
+    expect(await state.vault.read('token'), token);
+    expect((await admin.mySessions()).length, sessions);
+    final engine = state.engine!;
+    final id = newId();
+    engine.saveTask(Task(id: id, title: 'E2E Verschlüsselt'));
+    await eventually(tester, 'in sync over HTTPS', () async {
+      await engine.sync();
+      return engine.status.state == SyncState.idle &&
+          (await pull(admin, Collections.tasks)).containsKey(id);
+    });
+    engine.deleteTask(id);
+    await engine.sync();
     await finish(tester, state);
   });
 

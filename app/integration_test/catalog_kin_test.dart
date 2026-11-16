@@ -11,6 +11,7 @@
 // the ones that need an empty list (no medications, no children for the
 // child account) come first.
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -38,10 +39,12 @@ import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'catalog_kit.dart';
+import 'fresh_start.dart';
 
 /// A file on disk as the file picker hands it over.
 final class _DiskFile extends PlatformFile {
@@ -99,6 +102,91 @@ class _NoNetwork extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) =>
       super.createHttpClient(context)..findProxy = (_) => 'PROXY 127.0.0.1:9';
+}
+
+/// Passes TCP between the app and the throwaway server. While [cutUploads]
+/// is on, a connection that carries an upload (POST /api/files) is broken
+/// off after [cutAfter] bytes of it, like a network that drops mid-way;
+/// everything else (sync, WebSocket) goes on.
+class _CuttingGate {
+  _CuttingGate(this._upstream);
+
+  final Uri _upstream;
+  late final ServerSocket _server;
+  var cutUploads = false;
+  var cutAfter = 512 * 1024;
+
+  /// Uploads broken off so far.
+  var cut = 0;
+
+  String get url => 'http://127.0.0.1:${_server.port}';
+
+  Future<void> start() async {
+    _server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    _server.listen(_accept);
+  }
+
+  Future<void> _accept(Socket client) async {
+    unawaited(client.done.catchError((Object _) {}));
+    final Socket server;
+    try {
+      server = await Socket.connect(_upstream.host, _upstream.port);
+    } catch (_) {
+      client.destroy();
+      return;
+    }
+    unawaited(server.done.catchError((Object _) {}));
+    void close() {
+      client.destroy();
+      server.destroy();
+    }
+
+    // The last bytes seen, so a request line split across reads is found.
+    var tail = '';
+    int? uploadBytes;
+    client.listen(
+      (data) {
+        if (uploadBytes == null && cutUploads) {
+          final seen = tail + latin1.decode(data, allowInvalid: true);
+          final at = seen.indexOf('POST /api/files');
+          if (at >= 0) uploadBytes = seen.length - at;
+          tail = seen.substring(math.max(0, seen.length - 64));
+        } else if (uploadBytes != null) {
+          uploadBytes = uploadBytes! + data.length;
+        }
+        if (uploadBytes != null && uploadBytes! >= cutAfter) {
+          cut++;
+          debugPrint(
+            'E2E-INFO gate: upload broken off after $uploadBytes bytes',
+          );
+          close();
+          return;
+        }
+        try {
+          server.add(data);
+        } catch (_) {
+          close();
+        }
+      },
+      onDone: close,
+      onError: (Object _) => close(),
+      cancelOnError: true,
+    );
+    server.listen(
+      (data) {
+        try {
+          client.add(data);
+        } catch (_) {
+          close();
+        }
+      },
+      onDone: close,
+      onError: (Object _) => close(),
+      cancelOnError: true,
+    );
+  }
+
+  Future<void> close() => _server.close();
 }
 
 void main() {
@@ -455,6 +543,29 @@ void main() {
   Future<AppState> start(WidgetTester tester, {String? user}) {
     tallView(tester);
     return startApp(tester, user: user);
+  }
+
+  /// Like [start] as the admin, but through [url] (e.g. a [_CuttingGate]).
+  Future<AppState> startVia(WidgetTester tester, String url) async {
+    tallView(tester);
+    await initializeDateFormatting('de');
+    await freshStart();
+    final state = AppState();
+    await state.init();
+    addTearDown(() async {
+      if (state.me != null) await state.signOut();
+    });
+    await tester.pumpWidget(FamioApp(state: state));
+    await enter(tester, field('Server-Adresse'), url);
+    await tap(tester, find.text('Verbinden'));
+    await enter(tester, field('Benutzername'), kitUser);
+    await enter(tester, field('Passwort'), kitPassword);
+    await tap(tester, find.text('Anmelden'));
+    await waitFor(tester, signedInMark, timeout: const Duration(seconds: 60));
+    if (find.text(de.commonLater).evaluate().isNotEmpty) {
+      await tap(tester, find.text(de.commonLater).last);
+    }
+    return state;
   }
 
   /// Types [date] into an open date picker; whether the picker accepted it.
@@ -1222,6 +1333,106 @@ void main() {
       await admin.updateServerSettings({'maxUploadMb': null});
       await back(tester);
       expect(state.engine!.child(id)!.photo?.id, child.photo!.id);
+      await finish(tester, state);
+    },
+  );
+
+  // The connection drops while the photo goes up (after half a megabyte of
+  // it): the editor tells it in its snack bar (child_editor.dart), keeps the
+  // photo it had, and nothing half of it is kept – neither in the child nor
+  // on the server. With the network back, the same picture goes through.
+  testWidgets(
+    'KIN-009 an upload that breaks off is told, nothing half is kept',
+    (tester) async {
+      final picker = fakePicker();
+      final admin = await adminApi();
+      final id = await seedChild('E2E Abbruchkind', born(years: 2));
+      final gate = _CuttingGate(Uri.parse(kitUrl));
+      await gate.start();
+      addTearDown(gate.close);
+      final state = await startVia(tester, gate.url);
+      await openChild(tester, 'E2E Abbruchkind');
+      await tap(tester, find.byTooltip(de.commonEdit));
+      await waitFor(tester, find.text(de.settingsEditProfile));
+      expect(find.byType(CachedImage), findsNothing);
+      final before = await admin.adminOverview();
+      gate.cutUploads = true;
+      picker.picks.add(await picture('abbruch.png', big: true));
+      final button = find.byTooltip(de.kidsChoosePhoto);
+      await tester.ensureVisible(button.first);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(button.first, warnIfMissed: false);
+      final snack = find.descendant(
+        of: find.byType(SnackBar),
+        matching: find.byType(Text),
+      );
+      var blocked = false;
+      final end = DateTime.now().add(const Duration(seconds: 60));
+      while (snack.evaluate().isEmpty && DateTime.now().isBefore(end)) {
+        await tester.pump(const Duration(milliseconds: 20));
+        if (!enabled(tester, saveButton(de.commonSave))) blocked = true;
+      }
+      expect(snack, findsWidgets, reason: 'the failure is told');
+      final said = tester.widget<Text>(snack.first).data!;
+      debugPrint(
+        'E2E KIN-009 upload broken off: "$said", save blocked: $blocked',
+      );
+      expect(gate.cut, 1, reason: 'the gate broke the upload off');
+      expect(blocked, isTrue, reason: '"Speichern" locked while uploading');
+      expect(said, startsWith('Server nicht erreichbar'));
+      // The editor as it was: no photo, "Speichern" usable again.
+      await until(
+        tester,
+        () => enabled(tester, saveButton(de.commonSave)),
+        'save usable again',
+      );
+      expect(find.byType(CachedImage), findsNothing);
+      // Nothing half on the server.
+      await eventually(tester, 'no part of the file kept', () async {
+        final now = await admin.adminOverview();
+        return now.fileCount == before.fileCount &&
+            now.fileBytes == before.fileBytes;
+      });
+      // Saved like this, the child has no photo.
+      await snackGone(tester);
+      await tap(tester, find.text(de.commonSave).last);
+      await waitGone(tester, find.text(de.settingsEditProfile));
+      expect(state.engine!.child(id)!.photo, isNull);
+      await synced(tester, state);
+      expect(
+        Child.fromRecord((await pull(admin, Collections.children))[id]!).photo,
+        isNull,
+      );
+
+      // The network is back: the same picture goes through.
+      gate.cutUploads = false;
+      await tap(tester, find.byTooltip(de.commonEdit));
+      await waitFor(tester, find.text(de.settingsEditProfile));
+      picker.picks.add(await picture('abbruch.png', big: true));
+      await tap(tester, find.byTooltip(de.kidsChoosePhoto));
+      await waitFor(
+        tester,
+        find.byType(CachedImage),
+        timeout: const Duration(seconds: 60),
+      );
+      await until(
+        tester,
+        () => enabled(tester, saveButton(de.commonSave)),
+        'upload done',
+      );
+      await tap(tester, find.text(de.commonSave).last);
+      await waitGone(tester, find.text(de.settingsEditProfile));
+      final photo = state.engine!.child(id)!.photo;
+      expect(photo, isNotNull);
+      await synced(tester, state);
+      expect(
+        Child.fromRecord(
+          (await pull(admin, Collections.children))[id]!,
+        ).photo?.id,
+        photo!.id,
+      );
+      expect((await admin.adminOverview()).fileCount, before.fileCount + 1);
+      expect(gate.cut, 1);
       await finish(tester, state);
     },
   );
