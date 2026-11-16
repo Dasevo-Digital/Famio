@@ -4,6 +4,28 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.54 – Health data better protected, many fixes
+
+- Child accounts enter health data only for children and plans they may
+  see. Home Assistant no longer gets documents or the inbox; new Home
+  Assistant users join as guests.
+- Vaccinations name catch-up periods. Fever in babies under three months,
+  very low temperatures and pale stool get a hint. A page of its own names
+  the sources of the health content.
+- The privacy notice and licences are reachable in the app. On the iPhone,
+  places open in Apple Maps.
+- Files over 8 MiB upload again. After a short interruption the app syncs
+  at once.
+- Children and guests no longer see buttons that do not apply to them. If
+  the server refuses something or keeps it only partly, Famio says so.
+- The inbox files letters with a fitting audience; children see only
+  entries shared with them.
+- Calendar: today's mark follows the family's time zone, the repeat
+  interval stays when editing, the day overview shows nothing twice. Events
+  only some members see show as "Busy" in the widget and the day overview.
+- Changing the household book settings no longer takes others' entries
+  away from them.
+
 ## 2.0.53 – Bundled notifications, changes are kept
 
 - Many messages at once arrive as one notification. Each sync brings at

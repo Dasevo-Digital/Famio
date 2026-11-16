@@ -4,6 +4,29 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.54 – Datos de salud mejor protegidos, muchos fallos corregidos
+
+- Las cuentas infantiles solo anotan datos de salud de niños y planes que
+  pueden ver. Home Assistant ya no recibe documentos ni la bandeja de
+  entrada; los nuevos usuarios de Home Assistant entran como invitados.
+- Las vacunas indican plazos para ponerse al día. La fiebre en bebés de
+  menos de tres meses, una temperatura muy baja y las heces claras reciben
+  un aviso. Una página propia nombra las fuentes de los contenidos de salud.
+- El aviso de privacidad y las licencias están en la app. En el iPhone,
+  los lugares se abren en Apple Mapas.
+- Los archivos de más de 8 MiB vuelven a subirse. Tras una breve
+  interrupción, la app sincroniza al momento.
+- Niños e invitados ya no ven botones que no les corresponden. Si el
+  servidor rechaza algo o solo lo guarda en parte, Famio lo dice.
+- La bandeja de entrada archiva las cartas con el público adecuado; los
+  niños solo ven las entradas compartidas con ellos.
+- Calendario: la marca de hoy sigue la hora de la familia, el intervalo de
+  repetición se mantiene al editar, el resumen del día no repite nada. Las
+  citas que solo ven algunos aparecen como «Ocupado» en el widget y en el
+  resumen del día.
+- Quien cambia los ajustes del libro de cuentas ya no quita a otros sus
+  apuntes.
+
 ## 2.0.53 – Avisos agrupados, los cambios se conservan
 
 - Muchos mensajes a la vez llegan como un solo aviso. Cada sincronización
