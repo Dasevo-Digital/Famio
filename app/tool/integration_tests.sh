@@ -84,8 +84,22 @@ for test in "${TESTS[@]}"; do
   port=$(free_port)
   tls_port=$(free_port)
   log=$data.log
-  FAMIO_DATA_DIR=$data FAMIO_PORT=$port FAMIO_TLS_PORT=$tls_port \
-    FAMIO_TIMEZONE=Europe/Berlin "$SERVER_BIN" >"$log" 2>&1 &
+  # A test file may want its server set up otherwise, in a line like
+  #   // e2e-server: FAMIO_BACKUP_DIR=off FAMIO_TLS_PORT=0
+  # Only FAMIO_ variables; data folder and port stay the script's.
+  server_env=()
+  for assignment in $(sed -n 's|^// e2e-server:||p' "$test"); do
+    if [[ ! $assignment =~ ^FAMIO_[A-Z_]+=[A-Za-z0-9._:/-]*$ ]] ||
+      [[ $assignment =~ ^FAMIO_(DATA_DIR|PORT)= ]]; then
+      echo "Ungültige Servereinstellung in $test: $assignment" >&2
+      exit 1
+    fi
+    server_env+=("$assignment")
+  done
+  [ ${#server_env[@]} -eq 0 ] || echo "== Server mit ${server_env[*]}"
+  env FAMIO_TLS_PORT="$tls_port" FAMIO_TIMEZONE=Europe/Berlin \
+    ${server_env[@]+"${server_env[@]}"} \
+    FAMIO_DATA_DIR="$data" FAMIO_PORT="$port" "$SERVER_BIN" >"$log" 2>&1 &
   SERVER_PID=$!
 
   for _ in $(seq 1 60); do
@@ -106,6 +120,7 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_FRESH_START=true \
     --dart-define=FAMIO_URL="http://localhost:$port" \
     --dart-define=FAMIO_NEW_URL="https://localhost:$tls_port" \
+    --dart-define=FAMIO_E2E_TLS_PORT="$tls_port" \
     --dart-define=FAMIO_USER=admin \
     --dart-define=FAMIO_PASSWORD="$PASSWORD" \
     --dart-define=FAMIO_ALLOW_WIPE=yes \

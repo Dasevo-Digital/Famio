@@ -31,7 +31,19 @@ abstract final class AppEnv {
 
   /// HTTPS port tried first when connecting; the development server runs
   /// beside the family's one on its own ports.
-  static const tlsPort = isDev ? 8776 : 8766;
+  static const tlsPort = isE2e
+      ? _e2eTlsPort
+      : isDev
+      ? 8776
+      : 8766;
+
+  /// Tests against a throwaway server name its HTTPS port
+  /// (`--dart-define=FAMIO_E2E_TLS_PORT`, tool/integration_tests.sh), so that
+  /// "Jetzt verschlüsseln" never reaches the development server on 8776.
+  static const _e2eTlsPort = int.fromEnvironment(
+    'FAMIO_E2E_TLS_PORT',
+    defaultValue: 8776,
+  );
   static const httpPort = isDev ? 8775 : 8765;
 
   /// A build for an app store (`--dart-define=FAMIO_STORE=true`): Apple and
