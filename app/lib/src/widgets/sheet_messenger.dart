@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
@@ -14,21 +15,39 @@ import 'package:flutter/rendering.dart';
 /// When the sheet closes, a message that still offers something to do
 /// (e.g. "Rückgängig" after "Löschen" and closing) moves to the page; a
 /// plain message (a hint about the form) ends with the sheet.
-class SheetMessenger extends StatelessWidget {
+class SheetMessenger extends StatefulWidget {
   const SheetMessenger({super.key, required this.child});
 
   final Widget child;
 
   @override
+  State<SheetMessenger> createState() => _SheetMessengerHostState();
+}
+
+class _SheetMessengerHostState extends State<SheetMessenger> {
+  /// Whether the message showing offers something to tap ("Rückgängig").
+  /// A plain hint takes no taps: it often lies over the sheet's buttons
+  /// (KIN-085, "Bitte Medikament eingeben" over "Speichern").
+  final _actionShowing = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    _actionShowing.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) => _SheetScaffoldMessenger(
+    actionShowing: _actionShowing,
     child: Stack(
       // The content is laid out as without this widget.
       fit: StackFit.passthrough,
       children: [
-        child,
+        widget.child,
         Positioned.fill(
           child: _SnackBarsOnly(
-            child: Scaffold(
+            takesTaps: _actionShowing,
+            child: const Scaffold(
               // No status bar area to tap and nothing painted.
               primary: false,
               backgroundColor: Colors.transparent,
@@ -41,7 +60,12 @@ class SheetMessenger extends StatelessWidget {
 }
 
 class _SheetScaffoldMessenger extends ScaffoldMessenger {
-  const _SheetScaffoldMessenger({required super.child});
+  const _SheetScaffoldMessenger({
+    required this.actionShowing,
+    required super.child,
+  });
+
+  final ValueNotifier<bool> actionShowing;
 
   @override
   ScaffoldMessengerState createState() => _SheetMessengerState();
@@ -75,8 +99,20 @@ class _SheetMessengerState extends ScaffoldMessengerState {
       snackBarAnimationStyle: snackBarAnimationStyle,
     );
     _open.add(snackBar);
-    controller.closed.whenComplete(() => _open.remove(snackBar));
+    _showing();
+    controller.closed.whenComplete(() {
+      _open.remove(snackBar);
+      _showing();
+    });
     return controller;
+  }
+
+  /// The oldest open message is the one on screen.
+  void _showing() {
+    final messenger = widget as _SheetScaffoldMessenger;
+    if (!mounted) return;
+    messenger.actionShowing.value =
+        _open.isNotEmpty && _open.first.action != null;
   }
 
   @override
@@ -111,16 +147,30 @@ class _SheetMessengerState extends ScaffoldMessengerState {
 /// [Scaffold] that shows the messages would otherwise take every tap on
 /// the sheet.
 class _SnackBarsOnly extends SingleChildRenderObjectWidget {
-  const _SnackBarsOnly({required Widget super.child});
+  const _SnackBarsOnly({required this.takesTaps, required Widget super.child});
+
+  final ValueListenable<bool> takesTaps;
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderSnackBarsOnly();
+      _RenderSnackBarsOnly(takesTaps);
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    _RenderSnackBarsOnly renderObject,
+  ) => renderObject.takesTaps = takesTaps;
 }
 
 class _RenderSnackBarsOnly extends RenderProxyBox {
+  _RenderSnackBarsOnly(this.takesTaps);
+
+  ValueListenable<bool> takesTaps;
+
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    // A plain hint lets every tap through to the sheet.
+    if (!takesTaps.value) return false;
     final probe = BoxHitTestResult();
     if (!super.hitTest(probe, position: position)) return false;
     // The scaffold lays out its parts (here only a message) in a

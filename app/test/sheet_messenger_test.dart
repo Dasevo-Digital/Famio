@@ -119,6 +119,14 @@ void main() {
   void reachable(Finder finder) =>
       expect(finder.hitTestable(), findsOneWidget, reason: '$finder');
 
+  /// A plain hint takes no taps (KIN-085); it shows in the sheet's own
+  /// messenger, over the sheet.
+  void shownOverSheet(Finder finder) => expect(
+    find.descendant(of: find.byType(BottomSheet), matching: finder),
+    findsOneWidget,
+    reason: '$finder',
+  );
+
   Future<void> closeSheet(WidgetTester tester) async {
     await tester.tapAt(const Offset(195, 20));
     await tester.pumpAndSettle();
@@ -152,6 +160,51 @@ void main() {
       final plain = await sheetSize(tester, wrapped: false);
       await closeSheet(tester);
       expect(await sheetSize(tester, wrapped: true), plain);
+    });
+
+    testWidgets('a plain hint over the save button lets the tap through '
+        '(KIN-085)', (tester) async {
+      final context = await open(tester);
+      var saved = 0;
+      unawaited(
+        showModalBottomSheet<void>(
+          context: context,
+          builder: (_) => SheetMessenger(
+            child: Builder(
+              builder: (sheet) => SizedBox(
+                height: 120,
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: FilledButton(
+                      onPressed: () {
+                        saved++;
+                        ScaffoldMessenger.of(sheet).showSnackBar(
+                          const SnackBar(
+                            content: Text('Bitte Medikament eingeben'),
+                          ),
+                        );
+                      },
+                      child: const Text('Speichern'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern'));
+      await tester.pumpAndSettle();
+      expect(find.text('Bitte Medikament eingeben'), findsOneWidget);
+      // The hint lies over the button; the next tap still saves.
+      await tester.tapAt(tester.getCenter(find.text('Speichern')));
+      await tester.pump();
+      expect(saved, 2);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
     });
 
     testWidgets('a message shows over the sheet and takes its taps, the rest '
@@ -216,7 +269,9 @@ void main() {
       // Closing the sheet: a hint about it goes with it.
       await tester.tap(find.text('Hinweis zeigen'));
       await tester.pumpAndSettle();
-      reachable(find.text('Hinweis'));
+      // A plain hint is shown but takes no taps (KIN-085).
+      expect(find.text('Hinweis'), findsOneWidget);
+      expect(find.text('Hinweis').hitTestable(), findsNothing);
       await closeSheet(tester);
       expect(find.text('Hinweis'), findsNothing);
 
@@ -306,7 +361,7 @@ void main() {
       await tester.tap(find.text(tr.commonSave));
       await tester.pumpAndSettle();
       expect(engine.childLogs('c1'), isEmpty);
-      reachable(find.text(tr.kidsLogPleaseEnterTemperatureBetween));
+      shownOverSheet(find.text(tr.kidsLogPleaseEnterTemperatureBetween));
     });
 
     Future<void> failedUpload(WidgetTester tester, Finder add) async {
@@ -315,7 +370,7 @@ void main() {
       await tester.tap(add);
       await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsOneWidget);
-      reachable(find.text(_uploadFailed));
+      shownOverSheet(find.text(_uploadFailed));
     }
 
     testWidgets('a failed upload in the log editor', (tester) async {

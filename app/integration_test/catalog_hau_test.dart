@@ -43,7 +43,7 @@ import 'package:famio/src/widgets/member_avatar.dart';
 import 'package:famio/src/widgets/photo_viewer.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2895,13 +2895,15 @@ void main() {
     await audience({kitAdminName});
     await scrollTo(tester, find.text(de.budgetVisibleNames(kitAdminName)));
     await synced(tester, state);
+    // Whoever wrote a booking keeps it (#552): the child its own ice cream,
+    // nothing else.
     await eventually(
       tester,
       'Bea and the child lose bookings and subscriptions',
       () async =>
           (await bookings(bea)).isEmpty &&
           (await abos(bea)).isEmpty &&
-          (await bookings(kid)).isEmpty &&
+          setEquals(await bookings(kid), {'E2E Kind Eis'}) &&
           (await abos(kid)).isEmpty,
     );
     // HAU-160: restricted, the service account gets none.
@@ -2916,7 +2918,7 @@ void main() {
       () async =>
           (await bookings(bea)).containsAll(['E2E Einkauf A', 'E2E Kind Eis']),
     );
-    expect(await bookings(kid), isEmpty);
+    expect(await bookings(kid), {'E2E Kind Eis'});
     expect(await bookings(ha), isEmpty);
 
     // Hint: whoever restricts stays in it.
