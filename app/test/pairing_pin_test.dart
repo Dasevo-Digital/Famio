@@ -5,7 +5,9 @@ import 'package:crypto/crypto.dart';
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/screens/device_pairing_screen.dart';
+import 'package:famio/src/screens/invite_screens.dart';
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -144,6 +146,100 @@ void main() {
       findsOneWidget,
     );
     expect(secrets, isEmpty);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(minutes: 11));
+  }, skip: !available);
+
+  // GRU-037: the invitation QR code carries the key as well; a server with
+  // another key gets neither the code nor a question (#513).
+  testWidgets('an invitation for another server key is refused', (
+    tester,
+  ) async {
+    HttpOverrides.global = null;
+    tester.view.physicalSize = const Size(1000, 1600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final state = AppState();
+    await state.init();
+
+    final seen = <String>[];
+    final server = (await tester.runAsync(() async {
+      final context = SecurityContext()
+        ..useCertificateChain('${_certs.path}/b.crt')
+        ..usePrivateKey('${_certs.path}/b.key');
+      final s = await HttpServer.bindSecure('127.0.0.1', 0, context);
+      s.listen((request) async {
+        await utf8.decoder.bind(request).join();
+        seen.add(request.uri.path);
+        request.response.headers.contentType = ContentType.json;
+        if (request.uri.path.endsWith('api/health')) {
+          request.response.write(
+            jsonEncode({
+              'name': 'famio',
+              'version': '2.0.54',
+              'setupRequired': false,
+            }),
+          );
+        } else {
+          request.response.statusCode = 404;
+          request.response.write('{}');
+        }
+        await request.response.close();
+      });
+      return s;
+    }))!;
+    addTearDown(() => server.close(force: true));
+
+    final link = InviteLink(
+      server: 'https://127.0.0.1:${server.port}/',
+      code: 'ABCD-EFGH',
+      pin: _pin('a'),
+    ).encode();
+    // The camera is replaced: the scan reads this invitation.
+    debugScanInvitation = (_) async => link;
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    addTearDown(() => debugScanInvitation = null);
+
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pumpAndSettle();
+    tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .push(
+          MaterialPageRoute<void>(builder: (_) => const JoinWithInviteScreen()),
+        );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('QR-Code scannen'));
+    for (var i = 0; i < 30; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Zertifikat des Servers prüfen'), findsNothing);
+    expect(
+      find.textContaining('anderen Schlüssel als im Code'),
+      findsOneWidget,
+    );
+    // Not even asked whether the code exists.
+    expect(seen.where((p) => p.contains('invite')), isEmpty);
+    // The same scan with the right key reaches the server.
+    debugScanInvitation = (_) async => InviteLink(
+      server: 'https://127.0.0.1:${server.port}/',
+      code: 'ABCD-EFGH',
+      pin: _pin('b'),
+    ).encode();
+    await tester.tap(find.text('QR-Code scannen'));
+    for (var i = 0; i < 30; i++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 100)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(seen.where((p) => p.contains('invite')), isNotEmpty);
+    expect(find.text('Zertifikat des Servers prüfen'), findsNothing);
+    debugDefaultTargetPlatformOverride = null;
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(minutes: 11));
   }, skip: !available);

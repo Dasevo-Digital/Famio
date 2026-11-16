@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -228,6 +226,11 @@ class _InviteScreenState extends State<InviteScreen> {
   }
 }
 
+/// Stands in for the camera in tests: returns what a scan of the
+/// invitation's QR code would read.
+@visibleForTesting
+Future<String?> Function(BuildContext context)? debugScanInvitation;
+
 /// A newcomer joins with an invitation: scan the QR code (or type server
 /// and code), then choose name, username and password.
 class JoinWithInviteScreen extends StatefulWidget {
@@ -249,7 +252,10 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
   var _busy = false;
   String? _error;
 
-  static bool get _canScan => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  static bool get _canScan =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
 
   @override
   void dispose() {
@@ -260,12 +266,14 @@ class _JoinWithInviteScreenState extends State<JoinWithInviteScreen> {
   }
 
   Future<void> _scan() async {
-    final text = await Navigator.of(context).push<String>(
-      MaterialPageRoute(
-        builder: (_) =>
-            BarcodeScanScreen(qr: true, title: tr.inviteScanInvitation),
-      ),
-    );
+    final text =
+        await (debugScanInvitation?.call(context) ??
+            Navigator.of(context).push<String>(
+              MaterialPageRoute(
+                builder: (_) =>
+                    BarcodeScanScreen(qr: true, title: tr.inviteScanInvitation),
+              ),
+            ));
     if (text == null || !mounted) return;
     final link = InviteLink.parse(text);
     if (link == null) {
