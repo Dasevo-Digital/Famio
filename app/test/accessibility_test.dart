@@ -147,6 +147,26 @@ void main() {
     expect(missing, isEmpty);
   });
 
+  testWidgets('a low window keeps 48 dp in the side rail and scrolls', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await open(tester, size: const Size(1200, 620));
+    final r = await androidTapTargetGuideline.evaluate(tester);
+    expect(r.passed, isTrue, reason: r.reason);
+    // The last area is reached by scrolling the rail.
+    await tester.scrollUntilVisible(
+      find.text('Einstellungen'),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('Einstellungen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Konto'), findsWidgets);
+    await tester.pump(const Duration(seconds: 1));
+    semantics.dispose();
+  });
+
   testWidgets('every control has a label and a 48 dp target', (tester) async {
     final semantics = tester.ensureSemantics();
     await open(tester);

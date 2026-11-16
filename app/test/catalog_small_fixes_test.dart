@@ -149,7 +149,16 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await signedIn(tester, size: const Size(1366, 768));
     expect(tester.takeException(), isNull);
-    expect(find.text('Famio'), findsWidgets);
+    // Every area keeps its name; the logo gives way first (48 dp to tap)
+    // and the rail needs no scrolling on such a laptop.
+    expect(find.text('Einstellungen'), findsOneWidget);
+    expect(
+      find.ancestor(
+        of: find.text('Einstellungen'),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('ALL-194 soon due deadlines stand out in bold', (tester) async {

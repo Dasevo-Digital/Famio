@@ -141,9 +141,17 @@ void main() {
     tester.view.physicalSize = const Size(1200, 600);
     await tester.pumpAndSettle();
 
+    // Smaller, but every area keeps its name and 48 dp to tap; the rail
+    // scrolls instead of shrinking further (an iPad uses it too).
     final lowIconSize = tester.widget<Icon>(homeIcon).size!;
     expect(lowIconSize, lessThan(tallIconSize));
-    expect(find.text('Einstellungen'), findsNothing);
+    expect(find.text('Einstellungen'), findsOneWidget);
+    // Only the rail says "Einstellungen" on the start page.
+    final item = find.ancestor(
+      of: find.text('Einstellungen'),
+      matching: find.byType(InkWell),
+    );
+    expect(tester.getSize(item.first).height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('documents: filter by category and show lock for private ones', (

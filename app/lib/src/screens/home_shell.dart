@@ -559,20 +559,35 @@ class _SideRail extends StatelessWidget {
         right: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // The desktop rail deliberately has no scroll area. Its logo and
-            // items divide all available vertical space, so it remains calm
-            // and balanced on a 13" laptop as well as a tall desktop window.
+            // The rail divides all available height between its logo and
+            // items, so it stays calm on a 13" laptop and a tall window
+            // alike. Items keep at least 48 dp to tap (an iPad uses this
+            // rail too): the logo gives way first, and only below that the
+            // rail scrolls.
             const outerPadding = 12.0;
+            const minItem = 48.0;
             final usableHeight = math.max(
               0.0,
               constraints.maxHeight - outerPadding * 2,
             );
-            final logoExtent = (usableHeight * 0.11)
-                .clamp(52.0, 88.0)
-                .toDouble();
+            var logoExtent = (usableHeight * 0.11).clamp(52.0, 88.0).toDouble();
+            if (sections.isNotEmpty &&
+                usableHeight - logoExtent < minItem * sections.length) {
+              // A smaller logo without the name first (a 1366 × 768
+              // laptop still needs no scrolling).
+              logoExtent = math.max(
+                44.0,
+                usableHeight - minItem * sections.length,
+              );
+            }
             final itemExtent = sections.isEmpty
                 ? 0.0
-                : math.max(0.0, (usableHeight - logoExtent) / sections.length);
+                : math.max(
+                    minItem,
+                    (usableHeight - logoExtent) / sections.length,
+                  );
+            final scrolls =
+                logoExtent + itemExtent * sections.length > usableHeight + 0.5;
             // Below this there is not enough room for a useful text label.
             // Tooltips keep every destination discoverable in icon mode.
             final showLabel = itemExtent >= 45;
@@ -580,34 +595,40 @@ class _SideRail extends StatelessWidget {
                 .clamp(18.0, 36.0)
                 .toDouble();
             final labelSize = (itemExtent * 0.18).clamp(9.0, 13.0).toDouble();
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: outerPadding),
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: logoExtent,
-                    child: _Logo(
-                      size: (logoExtent * 0.62).clamp(32.0, 52.0).toDouble(),
+            final children = [
+              SizedBox(
+                height: logoExtent,
+                child: _Logo(
+                  size: (logoExtent * 0.62).clamp(32.0, 52.0).toDouble(),
+                ),
+              ),
+              for (final s in sections)
+                SizedBox(
+                  height: itemExtent,
+                  child: KeyedSubtree(
+                    key: TourTargets.sections[s],
+                    child: _RailItem(
+                      section: s,
+                      selected: s == current,
+                      showLabel: showLabel,
+                      iconSize: iconSize,
+                      labelSize: labelSize,
+                      badge: s == FamioSection.chat ? unread : 0,
+                      onTap: () => onSelect(s),
                     ),
                   ),
-                  for (final s in sections)
-                    Expanded(
-                      child: KeyedSubtree(
-                        key: TourTargets.sections[s],
-                        child: _RailItem(
-                          section: s,
-                          selected: s == current,
-                          showLabel: showLabel,
-                          iconSize: iconSize,
-                          labelSize: labelSize,
-                          badge: s == FamioSection.chat ? unread : 0,
-                          onTap: () => onSelect(s),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            );
+                ),
+            ];
+            const padding = EdgeInsets.symmetric(vertical: outerPadding);
+            return scrolls
+                ? SingleChildScrollView(
+                    padding: padding,
+                    child: Column(children: children),
+                  )
+                : Padding(
+                    padding: padding,
+                    child: Column(children: children),
+                  );
           },
         ),
       ),
@@ -692,75 +713,80 @@ class _RailItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
     final color = c.strong(section);
+    // The whole height of the item is the tap target (48 dp and more);
+    // the highlight keeps a little gap to its neighbours.
     final item = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-      child: AnimatedContainer(
-        duration: _railAnimationDuration(context),
-        curve: Curves.easeOutCubic,
-        decoration: BoxDecoration(
-          color: selected ? c.tint(section) : Colors.transparent,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
           borderRadius: BorderRadius.circular(22),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(22),
-            onTap: onTap,
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  PixelSnap(
-                    child: _Badge(
-                      count: badge,
-                      child: AnimatedScale(
-                        duration: _railAnimationDuration(context),
-                        curve: Curves.easeOutCubic,
-                        scale: selected ? 1.07 : 1,
-                        child: Icon(
-                          section.icon,
-                          color: selected ? color : c.inkSoft,
-                          size: iconSize,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (showLabel) ...[
-                    SizedBox(
-                      height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
-                    ),
-                    // Long names such as "Einstellungen" shrink a little
-                    // instead of being cut off at the rail's edge, and so
-                    // does large text in a low item (GRU-092).
-                    Flexible(
-                      child: PixelSnap(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: AnimatedDefaultTextStyle(
-                              duration: _railAnimationDuration(context),
-                              curve: Curves.easeOutCubic,
-                              maxLines: 1,
-                              overflow: TextOverflow.fade,
-                              softWrap: false,
-                              style: Theme.of(context).textTheme.labelSmall!
-                                  .copyWith(
-                                    color: selected ? c.ink : c.inkSoft,
-                                    fontSize: labelSize,
-                                    fontWeight: selected
-                                        ? FontWeight.w800
-                                        : FontWeight.w700,
-                                  ),
-                              child: Text(section.title(context)),
-                            ),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: AnimatedContainer(
+              duration: _railAnimationDuration(context),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                color: selected ? c.tint(section) : Colors.transparent,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PixelSnap(
+                      child: _Badge(
+                        count: badge,
+                        child: AnimatedScale(
+                          duration: _railAnimationDuration(context),
+                          curve: Curves.easeOutCubic,
+                          scale: selected ? 1.07 : 1,
+                          child: Icon(
+                            section.icon,
+                            color: selected ? color : c.inkSoft,
+                            size: iconSize,
                           ),
                         ),
                       ),
                     ),
+                    if (showLabel) ...[
+                      SizedBox(
+                        height: (iconSize * 0.12).clamp(2.0, 5.0).toDouble(),
+                      ),
+                      // Long names such as "Einstellungen" shrink a little
+                      // instead of being cut off at the rail's edge, and so
+                      // does large text in a low item (GRU-092).
+                      Flexible(
+                        child: PixelSnap(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: AnimatedDefaultTextStyle(
+                                duration: _railAnimationDuration(context),
+                                curve: Curves.easeOutCubic,
+                                maxLines: 1,
+                                overflow: TextOverflow.fade,
+                                softWrap: false,
+                                style: Theme.of(context).textTheme.labelSmall!
+                                    .copyWith(
+                                      color: selected ? c.ink : c.inkSoft,
+                                      fontSize: labelSize,
+                                      fontWeight: selected
+                                          ? FontWeight.w800
+                                          : FontWeight.w700,
+                                    ),
+                                child: Text(section.title(context)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

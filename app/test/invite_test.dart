@@ -1,5 +1,6 @@
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,8 +27,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Server'), findsOneWidget);
     expect(find.text('Code'), findsOneWidget);
-    // Desktop tests have no camera: no scan button.
+    // flutter_test pretends to be Android: a phone scans the QR code.
+    expect(find.text('QR-Code scannen'), findsOneWidget);
+  });
+
+  testWidgets('a computer joins by typing server and code', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final state = AppState();
+    await state.init();
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Mit Einladung beitreten'));
+    await tester.pumpAndSettle();
+    expect(find.text('Server'), findsOneWidget);
+    // No camera on a computer: no scan button.
     expect(find.text('QR-Code scannen'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    debugDefaultTargetPlatformOverride = null;
   });
 
   testWidgets('the sign-in screen offers pairing an existing account', (
