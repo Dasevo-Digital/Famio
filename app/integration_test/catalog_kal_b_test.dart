@@ -532,6 +532,9 @@ class FakePicker extends FilePickerPlatform {
   final picks = <List<PlatformFile>>[];
   final saved = <({String fileName, Uint8List bytes, String mimeType})>[];
 
+  /// The save dialog is cancelled (it returns no place).
+  bool cancelSave = false;
+
   @override
   Future<List<PlatformFile>> pickFiles({
     String? dialogTitle,
@@ -559,6 +562,7 @@ class FakePicker extends FilePickerPlatform {
     LinuxOptions linuxOptions = const LinuxOptions(),
     WebOptions webOptions = const WebOptions(),
   }) async {
+    if (cancelSave) return null;
     saved.add((fileName: fileName, bytes: bytes, mimeType: mimeType));
     return Uri.file('/saved/$fileName');
   }
@@ -4053,6 +4057,25 @@ void main() {
     expect(flat, isNot(contains('Psychotherapie')));
     expect('Gelbe Tonne'.allMatches(flat), hasLength(1));
     expect(flat, isNot(contains('🍝')));
+    await finish(tester, state);
+  });
+
+  // KAL-145 (the browser part is checked in a real browser): the save
+  // dialog cancelled.
+  testWidgets('KAL-145 the week plan with the save dialog cancelled', (
+    tester,
+  ) async {
+    await setUpFamily(tester);
+    final picker = fakePicker()..cancelSave = true;
+    final state = await startApp(tester);
+    await openCalendar(tester);
+    await tap(tester, find.byTooltip(de.weekPlanPrint));
+    await waitFor(tester, find.text(de.weekPlanWhichWeek));
+    await tap(tester, find.text(de.weekPlanThisWeekOption));
+    await waitFor(tester, find.text(de.weekPlanNotSaved));
+    expect(find.text(de.weekPlanSaved), findsNothing);
+    expect(find.text(de.weekPlanFailed), findsNothing);
+    expect(picker.saved, isEmpty);
     await finish(tester, state);
   });
 
