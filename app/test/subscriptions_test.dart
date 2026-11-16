@@ -213,7 +213,9 @@ void main() {
     engine.saveSubscription(abo('a', 'Filme', 1200));
     expect(engine.record(Collections.subscriptions, 'a')?.visibleTo, isNull);
     engine.saveBudgetSettings(BudgetSettings(memberIds: [me.id]));
-    expect(engine.record(Collections.subscriptions, 'a')?.visibleTo, [me.id]);
+    // Existing ones are moved along by the server, keeping their writer
+    // (#552); the app does not write them again.
+    expect(engine.record(Collections.subscriptions, 'a')?.visibleTo, isNull);
     engine.saveSubscription(abo('b', 'Musik', 900));
     expect(engine.record(Collections.subscriptions, 'b')?.visibleTo, [me.id]);
     await tester.pump(const Duration(seconds: 5));

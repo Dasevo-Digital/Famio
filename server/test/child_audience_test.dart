@@ -918,4 +918,77 @@ void main() {
     expect(after.visibleTo, isNot(contains(papa.id)));
     expect(after.data['assigneeIds'], [kid.id]);
   });
+
+  group('kept only partly, the app is told (#550)', () {
+    test('a child\'s narrowed audience', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await sync(
+        mama,
+        changes: [document('pass', 'Reisepass', updatedAt: now)],
+      );
+      var stored = app.records.get(Collections.documents, 'pass')!;
+      final plain = await sync(
+        kid,
+        changes: [
+          document(
+            'pass',
+            'Reisepass (neu)',
+            updatedAt: now + 1000,
+            rev: stored.rev,
+          ),
+        ],
+      );
+      expect(plain.refused, isEmpty);
+      stored = app.records.get(Collections.documents, 'pass')!;
+      final narrowed = await sync(
+        kid,
+        changes: [
+          document(
+            'pass',
+            'Reisepass (alt)',
+            visibleTo: [kid.id],
+            updatedAt: now + 2000,
+            rev: stored.rev,
+          ),
+        ],
+      );
+      expect(narrowed.refused.single.code, 'partly_kept');
+      expect(narrowed.refused.single.id, 'pass');
+      expect(narrowed.refused.single.updatedAt, now + 2000);
+      final after = app.records.get(Collections.documents, 'pass')!;
+      expect(after.data['title'], 'Reisepass (alt)');
+      expect(after.visibleTo, isNull);
+    });
+
+    test('a guest\'s changed task', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      SyncRecord task(String title, {bool done = false, int at = 0}) =>
+          SyncRecord(
+            collection: Collections.tasks,
+            id: 'garten',
+            data: Task(
+              id: 'garten',
+              title: title,
+              done: done,
+              assigneeIds: [guest.id],
+            ).toData(),
+            updatedAt: now + at,
+            rev: app.records.get(Collections.tasks, 'garten')?.rev ?? 0,
+          );
+      await sync(mama, changes: [task('Rasen mähen')]);
+      final ticked = await sync(
+        guest,
+        changes: [task('Rasen mähen', done: true, at: 1000)],
+      );
+      expect(ticked.refused, isEmpty);
+      final renamed = await sync(
+        guest,
+        changes: [task('Hecke schneiden', done: false, at: 2000)],
+      );
+      expect(renamed.refused.single.code, 'partly_kept');
+      final after = app.records.get(Collections.tasks, 'garten')!;
+      expect(after.data['title'], 'Rasen mähen');
+      expect(after.data['done'], isFalse);
+    });
+  });
 }

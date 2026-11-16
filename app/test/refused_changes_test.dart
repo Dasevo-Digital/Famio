@@ -13,6 +13,7 @@ void main() {
   Future<SyncEngine> pumpNotice(
     WidgetTester tester, {
     required bool refuse,
+    String code = 'not_allowed',
   }) async {
     final api = FamioApiClient(
       'localhost:1',
@@ -42,7 +43,7 @@ void main() {
                   collection: c.collection,
                   id: c.id,
                   updatedAt: c.updatedAt,
-                  code: 'not_allowed',
+                  code: code,
                 ),
           ],
         );
@@ -88,6 +89,21 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(engine.takeRefusedChanges(), isEmpty, reason: 'told once');
+  });
+
+  testWidgets('an edit kept only partly is told as such (#550)', (
+    tester,
+  ) async {
+    final engine = await pumpNotice(tester, refuse: true, code: partlyKept);
+    expect(
+      find.text(
+        'Eine Änderung wurde nur teilweise übernommen: Was dein Konto dort '
+        'nicht ändern darf, bleibt, wie es war.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('zurückgenommen'), findsNothing);
     expect(engine.takeRefusedChanges(), isEmpty, reason: 'told once');
   });
 

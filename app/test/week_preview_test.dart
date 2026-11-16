@@ -53,6 +53,21 @@ void main() {
     expect(p.lines, ['Mo 19:00 Elternabend', 'Mi 17:00 🚗 bringen: Training']);
   });
 
+  test(
+    'appointments only some members see say only that they are one (#549)',
+    () {
+      final engine = newEngine()
+        ..saveEvent(at('p', 'Paartherapie', DateTime(2026, 10, 13, 10)));
+      final record = engine.record(Collections.events, 'p')!;
+      engine.put(Collections.events, 'p', {
+        ...record.data,
+        'visibleTo': ['papa', 'mama'],
+      });
+      final p = buildWeekPreview(engine, monday)!;
+      expect(p.lines, ['Di 10:00 Belegt']);
+    },
+  );
+
   test('a quiet week sends nothing, a busy one is shortened', () {
     final engine = newEngine();
     // No holiday region is set, so no holidays show up either.

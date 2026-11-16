@@ -822,6 +822,12 @@ class _EventEditorState extends State<_EventEditor> {
                           if (!m.isChild)
                             DropdownMenuItem(
                               value: m.id,
+                              enabled:
+                                  m.id == value ||
+                                  (engine
+                                          .participantsAllowed(_original)
+                                          ?.contains(m.id) ??
+                                      true),
                               child: Text(m.displayName),
                             ),
                       ],
@@ -845,7 +851,9 @@ class _EventEditorState extends State<_EventEditor> {
                     avatar: const Icon(AppIcons.usersThree, size: 18),
                     label: Text(tr.commonWholeFamily),
                     selected: _memberIds.isEmpty,
-                    onSelected: _keptParticipants(engine).isEmpty
+                    onSelected:
+                        _keptParticipants(engine).isEmpty &&
+                            engine.participantsAllowed(_original) == null
                         ? (_) => setState(_memberIds.clear)
                         : null,
                   ),
@@ -855,10 +863,16 @@ class _EventEditorState extends State<_EventEditor> {
                       label: Text(m.displayName),
                       selected: _memberIds.contains(m.id),
                       // Children take only themselves out of appointments
-                      // they did not enter (#416).
+                      // they did not enter (#416), and add nobody new to
+                      // a confidential one of others (#551).
                       onSelected:
-                          _memberIds.contains(m.id) &&
-                              _keptParticipants(engine).contains(m.id)
+                          (_memberIds.contains(m.id) &&
+                                  _keptParticipants(engine).contains(m.id)) ||
+                              (!_memberIds.contains(m.id) &&
+                                  !(engine
+                                          .participantsAllowed(_original)
+                                          ?.contains(m.id) ??
+                                      true))
                           ? null
                           : (on) => setState(
                               () => on
@@ -868,6 +882,13 @@ class _EventEditorState extends State<_EventEditor> {
                     ),
                 ],
               ),
+              if (engine.participantsAllowed(_original) != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  tr.eventNoNewParticipants,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ],
               const SizedBox(height: 16),
               TextField(
                 controller: _location,

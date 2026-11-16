@@ -16,6 +16,11 @@ const _members =
     '[{"id":"m1","username":"mama","displayName":"Mama","isAdmin":true},'
     '{"id":"k1","username":"mia","displayName":"Mia","role":"child"}]';
 
+const _membersWithPapa =
+    '[{"id":"m1","username":"mama","displayName":"Mama","isAdmin":true},'
+    '{"id":"p1","username":"papa","displayName":"Papa"},'
+    '{"id":"k1","username":"mia","displayName":"Mia","role":"child"}]';
+
 /// Children switch "Privat" only for appointments they entered (#416);
 /// who wrote one last does not count. In others they take only themselves
 /// out.
@@ -137,6 +142,87 @@ void main() {
       'Ganze Familie': true,
     });
   });
+  testWidgets('nobody new in a confidential appointment of others (#551)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final store = LocalStore.open(':memory:')
+      ..setMeta('members', _membersWithPapa);
+    engine(
+      'm1',
+      store,
+    ).saveEvent(appointment('therapy', ['k1']).copyWith(confidential: true));
+    final mia = engine('k1', store)
+      ..saveEvent(appointment('own', ['k1']).copyWith(confidential: true));
+    expect(
+      mia.participantsAllowed(mia.event('therapy')),
+      unorderedEquals(['m1', 'k1']),
+    );
+    expect(mia.participantsAllowed(mia.event('own')), isNull);
+    expect(
+      engine('m1', store).participantsAllowed(mia.event('therapy')),
+      isNull,
+    );
+    final state = AppState();
+    await state.init();
+    state
+      ..me = mia.members.firstWhere((m) => m.id == 'k1')
+      ..engine = mia;
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pump();
+    final context = tester.element(find.byType(Scaffold).first);
+    const hint =
+        'Bei diesem vertraulichen Termin legen andere fest, wer dabei ist. '
+        'Du kannst nur dich selbst austragen.';
+
+    Future<Map<String, bool>> chips(String id) async {
+      final event = mia.events.firstWhere((e) => e.id == id);
+      unawaited(
+        showEventEditor(
+          context,
+          occurrence: Occurrence(event, event.start, event.end),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final result = {
+        for (final name in ['Mama', 'Papa', 'Mia', 'Ganze Familie'])
+          name: _selectable(
+            tester.widget(
+              find.ancestor(
+                of: find.text(name).last,
+                matching: find.byWidgetPredicate(
+                  (w) => w is FilterChip || w is ChoiceChip,
+                ),
+              ),
+            ),
+          ),
+        'hint': find.text(hint).evaluate().isNotEmpty,
+      };
+      Navigator.of(tester.element(find.text('Mia').first)).pop();
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    expect(await chips('therapy'), {
+      'Mama': true,
+      'Papa': false,
+      'Mia': true,
+      'Ganze Familie': false,
+      'hint': true,
+    });
+    expect(await chips('own'), {
+      'Mama': true,
+      'Papa': true,
+      'Mia': true,
+      'Ganze Familie': true,
+      'hint': false,
+    });
+  });
+
   testWidgets('single dates only in a series the child entered', (
     tester,
   ) async {

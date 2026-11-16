@@ -100,6 +100,43 @@ void main() {
       if (c.collection == collection && !c.deleted) c.id,
   };
 
+  test(
+    'moving an entry along to new settings keeps who wrote it (#552)',
+    () async {
+      await sync(papa, changes: [entry('vom-papa')]);
+      expect(
+        app.records.get(Collections.budgetEntries, 'vom-papa')!.visibleTo,
+        isNull,
+      );
+      // An older app moves every entry itself, in the name of whoever
+      // changed the settings: the server keeps the entry Papa's.
+      final moved = entry('vom-papa', visibleTo: [mama.id]);
+      final answer = await sync(
+        mama,
+        changes: [
+          settings([mama.id]),
+          moved,
+        ],
+      );
+      final stored = app.records.get(Collections.budgetEntries, 'vom-papa')!;
+      expect(stored.updatedBy, papa.id);
+      expect(stored.visibleTo, unorderedEquals([mama.id, papa.id]));
+      expect(answer.refused, isEmpty);
+      expect(live(await sync(papa), Collections.budgetEntries), {'vom-papa'});
+      // A real change is still Mama's.
+      final changed = entry('vom-papa', visibleTo: [mama.id]);
+      await sync(
+        mama,
+        changes: [
+          changed.copyWith(data: {...changed.data, 'cents': 990}),
+        ],
+      );
+      final after = app.records.get(Collections.budgetEntries, 'vom-papa')!;
+      expect(after.updatedBy, mama.id);
+      expect(after.data['cents'], 990);
+    },
+  );
+
   test('an adult outside a restricted household book writes into it, '
       'not to the family (HAU-162)', () async {
     await sync(

@@ -80,9 +80,10 @@ class SyncEngine {
   final _refusals = StreamController<void>.broadcast();
   final _refused = <SyncWriteIssue>[];
 
-  /// Own edits the server turned down (this member may not make them) since
-  /// they were last taken; their stored versions are back on the device.
-  /// Older servers do not tell (#539).
+  /// Own edits the server turned down (this member may not make them,
+  /// code `not_allowed`) or kept only partly (code `partly_kept`, #550)
+  /// since they were last taken; the stored versions are back on the
+  /// device. Older servers do not tell (#539).
   List<SyncWriteIssue> takeRefusedChanges() {
     final taken = [..._refused];
     _refused.clear();

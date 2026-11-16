@@ -468,7 +468,7 @@ class _AdminUserScreenState extends State<AdminUserScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${u.member.displayName} entfernen?'),
+        title: Text(tr.commonRemoveName(u.member.displayName)),
         content: Text(tr.adminAccountDeletedSignedOut),
         actions: [
           TextButton(

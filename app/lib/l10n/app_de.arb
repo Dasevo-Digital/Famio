@@ -7304,5 +7304,8 @@
   "inboxDocumentTitle": "Als Dokument ablegen",
   "inboxDocumentAdults": "Erwachsene",
   "docsChildHealthAudience": "Gesundheitsdokumente legst du nur für dich und ausgewählte Personen ab.",
-  "mealsWebAddressNeeded": "Bitte die Adresse einer Webseite eingeben (https://…)."
+  "mealsWebAddressNeeded": "Bitte die Adresse einer Webseite eingeben (https://…).",
+  "eventNoNewParticipants": "Bei diesem vertraulichen Termin legen andere fest, wer dabei ist. Du kannst nur dich selbst austragen.",
+  "syncChangesPartlyKept": "{count, plural, =1{Eine Änderung wurde nur teilweise übernommen: Was dein Konto dort nicht ändern darf, bleibt, wie es war.} other{{count} Änderungen wurden nur teilweise übernommen: Was dein Konto dort nicht ändern darf, bleibt, wie es war.}}",
+  "@syncChangesPartlyKept": {"placeholders": {"count": {"type": "int"}}}
 }

@@ -647,24 +647,15 @@ extension FamilyData on SyncEngine {
   }
 
   /// Changing who sees the budget moves all entries along.
+  /// Only the settings: the server moves every entry and subscription
+  /// along and keeps who wrote each (#552). Rewritten here, they would be
+  /// this member's, and their writers could lose them.
   void saveBudgetSettings(BudgetSettings s) {
     final audience = s.memberIds.isEmpty ? null : s.memberIds;
     put(Collections.budgetSettings, BudgetSettings.recordId, {
       ...s.toData(),
       SyncRecord.visibilityKey: audience,
     });
-    for (final e in budgetEntries) {
-      put(Collections.budgetEntries, e.id, {
-        ...e.toData(),
-        SyncRecord.visibilityKey: audience,
-      });
-    }
-    for (final a in subscriptions) {
-      put(Collections.subscriptions, a.id, {
-        ...a.toData(),
-        SyncRecord.visibilityKey: audience,
-      });
-    }
   }
 
   List<Subscription> get subscriptions =>

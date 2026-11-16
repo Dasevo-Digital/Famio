@@ -626,7 +626,8 @@ class RecordStore {
     final rejected = <SyncRecord>[];
     final unsupported = <String>{};
     final blocked = <SyncWriteIssue>[];
-    // Edits this member may not make at all: the app says so once (#539).
+    // Edits this member may not make at all (#539), or only partly (#550):
+    // the app says so once.
     final refused = <SyncWriteIssue>[];
     void refuse(SyncRecord change) => refused.add(
       SyncWriteIssue(
@@ -748,6 +749,13 @@ class RecordStore {
           refuse(change);
           continue;
         }
+        if (_onlyMovedAlong(incoming, existing)) {
+          // An app moved a household entry to new settings itself (older
+          // apps did): the server does that and keeps who wrote it (#552).
+          // Written in this member's name, it would leave the writer.
+          rejected.add(existing!);
+          continue;
+        }
         if (role == MemberRole.child) {
           final checked = _childHealthWrite(incoming, existing, userId);
           if (checked == null) {
@@ -811,13 +819,18 @@ class RecordStore {
           }
         }
         var merged = false;
+        // Kept partly: this member may change only some of what it sent
+        // (a guest's task, a child's audience); the app says so (#550).
+        var partlyKept = false;
         if (role == MemberRole.guest &&
             change.collection == Collections.tasks &&
             !incoming.deleted &&
             existing != null &&
             !existing.deleted) {
+          final sent = incoming;
           incoming = _guestTaskChange(incoming, existing);
           merged = true;
+          partlyKept = !_sameData(sent, incoming);
         }
         // Even a losing edit can be retained as a readable conflict. Check
         // new attachments before either version can reach persistent data.
@@ -880,7 +893,9 @@ class RecordStore {
           incoming = _withCreator(incoming, prior, userId);
         }
         if (role == MemberRole.child && !incoming.deleted) {
+          final sent = incoming;
           incoming = _childAudience(incoming, prior, userId);
+          partlyKept = partlyKept || !_sameData(sent, incoming);
         }
         if (change.collection == Collections.events && !incoming.deleted) {
           incoming = _withConfidentialBy(incoming, prior, userId);
@@ -1013,6 +1028,16 @@ class RecordStore {
         _put(incoming, previous: existing, deletionSnapshot: localDeletion);
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
+        if (partlyKept) {
+          refused.add(
+            SyncWriteIssue(
+              collection: change.collection,
+              id: change.id,
+              updatedAt: change.updatedAt,
+              code: 'partly_kept',
+            ),
+          );
+        }
         // A guest's ticks on top of the stored task: nothing was lost.
         if (existing != null && !merged) {
           _keepConflict(
@@ -1295,6 +1320,36 @@ class RecordStore {
     ];
     return ids.isEmpty ? null : ids;
   }
+
+  /// [incoming] only changes whom a household entry or subscription
+  /// reaches, which follows the settings anyway (see [_budgetFollow]).
+  static bool _onlyMovedAlong(SyncRecord incoming, SyncRecord? existing) {
+    if (!_budgetCollections.contains(incoming.collection) ||
+        existing == null ||
+        existing.deleted ||
+        incoming.deleted) {
+      return false;
+    }
+    Map<String, Object?> content(SyncRecord r) =>
+        {...r.data}..remove(SyncRecord.visibilityKey);
+    return jsonEncode(_sorted(content(incoming))) ==
+        jsonEncode(_sorted(content(existing)));
+  }
+
+  /// Whether [a] and [b] hold the same data, audience included, whatever
+  /// the order of their keys.
+  static bool _sameData(SyncRecord a, SyncRecord b) =>
+      jsonEncode(_sorted(a.data)) == jsonEncode(_sorted(b.data));
+
+  /// [value] with its maps' keys in order, to compare JSON by content.
+  static Object? _sorted(Object? value) => switch (value) {
+    Map() => {
+      for (final key in value.keys.map((k) => '$k').toList()..sort())
+        key: _sorted(value[key]),
+    },
+    List() => [for (final v in value) _sorted(v)],
+    _ => value,
+  };
 
   /// New settings move every entry and subscription along, also those an
   /// app did not move itself (written offline, by an older app, or in a

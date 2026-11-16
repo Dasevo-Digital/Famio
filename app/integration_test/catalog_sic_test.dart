@@ -3390,7 +3390,7 @@ void main() {
     final entry = find.text(de.adminRemoveName('E2E Weg'));
     await scrollTo(tester, entry);
     await tap(tester, entry);
-    await waitFor(tester, find.text('E2E Weg entfernen?'));
+    await waitFor(tester, find.text(de.commonRemoveName('E2E Weg')));
     await tap(
       tester,
       inDialog(find.widgetWithText(FilledButton, de.commonRemove)),

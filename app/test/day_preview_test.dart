@@ -18,6 +18,29 @@ void main() {
   // The day of the clock change: 25 hours long.
   final day = DateTime(2026, 10, 25);
 
+  test(
+    'appointments only some members see say only that they are one (#549)',
+    () {
+      final engine = newEngine()
+        ..saveEvent(
+          CalendarEvent(
+            id: 'p',
+            title: 'Paartherapie',
+            start: DateTime(2026, 10, 25, 10),
+            end: DateTime(2026, 10, 25, 11),
+          ),
+        );
+      final record = engine.record(Collections.events, 'p')!;
+      engine.put(Collections.events, 'p', {
+        ...record.data,
+        'visibleTo': ['papa', 'mama'],
+      });
+      final p = buildDayPreview(engine, day)!;
+      expect(p.lines, ['10:00 Belegt']);
+      expect(p.body, isNot(contains('Paartherapie')));
+    },
+  );
+
   test('my appointments, lifts, meal and due tasks; not the others\'', () {
     final engine = newEngine()
       ..saveEvent(

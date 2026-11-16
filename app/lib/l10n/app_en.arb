@@ -2893,5 +2893,7 @@
   "inboxDocumentTitle": "File as a document",
   "inboxDocumentAdults": "Adults",
   "docsChildHealthAudience": "You file health documents only for yourself and people you choose.",
-  "mealsWebAddressNeeded": "Please enter the address of a web page (https://…)."
+  "mealsWebAddressNeeded": "Please enter the address of a web page (https://…).",
+  "eventNoNewParticipants": "Others decide who takes part in this confidential appointment. You can only take yourself out.",
+  "syncChangesPartlyKept": "{count, plural, =1{A change was only partly saved: what your account may not change there stays as it was.} other{{count} changes were only partly saved: what your account may not change there stays as it was.}}"
 }

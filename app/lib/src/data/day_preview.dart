@@ -74,11 +74,11 @@ DayPreview? buildDayPreview(
       [
         if (!o.event.allDay) time.format(o.start),
         if (o.event.bringerId == me)
-          tr.weekPreviewDropOffTitle(o.event.publicTitle)
+          tr.weekPreviewDropOffTitle(engine.wallTitle(o.event))
         else if (o.event.pickerId == me)
-          tr.weekPreviewPickUpTitle(o.event.publicTitle)
+          tr.weekPreviewPickUpTitle(engine.wallTitle(o.event))
         else
-          o.event.publicTitle,
+          engine.wallTitle(o.event),
       ].join(' '),
     for (final (b, _) in birthdays) tr.dayPreviewBirthday(b.name),
     for (final p in waste) tr.dayPreviewWaste(p.label),

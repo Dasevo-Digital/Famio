@@ -57,6 +57,27 @@ extension FamilyExtras on SyncEngine {
         memberId,
       );
 
+  /// Whom this member may add to [existing] as taking part or driving:
+  /// null for anybody. In a confidential appointment someone else entered
+  /// or made confidential, children add nobody new (the server drops them,
+  /// #551).
+  Set<String>? participantsAllowed(CalendarEvent? existing) {
+    if (myRole != MemberRole.child || existing == null) return null;
+    final stored = record(Collections.events, existing.id);
+    final data = stored?.data ?? const <String, Object?>{};
+    if (data['confidential'] != true ||
+        CalendarEvent.childEntered(data, memberId)) {
+      return null;
+    }
+    return {
+      ?stored?.updatedBy,
+      for (final id in data['memberIds'] as List? ?? const [])
+        if (id is String) id,
+      if (data['bringerId'] case final String id) id,
+      if (data['pickerId'] case final String id) id,
+    };
+  }
+
   /// Whether this member may change or delete single dates of the series
   /// [existing]: children only of series they entered (#416).
   bool mayChangeOccurrences(CalendarEvent? existing) =>
