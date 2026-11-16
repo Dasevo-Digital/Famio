@@ -18,11 +18,18 @@ class _RewardsTab extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     if (me == null || engine.iAmGuest) return;
     if (!engine.iAmAdult) {
-      final balance = engine.pointBalance(me.id);
-      if (balance < reward.cost) {
+      // Open wishes keep their points until the parents decide (#377).
+      final available = engine.availablePoints(me.id);
+      if (available < reward.cost) {
+        final reserved = engine.reservedPoints(me.id);
+        final missing = reward.cost - available;
         messenger.showSnackBar(
           SnackBar(
-            content: Text(tr.rewardsYouStillNeedPoints(reward.cost - balance)),
+            content: Text(
+              reserved > 0
+                  ? tr.rewardsNeedPointsWishesOpen(missing, reserved)
+                  : tr.rewardsYouStillNeedPoints(missing),
+            ),
           ),
         );
         return;
@@ -117,20 +124,36 @@ class _RewardsTab extends StatelessWidget {
     }
     final me = engine.me;
     final balance = me == null ? 0 : engine.pointBalance(me.id);
+    final reserved = me == null ? 0 : engine.reservedPoints(me.id);
     return ListView(
       padding: EdgeInsets.only(bottom: listBottomPadding(context)),
       children: [
         if (me != null && me.role == MemberRole.child)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  tr.rewardsYouHave,
-                  style: Theme.of(context).textTheme.titleMedium,
+                Row(
+                  children: [
+                    Text(
+                      tr.rewardsYouHave,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(width: 8),
+                    _PointsChip(balance, big: true),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                _PointsChip(balance, big: true),
+                if (reserved > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      tr.rewardsPointsReserved(reserved),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: c.inkSoft),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -2895,5 +2895,7 @@
   "docsChildHealthAudience": "You file health documents only for yourself and people you choose.",
   "mealsWebAddressNeeded": "Please enter the address of a web page (https://…).",
   "eventNoNewParticipants": "Others decide who takes part in this confidential appointment. You can only take yourself out.",
-  "syncChangesPartlyKept": "{count, plural, =1{A change was only partly saved: what your account may not change there stays as it was.} other{{count} changes were only partly saved: what your account may not change there stays as it was.}}"
+  "syncChangesPartlyKept": "{count, plural, =1{A change was only partly saved: what your account may not change there stays as it was.} other{{count} changes were only partly saved: what your account may not change there stays as it was.}}",
+  "rewardsPointsReserved": "{points, plural, =1{1 of them is set aside for open wishes.} other{{points} of them are set aside for open wishes.}}",
+  "rewardsNeedPointsWishesOpen": "{points, plural, =1{⭐ {reserved} are already set aside for your open wishes. You still need 1 point.} other{⭐ {reserved} are already set aside for your open wishes. You still need {points} points.}}"
 }

@@ -93,6 +93,18 @@ extension FamilyExtras on SyncEngine {
           visibleTo.length == 1 &&
           visibleTo.single == memberId);
 
+  /// Whether this member may change and delete [existing] (null: a new
+  /// task): guests only tasks they created themselves (see
+  /// [Task.createdByKey]); of the others the server keeps only their ticks
+  /// (#365). Tasks from before the key are not a guest's own.
+  bool mayChangeTask(Task? existing) =>
+      myRole != MemberRole.guest ||
+      existing == null ||
+      Task.createdBy(
+        record(Collections.tasks, existing.id)?.data ?? const {},
+        memberId,
+      );
+
   /// Whether this member may change or delete the stored record [id] of a
   /// child's entries or log, or an intake: children only what they wrote
   /// themselves (the server keeps what others wrote, #539).
@@ -231,6 +243,15 @@ extension FamilyExtras on SyncEngine {
   int pointBalance(String memberId) => pointsOf(
     memberId,
   ).where((e) => e.counts).fold(0, (sum, e) => sum + e.points);
+
+  /// What [memberId] may still wish for: [pointBalance] less what open
+  /// wishes ask for (the server turns down wishes beyond it, #377).
+  int availablePoints(String memberId) =>
+      PointEntry.available(pointsOf(memberId), memberId);
+
+  /// Points [memberId]'s open wishes ask for.
+  int reservedPoints(String memberId) =>
+      pointBalance(memberId) - availablePoints(memberId);
 
   /// Requests waiting for an adult.
   List<PointEntry> get pendingPoints =>

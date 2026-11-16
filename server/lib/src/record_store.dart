@@ -350,8 +350,12 @@ class RecordStore {
         };
       case MemberRole.guest:
         if (collection == Collections.tasks) {
-          // What they may change of it is left to [_guestTaskChange].
-          return existing == null || existing.deleted || !incoming.deleted;
+          // What they may change of it is left to [_guestTaskChange]; their
+          // own tasks they also delete (#365).
+          return existing == null ||
+              existing.deleted ||
+              !incoming.deleted ||
+              Task.createdBy(existing.data, userId);
         }
         return Collections.guestWritable.contains(collection);
       case MemberRole.child:
@@ -387,6 +391,7 @@ class RecordStore {
   /// is, who has it and who sees it is for the family. So of a guest's write
   /// only the ticks count, on top of the task as it is now: the device may
   /// not know yet that it has changed, and the tick must not get lost.
+  /// Tasks the guest created ([Task.createdBy]) are theirs to change (#365).
   static SyncRecord _guestTaskChange(SyncRecord incoming, SyncRecord existing) {
     final theirs = incoming.data;
     final data = {...existing.data};
@@ -415,6 +420,37 @@ class RecordStore {
       ];
     }
     return incoming.copyWith(data: data);
+  }
+
+  /// Whether [incoming], an entry of [Collections.pointEntries], is covered
+  /// by its member's points: an open wish ([PointEntry.reserves]) asks for
+  /// no more than the confirmed points leave after the other open wishes
+  /// (#377). What it asked for before ([existing], still open) stays
+  /// covered, also when the points have gone down since. Adults deciding
+  /// on wishes and booking points are not limited here.
+  bool _wishCovered(SyncRecord incoming, SyncRecord? existing) {
+    if (incoming.deleted) return true;
+    final wish = PointEntry.fromRecord(incoming);
+    if (!wish.reserves) return true;
+    final before = existing == null || existing.deleted
+        ? null
+        : PointEntry.fromRecord(existing);
+    final had =
+        before != null && before.reserves && before.memberId == wish.memberId
+        ? -before.points
+        : 0;
+    final cost = -wish.points;
+    if (cost <= had) return true;
+    final entries = [
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE collection = ? AND deleted = 0'
+        " AND json_extract(data, '\$.memberId') = ?",
+        [Collections.pointEntries, wish.memberId],
+      ))
+        PointEntry.fromRecord(_record(row)),
+    ];
+    return PointEntry.available(entries, wish.memberId, except: wish.id) >=
+        cost;
   }
 
   /// Ids of all family members; needed when a record visible to everyone
@@ -749,6 +785,23 @@ class RecordStore {
           refuse(change);
           continue;
         }
+        if (change.collection == Collections.pointEntries &&
+            !_wishCovered(incoming, existing)) {
+          // A wish for more than is left after the open ones (#377).
+          rejected.add(
+            existing ??
+                SyncRecord(
+                  collection: change.collection,
+                  id: change.id,
+                  data: const {},
+                  deleted: true,
+                  updatedAt: revokedAt,
+                  updatedBy: serverMemberId,
+                ),
+          );
+          refuse(change);
+          continue;
+        }
         if (_onlyMovedAlong(incoming, existing)) {
           // An app moved a household entry to new settings itself (older
           // apps did): the server does that and keeps who wrote it (#552).
@@ -822,14 +875,24 @@ class RecordStore {
         // Kept partly: this member may change only some of what it sent
         // (a guest's task, a child's audience); the app says so (#550).
         var partlyKept = false;
+        // What comes back over a deletion ("Rückgängig", the same id written
+        // again) is judged against the last live version from the bin, not
+        // against the empty tombstone: it is no new record (#416).
+        final prior = existing != null && existing.deleted
+            ? _lastLive(change.collection, change.id) ?? existing
+            : existing;
         if (role == MemberRole.guest &&
             change.collection == Collections.tasks &&
             !incoming.deleted &&
-            existing != null &&
-            !existing.deleted) {
-          final sent = incoming;
-          incoming = _guestTaskChange(incoming, existing);
-          merged = true;
+            prior != null &&
+            !prior.deleted &&
+            !Task.createdBy(prior.data, userId)) {
+          // Someone else's task, also one written again over its deletion:
+          // only the guest's ticks count. Their own they change (#365).
+          // Who created it is the server's to keep, not part of the ticks.
+          final sent = _withCreator(incoming, prior, userId);
+          incoming = _guestTaskChange(incoming, prior);
+          merged = identical(prior, existing);
           partlyKept = !_sameData(sent, incoming);
         }
         // Even a losing edit can be retained as a readable conflict. Check
@@ -883,13 +946,9 @@ class RecordStore {
             !incoming.deleted) {
           incoming = _keepAudience(incoming, existing);
         }
-        // What comes back over a deletion ("Rückgängig", the same id written
-        // again) is judged against the last live version from the bin, not
-        // against the empty tombstone: it is no new record (#416).
-        final prior = existing != null && existing.deleted
-            ? _lastLive(change.collection, change.id) ?? existing
-            : existing;
-        if (change.collection == Collections.events && !incoming.deleted) {
+        if ((change.collection == Collections.events ||
+                change.collection == Collections.tasks) &&
+            !incoming.deleted) {
           incoming = _withCreator(incoming, prior, userId);
         }
         if (role == MemberRole.child && !incoming.deleted) {
@@ -995,7 +1054,8 @@ class RecordStore {
               change.collection == Collections.events) {
             snapshot = _keepAudience(snapshot, existing);
           }
-          if (change.collection == Collections.events) {
+          if (change.collection == Collections.events ||
+              change.collection == Collections.tasks) {
             // Who entered it comes back as stored, not as the app says.
             snapshot = _withCreator(snapshot, existing, userId);
           }
@@ -1736,25 +1796,27 @@ class RecordStore {
   static bool childOwnsEvent(Map<String, Object?> event, String userId) =>
       CalendarEvent.childOwns(event, userId);
 
-  /// Who entered an appointment: set when it is created, kept on every
-  /// change; what an app sends for it does not count. [existing] is the
-  /// stored version or, over a deletion, the last live one; over a
-  /// tombstone whose live version is gone, the writer.
+  /// Who entered an appointment or created a task ([CalendarEvent.createdByKey],
+  /// [Task.createdByKey]): set when it is created, kept on every change;
+  /// what an app sends for it does not count. [existing] is the stored
+  /// version or, over a deletion, the last live one; over a tombstone whose
+  /// live version is gone, the writer.
   static SyncRecord _withCreator(
     SyncRecord incoming,
     SyncRecord? existing,
     String userId,
   ) {
-    final data = {...incoming.data}
-      ..remove(CalendarEvent.createdByKey)
-      ..remove(CalendarEvent.confidentialByKey);
+    final event = incoming.collection == Collections.events;
+    final key = event ? CalendarEvent.createdByKey : Task.createdByKey;
+    final data = {...incoming.data}..remove(key);
+    if (event) data.remove(CalendarEvent.confidentialByKey);
     // Over a tombstone whose live version has left the bin nothing of the
-    // earlier appointment is left: what is written now is new.
+    // earlier record is left: what is written now is new.
     final creator = existing == null || existing.deleted
         ? userId
-        : existing.data[CalendarEvent.createdByKey];
-    if (creator != null) data[CalendarEvent.createdByKey] = creator;
-    if (existing != null && !existing.deleted) {
+        : existing.data[key];
+    if (creator != null) data[key] = creator;
+    if (event && existing != null && !existing.deleted) {
       final by = existing.data[CalendarEvent.confidentialByKey];
       if (by != null) data[CalendarEvent.confidentialByKey] = by;
     }
@@ -2028,7 +2090,8 @@ class RecordStore {
         if (existing == null || existing.deleted || incoming.deleted) {
           return false;
         }
-        const ticks = {'done', 'completedAt'};
+        // Who created it the server keeps itself (see [_withCreator]).
+        const ticks = {'done', 'completedAt', Task.createdByKey};
         // Missing, null and "" are the same (clients write empty fields).
         String same(Object? v) => jsonEncode(v == '' ? null : v);
         final keys = {...existing.data.keys, ...incoming.data.keys};

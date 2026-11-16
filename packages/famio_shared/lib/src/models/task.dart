@@ -83,6 +83,17 @@ class Task {
   /// they save the task.
   final List<FileRef> photos;
 
+  /// Key of a task's data: the member who created it. The server sets it
+  /// when the task is created and keeps it on every change (whatever an app
+  /// sends); older tasks have none. Guests change and delete only tasks
+  /// they created themselves (#365).
+  static const createdByKey = 'createdBy';
+
+  /// Whether [memberId] created the task stored as [data] (see
+  /// [createdByKey]); never for tasks from before the key.
+  static bool createdBy(Map<String, Object?> data, String memberId) =>
+      data[createdByKey] == memberId;
+
   /// The first of [assigneeIds], all that apps before 2.0.3 know.
   String? get assigneeId => assigneeIds.firstOrNull;
 

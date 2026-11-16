@@ -2344,11 +2344,13 @@ void main() {
     await synced(tester, state);
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('E2E Gast eigene'), findsOneWidget);
+    // The server notes the guest as who created it: the guest's own task
+    // opens in the editor (#365).
+    final created = await taskNamed(guest, 'E2E Gast eigene');
+    expect(created?.data[Task.createdByKey], f.guest.id);
     await openTask(tester, 'E2E Gast eigene');
-    expect(inSheet(find.text(de.commonClose)), findsOneWidget);
-    expect(inSheet(find.byType(TextField)), findsNothing);
-    await tap(tester, inSheet(find.text(de.commonClose)));
-    await waitGone(tester, sheet());
+    expect(inSheet(titleField), findsOneWidget);
+    await closeSheet(tester);
     // ALL-053
     await openSection(tester, 'Einkauf');
     await tester.pump(const Duration(seconds: 1));
@@ -2363,10 +2365,9 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (hint of ALL-052, known as #365, reproduced twice): a guest's own
-  // task opens only for reading (tasks_screen.dart:428), cannot be swiped
-  // away (tasks_screen.dart:256) and the server refuses its deletion
-  // (server/lib/src/record_store.dart:342).
+  // Hint of ALL-052 (#365): the server notes who created a task; a guest
+  // changes and deletes an own task, a task of the family stays for reading
+  // and ticking off.
   testWidgets('ALL-052 hint: a guest may change or delete an own task', (
     tester,
   ) async {
@@ -2381,35 +2382,56 @@ void main() {
         createdAt: DateTime.now(),
       ).toData(),
     });
+    await addTask(f.admin, 'E2E Gast fremde', assignees: [f.guest.id]);
     final state = await start(tester, user: f.guest.username);
     await openTasks(tester);
     await waitFor(tester, find.text('E2E Gast löscht eigene'));
-    final swipe = tester
+    await waitFor(tester, find.text('E2E Gast fremde'));
+    DismissDirection swipe(String title) => tester
         .widget<Dismissible>(
           find
               .ancestor(
-                of: find.text('E2E Gast löscht eigene'),
+                of: find.text(title),
                 matching: find.byType(Dismissible),
               )
               .first,
         )
         .direction;
+    expect(swipe('E2E Gast löscht eigene'), DismissDirection.endToStart);
+    expect(swipe('E2E Gast fremde'), DismissDirection.none);
+    // The family's task: only for reading.
+    await openTask(tester, 'E2E Gast fremde');
+    expect(inSheet(titleField), findsNothing);
+    expect(inSheet(find.text(de.commonClose)), findsOneWidget);
+    await tap(tester, inSheet(find.text(de.commonClose)));
+    await waitGone(tester, sheet());
+    // The own one: renamed in the editor, the server keeps it.
     await openTask(tester, 'E2E Gast löscht eigene');
-    final editable = inSheet(titleField).evaluate().isNotEmpty;
-    await closeSheet(tester);
-    final r = await remove(guest, Collections.tasks, [id]);
-    final deleted = !r.rejected.any((x) => x.id == id);
-    debugPrint(
-      'E2E-INFO own guest task: swipe $swipe, editor $editable, '
-      'API delete $deleted',
+    expect(inSheet(titleField), findsOneWidget);
+    await enter(tester, inSheet(titleField), 'E2E Gast ändert eigene');
+    await saveSheet(tester);
+    await synced(tester, state);
+    await eventually(tester, 'the server keeps the new title', () async {
+      final t = await taskNamed(guest, 'E2E Gast ändert eigene');
+      return t != null && t.data[Task.createdByKey] == f.guest.id;
+    });
+    // And deleted in the editor; the server takes the deletion.
+    await openTask(tester, 'E2E Gast ändert eigene');
+    await tap(tester, inSheet(find.text(de.commonDelete)));
+    await waitGone(tester, sheet());
+    await waitFor(
+      tester,
+      snackText(de.undoWhatDeleted('E2E Gast ändert eigene')),
     );
-    expect(
-      swipe != DismissDirection.none || editable || deleted,
-      isTrue,
-      reason: 'neither swipe ($swipe), editor nor deleting through the API',
+    await synced(tester, state);
+    await eventually(
+      tester,
+      'the server deleted it',
+      () async => await taskNamed(guest, 'E2E Gast ändert eigene') == null,
     );
+    expect(await taskNamed(guest, 'E2E Gast fremde'), isNotNull);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   // =========================================================================
   // Ämter & Punkte
@@ -3856,14 +3878,14 @@ void main() {
     },
   );
 
-  // Befund (hint of ALL-089, known as #377, reproduced twice): open wishes do
-  // not count against the balance (rewards.dart:21-22, family_extras.dart:193);
-  // three wishes of 20 points with 20 on the account are all sent, and once
-  // confirmed the balance is −40.
+  // Hint of ALL-089 (#377): open wishes keep the points they ask for. With
+  // 20 points one wish of 20 goes out; the next ones the app does not send
+  // (it says what is set aside) and the server turns down. Confirmed, the
+  // balance is 0, not below.
   testWidgets('ALL-089 more wishes than the balance covers', (tester) async {
     await resetChores();
     final f = await theFamily();
-    await addReward('E2E Teuer', 20, emoji: '🎮');
+    final reward = await addReward('E2E Teuer', 20, emoji: '🎮');
     await addPoints(f.kid, 20);
     final state = await start(tester, user: f.kid.username);
     await openChores(tester);
@@ -3884,13 +3906,41 @@ void main() {
         await tap(tester, find.text(de.rewardsWish));
         await dialogClosed(tester);
         if (snackText(de.rewardsWishSent).evaluate().isNotEmpty) sent++;
+      } else {
+        expect(
+          snackText(de.rewardsNeedPointsWishesOpen(20, 20)),
+          findsOneWidget,
+          reason: 'attempt ${i + 1} says what is set aside',
+        );
       }
     }
+    expect(sent, 1);
+    await waitFor(tester, find.text(de.rewardsPointsReserved(20)));
     await synced(tester, state);
+    // Another device of the child: the server turns it down.
+    final kid = await sessionOf(f.kid);
+    final extra = uid('wish');
+    final answer = await put(kid, Collections.pointEntries, {
+      extra: PointEntry(
+        id: extra,
+        memberId: f.kid.id,
+        points: -20,
+        title: '🎮 E2E Teuer',
+        kind: PointKind.reward,
+        at: DateTime.now(),
+        refId: reward,
+        status: PointStatus.pending,
+      ).toData(),
+    });
+    expect(answer.rejected.where((r) => r.id == extra), isNotEmpty);
+    expect(answer.refused.where((i) => i.id == extra).map((i) => i.code), [
+      'not_allowed',
+    ]);
     final wishes = [
       for (final e in state.engine!.pendingPoints)
         if (e.memberId == f.kid.id) e,
     ];
+    expect(wishes, hasLength(1));
     for (final w in wishes) {
       await seed(f.admin, Collections.pointEntries, {
         w.id: w.decide(PointStatus.approved, f.adminMember.id).toData(),
@@ -3907,16 +3957,9 @@ void main() {
       'E2E-INFO wishes sent $sent, open ${wishes.length}, '
       'balance after confirming all: $balance',
     );
-    expect(
-      wishes.length,
-      lessThanOrEqualTo(1),
-      reason:
-          '$sent wishes of 20 points with 20 on the account; confirmed all, '
-          'the balance is $balance',
-    );
-    expect(balance, greaterThanOrEqualTo(0));
+    expect(balance, 0);
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('ALL-090 adults redeem for a child', (tester) async {
     await resetChores();

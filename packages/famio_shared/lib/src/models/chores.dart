@@ -242,6 +242,27 @@ class PointEntry {
 
   bool get counts => status == PointStatus.approved;
 
+  /// An open wish (or other request that takes points off): until adults
+  /// decide, it keeps the points it asks for, so further wishes cannot spend
+  /// them again (#377).
+  bool get reserves => status == PointStatus.pending && points < 0;
+
+  /// Points [memberId] may still wish for among [entries]: the confirmed
+  /// ones less what open wishes ask for (see [reserves]). [except]: an
+  /// entry left out, such as the one being written.
+  static int available(
+    Iterable<PointEntry> entries,
+    String memberId, {
+    String? except,
+  }) {
+    var sum = 0;
+    for (final e in entries) {
+      if (e.memberId != memberId || e.id == except) continue;
+      if (e.counts || e.reserves) sum += e.points;
+    }
+    return sum;
+  }
+
   PointEntry decide(PointStatus status, String by) => PointEntry(
     id: id,
     memberId: memberId,

@@ -34,12 +34,17 @@ extension FamilyData on SyncEngine {
 
   /// [opened]: the task as the editor opened it; what changed on another
   /// device meanwhile stays (see [mergeEdit]).
-  void saveTask(Task task, {Task? opened}) => putEdited(
-    Collections.tasks,
-    task.id,
-    task.toData(),
-    opened: opened?.toData(),
-  );
+  ///
+  /// Keeps who created the task (see [Task.createdByKey]); the server sets
+  /// it anyway, the app knows it before the next sync.
+  void saveTask(Task task, {Task? opened}) {
+    final stored = record(Collections.tasks, task.id);
+    final creator = stored == null ? memberId : stored.data[Task.createdByKey];
+    putEdited(Collections.tasks, task.id, {
+      ...task.toData(),
+      Task.createdByKey: ?creator,
+    }, opened: opened?.toData());
+  }
 
   void deleteTask(String id) => delete(Collections.tasks, id);
 

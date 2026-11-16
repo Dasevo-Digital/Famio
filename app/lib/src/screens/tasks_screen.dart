@@ -251,10 +251,11 @@ class _TaskTile extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey(task.id),
-      // Guests tick off; taking a task away is for the family.
-      direction: engine.iAmGuest
-          ? DismissDirection.none
-          : DismissDirection.endToStart,
+      // Guests tick off; taking a task away is for the family, apart from
+      // the guest's own (#365).
+      direction: engine.mayChangeTask(task)
+          ? DismissDirection.endToStart
+          : DismissDirection.none,
       background: Container(
         decoration: BoxDecoration(
           color: theme.colorScheme.errorContainer,
@@ -423,9 +424,10 @@ enum _Audience { family, me, selected }
 
 /// [draft]: a new task filled in beforehand (e.g. shared to Famio).
 /// A guest gets to read a task that exists and to tick off its steps; what
-/// a task is, is for the family.
+/// a task is, is for the family. Their own tasks guests edit (#365).
 Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) {
-  final reading = task != null && AppScope.engineOf(context).iAmGuest;
+  final reading =
+      task != null && !AppScope.engineOf(context).mayChangeTask(task);
   return showModalBottomSheet<void>(
     context: context,
     // Above the floating navigation bar.

@@ -365,9 +365,15 @@ void main() {
     });
   });
 
+  /// [task] as the family gave it to the guest: created by Mama (#365).
+  void given(Task task) => engine.put(Collections.tasks, task.id, {
+    ...task.toData(),
+    Task.createdByKey: 'm1',
+  });
+
   testWidgets('a guest reads a task instead of editing it', (tester) async {
     final context = await start(tester, memberId: 'g1');
-    engine.saveTask(
+    given(
       const Task(
         id: 't1',
         title: 'Kuchen',
@@ -395,7 +401,7 @@ void main() {
     );
 
     Future<void> tasks(WidgetTester tester, BuildContext context) async {
-      engine.saveTask(task);
+      given(task);
       Navigator.of(
         context,
       ).push(MaterialPageRoute<void>(builder: (_) => const TasksScreen()));
@@ -424,7 +430,7 @@ void main() {
 
     testWidgets('reads it too when coming from the search', (tester) async {
       final context = await start(tester, memberId: 'g1');
-      engine.saveTask(task);
+      given(task);
       Navigator.of(
         context,
       ).push(MaterialPageRoute<void>(builder: (_) => const SearchScreen()));

@@ -2895,5 +2895,7 @@
   "docsChildHealthAudience": "Los documentos de salud solo los guardas para ti y para las personas que elijas.",
   "mealsWebAddressNeeded": "Introduce la dirección de una página web (https://…).",
   "eventNoNewParticipants": "Otros deciden quién participa en esta cita confidencial. Solo puedes quitarte a ti.",
-  "syncChangesPartlyKept": "{count, plural, =1{Un cambio solo se ha guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.} other{{count} cambios solo se han guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.}}"
+  "syncChangesPartlyKept": "{count, plural, =1{Un cambio solo se ha guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.} other{{count} cambios solo se han guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.}}",
+  "rewardsPointsReserved": "{points, plural, =1{1 de ellos está reservado para deseos pendientes.} other{{points} de ellos están reservados para deseos pendientes.}}",
+  "rewardsNeedPointsWishesOpen": "{points, plural, =1{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te falta 1 punto.} other{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te faltan {points} puntos.}}"
 }
