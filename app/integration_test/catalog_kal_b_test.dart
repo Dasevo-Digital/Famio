@@ -46,7 +46,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'package:path/path.dart' as p;
@@ -1222,7 +1221,7 @@ Future<void> typeTime(
 
 void main() {
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   // --- Anhänge, Kommentare, Packliste -------------------------------------------
 

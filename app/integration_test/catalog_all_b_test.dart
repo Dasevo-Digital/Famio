@@ -35,7 +35,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -566,7 +565,7 @@ DateTime addMonths(DateTime d, int months) {
 void main() {
   // The tests read German texts, whatever the device speaks.
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   // --- Erste Schritte: allein in der Familie ------------------------------------
 

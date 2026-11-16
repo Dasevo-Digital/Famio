@@ -34,7 +34,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -292,7 +291,7 @@ class _Setup {
 
 void main() {
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   final launcher = _FakeLauncher();
 

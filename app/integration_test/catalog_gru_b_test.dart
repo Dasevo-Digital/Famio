@@ -42,7 +42,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -1221,7 +1220,7 @@ SwitchListTile switchOf(WidgetTester tester, String title) =>
 
 void main() {
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   // === Papierkorb (first: the trash of the fresh server is empty) ===========
 

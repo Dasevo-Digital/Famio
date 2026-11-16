@@ -32,7 +32,6 @@ import 'package:famio_client/famio_client.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -968,7 +967,7 @@ Text trailingOf(WidgetTester tester, String title) =>
 
 void main() {
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   // =========================================================================
   // Aufgaben

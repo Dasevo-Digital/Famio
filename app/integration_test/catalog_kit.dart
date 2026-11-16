@@ -7,17 +7,48 @@
 // Other members are created through the API; what they get from the server
 // is checked with their own API session, what another device writes is
 // written through the API.
+import 'dart:io';
+
 import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:integration_test/integration_test.dart';
 
 import 'fresh_start.dart';
+
+/// The binding of a catalog file. On a Mac in use, a covered test window
+/// counts as hidden for macOS, and a hidden app draws no frames: every pump
+/// then waits for good (a full-screen window in front was enough). On the
+/// Mac the catalog keeps the app resumed for the system; tests that check
+/// the lifecycle drive it themselves.
+void catalogBinding() {
+  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  if (!Platform.isMacOS) return;
+  SystemChannels.lifecycle.setMessageHandler((message) async {
+    for (final state in const [
+      AppLifecycleState.resumed,
+      AppLifecycleState.inactive,
+    ]) {
+      if (message == state.toString()) {
+        WidgetsBinding.instance.handleAppLifecycleStateChanged(state);
+      }
+    }
+    return null;
+  });
+  final now = WidgetsBinding.instance.lifecycleState;
+  if (now == AppLifecycleState.hidden || now == AppLifecycleState.paused) {
+    WidgetsBinding.instance.handleAppLifecycleStateChanged(
+      AppLifecycleState.resumed,
+    );
+  }
+}
 
 const kitUrl = String.fromEnvironment('FAMIO_URL');
 const kitUser = String.fromEnvironment('FAMIO_USER', defaultValue: 'admin');

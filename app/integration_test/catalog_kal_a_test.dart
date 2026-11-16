@@ -22,7 +22,6 @@ import 'package:famio/src/widgets/member_avatar.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:integration_test/integration_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 
@@ -605,7 +604,7 @@ Future<AppState> restart(WidgetTester tester, AppState old) async {
 
 void main() {
   deviceLanguage = () => 'de';
-  IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  catalogBinding();
 
   // --- Kalenderansicht --------------------------------------------------------
 
