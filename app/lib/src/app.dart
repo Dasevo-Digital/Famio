@@ -71,7 +71,7 @@ class FamioApp extends StatelessWidget {
               builder: (_, _) => AppLockGate(
                 lock: state.lock,
                 active: state.me != null,
-                onSignOut: state.signOut,
+                onSignOut: (proceed) => state.signOut(proceed: proceed),
                 child: content,
               ),
             );

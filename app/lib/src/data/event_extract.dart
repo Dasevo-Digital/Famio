@@ -14,6 +14,8 @@
 /// left of the line, else the line before. Everything stays on the device.
 library;
 
+import 'package:famio_client/famio_client.dart';
+
 import '../l10n.dart';
 
 class EventSuggestion {
@@ -446,12 +448,19 @@ String guessLanguage(String text, {required String fallback}) {
   return best.value == 0 || tie ? fallback : best.key;
 }
 
+/// Appointments in [text]. Dates and times are the family's: with
+/// [timeZone] (the family's zone, see `SyncEngine.familyTimeZone`) they are
+/// instants of that zone, also when the device is elsewhere (#296). [now]
+/// is the moment the letter is read in (its year completes dates without
+/// one).
 List<EventSuggestion> extractEvents(
   String text, {
   DateTime? now,
   String? language,
+  String? timeZone,
 }) {
-  final today = now ?? DateTime.now();
+  final calendar = FamilyCalendar(timeZone);
+  final today = inCalendarZone(now ?? DateTime.now(), timeZone);
   final lang = language ?? guessLanguage(text, fallback: appLanguage);
   final lines = _lines(text);
   final found = <EventSuggestion>[];
@@ -469,7 +478,7 @@ List<EventSuggestion> extractEvents(
       final DateTime end;
       final bool allDay;
       if (time != null && date.lastDay == null) {
-        start = DateTime(
+        start = calendar.date(
           date.day.year,
           date.day.month,
           date.day.day,
@@ -478,7 +487,7 @@ List<EventSuggestion> extractEvents(
         );
         end = time.$3 == null
             ? start.add(const Duration(hours: 1))
-            : DateTime(
+            : calendar.date(
                 date.day.year,
                 date.day.month,
                 date.day.day,
@@ -487,9 +496,9 @@ List<EventSuggestion> extractEvents(
               );
         allDay = false;
       } else {
-        start = date.day;
+        start = calendar.day(date.day);
         final last = date.lastDay ?? date.day;
-        end = DateTime(last.year, last.month, last.day + 1);
+        end = calendar.date(last.year, last.month, last.day + 1);
         allDay = true;
       }
       if (!end.isAfter(start)) continue;

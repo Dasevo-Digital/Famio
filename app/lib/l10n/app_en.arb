@@ -2897,5 +2897,12 @@
   "eventNoNewParticipants": "Others decide who takes part in this confidential appointment. You can only take yourself out.",
   "syncChangesPartlyKept": "{count, plural, =1{A change was only partly saved: what your account may not change there stays as it was.} other{{count} changes were only partly saved: what your account may not change there stays as it was.}}",
   "rewardsPointsReserved": "{points, plural, =1{1 of them is set aside for open wishes.} other{{points} of them are set aside for open wishes.}}",
-  "rewardsNeedPointsWishesOpen": "{points, plural, =1{⭐ {reserved} are already set aside for your open wishes. You still need 1 point.} other{⭐ {reserved} are already set aside for your open wishes. You still need {points} points.}}"
+  "rewardsNeedPointsWishesOpen": "{points, plural, =1{⭐ {reserved} are already set aside for your open wishes. You still need 1 point.} other{⭐ {reserved} are already set aside for your open wishes. You still need {points} points.}}",
+  "signOutUnsentTitle": "Not sent yet",
+  "signOutUnsentBody": "{count, plural, =1{One change has not been sent yet. Famio could not send it to the server just now; if you sign out now, it is lost.} other{{count} changes have not been sent yet. Famio could not send them to the server just now; if you sign out now, they are lost.}}",
+  "signOutAnyway": "Sign out anyway",
+  "connectWaitingChanges": "{count, plural, =1{One change could not be sent yet. Sign in again with the same account so that it is sent. It stays on this device for 14 days at most.} other{{count} changes could not be sent yet. Sign in again with the same account so that they are sent. They stay on this device for 14 days at most.}}",
+  "connectDiscardWaiting": "Discard",
+  "connectDiscardWaitingTitle": "Discard the changes?",
+  "connectDiscardWaitingBody": "{count, plural, =1{The change is deleted from this device and can no longer be sent.} other{The {count} changes are deleted from this device and can no longer be sent.}}"
 }

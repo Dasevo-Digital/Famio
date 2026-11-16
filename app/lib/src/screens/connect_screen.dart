@@ -9,6 +9,7 @@ import 'device_pairing_screen.dart';
 import '../design/app_icons.dart';
 
 import '../app_state.dart';
+import '../data/waiting_changes.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../widgets/famio_glyph.dart';
@@ -55,6 +56,11 @@ class _ConnectScreenState extends State<ConnectScreen> {
     final state = AppScope.read(context);
     _url.text = state.serverUrl ?? '';
     _error = state.notice;
+    // Changes kept for this account (#337): signing in with it sends them.
+    if (state.waitingChanges case final waiting?) {
+      _url.text = waiting.server;
+      _username.text = waiting.username;
+    }
     // Web app: the server is where the page came from.
     _resolved = state.webServer;
     if (state.webServer != null) {
@@ -189,6 +195,34 @@ class _ConnectScreenState extends State<ConnectScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// The kept changes go for good, after asking.
+  Future<void> _discardWaiting() async {
+    final state = AppScope.read(context);
+    final waiting = state.waitingChanges;
+    if (waiting == null) return;
+    final discard = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr.connectDiscardWaitingTitle),
+        content: Text(tr.connectDiscardWaitingBody(waiting.count)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(tr.commonCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              tr.connectDiscardWaiting,
+              style: TextStyle(color: FamioColors.of(context).danger),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (discard ?? false) await state.discardWaitingChanges();
   }
 
   @override
@@ -415,6 +449,12 @@ class _ConnectScreenState extends State<ConnectScreen> {
                             ),
                           ),
                         ],
+                        if (state.waitingChanges case final waiting?
+                            when state.webServer == null)
+                          _WaitingChangesNote(
+                            waiting,
+                            onDiscard: _busy ? null : _discardWaiting,
+                          ),
                         const SizedBox(height: 24),
                         _busy
                             ? const Center(child: CircularProgressIndicator())
@@ -473,6 +513,43 @@ class _ConnectScreenState extends State<ConnectScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Changes a session that ended elsewhere could not send (#337).
+class _WaitingChangesNote extends StatelessWidget {
+  const _WaitingChangesNote(this.waiting, {required this.onDiscard});
+
+  final WaitingChanges waiting;
+  final VoidCallback? onDiscard;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            tr.connectWaitingChanges(waiting.count),
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: onDiscard,
+              child: Text(tr.connectDiscardWaiting),
+            ),
+          ),
+        ],
       ),
     );
   }

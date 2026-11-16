@@ -314,16 +314,20 @@ void main() {
   );
 
   group('the gate', () {
-    Widget gate(AppLock l, {bool active = true, VoidCallback? signOut}) =>
-        MaterialApp(
-          builder: (_, child) => AppLockGate(
-            lock: l,
-            active: active,
-            onSignOut: signOut ?? () {},
-            child: child!,
-          ),
-          home: const Text('Medikamente'),
-        );
+    Widget gate(
+      AppLock l, {
+      bool active = true,
+      VoidCallback? signOut,
+      Future<void> Function(Future<bool> Function(int unsent) proceed)? asking,
+    }) => MaterialApp(
+      builder: (_, child) => AppLockGate(
+        lock: l,
+        active: active,
+        onSignOut: asking ?? (_) async => signOut?.call(),
+        child: child!,
+      ),
+      home: const Text('Medikamente'),
+    );
 
     testWidgets('hides everything and asks once by itself', (tester) async {
       final l = await tester.runAsync(lock);
@@ -368,6 +372,51 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Abmelden'));
       expect(out, isTrue);
+    });
+
+    testWidgets('signing out there asks about changes it would lose (#337)', (
+      tester,
+    ) async {
+      final l = await tester.runAsync(lock);
+      device.works = false;
+      final answers = <bool>[];
+      await tester.pumpWidget(
+        gate(l!, asking: (proceed) async => answers.add(await proceed(2))),
+      );
+      await tester.pumpAndSettle();
+      // No page or dialog shows above the lock: it asks right there.
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('2 Änderungen sind noch nicht übertragen'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Abbrechen'));
+      await tester.pumpAndSettle();
+      expect(answers, [false]);
+      expect(find.textContaining('noch nicht übertragen'), findsNothing);
+
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Trotzdem abmelden'));
+      await tester.pumpAndSettle();
+      expect(answers, [false, true]);
+    });
+
+    testWidgets('nothing that would be lost: it signs out without asking', (
+      tester,
+    ) async {
+      final l = await tester.runAsync(lock);
+      device.works = false;
+      final answers = <bool>[];
+      await tester.pumpWidget(
+        gate(l!, asking: (proceed) async => answers.add(await proceed(0))),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      expect(answers, [true]);
+      expect(find.text('Trotzdem abmelden'), findsNothing);
     });
 
     testWidgets('nobody signed in: nothing to hide', (tester) async {

@@ -399,7 +399,11 @@ class AppLockGate extends StatelessWidget {
 
   final AppLock lock;
   final bool active;
-  final VoidCallback onSignOut;
+
+  /// Signs out; asks through `proceed` (with the number of changes it
+  /// would lose) whether to go on, as `AppState.signOut` does.
+  final Future<void> Function(Future<bool> Function(int unsent) proceed)
+  onSignOut;
   final Widget child;
 
   @override
@@ -429,7 +433,8 @@ class _LockScreen extends StatefulWidget {
   const _LockScreen({required this.lock, required this.onSignOut});
 
   final AppLock lock;
-  final VoidCallback onSignOut;
+  final Future<void> Function(Future<bool> Function(int unsent) proceed)
+  onSignOut;
 
   @override
   State<_LockScreen> createState() => _LockScreenState();
@@ -437,6 +442,34 @@ class _LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<_LockScreen> {
   var _asked = false;
+
+  /// Changes a sign-out would lose (#337): asked here, as no page or
+  /// dialog shows above this screen.
+  int? _unsent;
+  Completer<bool>? _answer;
+
+  var _signingOut = false;
+
+  Future<void> _signOut() async {
+    if (_signingOut) return;
+    _signingOut = true;
+    try {
+      await widget.onSignOut((unsent) {
+        if (unsent == 0 || !mounted) return Future.value(unsent == 0);
+        final answer = _answer = Completer<bool>();
+        setState(() => _unsent = unsent);
+        return answer.future;
+      });
+    } finally {
+      _signingOut = false;
+    }
+  }
+
+  void _answered(bool signOut) {
+    _answer?.complete(signOut);
+    _answer = null;
+    if (mounted) setState(() => _unsent = null);
+  }
 
   @override
   void initState() {
@@ -448,6 +481,7 @@ class _LockScreenState extends State<_LockScreen> {
   @override
   void dispose() {
     widget.lock.removeListener(_changed);
+    _answer?.complete(false);
     super.dispose();
   }
 
@@ -484,10 +518,34 @@ class _LockScreenState extends State<_LockScreen> {
                   onPressed: lock.unlock,
                   child: Text(tr.appLockUnlock),
                 ),
-                if (lock.failed) ...[
+                if (_unsent case final unsent?) ...[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      tr.signOutUnsentBody(unsent),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8,
+                    children: [
+                      TextButton(
+                        onPressed: () => _answered(false),
+                        child: Text(tr.commonCancel),
+                      ),
+                      TextButton(
+                        onPressed: () => _answered(true),
+                        child: Text(tr.signOutAnyway),
+                      ),
+                    ],
+                  ),
+                ] else if (lock.failed) ...[
                   const SizedBox(height: 8),
                   TextButton(
-                    onPressed: widget.onSignOut,
+                    onPressed: _signOut,
                     child: Text(tr.settingsSignOut),
                   ),
                 ],

@@ -217,7 +217,12 @@ class _EventImportScreenState extends State<EventImportScreen> {
   }
 
   void _analyse() {
-    final found = extractEvents(_text.text);
+    // The letter's times are the family's, as everywhere in the calendar
+    // (#296): also in the preview and the form.
+    final found = extractEvents(
+      _text.text,
+      timeZone: AppScope.read(context).engine?.familyTimeZone,
+    );
     for (final c in _titles.values) {
       c.dispose();
     }

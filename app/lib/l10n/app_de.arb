@@ -7311,5 +7311,15 @@
   "rewardsPointsReserved": "{points, plural, =1{1 Punkt davon ist für offene Wünsche vorgemerkt.} other{{points} Punkte davon sind für offene Wünsche vorgemerkt.}}",
   "@rewardsPointsReserved": {"placeholders": {"points": {"type": "int"}}},
   "rewardsNeedPointsWishesOpen": "{points, plural, =1{Für deine offenen Wünsche sind schon ⭐ {reserved} vorgemerkt. Dir fehlt noch 1 Punkt.} other{Für deine offenen Wünsche sind schon ⭐ {reserved} vorgemerkt. Dir fehlen noch {points} Punkte.}}",
-  "@rewardsNeedPointsWishesOpen": {"placeholders": {"points": {"type": "int"}, "reserved": {"type": "int"}}}
+  "@rewardsNeedPointsWishesOpen": {"placeholders": {"points": {"type": "int"}, "reserved": {"type": "int"}}},
+  "signOutUnsentTitle": "Noch nicht übertragen",
+  "signOutUnsentBody": "{count, plural, =1{Eine Änderung ist noch nicht übertragen. Famio konnte sie gerade nicht an den Server senden; wenn du dich jetzt abmeldest, geht sie verloren.} other{{count} Änderungen sind noch nicht übertragen. Famio konnte sie gerade nicht an den Server senden; wenn du dich jetzt abmeldest, gehen sie verloren.}}",
+  "@signOutUnsentBody": {"placeholders": {"count": {"type": "int"}}},
+  "signOutAnyway": "Trotzdem abmelden",
+  "connectWaitingChanges": "{count, plural, =1{Eine Änderung konnte noch nicht übertragen werden. Melde dich mit demselben Konto wieder an, damit sie gesendet wird. Sie bleibt höchstens 14 Tage auf diesem Gerät.} other{{count} Änderungen konnten noch nicht übertragen werden. Melde dich mit demselben Konto wieder an, damit sie gesendet werden. Sie bleiben höchstens 14 Tage auf diesem Gerät.}}",
+  "@connectWaitingChanges": {"placeholders": {"count": {"type": "int"}}},
+  "connectDiscardWaiting": "Verwerfen",
+  "connectDiscardWaitingTitle": "Änderungen verwerfen?",
+  "connectDiscardWaitingBody": "{count, plural, =1{Die Änderung wird von diesem Gerät gelöscht und kann nicht mehr übertragen werden.} other{Die {count} Änderungen werden von diesem Gerät gelöscht und können nicht mehr übertragen werden.}}",
+  "@connectDiscardWaitingBody": {"placeholders": {"count": {"type": "int"}}}
 }

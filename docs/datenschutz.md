@@ -75,7 +75,14 @@ ein Administrator die Rolle festlegt.
   bleiben 180 Tage, zugestellte Hinweise der eigenen Push-Verbindung drei
   Tage.
 - Beim Abmelden werden lokale Datenbank, Cache und Anmeldedaten des Geräts
-  gelöscht.
+  gelöscht. Sind noch Änderungen nicht übertragen und klappt der letzte
+  Abgleich nicht, fragt die App vorher nach. Endet die Sitzung auf anderem
+  Weg (neues Passwort auf einem anderen Gerät, „Überall abmelden“), während
+  noch Änderungen warten, bleibt die lokale Datenbank dieses Kontos
+  verschlüsselt auf dem Gerät, bis sich dasselbe Konto am selben Server
+  wieder anmeldet und sie überträgt. Meldet sich ein anderes Konto oder an
+  einem anderen Server an, verwirft man sie auf der Anmeldeseite oder sind
+  14 Tage vergangen, wird sie gelöscht.
 - Administratoren können die Familiendaten serverseitig löschen. Diese
   Löschung wird beim nächsten Abgleich auf die Geräte übertragen. Verbindungen
   zu Listen-Apps, Paperless-ngx und PhotoVault werden vorher getrennt, damit

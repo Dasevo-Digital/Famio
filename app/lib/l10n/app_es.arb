@@ -2897,5 +2897,12 @@
   "eventNoNewParticipants": "Otros deciden quién participa en esta cita confidencial. Solo puedes quitarte a ti.",
   "syncChangesPartlyKept": "{count, plural, =1{Un cambio solo se ha guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.} other{{count} cambios solo se han guardado en parte: lo que tu cuenta no puede cambiar ahí se queda como estaba.}}",
   "rewardsPointsReserved": "{points, plural, =1{1 de ellos está reservado para deseos pendientes.} other{{points} de ellos están reservados para deseos pendientes.}}",
-  "rewardsNeedPointsWishesOpen": "{points, plural, =1{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te falta 1 punto.} other{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te faltan {points} puntos.}}"
+  "rewardsNeedPointsWishesOpen": "{points, plural, =1{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te falta 1 punto.} other{Ya hay ⭐ {reserved} reservados para tus deseos pendientes. Te faltan {points} puntos.}}",
+  "signOutUnsentTitle": "Aún sin enviar",
+  "signOutUnsentBody": "{count, plural, =1{Un cambio aún no se ha enviado. Famio no ha podido enviarlo al servidor ahora; si cierras la sesión ahora, se pierde.} other{{count} cambios aún no se han enviado. Famio no ha podido enviarlos al servidor ahora; si cierras la sesión ahora, se pierden.}}",
+  "signOutAnyway": "Cerrar sesión de todos modos",
+  "connectWaitingChanges": "{count, plural, =1{Un cambio aún no se ha podido enviar. Vuelve a iniciar sesión con la misma cuenta para que se envíe. Se queda en este dispositivo 14 días como máximo.} other{{count} cambios aún no se han podido enviar. Vuelve a iniciar sesión con la misma cuenta para que se envíen. Se quedan en este dispositivo 14 días como máximo.}}",
+  "connectDiscardWaiting": "Descartar",
+  "connectDiscardWaitingTitle": "¿Descartar los cambios?",
+  "connectDiscardWaitingBody": "{count, plural, =1{El cambio se borra de este dispositivo y ya no se puede enviar.} other{Los {count} cambios se borran de este dispositivo y ya no se pueden enviar.}}"
 }

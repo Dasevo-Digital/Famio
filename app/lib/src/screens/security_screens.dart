@@ -11,6 +11,7 @@ import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../platform/passkey.dart';
+import '../widgets/sign_out.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/password_reveal.dart';
 import '../l10n.dart';
@@ -1104,7 +1105,7 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
         BubbleButton(
           icon: AppIcons.signOut,
           tooltip: tr.settingsSignOut,
-          onPressed: () => state.signOut(),
+          onPressed: () => signOutAsking(context),
         ),
       ],
       body: ListView(

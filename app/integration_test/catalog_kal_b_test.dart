@@ -1797,11 +1797,10 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (#296, confirmed): with the family in Asia/Tokyo and the device in
-  // Europe/Berlin "19:30 Uhr" is saved as 19:30 of the device (18:30 UTC),
-  // not 19:30 in Tokyo (10:30 UTC). event_import_screen.dart:376 (and :283
-  // for the editor) takes the suggestion's local DateTime as it is.
-  testWidgets('KAL-080 a recognised time is the family\'s time', skip: true, (
+  // #296: with the family in Asia/Tokyo and the device elsewhere "19:30 Uhr"
+  // is 19:30 in Tokyo (10:30 UTC): extractEvents reads the letter in the
+  // family's zone (app/test/event_import_zone_test.dart).
+  testWidgets('KAL-080 a recognised time is the family\'s time', (
     tester,
   ) async {
     final f = await setUpFamily(tester);

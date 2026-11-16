@@ -1956,11 +1956,10 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund (hint of GRU-049, reproduced twice): signed out while the server
-  // cannot be reached, Famio asks nothing and drops the waiting task: the
-  // last sync fails quietly (app_state.dart:792), then the database goes
-  // (app_state.dart:826); the settings tile signs out at once
-  // (settings_screen.dart:410-423).
+  // #337: signed out while the server cannot be reached and a change still
+  // waits, Famio asks first; "Abbrechen" keeps the session and the change,
+  // the next sign-out with a connection sends it
+  // (app/test/sign_out_unsent_test.dart).
   testWidgets(
     'GRU-049 hint: signing out offline keeps or warns about waiting changes',
     (tester) async {
@@ -1975,27 +1974,46 @@ void main() {
       await enter(tester, field(de.tasksNewTask), 'E2E Offline abgemeldet');
       await tap(tester, find.byTooltip(de.commonAdd));
       await waitFor(tester, find.text('E2E Offline abgemeldet'));
+      bool waiting() => state.engine!.store.dirty.any(
+        (r) => r.record.data['title'] == 'E2E Offline abgemeldet',
+      );
       await openSection(tester, 'Einstellungen');
       await scrollTo(tester, signOutTile);
       await tap(tester, signOutTile);
-      await tester.pump(const Duration(seconds: 2));
-      final warned = find.byType(AlertDialog).evaluate().isNotEmpty;
-      debugPrint('E2E-INFO offline sign-out asked first: $warned');
-      if (!warned) {
-        await waitFor(tester, field(de.connectServerAddress));
-        gate.restore();
-        await tester.pump(const Duration(seconds: 3));
-        expect(
-          await titlesOf(f.admin, Collections.tasks),
-          contains('E2E Offline abgemeldet'),
-          reason:
-              'signed out offline without a word: the waiting task is gone '
-              '(app_state.dart:792, :826)',
-        );
-      }
+      // The last sync fails: Famio asks instead of dropping the task.
+      await waitFor(tester, find.text(de.signOutUnsentBody(1)));
+      expect(find.text(de.signOutAnyway), findsOneWidget);
+      await tap(
+        tester,
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text(de.commonCancel),
+        ),
+      );
+      await dialogClosed(tester);
+      expect(state.me, isNotNull, reason: 'cancelled: still signed in');
+      expect(waiting(), isTrue, reason: 'the task still waits');
+
+      // With the connection back, signing out sends it without asking.
+      gate.restore();
+      await scrollTo(tester, signOutTile);
+      await tap(tester, signOutTile);
+      await waitFor(tester, field(de.connectServerAddress));
+      expect(find.byType(AlertDialog), findsNothing);
+      await eventually(
+        tester,
+        'the task on the server',
+        () async => (await titlesOf(
+          f.admin,
+          Collections.tasks,
+        )).contains('E2E Offline abgemeldet'),
+        timeout: const Duration(seconds: 10),
+      );
+      await clean([
+        Collections.tasks,
+      ], only: (r) => r.data['title'] == 'E2E Offline abgemeldet');
       await finish(tester, state);
     },
-    skip: true,
   );
 
   testWidgets('GRU-051 signed out from elsewhere closes the open dialog', (
@@ -2035,10 +2053,10 @@ void main() {
     expect(state.me, isNull);
   });
 
-  // Befund (hint of GRU-051, reproduced twice): a change made offline is
-  // lost when the session ends elsewhere meanwhile: on the first sync the
-  // server answers 401 and the app signs out with the notice
-  // (app_state.dart:918), deleting the database without keeping the change.
+  // #337: a change made offline outlives a sign-out from elsewhere: the
+  // app keeps the account's database, the sign-in page says so, and signing
+  // in again with the same account at the same server sends the change
+  // (app/test/sign_out_unsent_test.dart).
   testWidgets(
     'GRU-051 hint: changes made offline before a sign-out from elsewhere',
     (tester) async {
@@ -2072,18 +2090,33 @@ void main() {
         field(de.connectServerAddress),
         timeout: const Duration(seconds: 120),
       );
+      expect(state.me, isNull);
+      expect(find.text(de.appSessionHasExpiredPlease), findsOneWidget);
+      expect(find.text(de.connectWaitingChanges(1)), findsOneWidget);
+      expect(state.waitingChanges?.count, 1);
+
+      // The same account again, at the same server: the change goes out.
+      await connectTrusting(tester, gate.url);
+      await signInHere(tester, m.username, password: 'Wolke-Regal-Tulpe-52');
+      await waitFor(tester, signedInMark, timeout: const Duration(seconds: 60));
+      await laterIfAsked(tester);
+      expect(state.waitingChanges, isNull);
       final after = FamioApiClient(kitUrl);
       await after.login(username: m.username, password: 'Wolke-Regal-Tulpe-52');
-      expect(
-        await titlesOf(after, Collections.tasks),
-        contains('E2E Offline vor Passwort'),
-        reason:
-            'the change made offline is gone with the session '
-            '(app_state.dart:918 signs out without the last sync)',
+      await eventually(
+        tester,
+        'the change made offline on the server',
+        () async => (await titlesOf(
+          after,
+          Collections.tasks,
+        )).contains('E2E Offline vor Passwort'),
+        timeout: const Duration(seconds: 30),
       );
-      expect(state.me, isNull);
+      await clean([
+        Collections.tasks,
+      ], only: (r) => r.data['title'] == 'E2E Offline vor Passwort');
+      await finish(tester, state);
     },
-    skip: true,
   );
 
   // --- Tour, Tipps, Was ist neu -------------------------------------------------

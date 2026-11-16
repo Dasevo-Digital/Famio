@@ -13,6 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/family_data.dart';
+import 'data/waiting_changes.dart';
 import 'design/palette.dart';
 import 'home_widget/widget_sync.dart';
 import 'location/location_sharing.dart';
@@ -111,6 +112,7 @@ class AppState extends ChangeNotifier {
   /// Plain copies for other apps. Linux's temp folder is shared by all users
   /// of the computer, so they go to the user's own folder there.
   static Future<String> _openedFilesDir() async {
+    if (debugSupportDir case final dir?) return p.join(dir, 'famio_open');
     final temp = p.join((await getTemporaryDirectory()).path, 'famio_open');
     if (defaultTargetPlatform != TargetPlatform.linux) return temp;
     try {
@@ -270,6 +272,15 @@ class AppState extends ChangeNotifier {
   /// the home screen says so once.
   bool localDataSetAside = false;
 
+  /// Changes kept from a session that ended elsewhere, until the same
+  /// account signs in again at the same server (#337); the sign-in page
+  /// tells about them.
+  WaitingChanges? waitingChanges;
+
+  /// The session being ended: a second sign-out for it (the server's
+  /// "expired" during a sign-out, say) does nothing.
+  SyncEngine? _ending;
+
   /// Tile server for maps set by the admins; null uses OpenStreetMap.
   String? mapTileUrl;
 
@@ -320,6 +331,7 @@ class AppState extends ChangeNotifier {
       );
     }
     unawaited(_noteAppVersion());
+    await _checkWaitingChanges();
     try {
       vault = await SecureVault.open(_prefs);
     } on InsecureVaultConsentRequired {
@@ -778,18 +790,92 @@ class AppState extends ChangeNotifier {
     await _startSession(url, token, member, pin: pin);
   }
 
-  Future<void> signOut({String? notice}) async {
+  /// Signs out of this device. [notice]: why, shown on the sign-in page;
+  /// the session is over already then (the account was deleted), so
+  /// nothing is sent first.
+  ///
+  /// Otherwise a last sync sends what is still waiting. [proceed] then
+  /// decides, told how many changes signing out would lose because that
+  /// sync failed (0: nothing would be lost); false stays signed in (#337).
+  /// Returns whether it signed out.
+  Future<bool> signOut({
+    String? notice,
+    Future<bool> Function(int unsent)? proceed,
+  }) {
+    if (notice != null) return _signOut(notice: notice);
+    // Tapped again while the first one still syncs or asks: the same one.
+    return _signingOut ??= _signOut(
+      proceed: proceed,
+    ).whenComplete(() => _signingOut = null);
+  }
+
+  Future<bool>? _signingOut;
+
+  Future<bool> _signOut({
+    String? notice,
+    Future<bool> Function(int unsent)? proceed,
+  }) async {
     final engine = this.engine;
+    if (engine == null || identical(_ending, engine)) return true;
+    bool over() =>
+        !identical(this.engine, engine) || identical(_ending, engine);
+    if (notice == null) {
+      await engine.sync(); // Last chance to push pending edits.
+      if (over()) return true;
+      if (engine.lastError?.isUnauthorized ?? false) {
+        // The session ended elsewhere meanwhile.
+        await _endedElsewhere(engine);
+        return true;
+      }
+      final unsent = engine.lastError == null ? 0 : engine.store.dirty.length;
+      if (proceed != null && !await proceed(unsent)) return false;
+      if (over()) return true;
+    }
+    await _endSession(engine, notice: notice, logout: notice == null);
+    return true;
+  }
+
+  /// The server no longer knows this session (a new password on another
+  /// device, "Überall abmelden"): what was not sent yet is kept for the
+  /// same account's next sign-in here (#337).
+  Future<void> _endedElsewhere(SyncEngine engine) => _endSession(
+    engine,
+    notice: tr.appSessionHasExpiredPlease,
+    keepUnsent: true,
+  );
+
+  Future<void> _endSession(
+    SyncEngine engine, {
+    String? notice,
+    bool logout = false,
+    bool keepUnsent = false,
+  }) async {
+    _ending = engine;
     final member = me;
-    if (engine == null) return;
     this.notice = notice;
+    // Kept with the database: the same account signing in again at this
+    // server sends them (#337). Without any, it goes as always.
+    final unsent = keepUnsent && !kIsWeb && member != null
+        ? engine.store.dirty.length
+        : 0;
+    final url = serverUrl;
+    if (unsent > 0 && url != null) {
+      final waiting = WaitingChanges(
+        server: url,
+        memberId: member!.id,
+        username: member.username,
+        count: unsent,
+        since: DateTime.now(),
+      );
+      await waiting.save(_prefs);
+      waitingChanges = waiting;
+    }
 
     // This browser no longer gets the member's notices.
     final webPush = kIsWeb
         ? await stopWebPush().catchError((Object _) => null)
         : null;
-    if (notice == null) {
-      await engine.sync(); // Last chance to push pending edits.
+    if (logout) {
       try {
         if (webPush != null) await engine.api.unsubscribeWebPush(webPush);
         await engine.api.logout();
@@ -820,12 +906,10 @@ class AppState extends ChangeNotifier {
     await _stopSession();
     if (member != null && !kIsWeb) {
       final support = await _supportDir();
-      for (final name in ['famio_${member.id}.db', 'files_${member.id}.db']) {
-        for (final suffix in ['', '-journal', '-wal', '-shm']) {
-          final file = File(p.join(support, '$name$suffix'));
-          if (file.existsSync()) file.deleteSync();
-        }
+      if (waitingChanges?.memberId != member.id) {
+        deleteDeviceDatabase(support, WaitingChanges.databaseName(member.id));
       }
+      deleteDeviceDatabase(support, 'files_${member.id}.db');
     }
     await vault.write('token', null);
     await vault.write('certPin', null);
@@ -836,6 +920,59 @@ class AppState extends ChangeNotifier {
     certificatePin = null;
     changedCertificate = null;
     twoFactorGate = null;
+    if (identical(_ending, engine)) _ending = null;
+    notifyListeners();
+  }
+
+  /// Kept changes (#337) at the start: older than [WaitingChanges.keptFor],
+  /// or without their database, they go.
+  Future<void> _checkWaitingChanges() async {
+    final waiting = WaitingChanges.read(_prefs);
+    if (waiting == null) return;
+    final support = await _supportDir();
+    if (!waiting.expired(DateTime.now()) &&
+        File(waiting.database(support)).existsSync()) {
+      waitingChanges = waiting;
+      return;
+    }
+    await WaitingChanges.forget(_prefs);
+    deleteDeviceDatabase(
+      support,
+      WaitingChanges.databaseName(waiting.memberId),
+    );
+  }
+
+  /// A signing in: the same account at the same server takes the kept
+  /// changes over, its database opens with them and the first sync sends
+  /// them; anyone else's sign-in deletes them (#337).
+  Future<void> _settleWaitingChanges(
+    String support,
+    String server,
+    String memberId,
+  ) async {
+    final waiting = waitingChanges;
+    if (waiting == null) return;
+    waitingChanges = null;
+    await WaitingChanges.forget(_prefs);
+    if (!waiting.belongsTo(server, memberId)) {
+      deleteDeviceDatabase(
+        support,
+        WaitingChanges.databaseName(waiting.memberId),
+      );
+    }
+  }
+
+  /// "Verwerfen" on the sign-in page: the kept changes go for good.
+  Future<void> discardWaitingChanges() async {
+    final waiting = waitingChanges;
+    if (waiting == null) return;
+    waitingChanges = null;
+    await WaitingChanges.forget(_prefs);
+    // Nobody is signed in while there are any: the database is unused.
+    deleteDeviceDatabase(
+      await _supportDir(),
+      WaitingChanges.databaseName(waiting.memberId),
+    );
     notifyListeners();
   }
 
@@ -882,7 +1019,8 @@ class AppState extends ChangeNotifier {
     // encrypted copy in the browser).
     final key = kIsWeb ? null : await vault.deviceKey();
     final support = kIsWeb ? '' : await _supportDir();
-    final path = p.join(support, 'famio_${member.id}.db');
+    if (!kIsWeb) await _settleWaitingChanges(support, normalized, member.id);
+    final path = p.join(support, WaitingChanges.databaseName(member.id));
     final keep = kIsWeb && keepWebData;
     // Phones keep the key in the keystore of this one device, which a
     // backup does not take along: a copy restored onto another phone, met
@@ -914,8 +1052,10 @@ class AppState extends ChangeNotifier {
     );
     final engine = SyncEngine(store: store, api: api, memberId: member.id);
     engine.statusChanges.listen((status) {
-      if (status.state == SyncState.unauthorized && this.engine == engine) {
-        signOut(notice: tr.appSessionHasExpiredPlease);
+      if (status.state == SyncState.unauthorized &&
+          this.engine == engine &&
+          !identical(_ending, engine)) {
+        _endedElsewhere(engine);
       }
       if (status.state == SyncState.offline && pin != null) {
         _checkCertificate(normalized, pin);
@@ -1076,8 +1216,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// For tests: the folder that takes the device databases and copies
+  /// instead of the app's own (which needs the platform).
+  @visibleForTesting
+  static String? debugSupportDir;
+
   /// One database per member, so accounts on a shared device never mix.
   static Future<String> _supportDir() async {
+    if (debugSupportDir case final dir?) return dir;
     final dir = await getApplicationSupportDirectory();
     await dir.create(recursive: true);
     return dir.path;
