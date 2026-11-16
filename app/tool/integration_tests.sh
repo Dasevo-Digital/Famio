@@ -115,6 +115,7 @@ for test in "${TESTS[@]}"; do
     exit 1
   fi
 
+  out=$data.test.log
   if flutter test "$test" -d "$DEVICE" \
     --dart-define=FAMIO_ENV=e2e \
     --dart-define=FAMIO_FRESH_START=true \
@@ -127,7 +128,10 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_E2E_SLOT="$SLOT" \
     --dart-define=FAMIO_OTHER_CERT="$OTHER_CERT" \
     --dart-define=FAMIO_OTHER_KEY="$OTHER_KEY" \
-    ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS}; then
+    ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS} 2>&1 | tee "$out" &&
+    # A run that was cut off or ran nothing exits 0 as well: count only
+    # one that says every test passed.
+    grep -q 'All tests passed!' "$out" && ! grep -q 'No tests ran' "$out"; then
     echo "== OK: $test"
   else
     echo "== FEHLER: $test" >&2
