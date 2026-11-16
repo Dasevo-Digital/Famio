@@ -130,8 +130,10 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_OTHER_KEY="$OTHER_KEY" \
     ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS} 2>&1 | tee "$out" &&
     # A run that was cut off or ran nothing exits 0 as well: count only
-    # one that says every test passed.
-    grep -q 'All tests passed!' "$out" && ! grep -q 'No tests ran' "$out"; then
+    # one that says its tests passed ("All tests passed!" on macOS,
+    # "🎉 3 tests passed." on Linux).
+    grep -Eq 'All tests passed!|[0-9]+ tests? passed\.' "$out" &&
+    ! grep -q 'No tests ran' "$out"; then
     echo "== OK: $test"
   else
     echo "== FEHLER: $test" >&2
