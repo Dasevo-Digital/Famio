@@ -116,6 +116,10 @@ class _CuttingGate {
   var cutUploads = false;
   var cutAfter = 512 * 1024;
 
+  /// How long the gate holds the upload before it breaks it off: over the
+  /// loopback the whole upload would otherwise be over between two frames.
+  var holdBeforeCut = const Duration(milliseconds: 1500);
+
   /// Uploads broken off so far.
   var cut = 0;
 
@@ -144,7 +148,8 @@ class _CuttingGate {
     // The last bytes seen, so a request line split across reads is found.
     var tail = '';
     int? uploadBytes;
-    client.listen(
+    late final StreamSubscription<Uint8List> fromClient;
+    fromClient = client.listen(
       (data) {
         if (uploadBytes == null && cutUploads) {
           final seen = tail + latin1.decode(data, allowInvalid: true);
@@ -159,7 +164,8 @@ class _CuttingGate {
           debugPrint(
             'E2E-INFO gate: upload broken off after $uploadBytes bytes',
           );
-          close();
+          fromClient.pause();
+          Future<void>.delayed(holdBeforeCut, close);
           return;
         }
         try {
