@@ -12,6 +12,7 @@ import '../format.dart';
 import '../widgets/event_comments.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/sheet_messenger.dart';
 import '../widgets/undo_delete.dart';
 import '../widgets/assignment_confirmation.dart';
 import 'list_templates.dart';
@@ -70,7 +71,9 @@ Future<void> _showEventDetails(BuildContext context, Occurrence occurrence) =>
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => _EventDetails(occurrence: occurrence),
+      // "Rückgängig" for a deleted comment over the sheet (#364).
+      builder: (_) =>
+          SheetMessenger(child: _EventDetails(occurrence: occurrence)),
     );
 
 /// An appointment for reading: when, where, who, its files and comments.

@@ -15,12 +15,15 @@ Future<void> showEntryEditor(
   useRootNavigator: true,
   isScrollControlled: true,
   useSafeArea: true,
-  builder: (_) => _EntryEditor(
-    child: child,
-    kind: kind,
-    existing: existing,
-    refId: refId ?? existing?.refId,
-    planned: existing?.planned ?? planned,
+  // A failed upload over the sheet (#364).
+  builder: (_) => SheetMessenger(
+    child: _EntryEditor(
+      child: child,
+      kind: kind,
+      existing: existing,
+      refId: refId ?? existing?.refId,
+      planned: existing?.planned ?? planned,
+    ),
   ),
 );
 

@@ -12,6 +12,7 @@ import '../design/palette.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/sheet_messenger.dart';
 import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
@@ -261,111 +262,140 @@ class _DocumentCard extends StatelessWidget {
       isScrollControlled: true,
       // Below the status bar, so the handle stays reachable.
       useSafeArea: true,
-      builder: (sheet) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      // An error opening the file over the sheet (#364).
+      builder: (_) => SheetMessenger(
+        // Below the messenger, so messages of the sheet show on it.
+        child: Builder(
+          builder: (sheet) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  IconBlob(icon, color: color),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      document.title,
-                      style: Theme.of(sheet).textTheme.headlineSmall,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (file != null && file.isImage)
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 280),
-                  child: CachedImage(file, thumb: 1280, fit: BoxFit.contain),
-                ),
-              if (document.notes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                SelectableText(document.notes),
-              ],
-              const SizedBox(height: 12),
-              Text(
-                document.visibleTo == null
-                    ? tr.docsVisibleWholeFamily
-                    : tr.commonVisibleTo(_names(engine, document.visibleTo!)),
-                style: Theme.of(sheet).textTheme.bodySmall,
-              ),
-              if (document.fromArchive)
-                Text(
-                  tr.docsFromPaperless,
-                  style: Theme.of(sheet).textTheme.bodySmall,
-                ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  if (file != null)
-                    ColorButton(
-                      label: tr.commonOpen,
-                      icon: AppIcons.arrowSquareOut,
-                      color: color,
-                      onPressed: () => openFileRef(context, file),
-                    ),
-                  if (!document.fromArchive) ...[
-                    OutlinedButton.icon(
-                      icon: const Icon(AppIcons.pencilSimple, size: 18),
-                      label: Text(tr.commonEdit),
-                      onPressed: () {
-                        Navigator.pop(sheet);
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => DocumentEditor(existing: document),
-                          ),
-                        );
-                      },
-                    ),
-                    TextButton.icon(
-                      icon: const Icon(AppIcons.trash, size: 18),
-                      label: Text(tr.commonDelete),
-                      style: TextButton.styleFrom(
-                        foregroundColor: Theme.of(sheet).colorScheme.error,
-                      ),
-                      onPressed: () async {
-                        final ok = await showDialog<bool>(
-                          context: sheet,
-                          builder: (d) => AlertDialog(
-                            title: Text(tr.commonDeleteName(document.title)),
-                            content: Text(tr.docsDocumentRemovedEveryone),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(d, false),
-                                child: Text(tr.commonCancel),
-                              ),
-                              FilledButton(
-                                onPressed: () => Navigator.pop(d, true),
-                                child: Text(tr.commonDelete),
+                  // Long notes scroll; the buttons below always stay on
+                  // screen, also with large text (#484).
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              IconBlob(icon, color: color),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  document.title,
+                                  style: Theme.of(
+                                    sheet,
+                                  ).textTheme.headlineSmall,
+                                ),
                               ),
                             ],
                           ),
-                        );
-                        if (ok == true && sheet.mounted) {
-                          deleteWithUndo(
-                            sheet,
-                            what: document.title,
-                            collections: const {Collections.documents},
-                            delete: () => engine.deleteDocument(document.id),
-                          );
-                          Navigator.pop(sheet);
-                        }
-                      },
+                          const SizedBox(height: 16),
+                          if (file != null && file.isImage)
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxHeight: 280),
+                              child: CachedImage(
+                                file,
+                                thumb: 1280,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          if (document.notes.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            SelectableText(document.notes),
+                          ],
+                          const SizedBox(height: 12),
+                          Text(
+                            document.visibleTo == null
+                                ? tr.docsVisibleWholeFamily
+                                : tr.commonVisibleTo(
+                                    _names(engine, document.visibleTo!),
+                                  ),
+                            style: Theme.of(sheet).textTheme.bodySmall,
+                          ),
+                          if (document.fromArchive)
+                            Text(
+                              tr.docsFromPaperless,
+                              style: Theme.of(sheet).textTheme.bodySmall,
+                            ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      if (file != null)
+                        ColorButton(
+                          label: tr.commonOpen,
+                          icon: AppIcons.arrowSquareOut,
+                          color: color,
+                          onPressed: () => openFileRef(sheet, file),
+                        ),
+                      if (!document.fromArchive) ...[
+                        OutlinedButton.icon(
+                          icon: const Icon(AppIcons.pencilSimple, size: 18),
+                          label: Text(tr.commonEdit),
+                          onPressed: () {
+                            Navigator.pop(sheet);
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) =>
+                                    DocumentEditor(existing: document),
+                              ),
+                            );
+                          },
+                        ),
+                        TextButton.icon(
+                          icon: const Icon(AppIcons.trash, size: 18),
+                          label: Text(tr.commonDelete),
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(sheet).colorScheme.error,
+                          ),
+                          onPressed: () async {
+                            final ok = await showDialog<bool>(
+                              context: sheet,
+                              builder: (d) => AlertDialog(
+                                title: Text(
+                                  tr.commonDeleteName(document.title),
+                                ),
+                                content: Text(tr.docsDocumentRemovedEveryone),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(d, false),
+                                    child: Text(tr.commonCancel),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(d, true),
+                                    child: Text(tr.commonDelete),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (ok == true && sheet.mounted) {
+                              deleteWithUndo(
+                                sheet,
+                                what: document.title,
+                                collections: const {Collections.documents},
+                                delete: () =>
+                                    engine.deleteDocument(document.id),
+                              );
+                              Navigator.pop(sheet);
+                            }
+                          },
+                        ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -474,8 +474,21 @@ class _EntryEditorState extends State<_EntryEditor> {
     final theme = Theme.of(context);
     final engine = AppScope.engineOf(context);
     final color = FamioColors.of(context).strong(FamioSection.budget);
-    final categories = _income ? incomeCategories : expenseCategories;
-    if (!categories.contains(_category)) _category = categories.first;
+    // An own category (from the bank import, #488) stays as it is.
+    final keep = widget.existing?.income == _income
+        ? widget.existing!.category
+        : null;
+    final categories = budgetCategories(
+      income: _income,
+      entries: engine.budgetEntries,
+      limits: engine.budgetSettings.limits.keys,
+      keep: keep,
+    );
+    if (!categories.contains(_category)) {
+      _category = keep != null && categories.contains(keep)
+          ? keep
+          : categories.first;
+    }
     final now = DateTime.now();
     return Padding(
       padding: EdgeInsets.fromLTRB(

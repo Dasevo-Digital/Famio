@@ -791,11 +791,9 @@ void main() {
     }
   });
 
-  // Befund (HAU-121, #484): the sheet of a document is a plain Column
-  // (documents_screen.dart:254-267, a Column in the bottom sheet): with
-  // 45 lines of notes it overflows by 303 px already at normal size, "Öffnen",
-  // "Bearbeiten" and "Löschen" end up below the screen and cannot be
-  // reached.
+  // HAU-121, #484: in the sheet of a document long notes scroll; with 45
+  // lines of notes nothing overflows, also at twice the text size, and
+  // "Bearbeiten" and "Löschen" stay on screen.
   androidTest('HAU-121 long notes in the document sheet', (tester) async {
     await hostOk('grant');
     final state = await startApp(tester);
@@ -846,7 +844,7 @@ void main() {
       engine.delete(Collections.documents, id);
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
   // --- "Teilen an Famio" -----------------------------------------------------
 

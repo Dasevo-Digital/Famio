@@ -15,6 +15,7 @@ import '../design/palette.dart';
 import '../design/theme.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/sheet_messenger.dart';
 import 'kids_screens.dart';
 import '../widgets/undo_delete.dart';
 import '../format.dart';
@@ -1619,7 +1620,10 @@ Future<void> showLogEditor(
   useRootNavigator: true,
   isScrollControlled: true,
   useSafeArea: true,
-  builder: (_) => _LogEditor(child: child, kind: kind, existing: existing),
+  // Hints about the form and a failed upload over the sheet (#364).
+  builder: (_) => SheetMessenger(
+    child: _LogEditor(child: child, kind: kind, existing: existing),
+  ),
 );
 
 List<String> get _symptoms => [

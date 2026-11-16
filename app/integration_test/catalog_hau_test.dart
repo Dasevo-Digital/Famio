@@ -2797,10 +2797,8 @@ void main() {
     await finish(tester, state);
   });
 
-  // Befund: Der Editor setzt eine Kategorie, die nicht zu den Standard-
-  // kategorien gehört, auf die erste Standardkategorie zurück
-  // (budget_screens.dart:478: if (!categories.contains(_category))
-  // _category = categories.first); Speichern schreibt „Lebensmittel“.
+  // Eine eigene Kategorie aus dem Import (keine Standardkategorie) steht
+  // im Editor zur Auswahl und bleibt beim Speichern erhalten (#488).
   testWidgets('HAU-086 an own category from the import stays', (tester) async {
     await reset(_budget);
     final id = await seedBooking(
@@ -2835,7 +2833,7 @@ void main() {
     );
     expect(entry.category, 'E2E Hund');
     await finish(tester, state);
-  }, skip: true);
+  });
 
   testWidgets('HAU-083 HAU-155 HAU-160 who sees the household book: all, '
       'only A, A and B; children and the service account', (tester) async {

@@ -79,17 +79,19 @@ class _BankImportScreenState extends State<BankImportScreen> {
 
   Future<void> _pickCategory(int i) async {
     final t = widget.transactions[i];
-    final defaults = t.income ? incomeCategories : expenseCategories;
-    final own = {
-      for (final e in AppScope.engineOf(context).budgetEntries)
-        if (e.income == t.income && !defaults.contains(e.category)) e.category,
-    };
+    final engine = AppScope.engineOf(context);
+    final categories = budgetCategories(
+      income: t.income,
+      entries: engine.budgetEntries,
+      limits: engine.budgetSettings.limits.keys,
+      keep: _categories[i],
+    );
     final chosen = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
         title: Text(tr.commonCategory),
         children: [
-          for (final c in [...defaults, ...own.toList()..sort()])
+          for (final c in categories)
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, c),
               child: Text(categoryLabel(c)),

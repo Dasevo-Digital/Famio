@@ -6,6 +6,7 @@ import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/budget_month.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/design/components.dart';
+import 'package:famio/src/l10n.dart';
 import 'package:famio/src/screens/budget_screens.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,13 @@ void main() {
 
   late SyncEngine engine;
 
-  Future<void> openRent(WidgetTester tester, DateTime date) async {
+  /// Opens the editor of the booking shown as [tap] among [entries].
+  Future<void> openBooking(
+    WidgetTester tester,
+    List<BudgetEntry> entries,
+    String tap, {
+    BudgetSettings? settings,
+  }) async {
     SharedPreferences.setMockInitialValues({});
     FlutterSecureStorage.setMockInitialValues({});
     final state = AppState();
@@ -38,25 +45,35 @@ void main() {
     state
       ..me = const FamilyMember(id: 'm1', username: 'mama', displayName: 'Mama')
       ..engine = engine;
-    engine.saveBudgetEntry(
-      BudgetEntry(
-        id: 'rent',
-        date: date,
-        cents: 95000,
-        category: 'Wohnen',
-        note: 'Miete',
-        monthly: true,
-      ),
-    );
+    entries.forEach(engine.saveBudgetEntry);
+    if (settings != null) {
+      engine.put(
+        Collections.budgetSettings,
+        BudgetSettings.recordId,
+        settings.toData(),
+      );
+    }
     await tester.pumpWidget(FamioApp(state: state));
     await tester.pump();
     Navigator.of(
       tester.element(find.byType(Scaffold).first),
     ).push(MaterialPageRoute<void>(builder: (_) => const BudgetScreen()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Miete').first);
+    await tester.tap(find.text(tap).first);
     await tester.pumpAndSettle();
   }
+
+  Future<void> openRent(WidgetTester tester, DateTime date) =>
+      openBooking(tester, [
+        BudgetEntry(
+          id: 'rent',
+          date: date,
+          cents: 95000,
+          category: 'Wohnen',
+          note: 'Miete',
+          monthly: true,
+        ),
+      ], 'Miete');
 
   test('the range always holds the date it opens on', () {
     final now = DateTime(2026, 11, 11);
@@ -169,4 +186,109 @@ void main() {
       },
     );
   }
+
+  group('HAU-086 own categories', () {
+    final today = DateUtils.dateOnly(DateTime.now());
+
+    Future<void> openFood(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1000, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await openBooking(
+        tester,
+        [
+          BudgetEntry(
+            id: 'dog',
+            date: today,
+            cents: 2999,
+            category: 'Hund',
+            note: 'Futter',
+            importId: 'import-1',
+          ),
+          BudgetEntry(id: 'zoo', date: today, cents: 1500, category: 'Zoo'),
+          BudgetEntry(
+            id: 'bonus',
+            date: today,
+            cents: 50000,
+            category: 'Bonus',
+            income: true,
+          ),
+        ],
+        'Futter',
+        settings: const BudgetSettings(limits: {'Garten': 5000}),
+      );
+    }
+
+    bool selected(WidgetTester tester, String label) => tester
+        .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label))
+        .selected;
+
+    testWidgets('a booking from the import keeps its category', (tester) async {
+      await openFood(tester);
+      expect(selected(tester, 'Hund'), isTrue);
+      expect(selected(tester, 'Lebensmittel'), isFalse);
+      await tester.enterText(
+        find.widgetWithText(TextField, tr.budgetWhatOptional),
+        'Futter November',
+      );
+      await tester.tap(find.text('Speichern').last);
+      await tester.pumpAndSettle();
+      final entry = engine.budgetEntries.firstWhere((e) => e.id == 'dog');
+      expect((entry.category, entry.note), ('Hund', 'Futter November'));
+    });
+
+    testWidgets('own categories of other bookings and limits are offered, '
+        'of the same kind', (tester) async {
+      await openFood(tester);
+      for (final own in ['Hund', 'Zoo', 'Garten']) {
+        expect(find.widgetWithText(ChoiceChip, own), findsOneWidget);
+      }
+      expect(find.widgetWithText(ChoiceChip, 'Bonus'), findsNothing);
+      // Over to income and back: the booking's own category again.
+      await tester.tap(find.text(tr.budgetIncome2));
+      await tester.pumpAndSettle();
+      expect(find.widgetWithText(ChoiceChip, 'Bonus'), findsOneWidget);
+      expect(find.widgetWithText(ChoiceChip, 'Hund'), findsNothing);
+      await tester.tap(find.text(tr.budgetExpense));
+      await tester.pumpAndSettle();
+      expect(selected(tester, 'Hund'), isTrue);
+      // Another own one can be chosen.
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Zoo'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Speichern').last);
+      await tester.pumpAndSettle();
+      expect(
+        engine.budgetEntries.firstWhere((e) => e.id == 'dog').category,
+        'Zoo',
+      );
+    });
+  });
+
+  test('budgetCategories: defaults first, then own ones sorted', () {
+    final today = DateTime(2026, 11, 16);
+    expect(
+      budgetCategories(
+        income: false,
+        entries: [
+          BudgetEntry(id: 'a', date: today, cents: 1, category: 'zoo'),
+          BudgetEntry(id: 'b', date: today, cents: 1, category: 'Lebensmittel'),
+          BudgetEntry(id: 'c', date: today, cents: 1, category: ''),
+          BudgetEntry(
+            id: 'd',
+            date: today,
+            cents: 1,
+            category: 'Bonus',
+            income: true,
+          ),
+        ],
+        limits: ['Garten'],
+        keep: 'Hund',
+      ),
+      [...expenseCategories, 'Garten', 'Hund', 'zoo'],
+    );
+    expect(
+      budgetCategories(income: true, limits: ['Garten']),
+      incomeCategories,
+    );
+  });
 }

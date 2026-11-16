@@ -12,6 +12,7 @@ import '../format.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/sheet_messenger.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/undo_delete.dart';
@@ -434,9 +435,12 @@ Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) {
     useRootNavigator: true,
     isScrollControlled: true,
     useSafeArea: true,
-    builder: (_) => reading
-        ? _TaskDetails(id: task.id)
-        : _TaskEditor(task: task, draft: draft),
+    // A failed upload or file over the sheet (#364).
+    builder: (_) => SheetMessenger(
+      child: reading
+          ? _TaskDetails(id: task.id)
+          : _TaskEditor(task: task, draft: draft),
+    ),
   );
 }
 

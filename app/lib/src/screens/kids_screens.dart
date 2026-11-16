@@ -15,6 +15,7 @@ import '../design/theme.dart';
 import '../widgets/data_builder.dart';
 import '../widgets/files.dart';
 import '../widgets/member_avatar.dart';
+import '../widgets/sheet_messenger.dart';
 import '../widgets/sync_status_icon.dart';
 import 'kids_emergency_screens.dart';
 import 'kids_log_screens.dart';

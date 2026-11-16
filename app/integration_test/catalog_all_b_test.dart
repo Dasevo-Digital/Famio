@@ -1050,14 +1050,10 @@ void main() {
     },
   );
 
-  // Befund (reproduced twice): "Vergessen" in the staples sheet shows its
-  // "Rückgängig" in a snack bar of the page under the sheet
-  // (shopping_screens.dart:998, deleteWithUndo with the sheet's context): the
-  // sheet and its barrier cover it, a tap there hits the sheet, nothing
-  // comes back. The test taps where the button is drawn.
-  testWidgets('ALL-121 forgetting a staple, and back', skip: true, (
-    tester,
-  ) async {
+  // "Vergessen" in the staples sheet shows its "Rückgängig" over the sheet
+  // (SheetMessenger), not under it on the page: a finger there hits it,
+  // the article comes back. The test taps where the button is drawn.
+  testWidgets('ALL-121 forgetting a staple, and back', (tester) async {
     tall(tester);
     final f = await theFamily();
     await cleanShopping();
@@ -1106,10 +1102,8 @@ void main() {
     final reachable = hit.path.any(
       (e) => e.target == tester.renderObject(undo),
     );
-    debugPrint(
-      'E2E-INFO "Rückgängig" under the staples sheet reachable: '
-      '$reachable',
-    );
+    expect(reachable, isTrue, reason: '"Rückgängig" over the staples sheet');
+    expect(find.byType(BottomSheet), findsOneWidget);
     await tap(tester, undo);
     await until(
       tester,

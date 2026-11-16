@@ -25,6 +25,7 @@ import '../widgets/member_avatar.dart';
 import '../widgets/sync_status_icon.dart';
 import 'list_connect_screen.dart';
 import '../widgets/preppsuite_import.dart';
+import '../widgets/sheet_messenger.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';
 import '../security/app_lock.dart';
@@ -930,7 +931,8 @@ Future<void> showStaples(BuildContext context) => showModalBottomSheet<void>(
   context: context,
   useRootNavigator: true,
   isScrollControlled: true,
-  builder: (_) => const _StaplesSheet(),
+  // "Rückgängig" after "Vergessen" over the sheet, where it can be tapped.
+  builder: (_) => const SheetMessenger(child: _StaplesSheet()),
 );
 
 class _StaplesSheet extends StatelessWidget {
