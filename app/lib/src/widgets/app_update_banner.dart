@@ -198,7 +198,11 @@ class _AppUpdateDialogState extends State<_AppUpdateDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final busy = _step == _Step.downloading || _step == _Step.installing;
-    final desktop = widget.platform != AppPlatform.android;
+    // Both Android packages install through Android's own dialog; only
+    // Windows and Linux close and start again (GRU-158).
+    final desktop =
+        widget.platform == AppPlatform.windows ||
+        widget.platform == AppPlatform.linux;
     return AlertDialog(
       title: Text(tr.appUpdateAvailable(widget.offer.version)),
       content: Column(
