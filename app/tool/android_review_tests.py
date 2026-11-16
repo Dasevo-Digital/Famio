@@ -678,7 +678,55 @@ def _cmd_shortcuts(device, rest, changed):
     return " | ".join(keep)[:1500]
 
 
+def _famio_uid(device):
+    out = device.shell(f"cmd package list packages -U {PACKAGE}")
+    found = re.search(rf"package:{re.escape(PACKAGE)} uid:(\d+)", out)
+    return found.group(1) if found else None
+
+
+def _cmd_audio(device, rest, changed):
+    """What Famio plays now (Android's audio players of its uid): usage and
+    state per player, e.g. "USAGE_ALARM:started"; empty for none."""
+    uid = _famio_uid(device)
+    if uid is None:
+        return ""
+    players = []
+    for line in device.shell("dumpsys audio").splitlines():
+        if "AudioPlaybackConfiguration" not in line or f"u/pid:{uid}/" not in line:
+            continue
+        state = re.search(r"state:(\w+)", line)
+        usage = re.search(r"usage=(\w+)", line)
+        players.append(
+            f"{usage.group(1) if usage else '?'}:{state.group(1) if state else '?'}"
+        )
+    return " ".join(players)
+
+
+def _cmd_alarm_volume(device, rest, changed):
+    """The volume of the alarm stream (the siren's). The shell cannot set it
+    on this emulator, the test compares before, during and after."""
+    out = device.shell("cmd media_session volume --stream 4 --get")
+    found = re.search(r"volume is (\d+)", out)
+    if not found:
+        raise RuntimeError(f"Lautstärke nicht lesbar: {out.strip()}")
+    return found.group(1)
+
+
+def _cmd_alarms(device, rest, changed):
+    """How many alarms Android's AlarmManager holds for Famio (its planned
+    reminders)."""
+    out = device.shell("dumpsys alarm")
+    pattern = re.compile(
+        r"^\s*(RTC|RTC_WAKEUP|ELAPSED|ELAPSED_WAKEUP) #\d+: Alarm\{[^}]*\b"
+        + re.escape(PACKAGE) + r"\}"
+    )
+    return str(sum(1 for line in out.splitlines() if pattern.search(line)))
+
+
 CATALOG_COMMANDS = {
+    "audio": _cmd_audio,
+    "alarm-volume": _cmd_alarm_volume,
+    "alarms": _cmd_alarms,
     "permissions": _cmd_permissions,
     "grant-coarse": _cmd_grant_coarse,
     "battery": _cmd_battery,

@@ -20,6 +20,7 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/usernames.dart';
+import 'package:famio/src/data/year_review.dart' show reviewYear;
 import 'package:famio/src/design/app_icons.dart';
 import 'package:famio/src/design/components.dart';
 import 'package:famio/src/design/palette.dart';
@@ -2372,6 +2373,8 @@ void main() {
     tall(tester);
     final state = await startApp(tester);
     await openSection(tester, 'Start');
+    // The time of the run; 5, 9, 14, 20 and 23 o'clock are set by
+    // test/home_clock_test.dart.
     final now = DateTime.now();
     await waitFor(tester, find.text('${greeting(now)}, $kitAdminName!'));
     expect(find.text(DateFormat.MMMMEEEEd('de').format(now)), findsWidgets);
@@ -3008,10 +3011,13 @@ void main() {
           : de.homeCountChangesOverlappedPlease(open),
     );
     await scrollTo(tester, card, up: true);
+    // The date of the run: the card's dates themselves (15.12.–31.1., not
+    // for guests) are set by test/home_clock_test.dart.
     final now = DateTime.now();
     final yearEnd = (now.month == 12 && now.day >= 15) || now.month == 1;
     expect(
-      find.text(de.yearReviewHomeHint('${now.year}')),
+      // In January about the past year.
+      find.text(de.yearReviewHomeHint('${reviewYear(now)}')),
       yearEnd ? findsOneWidget : findsNothing,
     );
     expect(

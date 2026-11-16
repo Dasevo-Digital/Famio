@@ -13,6 +13,7 @@
 // Each test names the catalog entries it checks.
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:famio/src/data/birthdays.dart';
 import 'package:famio/src/data/family_data.dart';
@@ -28,14 +29,21 @@ import 'package:famio/src/location/location_sharing.dart';
 import 'package:famio/src/screens/location/labels.dart';
 import 'package:famio/src/screens/pantry_screens.dart' show PantryCard;
 import 'package:famio/src/security/app_lock.dart' show AppLock;
+import 'package:famio/src/sos/sos_controller.dart' show SosController;
 import 'package:famio/src/widgets/famio_tour.dart' show TourTargets;
+import 'package:famio/src/widgets/files.dart' show fileSizeLabel;
+import 'package:famio/src/widgets/photo_viewer.dart' show PhotoViewer;
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'catalog_kit.dart';
 
@@ -536,6 +544,57 @@ void androidTest(
     FlutterError.onError = next;
   }
 }, skip: skip);
+
+/// Stands in for the camera (GRU-075): the photo is [path].
+class _Camera extends ImagePickerPlatform {
+  _Camera(this.path);
+
+  final String path;
+  var shots = 0;
+
+  @override
+  Future<XFile?> getImageFromSource({
+    required ImageSource source,
+    ImagePickerOptions options = const ImagePickerOptions(),
+  }) async {
+    shots++;
+    return XFile(path);
+  }
+}
+
+/// A one-page PDF, as the document scanner hands it over (GRU-075).
+final _scannedPdf = utf8.encode(
+  '%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n'
+  '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n'
+  '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] >> endobj\n'
+  'trailer << /Root 1 0 R >>\n%%EOF\n',
+);
+
+/// Width and height of a PNG (its IHDR), null for anything else.
+(int, int)? pngSize(List<int> bytes) {
+  const signature = [0x89, 0x50, 0x4E, 0x47];
+  if (bytes.length < 24) return null;
+  for (var i = 0; i < 4; i++) {
+    if (bytes[i] != signature[i]) return null;
+  }
+  int at(int i) =>
+      bytes[i] << 24 | bytes[i + 1] << 16 | bytes[i + 2] << 8 | bytes[i + 3];
+  return (at(16), at(20));
+}
+
+/// Waits (without pumping: behind another app Android draws no frames) for
+/// Famio's lifecycle to reach [want].
+Future<void> lifecycleIs(AppLifecycleState want) async {
+  final watch = Stopwatch()..start();
+  while (WidgetsBinding.instance.lifecycleState != want) {
+    if (watch.elapsed > const Duration(seconds: 30)) {
+      throw TestFailure(
+        'Famio did not get $want: ${WidgetsBinding.instance.lifecycleState}',
+      );
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+  }
+}
 
 void main() {
   deviceLanguage = () => 'de';
@@ -2751,6 +2810,102 @@ void main() {
     }
   });
 
+  // SIC-009 on the phone: the child ends its own alarm ("Ich bin sicher –
+  // Alarm beenden"): the siren stops (Famio's player on the alarm stream
+  // goes, the alarm volume is back to the person's), the service for the
+  // positions ends and the server gets no more positions while the phone
+  // keeps moving. The emulator runs without sound (-no-audio); the siren
+  // plays there all the same.
+  androidTest('SIC-009 the child ends the alarm: siren and positions stop', (
+    tester,
+  ) async {
+    await hostOk('grant');
+    final f = await theFamily();
+    await resolveAll(f.admin);
+    await seed(f.admin, Collections.sosSettings, {
+      SosSettings.recordId: const SosSettings(siren: true, sms: false).toData(),
+    });
+    final kidId = f.kid.id;
+    // The alarm volume the person had (the siren turns it up to the top).
+    final volume = int.parse(await hostOk('alarm-volume'));
+    await hostOk('geo-long ${_school.$1} ${_school.$2} 420');
+    final state = await startApp(tester, user: 'e2e-kind');
+    try {
+      await hostOk('sos tile');
+      await waitFor(
+        tester,
+        find.text(de.sosAlarmSent),
+        timeout: const Duration(seconds: 40),
+      );
+      final alarm = await untilAsync(
+        tester,
+        'the alarm',
+        () => openAlertOf(f.admin, kidId),
+      );
+      // The siren plays, at full alarm volume.
+      expect(find.text(de.sosSirenOff), findsOneWidget);
+      expect(SosController.current?.sirenOn, isTrue);
+      final playing = await untilAsync(tester, 'the siren plays', () async {
+        final a = await hostOk('audio');
+        return a.contains('USAGE_ALARM:started') ? a : null;
+      }, timeout: const Duration(seconds: 20));
+      final loud = int.parse(await hostOk('alarm-volume'));
+      note('SIC-009 siren: $playing, alarm volume $volume → $loud');
+      expect(loud, greaterThanOrEqualTo(volume));
+      // The positions: from the service, every 20 seconds.
+      await liveServiceRunning(tester);
+      final first = await untilAsync(
+        tester,
+        'a position',
+        () async => (await openAlertOf(f.admin, kidId))?.positionAt,
+      );
+      final second = await untilAsync(tester, 'the next position', () async {
+        final at = (await openAlertOf(f.admin, kidId))?.positionAt;
+        return at != null && at.isAfter(first) ? at : null;
+      }, timeout: const Duration(seconds: 80));
+      note('SIC-009 positions while open: $first, $second');
+
+      await tap(tester, find.text(de.sosIAmSafeEnd));
+      await waitGone(tester, find.text(de.sosIAmSafeEnd));
+      final ended = SosAlert.fromRecord(
+        (await pull(f.admin, Collections.sosAlerts))[alarm.id]!,
+      );
+      expect(ended.state, SosState.resolved);
+      expect(ended.resolvedBy, kidId);
+      // The siren stops at once …
+      final quiet = await untilAsync(tester, 'the siren off', () async {
+        final a = await hostOk('audio');
+        return a.contains('USAGE_ALARM:started') ? null : '[$a]';
+      }, timeout: const Duration(seconds: 10));
+      final back = int.parse(await hostOk('alarm-volume'));
+      note('SIC-009 alarm volume after: $back');
+      expect(back, volume, reason: 'the volume from before');
+      // … the service for the positions ends …
+      await untilAsync(
+        tester,
+        'the position service stopped',
+        () async => !(await hostOk('services')).contains('SosLocationService'),
+        timeout: const Duration(seconds: 30),
+      );
+      // … and the server gets no more positions (the phone still moves).
+      final last = ended.positionAt;
+      await idle(tester, const Duration(seconds: 50));
+      final later = SosAlert.fromRecord(
+        (await pull(f.admin, Collections.sosAlerts))[alarm.id]!,
+      ).positionAt;
+      note(
+        'SIC-009 after ending: players $quiet, last position $last → $later',
+      );
+      expect(later, last);
+      expect(find.text(de.sosEmergencyCallRunning), findsNothing);
+      expect(SosController.current?.sirenOn ?? false, isFalse);
+    } finally {
+      await resolveAll(f.admin);
+      await quietSos(f);
+      await finish(tester, state);
+    }
+  });
+
   // --- the app lock ---------------------------------------------------------------
 
   androidTest('GRU-110 switching the lock on without a screen lock', (
@@ -3169,6 +3324,431 @@ void main() {
       listener.dispose();
       await host('pin-clear');
       await Future<void>.delayed(const Duration(seconds: 2));
+      await finish(tester, state);
+    }
+  });
+
+  // --- the family inbox and signing out ------------------------------------------
+
+  // GRU-075 on a phone: "Datei oder Foto auswählen" in the inbox's dialog
+  // opens the sheet first (limit, camera, scanner, file). The camera and the
+  // document scanner are stood in for (a photo made here, a PDF), the file
+  // comes from Android's own file picker.
+  androidTest('GRU-075 a file, a photo and a scan in the family inbox', (
+    tester,
+  ) async {
+    await hostOk('grant');
+    await hostOk('file e2e-ablage.png png 320 240');
+    final photo = await tester.runAsync(() async {
+      final recorder = ui.PictureRecorder();
+      Canvas(recorder).drawRect(
+        const Rect.fromLTWH(0, 0, 200, 150),
+        Paint()..color = const Color(0xFF3587D6),
+      );
+      final image = await recorder.endRecording().toImage(200, 150);
+      final png = await image.toByteData(format: ui.ImageByteFormat.png);
+      final file = File(
+        '${(await getTemporaryDirectory()).path}/e2e-kamera.png',
+      );
+      await file.writeAsBytes(png!.buffer.asUint8List());
+      return file;
+    });
+    final camera = _Camera(photo!.path);
+    final before = ImagePickerPlatform.instance;
+    ImagePickerPlatform.instance = camera;
+    const scanner = MethodChannel('famio/scan');
+    var scans = 0;
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(scanner, (call) async {
+      scans++;
+      return Uint8List.fromList(_scannedPdf);
+    });
+    addTearDown(() {
+      ImagePickerPlatform.instance = before;
+      messenger.setMockMethodCallHandler(scanner, null);
+    });
+    final state = await startApp(tester);
+    final engine = state.engine!;
+    try {
+      await clean(engine, {Collections.inbox});
+      await section(tester, de.sectionHome);
+      await tap(tester, find.byTooltip(de.inboxTitle));
+      await waitFor(tester, find.text(de.inboxTitle));
+      final limit = de.filesUploadLimit(fileSizeLabel(engine.maxUploadBytes));
+      Finder inSheet(String text) => find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.text(text),
+      );
+      Finder inDialog(String text) => find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text(text),
+      );
+
+      /// "Etwas ablegen" with [title], the sheet, then [choose] in it.
+      Future<void> add(
+        String title,
+        String option,
+        Future<String> Function() choose,
+      ) async {
+        await tap(
+          tester,
+          find.byWidgetPredicate(
+            (w) =>
+                (w is Tooltip && w.message == de.inboxAdd) ||
+                (w is Text && w.data == de.inboxAdd),
+          ),
+        );
+        await waitFor(tester, find.byType(AlertDialog));
+        await enter(tester, field(de.commonTitle), title);
+        await leaveField(tester);
+        await tap(tester, inDialog(de.filesChooseFilePhoto));
+        await waitFor(tester, inSheet(de.filesChooseFilePhoto));
+        // What the sheet offers on a phone.
+        for (final text in [
+          limit,
+          de.importTakePhoto,
+          de.filesScanDocument,
+          de.filesScanDocumentHint,
+          de.filesChooseFilePhoto,
+        ]) {
+          expect(inSheet(text), findsOneWidget, reason: text);
+        }
+        await tester.pump(const Duration(milliseconds: 600));
+        final name = await choose();
+        await waitFor(tester, inDialog(name));
+        await tap(
+          tester,
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.widgetWithText(FilledButton, de.commonSave),
+          ),
+        );
+        await dialogClosed(tester);
+        await waitFor(tester, find.text(title));
+        await until(
+          tester,
+          () => engine.inboxItems.any(
+            (i) => i.title == title && i.files.length == 1,
+          ),
+          'the entry with its file',
+          timeout: const Duration(seconds: 60),
+        );
+        final card = find.ancestor(
+          of: find.text(title),
+          matching: find.byType(ListTile),
+        );
+        expect(
+          find.descendant(
+            of: card,
+            matching: find.textContaining(de.inboxFiles(1)),
+          ),
+          findsOneWidget,
+          reason: '"1 Datei" under $title',
+        );
+      }
+
+      // A file from Android's picker.
+      await add('E2E Ablage Datei', de.filesChooseFilePhoto, () async {
+        // No pump after the tap: behind the picker Android draws no frames.
+        await tester.tap(
+          inSheet(de.filesChooseFilePhoto).first,
+          warnIfMissed: false,
+        );
+        await lifecycleIs(AppLifecycleState.paused);
+        var picked = await host('tap-text ${b64('e2e-ablage.png')} 6');
+        if (!picked.ok) {
+          // Not among the recent files: the picker's places, "Downloads".
+          final roots = await host(
+            'tap-text ${b64('Show roots|Open navigation drawer')} 6',
+          );
+          if (roots.ok) {
+            await host('tap-text ${b64('Downloads|Download')} 6');
+            picked = await host('tap-text ${b64('e2e-ablage.png')} 8');
+          }
+        }
+        if (!picked.ok) await hostOk('back');
+        await lifecycleIs(AppLifecycleState.resumed);
+        expect(picked.ok, isTrue, reason: 'picked in Android\'s file picker');
+        return 'e2e-ablage.png';
+      });
+      // A photo from the camera.
+      await add('E2E Ablage Foto', de.importTakePhoto, () async {
+        await tap(tester, inSheet(de.importTakePhoto));
+        expect(camera.shots, 1);
+        return 'e2e-kamera.png';
+      });
+      // A letter from the scanner: one PDF.
+      await add('E2E Ablage Scan', de.filesScanDocument, () async {
+        await tap(tester, inSheet(de.filesScanDocument));
+        expect(scans, 1);
+        final name = await untilAsync(
+          tester,
+          'the scan in the dialog',
+          () async {
+            // The button names it: "Scan <date> <time>.pdf".
+            final label = find.descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byWidgetPredicate(
+                (w) =>
+                    w is Text &&
+                    (w.data ?? '').startsWith(de.filesScanName) &&
+                    (w.data ?? '').endsWith('.pdf'),
+              ),
+            );
+            return label.evaluate().isEmpty
+                ? null
+                : (label.evaluate().first.widget as Text).data;
+          },
+        );
+        expect(name, endsWith('.pdf'));
+        return name;
+      });
+
+      // What the server keeps: the file, the photo and the scan.
+      final items = {for (final i in engine.inboxItems) i.title: i};
+      final file = items['E2E Ablage Datei']!.files.single;
+      final shot = items['E2E Ablage Foto']!.files.single;
+      final scan = items['E2E Ablage Scan']!.files.single;
+      expect(file.name, 'e2e-ablage.png');
+      expect(scan.mime, 'application/pdf');
+      expect(
+        pngSize((await tester.runAsync(() => state.files!.bytes(file)))!),
+        (320, 240),
+      );
+      expect(
+        await tester.runAsync(() => state.files!.bytes(shot)),
+        await photo.readAsBytes(),
+      );
+
+      // Tapped: a picture opens in Famio's viewer …
+      for (final title in ['E2E Ablage Datei', 'E2E Ablage Foto']) {
+        await tap(tester, find.text(title));
+        await waitFor(tester, find.byType(PhotoViewer));
+        await tap(tester, find.byTooltip(de.commonClose).last);
+        await waitGone(tester, find.byType(PhotoViewer));
+      }
+      // … the PDF in the phone's app for it (Famio hands over a copy).
+      expect(
+        await tester.runAsync(
+          () async => File(await state.files!.openable(scan)).readAsBytes(),
+        ),
+        _scannedPdf,
+      );
+      await tap(tester, find.text('E2E Ablage Scan'));
+      await Future<void>.delayed(const Duration(seconds: 4));
+      final focus = await hostOk('focus');
+      note('GRU-075 PDF opened in: $focus');
+      final opened = !focus.contains(AppEnv.isDev ? 'famio.dev' : 'famio');
+      if (opened) {
+        await hostOk('back');
+        await Future<void>.delayed(const Duration(seconds: 2));
+        await hostOk('front');
+      }
+      await lifecycleIs(AppLifecycleState.resumed);
+      await idle(tester, const Duration(seconds: 1));
+      expect(opened, isTrue, reason: 'an app for PDFs showed the scan');
+    } finally {
+      await clean(engine, {Collections.inbox});
+      await finish(tester, state);
+    }
+  });
+
+  // GRU-048 on Android: what Android had planned for the account
+  // (AlarmManager) and the widget's rows go with signing out; a reminder
+  // already shown is looked at too.
+  androidTest('GRU-048 signing out removes the planned reminders and the '
+      'widget', (tester) async {
+    await hostOk('grant');
+    final f = await theFamily();
+    final carl = await sessionOf(f.carl);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final later = uid('task');
+    final soon = uid('task');
+    await seed(carl, Collections.tasks, {
+      // Due today (a row of the widget), reminded in three hours.
+      later: Task(
+        id: later,
+        title: 'E2E Abmelden später',
+        due: today,
+        remindAt: now.add(const Duration(hours: 3)),
+        assigneeIds: [f.carl.id],
+        visibleTo: [f.carl.id],
+      ).toData(),
+      // Reminded in about a minute: shown before signing out.
+      soon: Task(
+        id: soon,
+        title: 'E2E Abmelden gleich',
+        due: today.add(const Duration(days: 2)),
+        remindAt: minuteAfter(const Duration(seconds: 50)),
+        assigneeIds: [f.carl.id],
+        visibleTo: [f.carl.id],
+      ).toData(),
+    });
+    var state = await startApp(tester, user: f.carl.username);
+    try {
+      final engine = state.engine!;
+      await until(
+        tester,
+        () => {later, soon}.every((id) => engine.tasks.any((t) => t.id == id)),
+        'both tasks on this phone',
+      );
+      expect(state.reminders, isNotNull, reason: 'the reminder service runs');
+      final prefs = await SharedPreferences.getInstance();
+      final plugin = FlutterLocalNotificationsPlugin();
+      bool ours(String? text) => (text ?? '').contains('E2E Abmelden');
+      final pending = await untilAsync(
+        tester,
+        'the reminders planned',
+        () async {
+          state.remindersChanged();
+          final p = await plugin.pendingNotificationRequests();
+          return p.where((r) => ours(r.title)).length >= 2 ? p : null;
+        },
+      );
+      final alarms = int.parse(await hostOk('alarms'));
+      note(
+        'GRU-048 before: planned ${prefs.getString('reminders.scheduled')}, '
+        'with the plugin ${pending.length}, Android\'s alarms $alarms',
+      );
+      expect(alarms, greaterThanOrEqualTo(2), reason: 'AlarmManager');
+
+      // The widget shows the day of this account.
+      Future<List<String?>> widget() async => [
+        await HomeWidget.getWidgetData<String>('date'),
+        for (var i = 0; i < 5; i++)
+          await HomeWidget.getWidgetData<String>('text$i'),
+      ];
+      final filled = await untilAsync(tester, 'the widget filled', () async {
+        final w = await widget();
+        return (w.first ?? '').isNotEmpty &&
+                w.skip(1).any((t) => (t ?? '').contains('Aufgabe'))
+            ? w
+            : null;
+      });
+      note('GRU-048 widget before: $filled');
+
+      // The reminder in a minute, shown by Android.
+      final shownBefore = await notification(
+        tester,
+        'the reminder of "E2E Abmelden gleich"',
+        (n) => ours(n.title) || ours(n.body),
+        timeout: const Duration(minutes: 3),
+      );
+      note('GRU-048 shown: ${shownBefore.title} / ${shownBefore.body}');
+      // Famio plans again meanwhile (the shown one stays, see below).
+      state.remindersChanged();
+      await idle(tester, const Duration(seconds: 3));
+      expect(
+        (await shown()).where((n) => ours(n.title) || ours(n.body)),
+        isNotEmpty,
+      );
+
+      // Einstellungen → "Abmelden".
+      await section(tester, de.sectionSettings);
+      await phoneScroll(tester, find.text(de.settingsSignOut));
+      expect(find.text(de.settingsSignOutSubtitle), findsOneWidget);
+      await tap(tester, find.text(de.settingsSignOut));
+      await until(tester, () => state.me == null, 'signed out');
+      await waitFor(
+        tester,
+        find.byWidgetPredicate(
+          (w) =>
+              w is TextField &&
+              (w.decoration?.labelText == 'Server-Adresse' ||
+                  w.decoration?.labelText == 'Benutzername'),
+        ),
+      );
+
+      expect(prefs.getString('reminders.scheduled'), isNull);
+      final after = await plugin.pendingNotificationRequests();
+      expect(after.map((r) => r.title), isEmpty);
+      final alarmsAfter = int.parse(await hostOk('alarms'));
+      expect(alarmsAfter, 0, reason: 'nothing left with AlarmManager');
+      final cleared = await widget();
+      expect(cleared.first, isEmpty, reason: 'the widget\'s date');
+      expect(cleared.skip(1), everyElement(isNull));
+      final stillShown = (await shown()).where(
+        (n) => ours(n.title) || ours(n.body),
+      );
+      note(
+        'GRU-048 after: planned ${after.length}, alarms $alarmsAfter, '
+        'widget $cleared, shown reminders of the old account '
+        '${describe(stillShown.toList())}',
+      );
+      expect(
+        stillShown,
+        isEmpty,
+        reason: 'the reminder shown before signing out is gone too',
+      );
+
+      // Signed in again: everything comes anew from the server.
+      await finish(tester, state);
+      state = await startApp(tester, user: f.carl.username);
+      await until(
+        tester,
+        () => state.engine!.tasks.any((t) => t.id == later),
+        'the task loaded again',
+      );
+    } finally {
+      await remove(carl, Collections.tasks, [later, soon]);
+      await finish(tester, state);
+    }
+  });
+
+  // Found while checking GRU-048: a reminder Android showed went off the
+  // screen as soon as Famio planned again (any change to tasks or
+  // appointments, every six hours, the next start): its time had passed,
+  // planning left it out and cancelled it. Now it stays until dismissed
+  // (reminder_service.dart, test/reminder_shown_test.dart); signing out
+  // still removes it (the GRU-048 test above).
+  androidTest('GRU-048 a shown reminder stays when Famio plans again', (
+    tester,
+  ) async {
+    await hostOk('grant');
+    final f = await theFamily();
+    final carl = await sessionOf(f.carl);
+    final now = DateTime.now();
+    final id = uid('task');
+    await seed(carl, Collections.tasks, {
+      id: Task(
+        id: id,
+        title: 'E2E Erinnerung bleibt',
+        due: DateTime(now.year, now.month, now.day + 2),
+        remindAt: minuteAfter(const Duration(seconds: 50)),
+        assigneeIds: [f.carl.id],
+        visibleTo: [f.carl.id],
+      ).toData(),
+    });
+    final state = await startApp(tester, user: f.carl.username);
+    try {
+      final engine = state.engine!;
+      await until(
+        tester,
+        () => engine.tasks.any((t) => t.id == id),
+        'the task on this phone',
+      );
+      bool ours(ActiveNotification n) =>
+          (n.title ?? '').contains('E2E Erinnerung bleibt');
+      await notification(
+        tester,
+        'the reminder',
+        ours,
+        timeout: const Duration(minutes: 3),
+      );
+      // Another task changes: Famio plans again.
+      final other = uid('task');
+      engine.saveTask(Task(id: other, title: 'E2E Anderes'));
+      await idle(tester, const Duration(seconds: 6));
+      state.remindersChanged();
+      await idle(tester, const Duration(seconds: 3));
+      final after = await shown();
+      note('GRU-048 shown after planning again: ${describe(after)}');
+      expect(after.where(ours), isNotEmpty);
+      engine.deleteTask(other);
+    } finally {
+      await remove(carl, Collections.tasks, [id]);
       await finish(tester, state);
     }
   });

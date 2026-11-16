@@ -3992,7 +3992,8 @@ void main() {
       ).toData(),
     });
     final state = await start(tester);
-    // HAU-138: no hint on the start page outside 15.12.–31.1.
+    // HAU-138: no hint on the start page outside 15.12.–31.1. (the date
+    // of the run; December and January: test/home_clock_test.dart).
     await openSection(tester, 'Start');
     await waitFor(tester, find.byType(HomeScreen));
     final banner = now.month == 1 || (now.month == 12 && now.day >= 15);

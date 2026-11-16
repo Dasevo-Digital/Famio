@@ -310,9 +310,20 @@ class ReminderService {
   Future<void> _schedule(List<DueReminder> due) async {
     final previous = _scheduled();
     final wanted = {for (final r in due) r.notificationId: _signature(r)};
+    // One whose time has come is no longer due, but the system may still
+    // show it: cancelling it would take it off the screen before the person
+    // read it (at the next sync, every six hours). It stays until dismissed,
+    // and in the list, so signing out still removes it (clear).
+    final shown = await _shownIds();
+    final kept = {
+      for (final e in previous.entries)
+        if (!wanted.containsKey(e.key) && shown.contains(e.key)) e.key: e.value,
+    };
 
     for (final id in previous.keys) {
-      if (wanted[id] != previous[id]) await _plugin.cancel(id: id);
+      if (wanted[id] != previous[id] && !kept.containsKey(id)) {
+        await _plugin.cancel(id: id);
+      }
     }
     for (final r in due) {
       if (previous[r.notificationId] == wanted[r.notificationId]) continue;
@@ -331,8 +342,20 @@ class ReminderService {
     }
     await _prefs.setString(
       _prefsKey,
-      jsonEncode({for (final e in wanted.entries) '${e.key}': e.value}),
+      jsonEncode({
+        for (final e in {...kept, ...wanted}.entries) '${e.key}': e.value,
+      }),
     );
+  }
+
+  /// The ids of Famio's notifications the system shows now; none where it
+  /// cannot tell.
+  Future<Set<int>> _shownIds() async {
+    try {
+      return {for (final n in await _plugin.getActiveNotifications()) ?n.id};
+    } catch (_) {
+      return const {};
+    }
   }
 
   void _armTimer(List<DueReminder> due) {

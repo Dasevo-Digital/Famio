@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -61,7 +62,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final me = AppScope.of(context).me!;
-    final now = DateTime.now();
+    // clock: tests set the time of day (GRU-056).
+    final now = clock.now();
     return SectionPage(
       section: FamioSection.home,
       title: '${_greeting(now)}, ${me.displayName}!',
@@ -242,7 +244,7 @@ class HomeScreen extends StatelessWidget {
                     _ConflictBanner(count: open.length),
                     const SizedBox(height: gap),
                   ],
-                  if (_yearEnd(DateTime.now()) && !guest) ...[
+                  if (_yearEnd(clock.now()) && !guest) ...[
                     const _YearReviewBanner(),
                     const SizedBox(height: gap),
                   ],
@@ -816,7 +818,7 @@ class _YearReviewBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = FamioColors.of(context);
-    final year = reviewYear(DateTime.now());
+    final year = reviewYear(clock.now());
     return SoftCard(
       color: c.tint(FamioSection.home),
       onTap: () => Navigator.of(context).push(

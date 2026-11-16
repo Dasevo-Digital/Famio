@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +40,8 @@ class YearReviewScreen extends StatefulWidget {
 }
 
 class _YearReviewScreenState extends State<YearReviewScreen> {
-  late var _year = widget.year ?? reviewYear(DateTime.now());
+  // clock: tests set the date (HAU-138).
+  late var _year = widget.year ?? reviewYear(clock.now());
   var _saving = false;
 
   Future<void> _savePdf(YearReview review) async {
@@ -68,7 +70,7 @@ class _YearReviewScreenState extends State<YearReviewScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final color = FamioColors.of(context).strong(FamioSection.home);
-    final latest = DateTime.now().year;
+    final latest = clock.now().year;
     return DataBuilder(
       collections: _collections,
       builder: (context, engine) {

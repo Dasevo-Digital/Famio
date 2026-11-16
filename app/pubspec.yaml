@@ -31,6 +31,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # The time of day and year the start page and the year in review go by,
+  # settable in tests (withClock).
+  clock: ^1.1.3
   crypto: ^3.0.7
   path_provider: ^2.1.6
   shared_preferences: ^2.5.5
