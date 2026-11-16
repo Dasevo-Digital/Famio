@@ -20,8 +20,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// (openssl) and only used on loopback.
 late Directory _certs;
 
+/// The DER bytes of [pem]; openssl on Windows writes CRLF line ends.
 List<int> _der(String pem) => base64.decode(
-  pem.split('\n').where((l) => l.isNotEmpty && !l.startsWith('-----')).join(),
+  const LineSplitter()
+      .convert(pem)
+      .map((l) => l.trim())
+      .where((l) => l.isNotEmpty && !l.startsWith('-----'))
+      .join(),
 );
 
 String _pin(String name) => formatFingerprint(
