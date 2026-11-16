@@ -352,7 +352,12 @@ class SyncEngine {
   Future<void> refreshMembers() async {
     try {
       final before = _own;
-      _members = await api.members();
+      final members = await api.members();
+      // The engine may have been disposed while the answer was on its way
+      // (sign-out, a test's tear-down): then neither store nor streams
+      // take anything any more.
+      if (_changes.isClosed) return;
+      _members = members;
       store.setMeta(
         'members',
         jsonEncode([for (final m in _members) m.toJson()]),
