@@ -496,7 +496,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                           onSelect: _go,
                           unread: unread,
                         ),
-                        Expanded(child: body),
+                        // The pages of a section block the semantics of
+                        // what is painted before them; without a boundary
+                        // of their own that is the rail, and screen readers
+                        // could not reach the areas.
+                        Expanded(
+                          child: Semantics(container: true, child: body),
+                        ),
                       ],
                     ),
                   )

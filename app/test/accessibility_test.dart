@@ -9,6 +9,7 @@ import 'package:famio/src/design/palette.dart';
 import 'package:famio/src/l10n.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -122,6 +123,29 @@ void main() {
     // Let the sync debounce of the demo data run out.
     await tester.pump(const Duration(seconds: 1));
   }
+
+  testWidgets('screen readers reach every area of the side rail', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await open(tester);
+    final missing = <String>[];
+    for (final area in _areas) {
+      if (find.text(area.label).evaluate().isEmpty) continue;
+      final nodes = find.bySemanticsLabel(area.label).evaluate();
+      final tappable = nodes.any(
+        (e) => tester
+            .getSemantics(find.byWidget(e.widget).first)
+            .getSemanticsData()
+            .hasAction(SemanticsAction.tap),
+      );
+      if (!tappable) missing.add(area.label);
+    }
+    // Let the sync debounce of the demo data run out.
+    await tester.pump(const Duration(seconds: 1));
+    semantics.dispose();
+    expect(missing, isEmpty);
+  });
 
   testWidgets('every control has a label and a 48 dp target', (tester) async {
     final semantics = tester.ensureSemantics();
