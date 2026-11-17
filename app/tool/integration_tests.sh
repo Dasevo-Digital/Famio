@@ -19,6 +19,9 @@
 # Bring! and Microsoft To Do (tool/fake_list_services.py): the server talks
 # to it instead of the real services, the test reaches it at
 # FAMIO_E2E_FAKE_LISTS.
+# A test file with the line `// e2e-control: restore` gets its server
+# through tool/e2e_server.py, which stops it, puts its newest backup back
+# and starts it again when the test asks at FAMIO_E2E_CONTROL.
 set -euo pipefail
 
 DEVICE="${1:?usage: tool/integration_tests.sh <linux|macos> [test]…}"
@@ -126,9 +129,17 @@ for test in "${TESTS[@]}"; do
     server_env+=("FAMIO_TEST_LIST_SERVICES=http://127.0.0.1:$fake_port/")
     fake_args+=("--dart-define=FAMIO_E2E_FAKE_LISTS=http://127.0.0.1:$fake_port")
   done
+  run_server=("$SERVER_BIN")
+  control_args=()
+  if grep -q '^// e2e-control: restore$' "$test"; then
+    control_port=$(free_port)
+    run_server=(python3 tool/e2e_server.py "$control_port" "$SERVER_BIN")
+    control_args=("--dart-define=FAMIO_E2E_CONTROL=http://127.0.0.1:$control_port")
+    echo "== Server über tool/e2e_server.py, Steuerung auf Port $control_port"
+  fi
   env FAMIO_TLS_PORT="$tls_port" FAMIO_TIMEZONE=Europe/Berlin \
     ${server_env[@]+"${server_env[@]}"} \
-    FAMIO_DATA_DIR="$data" FAMIO_PORT="$port" "$SERVER_BIN" >"$log" 2>&1 &
+    FAMIO_DATA_DIR="$data" FAMIO_PORT="$port" "${run_server[@]}" >"$log" 2>&1 &
   SERVER_PID=$!
 
   for _ in $(seq 1 60); do
@@ -158,6 +169,7 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_OTHER_CERT="$OTHER_CERT" \
     --dart-define=FAMIO_OTHER_KEY="$OTHER_KEY" \
     ${fake_args[@]+"${fake_args[@]}"} \
+    ${control_args[@]+"${control_args[@]}"} \
     ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS} 2>&1 | tee "$out" &&
     # A run that was cut off or ran nothing exits 0 as well: count only
     # one that says its tests passed ("All tests passed!" on macOS,

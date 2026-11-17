@@ -2,10 +2,13 @@
 """Runs integration_test/review_open_test.dart in an iOS simulator.
 
     tool/ios_review_tests.py <simulator id> [--file integration_test/<x>_test.dart]
+        [--out <folder for pictures>]
 
 Starts a throwaway server and answers the test's `E2E-HOST …` lines: what
 the share extension would leave in the app group (`share-sheet`, written
-with `xcrun simctl get_app_container`). Simulators only, never a phone: the
+with `xcrun simctl get_app_container`), Famio away behind another app and
+back (`away <seconds>`, keeps the picture iOS took for the app switcher)
+and a screenshot (`screenshot <name>`). Simulators only, never a phone: the
 test signs in to the throwaway server.
 """
 
@@ -14,6 +17,7 @@ import json
 import os
 import re
 import secrets
+import signal
 import subprocess
 import sys
 import tempfile
@@ -36,10 +40,39 @@ def simctl(*args, check=True):
     ).stdout.strip()
 
 
+def away(device, seconds, shots):
+    """Puts Settings in front of Famio for [seconds] and brings Famio back.
+    Returns where the picture iOS keeps for the app switcher went (as PNG
+    if sips can read it), or what was found instead."""
+    simctl("launch", device, "com.apple.Preferences")
+    time.sleep(seconds)
+    data = Path(simctl("get_app_container", device, BUNDLE, "data"))
+    found = [
+        p for folder in ("Library/SplashBoard", "Library/Caches/Snapshots")
+        if (data / folder).exists()
+        for p in (data / folder).rglob("*")
+        if p.is_file() and not p.name.startswith(".")
+    ]
+    out = "keine Aufnahme gefunden"
+    if found:
+        newest = max(found, key=lambda p: p.stat().st_mtime)
+        raw = shots / f"switcher-{int(time.time())}{newest.suffix}"
+        raw.write_bytes(newest.read_bytes())
+        png = raw.with_suffix(".png")
+        converted = subprocess.run(
+            ["sips", "-s", "format", "png", str(raw), "--out", str(png)],
+            capture_output=True,
+        )
+        out = str(png if converted.returncode == 0 and png.exists() else raw)
+    simctl("launch", device, BUNDLE)
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("device", help="simulator id (xcrun simctl list)")
     parser.add_argument("--file", default="integration_test/review_open_test.dart")
+    parser.add_argument("--out", help="folder for pictures (default: temporary)")
     args = parser.parse_args()
     listed = simctl("list", "devices")
     line = next((l for l in listed.splitlines() if args.device in l), "")
@@ -49,7 +82,11 @@ def main():
         simctl("boot", args.device)
         simctl("bootstatus", args.device, "-b")
 
+    # Stopped from outside: still stop the server (finally below).
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(143))
     work = Path(tempfile.mkdtemp(prefix="famio-ios-review-"))
+    shots = Path(args.out) if args.out else work / "shots"
+    shots.mkdir(parents=True, exist_ok=True)
     server = None
     try:
         print("== Server bauen", flush=True)
@@ -120,6 +157,7 @@ def main():
             what, rest = found.group(1), (found.group(2) or "").split()
             key = next((r[4:] for r in rest if r.startswith("@id=")), None)
             rest = [r for r in rest if not r.startswith("@id=")]
+            out = ""
             try:
                 if what == "share-sheet":
                     # As ShareViewController leaves it; its link the test
@@ -141,11 +179,17 @@ def main():
                     }))
                 elif what == "grant":
                     pass  # The simulator asks nothing the test needs here.
+                elif what == "away":
+                    out = away(args.device, float(rest[0]) if rest else 3, shots)
+                elif what == "screenshot":
+                    path = shots / f"{rest[0] if rest else 'screen'}.png"
+                    simctl("io", args.device, "screenshot", str(path))
+                    out = str(path)
                 else:
                     raise RuntimeError(f"unbekannter Auftrag: {what}")
-                print(f"== host: {what} erledigt", flush=True)
+                print(f"== host: {what} erledigt {out}".rstrip(), flush=True)
                 if key:
-                    results.results[key] = {"ok": True, "out": ""}
+                    results.results[key] = {"ok": True, "out": out}
             except Exception as e:  # noqa: BLE001 - reported to the test
                 print(f"!! host: {what} fehlgeschlagen: {e}", flush=True)
                 if key:

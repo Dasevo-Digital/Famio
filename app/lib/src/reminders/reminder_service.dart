@@ -42,6 +42,12 @@ class ReminderService {
   /// Returns null where notifications are unavailable (web, tests, errors).
   static Future<ReminderService?> create(SharedPreferences prefs) async {
     if (kIsWeb) return null;
+    // The iPhone test variant goes without: starting the plugin always asks
+    // iOS whether Famio may notify, and a simulator cannot answer, which
+    // keeps the app inactive for good.
+    if (AppEnv.isE2e && defaultTargetPlatform == TargetPlatform.iOS) {
+      return null;
+    }
     final plugin = FlutterLocalNotificationsPlugin();
     try {
       final ok = await plugin.initialize(
