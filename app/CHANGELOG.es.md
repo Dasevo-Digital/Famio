@@ -4,6 +4,17 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.56 – Las notificaciones abren su contenido, compartir en el iPhone
+
+- Al tocar una notificación se abre aquello de lo que trata: la tarea, la
+  cita en su día, el chat, el niño, la emergencia o la página adecuada.
+  También con las notificaciones del navegador y de ntfy.
+- En Android, las notificaciones propias del servidor ahora abren Famio al
+  tocarlas.
+- «Compartir con Famio» ahora también funciona en iPhone y iPad: enlaces,
+  texto, fotos y archivos de otras apps.
+- Los enlaces de páginas de recetas ofrecen primero importar la receta.
+
 ## 2.0.55 – Cierre de sesión y pantalla de pared mejorados
 
 - Si una sesión termina desde fuera, el dispositivo solo guarda los cambios

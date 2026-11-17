@@ -4,6 +4,17 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.56 – Mitteilungen öffnen ihr Ziel, Teilen auf dem iPhone
+
+- Eine Mitteilung antippen öffnet, worum es geht: die Aufgabe, den Termin
+  an seinem Tag, den Chat, das Kind, den Notfall oder die passende Seite.
+  Das gilt auch für Mitteilungen im Browser und über ntfy.
+- Auf Android öffnen auch die eigenen Mitteilungen des Servers Famio beim
+  Antippen.
+- „Teilen an Famio“ gibt es jetzt auch auf iPhone und iPad: Links, Text,
+  Fotos und Dateien aus anderen Apps.
+- Links von Rezeptseiten bieten den Rezept-Import zuerst an.
+
 ## 2.0.55 – Abmelden und Wandanzeige verbessert
 
 - Endet eine Sitzung von außen, bleiben auf dem Gerät nur die noch nicht

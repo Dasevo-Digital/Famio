@@ -4,6 +4,16 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.56 – Notifications open what they are about, sharing on the iPhone
+
+- Tapping a notification opens what it is about: the task, the appointment
+  on its day, the chat, the child, the emergency or the right page. This
+  also works for notifications in the browser and through ntfy.
+- On Android, the server's own notifications now open Famio when tapped.
+- "Share to Famio" now also works on iPhone and iPad: links, text, photos
+  and files from other apps.
+- Links of recipe sites offer the recipe import first.
+
 ## 2.0.55 – Signing out and the wall display improved
 
 - When a session ends elsewhere, the device keeps only changes not sent
