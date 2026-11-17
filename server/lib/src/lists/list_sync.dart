@@ -98,6 +98,26 @@ class ListSync {
 
   static const tasksList = 'tasks';
 
+  /// The app's end-to-end tests point Bring! and Microsoft To Do at a local
+  /// stand-in (`FAMIO_TEST_LIST_SERVICES`, `app/tool/fake_list_services.py`):
+  /// Bring! below `bring/`, Microsoft Graph below `graph/` and the Microsoft
+  /// sign-in below `login/` of the returned address. Only an http(s)
+  /// address on this computer counts (127.0.0.1, ::1, localhost), so the
+  /// setting can never send what members type in (passwords, tokens) to
+  /// another host; anything else gives null.
+  static Uri? testServicesBase(String? text) {
+    final uri = Uri.tryParse(text?.trim() ?? '');
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.userInfo.isNotEmpty ||
+        uri.hasQuery ||
+        uri.hasFragment ||
+        !const {'127.0.0.1', '::1', 'localhost'}.contains(uri.host)) {
+      return null;
+    }
+    return uri.path.endsWith('/') ? uri : uri.replace(path: '${uri.path}/');
+  }
+
   void start() {
     _timer ??= Timer.periodic(interval, (_) => syncAll());
   }

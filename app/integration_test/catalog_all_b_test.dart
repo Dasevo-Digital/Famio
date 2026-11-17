@@ -8,8 +8,9 @@
 // are API sessions (what the server gives them, what they write), a second
 // device of the admin is a sync engine of its own with the app's code.
 // Native parts are replaced at their plugin boundary: the share sheet (its
-// method channel) and the file picker. Bring! and Microsoft To Do are real
-// services and are not contacted.
+// method channel) and the file picker. Bring! and Microsoft To Do are not
+// contacted here; catalog_lists_test.dart connects them with a local
+// stand-in.
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;

@@ -29,6 +29,7 @@ class ServerConfig {
     this.upstreamPin,
     this.clientMode = false,
     this.fullAccessLog = false,
+    this.testListServices,
   });
 
   /// Reads configuration from CLI args, environment and, when running as a
@@ -103,6 +104,7 @@ class ServerConfig {
       ],
       webDir: _nonEmpty(env['FAMIO_WEB_DIR']),
       fullAccessLog: env['FAMIO_ACCESS_LOG']?.trim().toLowerCase() == 'full',
+      testListServices: _nonEmpty(env['FAMIO_TEST_LIST_SERVICES']),
       // Add-on in client mode: only the sidebar, the family's server runs
       // elsewhere.
       upstream: options['mode'] == 'client'
@@ -199,6 +201,12 @@ class ServerConfig {
   /// server's address in the home network (`FAMIO_TLS_NAMES=192.168.1.5`).
   /// Apple devices only connect to names listed in the certificate.
   final List<String> tlsNames;
+
+  /// For the app's end-to-end tests only: the address of a local stand-in
+  /// for Bring! and Microsoft To Do (`app/tool/fake_list_services.py`).
+  /// The server follows it only to an address on this computer (see
+  /// `ListSync.testServicesBase`).
+  final String? testListServices;
 }
 
 bool _flag(String? v, {bool defaultValue = false}) {

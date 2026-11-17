@@ -102,6 +102,7 @@ Future<void> _start(List<String> args) async {
     tlsPort: tls == null ? null : config.tlsPort,
     tls: tls,
     webApp: webApp,
+    testListServices: config.testListServices,
     auditLog: (line) =>
         stdout.writeln('${DateTime.now().toIso8601String()} $line'),
   )..startBackgroundJobs();

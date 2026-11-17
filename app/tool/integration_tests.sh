@@ -15,6 +15,10 @@
 # gnome-keyring in a dbus session).
 # FAMIO_E2E_ARGS goes to `flutter test` as it is, e.g.
 # FAMIO_E2E_ARGS='--plain-name KIN-012' to run single tests of a file.
+# A test file with the line `// e2e-fake: lists` gets a local stand-in for
+# Bring! and Microsoft To Do (tool/fake_list_services.py): the server talks
+# to it instead of the real services, the test reaches it at
+# FAMIO_E2E_FAKE_LISTS.
 set -euo pipefail
 
 DEVICE="${1:?usage: tool/integration_tests.sh <linux|macos> [test]…}"
@@ -47,8 +51,10 @@ fi
 
 WORK=$(mktemp -d)
 SERVER_PID=
+FAKE_PID=
 cleanup() {
   [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2>/dev/null || true
+  [ -n "$FAKE_PID" ] && kill "$FAKE_PID" 2>/dev/null || true
   rm -rf "$WORK"
   # Built app bundles would show up in Spotlight and Launchpad.
   if [ "$DEVICE" = macos ]; then
@@ -97,6 +103,29 @@ for test in "${TESTS[@]}"; do
     server_env+=("$assignment")
   done
   [ ${#server_env[@]} -eq 0 ] || echo "== Server mit ${server_env[*]}"
+  # Stand-ins for other services, in a line like `// e2e-fake: lists`.
+  fake_args=()
+  for fake in $(sed -n 's|^// e2e-fake:||p' "$test"); do
+    if [ "$fake" != lists ]; then
+      echo "Unbekannter Ersatzdienst in $test: $fake" >&2
+      exit 1
+    fi
+    fake_port=$(free_port)
+    python3 tool/fake_list_services.py --port "$fake_port" >"$data.fake.log" 2>&1 &
+    FAKE_PID=$!
+    for _ in $(seq 1 40); do
+      curl -fs "http://127.0.0.1:$fake_port/_test/state" >/dev/null && break
+      sleep 0.25
+    done
+    if ! curl -fs "http://127.0.0.1:$fake_port/_test/state" >/dev/null; then
+      echo "Ersatz für Bring! und Microsoft To Do startet nicht:" >&2
+      cat "$data.fake.log" >&2
+      exit 1
+    fi
+    echo "== Ersatz für Bring! und Microsoft To Do auf Port $fake_port"
+    server_env+=("FAMIO_TEST_LIST_SERVICES=http://127.0.0.1:$fake_port/")
+    fake_args+=("--dart-define=FAMIO_E2E_FAKE_LISTS=http://127.0.0.1:$fake_port")
+  done
   env FAMIO_TLS_PORT="$tls_port" FAMIO_TIMEZONE=Europe/Berlin \
     ${server_env[@]+"${server_env[@]}"} \
     FAMIO_DATA_DIR="$data" FAMIO_PORT="$port" "$SERVER_BIN" >"$log" 2>&1 &
@@ -128,6 +157,7 @@ for test in "${TESTS[@]}"; do
     --dart-define=FAMIO_E2E_SLOT="$SLOT" \
     --dart-define=FAMIO_OTHER_CERT="$OTHER_CERT" \
     --dart-define=FAMIO_OTHER_KEY="$OTHER_KEY" \
+    ${fake_args[@]+"${fake_args[@]}"} \
     ${FAMIO_E2E_ARGS:+$FAMIO_E2E_ARGS} 2>&1 | tee "$out" &&
     # A run that was cut off or ran nothing exits 0 as well: count only
     # one that says its tests passed ("All tests passed!" on macOS,
@@ -138,11 +168,20 @@ for test in "${TESTS[@]}"; do
   else
     echo "== FEHLER: $test" >&2
     tail -40 "$log" >&2
+    if [ -n "$FAKE_PID" ]; then
+      echo "== Ersatzdienst:" >&2
+      tail -40 "$data.fake.log" >&2
+    fi
     failed+=("$test")
   fi
   kill "$SERVER_PID" 2>/dev/null || true
   wait "$SERVER_PID" 2>/dev/null || true
   SERVER_PID=
+  if [ -n "$FAKE_PID" ]; then
+    kill "$FAKE_PID" 2>/dev/null || true
+    wait "$FAKE_PID" 2>/dev/null || true
+    FAKE_PID=
+  fi
 done
 
 if [ ${#failed[@]} -gt 0 ]; then

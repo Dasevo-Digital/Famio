@@ -79,6 +79,7 @@ class FamioServerApp {
     String? metricsToken,
     String releaseKey = famioReleaseKey,
     LoginThrottle? throttle,
+    String? testListServices,
   }) : dataDir = dataDir,
        trustProxy = trustProxy,
        ingressAuth = ingressAuth {
@@ -123,6 +124,17 @@ class FamioServerApp {
       client: httpClient,
       urlPolicy: remoteUrlPolicy,
     );
+    // End-to-end tests only: Bring! and Microsoft To Do on this computer.
+    final listTests = ListSync.testServicesBase(testListServices);
+    if (testListServices != null && testListServices.trim().isNotEmpty) {
+      auditLog?.call(
+        listTests == null
+            ? '[listen] FAMIO_TEST_LIST_SERVICES ignoriert: nur für '
+                  '127.0.0.1, ::1 oder localhost'
+            : '[listen] Testbetrieb: Bring! und Microsoft To Do unter '
+                  '$listTests',
+      );
+    }
     lists = ListSync(
       db: db,
       records: records,
@@ -133,6 +145,9 @@ class FamioServerApp {
         ServerSettings.listSyncModule,
       ),
       client: httpClient,
+      bringBase: listTests?.resolve('bring/'),
+      graphBase: listTests?.resolve('graph/'),
+      loginBase: listTests?.resolve('login/'),
       log: auditLog,
     );
     caldav = CalDavSync(
