@@ -26,6 +26,10 @@ abstract class RecordBackend {
 
   void setMeta(String key, String? value);
 
+  /// Rewrites the file without the space of what was removed, so nothing
+  /// of it stays readable there (outside a transaction).
+  void compact();
+
   /// Browser: keep an encrypted copy of the records from now on (true), or
   /// stop and delete it (false). The apps' database stays anyway.
   void keepCopy(bool keep);

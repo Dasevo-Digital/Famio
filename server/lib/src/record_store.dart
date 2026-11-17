@@ -881,19 +881,29 @@ class RecordStore {
         final prior = existing != null && existing.deleted
             ? _lastLive(change.collection, change.id) ?? existing
             : existing;
-        if (role == MemberRole.guest &&
+        final wallDisplay =
+            role == MemberRole.service && access == ServiceAccess.everyday;
+        if ((role == MemberRole.guest || wallDisplay) &&
             change.collection == Collections.tasks &&
             !incoming.deleted &&
             prior != null &&
             !prior.deleted &&
-            !Task.createdBy(prior.data, userId)) {
+            (wallDisplay || !Task.createdBy(prior.data, userId))) {
           // Someone else's task, also one written again over its deletion:
           // only the guest's ticks count. Their own they change (#365).
           // Who created it is the server's to keep, not part of the ticks.
+          // A wall display only ticks (#556); what else its app sends comes
+          // from writing whole tasks, not from a choice to tell about.
           final sent = _withCreator(incoming, prior, userId);
           incoming = _guestTaskChange(incoming, prior);
           merged = identical(prior, existing);
-          partlyKept = !_sameData(sent, incoming);
+          partlyKept = !wallDisplay && !_sameData(sent, incoming);
+          if (merged && !incoming.winsOver(prior)) {
+            // Ticked before someone changed the task meanwhile: the ticks
+            // are put on the task as it is now, so nothing of either is
+            // lost, and they come after it (#558).
+            incoming = incoming.copyWith(updatedAt: prior.updatedAt + 1);
+          }
         }
         // Even a losing edit can be retained as a readable conflict. Check
         // new attachments before either version can reach persistent data.
@@ -929,6 +939,7 @@ class RecordStore {
           incoming = canonical;
         }
         if (existing != null &&
+            !merged &&
             !incoming.winsOver(existing) &&
             !(sawReset && _wipeMark(existing))) {
           _keepConflict(
@@ -1594,9 +1605,11 @@ class RecordStore {
   }
 
   /// What stays of a departed member: children's records and timetables
-  /// they were named for lose them as guardian and audience. Where no
-  /// adult remains, the record is for the whole family, as a child without
-  /// guardians is in the apps; else nobody could see or change it (#506).
+  /// they were named for lose them as guardian and audience. What no other
+  /// adult was named for goes to the child's other guardians (#506). Where
+  /// none remain either, the record is for the whole family, as a child
+  /// without guardians is in the apps (else nobody could see or change
+  /// it), and for whoever else was named, the child itself, say.
   void _handOnChildren(String memberId, int at) {
     const kept = [
       Collections.children,
@@ -1604,22 +1617,53 @@ class RecordStore {
       Collections.childLogs,
       Collections.timetables,
     ];
-    final rows = _db.select(
-      'SELECT * FROM records WHERE deleted = 0 AND collection IN (?, ?, ?, ?)',
-      kept,
-    );
-    for (final row in rows) {
-      final r = _record(row);
+    final records = [
+      for (final row in _db.select(
+        'SELECT * FROM records WHERE deleted = 0'
+        ' AND collection IN (?, ?, ?, ?)',
+        kept,
+      ))
+        _record(row),
+    ];
+    final members = memberIds().toSet();
+    bool adult(Object? id) =>
+        id is String &&
+        id != memberId &&
+        members.contains(id) &&
+        _role(id) == MemberRole.adult;
+    List<String> guardiansOf(SyncRecord r) => [
+      for (final g in r.data['guardianIds'] as List? ?? const []) '$g',
+    ];
+    // Read before any child is changed: whom each one still has.
+    final guardiansLeft = {
+      for (final r in records)
+        if (r.collection == Collections.children)
+          r.id: guardiansOf(r).where(adult).toList(),
+    };
+    final adults = members.where(adult).toList();
+    for (final r in records) {
       final audience = r.visibleTo;
       final guardians = r.collection == Collections.children
-          ? [for (final g in r.data['guardianIds'] as List? ?? const []) '$g']
+          ? guardiansOf(r)
           : const <String>[];
       if (!(audience?.contains(memberId) ?? false) &&
           !guardians.contains(memberId)) {
         continue;
       }
+      final childId =
+          r.collection == Collections.childEntries ||
+              r.collection == Collections.childLogs
+          ? '${r.data['childId']}'
+          : r.id;
       final rest = [...?audience]..remove(memberId);
-      final keepsAdult = rest.any((id) => _role(id) == MemberRole.adult);
+      final others = guardiansLeft[childId] ?? const <String>[];
+      final List<String>? next = audience == null || rest.any(adult)
+          ? (audience == null ? null : rest)
+          : others.isNotEmpty
+          ? {...rest, ...others}.toList()
+          : rest.isEmpty
+          ? null
+          : {...rest, ...adults}.toList();
       _put(
         r.copyWith(
           data: {
@@ -1627,7 +1671,7 @@ class RecordStore {
               if (e.key != SyncRecord.visibilityKey) e.key: e.value,
             if (guardians.contains(memberId))
               'guardianIds': [...guardians]..remove(memberId),
-            if (keepsAdult) SyncRecord.visibilityKey: rest,
+            SyncRecord.visibilityKey: ?next,
           },
           updatedAt: at > r.updatedAt ? at : r.updatedAt + 1,
           updatedBy: serverMemberId,
@@ -1902,11 +1946,18 @@ class RecordStore {
       // stays in it: a child takes only itself out. In its own the child
       // adds and removes people freely.
       final ids = [...?(data['memberIds'] as List?)];
-      final missing = [
-        for (final id in existing.data['memberIds'] as List? ?? const [])
-          if (id != userId && !ids.contains(id)) id,
-      ];
-      if (missing.isNotEmpty) data['memberIds'] = [...ids, ...missing];
+      final before = existing.data['memberIds'] as List? ?? const [];
+      if (before.isEmpty) {
+        // Nor does it name people in an appointment of the whole family:
+        // naming itself would take it from everyone else (#559).
+        if (ids.isNotEmpty) data['memberIds'] = <Object?>[];
+      } else {
+        final missing = [
+          for (final id in before)
+            if (id != userId && !ids.contains(id)) id,
+        ];
+        if (missing.isNotEmpty) data['memberIds'] = [...ids, ...missing];
+      }
       // Nor does it take single dates out of such a series: "only this
       // date" would make the date the child's own copy (#416).
       if (existing.data.containsKey('exceptions')) {
@@ -2087,19 +2138,10 @@ class RecordStore {
       case Collections.routineRuns:
         return true;
       case Collections.tasks:
-        if (existing == null || existing.deleted || incoming.deleted) {
-          return false;
-        }
-        // Who created it the server keeps itself (see [_withCreator]).
-        const ticks = {'done', 'completedAt', Task.createdByKey};
-        // Missing, null and "" are the same (clients write empty fields).
-        String same(Object? v) => jsonEncode(v == '' ? null : v);
-        final keys = {...existing.data.keys, ...incoming.data.keys};
-        return keys.every(
-          (k) =>
-              ticks.contains(k) ||
-              same(existing.data[k]) == same(incoming.data[k]),
-        );
+        // Of an existing task only the ticks count, put on the task as it
+        // is ([_guestTaskChange]), as for guests: ticking a repeating task
+        // also moves it on, and the app writes whole tasks (#556).
+        return existing != null && !existing.deleted && !incoming.deleted;
       case Collections.pointEntries:
         bool pending(SyncRecord r) => r.data['status'] == 'pending';
         if (existing != null && !existing.deleted && !pending(existing)) {

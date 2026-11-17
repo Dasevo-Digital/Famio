@@ -6,10 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Changes a session left unsent when it ended elsewhere (a new password on
 /// another device, "Überall abmelden"), #337. The database of this account
-/// stays on the device where it was, encrypted as before, instead of being
-/// deleted: signing in again with the same account at the same server opens
-/// it, and the first sync sends what waits. Another account or server, a
-/// discard or [keptFor] delete it.
+/// stays on the device where it was, encrypted as before, with only these
+/// changes in it (#560): signing in again with the same account at the same
+/// server opens it, downloads everything anew and sends what waits. Another
+/// account or server, a discard or [keptFor] delete it. Of a removed
+/// account nothing is kept.
 class WaitingChanges {
   const WaitingChanges({
     required this.server,
@@ -85,5 +86,31 @@ void deleteDeviceDatabase(String dir, String name) {
   for (final suffix in const ['', '-journal', '-wal', '-shm']) {
     final file = File(p.join(dir, '$name$suffix'));
     if (file.existsSync()) file.deleteSync();
+  }
+}
+
+/// How long a database set aside because it did not open (#490) is kept:
+/// nothing in Famio reads it, it only holds what the device had not sent
+/// yet, so it goes after that, when its account signs out or another one
+/// signs in (#561).
+const setAsideKeptFor = Duration(days: 30);
+
+/// Deletes the copy set aside of the database [name] in [dir].
+void deleteSetAside(String dir, String name) =>
+    deleteDeviceDatabase(dir, '$name.unreadable');
+
+/// Deletes the copies set aside in [dir] older than [setAsideKeptFor] and,
+/// given [memberId], those of other accounts.
+void pruneSetAside(String dir, {required DateTime now, String? memberId}) {
+  final folder = Directory(dir);
+  if (!folder.existsSync()) return;
+  for (final entry in folder.listSync()) {
+    final name = p.basename(entry.path);
+    if (entry is! File || !name.endsWith('.db.unreadable')) continue;
+    final database = name.substring(0, name.length - '.unreadable'.length);
+    final other = memberId != null && !database.endsWith('_$memberId.db');
+    if (other || now.difference(entry.lastModifiedSync()) >= setAsideKeptFor) {
+      deleteSetAside(dir, database);
+    }
   }
 }

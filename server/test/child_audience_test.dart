@@ -858,6 +858,44 @@ void main() {
       );
     });
 
+    test('a child does not narrow a whole-family appointment to itself '
+        '(#559)', () async {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final family = appointment('Ausflug Zoo', const []);
+      await write(mama, 'zoo', family, now);
+      final r = await sync(
+        kid,
+        changes: [
+          SyncRecord(
+            collection: Collections.events,
+            id: 'zoo',
+            data: {
+              ...family,
+              'memberIds': [kid.id],
+              'notes': 'Brotdose',
+            },
+            updatedAt: now + 1000,
+            rev: app.records.get(Collections.events, 'zoo')!.rev,
+          ),
+        ],
+      );
+      final after = app.records.get(Collections.events, 'zoo')!;
+      expect(after.data['memberIds'], isEmpty);
+      expect(after.data['notes'], 'Brotdose');
+      expect(r.refused.map((i) => '${i.id}:${i.code}'), ['zoo:partly_kept']);
+      expect(await guestSeesTitle('zoo'), isTrue);
+      // In one it entered itself it names whom it likes.
+      final own = appointment('Spielplatz', const []);
+      await write(kid, 'play', own, now + 2000);
+      await write(kid, 'play', {
+        ...own,
+        'memberIds': [kid.id],
+      }, now + 3000);
+      expect(app.records.get(Collections.events, 'play')!.data['memberIds'], [
+        kid.id,
+      ]);
+    });
+
     test('an appointment from before the note has no owner', () async {
       final now = DateTime.now().millisecondsSinceEpoch;
       final old = appointment('Kieferorthopäde', [kid.id]);

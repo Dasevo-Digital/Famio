@@ -223,6 +223,74 @@ void main() {
     });
   });
 
+  testWidgets('nobody named in a whole-family appointment of others (#559)', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    final store = LocalStore.open(':memory:')
+      ..setMeta('members', _membersWithPapa);
+    engine('m1', store).saveEvent(appointment('zoo', const []));
+    final mia = engine('k1', store)..saveEvent(appointment('play', const []));
+    expect(mia.mayNameParticipants(mia.event('zoo')), isFalse);
+    expect(mia.mayNameParticipants(mia.event('play')), isTrue);
+    expect(mia.mayNameParticipants(null), isTrue);
+    expect(engine('m1', store).mayNameParticipants(mia.event('zoo')), isTrue);
+    final state = AppState();
+    await state.init();
+    state
+      ..me = mia.members.firstWhere((m) => m.id == 'k1')
+      ..engine = mia;
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pump();
+    final context = tester.element(find.byType(Scaffold).first);
+    const hint =
+        'Dieser Termin gilt für die ganze Familie. Einzelne Personen legen '
+        'andere fest.';
+
+    Future<Map<String, bool>> chips(String id) async {
+      final event = mia.events.firstWhere((e) => e.id == id);
+      unawaited(
+        showEventEditor(
+          context,
+          occurrence: Occurrence(event, event.start, event.end),
+        ),
+      );
+      await tester.pumpAndSettle();
+      final result = {
+        for (final name in ['Mama', 'Papa', 'Mia'])
+          name: _selectable(
+            tester.widget(
+              find.ancestor(
+                of: find.text(name).last,
+                matching: find.byType(FilterChip),
+              ),
+            ),
+          ),
+        'hint': find.text(hint).evaluate().isNotEmpty,
+      };
+      Navigator.of(tester.element(find.text('Mia').first)).pop();
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    expect(await chips('zoo'), {
+      'Mama': false,
+      'Papa': false,
+      'Mia': false,
+      'hint': true,
+    });
+    expect(await chips('play'), {
+      'Mama': true,
+      'Papa': true,
+      'Mia': true,
+      'hint': false,
+    });
+  });
+
   testWidgets('single dates only in a series the child entered', (
     tester,
   ) async {

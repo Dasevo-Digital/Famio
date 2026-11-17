@@ -420,6 +420,95 @@ void main() {
       );
     });
 
+    test('hands what only they saw on to the other guardians, and keeps the '
+        'child where it was named (#506)', () async {
+      // An adult in the family who is no guardian of these children.
+      final opa = app.accounts.create(username: 'opa', displayName: 'Opa');
+      tokens[opa.id] = app.accounts.createSession(opa.id);
+      await sync(
+        papa,
+        changes: [
+          // The older kid's own profile and log, shared by papa with the kid.
+          record(
+            Collections.children,
+            'kid-profile',
+            {
+              'name': 'Kid',
+              'birthDate': '2014-01-01',
+              'guardianIds': [papa.id],
+            },
+            audience: [papa.id, kid.id],
+          ),
+          record(
+            Collections.childLogs,
+            'kid-log',
+            {'childId': 'kid-profile', 'kind': 'note', 'note': 'synthetisch'},
+            audience: [papa.id, kid.id],
+          ),
+          // Ben: guardians papa and mama; one entry papa kept to himself.
+          record(
+            Collections.children,
+            'ben',
+            {
+              'name': 'Ben',
+              'birthDate': '2018-01-01',
+              'guardianIds': [papa.id, mama.id],
+            },
+            audience: [papa.id, mama.id],
+          ),
+          record(
+            Collections.childEntries,
+            'ben-private',
+            {'childId': 'ben', 'kind': 'note', 'title': 'nur Papa'},
+            audience: [papa.id],
+          ),
+          record(
+            Collections.timetables,
+            'ben',
+            {'periods': const <Object?>[]},
+            audience: [papa.id],
+          ),
+        ],
+      );
+      final response = await app.handler(
+        Request(
+          'DELETE',
+          Uri.parse('http://famio.test/api/admin/users/${papa.id}'),
+          headers: {'authorization': 'Bearer ${tokens[mama.id]}'},
+        ),
+      );
+      expect(response.statusCode, 200);
+      Future<Set<String>> sees(FamilyMember who) async => {
+        for (final r in (await sync(who)).changes)
+          if (!r.deleted) '${r.collection}/${r.id}',
+      };
+      expect(
+        app.records.get(Collections.childEntries, 'ben-private')!.visibleTo,
+        [mama.id],
+      );
+      expect(app.records.get(Collections.timetables, 'ben')!.visibleTo, [
+        mama.id,
+      ]);
+      final opaSees = await sees(opa);
+      expect(
+        opaSees,
+        isNot(contains('${Collections.childEntries}/ben-private')),
+      );
+      expect(opaSees, isNot(contains('${Collections.timetables}/ben')));
+      // No guardian left: the family's, and still the kid's.
+      final kidSees = await sees(kid);
+      expect(kidSees, containsAll(['${Collections.childLogs}/kid-log']));
+      expect(kidSees, contains('${Collections.children}/kid-profile'));
+      expect(opaSees, contains('${Collections.childLogs}/kid-log'));
+      expect(
+        await sees(mama),
+        containsAll([
+          '${Collections.childLogs}/kid-log',
+          '${Collections.childEntries}/ben-private',
+        ]),
+      );
+    });
+
     test('takes their own health data, leaves the shared', () async {
       await sync(
         papa,

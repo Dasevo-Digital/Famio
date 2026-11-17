@@ -377,8 +377,37 @@ class SyncEngine {
         unawaited(sync());
       }
     } on ApiError catch (e) {
-      if (e.isUnauthorized) _setStatus(SyncState.unauthorized, e.message);
+      if (e.isUnauthorized) {
+        // The app asks why (an account removed, say) when it signs out.
+        lastError = e;
+        _setStatus(SyncState.unauthorized, e.message);
+      }
     }
+  }
+
+  /// What stays of a session that ended elsewhere (#560): only the changes
+  /// this device has not sent yet. The rest of the family's data and what
+  /// the device knew of the family (its members, where syncing stood) go;
+  /// opened again, the store first downloads everything anew. For a
+  /// stopped engine, before its store is closed.
+  void keepOnlyUnsent() {
+    store.transaction(() {
+      for (final (collection, id) in [...store.keys]) {
+        if (!(store.get(collection, id)?.dirty ?? false)) {
+          store.remove(collection, id);
+        }
+      }
+      for (final key in const [
+        'lastRev',
+        'syncScope',
+        'syncReset',
+        'members',
+        'blockedChanges',
+      ]) {
+        store.setMeta(key, null);
+      }
+    });
+    store.compact();
   }
 
   // --- sync -----------------------------------------------------------------

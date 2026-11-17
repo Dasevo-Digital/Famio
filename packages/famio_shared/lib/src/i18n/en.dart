@@ -1409,4 +1409,6 @@ const sharedEn = <String, String>{
       "{name} exported all of the family's data, private entries included.",
   "Server|Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.":
       "An adult removes a child's account in the server administration.",
+  "Server|Dieses Konto wurde vom Server entfernt.":
+      "This account was removed from the server.",
 };

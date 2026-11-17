@@ -51,6 +51,9 @@ Database openDeviceDatabase(
           final part = File('$path$suffix');
           if (part.existsSync()) part.renameSync('$aside$suffix');
         }
+        // From now, for how long the app keeps it (#561).
+        final copy = File(aside);
+        if (copy.existsSync()) copy.setLastModifiedSync(DateTime.now());
         noteSetAside(aside);
     }
     return openDeviceDatabase(path, hexKey: hexKey);

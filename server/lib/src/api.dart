@@ -575,6 +575,14 @@ class FamioApi {
     token ??= _bearer(request);
     final member = token == null ? null : accounts.userForToken(token);
     if (member == null) {
+      if (token != null && accounts.endedReason(token) == 'account_removed') {
+        // The app then keeps nothing of the account (#560).
+        throw ApiException(
+          401,
+          'account_removed',
+          t('Dieses Konto wurde vom Server entfernt.'),
+        );
+      }
       throw ApiException(401, 'unauthorized', t('Nicht angemeldet'));
     }
     _checkTwoFactorPolicy(request, member, token!);

@@ -165,8 +165,24 @@ class Accounts {
   }
 
   void delete(String userId) {
+    // Its devices learn why the session ended ([endedReason]), and keep
+    // nothing of the account then (#560).
+    _db.execute(
+      'INSERT OR REPLACE INTO ended_sessions (token_hash, reason, at)'
+      " SELECT token_hash, 'account_removed', ? FROM sessions WHERE user_id = ?",
+      [DateTime.now().millisecondsSinceEpoch, userId],
+    );
     _db.execute('DELETE FROM users WHERE id = ?', [userId]);
   }
+
+  /// Why the session of [token] ended, as long as the server keeps it
+  /// (as long as an unused session would last): `account_removed`, or null
+  /// when it does not know (expired, signed out, never existed).
+  String? endedReason(String token) =>
+      _db.select('SELECT reason FROM ended_sessions WHERE token_hash = ?', [
+            _tokenHash(token),
+          ]).firstOrNull?['reason']
+          as String?;
 
   /// [check]: false only when the stored hash of a password already in
   /// use is renewed (see [verify]); it is not checked against newer rules.
@@ -597,7 +613,9 @@ class Accounts {
   /// Removes sessions past [sessionIdleTimeout]; returns how many.
   int deleteExpiredSessions() {
     _db.execute('DELETE FROM sessions WHERE last_seen <= ?', [_idleCutoff]);
-    return _db.updatedRows;
+    final count = _db.updatedRows;
+    _db.execute('DELETE FROM ended_sessions WHERE at <= ?', [_idleCutoff]);
+    return count;
   }
 
   int get _idleCutoff =>

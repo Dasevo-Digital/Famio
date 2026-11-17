@@ -739,11 +739,18 @@ void main() {
       expect(mama.seen['tasks/t1']!.data['done'], true);
       expect(mama.seen['events/e1']!.data['title'], 'Fest');
       expect(mama.seen['shopping_items/s1']!.data['name'], 'Milch');
-      // Renaming is more than ticking off.
+      // Renaming is more than ticking off: only the tick counts, the
+      // device gets the task back as it is (#556).
       final rename = await ha.sync([
-        _record(Collections.tasks, 't1', {'title': 'Anders', 'done': true}),
+        _record(Collections.tasks, 't1', {'title': 'Anders', 'done': false}),
       ]);
-      expect(rename.rejected.single.id, 't1');
+      expect(
+        rename.changes.singleWhere((r) => r.id == 't1').data['title'],
+        'Müll',
+      );
+      await mama.sync();
+      expect(mama.seen['tasks/t1']!.data['title'], 'Müll');
+      expect(mama.seen['tasks/t1']!.data['done'], false);
     });
 
     test('"Nur lesen" changes nothing', () async {

@@ -193,6 +193,9 @@ class _SqliteRecords implements RecordBackend {
   );
 
   @override
+  void compact() => _db.execute('VACUUM');
+
+  @override
   void keepCopy(bool keep) {}
 
   @override

@@ -380,6 +380,15 @@ const _migrations = [
   CREATE INDEX location_schedules_member
     ON location_schedules(member_id, until);
   ''',
+  '''
+  -- Sessions of removed accounts: their devices learn why they were signed
+  -- out and keep nothing of the account (#560). Only the token's hash.
+  CREATE TABLE ended_sessions (
+    token_hash TEXT PRIMARY KEY,
+    reason TEXT NOT NULL,
+    at INTEGER NOT NULL
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

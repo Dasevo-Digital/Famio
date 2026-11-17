@@ -121,6 +121,11 @@ class MemoryRecordBackend implements RecordBackend {
     _changed();
   }
 
+  /// Nothing to rewrite in memory; a browser copy follows with the next
+  /// change anyway.
+  @override
+  void compact() {}
+
   @override
   void keepCopy(bool keep) {
     _save?.cancel();

@@ -866,16 +866,18 @@ class _EventEditorState extends State<_EventEditor> {
                       label: Text(m.displayName),
                       selected: _memberIds.contains(m.id),
                       // Children take only themselves out of appointments
-                      // they did not enter (#416), and add nobody new to
-                      // a confidential one of others (#551).
+                      // they did not enter (#416), add nobody new to a
+                      // confidential one of others (#551) and name nobody
+                      // in one of the whole family (#559).
                       onSelected:
                           (_memberIds.contains(m.id) &&
                                   _keptParticipants(engine).contains(m.id)) ||
                               (!_memberIds.contains(m.id) &&
-                                  !(engine
-                                          .participantsAllowed(_original)
-                                          ?.contains(m.id) ??
-                                      true))
+                                  (!engine.mayNameParticipants(_original) ||
+                                      !(engine
+                                              .participantsAllowed(_original)
+                                              ?.contains(m.id) ??
+                                          true)))
                           ? null
                           : (on) => setState(
                               () => on
@@ -889,6 +891,12 @@ class _EventEditorState extends State<_EventEditor> {
                 const SizedBox(height: 8),
                 Text(
                   tr.eventNoNewParticipants,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ] else if (!engine.mayNameParticipants(_original)) ...[
+                const SizedBox(height: 8),
+                Text(
+                  tr.eventWholeFamilyStays,
                   style: theme.textTheme.bodySmall,
                 ),
               ],

@@ -388,13 +388,13 @@ void main() {
       await tester.tap(find.text('Abmelden'));
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('2 Änderungen sind noch nicht übertragen'),
+        find.textContaining('2 Änderungen sind noch nicht auf dem Server'),
         findsOneWidget,
       );
       await tester.tap(find.text('Abbrechen'));
       await tester.pumpAndSettle();
       expect(answers, [false]);
-      expect(find.textContaining('noch nicht übertragen'), findsNothing);
+      expect(find.textContaining('noch nicht auf dem Server'), findsNothing);
 
       await tester.tap(find.text('Abmelden'));
       await tester.pumpAndSettle();

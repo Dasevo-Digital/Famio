@@ -75,14 +75,20 @@ ein Administrator die Rolle festlegt.
   bleiben 180 Tage, zugestellte Hinweise der eigenen Push-Verbindung drei
   Tage.
 - Beim Abmelden werden lokale Datenbank, Cache und Anmeldedaten des Geräts
-  gelöscht. Sind noch Änderungen nicht übertragen und klappt der letzte
-  Abgleich nicht, fragt die App vorher nach. Endet die Sitzung auf anderem
-  Weg (neues Passwort auf einem anderen Gerät, „Überall abmelden“), während
-  noch Änderungen warten, bleibt die lokale Datenbank dieses Kontos
-  verschlüsselt auf dem Gerät, bis sich dasselbe Konto am selben Server
-  wieder anmeldet und sie überträgt. Meldet sich ein anderes Konto oder an
+  gelöscht. Sind noch Änderungen nicht auf dem Server, weil der letzte
+  Abgleich nicht klappt oder der Server sie zurückhält, fragt die App vorher
+  nach. Endet die Sitzung auf anderem Weg (neues Passwort auf einem anderen
+  Gerät, „Überall abmelden“), während noch Änderungen warten, bleiben nur
+  diese Änderungen verschlüsselt auf dem Gerät; die übrigen Daten der Familie
+  löscht die App. Meldet sich dasselbe Konto am selben Server wieder an, lädt
+  die App alles neu und überträgt sie. Meldet sich ein anderes Konto oder an
   einem anderen Server an, verwirft man sie auf der Anmeldeseite oder sind
-  14 Tage vergangen, wird sie gelöscht.
+  14 Tage vergangen, werden sie gelöscht. Hat der Server das Konto entfernt,
+  behält die App nichts.
+- Lässt sich die lokale Datenbank nicht öffnen (etwa beschädigt), legt die
+  App sie verschlüsselt beiseite und lädt alles neu. Die beiseitegelegte
+  Kopie wird beim Abmelden, bei der Anmeldung eines anderen Kontos und nach
+  30 Tagen gelöscht.
 - Administratoren können die Familiendaten serverseitig löschen. Diese
   Löschung wird beim nächsten Abgleich auf die Geräte übertragen. Verbindungen
   zu Listen-Apps, Paperless-ngx und PhotoVault werden vorher getrennt, damit
@@ -92,8 +98,11 @@ ein Administrator die Rolle festlegt.
 - Wird ein Konto gelöscht, entfernt der Server dessen Notfallangaben und alle
   Einträge, die nur diese Person sehen konnte, etwa private Notizen, Dokumente
   samt Dateien und Gesundheitsdaten; auch aus dem Papierkorb.
-  Daten von Kindern bleiben als Daten der Familie erhalten; war die Person ihre
-  einzige Sorgeberechtigte, sehen sie danach alle Erwachsenen. Vorhandene
+  Daten von Kindern bleiben als Daten der Familie erhalten. Was außer der
+  Person kein Erwachsener sehen konnte, sehen danach die übrigen
+  Sorgeberechtigten des Kindes; gibt es keine, alle Erwachsenen und wer sonst
+  ausgewählt war. Damit die anderen Geräte des Kontos das erfahren, merkt sich
+  der Server Prüfwerte ihrer Sitzungen bis zu 90 Tage. Vorhandene
   Sicherungen enthalten die gelöschten Daten bis zu ihrem Ablauf weiter.
 - Einzelne gelöschte Aufgaben, Termine, Notizen und Dokumente werden mit ihren
   Anhängen bis zu 30 Tage im serverseitigen Papierkorb aufbewahrt. Mitglieder

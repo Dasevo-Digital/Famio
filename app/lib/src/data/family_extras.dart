@@ -57,6 +57,17 @@ extension FamilyExtras on SyncEngine {
         memberId,
       );
 
+  /// Whether this member may name single people taking part in [existing]
+  /// (null: a new appointment): children not in an appointment of the
+  /// whole family they did not enter, which naming themselves would take
+  /// from everyone else (the server keeps it the family's, #559).
+  bool mayNameParticipants(CalendarEvent? existing) {
+    if (myRole != MemberRole.child || existing == null) return true;
+    final data = record(Collections.events, existing.id)?.data ?? const {};
+    return CalendarEvent.childEntered(data, memberId) ||
+        (data['memberIds'] as List? ?? const []).isNotEmpty;
+  }
+
   /// Whom this member may add to [existing] as taking part or driving:
   /// null for anybody. In a confidential appointment someone else entered
   /// or made confidential, children add nobody new (the server drops them,

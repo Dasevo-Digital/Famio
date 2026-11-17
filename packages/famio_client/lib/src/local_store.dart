@@ -160,5 +160,8 @@ class LocalStore {
     _meta[key] = value;
   }
 
+  /// See [RecordBackend.compact].
+  void compact() => _backend.compact();
+
   void close() => _backend.close();
 }

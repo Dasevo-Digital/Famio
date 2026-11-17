@@ -795,9 +795,9 @@ class AppState extends ChangeNotifier {
   /// nothing is sent first.
   ///
   /// Otherwise a last sync sends what is still waiting. [proceed] then
-  /// decides, told how many changes signing out would lose because that
-  /// sync failed (0: nothing would be lost); false stays signed in (#337).
-  /// Returns whether it signed out.
+  /// decides, told how many changes signing out would lose because they
+  /// are still not on the server after it (0: nothing would be lost);
+  /// false stays signed in (#337). Returns whether it signed out.
   Future<bool> signOut({
     String? notice,
     Future<bool> Function(int unsent)? proceed,
@@ -827,7 +827,10 @@ class AppState extends ChangeNotifier {
         await _endedElsewhere(engine);
         return true;
       }
-      final unsent = engine.lastError == null ? 0 : engine.store.dirty.length;
+      // Also what the server held back although syncing worked (a file no
+      // longer shared, a collection an older server does not know): it
+      // would go with the database just as well (#557).
+      final unsent = engine.store.dirty.length;
       if (proceed != null && !await proceed(unsent)) return false;
       if (over()) return true;
     }
@@ -837,12 +840,16 @@ class AppState extends ChangeNotifier {
 
   /// The server no longer knows this session (a new password on another
   /// device, "Überall abmelden"): what was not sent yet is kept for the
-  /// same account's next sign-in here (#337).
-  Future<void> _endedElsewhere(SyncEngine engine) => _endSession(
-    engine,
-    notice: tr.appSessionHasExpiredPlease,
-    keepUnsent: true,
-  );
+  /// same account's next sign-in here (#337). Of an account the server
+  /// removed nothing is kept (#560).
+  Future<void> _endedElsewhere(SyncEngine engine) {
+    final removed = engine.lastError?.code == 'account_removed';
+    return _endSession(
+      engine,
+      notice: removed ? tr.appAccountRemoved : tr.appSessionHasExpiredPlease,
+      keepUnsent: !removed,
+    );
+  }
 
   Future<void> _endSession(
     SyncEngine engine, {
@@ -853,8 +860,9 @@ class AppState extends ChangeNotifier {
     _ending = engine;
     final member = me;
     this.notice = notice;
-    // Kept with the database: the same account signing in again at this
-    // server sends them (#337). Without any, it goes as always.
+    // Kept in the database, which keeps nothing else (#560): the same
+    // account signing in again at this server sends them (#337). Without
+    // any, it goes as always.
     final unsent = keepUnsent && !kIsWeb && member != null
         ? engine.store.dirty.length
         : 0;
@@ -903,13 +911,21 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       // Not available on this platform.
     }
-    await _stopSession();
+    final pruned = await _stopSession(keepOnlyUnsent: unsent > 0);
     if (member != null && !kIsWeb) {
       final support = await _supportDir();
+      if (unsent > 0 && !pruned) {
+        // What else the device held would stay with them: they go too.
+        waitingChanges = null;
+        await WaitingChanges.forget(_prefs);
+      }
       if (waitingChanges?.memberId != member.id) {
         deleteDeviceDatabase(support, WaitingChanges.databaseName(member.id));
       }
       deleteDeviceDatabase(support, 'files_${member.id}.db');
+      // Copies set aside that did not open go with the account (#561).
+      deleteSetAside(support, WaitingChanges.databaseName(member.id));
+      deleteSetAside(support, 'files_${member.id}.db');
     }
     await vault.write('token', null);
     await vault.write('certPin', null);
@@ -976,9 +992,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _stopSession() async {
+  /// [keepOnlyUnsent]: the database keeps only what was not sent yet
+  /// ([SyncEngine.keepOnlyUnsent]); returns whether that worked.
+  Future<bool> _stopSession({bool keepOnlyUnsent = false}) async {
     final engine = this.engine;
-    if (engine == null) return;
+    if (engine == null) return false;
     // Dialogs and sheets above the home shell need the session (a sign-out
     // from another device can come while one is open): they go first, at
     // once, as a closing animation would build them again without it.
@@ -986,11 +1004,21 @@ class AppState extends ChangeNotifier {
     this.engine = null;
     notifyListeners();
     await engine.dispose();
+    var pruned = false;
+    if (keepOnlyUnsent) {
+      try {
+        engine.keepOnlyUnsent();
+        pruned = true;
+      } catch (_) {
+        // Then the database goes as a whole (see [_endSession]).
+      }
+    }
     engine.store.close();
     files
       ?..clearTemp()
       ..close();
     files = null;
+    return pruned;
   }
 
   /// [fresh]: signed in just now (password, passkey, SSO, pairing, setup).
@@ -1099,6 +1127,11 @@ class AppState extends ChangeNotifier {
     // Set aside: what this device had not sent yet is gone from view.
     if (takeSetAsideDatabases().isNotEmpty) {
       localDataSetAside = true;
+    }
+    // Copies set aside for other accounts, or long ago, go (#561). Only a
+    // signed-in device has any: signing out deletes its account's.
+    if (!kIsWeb) {
+      pruneSetAside(support, now: DateTime.now(), memberId: member.id);
     }
     // Nor does an iPhone's backup take the copies along, with the journal
     // files they have while open.

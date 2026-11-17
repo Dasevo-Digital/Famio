@@ -3,9 +3,13 @@
 //
 // - signing out while the last sync fails asks first (GRU-049);
 // - a session ended elsewhere (new password, "Überall abmelden") keeps the
-//   account's database; the same account signing in again at the same
-//   server sends them, anyone else, a discard or 14 days delete them
-//   (GRU-051).
+//   account's database with only those changes in it (#560); the same
+//   account signing in again at the same server sends them, anyone else, a
+//   discard or 14 days delete them (GRU-051); of an account the server
+//   removed nothing is kept;
+// - also what the server held back counts as not sent (#557);
+// - databases set aside because they did not open go with their account
+//   and after 30 days (#561).
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -40,6 +44,15 @@ class _Server {
   /// What the devices sent, by member.
   final pushed = <(String, SyncRecord)>[];
 
+  /// What the next sync hands out.
+  List<Map<String, Object?>> pull = [];
+
+  /// Where the devices' syncs started.
+  final since = <int>[];
+
+  /// Sessions of accounts the server removed.
+  final _removed = <String>{};
+
   String get url => 'http://127.0.0.1:${_http.port}/';
 
   static const _accounts = {
@@ -56,6 +69,16 @@ class _Server {
 
   /// A new password elsewhere: every session of this server ends.
   void endSessions() => _tokens.clear();
+
+  /// An admin removed the account [id].
+  void removeAccount(String id) {
+    for (final e in [..._tokens.entries]) {
+      if (e.value == id) {
+        _removed.add(e.key);
+        _tokens.remove(e.key);
+      }
+    }
+  }
 
   Future<void> _handle(HttpRequest request) async {
     final body = await utf8.decoder.bind(request).join();
@@ -76,18 +99,27 @@ class _Server {
       _tokens[token] = account['id']!;
       answer(200, {'token': token, 'member': account});
     } else if (member == null) {
-      answer(401, {'error': 'unauthorized', 'message': 'Sitzung abgelaufen'});
+      answer(
+        401,
+        _removed.contains(token)
+            ? {'error': 'account_removed', 'message': 'Konto entfernt'}
+            : {'error': 'unauthorized', 'message': 'Sitzung abgelaufen'},
+      );
     } else if (path.endsWith('api/sync')) {
       if (offline) {
         answer(503, {'error': 'unavailable', 'message': 'Nicht erreichbar'});
       } else {
         final request = SyncRequest.fromJson((jsonDecode(body) as Map).cast());
+        since.add(request.since);
         for (final change in request.changes) {
           pushed.add((member, change));
         }
+        final out = pull;
+        pull = [];
         answer(200, {
           'rev': ++rev,
           'serverTime': DateTime.now().millisecondsSinceEpoch,
+          'changes': out,
         });
       }
     } else if (path.endsWith('api/members')) {
@@ -134,7 +166,11 @@ void main() {
     late AppState state;
     final sent = <SyncRecord>[];
 
-    Future<void> open(WidgetTester tester, {required bool online}) async {
+    Future<void> open(
+      WidgetTester tester, {
+      required bool online,
+      bool holdBack = false,
+    }) async {
       tester.view.physicalSize = const Size(1000, 2400);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -153,7 +189,21 @@ void main() {
               );
               sent.addAll(body.changes);
               return http.Response(
-                jsonEncode({'rev': 1, 'serverTime': 0}),
+                jsonEncode({
+                  'rev': 1,
+                  'serverTime': 0,
+                  // A file no longer shared, say: it waits for repair.
+                  if (holdBack)
+                    'blocked': [
+                      for (final c in body.changes)
+                        {
+                          'collection': c.collection,
+                          'id': c.id,
+                          'updatedAt': c.updatedAt,
+                          'code': 'invalid_file_reference',
+                        },
+                    ],
+                }),
                 200,
                 headers: {'content-type': 'application/json'},
               );
@@ -202,14 +252,7 @@ void main() {
 
       await tapSignOut(tester);
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(
-        find.text(
-          'Eine Änderung ist noch nicht übertragen. Famio konnte sie gerade '
-          'nicht an den Server senden; wenn du dich jetzt abmeldest, geht sie '
-          'verloren.',
-        ),
-        findsOneWidget,
-      );
+      expect(find.text(_oneUnsent), findsOneWidget);
       // Cancelled: still signed in, the change still waits.
       await tester.tap(find.text('Abbrechen'));
       await tester.pumpAndSettle();
@@ -252,7 +295,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
       await tapSignOut(tester);
       expect(
-        find.textContaining('2 Änderungen sind noch nicht übertragen'),
+        find.textContaining('2 Änderungen sind noch nicht auf dem Server'),
         findsOneWidget,
       );
       await tester.tap(find.text('Abbrechen'));
@@ -278,6 +321,39 @@ void main() {
       await signedOut(tester);
       expect(find.byType(AlertDialog), findsNothing);
     });
+
+    testWidgets('online, but the server holds the change back: asks too '
+        '(#557)', (tester) async {
+      await open(tester, online: true, holdBack: true);
+      engine.put(Collections.notes, 'n1', const {
+        'title': 'Mit Anhang',
+        'files': [],
+      });
+      await tester.runAsync(engine.sync);
+      await tester.pump();
+      expect(engine.status.state, SyncState.attention);
+      expect(engine.lastError, isNull);
+      await tapSignOut(tester);
+      expect(find.text(_oneUnsent), findsOneWidget);
+      await tester.tap(find.text('Abbrechen'));
+      await tester.pumpAndSettle();
+      expect(state.me, isNotNull);
+      expect(engine.store.dirty, hasLength(1));
+    });
+
+    testWidgets('copies set aside go with the account (#561)', (tester) async {
+      await open(tester, online: true);
+      final aside = [
+        File('${dir.path}/${WaitingChanges.databaseName('m1')}.unreadable'),
+        File('${dir.path}/files_m1.db.unreadable-wal'),
+      ];
+      for (final f in aside) {
+        f.writeAsStringSync('');
+      }
+      await tapSignOut(tester);
+      await signedOut(tester);
+      expect(aside.where((f) => f.existsSync()), isEmpty);
+    });
   });
 
   group('a session ended elsewhere (GRU-051)', () {
@@ -301,9 +377,18 @@ void main() {
     Future<AppState> endedWithChange(String user) async {
       final state = AppState();
       await state.init();
-      server.offline = true;
+      // What the server hands out first arrives before going offline.
+      final first = server.pull.length;
+      server.offline = first == 0;
       await state.signIn(at(server), user, 'geheim');
       final engine = state.engine!;
+      if (first > 0) {
+        await _until(
+          'pulled',
+          () => engine.store.keys.length >= first && server.pull.isEmpty,
+        );
+        server.offline = true;
+      }
       engine.put(Collections.tasks, 't1', const {'title': 'Offline gemacht'});
       await engine.sync();
       expect(engine.store.dirty, hasLength(1));
@@ -317,8 +402,20 @@ void main() {
     }
 
     test('the same account signs in again: the change is sent', () async {
+      // What the device holds of the family before the change.
+      server.pull = [
+        SyncRecord(
+          collection: Collections.medications,
+          id: 'med1',
+          data: const {'name': 'Synthetin 10 mg'},
+          updatedAt: 1,
+          updatedBy: 'm2',
+          rev: 1,
+        ).toJson(),
+      ];
       final state = await endedWithChange('mama');
       expect(state.notice, 'Deine Sitzung ist abgelaufen. Bitte neu anmelden.');
+      expect(server.since, isNotEmpty);
       expect(database('m1').existsSync(), isTrue);
       expect(File('${dir.path}/files_m1.db').existsSync(), isFalse);
       final waiting = state.waitingChanges!;
@@ -330,6 +427,21 @@ void main() {
       await again.init();
       expect(again.waitingChanges?.count, 1);
 
+      // Nothing else stays with it, nor what the device knew (#560).
+      final key = await again.vault.deviceKey();
+      final kept = LocalStore.open(database('m1').path, hexKey: key);
+      expect(
+        [
+          for (final c in [Collections.medications, Collections.tasks])
+            for (final r in kept.all(c)) '${r.record.id} ${r.dirty}',
+        ],
+        ['t1 true'],
+      );
+      expect(kept.getMeta('members'), isNull);
+      expect(kept.getMeta('lastRev'), isNull);
+      kept.close();
+
+      server.since.clear();
       await again.signIn(at(server), 'mama', 'neues Passwort');
       await _until(
         'the change on the server',
@@ -344,7 +456,70 @@ void main() {
         WaitingChanges.read(await SharedPreferences.getInstance()),
         isNull,
       );
+      // It downloads everything anew.
+      expect(server.since.first, 0);
       await again.signOut();
+    });
+
+    test('an account the server removed: nothing is kept (#560)', () async {
+      final state = AppState();
+      await state.init();
+      server.offline = true;
+      await state.signIn(at(server), 'mama', 'geheim');
+      final engine = state.engine!;
+      engine.put(Collections.tasks, 't1', const {'title': 'Offline gemacht'});
+      await engine.sync();
+      server
+        ..offline = false
+        ..removeAccount('m1');
+      unawaited(engine.sync());
+      await _until('signed out', () => state.me == null);
+      await _until('database closed', () => state.engine == null);
+      expect(
+        state.notice,
+        'Dein Konto wurde vom Server entfernt. Famio hat seine Daten auf '
+        'diesem Gerät gelöscht.',
+      );
+      expect(database('m1').existsSync(), isFalse);
+      expect(state.waitingChanges, isNull);
+      expect(
+        WaitingChanges.read(await SharedPreferences.getInstance()),
+        isNull,
+      );
+    });
+
+    test('signing in: copies set aside are kept 30 days (#561)', () async {
+      final young = File('${dir.path}/famio_m1.db.unreadable')
+        ..writeAsStringSync('');
+      final old = File('${dir.path}/files_m1.db.unreadable')
+        ..writeAsStringSync('');
+      final oldWal = File('${dir.path}/files_m1.db.unreadable-wal')
+        ..writeAsStringSync('');
+      old.setLastModifiedSync(
+        DateTime.now().subtract(const Duration(days: 31)),
+      );
+      final state = AppState();
+      await state.init();
+      await state.signIn(at(server), 'mama', 'geheim');
+      expect(young.existsSync(), isTrue);
+      expect(old.existsSync(), isFalse);
+      expect(oldWal.existsSync(), isFalse);
+      await state.signOut();
+      // Signed out, its account's go as well.
+      expect(young.existsSync(), isFalse);
+    });
+
+    test('another account signing in: copies set aside for others go '
+        '(#561)', () async {
+      final other = File(
+        '${dir.path}/${WaitingChanges.databaseName('m1')}.unreadable',
+      )..writeAsStringSync('');
+      final state = AppState();
+      await state.init();
+      expect(other.existsSync(), isTrue);
+      await state.signIn(at(server), 'papa', 'geheim');
+      expect(other.existsSync(), isFalse);
+      await state.signOut();
     });
 
     test('another account signs in: the change is deleted', () async {
@@ -484,3 +659,8 @@ void main() {
     expect(find.text(text), findsNothing);
   });
 }
+
+const _oneUnsent =
+    'Eine Änderung ist noch nicht auf dem Server, weil die Verbindung fehlt '
+    'oder der Server sie zurückhält; wenn du dich jetzt abmeldest, geht sie '
+    'verloren.';
