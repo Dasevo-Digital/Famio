@@ -462,4 +462,61 @@ void main() {
       expect(calls.single.arguments, {'locked': true});
     },
   );
+
+  test('a preview over Flutter is no time away on the iPhone (#512)', () async {
+    final l = await lock(platform: TargetPlatform.iOS, delaySeconds: 0);
+    await l.unlock();
+    await AppLock.previewing(() async {
+      // iOS's preview takes Flutter's view away and gives it back.
+      l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+      l.didChangeAppLifecycleState(AppLifecycleState.paused);
+      now = now.add(const Duration(minutes: 5));
+    });
+    l.didChangeAppLifecycleState(AppLifecycleState.inactive);
+    l.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    expect(l.locked, isFalse);
+  });
+
+  test(
+    'back with a preview up, the iPhone cover asks the lock (#512)',
+    () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      const codec = StandardMethodCodec();
+      messenger.setMockMethodCallHandler(
+        const MethodChannel('famio/privacy'),
+        (call) async => null,
+      );
+      addTearDown(
+        () => messenger.setMockMethodCallHandler(
+          const MethodChannel('famio/privacy'),
+          null,
+        ),
+      );
+      Future<Object?> cameBack(int ms) async {
+        final answer = await messenger.handlePlatformMessage(
+          'famio/privacy',
+          codec.encodeMethodCall(MethodCall('cameBack', {'awayMs': ms})),
+          null,
+        );
+        return codec.decodeEnvelope(answer!);
+      }
+
+      var l = await lock(platform: TargetPlatform.iOS, delaySeconds: 60);
+      await l.unlock();
+      expect(await cameBack(30000), isFalse);
+      expect(l.locked, isFalse);
+      expect(await cameBack(90000), isTrue);
+      expect(l.locked, isTrue);
+
+      l = await lock(platform: TargetPlatform.iOS, delaySeconds: 0);
+      await l.unlock();
+      expect(await cameBack(1), isTrue);
+
+      l = await lock(enabled: false, platform: TargetPlatform.iOS);
+      expect(await cameBack(600000), isFalse);
+      expect(l.locked, isFalse);
+    },
+  );
 }

@@ -341,7 +341,10 @@ Future<void> openFileExternally(BuildContext context, FileRef ref) async {
     }
     // A short-lived plain copy for the other app; removed on next start.
     final path = await files.openable(ref);
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isIOS) {
+      // A preview inside Famio, not a trip away (#512).
+      await AppLock.previewing(() => OpenFilex.open(path, type: ref.mime));
+    } else if (Platform.isAndroid) {
       await OpenFilex.open(path, type: ref.mime);
     } else {
       await launchUrl(Uri.file(path));

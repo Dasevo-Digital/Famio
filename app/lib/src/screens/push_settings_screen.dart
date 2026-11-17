@@ -441,6 +441,8 @@ class _WebPushCardState extends State<_WebPushCard> {
   @override
   void initState() {
     super.initState();
+    // In the Home Assistant panel there is nothing to ask the browser.
+    if (AppScope.read(context).panelMode != 'browser') return;
     currentWebPush().then(
       (s) => mounted ? setState(() => _on = s != null) : null,
       onError: (Object _) => mounted ? setState(() => _on = false) : null,

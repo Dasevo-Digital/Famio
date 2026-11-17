@@ -1297,10 +1297,14 @@ final class PrivacyCover: NSObject {
   private var enabled = UserDefaults.standard.bool(forKey: PrivacyCover.enabledKey)
   private var covers: [UIView] = []
   private var fallback: DispatchWorkItem?
+  private var channel: FlutterMethodChannel?
+  /// When Famio went to the background (for the app lock's delay).
+  private var leftAt: Date?
 
   func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
       name: "famio/privacy", binaryMessenger: registrar.messenger())
+    self.channel = channel
     channel.setMethodCallHandler { [weak self] call, result in
       switch call.method {
       case "setSecure":
@@ -1310,6 +1314,18 @@ final class PrivacyCover: NSObject {
         let locked = (call.arguments as? [String: Any])?["locked"] as? Bool ?? false
         self?.resumed(locked: locked)
         result(nil)
+      #if targetEnvironment(simulator)
+        // Device tests in the simulator only (integration_test/
+        // review_cover_test.dart): whether the cover is up and whether
+        // something iOS shows lies over Famio. Not in builds for phones.
+        case "debugState":
+          result([
+            "covered": !(self?.covers.isEmpty ?? true),
+            "presented": self?.windows.contains {
+              $0.rootViewController?.presentedViewController != nil
+            } ?? false,
+          ])
+      #endif
       default:
         result(FlutterMethodNotImplemented)
       }
@@ -1318,13 +1334,53 @@ final class PrivacyCover: NSObject {
       forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
     ) { [weak self] _ in self?.cover() }
     NotificationCenter.default.addObserver(
+      forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main
+    ) { [weak self] _ in
+      if self?.leftAt == nil { self?.leftAt = Date() }
+    }
+    NotificationCenter.default.addObserver(
       forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
     ) { [weak self] _ in
+      guard let self else { return }
       // Flutter answers with "resumed"; without an answer the cover goes.
-      let item = DispatchWorkItem { self?.uncover() }
-      self?.fallback?.cancel()
-      self?.fallback = item
+      let item = DispatchWorkItem { [weak self] in self?.uncover() }
+      self.fallback?.cancel()
+      self.fallback = item
       DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: item)
+      let away = self.leftAt.map { Date().timeIntervalSince($0) }
+      self.leftAt = nil
+      if let away, self.enabled, self.flutterHidden { self.cameBack(after: away) }
+    }
+  }
+
+  /// Something iOS shows lies over Flutter's whole view (a document's
+  /// preview, the camera): then Flutter hears nothing of Famio going away
+  /// and coming back, and does not answer with "resumed" (#512).
+  private var flutterHidden: Bool {
+    windows.contains { window in
+      guard let root = window.rootViewController else { return false }
+      return root.presentedViewController != nil && root.viewIfLoaded?.window == nil
+    }
+  }
+
+  /// Asks the app lock whether Famio is locked after [away] seconds; if so,
+  /// what lies over Famio closes and the lock screen is what remains.
+  private func cameBack(after away: TimeInterval) {
+    fallback?.cancel()
+    channel?.invokeMethod("cameBack", arguments: ["awayMs": Int(away * 1000)]) {
+      [weak self] answer in
+      guard let self else { return }
+      guard answer as? Bool == true else {
+        self.uncover()
+        return
+      }
+      let root = self.windows.compactMap { $0.rootViewController }
+        .first { $0.presentedViewController != nil }
+      guard let root else {
+        self.uncover()
+        return
+      }
+      root.dismiss(animated: false) { [weak self] in self?.uncover() }
     }
   }
 

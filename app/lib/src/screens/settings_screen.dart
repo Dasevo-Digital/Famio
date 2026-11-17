@@ -254,18 +254,18 @@ class SettingsScreen extends StatelessWidget {
               subtitle: Text(tr.memberEmergencyMineSubtitle),
               onTap: () => showMemberEmergency(context, me.id),
             ),
-          // The web app only outside Home Assistant (Web Push).
-          if (!kIsWeb || state.panelMode == 'browser')
-            ListTile(
-              leading: const Icon(AppIcons.bellRing),
-              title: Text(context.l10n.settingsPush),
-              subtitle: Text(context.l10n.settingsPushSubtitle),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => const PushSettingsScreen(),
-                ),
+          // Also in the Home Assistant panel (#563): no browser
+          // notifications there, but quiet hours and ntfy.
+          ListTile(
+            leading: const Icon(AppIcons.bellRing),
+            title: Text(context.l10n.settingsPush),
+            subtitle: Text(context.l10n.settingsPushSubtitle),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const PushSettingsScreen(),
               ),
             ),
+          ),
           ListHeading(context.l10n.settingsThisDevice, color: accent),
           const _AppLockTile(),
           ListTile(

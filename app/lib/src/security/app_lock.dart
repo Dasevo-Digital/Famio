@@ -74,6 +74,13 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     locked = enabled;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_applySecure());
+    if (_platform == TargetPlatform.iOS && !kIsWeb) {
+      _privacy.setMethodCallHandler((call) async {
+        if (call.method != 'cameBack') return null;
+        final away = (call.arguments as Map?)?['awayMs'] as int? ?? 0;
+        return _cameBack(Duration(milliseconds: away));
+      });
+    }
   }
 
   static const _key = 'appLock.enabled';
@@ -106,6 +113,21 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
       return await pick();
     } finally {
       _picking--;
+    }
+  }
+
+  static var _previewing = 0;
+
+  /// Runs [show], which shows a document in iOS's preview inside Famio. It
+  /// lies over Flutter's view, so its coming and going is no time away;
+  /// and while it is up Flutter hears nothing of Famio going away and coming
+  /// back: then the iPhone's cover asks [_cameBack] (#512, catalog GRU-115).
+  static Future<T> previewing<T>(Future<T> Function() show) async {
+    _previewing++;
+    try {
+      return await show();
+    } finally {
+      _previewing--;
     }
   }
 
@@ -159,6 +181,9 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
     // The system's own dialog sends the app to the background too.
     if (!enabled || _asking) return;
     final hide = _platform == TargetPlatform.iOS;
+    // Flutter's view goes and comes with iOS's preview over it; leaving
+    // Famio with the preview up the iPhone's cover reports (_cameBack).
+    if (hide && _previewing > 0) return;
     switch (state) {
       case AppLifecycleState.resumed:
         final left = _left;
@@ -187,6 +212,21 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
         covered = hide;
     }
     notifyListeners();
+  }
+
+  /// The iPhone's cover asks when Famio comes back with something iOS shows
+  /// over Flutter's view (a document's preview, the camera): Flutter itself
+  /// hears nothing then. True if Famio is locked now; then the cover closes
+  /// what lies over Famio, so the lock screen is what remains.
+  bool _cameBack(Duration away) {
+    if (!enabled) return false;
+    final allowed = _picking > 0 && delay < pickerDelay ? pickerDelay : delay;
+    if (!locked && (allowed == Duration.zero || away >= allowed)) {
+      locked = true;
+      _forget();
+      notifyListeners();
+    }
+    return locked;
   }
 
   /// Asks the device; true if it was its owner.
