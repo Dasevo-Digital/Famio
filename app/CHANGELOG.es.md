@@ -4,6 +4,18 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.55 – Cierre de sesión y pantalla de pared mejorados
+
+- Si una sesión termina desde fuera, el dispositivo solo guarda los cambios
+  aún no enviados; si la cuenta se eliminó, no guarda nada. Famio borra los
+  datos apartados a los 30 días.
+- Cerrar sesión también pregunta cuando el servidor retiene cambios.
+- La pantalla de pared también marca tareas periódicas. Las marcas de los
+  invitados no se pierden si alguien cambió la tarea mientras tanto.
+- Los niños no pueden limitar a sí mismos las citas de toda la familia. Los
+  datos de niños de una cuenta eliminada pasan a los demás tutores.
+- Los recordatorios ya mostrados se quedan en la barra de notificaciones.
+
 ## 2.0.54 – Datos de salud mejor protegidos, muchos fallos corregidos
 
 - Las cuentas infantiles solo anotan datos de salud de niños y planes que

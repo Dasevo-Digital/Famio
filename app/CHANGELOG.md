@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.55 – Abmelden und Wandanzeige verbessert
+
+- Endet eine Sitzung von außen, bleiben auf dem Gerät nur die noch nicht
+  übertragenen Änderungen; wurde das Konto entfernt, bleibt nichts.
+  Beiseitegelegte Daten löscht Famio nach 30 Tagen.
+- Abmelden fragt auch nach, wenn der Server Änderungen zurückhält.
+- Die Wandanzeige hakt auch wiederkehrende Aufgaben ab. Haken von Gästen
+  gehen nicht verloren, wenn jemand die Aufgabe inzwischen geändert hat.
+- Kinder schränken Termine der ganzen Familie nicht auf sich ein.
+  Kinderdaten eines gelöschten Kontos gehen an die übrigen
+  Sorgeberechtigten.
+- Angezeigte Erinnerungen bleiben in der Mitteilungsleiste.
+
 ## 2.0.54 – Gesundheitsdaten besser geschützt, viele Fehler behoben
 
 - Kinderkonten tragen Gesundheitsdaten nur bei Kindern und Plänen ein, die

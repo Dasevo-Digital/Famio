@@ -4,6 +4,18 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.55 – Signing out and the wall display improved
+
+- When a session ends elsewhere, the device keeps only changes not sent
+  yet; if the account was removed, it keeps nothing. Famio deletes data
+  set aside after 30 days.
+- Signing out also asks when the server holds changes back.
+- The wall display ticks off repeating tasks too. Guests' ticks are not
+  lost when someone changed the task meanwhile.
+- Children cannot narrow appointments of the whole family to themselves.
+  Children's data of a deleted account goes to the other guardians.
+- Reminders already shown stay in the notification bar.
+
 ## 2.0.54 – Health data better protected, many fixes
 
 - Child accounts enter health data only for children and plans they may
