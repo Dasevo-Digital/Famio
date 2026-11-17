@@ -563,6 +563,7 @@ class FamioApi {
         ),
         brief: t('Neue Anmeldung bei Famio'),
         tag: 'key',
+        target: const NoticeTarget.page(NoticeTarget.devices),
       ),
       null,
     );
@@ -696,6 +697,7 @@ class FamioApi {
         ),
         brief: t('Neues Familienmitglied'),
         tag: 'bust_in_silhouette',
+        target: const NoticeTarget.section('settings'),
       ),
       null,
     );

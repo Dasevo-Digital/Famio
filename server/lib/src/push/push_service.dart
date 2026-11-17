@@ -26,6 +26,7 @@ class PushNotice {
     this.place = false,
     this.urgent = false,
     this.stillValid,
+    this.target,
   });
 
   final Set<String> to;
@@ -48,7 +49,17 @@ class PushNotice {
   /// Asked before each further try of an [urgent] notice: an alarm that
   /// ended meanwhile is not sounded again after "Notfall beendet" (#396).
   final bool Function()? stillValid;
+
+  /// What tapping it opens in the app (#385).
+  final NoticeTarget? target;
 }
+
+/// The task or appointment [r] is, as a notice target.
+NoticeTarget? _recordTarget(SyncRecord r) => switch (r.collection) {
+  Collections.tasks => NoticeTarget.task(r.id),
+  Collections.events => NoticeTarget.event(r.id),
+  _ => null,
+};
 
 /// Real push notifications while the apps are closed: the server publishes
 /// to each member's ntfy topic (https://ntfy.sh or a self-hosted ntfy),
@@ -343,6 +354,7 @@ class PushService {
                     }),
               brief: t('Neue Rückmeldung'),
               tag: 'clipboard',
+              target: _recordTarget(parent),
             ),
             parent,
             budget: budget,
@@ -510,6 +522,7 @@ class PushService {
                 }),
           brief: t('Eine Zuständigkeit wartet auf deine Rückmeldung'),
           tag: 'clipboard',
+          target: _recordTarget(record),
         ),
         record,
       );
@@ -561,6 +574,7 @@ class PushService {
         brief: t('Offene Einkäufe'),
         tag: 'shopping_cart',
         place: true,
+        target: const NoticeTarget.section('shopping'),
       ),
       null,
     );
@@ -586,6 +600,7 @@ class PushService {
           // but not check-ins: those get their own tag.
           tag: alert.checkIn != null ? 'wave' : 'round_pushpin',
           place: true,
+          target: const NoticeTarget.section('location'),
         ),
         r,
       );
@@ -613,6 +628,7 @@ class PushService {
         TripMode.transit => 'bus',
       },
       place: true,
+      target: const NoticeTarget.section('location'),
     );
   }
 
@@ -635,6 +651,7 @@ class PushService {
       body: body,
       brief: t('Neue Nachricht'),
       tag: 'speech_balloon',
+      target: NoticeTarget.chat(m.chatId),
     );
   }
 
@@ -655,6 +672,7 @@ class PushService {
       }),
       brief: t('{count} neue Nachrichten', {'count': count}),
       tag: last.tag,
+      target: last.target,
     );
   }
 
@@ -676,6 +694,7 @@ class PushService {
       body: task.title,
       brief: t('Neue Aufgabe für dich'),
       tag: 'white_check_mark',
+      target: NoticeTarget.task(r.id),
     );
   }
 
@@ -704,6 +723,7 @@ class PushService {
       body: event.confidential ? name(author) : '${name(author)}: ${c.text}',
       brief: brief,
       tag: 'calendar',
+      target: NoticeTarget.event(c.eventId),
     );
   }
 
@@ -721,6 +741,7 @@ class PushService {
       body: _when(event),
       brief: brief,
       tag: 'calendar',
+      target: NoticeTarget.event(r.id),
     );
   }
 
@@ -748,6 +769,7 @@ class PushService {
         body: what,
         brief: t('Eine Anfrage bei den Ämtern wartet'),
         tag: 'star',
+        target: const NoticeTarget.section('chores'),
       );
     }
     if (was == PointStatus.pending &&
@@ -768,6 +790,7 @@ class PushService {
             ? t('Deine Anfrage wurde bestätigt')
             : t('Deine Anfrage wurde abgelehnt'),
         tag: ok ? 'star' : 'no_entry',
+        target: const NoticeTarget.section('chores'),
       );
     }
     return null;
@@ -970,6 +993,8 @@ class PushService {
           'title': details ? notice.title : 'Famio',
           'message': details ? notice.body : notice.brief,
           'tags': [notice.tag],
+          // Tapped on a phone with Famio: opens what it is about (#385).
+          if (notice.target case final target?) 'click': target.link,
           // ntfy's "low": no sound, no vibration, no pop-up.
           if (quiet) 'priority': 2,
           // "urgent": long vibration, breaks through on phones.

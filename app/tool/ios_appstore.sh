@@ -95,18 +95,38 @@ echo "Bundle-ID: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plis
 echo "Version:   $(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$plist")" \
   "($(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$plist"))"
 echo "Mindestens iOS $(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "$plist")"
-if codesign -d --entitlements - --xml "$app" 2> /dev/null | grep -q get-task-allow; then
-  if codesign -d --entitlements - --xml "$app" 2> /dev/null |
-    plutil -extract get-task-allow raw -o - - 2> /dev/null | grep -q true; then
-    echo "Fehler: Das Paket ist für die Entwicklung signiert (get-task-allow)." >&2
-    exit 1
-  fi
-fi
-if security cms -D -i "$app/embedded.mobileprovision" 2> /dev/null |
-  grep -q ProvisionedDevices; then
-  echo "Fehler: Das Profil nennt einzelne Geräte, es ist kein App-Store-Profil." >&2
+# The app and its share extension ("Teilen an Famio"): each signed for the
+# App Store, the extension at the app's version and in its app group.
+extension="$app/PlugIns/ShareExtension.appex"
+if [ ! -d "$extension" ]; then
+  echo "Fehler: Die Share-Extension fehlt im Paket." >&2
   exit 1
 fi
+for bundle in "$app" "$extension"; do
+  name=$(basename "$bundle")
+  if codesign -d --entitlements - --xml "$bundle" 2> /dev/null |
+    plutil -extract get-task-allow raw -o - - 2> /dev/null | grep -q true; then
+    echo "Fehler: $name ist für die Entwicklung signiert (get-task-allow)." >&2
+    exit 1
+  fi
+  if security cms -D -i "$bundle/embedded.mobileprovision" 2> /dev/null |
+    grep -q ProvisionedDevices; then
+    echo "Fehler: Das Profil von $name nennt einzelne Geräte, es ist kein App-Store-Profil." >&2
+    exit 1
+  fi
+  if ! codesign -d --entitlements - --xml "$bundle" 2> /dev/null |
+    grep -q "group\.$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$plist")<"; then
+    echo "Fehler: $name fehlt die App-Gruppe." >&2
+    exit 1
+  fi
+done
+for key in CFBundleShortVersionString CFBundleVersion; do
+  if [ "$(/usr/libexec/PlistBuddy -c "Print :$key" "$plist")" != \
+    "$(/usr/libexec/PlistBuddy -c "Print :$key" "$extension/Info.plist")" ]; then
+    echo "Fehler: Die Share-Extension hat eine andere $key als die App." >&2
+    exit 1
+  fi
+done
 if [ ! -f "$app/PrivacyInfo.xcprivacy" ]; then
   echo "Fehler: PrivacyInfo.xcprivacy fehlt im Paket." >&2
   exit 1

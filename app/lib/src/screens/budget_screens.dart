@@ -14,6 +14,8 @@ import '../widgets/sync_status_icon.dart';
 import '../widgets/undo_delete.dart';
 import 'bank_import_screen.dart';
 import 'subscriptions_screen.dart';
+// Opened from a notification as well (see open_target.dart).
+export 'subscriptions_screen.dart' show SubscriptionsScreen;
 import '../data/budget_month.dart';
 import '../l10n.dart';
 

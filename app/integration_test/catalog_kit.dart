@@ -20,6 +20,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fresh_start.dart';
 
@@ -447,6 +448,12 @@ Future<AppState> startApp(
     _formatted = true;
   }
   await freshStart();
+  // The tests look for German texts, whatever the device speaks (an
+  // emulator in English, say).
+  final prefs = await SharedPreferences.getInstance();
+  if (prefs.getString('language') == null) {
+    await prefs.setString('language', 'de');
+  }
   final state = AppState();
   await state.init();
   // Also when the test fails half-way: the next one starts signed out.

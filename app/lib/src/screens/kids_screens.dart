@@ -20,6 +20,8 @@ import '../widgets/sync_status_icon.dart';
 import 'kids_emergency_screens.dart';
 import 'kids_log_screens.dart';
 import 'pregnancy_screens.dart';
+// Opened from a notification as well (see open_target.dart).
+export 'pregnancy_screens.dart' show PregnancyScreen;
 import 'timetable_view.dart';
 import '../widgets/undo_delete.dart';
 import '../l10n.dart';

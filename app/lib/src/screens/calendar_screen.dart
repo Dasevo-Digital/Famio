@@ -29,6 +29,10 @@ import 'free_time_screen.dart';
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
+  /// A day to show, e.g. from a tapped notification (#385): the calendar
+  /// takes it when it is on screen or comes there.
+  static final requestedDay = ValueNotifier<DateTime?>(null);
+
   @override
   State<CalendarScreen> createState() => _CalendarScreenState();
 }
@@ -49,6 +53,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
     super.initState();
     final engine = AppScope.read(context).engine!;
     _selected = DateUtils.dateOnly(engine.calendar.today());
+    _takeRequested();
+    CalendarScreen.requestedDay.addListener(_requested);
     var zone = engine.familyTimeZone;
     _zoneChanges = engine.changes.listen((_) {
       if (zone == engine.familyTimeZone) return;
@@ -59,8 +65,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    CalendarScreen.requestedDay.removeListener(_requested);
     _zoneChanges?.cancel();
     super.dispose();
+  }
+
+  void _requested() {
+    if (mounted && CalendarScreen.requestedDay.value != null) {
+      setState(_takeRequested);
+    }
+  }
+
+  void _takeRequested() {
+    final day = CalendarScreen.requestedDay.value;
+    if (day == null) return;
+    CalendarScreen.requestedDay.value = null;
+    _followsToday = false;
+    _selected = DateUtils.dateOnly(day);
+    _month = DateTime(_selected.year, _selected.month);
   }
 
   void _changeMonth(int delta) => setState(() {

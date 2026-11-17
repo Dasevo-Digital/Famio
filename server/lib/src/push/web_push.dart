@@ -275,6 +275,7 @@ class WebPush {
         'title': notice.title,
         'body': body,
         'tag': notice.tag,
+        if (notice.target case final target?) 'target': target.encode(),
         if (quiet) 'quiet': true,
         if (notice.urgent) 'urgent': true,
       }),

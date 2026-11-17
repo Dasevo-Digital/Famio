@@ -18,6 +18,9 @@ import VisionKit
     // Also when iOS relaunches the app in the background for a location
     // event: sharing continues without the Flutter UI.
     LocationReporter.shared.resumeIfEnabled()
+    // Taps on reminders reach the notifications plugin (#385), which
+    // FlutterAppDelegate forwards them to.
+    UNUserNotificationCenter.current().delegate = self
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -271,25 +274,44 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
 }
 
 /// Calendar files opened with Famio from another app ("Öffnen mit" in Mail
-/// or Files, `famio/open_file`): kept until Dart takes them.
+/// or Files), what the share sheet handed over ("Teilen an Famio", see
+/// ShareInbox) and `famio://open?target=…` links (ntfy, #385), all through
+/// `famio/open_file`: kept until Dart takes them.
 final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
   static let shared = OpenedFiles()
 
   private var channel: FlutterMethodChannel?
   private var pending: (name: String, data: Data)?
+  private var pendingTarget: String?
 
   func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
       name: "famio/open_file", binaryMessenger: registrar.messenger())
     channel.setMethodCallHandler { [weak self] call, result in
-      guard call.method == "take" else {
+      switch call.method {
+      case "take":
+        let file = self?.pending
+        self?.pending = nil
+        result(
+          file.map { ["name": $0.name, "bytes": FlutterStandardTypedData(bytes: $0.data)] })
+      case "takeTarget":
+        let target = self?.pendingTarget
+        self?.pendingTarget = nil
+        result(target)
+      case "takeShare":
+        result(ShareInbox.take())
+      #if targetEnvironment(simulator)
+        // Device tests in the simulator only: a link as iOS hands it over,
+        // without the system's "Open in Famio?" question, which a simulator
+        // without a window cannot answer (integration_test/
+        // review_open_test.dart). Not in builds for phones.
+        case "debugOpenURL":
+          let url = (call.arguments as? String).flatMap(URL.init(string:))
+          result(url.map { self?.receive([$0]) ?? false } ?? false)
+      #endif
+      default:
         result(FlutterMethodNotImplemented)
-        return
       }
-      let file = self?.pending
-      self?.pending = nil
-      result(
-        file.map { ["name": $0.name, "bytes": FlutterStandardTypedData(bytes: $0.data)] })
     }
     self.channel = channel
     registrar.addSceneDelegate(self)
@@ -309,7 +331,34 @@ final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
     receive(URLContexts.map(\.url))
   }
 
+  /// The links taken last, and when: Flutter may hand the same ones over
+  /// as well (see SceneDelegate).
+  private var lastLinks: (urls: [URL], at: Date)?
+
   private func receive(_ urls: [URL]) -> Bool {
+    if !urls.isEmpty, let last = lastLinks, last.urls == urls,
+      Date().timeIntervalSince(last.at) < 2
+    {
+      return true
+    }
+    lastLinks = urls.isEmpty ? lastLinks : (urls, Date())
+    if let link = urls.first(where: { $0.scheme == "famio" }) {
+      switch link.host {
+      case "open":
+        // Only something to open: Dart checks it and opens nothing else.
+        let target = URLComponents(url: link, resolvingAgainstBaseURL: false)?
+          .queryItems?.first(where: { $0.name == "target" })?.value
+        guard let target, target.count <= 512 else { return false }
+        pendingTarget = target
+      case "share":
+        // The share extension left something in the app group.
+        break
+      default:
+        return false
+      }
+      channel?.invokeMethod("opened", arguments: nil)
+      return true
+    }
     guard let url = urls.first(where: \.isFileURL) else { return false }
     let access = url.startAccessingSecurityScopedResource()
     defer { if access { url.stopAccessingSecurityScopedResource() } }
@@ -1325,5 +1374,60 @@ final class PrivacyCover: NSObject {
       }
     }
     uncover()
+  }
+}
+
+/// What the share extension ("Teilen an Famio" in other apps' share sheet)
+/// left in the app group for the app: one folder per share with
+/// `share.json` (text, subject, files) and the files. Taken one at a time,
+/// files moved to the app's temporary folder, where Dart's clean-up finds
+/// them; shares older than a day go unread.
+enum ShareInbox {
+  static var folder: URL? {
+    guard let group = Bundle.main.object(forInfoDictionaryKey: "FamioAppGroup") as? String,
+      let container = FileManager.default.containerURL(
+        forSecurityApplicationGroupIdentifier: group)
+    else { return nil }
+    return container.appendingPathComponent("Share", isDirectory: true)
+  }
+
+  static func take() -> [String: Any]? {
+    let manager = FileManager.default
+    guard let folder,
+      let shares = try? manager.contentsOfDirectory(
+        at: folder, includingPropertiesForKeys: [.creationDateKey])
+    else { return nil }
+    let dayAgo = Date().addingTimeInterval(-24 * 60 * 60)
+    // Folder names begin with the time they were made.
+    for share in shares.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+      defer { try? manager.removeItem(at: share) }
+      let made = (try? share.resourceValues(forKeys: [.creationDateKey]))?.creationDate
+      guard (made ?? Date()) > dayAgo,
+        let data = try? Data(contentsOf: share.appendingPathComponent("share.json")),
+        let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+      else { continue }
+      let target = manager.temporaryDirectory
+        .appendingPathComponent("shared", isDirectory: true)
+        .appendingPathComponent(UUID().uuidString, isDirectory: true)
+      try? manager.createDirectory(at: target, withIntermediateDirectories: true)
+      var files: [[String: String]] = []
+      for file in json["files"] as? [[String: Any]] ?? [] {
+        guard let stored = file["file"] as? String, !stored.contains("/"),
+          stored != "share.json"
+        else { continue }
+        let to = target.appendingPathComponent(stored)
+        guard (try? manager.moveItem(at: share.appendingPathComponent(stored), to: to)) != nil
+        else { continue }
+        files.append([
+          "path": to.path,
+          "name": file["name"] as? String ?? stored,
+          "mime": file["mime"] as? String ?? "application/octet-stream",
+        ])
+      }
+      let text = json["text"] as? String ?? ""
+      if text.isEmpty && files.isEmpty { continue }
+      return ["text": text, "subject": json["subject"] as? String ?? "", "files": files]
+    }
+    return nil
   }
 }

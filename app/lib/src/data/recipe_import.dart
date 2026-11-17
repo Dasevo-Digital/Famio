@@ -15,6 +15,44 @@ Uri? linkIn(String text) {
   return url != null && url.host.isNotEmpty ? url : null;
 }
 
+/// Whether [url] looks like a recipe: a page of a known recipe site, or an
+/// address that says so (`/rezept/`, `/recipes/`, `/receta/`, …). "Teilen
+/// an Famio" then offers the recipe import first.
+bool isRecipeLink(Uri url) {
+  var host = url.host.toLowerCase();
+  if (host.startsWith('www.')) host = host.substring(4);
+  if (_recipeSites.any((site) => host == site || host.endsWith('.$site'))) {
+    return true;
+  }
+  return RegExp(
+    r'(^|[/\-_])(rezept|rezepte|recipe|recipes|receta|recetas|kochen)([/\-_.]|$)',
+  ).hasMatch(url.path.toLowerCase());
+}
+
+const _recipeSites = {
+  'chefkoch.de',
+  'lecker.de',
+  'kitchenstories.com',
+  'gutekueche.at',
+  'gutekueche.de',
+  'essen-und-trinken.de',
+  'eatsmarter.de',
+  'springlane.de',
+  'kuechengoetter.de',
+  'einfachbacken.de',
+  'kochbar.de',
+  'cookidoo.de',
+  'hellofresh.de',
+  'bbcgoodfood.com',
+  'allrecipes.com',
+  'seriouseats.com',
+  'simplyrecipes.com',
+  'bonappetit.com',
+  'epicurious.com',
+  'recetasgratis.net',
+  'directoalpaladar.com',
+};
+
 /// A recipe from a web page and the address of its photo.
 typedef ImportedRecipe = ({Recipe recipe, Uri? image});
 

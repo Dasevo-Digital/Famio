@@ -30,13 +30,18 @@ self.addEventListener('push', (event) => {
       silent: Boolean(data.quiet) || (inFront && !data.urgent),
       requireInteraction: Boolean(data.urgent),
       vibrate: data.urgent ? [500, 200, 500, 200, 500] : undefined,
+      // What a tap opens (#385).
+      data: { target: typeof data.target === 'string' ? data.target : null },
     });
   })());
 });
 
-// A tap opens Famio (an open window comes to the front).
+// A tap opens Famio (an open window comes to the front) at what the
+// notice is about (#385): an open window hears it as a message, a new one
+// finds it in its address.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const target = event.notification.data && event.notification.data.target;
   event.waitUntil((async () => {
     const windows = await self.clients.matchAll({
       type: 'window',
@@ -44,9 +49,12 @@ self.addEventListener('notificationclick', (event) => {
     });
     for (const w of windows) {
       if (w.url.startsWith(self.registration.scope) && 'focus' in w) {
+        if (target) w.postMessage({ famioOpen: target });
         return w.focus();
       }
     }
-    return self.clients.openWindow(self.registration.scope);
+    const url = new URL(self.registration.scope);
+    if (target) url.searchParams.set('open', target);
+    return self.clients.openWindow(url.href);
   })());
 });

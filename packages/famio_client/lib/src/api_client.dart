@@ -1841,6 +1841,7 @@ class Notice {
     required this.tag,
     this.quiet = false,
     this.alarm = false,
+    this.target,
   });
 
   factory Notice.fromJson(Map<String, Object?> json) => Notice(
@@ -1852,6 +1853,7 @@ class Notice {
     tag: json['tag'] as String? ?? '',
     quiet: json['quiet'] as bool? ?? false,
     alarm: json['alarm'] as bool? ?? false,
+    target: NoticeTarget.decode(json['target'] as String?),
   );
 
   final int id;
@@ -1868,6 +1870,9 @@ class Notice {
 
   /// An emergency (SOS): show as an alarm, always loud.
   final bool alarm;
+
+  /// What tapping it opens (#385); null from older servers.
+  final NoticeTarget? target;
 }
 
 class NoticeBatch {

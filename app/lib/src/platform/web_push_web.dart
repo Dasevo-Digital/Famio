@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
@@ -113,6 +114,39 @@ Future<String?> stopWebPush() async {
   if (subscription == null) return null;
   await subscription.unsubscribe().toDart;
   return subscription.endpoint;
+}
+
+/// What a tapped browser notification asks to open (#385), once: the
+/// service worker opens a new window with it in the address.
+String? takeWebOpenRequest() {
+  if (_openTaken) return null;
+  _openTaken = true;
+  return Uri.base.queryParameters['open'];
+}
+
+var _openTaken = false;
+
+/// Same for a window that was open already: the service worker tells it.
+final Stream<String> webOpenRequests = _webOpenRequests();
+
+Stream<String> _webOpenRequests() {
+  final controller = StreamController<String>.broadcast();
+  try {
+    web.window.navigator.serviceWorker.addEventListener(
+      'message',
+      ((web.MessageEvent event) {
+        final data = event.data;
+        if (data == null || !data.isA<JSObject>()) return;
+        final target = (data as JSObject)['famioOpen'];
+        if (target != null && target.isA<JSString>()) {
+          controller.add((target as JSString).toDart);
+        }
+      }).toJS,
+    );
+  } catch (_) {
+    // No service workers here (no HTTPS): no notifications either.
+  }
+  return controller.stream;
 }
 
 bool _same(List<int> a, List<int> b) {

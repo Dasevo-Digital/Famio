@@ -18,6 +18,7 @@ import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
 import '../data/school_bag.dart';
 import '../data/deadlines.dart';
+import '../data/reminder_targets.dart';
 import '../data/loans.dart';
 import '../data/waste.dart';
 import '../data/day_preview.dart';
@@ -44,6 +45,7 @@ class ReminderService {
     final plugin = FlutterLocalNotificationsPlugin();
     try {
       final ok = await plugin.initialize(
+        onDidReceiveNotificationResponse: _tapped,
         settings: InitializationSettings(
           android: AndroidInitializationSettings('@mipmap/ic_launcher'),
           iOS: DarwinInitializationSettings(),
@@ -75,6 +77,38 @@ class ReminderService {
   final FlutterLocalNotificationsPlugin _plugin;
   final SharedPreferences _prefs;
   var _exactAlarms = false;
+
+  /// What tapped notifications open (#385), while the app runs; see
+  /// [launchTarget] for the one that started it.
+  static Stream<NoticeTarget> get taps => _taps.stream;
+  static final _taps = StreamController<NoticeTarget>.broadcast();
+
+  static void _tapped(NotificationResponse response) {
+    if (NoticeTarget.decode(response.payload) case final target?) {
+      _taps.add(target);
+    }
+  }
+
+  /// What the notification opens that started the app, once.
+  Future<NoticeTarget?> launchTarget() async {
+    if (_launchTaken) return null;
+    _launchTaken = true;
+    try {
+      final details = await _plugin.getNotificationAppLaunchDetails();
+      if (details == null || !details.didNotificationLaunchApp) return null;
+      return NoticeTarget.decode(details.notificationResponse?.payload);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  var _launchTaken = false;
+
+  /// What tapping [r] opens, as the notification keeps it.
+  String? _payload(DueReminder r) {
+    final engine = _engine;
+    return engine == null ? null : reminderTarget(r, engine)?.encode();
+  }
 
   static const _window = Duration(days: 14);
   static const _maxScheduled = 48;
@@ -159,6 +193,7 @@ class ReminderService {
         id: 800000 + notice.id % 100000,
         title: details ? notice.title : AppEnv.appName,
         body: details ? notice.body : notice.brief,
+        payload: notice.target?.encode(),
         notificationDetails: notice.alarm
             ? _alarmDetails
             : notice.quiet
@@ -338,6 +373,7 @@ class ReminderService {
             : AndroidScheduleMode.inexactAllowWhileIdle,
         title: _title(r),
         body: _text(r),
+        payload: _payload(r),
       );
     }
     await _prefs.setString(
@@ -369,6 +405,7 @@ class ReminderService {
         title: _title(next),
         body: _text(next),
         notificationDetails: _details,
+        payload: _payload(next),
       );
       _reschedule();
     });
@@ -387,9 +424,14 @@ class ReminderService {
   /// hash is kept: the texts name medications, children and appointments,
   /// and the preferences are plain files that go into device backups
   /// (#514).
+  /// With what it opens: reminders planned before that existed get it at
+  /// the next planning (#385).
   String _signature(DueReminder r) => sha256
       .convert(
-        utf8.encode('${r.at.millisecondsSinceEpoch}|${_title(r)}|${_text(r)}'),
+        utf8.encode(
+          '${r.at.millisecondsSinceEpoch}|${_title(r)}|${_text(r)}'
+          '|${_payload(r)}',
+        ),
       )
       .toString();
 
@@ -465,6 +507,7 @@ class ReminderService {
             ? m.text
             : '📎 ${m.attachment?.name ?? tr.commonAttachment}',
         notificationDetails: _quiet() ? _quietDetails : _chatDetails,
+        payload: NoticeTarget.chat(m.chatId).encode(),
       );
     }
   }
@@ -494,6 +537,7 @@ class ReminderService {
         notificationDetails: _quiet(place: true)
             ? _quietDetails
             : _placeDetails,
+        payload: const NoticeTarget.section('location').encode(),
       );
     }
   }

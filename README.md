@@ -68,7 +68,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
-| Essen: Rezepte (Import von Webseiten samt Foto, auf Android auch per „Teilen an Famio“, überall aus dem Familien-Eingang), Kochmodus (Schritt für Schritt, Bildschirm bleibt an, Timer aus den Schritten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
+| Essen: Rezepte (Import von Webseiten samt Foto, auf Android, iPhone und iPad auch per „Teilen an Famio“, bei Links von Rezeptseiten als erste Wahl, überall aus dem Familien-Eingang), Kochmodus (Schritt für Schritt, Bildschirm bleibt an, Timer aus den Schritten), Wochenplan, Zutaten auf die Einkaufsliste, Nährwerte pro Portion (Open Food Facts, opt-in) | ✅ |
 | Finanzen: Haushaltsbuch mit Limits, nur für ausgewählte Mitglieder, Kontoauszug-Import (CSV, CAMT); Gehalt ab dem 15. zählt für den Folgemonat, je Buchung änderbar; optional Abos im Blick (Kosten pro Monat und Jahr, nächste Zahlungen, Erinnerung vor der Abbuchung) | ✅ |
 | Stundenplan pro Schulkind | ✅ |
 | Jahresrückblick: Zahlen, Meilensteine, Reisen, Fotos aus dem Chat, Ämter; als PDF | ✅ |
@@ -86,7 +86,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Wochenvorschau (sonntags 18 Uhr) und auf Wunsch ein Tagesüberblick am Morgen (Termine, Fahrten, fällige Aufgaben, Abfall, Geburtstage, Essen, Wetter) als Mitteilung | ✅ |
 | Widget für den Startbildschirm | ✅ Android (iOS: braucht bezahlten Apple-Entwickler-Account) |
 | Web-App im Browser und in der Home-Assistant-Seitenleiste (Add-on als Server oder nur als Client) | ✅ |
-| „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps in den Familien-Eingang, auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat; am Computer Dateien ins Fenster ziehen | ✅ Android, macOS, Windows, Linux (iOS: braucht bezahlten Apple-Entwickler-Account) |
+| „Teilen an Famio“: Text, Links, Fotos und Dateien aus anderen Apps in den Familien-Eingang, auf die Einkaufsliste (eine Zeile, ein Artikel), als Aufgabe, Notiz oder Dokument oder in den Familien-Chat; am Computer Dateien ins Fenster ziehen | ✅ Android, iOS, macOS, Windows, Linux |
 | Multi-Device-Sync, offlinefähig, Rechte pro Datensatz | ✅ |
 | Datenexport als ZIP (eigene Daten bzw. ganze Familie) | ✅ |
 | Papierkorb für Aufgaben, Termine, Notizen und Dokumente mit 30 Tagen Aufbewahrung; Wiederherstellung auf allen Geräten nach aktueller Rechteprüfung | ✅ |
@@ -188,6 +188,13 @@ denen man teilnimmt, und eigene bzw. nicht zugewiesene Aufgaben):
 |---|---|
 | Android, iOS, macOS, Windows | System-Benachrichtigung nach erteilter Berechtigung, auch bei geschlossener App |
 | Linux | nur solange die App läuft (kein geplantes Anzeigen unter Linux) |
+
+Eine Mitteilung antippen öffnet, worum es geht: die Aufgabe, den Termin an
+seinem Tag, den Chat, das Kind, den Notfall oder die passende Seite (Fristen,
+Abos, Verleih, Abfall). Das gilt für Erinnerungen, die eigenen Mitteilungen
+des Servers, Browser-Mitteilungen und ntfy (dort über einen
+`famio://open`-Link). Ist die App-Sperre an, öffnet Famio es nach dem
+Entsperren; was es nicht mehr gibt, öffnet nur den Bereich.
 
 ### Google Kalender, Apple Kalender & Co.
 

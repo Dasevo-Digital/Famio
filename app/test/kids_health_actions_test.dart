@@ -15,7 +15,6 @@ import 'package:famio/src/l10n.dart';
 import 'package:famio/src/screens/kids_log_screens.dart';
 import 'package:famio/src/screens/kids_screens.dart';
 import 'package:famio/src/screens/medication_screens.dart';
-import 'package:famio/src/screens/pregnancy_screens.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';

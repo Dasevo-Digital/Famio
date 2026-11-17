@@ -258,6 +258,17 @@ String _shortTime(DateTime t) => DateUtils.isSameDay(t, DateTime.now())
     ? timeLabel(t)
     : DateFormat.Md(appLanguage).format(t);
 
+/// The name a chat is shown under: the family's, or the other person's.
+String chatTitle(SyncEngine engine, String chatId) {
+  if (chatId == ChatIds.family) return tr.settingsFamily;
+  for (final m in engine.members) {
+    if (ChatIds.direct(engine.memberId, m.id) == chatId) {
+      return m.displayName;
+    }
+  }
+  return tr.sectionChat;
+}
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key, required this.chatId, required this.title});
 

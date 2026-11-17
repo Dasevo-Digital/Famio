@@ -236,6 +236,7 @@ class SosService {
         }),
         brief: t('Notfall beendet'),
         tag: 'white_check_mark',
+        target: NoticeTarget.sos(record.id),
       ),
       record,
     );
@@ -358,6 +359,7 @@ class SosService {
         ),
         brief: t('Bitte um einen Check-in'),
         tag: 'wave',
+        target: const NoticeTarget.section('location'),
       ),
       null,
     );
@@ -397,6 +399,7 @@ class SosService {
         }),
         brief: t('Akku fast leer'),
         tag: 'battery',
+        target: const NoticeTarget.section('location'),
       ),
       about,
     );
@@ -423,6 +426,7 @@ class SosService {
         ),
         brief: t('Ein Handy meldet sich nicht'),
         tag: 'warning',
+        target: const NoticeTarget.section('location'),
       ),
       records.get(Collections.memberLocations, member.id),
     );
@@ -447,6 +451,7 @@ class SosService {
       urgent: true,
       // Ended meanwhile: no further try after "Notfall beendet".
       stillValid: () => _get(about.id)?.open ?? false,
+      target: NoticeTarget.sos(about.id),
     ),
     about,
   );

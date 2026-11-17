@@ -1495,6 +1495,45 @@ void main() {
       expect((await device.call('GET', 'api/me'))['_status'], 401);
     });
 
+    test('notifications say what tapping them opens (#385)', () async {
+      await mama.sync([
+        _record(
+          Collections.chatMessages,
+          'z1',
+          chat('z1', ChatIds.family, 'Essen ist fertig'),
+        ),
+        _record(
+          Collections.tasks,
+          'z2',
+          Task(id: 'z2', title: 'Müll raus', assigneeIds: [kind.id]).toData(),
+        ),
+      ]);
+      await app.push.idle;
+      final got = await kind.call('GET', 'api/notifications?after=0');
+      final targets = {
+        for (final n in (got['notices'] as List).cast<Map>()) n['target'],
+      };
+      expect(targets, {'chat:${ChatIds.family}', 'task:z2'});
+      // To ntfy as a link the phone's Famio opens.
+      final added = await kind.call('POST', 'api/me/push', {
+        'password': 'tulpe-regal-7',
+        'url': 'https://push.example/famio-geheim',
+      });
+      expect(added['_status'], 201);
+      pushed.clear();
+      await mama.sync([
+        _record(
+          Collections.chatMessages,
+          'z3',
+          chat('z3', ChatIds.family, 'Noch was'),
+        ),
+      ]);
+      await app.push.idle;
+      final link = Uri.parse(pushed.single['click'] as String);
+      expect(NoticeTarget.fromLink(link), NoticeTarget.chat(ChatIds.family));
+      expect(jsonEncode(pushed), isNot(contains('Noch was')));
+    });
+
     test('in the quiet time notices arrive silently', () async {
       final now = tz.TZDateTime.now(app.settings.location);
       String at(int minutes) =>

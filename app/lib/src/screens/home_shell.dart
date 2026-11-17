@@ -39,6 +39,7 @@ import '../environment.dart';
 import '../widgets/whats_new.dart';
 import '../l10n.dart';
 import 'deferred_sections.dart';
+import 'open_target.dart';
 import 'share_target.dart';
 import '../widgets/file_drop.dart';
 
@@ -172,6 +173,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       }
       _openedFile();
       final state = AppScope.read(context);
+      // Tapped notifications (#385): the one that started the app, and
+      // those tapped while it runs.
+      _openRequests = state.openRequest..addListener(_openRequested);
+      _openRequested();
       if (state.localDataSetAside) {
         state.localDataSetAside = false;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -189,14 +194,33 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     if (SosDevice.onLaunch == _sosLaunch) SosDevice.onLaunch = null;
     if (OpenedFiles.onOpened == _openedFile) OpenedFiles.onOpened = null;
+    _openRequests?.removeListener(_openRequested);
     super.dispose();
   }
+
+  ValueNotifier<NoticeTarget?>? _openRequests;
+
+  void _openRequested() {
+    if (!mounted) return;
+    final target = AppScope.read(context).takeOpenRequest();
+    if (target != null) _open(target);
+  }
+
+  Future<void> _open(NoticeTarget target) => openNoticeTarget(
+    context,
+    target,
+    go: _go,
+    navigatorOf: (section) => _navigators[section]?.currentState,
+  );
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     _checkSosLaunch();
     AppScope.read(context).files?.sweepTemp();
+    // What another app handed over meanwhile (an iPhone's share sheet
+    // leaves it for the app, which it may not open itself).
+    _openedFile();
   }
 
   /// Opened from the "Famio Notruf" tile or the app shortcut (Android).
@@ -207,6 +231,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   /// A calendar file opened with Famio from another app, or text and files
   /// shared to Famio ("Teilen an Famio" on Android).
   Future<void> _openedFile() async {
+    // A link to something in Famio (ntfy, a notification of Android's own
+    // push, #385).
+    final target = await OpenedFiles.takeTarget();
+    if (target != null && mounted) await _open(target);
     final file = await OpenedFiles.take();
     if (file != null && mounted) await _importCalendarFile(file);
     final share = await OpenedFiles.takeShare();

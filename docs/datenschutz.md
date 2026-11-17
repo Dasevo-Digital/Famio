@@ -37,7 +37,9 @@ Unverschlüsselt auf dem Gerät bleiben:
 - zwischengespeicherte Kartenkacheln, auf dem iPhone die Orte der Familie für
   Ortsmeldungen und die Koordinaten des Wetterorts;
 - Texte angezeigter Mitteilungen, wenn „Inhalte anzeigen“ eingeschaltet ist;
-  bei Erinnerungen an Medikamente und Kinder nennen sie Namen.
+  bei Erinnerungen an Medikamente und Kinder nennen sie Namen;
+- auf iPhone und iPad, was über „Teilen“ aus einer anderen App an Famio geht,
+  bis Famio es übernimmt, höchstens einen Tag.
 
 Gesundheitsdaten (Medikamente, Kinderdaten mit Notfallangaben und Protokoll,
 Schwangerschaften und Dokumente der Kategorie Gesundheit) erhalten nur
@@ -180,7 +182,9 @@ dabei die IP-Adresse von Gerät oder Server, sonst nichts.
 geheime Thema, die IP-Adresse und mindestens einen knappen Hinweis; auch dieser
 nennt bei manchen Mitteilungen einen Namen („SOS von …“, „… kommt“). Wenn
 „Details“ aktiviert ist, wird die eigentliche Benachrichtigung übertragen, etwa
-Ankünfte an Orten, Fahrtziele mit Ankunftszeit oder Chat-Texte. Der öffentliche
+Ankünfte an Orten, Fahrtziele mit Ankunftszeit oder Chat-Texte. Dazu kommt ein
+Verweis, was Famio beim Antippen öffnet (eine zufällige Kennung, etwa einer
+Aufgabe oder eines Chats, ohne deren Inhalt). Der öffentliche
 Dienst ntfy.sh hält Nachrichten laut eigener Datenschutzerklärung bis zu zwölf
 Stunden vor und stellt sie auf Handys über Google (FCM) beziehungsweise Apple
 zu. Auf dem iPhone ist ntfy ohne Apple Push der einzige Weg für Mitteilungen im

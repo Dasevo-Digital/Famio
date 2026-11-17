@@ -723,6 +723,32 @@ def _cmd_alarms(device, rest, changed):
     return str(sum(1 for line in out.splitlines() if pattern.search(line)))
 
 
+def _cmd_view_link(device, rest, changed):
+    """A link as another app opens it (ntfy: famio://open?target=…, #385)."""
+    url = _text(rest[0]).replace("'", "")
+    device.shell(f"am start -a android.intent.action.VIEW -d '{url}' -p {PACKAGE}")
+
+
+def _cmd_tap_notification(device, rest, changed):
+    """Pulls the notification shade down and taps the notification with
+    this text, like a person (#385)."""
+    texts = _text(rest[0]).split("|")
+    # What Famio shows: titles and groups (Android bundles many into one).
+    shown = device.shell(f"dumpsys notification --noredact | grep -A40 'pkg={PACKAGE}'")
+    for line in shown.splitlines():
+        if re.search(r"NotificationRecord|groupKey=|android\.title=|android\.text=|contentIntent", line):
+            print(f"   {line.strip()[:160]}", flush=True)
+    device.shell("cmd statusbar expand-notifications")
+    time.sleep(1)
+    node = device.find_any(texts, float(rest[1]) if len(rest) > 1 else 20,
+                           exact_first=False)
+    if node is None:
+        device.shell("cmd statusbar collapse")
+        raise RuntimeError(f"keine Mitteilung: {texts}")
+    device.tap(node["centre"])
+    return node["text"] or node["desc"]
+
+
 CATALOG_COMMANDS = {
     "audio": _cmd_audio,
     "alarm-volume": _cmd_alarm_volume,
@@ -751,6 +777,8 @@ CATALOG_COMMANDS = {
     "recents": _cmd_recents,
     "services": _cmd_services,
     "home-tap": _cmd_home_tap,
+    "view-link": _cmd_view_link,
+    "tap-notification": _cmd_tap_notification,
 }
 
 

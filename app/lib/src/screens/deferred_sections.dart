@@ -80,6 +80,27 @@ Widget kidsPage() => DeferredPage(
   builder: (_) => kids.KidsScreen(),
 );
 
+/// A child's page.
+Widget childPage(String childId) => DeferredPage(
+  id: 'kids',
+  load: kids.loadLibrary,
+  builder: (_) => kids.ChildScreen(childId: childId),
+);
+
+/// A pregnancy's page.
+Widget pregnancyPage(String pregnancyId) => DeferredPage(
+  id: 'kids',
+  load: kids.loadLibrary,
+  builder: (_) => kids.PregnancyScreen(pregnancyId: pregnancyId),
+);
+
+/// The family's subscriptions.
+Widget subscriptionsPage() => DeferredPage(
+  id: 'budget',
+  load: budget.loadLibrary,
+  builder: (_) => budget.SubscriptionsScreen(),
+);
+
 Widget mealsPage() => DeferredPage(
   id: 'meals',
   load: meals.loadLibrary,

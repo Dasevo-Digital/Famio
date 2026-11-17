@@ -223,4 +223,26 @@ void main() {
       Uri.parse('https://bilder.test/a.jpg'),
     );
   });
+
+  test('links of recipe sites are told apart (#567)', () {
+    for (final yes in [
+      'https://www.chefkoch.de/rezepte/1234/Carbonara.html',
+      'https://mobile.chefkoch.de/x',
+      'https://www.kitchenstories.com/de/rezepte/x',
+      'https://www.bbcgoodfood.com/recipes/x',
+      'https://blog.example.com/rezept/apfelkuchen',
+      'https://example.es/recetas/tortilla',
+      'https://example.com/2026/11/schnelle-rezepte-fuer-den-herbst',
+    ]) {
+      expect(isRecipeLink(Uri.parse(yes)), isTrue, reason: yes);
+    }
+    for (final no in [
+      'https://example.com/termine/elternabend',
+      'https://www.schule.de/rezeptionstheke',
+      'https://www.notchefkoch.de/x',
+      'https://www.youtube.com/watch?v=x',
+    ]) {
+      expect(isRecipeLink(Uri.parse(no)), isFalse, reason: no);
+    }
+  });
 }

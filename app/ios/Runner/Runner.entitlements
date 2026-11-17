@@ -4,5 +4,9 @@
 <dict>
 	<key>com.apple.developer.usernotifications.time-sensitive</key>
 	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.$(FAMIO_BUNDLE_ID)</string>
+	</array>
 </dict>
 </plist>

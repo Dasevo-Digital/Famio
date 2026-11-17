@@ -237,7 +237,21 @@ class NotifyService : Service() {
                 .setContentTitle("Famio")
                 .setContentText(notice.optString("brief"))
                 .build()
+            val id = NOTIFICATION_ID + 1 + (notice.optLong("id") % 100_000).toInt()
+            // Tapped: Famio opens what it is about (#385), else just itself.
+            val target = notice.optString("target")
+            val open = PendingIntent.getActivity(
+                this,
+                id,
+                if (target.isNotEmpty()) {
+                    MainActivity.openIntent(this, target)
+                } else {
+                    Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
             val notification = builder(channel)
+                .setContentIntent(open)
                 .apply {
                     if (alarm) {
                         // Over the lock screen, like an alarm clock.
@@ -278,7 +292,7 @@ class NotifyService : Service() {
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
                 .setPublicVersion(public)
                 .build()
-            manager.notify(NOTIFICATION_ID + 1 + (notice.optLong("id") % 100_000).toInt(), notification)
+            manager.notify(id, notification)
         }
     }
 

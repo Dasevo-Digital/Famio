@@ -1,3 +1,4 @@
+import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -61,6 +62,21 @@ abstract final class OpenedFiles {
               mime: f['mime'] as String? ?? 'application/octet-stream',
             ),
         ],
+      );
+    } on MissingPluginException {
+      return null;
+    } on PlatformException {
+      return null;
+    }
+  }
+
+  /// What a link or notification asked to open (`famio://open?…`, #385),
+  /// once.
+  static Future<NoticeTarget?> takeTarget() async {
+    if (!_supported) return null;
+    try {
+      return NoticeTarget.decode(
+        await _channel.invokeMethod<String>('takeTarget'),
       );
     } on MissingPluginException {
       return null;

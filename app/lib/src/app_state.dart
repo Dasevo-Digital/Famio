@@ -247,6 +247,20 @@ class AppState extends ChangeNotifier {
   /// Reminders of this device; null before sign-in and in the web app.
   ReminderService? get reminders => _reminders;
 
+  /// What a tapped notification asks to open (#385), until the app shell
+  /// takes it ([takeOpenRequest]).
+  final openRequest = ValueNotifier<NoticeTarget?>(null);
+
+  StreamSubscription<NoticeTarget>? _taps;
+  StreamSubscription<String>? _webTaps;
+
+  /// The waiting [openRequest], once.
+  NoticeTarget? takeOpenRequest() {
+    final target = openRequest.value;
+    openRequest.value = null;
+    return target;
+  }
+
   /// Famio's own push notifications (without ntfy).
   OwnPush? ownPush;
 
@@ -932,6 +946,8 @@ class AppState extends ChangeNotifier {
     if (kIsWeb) setTabValue('famio.token', null);
     await _prefs.remove('me');
     me = null;
+    // A tapped notification of the old session opens nothing later.
+    openRequest.value = null;
     lock.signedOut();
     certificatePin = null;
     changedCertificate = null;
@@ -1161,7 +1177,16 @@ class AppState extends ChangeNotifier {
 
     if (kIsWeb) {
       // No widgets or location sharing in the browser; notifications only
-      // through Web Push (see PushSettingsScreen).
+      // through Web Push (see PushSettingsScreen). A tapped one opens what
+      // it is about (#385).
+      if (NoticeTarget.decode(takeWebOpenRequest()) case final target?) {
+        openRequest.value = target;
+      }
+      _webTaps ??= webOpenRequests.listen((text) {
+        if (NoticeTarget.decode(text) case final target?) {
+          openRequest.value = target;
+        }
+      });
       _loadConfig(api);
       refreshTwoFactor();
       if (panelMode == 'browser') _renewWebPush(api);
@@ -1186,6 +1211,11 @@ class AppState extends ChangeNotifier {
         .attach(api, serverUrl: normalized, pin: pin, device: deviceName)
         .catchError((Object _) {});
     _reminders ??= await ReminderService.create(_prefs);
+    _taps ??= ReminderService.taps.listen((t) => openRequest.value = t);
+    // Started by tapping one of them.
+    if (await _reminders?.launchTarget() case final target?) {
+      openRequest.value = target;
+    }
     _reminders?.ownPushActive = () => push.active;
     _reminders?.quietHours = () => quietHours;
     _reminders?.weekPreview = () => weekPreview;

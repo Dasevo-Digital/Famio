@@ -116,6 +116,19 @@
 	</array>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<false/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>famio</string>
+			</array>
+		</dict>
+	</array>
+	<key>FamioAppGroup</key>
+	<string>group.$(FAMIO_BUNDLE_ID)</string>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
 </dict>

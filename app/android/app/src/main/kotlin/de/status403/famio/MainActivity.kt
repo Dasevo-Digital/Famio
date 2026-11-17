@@ -26,6 +26,16 @@ class MainActivity : FlutterFragmentActivity() {
     companion object {
         const val ACTION_SOS = "de.status403.famio.SOS"
 
+        /** A tapped notification of Famio's own push opens what it is about (#385). */
+        const val ACTION_OPEN = "de.status403.famio.OPEN"
+        private const val EXTRA_TARGET = "de.status403.famio.TARGET"
+
+        fun openIntent(context: Context, target: String) =
+            Intent(context, MainActivity::class.java)
+                .setAction(ACTION_OPEN)
+                .putExtra(EXTRA_TARGET, target)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
         /** "Teilen an Famio": at most this many files of at most 100 MB. */
         private const val MAX_SHARED_FILES = 10
         private const val MAX_SHARED_BYTES = 100L * 1024 * 1024
@@ -87,6 +97,9 @@ class MainActivity : FlutterFragmentActivity() {
     /** Text and files shared to Famio, until Dart takes them. */
     private var pendingShare: Map<String, Any>? = null
 
+    /** What a notification or a `famio://open` link asks to open, until Dart takes it. */
+    private var pendingTarget: String? = null
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         // Recreated after the system ended the process, or opened again from
@@ -121,6 +134,16 @@ class MainActivity : FlutterFragmentActivity() {
      */
     private fun receiveFile(intent: Intent?): Boolean {
         val action = intent?.action ?: return false
+        // Only something to open: Dart checks it and opens nothing else.
+        if (action == ACTION_OPEN) {
+            pendingTarget = intent.getStringExtra(EXTRA_TARGET)?.take(512)
+            return pendingTarget != null
+        }
+        if (action == Intent.ACTION_VIEW && intent.data?.scheme == "famio") {
+            pendingTarget = runCatching { intent.data?.getQueryParameter("target") }
+                .getOrNull()?.take(512)
+            return pendingTarget != null
+        }
         val uris = when (action) {
             Intent.ACTION_VIEW -> listOfNotNull(intent.data)
             Intent.ACTION_SEND -> listOfNotNull(stream(intent))
@@ -246,6 +269,11 @@ class MainActivity : FlutterFragmentActivity() {
                             val share = pendingShare
                             pendingShare = null
                             result.success(share)
+                        }
+                        "takeTarget" -> {
+                            val target = pendingTarget
+                            pendingTarget = null
+                            result.success(target)
                         }
                         else -> result.notImplemented()
                     }

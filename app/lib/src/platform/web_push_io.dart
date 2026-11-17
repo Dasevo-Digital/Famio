@@ -17,3 +17,9 @@ Future<BrowserSubscription?> startWebPush(
 ) async => null;
 
 Future<String?> stopWebPush() async => null;
+
+/// What a tapped browser notification asks to open (#385): none here.
+String? takeWebOpenRequest() => null;
+
+/// Same, while the web app runs: none here.
+Stream<String> get webOpenRequests => const Stream.empty();

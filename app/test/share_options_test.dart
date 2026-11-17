@@ -120,4 +120,32 @@ void main() {
     ]);
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('a link of a recipe site offers the import first (#567)', (
+    tester,
+  ) async {
+    await start(tester);
+    double top(String label) => tester.getTopLeft(find.text(label)).dy;
+    share(
+      tester,
+      'Spaghetti Carbonara – Rezept | Chefkoch '
+      'https://www.chefkoch.de/rezepte/1234/Spaghetti-Carbonara.html',
+    );
+    await tester.pumpAndSettle();
+    expect(
+      top('Als Rezept importieren'),
+      lessThan(top('Im Familien-Eingang ablegen')),
+    );
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+    // Another link: the inbox first, the recipe offered after it.
+    share(tester, 'https://example.com/termine/elternabend');
+    await tester.pumpAndSettle();
+    expect(
+      top('Als Rezept importieren'),
+      greaterThan(top('Im Familien-Eingang ablegen')),
+    );
+    await tester.tapAt(const Offset(20, 20));
+    await tester.pumpAndSettle();
+  });
 }

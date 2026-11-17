@@ -162,7 +162,7 @@ class _SearchScreenState extends State<SearchScreen> {
         await Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (_) =>
-                ChatScreen(chatId: chatId, title: _chatTitle(engine, chatId)),
+                ChatScreen(chatId: chatId, title: chatTitle(engine, chatId)),
           ),
         );
       case SearchKind.inbox:
@@ -171,16 +171,6 @@ class _SearchScreenState extends State<SearchScreen> {
         ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen()));
     }
     if (mounted) _searchChanged(_query.text, immediately: true);
-  }
-
-  static String _chatTitle(SyncEngine engine, String chatId) {
-    if (chatId == ChatIds.family) return tr.settingsFamily;
-    for (final m in engine.members) {
-      if (ChatIds.direct(engine.memberId, m.id) == chatId) {
-        return m.displayName;
-      }
-    }
-    return tr.sectionChat;
   }
 
   @override
@@ -264,7 +254,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   subtitle: Text(
                                     [
                                       if (kind == SearchKind.chat)
-                                        _chatTitle(engine, h.detail)
+                                        chatTitle(engine, h.detail)
                                       else if (h.detail.isNotEmpty)
                                         h.detail,
                                       if (h.at != null) day.format(h.at!),

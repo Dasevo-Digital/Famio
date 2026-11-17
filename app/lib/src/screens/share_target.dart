@@ -55,6 +55,19 @@ Future<void> showShareTarget(
         subtitle: subtitle == null ? null : Text(subtitle),
         onTap: () => Navigator.pop(context, t),
       );
+      final recipe =
+          files.isEmpty &&
+              link != null &&
+              !me.isGuest &&
+              !state.hiddenModules.contains(FamioSection.meals.name)
+          ? option(
+              _Target.recipe,
+              AppIcons.cookingPot,
+              FamioSection.meals,
+              tr.shareAsRecipe,
+            )
+          : null;
+      final recipeFirst = link != null && isRecipeLink(link);
       return SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
@@ -82,6 +95,8 @@ Future<void> showShareTarget(
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+              // A link of a recipe site: the import first (#567).
+              if (recipe != null && recipeFirst) recipe,
               if (!me.isGuest)
                 option(
                   _Target.inbox,
@@ -90,16 +105,7 @@ Future<void> showShareTarget(
                   tr.shareToInbox,
                   tr.shareToInboxHint,
                 ),
-              if (files.isEmpty &&
-                  link != null &&
-                  !me.isGuest &&
-                  !state.hiddenModules.contains(FamioSection.meals.name))
-                option(
-                  _Target.recipe,
-                  AppIcons.cookingPot,
-                  FamioSection.meals,
-                  tr.shareAsRecipe,
-                ),
+              if (recipe != null && !recipeFirst) recipe,
               if (files.isEmpty &&
                   lines.isNotEmpty &&
                   !state.hiddenModules.contains(FamioSection.shopping.name))

@@ -33,6 +33,10 @@ class NoticeBox {
         );
       }
     }
+    // What tapping it opens (#385).
+    if (!columns.contains('target')) {
+      _db.execute('ALTER TABLE notices ADD COLUMN target TEXT');
+    }
   }
 
   final Database _db;
@@ -58,7 +62,7 @@ class NoticeBox {
       // Records may name members that no longer exist (deleted, imported).
       _db.execute(
         'INSERT INTO notices (member_id, at, title, body, brief, tag, quiet,'
-        ' alarm) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8 WHERE EXISTS'
+        ' alarm, target) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS'
         ' (SELECT 1 FROM users WHERE id = ?1)',
         [
           id,
@@ -69,6 +73,7 @@ class NoticeBox {
           notice.tag,
           if (quiet.contains(id)) 1 else 0,
           if (notice.urgent) 1 else 0,
+          notice.target?.encode(),
         ],
       );
       if (_db.updatedRows == 0) continue;
@@ -113,6 +118,7 @@ class NoticeBox {
         'tag': row['tag'],
         'quiet': row['quiet'] == 1,
         'alarm': row['alarm'] == 1,
+        if (row['target'] case final String target) 'target': target,
       },
   ];
 

@@ -1,0 +1,5 @@
+// The share extension ("Teilen an Famio"): version and bundle id as the
+// app's (Flutter writes Generated.xcconfig on each build; App Store builds
+// need both bundles at the same version), signing as for the app.
+#include? "../Flutter/Generated.xcconfig"
+#include "../Flutter/AppInfo.xcconfig"
