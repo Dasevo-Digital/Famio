@@ -45,6 +45,98 @@ void main() {
       expect(extracted.tasks.single.due, isNull);
     });
 
+    test('a comma before a request preserves the appointment and its time', () {
+      final extracted = extractLetter(
+        'Der Ausflug findet am 27.11.2026 um 8:30 Uhr statt, '
+        'bitte geben Sie das Einverständnis bis 20.11.2026 ab.',
+        now: now,
+      );
+      expect(extracted.events.single.start, DateTime(2026, 11, 27, 8, 30));
+      expect(extracted.events.single.title, contains('Ausflug'));
+      final task = extracted.tasks.single;
+      expect(task.due, DateTime(2026, 11, 20));
+      expect(task.title, isNot(contains('Ausflug')));
+      expect(
+        task.line,
+        'bitte geben Sie das Einverständnis bis 20.11.2026 ab.',
+      );
+    });
+
+    test('a request can start at the comma without a polite preface', () {
+      final extracted = extractLetter(
+        'Ausflug am Freitag, 27.11.2026 um 9 Uhr, '
+        'Einverständnis bitte bis 20.11.2026 abgeben.',
+        now: now,
+      );
+      expect(extracted.events.single.start, DateTime(2026, 11, 27, 9));
+      expect(extracted.tasks.single.due, DateTime(2026, 11, 20));
+      expect(extracted.tasks.single.line, startsWith('Einverständnis'));
+    });
+
+    test('a hand-in action on a date creates a task only for that date', () {
+      for (final text in [
+        'Bitte die Einverständniserklärung am 20.11.2026 abgeben.',
+        'Reichen Sie das Formular am 20.11.2026 ein.',
+      ]) {
+        final extracted = extractLetter(
+          'Ausflug am 27.11.2026 um 9 Uhr\n$text',
+          now: now,
+        );
+        expect(extracted.events.single.start, DateTime(2026, 11, 27, 9));
+        expect(extracted.tasks.single.due, DateTime(2026, 11, 20));
+        expect(extracted.tasks.single.line, text);
+      }
+    });
+
+    test('alternatives in a deadline leave the date unset', () {
+      for (final (text, title) in [
+        (
+          'Bitte Einverständnis bis Freitag oder Montag abgeben.',
+          'Einverständnis abgeben',
+        ),
+        (
+          'Bitte Einverständnis am 20.11. oder 23.11. abgeben.',
+          'Einverständnis abgeben',
+        ),
+        (
+          'Please return the consent form by Friday or Monday.',
+          'return the consent form',
+        ),
+        (
+          'Bitte Einverständnis bis Freitag oder Montag abgeben oder zurücksenden.',
+          'Einverständnis abgeben oder zurücksenden',
+        ),
+        (
+          'Por favor entregar la autorización hasta el viernes o el lunes.',
+          'entregar la autorización',
+        ),
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        expect(extracted.events, isEmpty, reason: text);
+        expect(extracted.tasks.single.title, title, reason: text);
+        expect(extracted.tasks.single.due, isNull, reason: text);
+      }
+    });
+
+    test('a choice of actions does not unset a single due date', () {
+      final extracted = extractLetter(
+        'Bitte Einverständnis bis Freitag abgeben oder zurücksenden.',
+        now: now,
+      );
+      expect(extracted.tasks.single.due, DateTime(2026, 11, 20));
+    });
+
+    test('an appointment with a consent notice remains an appointment', () {
+      for (final text in [
+        'Elternabend am 27.11.2026 um 19 Uhr (mit Einverständniserklärung).',
+        'Beim Elternabend am 27.11.2026 um 19 Uhr können Sie die Einverständniserklärung abgeben.',
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        expect(extracted.tasks, isEmpty, reason: text);
+        expect(extracted.events.single.start, DateTime(2026, 11, 27, 19));
+      }
+    });
+
     test('ordinary invitations still use the existing appointment parser', () {
       const text = 'Elternabend am 27.11.2026 um 19 Uhr; Basar am 28.11.2026';
       final extracted = extractLetter(text, now: now);

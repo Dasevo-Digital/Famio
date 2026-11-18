@@ -385,8 +385,8 @@ void main() {
         (tester) async {
           await read(
             tester,
-            'Ausflug am ${day(later)} um 9 Uhr\n'
-            'Bitte Einverständnis bis ${day(soon)} abgeben.',
+            'Ausflug am ${day(later)} um 9 Uhr, '
+            'bitte Einverständnis am ${day(soon)} abgeben.',
           );
           expect(engine.events, isEmpty);
           expect(engine.tasks, isEmpty);

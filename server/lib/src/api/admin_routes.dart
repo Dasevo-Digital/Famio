@@ -240,11 +240,10 @@ extension _AdminRoutes on FamioApi {
       );
     } else {
       final newest = job.list().firstOrNull;
-      final check = newest?.check;
       final fresh =
           newest != null &&
           DateTime.now().difference(newest.at) < BackupJob.freshFor;
-      final ok = fresh && (check?.ok ?? false);
+      final ok = fresh && newest.fullyVerified;
       steps.add(
         SetupStep(
           id: 'backup',

@@ -870,8 +870,11 @@ prüft der Server jede Sicherung, ohne sie zu verändern: beide Datenbanken mit
 dem Schlüssel öffnen, Integrität, Mitglieder vorhanden, jede Datei mit Inhalt,
 Vergleich mit dem aktuellen Stand (Ergebnis in `check.json` der Sicherung).
 Eine fehlerhafte neue Kopie wird verworfen, bevor die Aufbewahrung alte
-Sicherungen entfernt. In
-der Server-Verwaltung unter „Status“ stehen letzte Sicherung, Prüfergebnis,
+Sicherungen entfernt. Der Sicherungsordner hält fest, ob er vollständig ist
+oder ob die Aufbewahrung seine Dateiinhalte entfernt hat. Fehlen erwartete
+Dateiinhalte, schlägt die Prüfung fehl. Für den Sicherungsschritt in der
+Einrichtungsliste ist eine aktuelle, vollständig geprüfte Kopie nötig.
+In der Server-Verwaltung unter „Status“ stehen letzte Sicherung, Prüfergebnis,
 Fehler, „Jetzt sichern“ und „Sicherung prüfen“.
 
 Wiederherstellen (Famio vorher stoppen; die bisherigen Datenbanken werden nur

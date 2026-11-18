@@ -10,21 +10,27 @@ import '../crypto/encrypted_db.dart';
 import 'backup_check.dart';
 import '../i18n.dart';
 
-/// One stored backup: a folder with `famio.db` and `files.db`.
+/// One stored backup: a folder with `famio.db` and optional `files.db`.
 class BackupInfo {
   const BackupInfo({
     required this.name,
     required this.at,
     required this.bytes,
+    required this.hasFiles,
     this.check,
   });
 
   final String name;
   final DateTime at;
   final int bytes;
+  final bool hasFiles;
 
   /// The last test of this backup, if any.
   final BackupCheck? check;
+
+  /// A stored successful report may predate the loss of the file database.
+  bool get fullyVerified =>
+      hasFiles && check?.ok == true && check?.filesChecked == true;
 
   Map<String, Object?> toJson() => {
     'name': name,
@@ -94,6 +100,10 @@ class BackupJob {
   BackupCheck? lastCheck;
 
   static const _createdAtFile = 'created-at';
+  static const _filesDb = 'files.db';
+  static const _fileScope = 'file-scope';
+  static const _full = 'full\n';
+  static const _pruned = 'pruned\n';
   static final _name = RegExp(r'^famio-(\d{8})-(\d{6})(?:-(\d{6}))?$');
 
   /// A nightly backup is missing when the newest is older than this: one
@@ -116,7 +126,10 @@ class BackupJob {
     if (now.hour < hour) return;
     final today = '${now.year}${_two(now.month)}${_two(now.day)}';
     if (list().any(
-      (b) => b.name.startsWith('famio-$today') && b.check?.ok != false,
+      (b) =>
+          b.name.startsWith('famio-$today') &&
+          b.hasFiles &&
+          b.check?.ok != false,
     )) {
       return;
     }
@@ -140,7 +153,10 @@ class BackupJob {
       await _checkSpace();
       partial = root.createTempSync('.$stamp.partial-');
       await _copy(db, dbPath, p.join(partial.path, 'famio.db'));
-      await _copy(blobs, blobsPath, p.join(partial.path, 'files.db'));
+      await _copy(blobs, blobsPath, p.join(partial.path, _filesDb));
+      File(
+        p.join(partial.path, _fileScope),
+      ).writeAsStringSync(_full, flush: true);
       final createdAt = now.toUtc();
       File(p.join(partial.path, _createdAtFile)).writeAsStringSync(
         '${createdAt.toIso8601String()}\n${now.timeZoneOffset.inSeconds}',
@@ -224,7 +240,14 @@ class BackupJob {
   Future<BackupCheck> verify(String name) async {
     final d = folder(name);
     if (d == null) throw ArgumentError.value(name, 'name', 'unbekannt');
-    final check = await _inspect(d.path, name: name);
+    final requireFiles = _requiresFiles(d, name);
+    var check = await _inspect(d.path, name: name, requireFiles: requireFiles);
+    // Retention can remove the file database while the isolate is running.
+    if (requireFiles &&
+        !File(p.join(d.path, _filesDb)).existsSync() &&
+        !_requiresFiles(d, name)) {
+      check = await _inspect(d.path, name: name, requireFiles: false);
+    }
     check.save(d.path);
     lastCheck = check;
     if (!check.ok) {
@@ -236,10 +259,26 @@ class BackupJob {
     return check;
   }
 
+  bool _requiresFiles(Directory folder, String name) {
+    final scope = File(p.join(folder.path, _fileScope));
+    if (scope.existsSync()) {
+      try {
+        return scope.readAsStringSync() != _pruned;
+      } on FileSystemException {
+        return true;
+      } on FormatException {
+        return true;
+      }
+    }
+    // Older servers pruned without leaving a marker. Only backups outside
+    // the file retention window may be legacy data-only copies.
+    return list().take(filesKeep).any((backup) => backup.name == name);
+  }
+
   Future<BackupCheck> _inspect(
     String path, {
     required String name,
-    bool requireFiles = false,
+    required bool requireFiles,
   }) {
     int count(String sql) => db.select(sql).first.columnAt(0) as int;
     return _checkIn(
@@ -407,6 +446,7 @@ class BackupJob {
           name: name,
           at: at,
           bytes: bytes,
+          hasFiles: File(p.join(entry.path, _filesDb)).existsSync(),
           check: BackupCheck.load(entry.path),
         ),
       );
@@ -456,8 +496,14 @@ class BackupJob {
     for (final b
         in backups.where((b) => keep.contains(b.name)).skip(filesKeep)) {
       if (b.name == protectedName) continue;
-      final files = File(p.join(dir, b.name, 'files.db'));
-      if (files.existsSync()) files.deleteSync();
+      final files = File(p.join(dir, b.name, _filesDb));
+      if (!files.existsSync()) continue;
+      // Record the intentional removal first. A missing file alone is
+      // never evidence that retention pruned a full backup.
+      File(
+        p.join(files.parent.path, _fileScope),
+      ).writeAsStringSync(_pruned, flush: true);
+      files.deleteSync();
     }
   }
 

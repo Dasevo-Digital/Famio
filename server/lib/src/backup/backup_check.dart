@@ -38,8 +38,8 @@ class BackupCheck {
   final String name;
   final DateTime at;
 
-  /// Restorable: opens with the key, intact, has members, no file lacks
-  /// its contents.
+  /// Restorable within its expected scope. A deliberately pruned backup
+  /// can be OK with [filesChecked] false.
   final bool ok;
 
   /// Why it is not [ok].

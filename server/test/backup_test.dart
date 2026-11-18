@@ -95,8 +95,59 @@ void main() {
       'check.json',
       'created-at',
       'famio.db',
+      'file-scope',
       'files.db',
     ]);
+  });
+
+  test('the latest backup must still contain its file database', () async {
+    await app.files.save(
+      owner: app.accounts.members().single.id,
+      name: 'fixture.txt',
+      mime: 'text/plain',
+      body: Stream.value([1, 2, 3]),
+    );
+    final (made, backup) = await call(
+      'POST',
+      'api/admin/backups',
+      token: admin,
+    );
+    expect(made, 201);
+    final folder = app.backups!.folder(backup['name'] as String)!;
+
+    Future<bool> setupDone() async {
+      final (code, checklist) = await call(
+        'GET',
+        'api/admin/setup',
+        token: admin,
+      );
+      expect(code, 200);
+      return (checklist['steps'] as List).singleWhere(
+            (step) => step['id'] == 'backup',
+          )['done']
+          as bool;
+    }
+
+    expect(await setupDone(), isTrue);
+    File(p.join(folder.path, 'files.db')).deleteSync();
+    expect(
+      await setupDone(),
+      isFalse,
+      reason: 'cached check predates the loss',
+    );
+
+    final (checked, result) = await call(
+      'POST',
+      'api/admin/backups/check',
+      token: admin,
+    );
+    expect(checked, 200);
+    expect(
+      (result['ok'], result['filesChecked'], result['files']),
+      (false, false, 1),
+    );
+    expect(result['problems'], ['files.db fehlt']);
+    expect(await setupDone(), isFalse);
   });
 
   test(
@@ -177,6 +228,7 @@ void main() {
         'check.json',
         'created-at',
         'famio.db',
+        'file-scope',
         'files.db',
       ]);
       expect(Directory(restartedJob.dir).listSync(), hasLength(1));
@@ -287,6 +339,55 @@ void main() {
       expect((await job.verify(legacy.name)).ok, isTrue);
       final check = await job.verify(newest.name);
       expect((check.ok, check.filesChecked), (true, true));
+    },
+  );
+
+  test(
+    'missing file contents are not marked as pruned after ageing out',
+    () async {
+      var now = DateTime.utc(2026, 11, 17, 9, 10, 11);
+      final job = jobAt(() => now, filesKeep: 1);
+      final full = await job.run();
+      File(p.join(job.folder(full.name)!.path, 'files.db')).deleteSync();
+      now = now.add(const Duration(days: 1));
+      await job.run();
+
+      final afterRestart = jobAt(() => now, filesKeep: 1);
+      final check = await afterRestart.verify(full.name);
+      expect((check.ok, check.filesChecked), (false, false));
+      expect(check.problems, ['files.db fehlt']);
+    },
+  );
+
+  test(
+    'intentional pruning and legacy data-only backups can be checked',
+    () async {
+      var now = DateTime.utc(2026, 11, 17, 9, 10, 11);
+      final job = jobAt(() => now, filesKeep: 1);
+      final full = await job.run();
+      final olderFolder = job.folder(full.name)!;
+      final scope = File(p.join(olderFolder.path, 'file-scope'));
+      expect(scope.readAsStringSync(), 'full\n');
+      now = now.add(const Duration(days: 1));
+      final newest = await job.run();
+      expect(scope.readAsStringSync(), 'pruned\n');
+
+      final restarted = jobAt(() => now, filesKeep: 1);
+      final intended = await restarted.verify(full.name);
+      expect((intended.ok, intended.filesChecked), (true, false));
+      scope.deleteSync();
+      final legacy = await restarted.verify(full.name);
+      expect((legacy.ok, legacy.filesChecked), (true, false));
+      final latestFolder = job.folder(newest.name)!;
+      File(p.join(latestFolder.path, 'file-scope')).deleteSync();
+      File(p.join(latestFolder.path, 'files.db')).deleteSync();
+      final missing = await restarted.verify(newest.name);
+      expect((missing.ok, missing.filesChecked), (false, false));
+
+      latestFolder.deleteSync(recursive: true);
+      scope.writeAsStringSync('pruned\n');
+      final promoted = await restarted.verify(full.name);
+      expect((promoted.ok, promoted.filesChecked), (true, false));
     },
   );
 

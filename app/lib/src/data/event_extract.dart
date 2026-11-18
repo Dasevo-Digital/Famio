@@ -473,10 +473,56 @@ final _letterDeadline = RegExp(
   caseSensitive: false,
 );
 
+/// An "am" date is a deadline only with a definite hand-in action.
+final _letterHandIn = RegExp(
+  r'\b(?:abgeben|einreichen|zurückgeben|zurücksenden)\b'
+  r'|\bgeben\s+sie\b.*\b(?:ab|zurück)\b'
+  r'|\breichen\s+sie\b.*\bein\b'
+  r'|\b(?:senden|schicken)\s+sie\b.*\bzurück\b',
+  caseSensitive: false,
+);
+
+final _letterOn = RegExp(r'\bam\b', caseSensitive: false);
+final _letterOptional = RegExp(
+  r'\b(?:kann|können|könnt|könnte|könnten)\b',
+  caseSensitive: false,
+);
+final _letterDayPrefix = RegExp(r'^(?:am|on|el)\s+', caseSensitive: false);
+
+/// A comma can introduce a request as well as belong to a date.
+final _letterClause = RegExp(
+  r';[ \t]+|[,!.?][ \t]+(?=(?:bitte|please|por favor|geben\s+sie'
+  r'|reichen\s+sie|senden\s+sie|einverständnis(?:erklärung)?|rückmeldung'
+  r'|return|submit|reply|rsvp|entregar|devolver)\b)',
+  caseSensitive: false,
+);
+
+final _letterAlternatives = RegExp(
+  r'\s+(?:oder|or|o|u)\s+',
+  caseSensitive: false,
+);
+
 final _letterPolite = RegExp(
   r'^(?:bitte|please|por favor)[,\s]+',
   caseSensitive: false,
 );
+
+/// An alternative starts with a day. An "or" between two actions does
+/// not make a date elsewhere in the clause an alternative deadline.
+bool _startsWithLetterDay(String text, DateTime today, String language) {
+  final line = text.trimLeft();
+  final prefixEnd = _letterDayPrefix.matchAsPrefix(line)?.end ?? 0;
+  final day = line.substring(prefixEnd);
+  return _dates(
+        line,
+        today,
+        language,
+      ).any((date) => date.startIndex == prefixEnd) ||
+      _quickWeekday.matchAsPrefix(day) != null ||
+      _quickShortDay.matchAsPrefix(day) != null ||
+      _quickRelative.matchAsPrefix(day) != null ||
+      _quickIn.matchAsPrefix(day) != null;
+}
 
 /// Separates actions with deadlines from appointments so a deadline is
 /// never also offered as an appointment.
@@ -488,37 +534,60 @@ extractLetter(String text, {DateTime? now, String? timeZone}) {
   final lines = _lines(
     text
         .replaceAllMapped(
-          RegExp(
-            r'(;)[ \t]+|(?<!\d)([.!?])[ \t]+(?=(?:bitte|please|por favor)\b)',
-            caseSensitive: false,
-          ),
-          (match) => '${match[1] ?? match[2]}\n',
+          _letterClause,
+          (match) => '${match[0]!.trimRight()}\n',
         )
         .replaceAllMapped(
           RegExp(r'\b(bis|by|hasta)[ \t]*\r?\n[ \t]*', caseSensitive: false),
           (match) => '${match[1]} ',
         ),
   );
+  QuickEntry parse(String text) =>
+      parseQuickEntry(text, today: today, language: language);
+  bool startsWithDay(String text) =>
+      _startsWithLetterDay(text, today, language);
+
   final tasks = <LetterTaskSuggestion>[];
   final seen = <(String, DateTime?)>{};
   final eventLines = [...lines];
   for (final (index, line) in lines.indexed) {
-    final marker = _letterDeadline.firstMatch(line);
-    if (marker == null || !_letterAction.hasMatch(line)) continue;
-    final deadline = parseQuickEntry(
-      line.substring(marker.end),
-      today: today,
-      language: language,
-    );
-    if (deadline.days.isEmpty) continue;
-    final title = '${line.substring(0, marker.start)} ${deadline.title}'
+    final explicit = _letterDeadline.firstMatch(line);
+    final marker = explicit != null && _letterAction.hasMatch(line)
+        ? explicit
+        : _letterHandIn.hasMatch(line) && !_letterOptional.hasMatch(line)
+        ? _letterOn
+              .allMatches(line)
+              .where((m) => startsWithDay(line.substring(m.end)))
+              .firstOrNull
+        : null;
+    if (marker == null) continue;
+    final after = line.substring(marker.end);
+    final options = <QuickEntry>[];
+    var offset = 0;
+    for (final split in _letterAlternatives.allMatches(after)) {
+      if (!startsWithDay(after.substring(split.end))) continue;
+      options.add(parse(after.substring(offset, split.start)));
+      offset = split.end;
+    }
+    options.add(parse(after.substring(offset)));
+    final alternatives =
+        options.length > 1 && options.every((option) => option.days.isNotEmpty);
+    final deadline = alternatives
+        ? null
+        : options.length == 1
+        ? options.single
+        : parse(after);
+    if (deadline != null && deadline.days.isEmpty) continue;
+    final rest =
+        deadline?.title ?? options.map((option) => option.title).join(' ');
+    final title = '${line.substring(0, marker.start)} $rest'
         .trim()
         .replaceFirst(_letterPolite, '')
         .replaceFirst(RegExp(r'[.!?;,]+$'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (title.isEmpty) continue;
-    final due = deadline.ambiguous
+    final due = deadline == null || deadline.ambiguous
         ? null
         : deadline.lastDay ?? deadline.days.single;
     final shortTitle = title.length > 120
