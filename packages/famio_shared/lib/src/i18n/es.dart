@@ -1383,6 +1383,7 @@ const sharedEs = <String, String>{
   "Server|Nicht unterstützt": "No compatible",
   "Server|Diese Liste nimmt nur Aufgaben (VTODO) an.":
       "Esta lista solo acepta tareas (VTODO).",
+  "Server|files.db fehlt": "Falta files.db",
   "Server|famio.db fehlt": "Falta famio.db",
   "Server|famio.db beschädigt: {check}": "famio.db dañada: {check}",
   "Server|famio.db lässt sich mit dem Datenschlüssel nicht öffnen ({message})":

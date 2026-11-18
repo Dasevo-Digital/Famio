@@ -426,10 +426,14 @@ enum _Audience { family, me, selected }
 /// [draft]: a new task filled in beforehand (e.g. shared to Famio).
 /// A guest gets to read a task that exists and to tick off its steps; what
 /// a task is, is for the family. Their own tasks guests edit (#365).
-Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) {
+Future<bool> showTaskEditor(
+  BuildContext context, {
+  Task? task,
+  Task? draft,
+}) async {
   final reading =
       task != null && !AppScope.engineOf(context).mayChangeTask(task);
-  return showModalBottomSheet<void>(
+  final saved = await showModalBottomSheet<bool>(
     context: context,
     // Above the floating navigation bar.
     useRootNavigator: true,
@@ -442,6 +446,7 @@ Future<void> showTaskEditor(BuildContext context, {Task? task, Task? draft}) {
           : _TaskEditor(task: task, draft: draft),
     ),
   );
+  return saved ?? false;
 }
 
 /// A task for reading, with its steps to tick off and its files to open.
@@ -665,7 +670,7 @@ class _TaskEditorState extends State<_TaskEditor> {
       // What changed on another device meanwhile stays (#483).
       opened: widget.task,
     );
-    Navigator.pop(context);
+    Navigator.pop(context, true);
   }
 
   Future<void> _pickDate() async {

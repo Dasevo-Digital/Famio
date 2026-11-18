@@ -1563,11 +1563,11 @@
       }
     }
   },
-  "adminCountVersionsSizeMb": "{count} Stände · {size} MB · jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt (Dokumente und Fotos in den 2 neuesten)",
+  "adminCountVersionsSizeMb": "{count, plural, one{1 Stand} other{{count} Stände}} · {size} MB · jede Nacht um 3 Uhr, 7 Tage und 4 Wochen aufbewahrt (Dokumente und Fotos in den 2 neuesten)",
   "@adminCountVersionsSizeMb": {
     "placeholders": {
       "count": {
-        "type": "Object?"
+        "type": "int"
       },
       "size": {
         "type": "Object?"
@@ -1592,20 +1592,20 @@
   },
   "adminBackUpNow": "Jetzt sichern",
   "adminCheckBackup": "Sicherung prüfen",
-  "adminCheckedAgoCanRestored": "Geprüft{ago}: lässt sich wiederherstellen ({records} Einträge, {users} Mitglieder, {files} Dateien{partial})",
+  "adminCheckedAgoCanRestored": "Geprüft{ago}: lässt sich wiederherstellen ({records, plural, one{1 Eintrag} other{{records} Einträge}}, {users, plural, one{1 Mitglied} other{{users} Mitglieder}}, {files, plural, one{1 Datei} other{{files} Dateien}}{partial})",
   "@adminCheckedAgoCanRestored": {
     "placeholders": {
       "ago": {
         "type": "Object?"
       },
       "records": {
-        "type": "Object?"
+        "type": "int"
       },
       "users": {
-        "type": "Object?"
+        "type": "int"
       },
       "files": {
-        "type": "Object?"
+        "type": "int"
       },
       "partial": {
         "type": "Object?"
@@ -4361,7 +4361,7 @@
   "commonRetry": "Erneut versuchen",
   "importNoTextWasFound": "Im PDF wurde kein Text gefunden.",
   "importNoTextWasRecognized": "Auf dem Bild wurde kein Text erkannt.",
-  "importNoEventsFoundText": "Keine Termine im Text gefunden.",
+  "importNoEventsFoundText": "Keine Termine oder Aufgaben im Text gefunden.",
   "importTakenLine": "Übernommen aus: {line}",
   "@importTakenLine": {
     "placeholders": {
@@ -4370,6 +4370,12 @@
       }
     }
   },
+  "importKeepLetterOriginal": "Original an den Entwürfen anhängen",
+  "importEditTask": "Aufgabenentwurf öffnen",
+  "importTaskAdded": "1 Aufgabe eingetragen",
+  "importTaskDue": "Fällig am {day}",
+  "@importTaskDue": {"placeholders": {"day": {"type": "String"}}},
+  "importTaskSetDue": "Frist im Entwurf prüfen",
   "import1EventAdded": "1 Termin eingetragen",
   "importEditEvent": "Termin bearbeiten",
   "importKeepOriginal": "Original an den Terminen speichern",
@@ -4405,16 +4411,16 @@
       }
     }
   },
-  "importRecognizeEvents": "Termine erkennen",
+  "importRecognizeEvents": "Termine und Aufgaben erkennen",
   "importParentsLetterInvitationEmail": "Aus Elternbrief, Einladung oder Mail",
-  "importFamioReadsDatesTimes": "Famio liest Daten und Uhrzeiten aus dem Text und schlägt Termine vor. Die Erkennung läuft auf diesem Gerät; nichts wird hochgeladen. Prüfe die Vorschläge vor dem Übernehmen.",
+  "importFamioReadsDatesTimes": "Famio sucht im Text nach Terminen und Aufgaben. Die Texterkennung läuft auf diesem Gerät. Prüfe die Vorschläge vor dem Übernehmen.",
   "importTakePhoto": "Foto aufnehmen",
   "importChoosePicture": "Bild wählen",
   "importChoosePdf": "PDF wählen",
   "importClipboard": "Aus der Zwischenablage",
   "importPasteTextHere": "Oder Text hier einfügen",
   "importEGParentsEvening": "z. B. „Elternabend am 16.10. um 19 Uhr“",
-  "importFindEvents": "Termine suchen",
+  "importFindEvents": "Termine und Aufgaben suchen",
   "importTakeOver1Event": "1 Termin übernehmen",
   "importTakeOverCountEvents": "{count, plural, =1{1 Termin übernehmen} other{{count} Termine übernehmen}}",
   "@importTakeOverCountEvents": {

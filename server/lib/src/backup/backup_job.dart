@@ -34,6 +34,14 @@ class BackupInfo {
   };
 }
 
+class _FailedBackupCheck implements Exception {
+  const _FailedBackupCheck(this.problems);
+  final List<String> problems;
+
+  @override
+  String toString() => problems.join('; ');
+}
+
 /// Backups while the server runs: SQLite's `VACUUM INTO` writes a
 /// consistent copy of both databases, encrypted with the same data key
 /// (restoring needs the key file too). Nightly at [hour] (family time),
@@ -107,7 +115,11 @@ class BackupJob {
     final now = tz.TZDateTime.from(_clock(), location());
     if (now.hour < hour) return;
     final today = '${now.year}${_two(now.month)}${_two(now.day)}';
-    if (list().any((b) => b.name.startsWith('famio-$today'))) return;
+    if (list().any(
+      (b) => b.name.startsWith('famio-$today') && b.check?.ok != false,
+    )) {
+      return;
+    }
     // Errors are recorded in lastError; tried again in half an hour.
     unawaited(run().then((_) {}, onError: (Object _) {}));
   }
@@ -130,17 +142,27 @@ class BackupJob {
       await _copy(db, dbPath, p.join(partial.path, 'famio.db'));
       await _copy(blobs, blobsPath, p.join(partial.path, 'files.db'));
       final createdAt = now.toUtc();
-      File(
-        p.join(partial.path, _createdAtFile),
-      ).writeAsStringSync(createdAt.toIso8601String(), flush: true);
-      final name = _publish(partial, root, stamp);
+      File(p.join(partial.path, _createdAtFile)).writeAsStringSync(
+        '${createdAt.toIso8601String()}\n${now.timeZoneOffset.inSeconds}',
+        flush: true,
+      );
+      final check = await _inspect(
+        partial.path,
+        name: stamp,
+        requireFiles: true,
+      );
+      if (!check.ok) {
+        lastCheck = check;
+        throw _FailedBackupCheck(check.problems);
+      }
+      final name = _publish(partial, root, stamp, check);
       partial = null;
-      prune();
-      // A backup is only worth something if it can be restored.
-      await verify(name);
+      prune(protectedName: name);
+      final backup = list().firstWhere((b) => b.name == name);
       lastAt = createdAt;
       lastError = null;
-      return list().firstWhere((b) => b.name == name);
+      lastCheck = backup.check;
+      return backup;
     } catch (e) {
       lastError = '$e';
       onError?.call('[backup] Sicherung fehlgeschlagen: $e');
@@ -155,7 +177,12 @@ class BackupJob {
 
   /// Only complete backups get a final name. The first keeps the old
   /// format. Further backups in the same second sort after it.
-  static String _publish(Directory partial, Directory root, String stamp) {
+  static String _publish(
+    Directory partial,
+    Directory root,
+    String stamp,
+    BackupCheck check,
+  ) {
     while (true) {
       var next = 0;
       // Pruning can already have removed the name without a suffix. Find
@@ -175,6 +202,7 @@ class BackupJob {
           ? stamp
           : '$stamp-${next.toString().padLeft(6, '0')}';
       final target = p.join(root.path, name);
+      check.save(partial.path, publishedName: name);
       try {
         partial.renameSync(target);
         return name;
@@ -196,15 +224,8 @@ class BackupJob {
   Future<BackupCheck> verify(String name) async {
     final d = folder(name);
     if (d == null) throw ArgumentError.value(name, 'name', 'unbekannt');
-    int count(String sql) => db.select(sql).first.columnAt(0) as int;
-    final check = await _checkIn(
-      d.path,
-      hexKey,
-      count('SELECT count(*) FROM users'),
-      count('SELECT count(*) FROM records WHERE deleted = 0'),
-    );
-    final path = d.path;
-    check.save(path);
+    final check = await _inspect(d.path, name: name);
+    check.save(d.path);
     lastCheck = check;
     if (!check.ok) {
       onError?.call(
@@ -215,19 +236,39 @@ class BackupJob {
     return check;
   }
 
+  Future<BackupCheck> _inspect(
+    String path, {
+    required String name,
+    bool requireFiles = false,
+  }) {
+    int count(String sql) => db.select(sql).first.columnAt(0) as int;
+    return _checkIn(
+      path,
+      name,
+      hexKey,
+      count('SELECT count(*) FROM users'),
+      count('SELECT count(*) FROM records WHERE deleted = 0'),
+      requireFiles,
+    );
+  }
+
   /// [checkBackup] in an isolate; static so the closure carries nothing
   /// but these values (a database connection cannot be sent).
   static Future<BackupCheck> _checkIn(
     String path,
+    String name,
     String? key,
     int liveUsers,
     int liveRecords,
+    bool requireFiles,
   ) => Isolate.run(
     () => checkBackup(
       path,
+      name: name,
       hexKey: key,
       liveUsers: liveUsers,
       liveRecords: liveRecords,
+      requireFiles: requireFiles,
     ),
   );
 
@@ -287,21 +328,42 @@ class BackupJob {
     }
   }
 
-  static DateTime? _recordedAt(Directory folder) {
+  static DateTime? _recordedAt(
+    Directory folder,
+    DateTime wall,
+    tz.Location zone,
+  ) {
     try {
-      final text = File(p.join(folder.path, _createdAtFile)).readAsStringSync();
-      final at = DateTime.tryParse(text);
-      if (at != null && at.isUtc && at.toIso8601String() == text) return at;
+      final lines = File(
+        p.join(folder.path, _createdAtFile),
+      ).readAsStringSync().split('\n');
+      final at = DateTime.tryParse(lines.first);
+      if (at == null || !at.isUtc || at.toIso8601String() != lines.first) {
+        return null;
+      }
+      // Older UTC-only metadata can be verified against the current zone.
+      // New backups keep their original offset even after a zone change.
+      final seconds = switch (lines.length) {
+        1 => zone.timeZone(at.millisecondsSinceEpoch).offset.inSeconds,
+        2 => int.tryParse(lines[1]),
+        _ => null,
+      };
+      if (seconds == null || seconds.abs() >= Duration.secondsPerDay) {
+        return null;
+      }
+      final local = at.add(Duration(seconds: seconds));
+      return !local.isBefore(wall) &&
+              local.isBefore(wall.add(const Duration(seconds: 1)))
+          ? at
+          : null;
     } on FileSystemException {
-      // Backups from older servers have no timestamp file.
+      return null;
     } on FormatException {
-      // A damaged timestamp can still be read from the folder name.
+      return null;
     }
-    return null;
   }
 
-  static DateTime _legacyAt(RegExpMatch name, tz.Location zone) {
-    final wall = DateTime.parse('${name[1]}T${name[2]}Z');
+  static DateTime _legacyAt(DateTime wall, tz.Location zone) {
     final resolved = tz.TZDateTime(
       zone,
       wall.year,
@@ -334,7 +396,8 @@ class BackupJob {
       final name = p.basename(entry.path);
       final m = _name.firstMatch(name);
       if (m == null) continue;
-      final at = _recordedAt(entry) ?? _legacyAt(m, zone);
+      final wall = DateTime.parse('${m[1]}T${m[2]}Z');
+      final at = _recordedAt(entry, wall, zone) ?? _legacyAt(wall, zone);
       final bytes = entry.listSync().whereType<File>().fold<int>(
         0,
         (sum, f) => sum + f.lengthSync(),
@@ -356,7 +419,7 @@ class BackupJob {
 
   /// Keeps the newest per day for [daily] days and the newest per week
   /// for [weekly] weeks.
-  void prune() {
+  void prune({String? protectedName}) {
     final keep = <String>{};
     final days = <String>{};
     final weeks = <String>{};
@@ -364,6 +427,7 @@ class BackupJob {
     var weeklyKept = 0;
     final backups = list();
     for (final b in backups) {
+      if (b.check?.ok == false) continue;
       // The name retains the family day in effect when the copy was made.
       final day = b.name.substring(6, 14);
       final date = DateTime.parse('${day}T00:00:00Z');
@@ -380,6 +444,9 @@ class BackupJob {
         keep.add(b.name);
       }
     }
+    // A corrected clock or old metadata may still put the successful
+    // copy behind an existing one. Give it a chance to be restored too.
+    if (protectedName != null) keep.add(protectedName);
     for (final b in backups) {
       if (!keep.contains(b.name)) {
         Directory(p.join(dir, b.name)).deleteSync(recursive: true);
@@ -388,6 +455,7 @@ class BackupJob {
     // Documents and photos only in the newest few.
     for (final b
         in backups.where((b) => keep.contains(b.name)).skip(filesKeep)) {
+      if (b.name == protectedName) continue;
       final files = File(p.join(dir, b.name, 'files.db'));
       if (files.existsSync()) files.deleteSync();
     }

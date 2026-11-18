@@ -251,7 +251,7 @@ void main() {
         'Elternabend am ${next.day}.${next.month}. um 19:30 Uhr\n'
         'Wandertag ${after.day}.${after.month}.',
       );
-      await tester.tap(find.text('Termine suchen'));
+      await tester.tap(find.text('Termine und Aufgaben suchen'));
       await tester.pumpAndSettle();
       expect(find.text('2 Termine übernehmen'), findsOneWidget);
       // Only the first one.
@@ -280,7 +280,7 @@ void main() {
         find.widgetWithText(TextField, 'Oder Text hier einfügen'),
         text,
       );
-      await tester.tap(find.text('Termine suchen'));
+      await tester.tap(find.text('Termine und Aufgaben suchen'));
       await tester.pumpAndSettle();
     }
 
@@ -379,6 +379,77 @@ void main() {
         }
         await tester.pumpAndSettle();
       }
+
+      testWidgets(
+        'a school letter makes separate drafts using one attachment',
+        (tester) async {
+          await read(
+            tester,
+            'Ausflug am ${day(later)} um 9 Uhr\n'
+            'Bitte Einverständnis bis ${day(soon)} abgeben.',
+          );
+          expect(engine.events, isEmpty);
+          expect(engine.tasks, isEmpty);
+          expect(find.text('1 Termin übernehmen'), findsNothing);
+
+          final taskDraft = find.byTooltip('Aufgabenentwurf öffnen');
+          await tapAndWait(tester, taskDraft);
+          expect(
+            find.widgetWithText(TextField, 'Einverständnis abgeben'),
+            findsOneWidget,
+          );
+          Navigator.of(tester.element(find.text('Speichern'))).pop();
+          await tester.pumpAndSettle();
+          expect(engine.tasks, isEmpty);
+          expect(taskDraft, findsOneWidget);
+
+          await tapAndWait(tester, find.byTooltip('Termin bearbeiten'));
+          await tester.tap(find.text('Speichern'));
+          await tester.pumpAndSettle();
+          expect(engine.events.single.files.single.id, 'f1');
+          expect(engine.tasks, isEmpty);
+
+          await tapAndWait(tester, taskDraft);
+          final save = find.text('Speichern');
+          await tester.ensureVisible(save);
+          await tester.pumpAndSettle();
+          await tester.tap(save);
+          await tester.pumpAndSettle();
+          final task = engine.tasks.single;
+          expect(task.title, 'Einverständnis abgeben');
+          expect(
+            (task.due?.year, task.due?.month, task.due?.day),
+            (soon.year, soon.month, soon.day),
+          );
+          expect(task.photos.single.id, engine.events.single.files.single.id);
+          expect(uploads, ['photo.jpg']);
+          expect(find.byType(EventImportScreen), findsNothing);
+          await tester.pump(const Duration(seconds: 5));
+        },
+      );
+
+      testWidgets(
+        'a failed original upload leaves the school drafts available',
+        (tester) async {
+          await read(
+            tester,
+            'Ausflug am ${day(later)} um 9 Uhr\n'
+            'Bitte Einverständnis bis ${day(soon)} abgeben.',
+            serverWorks: false,
+          );
+          final taskDraft = find.byTooltip('Aufgabenentwurf öffnen');
+          await tapAndWait(tester, taskDraft);
+          expect(engine.events, isEmpty);
+          expect(engine.tasks, isEmpty);
+          expect(taskDraft, findsOneWidget);
+          expect(
+            find.textContaining('Das Original konnte nicht gespeichert werden'),
+            findsOneWidget,
+          );
+          expect(find.text('Speichern'), findsNothing);
+          await tester.pump(const Duration(seconds: 5));
+        },
+      );
 
       testWidgets('on every appointment, sent once', (tester) async {
         await read(

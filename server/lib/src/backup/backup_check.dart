@@ -82,9 +82,11 @@ class BackupCheck {
     }
   }
 
-  void save(String folder) => File(
-    p.join(folder, fileName),
-  ).writeAsStringSync(jsonEncode(toJson()), flush: true);
+  void save(String folder, {String? publishedName}) =>
+      File(p.join(folder, fileName)).writeAsStringSync(
+        jsonEncode({...toJson(), 'name': publishedName ?? name}),
+        flush: true,
+      );
 }
 
 /// Checks the backup in [folder] without changing it: both databases are
@@ -97,8 +99,9 @@ BackupCheck checkBackup(
   required int liveUsers,
   required int liveRecords,
   DateTime? now,
+  String? name,
+  bool requireFiles = false,
 }) {
-  final name = p.basename(folder);
   final problems = <String>[];
   final notes = <String>[];
   var users = 0, records = 0, files = 0;
@@ -163,6 +166,9 @@ BackupCheck checkBackup(
 
   try {
     final blobs = open(p.join(folder, 'files.db'));
+    if (blobs == null && requireFiles) {
+      problems.add(t('files.db fehlt'));
+    }
     if (blobs != null) {
       filesChecked = true;
       try {
@@ -226,7 +232,7 @@ BackupCheck checkBackup(
     );
   }
   return BackupCheck(
-    name: name,
+    name: name ?? p.basename(folder),
     at: now ?? DateTime.now(),
     ok: problems.isEmpty,
     problems: problems,

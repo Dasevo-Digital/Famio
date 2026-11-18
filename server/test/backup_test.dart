@@ -99,6 +99,46 @@ void main() {
     ]);
   });
 
+  test(
+    'failed backup keeps the last verified copy and returns an error',
+    () async {
+      final attachment = await app.files.save(
+        owner: app.accounts.members().single.id,
+        name: 'fixture.txt',
+        mime: 'text/plain',
+        body: Stream.value([1, 2, 3]),
+      );
+      final (made, original) = await call(
+        'POST',
+        'api/admin/backups',
+        token: admin,
+      );
+      expect(made, 201);
+      final name = original['name'] as String;
+      final oldFolder = app.backups!.folder(name)!;
+      app.files.blobs.execute('DELETE FROM blobs WHERE id = ?', [
+        attachment.id,
+      ]);
+      expect((await app.backups!.verify(name)).ok, isTrue);
+
+      final (failed, error) = await call(
+        'POST',
+        'api/admin/backups',
+        token: admin,
+      );
+      expect((failed, error['error']), (500, 'backup_failed'));
+      expect(error['message'], contains('1 Datei ohne Inhalt'));
+      final (_, status) = await call('GET', 'api/admin/backups', token: admin);
+      expect((status['backups'] as List).single['name'], name);
+      expect(status['lastAt'], original['at']);
+      expect(status['lastCheck']['ok'], isFalse);
+      expect(status['lastError'], contains('1 Datei ohne Inhalt'));
+      expect(oldFolder.existsSync(), isTrue);
+      expect(Directory(app.backups!.dir).listSync(), hasLength(1));
+      expect((await app.backups!.verify(name)).ok, isTrue);
+    },
+  );
+
   BackupJob jobAt(
     DateTime Function() clock, {
     tz.Location? zone,
@@ -164,6 +204,52 @@ void main() {
     expect(restarted.list().map((b) => b.name), [later.name]);
     expect(restarted.folder(earlier.name), isNull);
     expect(jobAt(() => now, zone: berlin).list().single.at.toUtc(), now);
+  });
+
+  for (final legacy in [true, false]) {
+    test(
+      'timestamp must match the wall time, UTC-only format=$legacy',
+      () async {
+        var now = DateTime.utc(2026, 11, 18, 9, 10, 11);
+        final job = jobAt(() => now);
+        final older = await job.run();
+        final stamp = File(p.join(job.folder(older.name)!.path, 'created-at'));
+        final incorrect = now.toIso8601String().replaceFirst(
+          'T09:10:',
+          'T09:50:',
+        );
+        stamp.writeAsStringSync(legacy ? incorrect : '$incorrect\n0');
+        expect(job.list().single.at, now);
+        now = DateTime.utc(2026, 11, 18, 9, 20, 11);
+        final newer = await job.run();
+        expect(job.list().single.name, newer.name);
+        expect(job.folder(older.name), isNull);
+      },
+    );
+  }
+
+  test('the original offset survives a change of family zone', () async {
+    var now = DateTime.utc(2026, 10, 25, 0, 55);
+    final berlin = tz.getLocation('Europe/Berlin');
+    final earlier = await jobAt(() => now, zone: berlin).run();
+    final utc = jobAt(() => now);
+    expect(utc.list().single.at, now);
+    now = DateTime.utc(2026, 10, 25, 1, 5);
+    final later = await utc.run();
+    expect(utc.list().single.name, later.name);
+    expect(utc.folder(earlier.name), isNull);
+  });
+
+  test('a clock correction does not remove a just verified copy', () async {
+    var now = DateTime.utc(2026, 11, 18, 9, 20, 11);
+    final job = jobAt(() => now, filesKeep: 1);
+    final earlier = await job.run();
+    now = now.subtract(const Duration(minutes: 15));
+    final later = await job.run();
+    expect(job.list().map((backup) => backup.name), [earlier.name, later.name]);
+    final current = job.folder(later.name)!;
+    expect(File(p.join(current.path, 'files.db')).existsSync(), isTrue);
+    expect((await job.verify(later.name)).ok, isTrue);
   });
 
   test('an ambiguous legacy name cannot displace a new backup', () async {

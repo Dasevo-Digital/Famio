@@ -2,6 +2,71 @@ import 'package:famio/src/data/event_extract.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  group('school letters', () {
+    final now = DateTime(2026, 11, 18);
+    test('one trip and one deadline are different drafts', () {
+      final extracted = extractLetter(
+        'Klassenfahrt am 27.11.2026 um 8:30 Uhr. '
+        'Bitte Einverständnis bis Freitag abgeben.',
+        now: now,
+      );
+      expect(extracted.events.single.start, DateTime(2026, 11, 27, 8, 30));
+      expect(extracted.events.single.title, contains('Klassenfahrt'));
+      expect(extracted.tasks.single.title, 'Einverständnis abgeben');
+      expect(extracted.tasks.single.due, DateTime(2026, 11, 20));
+    });
+
+    test('explicit English and Spanish dates are not appointments', () {
+      for (final (text, due) in [
+        (
+          'Please return the consent form by November 20, 2026.',
+          DateTime(2026, 11, 20),
+        ),
+        (
+          'Por favor entregar la autorización antes del 21 de noviembre de 2026.',
+          DateTime(2026, 11, 21),
+        ),
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        expect(extracted.events, isEmpty);
+        expect(extracted.tasks.single.due, due);
+        expect(extracted.tasks.single.line, text);
+      }
+    });
+
+    test('ambiguous weekdays stay editable without picking a deadline', () {
+      final extracted = extractLetter(
+        'Bitte Einverständnis bis\nnächsten Freitag abgeben.\n'
+        'Bitte Einverständnis bis nächsten Freitag abgeben.',
+        now: now,
+      );
+      expect(extracted.events, isEmpty);
+      expect(extracted.tasks.single.title, 'Einverständnis abgeben');
+      expect(extracted.tasks.single.due, isNull);
+    });
+
+    test('ordinary invitations still use the existing appointment parser', () {
+      const text = 'Elternabend am 27.11.2026 um 19 Uhr; Basar am 28.11.2026';
+      final extracted = extractLetter(text, now: now);
+      final ordinary = extractEvents(text, now: now);
+      expect(extracted.tasks, isEmpty);
+      expect(
+        extracted.events.map((e) => (e.title, e.start, e.end, e.line)),
+        ordinary.map((e) => (e.title, e.start, e.end, e.line)),
+      );
+    });
+
+    test('an event time span remains an event', () {
+      final extracted = extractLetter(
+        'Elternabend am 27.11.2026 von 17 bis 19 Uhr',
+        now: now,
+      );
+      expect(extracted.tasks, isEmpty);
+      expect(extracted.events.single.start.hour, 17);
+      expect(extracted.events.single.end.hour, 19);
+    });
+  });
+
   final now = DateTime(2026, 10, 6);
 
   List<(String, DateTime, DateTime, bool)> found(

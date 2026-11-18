@@ -1346,6 +1346,7 @@ const sharedEn = <String, String>{
   "Server|Nicht unterstützt": "Not supported",
   "Server|Diese Liste nimmt nur Aufgaben (VTODO) an.":
       "This list only accepts tasks (VTODO).",
+  "Server|files.db fehlt": "files.db is missing",
   "Server|famio.db fehlt": "famio.db missing",
   "Server|famio.db beschädigt: {check}": "famio.db damaged: {check}",
   "Server|famio.db lässt sich mit dem Datenschlüssel nicht öffnen ({message})":

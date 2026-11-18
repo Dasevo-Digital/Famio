@@ -448,6 +448,98 @@ String guessLanguage(String text, {required String fallback}) {
   return best.value == 0 || tie ? fallback : best.key;
 }
 
+/// One action extracted from a letter. An ambiguous deadline stays unset.
+class LetterTaskSuggestion {
+  const LetterTaskSuggestion(this.title, this.line, this.due);
+
+  final String title;
+  final String line;
+  final DateTime? due;
+}
+
+final _letterAction = RegExp(
+  r'\b(?:einverständnis(?:erklärung)?|rückmeldung|anmeldeschluss|abgabefrist'
+  r'|abgeben|zurückgeben|zurücksenden|einreichen|unterschreiben|überweisen'
+  r'|bezahlen|anmelden|bestätigen|mitteilen|geben\s+sie|senden\s+sie'
+  r'|return|submit|sign|pay|register|reply|respond|rsvp'
+  r'|entregar|devolver|firmar|pagar|inscribirse|confirmar|responder'
+  r'|autorización|plazo de entrega)\b',
+  caseSensitive: false,
+);
+
+final _letterDeadline = RegExp(
+  r'\b(?:bis(?:\s+spätestens)?|spätestens(?:\s+am)?'
+  r'|no later than|due(?:\s+by|\s+on)?|by|antes\s+del?|hasta)\b',
+  caseSensitive: false,
+);
+
+final _letterPolite = RegExp(
+  r'^(?:bitte|please|por favor)[,\s]+',
+  caseSensitive: false,
+);
+
+/// Separates actions with deadlines from appointments so a deadline is
+/// never also offered as an appointment.
+({List<EventSuggestion> events, List<LetterTaskSuggestion> tasks})
+extractLetter(String text, {DateTime? now, String? timeZone}) {
+  final calendar = FamilyCalendar(timeZone);
+  final today = inCalendarZone(now ?? DateTime.now(), timeZone);
+  final language = guessLanguage(text, fallback: appLanguage);
+  final lines = _lines(
+    text
+        .replaceAllMapped(
+          RegExp(
+            r'(;)[ \t]+|(?<!\d)([.!?])[ \t]+(?=(?:bitte|please|por favor)\b)',
+            caseSensitive: false,
+          ),
+          (match) => '${match[1] ?? match[2]}\n',
+        )
+        .replaceAllMapped(
+          RegExp(r'\b(bis|by|hasta)[ \t]*\r?\n[ \t]*', caseSensitive: false),
+          (match) => '${match[1]} ',
+        ),
+  );
+  final tasks = <LetterTaskSuggestion>[];
+  final seen = <(String, DateTime?)>{};
+  final eventLines = [...lines];
+  for (final (index, line) in lines.indexed) {
+    final marker = _letterDeadline.firstMatch(line);
+    if (marker == null || !_letterAction.hasMatch(line)) continue;
+    final deadline = parseQuickEntry(
+      line.substring(marker.end),
+      today: today,
+      language: language,
+    );
+    if (deadline.days.isEmpty) continue;
+    final title = '${line.substring(0, marker.start)} ${deadline.title}'
+        .trim()
+        .replaceFirst(_letterPolite, '')
+        .replaceFirst(RegExp(r'[.!?;,]+$'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (title.isEmpty) continue;
+    final due = deadline.ambiguous
+        ? null
+        : deadline.lastDay ?? deadline.days.single;
+    final shortTitle = title.length > 120
+        ? '${title.substring(0, 117)}…'
+        : title;
+    if (seen.add((shortTitle, due))) {
+      tasks.add(LetterTaskSuggestion(shortTitle, line, due));
+    }
+    eventLines[index] = '';
+  }
+  return (
+    events: _extractEvents(
+      tasks.isEmpty ? _lines(text) : eventLines,
+      calendar,
+      today,
+      language,
+    ),
+    tasks: tasks,
+  );
+}
+
 /// Appointments in [text]. Dates and times are the family's: with
 /// [timeZone] (the family's zone, see `SyncEngine.familyTimeZone`) they are
 /// instants of that zone, also when the device is elsewhere (#296). [now]
@@ -462,7 +554,15 @@ List<EventSuggestion> extractEvents(
   final calendar = FamilyCalendar(timeZone);
   final today = inCalendarZone(now ?? DateTime.now(), timeZone);
   final lang = language ?? guessLanguage(text, fallback: appLanguage);
-  final lines = _lines(text);
+  return _extractEvents(_lines(text), calendar, today, lang);
+}
+
+List<EventSuggestion> _extractEvents(
+  List<String> lines,
+  FamilyCalendar calendar,
+  DateTime today,
+  String lang,
+) {
   final found = <EventSuggestion>[];
   final seen = <String>{};
   for (var i = 0; i < lines.length; i++) {

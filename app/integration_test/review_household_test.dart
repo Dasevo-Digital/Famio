@@ -1517,7 +1517,7 @@ void main() {
           find.widgetWithText(TextField, 'Oder Text hier einfügen'),
           text,
         );
-        await tap(tester, find.text('Termine suchen'));
+        await tap(tester, find.text('Termine und Aufgaben suchen'));
         for (final when in expected) {
           await waitFor(tester, find.text(when));
         }

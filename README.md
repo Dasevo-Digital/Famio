@@ -79,7 +79,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Ein bestehendes Konto über einen einmaligen, fünf Minuten gültigen QR-Code mit einem neuen Gerät koppeln | ✅ |
 | Eigene Push-Benachrichtigungen ohne ntfy/Google (Android auch bei geschlossener App), Web Push für die Web-App, alternativ über ntfy | ✅ |
 | Wandanzeige fürs Küchen-Tablet | ✅ |
-| Termine aus Fotos, Scans und PDFs von Briefen und Einladungen (Erkennung auf dem Gerät, Bearbeiten vor dem Übernehmen, das Original bleibt als Anhang am Termin); Fotos und Dateien an Terminen | ✅ |
+| Texterkennung auf dem Gerät für Fotos, Scans und PDFs. Aus einem Schulbrief mit Frist können Termin und Aufgabe als getrennt prüfbare Entwürfe mit demselben Originalanhang entstehen. Termine unterstützen Fotos und Dateien. | ✅ |
 | Kommentare an Terminen, Umfragen im Chat, Listen-Vorlagen (Packlisten) | ✅ |
 | Vorrat mit Barcode-Scanner (Open Food Facts) und MHD-Erinnerung | ✅ (Scanner: Android, iOS, macOS) |
 | Medikamentenplan mit Erinnerung und Vorrat | ✅ |
@@ -868,7 +868,9 @@ sind mit demselben Datenschlüssel verschlüsselt; zum Wiederherstellen werden
 also Sicherung **und** Schlüsseldatei gebraucht. Gleich nach dem Anlegen
 prüft der Server jede Sicherung, ohne sie zu verändern: beide Datenbanken mit
 dem Schlüssel öffnen, Integrität, Mitglieder vorhanden, jede Datei mit Inhalt,
-Vergleich mit dem aktuellen Stand (Ergebnis in `check.json` der Sicherung). In
+Vergleich mit dem aktuellen Stand (Ergebnis in `check.json` der Sicherung).
+Eine fehlerhafte neue Kopie wird verworfen, bevor die Aufbewahrung alte
+Sicherungen entfernt. In
 der Server-Verwaltung unter „Status“ stehen letzte Sicherung, Prüfergebnis,
 Fehler, „Jetzt sichern“ und „Sicherung prüfen“.
 

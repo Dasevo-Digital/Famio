@@ -124,7 +124,7 @@ void main() {
         find.widgetWithText(TextField, 'Oder Text hier einfügen'),
         letter,
       );
-      await tester.tap(find.text('Termine suchen'));
+      await tester.tap(find.text('Termine und Aufgaben suchen'));
       await tester.pumpAndSettle();
     }
 

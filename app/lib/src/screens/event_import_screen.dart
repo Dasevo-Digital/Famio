@@ -20,6 +20,7 @@ import '../platform/document_scanner.dart';
 import '../widgets/files.dart';
 import 'event_editor.dart';
 import 'ics_import_screen.dart';
+import 'tasks_screen.dart';
 import '../security/app_lock.dart';
 import '../widgets/camera.dart';
 
@@ -69,6 +70,8 @@ class _EventImportScreenState extends State<EventImportScreen> {
 
   /// Suggestions already taken over through the editor.
   final _saved = <int>{};
+  List<LetterTaskSuggestion> _tasks = const [];
+  final _savedTasks = <int>{};
   var _busy = false;
   String? _message;
 
@@ -219,7 +222,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
   void _analyse() {
     // The letter's times are the family's, as everywhere in the calendar
     // (#296): also in the preview and the form.
-    final found = extractEvents(
+    final (events: found, :tasks) = extractLetter(
       _text.text,
       timeZone: AppScope.read(context).engine?.familyTimeZone,
     );
@@ -236,14 +239,18 @@ class _EventImportScreenState extends State<EventImportScreen> {
     final now = DateTime.now();
     setState(() {
       _found = found;
+      _tasks = tasks;
       _saved.clear();
+      _savedTasks.clear();
       _chosen
         ..clear()
         ..addAll([
           for (final (i, e) in found.indexed)
             if (e.end.isAfter(now)) i,
         ]);
-      _message = found.isEmpty ? tr.importNoEventsFoundText : null;
+      _message = found.isEmpty && tasks.isEmpty
+          ? tr.importNoEventsFoundText
+          : null;
     });
   }
 
@@ -252,6 +259,7 @@ class _EventImportScreenState extends State<EventImportScreen> {
   /// [_finish] says that the original is missing.
   Future<List<FileRef>> _attachment() async {
     final source = _source;
+    _notKept = false;
     if (source == null || !_keepSource) return const [];
     final state = AppScope.read(context);
     final file = File(source.path);
@@ -279,10 +287,8 @@ class _EventImportScreenState extends State<EventImportScreen> {
   Future<void> _edit(int i) async {
     final e = _found![i];
     final title = _titles[i]!.text.trim();
-    setState(() => _busy = true);
-    final files = await _attachment();
-    if (!mounted) return;
-    setState(() => _busy = false);
+    final files = await _draftFiles();
+    if (files == null || !mounted) return;
     final saved = await showEventEditor(
       context,
       start: e.start,
@@ -298,10 +304,52 @@ class _EventImportScreenState extends State<EventImportScreen> {
       _saved.add(i);
       _chosen.remove(i);
     });
-    if (_saved.length == _found!.length) {
+    if (_tasks.isEmpty && _saved.length == _found!.length) {
       _finish(_saved.length);
     } else {
-      _tell(tr.import1EventAdded);
+      _draftSaved(tr.import1EventAdded);
+    }
+  }
+
+  Future<List<FileRef>?> _draftFiles() async {
+    setState(() {
+      _busy = true;
+      _message = null;
+    });
+    final files = await _attachment();
+    if (!mounted) return null;
+    final missingOriginal = _tasks.isNotEmpty && _notKept;
+    setState(() {
+      _busy = false;
+      if (missingOriginal) _message = tr.importOriginalNotKept;
+    });
+    return missingOriginal ? null : files;
+  }
+
+  Future<void> _editTask(int index) async {
+    final task = _tasks[index];
+    final files = await _draftFiles();
+    if (files == null || !mounted) return;
+    final saved = await showTaskEditor(
+      context,
+      draft: Task(
+        id: newId(),
+        title: task.title,
+        due: task.due,
+        notes: tr.importTakenLine(task.line),
+        photos: files,
+      ),
+    );
+    if (!saved || !mounted) return;
+    setState(() => _savedTasks.add(index));
+    _draftSaved(tr.importTaskAdded);
+  }
+
+  void _draftSaved(String message) {
+    _tell(message);
+    if (_saved.length == _found!.length &&
+        _savedTasks.length == _tasks.length) {
+      Navigator.pop(context);
     }
   }
 
@@ -430,7 +478,13 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     value: _keepSource,
                     onChanged: (v) => setState(() => _keepSource = v ?? false),
                   ),
-                  Expanded(child: Text(tr.importKeepOriginal)),
+                  Expanded(
+                    child: Text(
+                      _tasks.isEmpty
+                          ? tr.importKeepOriginal
+                          : tr.importKeepLetterOriginal,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -577,13 +631,15 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Checkbox(
-                          value: _chosen.contains(i),
-                          onChanged: (v) => setState(
-                            () =>
-                                v ?? false ? _chosen.add(i) : _chosen.remove(i),
+                        if (_tasks.isEmpty)
+                          Checkbox(
+                            value: _chosen.contains(i),
+                            onChanged: (v) => setState(
+                              () => v ?? false
+                                  ? _chosen.add(i)
+                                  : _chosen.remove(i),
+                            ),
                           ),
-                        ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,21 +681,59 @@ class _EventImportScreenState extends State<EventImportScreen> {
                     ),
                   ),
                 ),
+            for (final (i, task) in _tasks.indexed)
+              if (!_savedTasks.contains(i))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SoftCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(task.title),
+                      subtitle: Text(
+                        [
+                          if (task.due case final due?)
+                            tr.importTaskDue(
+                              DateFormat.yMMMEd(appLanguage).format(due),
+                            )
+                          else
+                            tr.importTaskSetDue,
+                          task.line,
+                        ].join('\n'),
+                      ),
+                      trailing: IconButton(
+                        icon: const Icon(AppIcons.pencilSimple),
+                        tooltip: tr.importEditTask,
+                        onPressed: _busy ? null : () => _editTask(i),
+                      ),
+                    ),
+                  ),
+                ),
             Row(
               children: [
                 TextButton(
-                  onPressed: () => setState(() => _found = null),
-                  child: Text(tr.commonBack),
-                ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: _chosen.isEmpty || _busy ? null : _add,
+                  onPressed: _busy
+                      ? null
+                      : _tasks.isNotEmpty &&
+                            (_saved.isNotEmpty || _savedTasks.isNotEmpty)
+                      ? () => Navigator.pop(context)
+                      : () => setState(() => _found = null),
                   child: Text(
-                    _chosen.length == 1
-                        ? tr.importTakeOver1Event
-                        : tr.importTakeOverCountEvents(_chosen.length),
+                    _tasks.isNotEmpty &&
+                            (_saved.isNotEmpty || _savedTasks.isNotEmpty)
+                        ? tr.commonClose
+                        : tr.commonBack,
                   ),
                 ),
+                const Spacer(),
+                if (_tasks.isEmpty)
+                  FilledButton(
+                    onPressed: _chosen.isEmpty || _busy ? null : _add,
+                    child: Text(
+                      _chosen.length == 1
+                          ? tr.importTakeOver1Event
+                          : tr.importTakeOverCountEvents(_chosen.length),
+                    ),
+                  ),
               ],
             ),
           ],

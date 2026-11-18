@@ -369,9 +369,9 @@ class _BackupCheckLine extends StatelessWidget {
               ok
                   ? tr.adminCheckedAgoCanRestored(
                       at == null ? '' : ' ${_ago(at)}',
-                      '${check['records']}',
-                      '${check['users']}',
-                      '${check['files']}',
+                      (check['records'] as num?)?.toInt() ?? 0,
+                      (check['users'] as num?)?.toInt() ?? 0,
+                      (check['files'] as num?)?.toInt() ?? 0,
                       check['filesChecked'] == true
                           ? ''
                           : tr.adminWithoutFileContents,
