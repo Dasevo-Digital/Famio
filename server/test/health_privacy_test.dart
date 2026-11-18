@@ -840,6 +840,78 @@ void main() {
         expect(app.files.mayRead(file, ha.id), isFalse);
       });
 
+      test('a queued edit from an older client keeps the attachment', () async {
+        final file = await photo();
+        await sync(
+          mama,
+          changes: [appointment('ordinary', confidential: false, file: file)],
+        );
+        final old = (await sync(papa)).changes.single;
+        final legacyData = {...old.data, 'title': 'Geänderter Titel'}
+          ..remove('files');
+        final answer = await sync(
+          papa,
+          since: old.rev,
+          changes: [old.copyWith(data: legacyData, updatedAt: clock + 1)],
+        );
+        expect(answer.rejected, isEmpty);
+        final saved = app.records.get(Collections.events, old.id)!;
+        expect(saved.data['title'], legacyData['title']);
+        expect(recordFileIds(saved), [file.id]);
+        expect(app.records.referenced(file.id), isTrue);
+        expect(app.files.mayRead(file, papa.id), isTrue);
+      });
+
+      test('an explicit empty list removes the last attachment', () async {
+        final file = await photo();
+        await sync(
+          mama,
+          changes: [appointment('ordinary', confidential: false, file: file)],
+        );
+        final old = (await sync(papa)).changes.single;
+        final cleared = CalendarEvent.fromRecord(
+          old,
+        ).copyWith(files: []).toData();
+        final answer = await sync(
+          papa,
+          since: old.rev,
+          changes: [old.copyWith(data: cleared, updatedAt: clock + 1)],
+        );
+        expect(answer.rejected, isEmpty);
+        final saved = app.records.get(Collections.events, old.id)!;
+        expect(saved.data['files'], isEmpty);
+        expect(recordFileIds(saved), isEmpty);
+        expect(app.records.referenced(file.id), isFalse);
+      });
+
+      test(
+        'a legacy offline deletion snapshot retains the attachment',
+        () async {
+          final file = await photo();
+          await sync(
+            mama,
+            changes: [appointment('ordinary', confidential: false, file: file)],
+          );
+          final old = (await sync(papa)).changes.single;
+          final snapshot = {...old.data, 'title': 'Offline bearbeitet'}
+            ..remove('files');
+          await sync(
+            papa,
+            since: old.rev,
+            changes: [
+              old.copyWith(
+                deleted: true,
+                data: {'deletionSnapshot': snapshot},
+                updatedAt: clock + 1,
+              ),
+            ],
+          );
+          final saved = app.records.trashFor(papa.id).$1.single.record;
+          expect(saved.data['title'], snapshot['title']);
+          expect(recordFileIds(saved), [file.id]);
+        },
+      );
+
       test('an open appointment shares its photo with everyone', () async {
         final file = await photo();
         await sync(

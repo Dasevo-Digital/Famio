@@ -77,3 +77,59 @@ class LocationQueueTests: XCTestCase {
     XCTAssertNil(LocationQueue.open(data, key: SymmetricKey(size: .bits256)))
   }
 }
+
+class ShareInboxTests: XCTestCase {
+  private let manager = FileManager.default
+
+  func testKeepsInProgressFoldersAndReadsPublishedSharesInOrder() throws {
+    let temp = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? manager.removeItem(at: temp) }
+    let inbox = temp.appendingPathComponent("Share")
+    let unfinished = inbox.appendingPathComponent("00-legacy-in-progress")
+    let staged = inbox.appendingPathComponent(".staging").appendingPathComponent("02")
+    try manager.createDirectory(at: unfinished, withIntermediateDirectories: true)
+    try manifest("second", at: staged)
+    try manifest("first", at: inbox.appendingPathComponent("01"))
+
+    XCTAssertEqual(ShareInbox.take(from: inbox, temporary: temp)?["text"] as? String, "first")
+    XCTAssertNil(ShareInbox.take(from: inbox, temporary: temp))
+    XCTAssertTrue(manager.fileExists(atPath: unfinished.path))
+    XCTAssertTrue(manager.fileExists(atPath: staged.path))
+
+    try manager.moveItem(at: staged, to: inbox.appendingPathComponent("02"))
+    XCTAssertEqual(ShareInbox.take(from: inbox, temporary: temp)?["text"] as? String, "second")
+    XCTAssertNil(ShareInbox.take(from: inbox, temporary: temp))
+  }
+
+  func testExpiresAbandonedFoldersAndKeepsFilesTogetherOnCopyFailure() throws {
+    let temp = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? manager.removeItem(at: temp) }
+    let inbox = temp.appendingPathComponent("Share")
+    let abandoned = inbox.appendingPathComponent(".staging").appendingPathComponent("old")
+    try manager.createDirectory(at: abandoned, withIntermediateDirectories: true)
+    let old = Date(timeIntervalSinceNow: -25 * 60 * 60)
+    try manager.setAttributes([.creationDate: old], ofItemAtPath: abandoned.path)
+    let share = inbox.appendingPathComponent("01")
+    try manifest("two files", at: share, files: ["one.txt", "two.txt"])
+    try Data([1]).write(to: share.appendingPathComponent("one.txt"))
+
+    XCTAssertNil(ShareInbox.take(from: inbox, temporary: temp))
+    XCTAssertFalse(manager.fileExists(atPath: abandoned.path))
+    XCTAssertTrue(manager.fileExists(atPath: share.appendingPathComponent("one.txt").path))
+    try Data([2]).write(to: share.appendingPathComponent("two.txt"))
+
+    let result = try XCTUnwrap(ShareInbox.take(from: inbox, temporary: temp))
+    let files = try XCTUnwrap(result["files"] as? [[String: String]])
+    XCTAssertEqual(files.map { $0["name"] }, ["one.txt", "two.txt"])
+    let second = try XCTUnwrap(files.last?["path"])
+    XCTAssertEqual(try Data(contentsOf: URL(fileURLWithPath: second)), Data([2]))
+    XCTAssertFalse(manager.fileExists(atPath: share.path))
+  }
+
+  private func manifest(_ text: String, at folder: URL, files: [String] = []) throws {
+    try manager.createDirectory(at: folder, withIntermediateDirectories: true)
+    let payload: [String: Any] = ["text": text, "files": files.map { ["file": $0] }]
+    let json = try JSONSerialization.data(withJSONObject: payload)
+    try json.write(to: folder.appendingPathComponent("share.json"))
+  }
+}

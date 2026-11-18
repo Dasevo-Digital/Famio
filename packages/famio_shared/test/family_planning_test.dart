@@ -136,8 +136,7 @@ void main() {
       ),
       ['f1'],
     );
-    // Without files nothing is written.
-    expect(event.copyWith(files: []).toData(), isNot(contains('files')));
+    expect(event.copyWith(files: []).toData()['files'], isEmpty);
   });
 
   group('salary paid late in the month', () {

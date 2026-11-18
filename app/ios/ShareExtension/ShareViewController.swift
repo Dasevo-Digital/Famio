@@ -36,24 +36,32 @@ final class ShareViewController: UIViewController {
     guard !started else { return }
     started = true
     Task { @MainActor in
-      let kept = await keep()
-      if kept && openApp() {
+      let (kept, omitted) = await keep()
+      if kept && omitted.isEmpty && openApp() {
         extensionContext?.completeRequest(returningItems: nil)
       } else {
-        show(kept ? Texts.kept : Texts.failed)
+        let status = kept ? Texts.kept : Texts.failed
+        let details = Omission.allCases.compactMap { reason in
+          omitted[reason].map { Texts.omitted(reason, count: $0) }
+        }
+        show(([status] + details).joined(separator: "\n\n"))
       }
     }
   }
 
-  /// Writes the share into the app group; false if nothing could be kept.
-  private func keep() async -> Bool {
-    guard let inbox = Self.inbox else { return false }
+  /// Only publish completed shares. The app may read the inbox while a
+  /// provider is still preparing a file for the extension.
+  private func keep() async -> (Bool, [Omission: Int]) {
+    guard let inbox = Self.inbox else { return (false, [:]) }
     let manager = FileManager.default
     let stamp = String(format: "%013.0f", Date().timeIntervalSince1970 * 1000)
-    let folder = inbox.appendingPathComponent(
-      "\(stamp)-\(UUID().uuidString)", isDirectory: true)
+    let name = "\(stamp)-\(UUID().uuidString)"
+    let folder = inbox.appendingPathComponent(".staging", isDirectory: true)
+      .appendingPathComponent(name, isDirectory: true)
     guard (try? manager.createDirectory(at: folder, withIntermediateDirectories: true)) != nil
-    else { return false }
+    else { return (false, [:]) }
+    defer { try? manager.removeItem(at: folder) }
+    var omitted: [Omission: Int] = [:]
     var texts: [String] = []
     var subject = ""
     var files: [[String: String]] = []
@@ -85,28 +93,40 @@ final class ShareViewController: UIViewController {
           addText(text)
           continue
         }
-        guard files.count < Self.maxFiles,
-          let type = [UTType.image, .pdf, .movie, .data, .item]
-            .first(where: { provider.hasItemConformingToTypeIdentifier($0.identifier) }),
-          let file = await copyFile(
-            provider, type: type, into: folder, index: files.count,
-            left: Self.maxBytes - bytes)
-        else { continue }
-        bytes += file.size
-        files.append(["file": file.stored, "name": file.name, "mime": file.mime])
+        guard files.count < Self.maxFiles else {
+          omitted[.count, default: 0] += 1
+          continue
+        }
+        guard let type = [UTType.image, .pdf, .movie, .data, .item]
+          .first(where: { provider.hasItemConformingToTypeIdentifier($0.identifier) })
+        else {
+          omitted[.unreadable, default: 0] += 1
+          continue
+        }
+        switch await copyFile(
+          provider, type: type, into: folder, index: files.count,
+          left: Self.maxBytes - bytes)
+        {
+        case .success(let file):
+          bytes += file.size
+          files.append(["file": file.stored, "name": file.name, "mime": file.mime])
+        case .failure(let reason):
+          omitted[reason, default: 0] += 1
+        }
       }
     }
     let text = texts.joined(separator: "\n")
-    guard !text.isEmpty || !files.isEmpty,
-      let json = try? JSONSerialization.data(withJSONObject: [
+    guard !text.isEmpty || !files.isEmpty else { return (false, omitted) }
+    do {
+      let json = try JSONSerialization.data(withJSONObject: [
         "text": text, "subject": subject, "files": files,
-      ]),
-      (try? json.write(to: folder.appendingPathComponent("share.json"))) != nil
-    else {
-      try? manager.removeItem(at: folder)
-      return false
+      ])
+      try json.write(to: folder.appendingPathComponent("share.json"), options: .atomic)
+      try manager.moveItem(at: folder, to: inbox.appendingPathComponent(name))
+      return (true, omitted)
+    } catch {
+      return (false, omitted)
     }
-    return true
   }
 
   private func loadURL(_ provider: NSItemProvider) async -> URL? {
@@ -126,16 +146,17 @@ final class ShareViewController: UIViewController {
   }
 
   /// Copies the file of [provider] (valid only inside the callback) into
-  /// [folder]; nil if it is larger than [left] bytes or unreadable.
+  /// the staging folder, reporting why an attachment could not be kept.
   private func copyFile(
     _ provider: NSItemProvider, type: UTType, into folder: URL, index: Int, left: Int64
-  ) async -> (stored: String, name: String, mime: String, size: Int64)? {
+  ) async -> Result<(stored: String, name: String, mime: String, size: Int64), Omission> {
     await withCheckedContinuation { done in
       provider.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, _ in
-        guard let url else { return done.resume(returning: nil) }
-        let size = Int64(
-          (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? Int.max)
-        guard size <= left else { return done.resume(returning: nil) }
+        guard let url,
+          let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+          values.isRegularFile == true, let size = values.fileSize
+        else { return done.resume(returning: .failure(.unreadable)) }
+        guard Int64(size) <= left else { return done.resume(returning: .failure(.bytes)) }
         let name = url.lastPathComponent.isEmpty ? "datei" : url.lastPathComponent
         // A number in front: two files of the same name stay apart.
         let stored = "\(index)-\(name)".replacingOccurrences(of: "/", with: "_")
@@ -143,9 +164,9 @@ final class ShareViewController: UIViewController {
           ?? type.preferredMIMEType ?? "application/octet-stream"
         do {
           try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent(stored))
-          done.resume(returning: (stored, name, mime, size))
+          done.resume(returning: .success((stored, name, mime, Int64(size))))
         } catch {
-          done.resume(returning: nil)
+          done.resume(returning: .failure(.unreadable))
         }
       }
     }
@@ -200,6 +221,10 @@ final class ShareViewController: UIViewController {
   }
 }
 
+private enum Omission: Error, CaseIterable {
+  case count, bytes, unreadable
+}
+
 /// The few words of the extension, in the app's languages.
 private enum Texts {
   private static let language = Locale.preferredLanguages.first?.prefix(2) ?? "en"
@@ -225,5 +250,25 @@ private enum Texts {
       "Famio could not take this over.",
       "Famio no ha podido recogerlo.")
   }
+  static func omitted(_ reason: Omission, count: Int) -> String {
+    switch reason {
+    case .count:
+      return pick(
+        "Dateien über der Grenze von 10 Anhängen (\(count))",
+        "Files beyond the limit of 10 attachments (\(count))",
+        "Archivos que superan el límite de 10 adjuntos (\(count))")
+    case .bytes:
+      return pick(
+        "Dateien über der Gesamtgrenze von 100 MB (\(count))",
+        "Files beyond the total limit of 100 MB (\(count))",
+        "Archivos que superan el límite total de 100 MB (\(count))")
+    case .unreadable:
+      return pick(
+        "Dateien, die Famio nicht lesen konnte (\(count))",
+        "Files Famio could not read (\(count))",
+        "Archivos que Famio no pudo leer (\(count))")
+    }
+  }
+
   static var done: String { pick("Fertig", "Done", "Listo") }
 }

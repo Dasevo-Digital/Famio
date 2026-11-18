@@ -636,6 +636,84 @@ class _DayAgenda extends StatelessWidget {
   }
 }
 
+/// Opens a calendar entry in the editor or its read-only imported view.
+Future<void> showCalendarOccurrence(
+  BuildContext context,
+  SyncEngine engine,
+  Occurrence occurrence,
+) async {
+  if (occurrence.event.sourceId == null) {
+    await showEventEditor(context, occurrence: occurrence);
+    return;
+  }
+
+  final e = occurrence.event;
+  final source = engine.calendarSubscription(e.sourceId);
+  final when = e.allDay
+      ? dayLabel(occurrence.start)
+      : '${dateTimeLabel(occurrence.start)} – ${timeLabel(occurrence.end)}';
+  await showModalBottomSheet<void>(
+    context: context,
+    // Above the floating navigation bar.
+    useRootNavigator: true,
+    showDragHandle: true,
+    builder: (context) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(e.title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(when),
+            if (e.location.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(e.location),
+            ],
+            if (e.notes.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              SelectableText(e.notes),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  isBirthdaySource(e.sourceId)
+                      ? AppIcons.cake
+                      : AppIcons.cloudArrowDown,
+                  size: 18,
+                  color: eventColor(context, engine, e),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    isHolidaySource(e.sourceId)
+                        ? tr.calendarAdminsSetFederalState
+                        : isBirthdaySource(e.sourceId)
+                        ? tr.calendarWhatChangeProfileChild(
+                            engine
+                                    .birthdayOf(e.sourceId)
+                                    ?.headline(occurrence.start) ??
+                                tr.commonBirthday,
+                          )
+                        : FamilyData.isCalDavSource(e.sourceId)
+                        ? tr.calendarConnectedCalendarReadOnly
+                        : tr.calendarSourceReadOnlyMake(
+                            source?.name ?? tr.calendarSubscription,
+                          ),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class _OccurrenceTile extends StatelessWidget {
   const _OccurrenceTile(
     this.occurrence, {
@@ -646,75 +724,6 @@ class _OccurrenceTile extends StatelessWidget {
   final Occurrence occurrence;
   final DateTime day;
   final SyncEngine engine;
-
-  /// Imported events are read-only; show their details instead of the editor.
-  void _showImported(BuildContext context) {
-    final e = occurrence.event;
-    final source = engine.calendarSubscription(e.sourceId);
-    final when = e.allDay
-        ? dayLabel(occurrence.start)
-        : '${dateTimeLabel(occurrence.start)} – ${timeLabel(occurrence.end)}';
-    showModalBottomSheet<void>(
-      context: context,
-      // Above the floating navigation bar.
-      useRootNavigator: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(e.title, style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: 8),
-              Text(when),
-              if (e.location.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(e.location),
-              ],
-              if (e.notes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                SelectableText(e.notes),
-              ],
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(
-                    isBirthdaySource(e.sourceId)
-                        ? AppIcons.cake
-                        : AppIcons.cloudArrowDown,
-                    size: 18,
-                    color: eventColor(context, engine, e),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      isHolidaySource(e.sourceId)
-                          ? tr.calendarAdminsSetFederalState
-                          : isBirthdaySource(e.sourceId)
-                          ? tr.calendarWhatChangeProfileChild(
-                              engine
-                                      .birthdayOf(e.sourceId)
-                                      ?.headline(occurrence.start) ??
-                                  tr.commonBirthday,
-                            )
-                          : FamilyData.isCalDavSource(e.sourceId)
-                          ? tr.calendarConnectedCalendarReadOnly
-                          : tr.calendarSourceReadOnlyMake(
-                              source?.name ?? tr.calendarSubscription,
-                            ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   String _timeText() {
     final e = occurrence.event;
@@ -741,9 +750,7 @@ class _OccurrenceTile extends StatelessWidget {
     ].join(' · ');
 
     return InkWell(
-      onTap: () => e.sourceId == null
-          ? showEventEditor(context, occurrence: occurrence)
-          : _showImported(context),
+      onTap: () => showCalendarOccurrence(context, engine, occurrence),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(

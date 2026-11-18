@@ -11,7 +11,6 @@ import 'calendar_screen.dart';
 import 'chat_screens.dart';
 import 'deadlines_screen.dart';
 import 'deferred_sections.dart';
-import 'event_editor.dart';
 import 'home_shell.dart';
 import 'loans_screen.dart';
 import 'settings_screen.dart';
@@ -31,19 +30,62 @@ Future<void> openNoticeTarget(
   required NavigatorState? Function(FamioSection section) navigatorOf,
 }) async {
   final state = AppScope.read(context);
-  await _unlocked(state.lock);
-  if (!context.mounted) return;
   final engine = state.engine;
-  final me = state.me;
-  if (engine == null || me == null) return;
-  final visible = sectionsFor(me.role, hidden: state.hiddenModules).toSet();
+  if (engine == null) return;
+  bool active() => context.mounted && identical(state.engine, engine);
+  bool visible(FamioSection section) =>
+      active() &&
+      state.me != null &&
+      sectionsFor(
+        state.me!.role,
+        hidden: state.hiddenModules,
+      ).contains(section);
+  await _unlocked(state.lock);
+  if (!active()) return;
+
+  CalendarEvent? event() =>
+      engine.event(target.id) ??
+      engine.externalEvents.where((e) => e.id == target.id).firstOrNull;
+  bool chat() =>
+      target.id == ChatIds.family ||
+      engine.members.any(
+        (m) => ChatIds.direct(engine.memberId, m.id) == target.id,
+      );
+
+  final section = switch (target.kind) {
+    NoticeTarget.taskKind => FamioSection.tasks,
+    NoticeTarget.eventKind => FamioSection.calendar,
+    NoticeTarget.chatKind => FamioSection.chat,
+    NoticeTarget.childKind || NoticeTarget.pregnancyKind => FamioSection.kids,
+    _ => null,
+  };
+  if (section != null && !visible(section)) return;
+  await _waitForFirstSync(
+    state,
+    engine,
+    () => switch (target.kind) {
+      NoticeTarget.taskKind =>
+        engine.record(Collections.tasks, target.id) != null,
+      NoticeTarget.eventKind => event() != null,
+      NoticeTarget.chatKind => chat(),
+      NoticeTarget.childKind => engine.child(target.id) != null,
+      NoticeTarget.pregnancyKind => engine.pregnancy(target.id) != null,
+      NoticeTarget.sosKind =>
+        engine.record(Collections.sosAlerts, target.id) != null,
+      _ => true,
+    },
+  );
+  if (!active()) return;
+  await _unlocked(state.lock);
+  if (!context.mounted || !identical(state.engine, engine)) return;
 
   /// The section [s] on screen at its start page; null when it is not this
   /// member's.
   Future<NavigatorState?> at(FamioSection s) async {
-    if (!visible.contains(s)) return null;
+    if (!visible(s)) return null;
     go(s);
     await WidgetsBinding.instance.endOfFrame;
+    if (!visible(s)) return null;
     final navigator = navigatorOf(s);
     navigator?.popUntil((r) => r.isFirst);
     return navigator != null && navigator.mounted ? navigator : null;
@@ -55,31 +97,26 @@ Future<void> openNoticeTarget(
   switch (target.kind) {
     case NoticeTarget.taskKind:
       final page = (await at(FamioSection.tasks))?.context;
-      final task = engine.tasks.where((t) => t.id == target.id).firstOrNull;
-      if (page != null && page.mounted && task != null) {
-        await showTaskEditor(page, task: task);
+      if (page != null && page.mounted) {
+        final task = engine.tasks.where((t) => t.id == target.id).firstOrNull;
+        if (task != null) await showTaskEditor(page, task: task);
       }
     case NoticeTarget.eventKind:
-      final event = engine.events.where((e) => e.id == target.id).firstOrNull;
-      final occurrence = event == null ? null : _occurrence(event, target.at);
-      if (occurrence != null) {
-        CalendarScreen.requestedDay.value = occurrence.start;
-      }
       final page = (await at(FamioSection.calendar))?.context;
-      if (page != null && page.mounted && occurrence != null) {
-        await showEventEditor(page, occurrence: occurrence);
+      if (page == null || !page.mounted) return;
+      final appointment = event();
+      if (appointment != null) {
+        final occurrence = _occurrence(appointment, target.at);
+        CalendarScreen.requestedDay.value = occurrence.start;
+        await showCalendarOccurrence(page, engine, occurrence);
       }
     case NoticeTarget.dayKind:
-      CalendarScreen.requestedDay.value = target.at;
-      await at(FamioSection.calendar);
+      if (await at(FamioSection.calendar) != null) {
+        CalendarScreen.requestedDay.value = target.at;
+      }
     case NoticeTarget.chatKind:
       final navigator = await at(FamioSection.chat);
-      final ours =
-          target.id == ChatIds.family ||
-          engine.members.any(
-            (m) => ChatIds.direct(engine.memberId, m.id) == target.id,
-          );
-      if (navigator != null && ours) {
+      if (navigator != null && chat()) {
         await push(
           navigator,
           ChatScreen(chatId: target.id, title: chatTitle(engine, target.id)),
@@ -131,9 +168,50 @@ Future<void> openNoticeTarget(
   }
 }
 
+/// A fresh session can already display the shell while its first pull runs.
+/// Stop waiting when it completes, goes offline, the session changes or the
+/// time limit expires. Local targets can open as soon as they arrive.
+Future<void> _waitForFirstSync(
+  AppState state,
+  SyncEngine engine,
+  bool Function() available,
+) async {
+  bool done() {
+    final status = engine.status;
+    return !identical(state.engine, engine) ||
+        status.lastSync != null ||
+        status.state == SyncState.offline ||
+        status.state == SyncState.unauthorized ||
+        available();
+  }
+
+  if (done()) return;
+  final ready = Completer<void>();
+  void finish() {
+    if (!ready.isCompleted) ready.complete();
+  }
+
+  void check() {
+    if (done()) finish();
+  }
+
+  final changes = engine.changes.listen((_) => check(), onDone: finish);
+  final statuses = engine.statusChanges.listen((_) => check());
+  state.addListener(check);
+  final timeout = Timer(const Duration(seconds: 8), finish);
+  try {
+    await ready.future;
+  } finally {
+    timeout.cancel();
+    state.removeListener(check);
+    unawaited(changes.cancel());
+    unawaited(statuses.cancel());
+  }
+}
+
 /// The date [at] of [event], else its next one (or its first, when it is
 /// over).
-Occurrence? _occurrence(CalendarEvent event, DateTime? at) {
+Occurrence _occurrence(CalendarEvent event, DateTime? at) {
   if (at != null) {
     final found = event
         .occurrencesBetween(

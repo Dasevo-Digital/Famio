@@ -228,23 +228,45 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (await SosDevice.takeLaunch()) _sosLaunch();
   }
 
-  /// A calendar file opened with Famio from another app, or text and files
-  /// shared to Famio ("Teilen an Famio" on Android).
+  bool _openingFiles = false;
+  bool _openFilesAgain = false;
+
+  /// Handles one native signal at a time and shows queued shares in order.
   Future<void> _openedFile() async {
-    // A link to something in Famio (ntfy, a notification of Android's own
-    // push, #385).
-    final target = await OpenedFiles.takeTarget();
-    if (target != null && mounted) await _open(target);
-    final file = await OpenedFiles.take();
-    if (file != null && mounted) await _importCalendarFile(file);
-    final share = await OpenedFiles.takeShare();
-    if (share != null && mounted) {
-      await showShareTarget(
-        context,
-        share,
-        go: _go,
-        navigatorOf: (section) => _navigators[section]?.currentState,
-      );
+    if (_openingFiles) {
+      _openFilesAgain = true;
+      return;
+    }
+    if (!mounted) return;
+    final state = AppScope.read(context);
+    final engine = state.engine;
+    bool active() =>
+        mounted && engine != null && identical(state.engine, engine);
+    if (!active()) return;
+    _openingFiles = true;
+    try {
+      do {
+        _openFilesAgain = false;
+        final target = await OpenedFiles.takeTarget();
+        if (target != null && active()) await _open(target);
+        if (!active()) return;
+        final file = await OpenedFiles.take();
+        if (file != null && active()) await _importCalendarFile(file);
+        while (active()) {
+          final share = await OpenedFiles.takeShare();
+          if (share == null || !mounted || !identical(state.engine, engine)) {
+            break;
+          }
+          await showShareTarget(
+            context,
+            share,
+            go: _go,
+            navigatorOf: (section) => _navigators[section]?.currentState,
+          );
+        }
+      } while (active() && _openFilesAgain);
+    } finally {
+      _openingFiles = false;
     }
   }
 

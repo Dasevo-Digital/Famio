@@ -1436,7 +1436,7 @@ final class PrivacyCover: NSObject {
 /// What the share extension ("Teilen an Famio" in other apps' share sheet)
 /// left in the app group for the app: one folder per share with
 /// `share.json` (text, subject, files) and the files. Taken one at a time,
-/// files moved to the app's temporary folder, where Dart's clean-up finds
+/// files copied to the app's temporary folder, where Dart's clean-up finds
 /// them; shares older than a day go unread.
 enum ShareInbox {
   static var folder: URL? {
@@ -1448,42 +1448,81 @@ enum ShareInbox {
   }
 
   static func take() -> [String: Any]? {
+    guard let folder else { return nil }
+    return take(from: folder)
+  }
+
+  static func take(
+    from folder: URL, now: Date = Date(), temporary: URL = FileManager.default.temporaryDirectory
+  ) -> [String: Any]? {
     let manager = FileManager.default
-    guard let folder,
-      let shares = try? manager.contentsOfDirectory(
-        at: folder, includingPropertiesForKeys: [.creationDateKey])
-    else { return nil }
-    let dayAgo = Date().addingTimeInterval(-24 * 60 * 60)
+    let cutoff = now.addingTimeInterval(-24 * 60 * 60)
+    let keys: [URLResourceKey] = [.creationDateKey, .isDirectoryKey]
+    func entries(_ parent: URL) -> [URL] {
+      (try? manager.contentsOfDirectory(
+        at: parent, includingPropertiesForKeys: keys, options: .skipsHiddenFiles)) ?? []
+    }
+    func fresh(_ url: URL) -> Bool {
+      guard let values = try? url.resourceValues(forKeys: Set(keys)),
+        values.isDirectory == true
+      else { return false }
+      if let made = values.creationDate, made <= cutoff {
+        try? manager.removeItem(at: url)
+        return false
+      }
+      return true
+    }
+    // Remove abandoned staging directories after the same retention window.
+    for stage in entries(folder.appendingPathComponent(".staging")) {
+      _ = fresh(stage)
+    }
     // Folder names begin with the time they were made.
-    for share in shares.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
-      defer { try? manager.removeItem(at: share) }
-      let made = (try? share.resourceValues(forKeys: [.creationDateKey]))?.creationDate
-      guard (made ?? Date()) > dayAgo,
+    for share in entries(folder).sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+      guard fresh(share),
         let data = try? Data(contentsOf: share.appendingPathComponent("share.json")),
         let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
       else { continue }
-      let target = manager.temporaryDirectory
-        .appendingPathComponent("shared", isDirectory: true)
+      let target = temporary.appendingPathComponent("shared", isDirectory: true)
         .appendingPathComponent(UUID().uuidString, isDirectory: true)
-      try? manager.createDirectory(at: target, withIntermediateDirectories: true)
-      var files: [[String: String]] = []
-      for file in json["files"] as? [[String: Any]] ?? [] {
-        guard let stored = file["file"] as? String, !stored.contains("/"),
-          stored != "share.json"
-        else { continue }
-        let to = target.appendingPathComponent(stored)
-        guard (try? manager.moveItem(at: share.appendingPathComponent(stored), to: to)) != nil
-        else { continue }
-        files.append([
-          "path": to.path,
-          "name": file["name"] as? String ?? stored,
-          "mime": file["mime"] as? String ?? "application/octet-stream",
-        ])
-      }
       let text = json["text"] as? String ?? ""
-      if text.isEmpty && files.isEmpty { continue }
+      guard let files = copyAttachments(json["files"], from: share, to: target),
+        !text.isEmpty || !files.isEmpty
+      else { continue }
+      // Keep the inbox entry intact until every file is ready in the app.
+      do {
+        try manager.removeItem(at: share)
+      } catch {
+        try? manager.removeItem(at: target)
+        continue
+      }
       return ["text": text, "subject": json["subject"] as? String ?? "", "files": files]
     }
     return nil
+  }
+
+  private static func copyAttachments(
+    _ value: Any?, from share: URL, to target: URL
+  ) -> [[String: String]]? {
+    guard let entries = (value ?? []) as? [[String: Any]] else { return nil }
+    if entries.isEmpty { return [] }
+    let manager = FileManager.default
+    do {
+      try manager.createDirectory(at: target, withIntermediateDirectories: true)
+      return try entries.map { file in
+        guard let stored = file["file"] as? String, !stored.isEmpty,
+          !stored.contains("/"), ![".", "..", "share.json"].contains(stored)
+        else { throw CocoaError(.fileReadCorruptFile) }
+        let to = target.appendingPathComponent(stored)
+        try manager.copyItem(at: share.appendingPathComponent(stored), to: to)
+        return [
+          "path": to.path,
+          "name": file["name"] as? String ?? stored,
+          "mime": file["mime"] as? String ?? "application/octet-stream",
+        ]
+      }
+    } catch {
+      try? manager.removeItem(at: target)
+      return nil
+    }
   }
 }

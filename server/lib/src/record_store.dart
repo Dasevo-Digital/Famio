@@ -905,6 +905,7 @@ class RecordStore {
             incoming = incoming.copyWith(updatedAt: prior.updatedAt + 1);
           }
         }
+        incoming = _keepEventFiles(incoming, existing);
         // Even a losing edit can be retained as a readable conflict. Check
         // new attachments before either version can reach persistent data.
         final previousFiles =
@@ -1058,6 +1059,7 @@ class RecordStore {
             data: (change.data['deletionSnapshot'] as Map)
                 .cast<String, Object?>(),
           );
+          snapshot = _keepEventFiles(snapshot, existing);
           _validate(snapshot);
           // What comes back from the bin follows the same rules as a write:
           // a child cannot hide a family record in its own bin.
@@ -1865,6 +1867,23 @@ class RecordStore {
       if (by != null) data[CalendarEvent.confidentialByKey] = by;
     }
     return incoming.copyWith(data: data);
+  }
+
+  /// A client that omits the attachment field cannot tell us it removed
+  /// the files. Preserve the stored references, including for old offline
+  /// edits sent after this upgrade. An explicit list always wins.
+  static SyncRecord _keepEventFiles(SyncRecord next, SyncRecord? previous) {
+    if (next.collection != Collections.events ||
+        next.deleted ||
+        previous == null ||
+        previous.deleted ||
+        next.data['files'] != null) {
+      return next;
+    }
+    final files = previous.data['files'];
+    return files is List && files.isNotEmpty && recordDataIsValid(previous)
+        ? next.copyWith(data: {...next.data, 'files': files})
+        : next;
   }
 
   /// Who made an appointment confidential, after what a child may change

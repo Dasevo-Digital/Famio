@@ -6,13 +6,18 @@ import 'package:famio/src/app.dart';
 import 'package:famio/src/app_state.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/reminder_targets.dart';
+import 'package:famio/src/platform/opened_files.dart';
+import 'package:famio/src/screens/calendar_screen.dart';
 import 'package:famio/src/screens/chat_screens.dart';
 import 'package:famio/src/screens/chores_screens.dart';
 import 'package:famio/src/screens/deadlines_screen.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -96,6 +101,7 @@ void main() {
       WidgetTester tester, {
       MemberRole role = MemberRole.adult,
       Set<String> hidden = const {},
+      FamioApiClient? api,
     }) async {
       tester.view.physicalSize = const Size(1400, 1000);
       tester.view.devicePixelRatio = 1;
@@ -114,7 +120,7 @@ void main() {
                       '"role":"${role.name}"},'
                       '{"id":"m2","username":"tom","displayName":"Tom"}]',
           ),
-        api: FamioApiClient('localhost:1'),
+        api: api ?? FamioApiClient('localhost:1'),
         memberId: 'm1',
       );
       engine
@@ -154,6 +160,137 @@ void main() {
       expect(find.widgetWithText(TextField, 'Elternabend'), findsOneWidget);
     });
 
+    testWidgets('an imported appointment opens its read-only view', (
+      tester,
+    ) async {
+      await run(tester);
+      final appointment = CalendarEvent(
+        id: 'external',
+        title: 'Train timetable',
+        notes: 'Details from the subscription',
+        start: start,
+        end: start.add(const Duration(hours: 1)),
+        sourceId: 'caldav:test',
+      );
+      engine.put(
+        Collections.externalEvents,
+        appointment.id,
+        appointment.toData(),
+      );
+      await tap(tester, NoticeTarget.event(appointment.id, start));
+      final sheet = find.byType(BottomSheet);
+      expect(
+        find.descendant(of: sheet, matching: find.text(appointment.title)),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.byType(TextField)),
+        findsNothing,
+      );
+      final details = find.descendant(
+        of: sheet,
+        matching: find.byType(SelectableText),
+      );
+      expect(tester.widget<SelectableText>(details).data, appointment.notes);
+    });
+
+    testWidgets(
+      'a target opens when it arrives instead of needing another tap',
+      (tester) async {
+        await run(tester);
+        const id = 'pending';
+        await tap(tester, const NoticeTarget.task(id));
+        expect(find.widgetWithText(TextField, 'Just synced'), findsNothing);
+        engine.saveTask(Task(id: id, title: 'Just synced'));
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pumpAndSettle();
+        expect(find.widgetWithText(TextField, 'Just synced'), findsOneWidget);
+      },
+    );
+
+    testWidgets('a missing target falls back when an offline sync ends', (
+      tester,
+    ) async {
+      await run(
+        tester,
+        api: FamioApiClient(
+          'localhost:1',
+          httpClient: MockClient(
+            (_) async => http.Response('Unavailable', 503),
+          ),
+        ),
+      );
+      await tap(tester, const NoticeTarget.event('missing'));
+      expect(find.byType(CalendarScreen), findsNothing);
+      final sync = engine.sync();
+      await tester.pumpAndSettle();
+      await sync;
+      await tester.pumpAndSettle();
+      expect(find.byType(CalendarScreen), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('a missing target falls back after the wait expires', (
+      tester,
+    ) async {
+      await run(tester);
+      await tap(tester, const NoticeTarget.event('missing'));
+      expect(find.byType(CalendarScreen), findsNothing);
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
+      expect(find.byType(CalendarScreen), findsOneWidget);
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
+    testWidgets('a target waiting for sync is dropped with the old session', (
+      tester,
+    ) async {
+      await run(tester);
+      await tap(tester, const NoticeTarget.event('pending'));
+      state.engine = SyncEngine(
+        store: LocalStore.open(':memory:'),
+        api: FamioApiClient('localhost:1'),
+        memberId: 'different-member',
+      );
+      engine.saveEvent(
+        CalendarEvent(
+          id: 'pending',
+          title: 'Previous session',
+          start: start,
+          end: start.add(const Duration(hours: 1)),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(CalendarScreen), findsNothing);
+      expect(find.byType(BottomSheet), findsNothing);
+      await engine.stop();
+    });
+
+    testWidgets('share signals drain the queue one dialog at a time', (
+      tester,
+    ) async {
+      final pending = ['First share', 'Second share'];
+      const channel = MethodChannel('famio/open_file');
+      final messenger = tester.binding.defaultBinaryMessenger;
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method != 'takeShare' || pending.isEmpty) return null;
+        return <String, Object?>{'text': pending.removeAt(0)};
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      await run(tester);
+      expect(find.text('First share'), findsOneWidget);
+      OpenedFiles.onOpened!();
+      await tester.pumpAndSettle();
+      expect(pending, ['Second share']);
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+      expect(find.text('Second share'), findsOneWidget);
+      expect(pending, isEmpty);
+      await tester.tapAt(const Offset(4, 4));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+    });
+
     testWidgets('a chat', (tester) async {
       await run(tester);
       await tap(tester, NoticeTarget.chat(ChatIds.direct('m1', 'm2')));
@@ -177,10 +314,14 @@ void main() {
       expect(find.byType(ChoresScreen), findsNothing);
       // A task that no longer exists: its section only.
       await tap(tester, const NoticeTarget.task('gone'));
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
       expect(find.byType(BottomSheet), findsNothing);
       // Nor a chat of others.
       final others = ChatIds.direct('m2', 'm3');
       await tap(tester, NoticeTarget.chat(others));
+      await tester.pump(const Duration(seconds: 9));
+      await tester.pumpAndSettle();
       expect(
         find.byWidgetPredicate((w) => w is ChatScreen && w.chatId == others),
         findsNothing,

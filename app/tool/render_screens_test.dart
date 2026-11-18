@@ -1341,7 +1341,12 @@ void main() {
     await go(tester, 'Kacka');
     await _shot(tester, key, 'phone_9b_windel_stuhl');
     await go(tester, 'Durchfall');
-    await go(tester, 'gelb');
+    final yellow = find.widgetWithText(ChoiceChip, 'gelb');
+    await tester.ensureVisible(yellow);
+    expect(yellow.hitTestable(), findsOneWidget);
+    await tester.tap(yellow.hitTestable());
+    await tester.pumpAndSettle();
+    expect(tester.widget<ChoiceChip>(yellow).selected, isTrue);
     // The third answer closes the sheet.
     await go(tester, 'viel');
     final row = find.text('Windel Kacka · Durchfall · gelb · viel');

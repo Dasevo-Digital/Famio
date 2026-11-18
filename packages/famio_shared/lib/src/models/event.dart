@@ -516,7 +516,9 @@ class CalendarEvent {
     'notes': notes,
     'memberIds': memberIds,
     'recurrence': recurrence?.toJson(),
-    if (files.isNotEmpty) 'files': [for (final f in files) f.toJson()],
+    // An explicit empty list removes the last attachment. Older apps
+    // omitted this field even when the stored event had attachments.
+    'files': [for (final f in files) f.toJson()],
     'exceptions': [for (final d in exceptions) _formatDate(d)]..sort(),
     'reminderMinutes': reminderMinutes,
     'sourceId': ?sourceId,

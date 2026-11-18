@@ -1654,7 +1654,7 @@ class _LogEditorState extends State<_LogEditor> {
   late DateTime? _end = _old?.end;
   late BreastSide? _side = _old?.side ?? BreastSide.left;
   late MilkKind? _milk = _old?.milk ?? MilkKind.formula;
-  late DrinkKind? _drink = _old?.drink ?? DrinkKind.water;
+  late DrinkKind? _drink = _old == null ? DrinkKind.water : _old.drink;
   late DiaperKind _diaper = _old?.diaper ?? DiaperKind.wet;
   late StoolKind? _stool = _old?.stool;
   late StoolColor? _stoolColor = _old?.stoolColor;

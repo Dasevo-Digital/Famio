@@ -382,6 +382,44 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
+  testWidgets('kids: editing a note preserves an unspecified drink', (
+    tester,
+  ) async {
+    await open(tester, 'Kinder');
+    final birth = DateUtils.dateOnly(
+      DateTime.now().subtract(const Duration(days: 300)),
+    );
+    engine
+      ..saveChild(Child(id: 'k1', name: 'Lena', birthDate: birth))
+      ..saveChildLog(
+        ChildLog(
+          id: 'drink',
+          childId: 'k1',
+          kind: LogKind.drink,
+          start: earlierToday(),
+          amountMl: 100,
+        ),
+      );
+    await pumpData(tester);
+    await tester.tap(find.text('Lena'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Getränk · 100 ml'));
+    await tester.pumpAndSettle();
+    final water = find.widgetWithText(ChoiceChip, 'Wasser');
+    expect(tester.widget<ChoiceChip>(water).selected, isFalse);
+    final note = find.widgetWithText(TextField, 'Notiz (optional)');
+    await tester.ensureVisible(note);
+    await tester.enterText(note, 'Testnotiz');
+    final save = find.text('Speichern');
+    await tester.ensureVisible(save);
+    await tester.tap(save);
+    await tester.pumpAndSettle();
+    final saved = engine.childLogs('k1').single;
+    expect(saved.note, 'Testnotiz');
+    expect(saved.drink, isNull);
+    await tester.pump(const Duration(seconds: 5));
+  });
+
   testWidgets('kids: drinks and walks in the log', (tester) async {
     await open(tester, 'Kinder');
     final birth = DateUtils.dateOnly(
