@@ -17,10 +17,12 @@ import 'catalog_kit.dart';
 
 const _control = String.fromEnvironment('FAMIO_E2E_CONTROL');
 
-Future<Map<String, Object?>> _restore() async {
+Future<Map<String, Object?>> _restore(String backup) async {
   final client = HttpClient();
   try {
-    final request = await client.postUrl(Uri.parse('$_control/restore'));
+    final request = await client.postUrl(
+      Uri.parse('$_control/restore').replace(queryParameters: {'name': backup}),
+    );
     final response = await request.close();
     final body = await response.transform(utf8.decoder).join();
     expect(response.statusCode, 200, reason: body);
@@ -70,7 +72,9 @@ void main() {
       return ids.contains(before) && ids.contains(after);
     });
 
-    final restored = await _restore();
+    final status = await admin.backupStatus();
+    final newest = (status['backups'] as List).first['name'] as String;
+    final restored = await _restore(newest);
     expect(restored['ok'], isTrue, reason: '${restored['output']}');
     final aside = (restored['aside']! as List).cast<String>();
     expect(aside.where((f) => f.endsWith('/famio.db')), hasLength(1));

@@ -937,6 +937,7 @@ const sharedEn = <String, String>{
   "Server|Ohne Famio-App: {names}.": "Without the Famio app: {names}.",
   "Server|Einstellungen → Benachrichtigungen (in der jeweiligen App)":
       "Settings → Notifications (in each app)",
+  "Server|Sicherung": "Backup",
   "Server|Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann muss Proxmox, Home Assistant oder ein anderes Werkzeug das Datenverzeichnis sichern.":
       "The built-in backup is off (FAMIO_BACKUP_DIR=off). Then Proxmox, Home Assistant or another tool must back up the data directory.",
   "Server|FAMIO_BACKUP_DIR in der Server-Konfiguration":

@@ -230,7 +230,7 @@ extension _AdminRoutes on FamioApi {
       steps.add(
         SetupStep(
           id: 'backup',
-          title: 'Sicherung',
+          title: t('Sicherung'),
           done: false,
           detail: t(
             'Die eingebaute Sicherung ist aus (FAMIO_BACKUP_DIR=off). Dann muss Proxmox, Home Assistant oder ein anderes Werkzeug das Datenverzeichnis sichern.',
@@ -248,7 +248,7 @@ extension _AdminRoutes on FamioApi {
       steps.add(
         SetupStep(
           id: 'backup',
-          title: 'Sicherung',
+          title: t('Sicherung'),
           done: ok,
           detail: ok
               ? t(

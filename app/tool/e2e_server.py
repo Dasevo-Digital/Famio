@@ -11,19 +11,21 @@ The server's settings come from the environment (FAMIO_DATA_DIR,
 FAMIO_PORT, …); its output goes to this script's output. Control, on
 127.0.0.1 only:
 
-    POST /restore   stops the server, puts its newest backup back with
-                    tool/famio-restore-backup.sh and starts it again;
-                    answers {"ok", "output", "aside": [files set aside]}.
+    POST /restore?name=...  stops the server, restores the backup selected
+                          through the admin API and starts the server again;
+                          answers {"ok", "output", "aside": [files set aside]}.
 """
 
 import http.server
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -57,15 +59,15 @@ def stop():
             server.wait()
 
 
-def restore():
-    backups = sorted(
-        p for p in (DATA / "backups").glob("famio-*") if (p / "famio.db").is_file()
-    )
-    if not backups:
-        return {"ok": False, "output": "Keine Sicherung im Datenordner."}
+def restore(name):
+    if not re.fullmatch(r"famio-[0-9]{8}-[0-9]{6}(?:-[0-9]{6})?", name):
+        return {"ok": False, "output": "Ungültiger Sicherungsname."}
+    backup = DATA / "backups" / name
+    if not (backup / "famio.db").is_file():
+        return {"ok": False, "output": "Keine Sicherung mit diesem Namen."}
     stop()
     done = subprocess.run(
-        ["sh", str(RESTORE), str(backups[-1]), str(DATA)],
+        ["sh", str(RESTORE), str(backup), str(DATA)],
         capture_output=True, text=True,
     )
     start()
@@ -81,12 +83,14 @@ def restore():
 
 class Control(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
-        if self.path != "/restore":
+        url = urllib.parse.urlsplit(self.path)
+        if url.path != "/restore":
             self.send_error(404)
             return
         with lock:
             try:
-                answer = restore()
+                name = urllib.parse.parse_qs(url.query).get("name", [""])[0]
+                answer = restore(name)
             except Exception as e:  # noqa: BLE001 - told to the test
                 answer = {"ok": False, "output": str(e)}
         body = json.dumps(answer).encode()

@@ -85,6 +85,7 @@ class BackupJob {
   /// The latest test of a backup (see [verify]).
   BackupCheck? lastCheck;
 
+  static const _createdAtFile = 'created-at';
   static final _name = RegExp(r'^famio-(\d{8})-(\d{6})(?:-(\d{6}))?$');
 
   /// A nightly backup is missing when the newest is older than this: one
@@ -128,13 +129,17 @@ class BackupJob {
       partial = root.createTempSync('.$stamp.partial-');
       await _copy(db, dbPath, p.join(partial.path, 'famio.db'));
       await _copy(blobs, blobsPath, p.join(partial.path, 'files.db'));
+      final createdAt = now.toUtc();
+      File(
+        p.join(partial.path, _createdAtFile),
+      ).writeAsStringSync(createdAt.toIso8601String(), flush: true);
       final name = _publish(partial, root, stamp);
       partial = null;
-      lastAt = _clock();
-      lastError = null;
       prune();
       // A backup is only worth something if it can be restored.
       await verify(name);
+      lastAt = createdAt;
+      lastError = null;
       return list().firstWhere((b) => b.name == name);
     } catch (e) {
       lastError = '$e';
@@ -282,27 +287,54 @@ class BackupJob {
     }
   }
 
+  static DateTime? _recordedAt(Directory folder) {
+    try {
+      final text = File(p.join(folder.path, _createdAtFile)).readAsStringSync();
+      final at = DateTime.tryParse(text);
+      if (at != null && at.isUtc && at.toIso8601String() == text) return at;
+    } on FileSystemException {
+      // Backups from older servers have no timestamp file.
+    } on FormatException {
+      // A damaged timestamp can still be read from the folder name.
+    }
+    return null;
+  }
+
+  static DateTime _legacyAt(RegExpMatch name, tz.Location zone) {
+    final wall = DateTime.parse('${name[1]}T${name[2]}Z');
+    final resolved = tz.TZDateTime(
+      zone,
+      wall.year,
+      wall.month,
+      wall.day,
+      wall.hour,
+      wall.minute,
+      wall.second,
+    );
+    // A legacy name cannot tell the two occurrences of a repeated hour
+    // apart. Prefer the earlier instant so an older copy cannot displace
+    // a new backup with a recorded timestamp during the changeover.
+    final previousOffset = zone
+        .timeZone(wall.subtract(const Duration(days: 1)).millisecondsSinceEpoch)
+        .offset;
+    final earlier = tz.TZDateTime.from(wall.subtract(previousOffset), zone);
+    return earlier.isBefore(resolved) &&
+            earlier.timeZoneOffset == previousOffset
+        ? earlier.toUtc()
+        : resolved.toUtc();
+  }
+
   /// Stored backups, newest first.
   List<BackupInfo> list() {
     final root = Directory(dir);
     if (!root.existsSync()) return const [];
+    final zone = location();
     final found = <BackupInfo>[];
     for (final entry in root.listSync().whereType<Directory>()) {
       final name = p.basename(entry.path);
       final m = _name.firstMatch(name);
       if (m == null) continue;
-      final d = m[1]!;
-      final t = m[2]!;
-      // The name is in family time ([run]), not the server's time zone.
-      final at = tz.TZDateTime(
-        location(),
-        int.parse(d.substring(0, 4)),
-        int.parse(d.substring(4, 6)),
-        int.parse(d.substring(6, 8)),
-        int.parse(t.substring(0, 2)),
-        int.parse(t.substring(2, 4)),
-        int.parse(t.substring(4, 6)),
-      );
+      final at = _recordedAt(entry) ?? _legacyAt(m, zone);
       final bytes = entry.listSync().whereType<File>().fold<int>(
         0,
         (sum, f) => sum + f.lengthSync(),
@@ -330,14 +362,13 @@ class BackupJob {
     final weeks = <String>{};
     var dailyKept = 0;
     var weeklyKept = 0;
-    for (final b in list()) {
-      final day = '${b.at.year}-${b.at.month}-${b.at.day}';
-      final monday = DateTime(
-        b.at.year,
-        b.at.month,
-        b.at.day - b.at.weekday + 1,
-      );
-      final week = '${monday.year}-${monday.month}-${monday.day}';
+    final backups = list();
+    for (final b in backups) {
+      // The name retains the family day in effect when the copy was made.
+      final day = b.name.substring(6, 14);
+      final date = DateTime.parse('${day}T00:00:00Z');
+      final monday = date.subtract(Duration(days: date.weekday - 1));
+      final week = monday.toIso8601String();
       // An older backup of a day already kept.
       if (!days.add(day)) continue;
       if (dailyKept < daily) {
@@ -349,13 +380,14 @@ class BackupJob {
         keep.add(b.name);
       }
     }
-    for (final b in list()) {
+    for (final b in backups) {
       if (!keep.contains(b.name)) {
         Directory(p.join(dir, b.name)).deleteSync(recursive: true);
       }
     }
     // Documents and photos only in the newest few.
-    for (final b in list().skip(filesKeep)) {
+    for (final b
+        in backups.where((b) => keep.contains(b.name)).skip(filesKeep)) {
       final files = File(p.join(dir, b.name, 'files.db'));
       if (files.existsSync()) files.deleteSync();
     }

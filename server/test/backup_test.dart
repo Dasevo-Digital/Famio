@@ -93,16 +93,21 @@ void main() {
     expect(again['problems'], isEmpty);
     expect([for (final f in folder.listSync()) p.basename(f.path)]..sort(), [
       'check.json',
+      'created-at',
       'famio.db',
       'files.db',
     ]);
   });
 
-  BackupJob jobAt(DateTime Function() clock, {int filesKeep = 2}) => BackupJob(
+  BackupJob jobAt(
+    DateTime Function() clock, {
+    tz.Location? zone,
+    int filesKeep = 2,
+  }) => BackupJob(
     db: app.db,
     blobs: app.files.blobs,
     dir: app.backups!.dir,
-    location: () => tz.UTC,
+    location: () => zone ?? tz.UTC,
     clock: clock,
     filesKeep: filesKeep,
   );
@@ -130,6 +135,7 @@ void main() {
       final saved = restartedJob.folder(third.name)!;
       expect([for (final f in saved.listSync()) p.basename(f.path)]..sort(), [
         'check.json',
+        'created-at',
         'famio.db',
         'files.db',
       ]);
@@ -137,18 +143,59 @@ void main() {
     },
   );
 
+  test('retention keeps the later instant across the repeated hour', () async {
+    final berlin = tz.getLocation('Europe/Berlin');
+    var now = DateTime.utc(2026, 10, 25, 0, 55, 43);
+    final earlier = await jobAt(() => now, zone: berlin).run();
+    expect(earlier.name, 'famio-20261025-025543');
+    const firstHour = Duration(hours: 2);
+    expect(berlin.timeZone(now.millisecondsSinceEpoch).offset, firstHour);
+
+    // The local clock goes backwards, and the first timestamp must still
+    // be available from disk when the server has restarted.
+    now = DateTime.utc(2026, 10, 25, 1, 5, 43);
+    final restarted = jobAt(() => now, zone: berlin);
+    final later = await restarted.run();
+    expect(earlier.at.toUtc(), DateTime.utc(2026, 10, 25, 0, 55, 43));
+    expect(later.name, 'famio-20261025-020543');
+    expect(later.at.toUtc(), now);
+    expect(later.check?.ok, isTrue);
+    expect(restarted.status()['lastAt'], now.toIso8601String());
+    expect(restarted.list().map((b) => b.name), [later.name]);
+    expect(restarted.folder(earlier.name), isNull);
+    expect(jobAt(() => now, zone: berlin).list().single.at.toUtc(), now);
+  });
+
+  test('an ambiguous legacy name cannot displace a new backup', () async {
+    final berlin = tz.getLocation('Europe/Berlin');
+    final now = DateTime.utc(2026, 10, 25, 1, 5, 43);
+    final job = jobAt(() => now, zone: berlin);
+    final legacy = Directory(p.join(job.dir, 'famio-20261025-025543'))
+      ..createSync(recursive: true);
+    expect(job.list().single.at.toUtc(), DateTime.utc(2026, 10, 25, 0, 55, 43));
+
+    final later = await job.run();
+    expect(job.list().single.name, later.name);
+    expect(legacy.existsSync(), isFalse);
+  });
+
   test(
     'listing, verification and retention also work with mixed names',
     () async {
       var now = DateTime.utc(2026, 11, 17, 9, 10, 11);
       final job = jobAt(() => now, filesKeep: 1);
       final legacy = await job.run();
+      final legacyFolder = job.folder(legacy.name)!;
+      final timestamp = File(p.join(legacyFolder.path, 'created-at'));
+      timestamp.deleteSync();
       now = now.add(const Duration(days: 1));
       await job.run();
       final newest = await job.run();
 
       expect(job.list().map((b) => b.name), [newest.name, legacy.name]);
-      final legacyFolder = job.folder(legacy.name)!;
+      expect(job.list().last.at, legacy.at);
+      timestamp.writeAsBytesSync([0xff]);
+      expect(job.list().last.at, legacy.at);
       expect(File(p.join(legacyFolder.path, 'famio.db')).existsSync(), isTrue);
       expect(File(p.join(legacyFolder.path, 'files.db')).existsSync(), isFalse);
       expect((await job.verify(legacy.name)).ok, isTrue);
@@ -312,7 +359,10 @@ void main() {
         File(p.join(dir.path, b.name, f)).existsSync();
     expect([for (final b in backups) has(b, 'files.db')], [true, true, false]);
     expect([for (final b in backups) has(b, 'famio.db')], everyElement(isTrue));
-    expect(await BackupJob.freeBytes(dir.path), greaterThan(0));
+    // The optional disk-space check uses df, which Windows may not have.
+    if (!Platform.isWindows) {
+      expect(await BackupJob.freeBytes(dir.path), greaterThan(0));
+    }
   });
 
   test('backup times are read in family time, not server time', () {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:famio_server/famio_server.dart';
 import 'package:famio_shared/famio_shared.dart';
@@ -6,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shelf/shelf.dart';
 import 'package:test/test.dart';
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   test('says what is still to set up, and notices progress', () async {
@@ -90,6 +92,55 @@ void main() {
     expect(broken.done, isFalse);
     expect(broken.url, 'https://kaputt.example.org/');
   });
+
+  for (final enabled in [true, false]) {
+    test(
+      'localizes the checklist title with backups enabled=$enabled',
+      () async {
+        FamioServerApp.initTimeZones();
+        final dir = Directory.systemTemp.createTempSync('famio_setup_');
+        final app = FamioServerApp(
+          db: openFamioDatabase(':memory:'),
+          dataDir: dir.path,
+          location: tz.UTC,
+          backupDir: enabled ? null : 'off',
+        );
+        addTearDown(() async {
+          await app.close();
+          dir.deleteSync(recursive: true);
+        });
+        final admin = app.accounts.create(
+          username: 'mama',
+          displayName: 'Mama',
+          passwordHash: 'x',
+          isAdmin: true,
+        );
+        final token = app.accounts.createSession(admin.id, method: 'password');
+        for (final (language, title) in [
+          ('de-DE', 'Sicherung'),
+          ('en-US', 'Backup'),
+          ('es-ES', 'Copia de seguridad'),
+        ]) {
+          final r = await app.handler(
+            Request(
+              'GET',
+              Uri.parse('http://famio.test/api/admin/setup'),
+              headers: {
+                'authorization': 'Bearer $token',
+                'accept-language': language,
+              },
+            ),
+          );
+          expect(r.statusCode, 200);
+          final body = jsonDecode(await r.readAsString()) as Map;
+          final backup = (body['steps'] as List).singleWhere(
+            (step) => step['id'] == 'backup',
+          );
+          expect(backup['title'], title, reason: language);
+        }
+      },
+    );
+  }
 
   test('admins leave single steps as they are, for every device', () async {
     final app = FamioServerApp.inMemory();
