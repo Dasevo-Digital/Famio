@@ -44,6 +44,7 @@ class BackupJob {
     required this.blobs,
     required this.dir,
     required this.location,
+    DateTime Function()? clock,
     this.dbPath,
     this.blobsPath,
     this.hexKey,
@@ -52,7 +53,7 @@ class BackupJob {
     this.weekly = 4,
     this.filesKeep = 2,
     this.onError,
-  });
+  }) : _clock = clock ?? DateTime.now;
 
   final Database db;
   final Database blobs;
@@ -70,6 +71,7 @@ class BackupJob {
   final int filesKeep;
   final String dir;
   final tz.Location Function() location;
+  final DateTime Function() _clock;
   final int hour;
   final int daily;
   final int weekly;
@@ -83,7 +85,7 @@ class BackupJob {
   /// The latest test of a backup (see [verify]).
   BackupCheck? lastCheck;
 
-  static final _name = RegExp(r'^famio-(\d{8})-(\d{6})$');
+  static final _name = RegExp(r'^famio-(\d{8})-(\d{6})(?:-(\d{6}))?$');
 
   /// A nightly backup is missing when the newest is older than this: one
   /// night plus the retries of the following day.
@@ -101,7 +103,7 @@ class BackupJob {
 
   /// Once a day after [hour], if today has none yet.
   void _maybe() {
-    final now = tz.TZDateTime.now(location());
+    final now = tz.TZDateTime.from(_clock(), location());
     if (now.hour < hour) return;
     final today = '${now.year}${_two(now.month)}${_two(now.day)}';
     if (list().any((b) => b.name.startsWith('famio-$today'))) return;
@@ -115,21 +117,20 @@ class BackupJob {
   Future<BackupInfo> run() async {
     if (_running) throw StateError(t('Sicherung läuft bereits'));
     _running = true;
-    final now = tz.TZDateTime.now(location());
-    final name =
-        'famio-${now.year}${_two(now.month)}${_two(now.day)}-'
-        '${_two(now.hour)}${_two(now.minute)}${_two(now.second)}';
-    final target = Directory(p.join(dir, name));
-    final partial = Directory(p.join(dir, '.$name.partial'));
+    Directory? partial;
     try {
-      if (partial.existsSync()) partial.deleteSync(recursive: true);
-      partial.createSync(recursive: true);
+      final now = tz.TZDateTime.from(_clock(), location());
+      final stamp =
+          'famio-${now.year}${_two(now.month)}${_two(now.day)}-'
+          '${_two(now.hour)}${_two(now.minute)}${_two(now.second)}';
+      final root = Directory(dir)..createSync(recursive: true);
       await _checkSpace();
+      partial = root.createTempSync('.$stamp.partial-');
       await _copy(db, dbPath, p.join(partial.path, 'famio.db'));
       await _copy(blobs, blobsPath, p.join(partial.path, 'files.db'));
-      // Only complete backups get their final name.
-      partial.renameSync(target.path);
-      lastAt = DateTime.now();
+      final name = _publish(partial, root, stamp);
+      partial = null;
+      lastAt = _clock();
       lastError = null;
       prune();
       // A backup is only worth something if it can be restored.
@@ -138,10 +139,48 @@ class BackupJob {
     } catch (e) {
       lastError = '$e';
       onError?.call('[backup] Sicherung fehlgeschlagen: $e');
-      if (partial.existsSync()) partial.deleteSync(recursive: true);
+      if (partial != null && partial.existsSync()) {
+        partial.deleteSync(recursive: true);
+      }
       rethrow;
     } finally {
       _running = false;
+    }
+  }
+
+  /// Only complete backups get a final name. The first keeps the old
+  /// format. Further backups in the same second sort after it.
+  static String _publish(Directory partial, Directory root, String stamp) {
+    while (true) {
+      var next = 0;
+      // Pruning can already have removed the name without a suffix. Find
+      // the highest retained sequence so a later backup still sorts last.
+      for (final entry in root.listSync(followLinks: false)) {
+        final name = p.basename(entry.path);
+        if (!name.startsWith(stamp)) continue;
+        final match = _name.firstMatch(name);
+        if (match == null) continue;
+        final sequence = int.parse(match[3] ?? '0');
+        if (sequence >= next) next = sequence + 1;
+      }
+      if (next > 999999) {
+        throw FileSystemException('Backup sequence exhausted', root.path);
+      }
+      final name = next == 0
+          ? stamp
+          : '$stamp-${next.toString().padLeft(6, '0')}';
+      final target = p.join(root.path, name);
+      try {
+        partial.renameSync(target);
+        return name;
+      } on FileSystemException {
+        // The name may have appeared between listing and renaming. Keep
+        // the completed temporary copy and allocate another name.
+        if (FileSystemEntity.typeSync(target, followLinks: false) ==
+            FileSystemEntityType.notFound) {
+          rethrow;
+        }
+      }
     }
   }
 
@@ -277,7 +316,10 @@ class BackupJob {
         ),
       );
     }
-    return found..sort((a, b) => b.at.compareTo(a.at));
+    return found..sort((a, b) {
+      final byTime = b.at.compareTo(a.at);
+      return byTime == 0 ? b.name.compareTo(a.name) : byTime;
+    });
   }
 
   /// Keeps the newest per day for [daily] days and the newest per week

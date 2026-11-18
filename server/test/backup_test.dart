@@ -98,6 +98,65 @@ void main() {
     ]);
   });
 
+  BackupJob jobAt(DateTime Function() clock, {int filesKeep = 2}) => BackupJob(
+    db: app.db,
+    blobs: app.files.blobs,
+    dir: app.backups!.dir,
+    location: () => tz.UTC,
+    clock: clock,
+    filesKeep: filesKeep,
+  );
+
+  test(
+    'three backups in the same second retain the newest complete copy',
+    () async {
+      final now = DateTime.utc(2026, 11, 18, 9, 10, 11);
+      final firstJob = jobAt(() => now);
+      final first = await firstJob.run();
+      expect(first.name, 'famio-20261118-091011');
+
+      final second = await firstJob.run();
+      expect(second.name, '${first.name}-000001');
+      expect(firstJob.list().map((b) => b.name), [second.name]);
+      expect(firstJob.folder(first.name), isNull);
+
+      // An empty in-memory counter could reuse the now-absent first name.
+      final restartedJob = jobAt(() => now);
+      final third = await restartedJob.run();
+      expect(third.name, '${first.name}-000002');
+      expect(restartedJob.list().map((b) => b.name), [third.name]);
+      expect(third.at, now);
+      expect(third.check?.ok, isTrue);
+      final saved = restartedJob.folder(third.name)!;
+      expect([for (final f in saved.listSync()) p.basename(f.path)]..sort(), [
+        'check.json',
+        'famio.db',
+        'files.db',
+      ]);
+      expect(Directory(restartedJob.dir).listSync(), hasLength(1));
+    },
+  );
+
+  test(
+    'listing, verification and retention also work with mixed names',
+    () async {
+      var now = DateTime.utc(2026, 11, 17, 9, 10, 11);
+      final job = jobAt(() => now, filesKeep: 1);
+      final legacy = await job.run();
+      now = now.add(const Duration(days: 1));
+      await job.run();
+      final newest = await job.run();
+
+      expect(job.list().map((b) => b.name), [newest.name, legacy.name]);
+      final legacyFolder = job.folder(legacy.name)!;
+      expect(File(p.join(legacyFolder.path, 'famio.db')).existsSync(), isTrue);
+      expect(File(p.join(legacyFolder.path, 'files.db')).existsSync(), isFalse);
+      expect((await job.verify(legacy.name)).ok, isTrue);
+      final check = await job.verify(newest.name);
+      expect((check.ok, check.filesChecked), (true, true));
+    },
+  );
+
   group('a backup check', () {
     late Directory dir;
     setUp(() => dir = Directory.systemTemp.createTempSync('famio_check_'));
