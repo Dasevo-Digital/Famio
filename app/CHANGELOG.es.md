@@ -4,6 +4,24 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.57 – Importar recetas, copias de seguridad y circulares del colegio
+
+- Si una página de recetas rechaza la solicitud, Famio lo intenta de nuevo
+  y luego a través de tu propio servidor. El mensaje indica el motivo y
+  ofrece «Reintentar».
+- Una circular del colegio con plazo se convierte en una cita y una tarea,
+  ambas con el original adjunto.
+- Las copias de seguridad nuevas se comprueban por completo antes de
+  borrar las antiguas. Una defectuosa ya no desplaza a la última correcta,
+  y el orden también es correcto con el cambio de hora.
+- Las notificaciones abren su contenido aunque todavía se esté cargando,
+  también con citas suscritas. Varios elementos compartidos en el iPhone
+  llegan uno tras otro.
+- Con el bloqueo de la app activado, el iPhone cierra una vista previa de
+  documento abierta cuando Famio vuelve bloqueado. Los ajustes de push
+  también están en el panel de Home Assistant.
+- Los adjuntos de las citas se mantienen cuando una app antigua las edita.
+
 ## 2.0.56 – Las notificaciones abren su contenido, compartir en el iPhone
 
 - Al tocar una notificación se abre aquello de lo que trata: la tarea, la

@@ -2,6 +2,24 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.57 – Rezept-Import, Sicherungen und Schulbriefe
+
+- Lehnt eine Rezeptseite den Abruf ab, versucht Famio es noch einmal und
+  dann über den eigenen Server. Die Meldung nennt den Grund und bietet
+  „Erneut versuchen“ an.
+- Aus einem Schulbrief mit Frist werden ein Termin und eine Aufgabe, beide
+  mit dem Original als Anhang.
+- Neue Sicherungen werden vor dem Aufräumen vollständig geprüft. Eine
+  fehlerhafte verdrängt die letzte intakte nicht mehr, und die Reihenfolge
+  stimmt auch bei der Zeitumstellung.
+- Mitteilungen öffnen ihr Ziel auch, wenn es erst noch geladen wird, und
+  bei abonnierten Terminen. Mehrere Freigaben auf dem iPhone kommen
+  nacheinander an.
+- Mit App-Sperre schließt das iPhone eine offene Dokumentvorschau, wenn
+  Famio gesperrt zurückkommt. Push-Einstellungen gibt es auch im
+  Home-Assistant-Panel.
+- Anhänge an Terminen bleiben, wenn eine ältere App den Termin bearbeitet.
+
 ## 2.0.56 – Mitteilungen öffnen ihr Ziel, Teilen auf dem iPhone
 
 - Eine Mitteilung antippen öffnet, worum es geht: die Aufgabe, den Termin

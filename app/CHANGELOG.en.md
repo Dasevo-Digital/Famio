@@ -4,6 +4,24 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.57 – Recipe import, backups and school letters
+
+- If a recipe site turns the request down, Famio tries again and then
+  through your own server. The message names the reason and offers "Try
+  again".
+- A school letter with a deadline becomes an appointment and a task, both
+  with the original attached.
+- New backups are checked in full before old ones are cleared away. A
+  faulty one no longer pushes out the last good one, and the order stays
+  right when the clocks change.
+- Notifications open what they are about even while it is still loading,
+  and for subscribed appointments. Several items shared on the iPhone
+  arrive one after another.
+- With the app lock on, the iPhone closes an open document preview when
+  Famio comes back locked. Push settings are also in the Home Assistant
+  panel.
+- Attachments of appointments stay when an older app edits them.
+
 ## 2.0.56 – Notifications open what they are about, sharing on the iPhone
 
 - Tapping a notification opens what it is about: the task, the appointment
