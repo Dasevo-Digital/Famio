@@ -2911,5 +2911,8 @@
   "connectDiscardWaitingTitle": "¿Descartar los cambios?",
   "connectDiscardWaitingBody": "{count, plural, =1{El cambio se borra de este dispositivo y ya no se puede enviar.} other{Los {count} cambios se borran de este dispositivo y ya no se pueden enviar.}}",
   "appAccountRemoved": "Tu cuenta se ha eliminado del servidor. Famio ha borrado sus datos en este dispositivo.",
-  "eventWholeFamilyStays": "Esta cita es para toda la familia. Otros deciden sobre personas concretas."
+  "eventWholeFamilyStays": "Esta cita es para toda la familia. Otros deciden sobre personas concretas.",
+  "mealsRecipePageRefused": "La página rechazó la solicitud (error {status}). Vuelve a intentarlo más tarde.",
+  "mealsRecipePageTurnedDown": "La página rechazó la solicitud. Vuelve a intentarlo más tarde.",
+  "mealsRecipePageGone": "Esta página ya no existe."
 }

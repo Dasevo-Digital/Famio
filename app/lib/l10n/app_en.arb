@@ -2911,5 +2911,8 @@
   "connectDiscardWaitingTitle": "Discard the changes?",
   "connectDiscardWaitingBody": "{count, plural, =1{The change is deleted from this device and can no longer be sent.} other{The {count} changes are deleted from this device and can no longer be sent.}}",
   "appAccountRemoved": "Your account was removed from the server. Famio has deleted its data on this device.",
-  "eventWholeFamilyStays": "This appointment is for the whole family. Others decide on single people."
+  "eventWholeFamilyStays": "This appointment is for the whole family. Others decide on single people.",
+  "mealsRecipePageRefused": "The page turned the request down (error {status}). Please try again later.",
+  "mealsRecipePageTurnedDown": "The page turned the request down. Please try again later.",
+  "mealsRecipePageGone": "This page does not exist (any more)."
 }

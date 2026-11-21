@@ -1,6 +1,6 @@
 # Datenschutzinformationen für Famio
 
-Stand: 14. November 2026
+Stand: 21. November 2026
 
 ## Verantwortlichkeit
 
@@ -174,9 +174,12 @@ Suchbegriffe, jeweils mit der technisch notwendigen IP-Adresse, an
 `world.openfoodfacts.org`.
 
 **Rezept-Import.** Wer ein Rezept von einer Webseite übernimmt, ruft diese Seite
-auf: die App direkt, die Web-App über den Famio-Server. Das Foto des Rezepts holt
-immer der Server und speichert es wie einen Upload. Der Anbieter der Seite sieht
-dabei die IP-Adresse von Gerät oder Server, sonst nichts.
+auf: die App direkt, die Web-App über den Famio-Server. Lehnt die Seite den Abruf
+der App ab oder liefert sie kein Rezept, versucht die App es noch einmal und
+bittet dann den Famio-Server, die Seite zu holen; der eigene Server erfährt dabei
+die Adresse der Seite. Das Foto des Rezepts holt immer der Server und speichert
+es wie einen Upload. Der Anbieter der Seite sieht dabei die IP-Adresse von Gerät
+oder Server, sonst nichts.
 
 **ntfy.** Nur nach Einrichtung. Der eingestellte ntfy-Server erhält das
 geheime Thema, die IP-Adresse und mindestens einen knappen Hinweis; auch dieser

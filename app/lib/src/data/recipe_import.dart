@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:famio_client/famio_client.dart';
@@ -89,34 +90,157 @@ ImportedRecipe? recipeFromHtml(
   return null;
 }
 
-/// Downloads [url] and reads its recipe. The web app asks [api] to fetch
-/// it: browsers may not read other sites, and its content policy only lets
-/// it talk to a few hosts.
-Future<ImportedRecipe?> importRecipe(
+/// Why no recipe came from a page (#570). The order says which reason
+/// tells the most: a page that turned the request down explains more than
+/// one without a recipe, and that more than one that was out of reach.
+enum RecipeImportProblem { refused, noRecipe, unreachable }
+
+/// A recipe page that could not be read; see [RecipeImportProblem].
+class RecipeImportError implements Exception {
+  const RecipeImportError(
+    this.problem, {
+    this.status,
+    this.message,
+    this.timedOut = false,
+  });
+
+  final RecipeImportProblem problem;
+
+  /// The page's HTTP status, when the device fetched it itself.
+  final int? status;
+
+  /// The server's own words, when it fetched the page.
+  final String? message;
+
+  /// No answer in time: a second try would only wait as long again.
+  final bool timedOut;
+
+  /// The page is not there (any more); nobody gets another answer.
+  bool get gone => status == 404 || status == 410;
+
+  @override
+  String toString() => 'RecipeImportError($problem, $status, $message)';
+}
+
+const _userAgent = 'Mozilla/5.0 (Famio Rezept-Import)';
+
+/// Downloads [url] and reads its recipe, or throws a [RecipeImportError].
+///
+/// With [direct] the device fetches the page itself, and once more after
+/// [retryAfter] when that failed: sites sometimes turn a single request
+/// down. Then the server [api] tries (the web app may only ask the server:
+/// browsers may not read other sites, and its content policy only lets it
+/// talk to a few hosts), so another way to the site gets its chance.
+Future<ImportedRecipe> importRecipe(
   Uri url, {
   required String id,
   http.Client? client,
   FamioApiClient? api,
+  bool direct = true,
+  Duration retryAfter = const Duration(seconds: 1),
 }) async {
+  RecipeImportError? reason;
+  void keep(RecipeImportError e) {
+    if (reason == null || e.problem.index < reason!.problem.index) reason = e;
+  }
+
+  if (direct) {
+    final c = client ?? http.Client();
+    try {
+      for (var attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) await Future<void>.delayed(retryAfter);
+        try {
+          return await _fetchDirect(c, url, id: id);
+        } on RecipeImportError catch (e) {
+          keep(e);
+          if (e.gone) rethrow;
+          if (e.timedOut) break;
+        }
+      }
+    } finally {
+      if (client == null) c.close();
+    }
+  }
   if (api != null) {
-    final page = await api.fetchWebPage(url);
-    return recipeFromHtml(page.html, id: id, source: page.url.toString());
+    // Without the device's own try the server gets the second one.
+    for (var attempt = 0; attempt < (direct ? 1 : 2); attempt++) {
+      if (attempt > 0) await Future<void>.delayed(retryAfter);
+      try {
+        final page = await api.fetchWebPage(url);
+        final recipe = recipeFromHtml(
+          page.html,
+          id: id,
+          source: page.url.toString(),
+        );
+        if (recipe != null) return recipe;
+        keep(const RecipeImportError(RecipeImportProblem.noRecipe));
+        break;
+      } on ApiError catch (e) {
+        final problem = _serverProblem(e);
+        keep(problem);
+        // Only the page's answer may be different next time.
+        if (e.code != 'page_unavailable' || problem.timedOut) break;
+      }
+    }
   }
-  final c = client ?? http.Client();
-  try {
-    final response = await c
-        .get(url, headers: {'user-agent': 'Mozilla/5.0 (Famio Rezept-Import)'})
-        .timeout(const Duration(seconds: 20));
-    if (response.statusCode != 200) return null;
-    return recipeFromHtml(
-      utf8.decode(response.bodyBytes, allowMalformed: true),
-      id: id,
-      source: url.toString(),
-    );
-  } finally {
-    if (client == null) c.close();
-  }
+  throw reason ?? const RecipeImportError(RecipeImportProblem.unreachable);
 }
+
+Future<ImportedRecipe> _fetchDirect(
+  http.Client client,
+  Uri url, {
+  required String id,
+}) async {
+  final http.Response response;
+  try {
+    response = await client
+        .get(url, headers: {'user-agent': _userAgent})
+        .timeout(const Duration(seconds: 20));
+  } on TimeoutException {
+    throw const RecipeImportError(
+      RecipeImportProblem.unreachable,
+      timedOut: true,
+    );
+  } on Exception {
+    // No connection, no name, a broken TLS handshake …
+    throw const RecipeImportError(RecipeImportProblem.unreachable);
+  }
+  if (response.statusCode != 200) {
+    throw RecipeImportError(
+      RecipeImportProblem.refused,
+      status: response.statusCode,
+    );
+  }
+  final recipe = recipeFromHtml(
+    utf8.decode(response.bodyBytes, allowMalformed: true),
+    id: id,
+    source: url.toString(),
+  );
+  if (recipe == null) {
+    throw const RecipeImportError(RecipeImportProblem.noRecipe);
+  }
+  return recipe;
+}
+
+/// What the server's answer for a page means (see its `/api/web/page`).
+RecipeImportError _serverProblem(ApiError e) => switch (e.code) {
+  // The page answered with something else than the page.
+  'page_unavailable' when e.status == 502 => RecipeImportError(
+    RecipeImportProblem.refused,
+    message: e.message,
+  ),
+  'page_unavailable' => RecipeImportError(
+    RecipeImportProblem.unreachable,
+    message: e.message,
+    timedOut: true,
+  ),
+  'not_html' || 'too_large' => RecipeImportError(
+    RecipeImportProblem.noRecipe,
+    message: e.message,
+  ),
+  // Offline, a guest, an address the server may not fetch …
+  _ => RecipeImportError(RecipeImportProblem.unreachable, message: e.message),
+};
 
 Map<String, Object?>? _findRecipe(Object? json) {
   if (json is List) {

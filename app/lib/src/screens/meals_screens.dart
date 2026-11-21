@@ -1038,13 +1038,7 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     final messenger = ScaffoldMessenger.of(context);
     final api = AppScope.read(context).engine!.api;
     try {
-      final r = await importRecipe(uri, id: _id, api: kIsWeb ? api : null);
-      if (r == null) {
-        messenger.showSnackBar(
-          SnackBar(content: Text(tr.mealsNoRecipeWasFound)),
-        );
-        return;
-      }
+      final r = await importRecipe(uri, id: _id, api: api, direct: !kIsWeb);
       if (!mounted) return;
       final recipe = r.recipe;
       setState(() {
@@ -1063,11 +1057,46 @@ class _RecipeEditorState extends State<_RecipeEditor> {
       if (r.image case final image? when _photo == null) {
         await _takePhoto(image, api, messenger);
       }
+    } on RecipeImportError catch (e) {
+      _importFailed(messenger, e, () => _fetch(uri));
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  /// Says why the page gave no recipe (#570), with another try where one
+  /// may help.
+  void _importFailed(
+    ScaffoldMessengerState messenger,
+    RecipeImportError e,
+    VoidCallback retry,
+  ) {
+    final text = switch (e.problem) {
+      _ when e.gone => tr.mealsRecipePageGone,
+      RecipeImportProblem.refused => switch (e.status) {
+        final status? => tr.mealsRecipePageRefused(status),
+        null => tr.mealsRecipePageTurnedDown,
+      },
+      RecipeImportProblem.noRecipe => tr.mealsNoRecipeWasFound,
+      RecipeImportProblem.unreachable => tr.mealsPageNotReachable,
+    };
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(text),
+        // Goes like any message; another try only on request.
+        persist: false,
+        action: e.gone
+            ? null
+            : SnackBarAction(
+                label: tr.commonRetry,
+                onPressed: () {
+                  if (mounted && !_busy) retry();
+                },
+              ),
+      ),
+    );
   }
 
   Future<void> _takePhoto(
@@ -1092,14 +1121,16 @@ class _RecipeEditorState extends State<_RecipeEditor> {
     final messenger = ScaffoldMessenger.of(context);
     final api = AppScope.read(context).engine!.api;
     try {
-      final page = await importRecipe(link, id: _id, api: kIsWeb ? api : null);
-      if (page?.image case final image?) {
+      final page = await importRecipe(link, id: _id, api: api, direct: !kIsWeb);
+      if (page.image case final image?) {
         await _takePhoto(image, api, messenger);
       } else {
         messenger.showSnackBar(
           SnackBar(content: Text(tr.mealsPhotoNotImported)),
         );
       }
+    } on RecipeImportError catch (e) {
+      _importFailed(messenger, e, _photoFromSource);
     } catch (_) {
       messenger.showSnackBar(SnackBar(content: Text(tr.mealsPageNotReachable)));
     } finally {

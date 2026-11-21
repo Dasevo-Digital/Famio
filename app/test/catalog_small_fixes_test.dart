@@ -279,6 +279,8 @@ void main() {
         address,
       );
       await tester.tap(find.text(tr.commonApply));
+      // A second try after a second, then the server (#570).
+      await tester.pump(const Duration(seconds: 2));
       await tester.pumpAndSettle();
     }
 
@@ -290,11 +292,30 @@ void main() {
         .text;
 
     testWidgets('an address without https:// is tried with it', (tester) async {
-      // The test's HTTP answers every request with 400: no recipe there.
+      // The test's HTTP answers every request with 400: the page turned
+      // the request down, and says so (#570).
       await importing(tester, 'e2e.invalid/rezept');
-      expect(find.text(tr.mealsNoRecipeWasFound), findsOneWidget);
+      expect(find.text(tr.mealsRecipePageRefused(400)), findsOneWidget);
+      expect(find.text(tr.mealsNoRecipeWasFound), findsNothing);
       // The address stays as the source.
       expect(source(tester), 'https://e2e.invalid/rezept');
+
+      // Another try on request.
+      await tester.tap(find.widgetWithText(SnackBarAction, tr.commonRetry));
+      // The message goes, the page is fetched again.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(SnackBar), findsNothing, reason: 'trying again');
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(find.text(tr.mealsRecipePageRefused(400)), findsOneWidget);
+      expect(source(tester), 'https://e2e.invalid/rezept');
+      // It goes like any message, without being tapped.
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
     });
 
     testWidgets('another kind of link is told off', (tester) async {
