@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:famio/src/design/theme.dart';
 import 'package:famio/src/security/app_lock.dart';
 import 'package:flutter/material.dart';
@@ -149,6 +150,41 @@ void main() {
       // Leaving any other way locks at once.
       away(l, const Duration(seconds: 1));
       expect(l.locked, isTrue);
+    },
+  );
+
+  test(
+    'a picker that never answers stops counting once Famio locks (#568)',
+    () async {
+      final l = await lock(delaySeconds: 0);
+      await l.unlock();
+      // Closed without telling Famio, as the iPhone's cover did with the
+      // scanner: its answer never comes.
+      unawaited(AppLock.picking(() => Completer<void>().future));
+      away(l, const Duration(minutes: 2));
+      expect(l.locked, isTrue);
+      await l.unlock();
+      // "At once" again, not only after a minute.
+      away(l, const Duration(seconds: 5));
+      expect(l.locked, isTrue);
+    },
+  );
+
+  test(
+    'a picker that never answers counts only for its limit (#568)',
+    () async {
+      final l = await lock(delaySeconds: 0);
+      await l.unlock();
+      var time = DateTime(2026, 11, 5, 12);
+      await withClock(Clock(() => time), () async {
+        unawaited(AppLock.picking(() => Completer<void>().future));
+        // Within the limit it is a trip to the picker.
+        away(l, const Duration(seconds: 30));
+        expect(l.locked, isFalse);
+        time = time.add(AppLock.pickerLimit);
+        away(l, const Duration(seconds: 30));
+        expect(l.locked, isTrue);
+      });
     },
   );
 

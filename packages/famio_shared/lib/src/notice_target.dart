@@ -43,6 +43,10 @@ class NoticeTarget {
   static const pageKind = 'page';
   static const dayKind = 'day';
 
+  /// The years a date of a target may have; others are left out.
+  static const firstYear = 1900;
+  static const lastYear = 2200;
+
   static const devices = 'devices';
   static const deadlines = 'deadlines';
   static const loans = 'loans';
@@ -86,7 +90,9 @@ class NoticeTarget {
     if (mark >= 0) {
       final date = DateTime.tryParse(id.substring(mark + 1));
       if (date != null) {
-        at = date;
+        // A date far from any calendar's (a link from another app) is
+        // none: the calendar would fail on it (#579).
+        if (date.year >= firstYear && date.year <= lastYear) at = date;
         id = id.substring(0, mark);
       }
     }

@@ -1,6 +1,7 @@
 package de.status403.famio
 
 import android.Manifest
+import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -100,6 +101,12 @@ class MainActivity : FlutterFragmentActivity() {
     /** What a notification or a `famio://open` link asks to open, until Dart takes it. */
     private var pendingTarget: String? = null
 
+    /**
+     * Reads what other apps hand over, one after the other and off the main
+     * thread: a large or slow file must not hold up Famio (#580).
+     */
+    private val receiver = java.util.concurrent.Executors.newSingleThreadExecutor()
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         // Recreated after the system ended the process, or opened again from
@@ -126,11 +133,19 @@ class MainActivity : FlutterFragmentActivity() {
         if (receiveFile(intent)) openFile?.invokeMethod("opened", null)
     }
 
+    override fun onDestroy() {
+        // Nothing new starts; what is still being read is dropped.
+        receiver.shutdown()
+        super.onDestroy()
+    }
+
     /**
      * Reads what another app hands to Famio: a calendar file from "Öffnen
      * mit" (VIEW) or "Teilen" (SEND) goes to the import as before; other
      * shared text and files wait in [pendingShare] for the "Teilen an
-     * Famio" sheet.
+     * Famio" sheet. Links and notifications are there at once (true);
+     * files are read in the background, and Dart hears "opened" when they
+     * are ready.
      */
     private fun receiveFile(intent: Intent?): Boolean {
         val action = intent?.action ?: return false
@@ -153,20 +168,78 @@ class MainActivity : FlutterFragmentActivity() {
             Intent.ACTION_SEND -> listOfNotNull(stream(intent))
             Intent.ACTION_SEND_MULTIPLE -> streams(intent)
             else -> return false
-        }
-        if (uris.size == 1 && isCalendar(uris[0], intent.type)) {
-            // A calendar file, not a film: at most 10 MB.
-            val bytes = read(uris[0], 10 * 1024 * 1024) ?: return false
-            pendingFile = (displayName(uris[0]) ?: "kalender.ics") to bytes
-            return true
-        }
-        if (action == Intent.ACTION_VIEW) return false
+        }.filter(::fromOtherApp)
         val text = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT).orEmpty()
+        if (uris.isEmpty()) {
+            if (action == Intent.ACTION_VIEW || text.isBlank()) return false
+            pendingShare = mapOf(
+                "text" to text,
+                "subject" to subject,
+                "files" to emptyList<Map<String, String>>(),
+            )
+            return true
+        }
+        val type = intent.type
+        receiver.execute {
+            val received = runCatching { receiveStreams(action, uris, type, text, subject) }
+                .getOrNull()
+            if (received != null) {
+                runOnUiThread {
+                    if (isDestroyed) return@runOnUiThread
+                    received()
+                    openFile?.invokeMethod("opened", null)
+                }
+            }
+        }
+        return false
+    }
+
+    /**
+     * Reads [uris] (background thread); what to keep, to run on the main
+     * thread, or null for nothing.
+     */
+    private fun receiveStreams(
+        action: String,
+        uris: List<Uri>,
+        type: String?,
+        text: String,
+        subject: String,
+    ): (() -> Unit)? {
+        if (uris.size == 1 && isCalendar(uris[0], type)) {
+            // A calendar file, not a film: at most 10 MB.
+            val bytes = read(uris[0], 10 * 1024 * 1024) ?: return null
+            val file = (displayName(uris[0]) ?: "kalender.ics") to bytes
+            return { pendingFile = file }
+        }
+        if (action == Intent.ACTION_VIEW) return null
         val files = copyShared(uris.take(MAX_SHARED_FILES))
-        if (text.isBlank() && files.isEmpty()) return false
-        pendingShare = mapOf("text" to text, "subject" to subject, "files" to files)
-        return true
+        if (text.isBlank() && files.isEmpty()) return null
+        val share = mapOf("text" to text, "subject" to subject, "files" to files)
+        return { pendingShare = share }
+    }
+
+    /**
+     * Only what another app hands over through a content provider of its
+     * own: a `file://` address or one of Famio's own providers could point
+     * at Famio's private files (#580, #519).
+     */
+    private fun fromOtherApp(uri: Uri): Boolean {
+        if (uri.scheme != ContentResolver.SCHEME_CONTENT) return false
+        val owner = uri.authority?.let { authority ->
+            runCatching {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    packageManager.resolveContentProvider(
+                        authority,
+                        PackageManager.ComponentInfoFlags.of(0),
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    packageManager.resolveContentProvider(authority, 0)
+                }
+            }.getOrNull()?.packageName
+        }
+        return SharedCopy.fromOtherApp(uri.scheme, owner, packageName)
     }
 
     private fun stream(intent: Intent): Uri? = if (Build.VERSION.SDK_INT >= 33) {
@@ -198,21 +271,15 @@ class MainActivity : FlutterFragmentActivity() {
     private fun read(uri: Uri, limit: Int): ByteArray? = runCatching {
         contentResolver.openInputStream(uri)?.use { input ->
             val out = java.io.ByteArrayOutputStream()
-            val buffer = ByteArray(64 * 1024)
-            while (true) {
-                val n = input.read(buffer)
-                if (n < 0) break
-                out.write(buffer, 0, n)
-                if (out.size() > limit) return@use null
-            }
-            out.toByteArray()
+            SharedCopy.copyAtMost(input, out, limit.toLong())?.let { out.toByteArray() }
         }
     }.getOrNull()
 
     /**
      * Copies shared files into the cache, so Dart can read them after the
      * sending app revoked access; copies of earlier shares older than a day
-     * are removed.
+     * are removed. Each stops at the limit, not after reading all of it
+     * (#580).
      */
     private fun copyShared(uris: List<Uri>): List<Map<String, String>> {
         val dir = java.io.File(cacheDir, "shared").apply { mkdirs() }
@@ -223,10 +290,7 @@ class MainActivity : FlutterFragmentActivity() {
             val target = java.io.File(dir, "${System.nanoTime()}-$name")
             val ok = runCatching {
                 contentResolver.openInputStream(uri)?.use { input ->
-                    target.outputStream().use { out ->
-                        val copied = input.copyTo(out)
-                        copied in 1..MAX_SHARED_BYTES
-                    }
+                    SharedCopy.copyToFile(input, target, MAX_SHARED_BYTES)
                 } ?: false
             }.getOrDefault(false)
             if (!ok) {

@@ -58,8 +58,7 @@ final class ShareViewController: UIViewController {
     let name = "\(stamp)-\(UUID().uuidString)"
     let folder = inbox.appendingPathComponent(".staging", isDirectory: true)
       .appendingPathComponent(name, isDirectory: true)
-    guard (try? manager.createDirectory(at: folder, withIntermediateDirectories: true)) != nil
-    else { return (false, [:]) }
+    guard Self.prepare(inbox: inbox, folder: folder) else { return (false, [:]) }
     defer { try? manager.removeItem(at: folder) }
     var omitted: [Omission: Int] = [:]
     var texts: [String] = []
@@ -121,7 +120,9 @@ final class ShareViewController: UIViewController {
       let json = try JSONSerialization.data(withJSONObject: [
         "text": text, "subject": subject, "files": files,
       ])
-      try json.write(to: folder.appendingPathComponent("share.json"), options: .atomic)
+      try json.write(
+        to: folder.appendingPathComponent("share.json"),
+        options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
       try manager.moveItem(at: folder, to: inbox.appendingPathComponent(name))
       return (true, omitted)
     } catch {
@@ -163,7 +164,10 @@ final class ShareViewController: UIViewController {
         let mime = UTType(filenameExtension: url.pathExtension)?.preferredMIMEType
           ?? type.preferredMIMEType ?? "application/octet-stream"
         do {
-          try FileManager.default.copyItem(at: url, to: folder.appendingPathComponent(stored))
+          let copy = folder.appendingPathComponent(stored)
+          try FileManager.default.copyItem(at: url, to: copy)
+          try? FileManager.default.setAttributes(
+            ShareViewController.protection, ofItemAtPath: copy.path)
           done.resume(returning: .success((stored, name, mime, Int64(size))))
         } catch {
           done.resume(returning: .failure(.unreadable))
@@ -210,6 +214,32 @@ final class ShareViewController: UIViewController {
       done.centerXAnchor.constraint(equalTo: view.centerXAnchor),
       done.heightAnchor.constraint(greaterThanOrEqualToConstant: 44),
     ])
+  }
+
+  /// What waits for the app is readable only after the phone was unlocked
+  /// once since it started (#580).
+  static var protection: [FileAttributeKey: Any] {
+    [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+  }
+
+  /// Makes [folder] in the inbox, with the inbox's own protection and the
+  /// inbox kept out of the device's backup: shares wait there only until
+  /// Famio takes them (#580).
+  private static func prepare(inbox: URL, folder: URL) -> Bool {
+    let manager = FileManager.default
+    guard
+      (try? manager.createDirectory(
+        at: folder, withIntermediateDirectories: true, attributes: protection)) != nil
+    else { return false }
+    // Made before this protection existed: new files in them get it too.
+    for existing in [inbox, folder.deletingLastPathComponent()] {
+      try? manager.setAttributes(protection, ofItemAtPath: existing.path)
+    }
+    var url = inbox
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try? url.setResourceValues(values)
+    return true
   }
 
   private static var inbox: URL? {

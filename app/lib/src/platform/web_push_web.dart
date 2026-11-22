@@ -5,6 +5,8 @@ import 'dart:js_interop_unsafe';
 
 import 'package:web/web.dart' as web;
 
+import 'open_request_address.dart';
+
 /// A browser's push subscription: the address at its push service and the
 /// keys the server encrypts for (RFC 8291).
 typedef BrowserSubscription = ({String endpoint, String p256dh, String auth});
@@ -121,7 +123,16 @@ Future<String?> stopWebPush() async {
 String? takeWebOpenRequest() {
   if (_openTaken) return null;
   _openTaken = true;
-  return Uri.base.queryParameters['open'];
+  final address = Uri.base;
+  // Read once: a reload must not open it again (#579).
+  if (addressWithoutOpenRequest(address) case final cleaned?) {
+    try {
+      web.window.history.replaceState(web.window.history.state, '', cleaned);
+    } catch (_) {
+      // The address stays; the request is still taken only once.
+    }
+  }
+  return address.queryParameters[openRequestParameter];
 }
 
 var _openTaken = false;

@@ -1,6 +1,7 @@
 import AVFoundation
 import CoreLocation
 import PDFKit
+import PhotosUI
 import Vision
 import CryptoKit
 import Flutter
@@ -197,6 +198,8 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
   static let shared = DocumentScanner()
 
   private var pending: FlutterResult?
+  /// The camera of [pending], while iOS shows it.
+  private weak var camera: VNDocumentCameraViewController?
 
   func register(with registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(
@@ -211,9 +214,14 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
   }
 
   private func start(_ result: @escaping FlutterResult) {
-    guard pending == nil else {
-      result(FlutterError(code: "busy", message: nil, details: nil))
-      return
+    if pending != nil {
+      // One scan at a time; but a camera closed without telling Famio
+      // answers nothing any more (#568).
+      guard camera?.presentingViewController == nil else {
+        result(FlutterError(code: "busy", message: nil, details: nil))
+        return
+      }
+      answer(nil)
     }
     // Not in the simulator, and not on devices without a camera.
     guard VNDocumentCameraViewController.isSupported, let top = Self.topController() else {
@@ -223,7 +231,23 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
     pending = result
     let camera = VNDocumentCameraViewController()
     camera.delegate = self
+    self.camera = camera
     top.present(camera, animated: true)
+  }
+
+  /// [controller] is about to close from outside (see PrivacyCover): if it
+  /// is the scanner's camera, its scan ends without pages, else Dart would
+  /// wait for it for good.
+  func closing(_ controller: UIViewController) {
+    guard pending != nil, controller === camera else { return }
+    answer(nil)
+  }
+
+  private func answer(_ value: Any?) {
+    let result = pending
+    pending = nil
+    camera = nil
+    result?(value)
   }
 
   private static func topController() -> UIViewController? {
@@ -238,8 +262,7 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
 
   private func finish(_ value: Any?, _ controller: VNDocumentCameraViewController) {
     controller.dismiss(animated: true)
-    pending?(value)
-    pending = nil
+    answer(value)
   }
 
   func documentCameraViewController(
@@ -332,6 +355,25 @@ final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
     receive(URLContexts.map(\.url))
   }
 
+  /// A calendar file, not a film: at most this long.
+  static let maxCalendarBytes = 10 * 1024 * 1024
+
+  /// The file at [url] if it is at most [limit] bytes long. Its size is
+  /// asked before reading, and no more than the limit is read even if the
+  /// size is unknown or the file grows meanwhile (#580).
+  static func calendarFile(at url: URL, limit: Int = maxCalendarBytes) -> Data? {
+    guard let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
+      values.isRegularFile != false
+    else { return nil }
+    if let size = values.fileSize, size > limit { return nil }
+    guard let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+    defer { try? handle.close() }
+    guard let data = try? handle.read(upToCount: limit + 1), data.count <= limit else {
+      return nil
+    }
+    return data
+  }
+
   /// The links taken last, and when: Flutter may hand the same ones over
   /// as well (see SceneDelegate).
   private var lastLinks: (urls: [URL], at: Date)?
@@ -367,10 +409,7 @@ final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
     guard let url = urls.first(where: \.isFileURL) else { return false }
     let access = url.startAccessingSecurityScopedResource()
     defer { if access { url.stopAccessingSecurityScopedResource() } }
-    // A calendar file, not a film: at most 10 MB.
-    guard let data = try? Data(contentsOf: url), data.count <= 10 * 1024 * 1024 else {
-      return false
-    }
+    guard let data = Self.calendarFile(at: url) else { return false }
     pending = (url.lastPathComponent, data)
     channel?.invokeMethod("opened", arguments: nil)
     return true
@@ -1294,7 +1333,8 @@ func subjectPublicKeyInfo(_ data: Data) -> Data? {
 /// over everything, also over a document open in iOS's preview, which
 /// Flutter's lock screen does not reach, and so over the picture in the app
 /// switcher. Back again, Flutter says whether Famio is locked; then what iOS
-/// shows over Famio closes and the lock screen is what remains.
+/// shows of Famio's over it (a document's preview, the share sheet) closes
+/// and the lock screen is what remains. Famio's own pickers stay (#568).
 final class PrivacyCover: NSObject {
   static let shared = PrivacyCover()
 
@@ -1369,7 +1409,8 @@ final class PrivacyCover: NSObject {
   }
 
   /// Asks the app lock whether Famio is locked after [away] seconds; if so,
-  /// what lies over Famio closes and the lock screen is what remains.
+  /// what lies over Famio closes (see closeOverLock) and the lock screen is
+  /// what remains.
   private func cameBack(after away: TimeInterval) {
     fallback?.cancel()
     channel?.invokeMethod("cameBack", arguments: ["awayMs": Int(away * 1000)]) {
@@ -1379,14 +1420,45 @@ final class PrivacyCover: NSObject {
         self.uncover()
         return
       }
-      let root = self.windows.compactMap { $0.rootViewController }
-        .first { $0.presentedViewController != nil }
-      guard let root else {
-        self.uncover()
-        return
-      }
-      root.dismiss(animated: false) { [weak self] in self?.uncover() }
+      self.closeOverLock { [weak self] in self?.uncover() }
     }
+  }
+
+  /// The camera, the scanner, the photo and the file picker: they show
+  /// nothing of Famio's, and they answer Famio only when the person is
+  /// done with them. Closed from here, they would not answer at all, and
+  /// Famio would wait for good (#568).
+  static func isPicker(_ controller: UIViewController) -> Bool {
+    controller is UIImagePickerController || controller is VNDocumentCameraViewController
+      || controller is PHPickerViewController || controller is UIDocumentPickerViewController
+  }
+
+  /// Famio came back locked: closes, in each window, what iOS shows over
+  /// Famio from the first that is not a picker on (a document's preview,
+  /// the share sheet, anything else), then calls [done]. Pickers below it
+  /// stay; after them the lock screen is what remains.
+  private func closeOverLock(then done: @escaping () -> Void) {
+    let presenters: [UIViewController] = windows.compactMap { window in
+      var presenter = window.rootViewController
+      while let current = presenter, let shown = current.presentedViewController {
+        if !Self.isPicker(shown) { return current }
+        presenter = shown
+      }
+      return nil
+    }
+    guard !presenters.isEmpty else { return done() }
+    let group = DispatchGroup()
+    for presenter in presenters {
+      // A picker above what closes goes with it: the scanner answers first.
+      var above = presenter.presentedViewController
+      while let shown = above {
+        DocumentScanner.shared.closing(shown)
+        above = shown.presentedViewController
+      }
+      group.enter()
+      presenter.dismiss(animated: false) { group.leave() }
+    }
+    group.notify(queue: .main, execute: done)
   }
 
   private func setEnabled(_ value: Bool) {
@@ -1429,12 +1501,8 @@ final class PrivacyCover: NSObject {
   }
 
   private func resumed(locked: Bool) {
-    if locked {
-      for window in windows {
-        window.rootViewController?.presentedViewController?.dismiss(animated: false)
-      }
-    }
-    uncover()
+    guard locked else { return uncover() }
+    closeOverLock { [weak self] in self?.uncover() }
   }
 }
 
@@ -1461,6 +1529,10 @@ enum ShareInbox {
     from folder: URL, now: Date = Date(), temporary: URL = FileManager.default.temporaryDirectory
   ) -> [String: Any]? {
     let manager = FileManager.default
+    // Shares wait here only until Famio takes them: none of them goes into
+    // the device's backup (#580). The share extension marks the folder as
+    // well; this covers folders from before.
+    keepOutOfBackups(folder)
     let cutoff = now.addingTimeInterval(-24 * 60 * 60)
     let keys: [URLResourceKey] = [.creationDateKey, .isDirectoryKey]
     func entries(_ parent: URL) -> [URL] {
@@ -1503,6 +1575,14 @@ enum ShareInbox {
       return ["text": text, "subject": json["subject"] as? String ?? "", "files": files]
     }
     return nil
+  }
+
+  static func keepOutOfBackups(_ folder: URL) {
+    guard FileManager.default.fileExists(atPath: folder.path) else { return }
+    var url = folder
+    var values = URLResourceValues()
+    values.isExcludedFromBackup = true
+    try? url.setResourceValues(values)
   }
 
   private static func copyAttachments(

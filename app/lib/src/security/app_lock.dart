@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -102,19 +103,37 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   /// "at once" would ask after every photo.
   static const pickerDelay = Duration(minutes: 1);
 
-  static var _picking = 0;
+  /// A trip of [picking] counts for at most this long after it began: a
+  /// picker that never answers (closed without telling Famio) must not keep
+  /// "at once" at a minute for good (#568).
+  static const pickerLimit = Duration(minutes: 10);
+
+  /// The trips of [picking] under way, with when each began.
+  static final _picks = <Object, DateTime>{};
+
+  /// Whether a trip of [picking] is under way, and not older than
+  /// [pickerLimit].
+  static bool get _picking {
+    final since = clock.now().subtract(pickerLimit);
+    return _picks.values.any((began) => began.isAfter(since));
+  }
 
   /// Runs [pick], which opens the camera, a file picker, the scanner or the
   /// share sheet. On Android these are apps of their own that send Famio to
   /// the background.
   static Future<T> picking<T>(Future<T> Function() pick) async {
-    _picking++;
+    final trip = Object();
+    _picks[trip] = clock.now();
     try {
       return await pick();
     } finally {
-      _picking--;
+      _picks.remove(trip);
     }
   }
+
+  /// Locked now: the trips under way were judged with it. One that answers
+  /// later changes nothing; one that never answers no longer counts (#568).
+  static void _pickingJudged() => _picks.clear();
 
   static var _previewing = 0;
 
@@ -196,6 +215,7 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
             (left != null &&
                 (allowed == Duration.zero ||
                     _now().difference(left) >= allowed));
+        if (locked) _pickingJudged();
         covered = false;
         if (hide) unawaited(_resumedOnIos());
       case AppLifecycleState.inactive:
@@ -207,7 +227,7 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
         // Famio is told it is back.
         if (_left == null) {
           _left = _now();
-          _leftToPick = _picking > 0;
+          _leftToPick = _picking;
         }
         covered = hide;
     }
@@ -220,12 +240,13 @@ class AppLock extends ChangeNotifier with WidgetsBindingObserver {
   /// what lies over Famio, so the lock screen is what remains.
   bool _cameBack(Duration away) {
     if (!enabled) return false;
-    final allowed = _picking > 0 && delay < pickerDelay ? pickerDelay : delay;
+    final allowed = _picking && delay < pickerDelay ? pickerDelay : delay;
     if (!locked && (allowed == Duration.zero || away >= allowed)) {
       locked = true;
       _forget();
       notifyListeners();
     }
+    if (locked) _pickingJudged();
     return locked;
   }
 

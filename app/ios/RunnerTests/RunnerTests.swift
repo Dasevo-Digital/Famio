@@ -1,4 +1,9 @@
 import CryptoKit
+import PhotosUI
+import QuickLook
+import UIKit
+import UniformTypeIdentifiers
+import VisionKit
 import XCTest
 
 @testable import Runner
@@ -126,10 +131,54 @@ class ShareInboxTests: XCTestCase {
     XCTAssertFalse(manager.fileExists(atPath: share.path))
   }
 
+  func testKeepsTheInboxOutOfBackups() throws {
+    let temp = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    defer { try? manager.removeItem(at: temp) }
+    let inbox = temp.appendingPathComponent("Share")
+    try manifest("text", at: inbox.appendingPathComponent("01"))
+
+    XCTAssertEqual(ShareInbox.take(from: inbox, temporary: temp)?["text"] as? String, "text")
+    let values = try inbox.resourceValues(forKeys: [.isExcludedFromBackupKey])
+    XCTAssertEqual(values.isExcludedFromBackup, true)
+  }
+
   private func manifest(_ text: String, at folder: URL, files: [String] = []) throws {
     try manager.createDirectory(at: folder, withIntermediateDirectories: true)
     let payload: [String: Any] = ["text": text, "files": files.map { ["file": $0] }]
     let json = try JSONSerialization.data(withJSONObject: payload)
     try json.write(to: folder.appendingPathComponent("share.json"))
+  }
+}
+
+class OpenedFilesTests: XCTestCase {
+  private let manager = FileManager.default
+
+  func testCalendarFilesAreMeasuredBeforeReading() throws {
+    let temp = manager.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try manager.createDirectory(at: temp, withIntermediateDirectories: true)
+    defer { try? manager.removeItem(at: temp) }
+    let small = temp.appendingPathComponent("small.ics")
+    try Data(repeating: 65, count: 64).write(to: small)
+    let large = temp.appendingPathComponent("large.ics")
+    try Data(repeating: 65, count: 65).write(to: large)
+
+    XCTAssertEqual(OpenedFiles.calendarFile(at: small, limit: 64)?.count, 64)
+    XCTAssertNil(OpenedFiles.calendarFile(at: large, limit: 64))
+    XCTAssertNil(OpenedFiles.calendarFile(at: temp, limit: 64))
+    XCTAssertNil(OpenedFiles.calendarFile(at: temp.appendingPathComponent("gone.ics")))
+  }
+}
+
+class PrivacyCoverTests: XCTestCase {
+  func testPickersStayWhenFamioComesBackLocked() {
+    XCTAssertTrue(PrivacyCover.isPicker(UIImagePickerController()))
+    XCTAssertTrue(PrivacyCover.isPicker(VNDocumentCameraViewController()))
+    XCTAssertTrue(PrivacyCover.isPicker(PHPickerViewController(configuration: .init())))
+    XCTAssertTrue(
+      PrivacyCover.isPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.pdf])))
+    // A document's preview and the share sheet show Famio's data: they close.
+    XCTAssertFalse(PrivacyCover.isPicker(QLPreviewController()))
+    XCTAssertFalse(
+      PrivacyCover.isPicker(UIActivityViewController(activityItems: [], applicationActivities: nil)))
   }
 }
