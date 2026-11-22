@@ -454,10 +454,15 @@ jedem Sync durchsetzt:
   Einkaufsartikel, Aufgaben, Kommentare und Umfrage-Stimmen. Von den
   Aufgaben sieht er nur die, die ihm zugewiesen oder unter „Wer darf es
   sehen?“ für ihn freigegeben sind. Standort und Kalender-Verbindungen sind
-  für Gäste gesperrt.
+  für Gäste gesperrt. Von fremden Aufgaben zählt nur, was er selbst abhakt,
+  gemessen an dem Stand, auf dem seine Änderung beruht: Was die Familie
+  inzwischen abgehakt oder zurückgenommen hat, bleibt. Eine wiederkehrende
+  Aufgabe rückt nur beim Abhaken weiter.
 - **Dienstkonto** (Home Assistant, Wandanzeige): sieht, was Erwachsene sehen,
   aber nie Gesundheitsdaten und Notfallangaben; vertrauliche Termine nur als
-  belegte Zeit.
+  belegte Zeit. Mit „Abhaken und Einkauf“ zählt bei Aufgaben wie bei Gästen
+  nur das Abhaken; anderen Programmen als der Famio-App meldet der Server
+  (`partly_kept`), wenn er mehr verworfen hat.
 
 Vertrauliche Termine erreichen Gäste und Kinder nur, wenn sie beteiligt sind.
 Widget, Wandanzeige und Erinnerungen nennen sie nur als „Belegt“ bzw. „Termin“.

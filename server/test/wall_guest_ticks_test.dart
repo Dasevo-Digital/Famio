@@ -47,9 +47,12 @@ void main() {
     Directory(app.dataDir).deleteSync(recursive: true);
   });
 
+  /// As Famio's apps sync ([SyncRequest.resettable]); [fromApp] false for
+  /// other clients, such as Home Assistant.
   Future<SyncResponse> sync(
     FamilyMember who, [
     List<SyncRecord> changes = const [],
+    bool fromApp = true,
   ]) async {
     final r = await app.handler(
       Request(
@@ -59,7 +62,9 @@ void main() {
           'authorization': 'Bearer ${tokens[who.id]}',
           'content-type': 'application/json',
         },
-        body: jsonEncode(SyncRequest(since: 0, changes: changes).toJson()),
+        body: jsonEncode(
+          SyncRequest(since: 0, changes: changes, resettable: fromApp).toJson(),
+        ),
       ),
     );
     expect(r.statusCode, 200);
@@ -225,5 +230,230 @@ void main() {
     await sync(oma, [late.copyWith(updatedAt: seen.updatedAt + 1)]);
     expect(stored('own').data['title'], 'Eigene (Mama)');
     expect(app.records.all(Collections.conflicts), hasLength(1));
+  });
+
+  group('ticks written on an older version (#558)', () {
+    Task packing(String id, {TaskRepeat? repeat, DateTime? due}) => Task(
+      id: id,
+      title: 'Koffer packen',
+      assigneeIds: [oma.id],
+      due: due,
+      repeat: repeat,
+      checklist: const [
+        TaskStep(id: 's1', text: 'Pullover'),
+        TaskStep(id: 's2', text: 'Socken'),
+      ],
+    );
+    Task ticked(Task t, String step) => t.copyWith(
+      checklist: [
+        for (final s in t.checklist) s.id == step ? s.copyWith(done: true) : s,
+      ],
+    );
+
+    test(
+      'a step ticked offline does not reopen a task an adult finished',
+      () async {
+        await sync(mama, [rec(Collections.tasks, 't', packing('t').toData())]);
+        final seen = stored('t');
+        // Offline, the guest ticks one step only …
+        final step = rec(
+          Collections.tasks,
+          't',
+          ticked(Task.fromRecord(seen), 's1').toData(),
+        ).copyWith(rev: seen.rev);
+        // … meanwhile an adult ticks off the whole task.
+        await sync(mama, [
+          rec(
+            Collections.tasks,
+            't',
+            Task.fromRecord(seen).completed().toData(),
+          ),
+        ]);
+        final done = stored('t');
+        final r = await sync(oma, [step]);
+        final after = Task.fromRecord(stored('t'));
+        expect(after.done, isTrue);
+        expect(after.completedAt, Task.fromRecord(done).completedAt);
+        expect([for (final s in after.checklist) s.done], [true, false]);
+        expect(app.records.all(Collections.conflicts), isEmpty);
+        expect(r.refused, isEmpty, reason: 'nothing of the guest left out');
+      },
+    );
+
+    test('steps count one by one: an adult\'s tick meanwhile stays', () async {
+      await sync(mama, [rec(Collections.tasks, 't', packing('t').toData())]);
+      final seen = stored('t');
+      final step = rec(
+        Collections.tasks,
+        't',
+        ticked(Task.fromRecord(seen), 's2').toData(),
+      ).copyWith(rev: seen.rev);
+      await sync(mama, [
+        rec(
+          Collections.tasks,
+          't',
+          ticked(Task.fromRecord(seen), 's1').toData(),
+        ),
+      ]);
+      await sync(oma, [step]);
+      final after = Task.fromRecord(stored('t'));
+      expect([for (final s in after.checklist) s.done], [true, true]);
+      expect(after.done, isFalse);
+    });
+
+    test(
+      'a step ticked offline keeps the due date a repeating task moved to',
+      () async {
+        await sync(mama, [
+          rec(
+            Collections.tasks,
+            'w',
+            packing(
+              'w',
+              repeat: TaskRepeat.weekly,
+              due: DateTime.now(),
+            ).toData(),
+          ),
+        ]);
+        final seen = stored('w');
+        final step = rec(
+          Collections.tasks,
+          'w',
+          ticked(Task.fromRecord(seen), 's1').toData(),
+        ).copyWith(rev: seen.rev);
+        await sync(mama, [
+          rec(
+            Collections.tasks,
+            'w',
+            Task.fromRecord(seen).completed().toData(),
+          ),
+        ]);
+        final moved = Task.fromRecord(stored('w')).due;
+        await sync(oma, [step]);
+        expect(Task.fromRecord(stored('w')).due, moved);
+      },
+    );
+
+    test(
+      'a guest who ticked off a repeating task offline moves it on',
+      () async {
+        await sync(mama, [
+          rec(
+            Collections.tasks,
+            'w',
+            packing(
+              'w',
+              repeat: TaskRepeat.weekly,
+              due: DateTime.now(),
+            ).toData(),
+          ),
+        ]);
+        final seen = stored('w');
+        final tick = rec(
+          Collections.tasks,
+          'w',
+          Task.fromRecord(seen).completed().toData(),
+        ).copyWith(rev: seen.rev);
+        await sync(mama, [
+          rec(Collections.tasks, 'w', {...seen.data, 'title': 'Koffer'}),
+        ]);
+        await sync(oma, [tick]);
+        final after = stored('w');
+        expect(
+          Task.fromRecord(after).due,
+          Task.fromRecord(tick).due,
+          reason: 'the tick is theirs, the rename is not',
+        );
+        expect(after.data['title'], 'Koffer');
+      },
+    );
+  });
+
+  test('a repeating task moves on only when it is ticked off (#477)', () async {
+    await sync(mama, [
+      rec(
+        Collections.tasks,
+        'w',
+        Task(
+          id: 'w',
+          title: 'Blumen gießen',
+          assigneeIds: [oma.id],
+          due: DateTime.now(),
+          repeat: TaskRepeat.weekly,
+        ).toData(),
+      ),
+    ]);
+    final seen = stored('w');
+    final r = await sync(oma, [
+      rec(Collections.tasks, 'w', {
+        ...seen.data,
+        'due': DateTime(2099).toIso8601String(),
+      }),
+    ]);
+    expect(stored('w').data['due'], seen.data['due']);
+    expect(r.refused.single.code, 'partly_kept');
+  });
+
+  group('Home Assistant with "tick off and shopping"', () {
+    // Not Famio's app: it sends no `resettable` and no base version.
+    SyncRecord fromHa(String id, Map<String, Object?> data) =>
+        rec(Collections.tasks, id, data).copyWith(rev: 0);
+
+    test(
+      'a rename with the tick: the tick stays, the rest is reported',
+      () async {
+        await sync(mama, [
+          rec(
+            Collections.tasks,
+            'h',
+            Task(id: 'h', title: 'Müll', assigneeIds: [kind.id]).toData(),
+          ),
+        ]);
+        final seen = stored('h');
+        final r = await sync(wall, [
+          fromHa('h', {
+            ...seen.data,
+            'title': 'Altpapier',
+            'done': true,
+            'completedAt': DateTime.now().toIso8601String(),
+          }),
+        ], false);
+        expect(stored('h').data['title'], 'Müll');
+        expect(stored('h').data['done'], isTrue);
+        expect(r.refused.map((i) => (i.id, i.code)), [('h', 'partly_kept')]);
+
+        // Only a tick: nothing to report.
+        final tick = await sync(wall, [
+          fromHa('h', {
+            ...stored('h').data,
+            'done': false,
+            'completedAt': null,
+          }),
+        ], false);
+        expect(tick.refused, isEmpty);
+        expect(stored('h').data['done'], isFalse);
+      },
+    );
+
+    test('a due date without a tick moves no repeating task', () async {
+      await sync(mama, [
+        rec(
+          Collections.tasks,
+          'w',
+          Task(
+            id: 'w',
+            title: 'Müll',
+            due: DateTime.now(),
+            repeat: TaskRepeat.weekly,
+          ).toData(),
+        ),
+      ]);
+      final seen = stored('w');
+      final r = await sync(wall, [
+        fromHa('w', {...seen.data, 'due': DateTime(2099).toIso8601String()}),
+      ], false);
+      expect(stored('w').data['due'], seen.data['due']);
+      expect(r.refused.single.code, 'partly_kept');
+    });
   });
 }

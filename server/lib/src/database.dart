@@ -403,6 +403,17 @@ const _migrations = [
     PRIMARY KEY (member_id, device_key)
   );
   ''',
+  '''
+  -- The revision at which a tick of a task last changed: whether it is
+  -- done, its due date and reminder, each step of its checklist. Tells
+  -- what an older write of a guest or wall display changed itself (#558).
+  CREATE TABLE task_marks (
+    task_id TEXT NOT NULL,
+    field TEXT NOT NULL,
+    rev INTEGER NOT NULL,
+    PRIMARY KEY (task_id, field)
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

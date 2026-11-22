@@ -391,36 +391,147 @@ class RecordStore {
   /// is, who has it and who sees it is for the family. So of a guest's write
   /// only the ticks count, on top of the task as it is now: the device may
   /// not know yet that it has changed, and the tick must not get lost.
+  /// Only what the writer ticked itself counts, against the version its
+  /// change is based on ([SyncRecord.rev]): what the family ticked or took
+  /// back meanwhile stays (#558). A repeating task moves on only when it is
+  /// ticked off, not to any due date (#477).
   /// Tasks the guest created ([Task.createdBy]) are theirs to change (#365).
-  static SyncRecord _guestTaskChange(SyncRecord incoming, SyncRecord existing) {
+  SyncRecord _guestTaskChange(SyncRecord incoming, SyncRecord existing) {
     final theirs = incoming.data;
     final data = {...existing.data};
-    for (final key in [
-      'done',
-      'completedAt',
-      // Ticking off a repeating task moves it on.
-      if (existing.data['repeat'] != null) ...['due', 'remindAt'],
-    ]) {
-      if (theirs.containsKey(key)) {
-        data[key] = theirs[key];
-      } else {
-        data.remove(key);
+    // Written on an older version: of what changed on the server since,
+    // nothing is theirs. Without a version (Home Assistant) or on the
+    // stored one, every tick that differs is.
+    final stale = incoming.rev > 0 && incoming.rev < existing.rev;
+    final marks = stale ? _tickMarks(existing.id) : const <String, int>{};
+    final ticks = {
+      for (final field in _tickChanges(existing.data, theirs))
+        if ((marks[field] ?? 0) <= incoming.rev) field,
+    };
+    void take(List<String> keys) {
+      for (final key in keys) {
+        if (theirs.containsKey(key)) {
+          data[key] = theirs[key];
+        } else {
+          data.remove(key);
+        }
       }
     }
-    final ticks = {
-      for (final step in theirs['checklist'] as List? ?? const [])
-        if (step is Map) step['id']: step['done'],
-    };
-    if (existing.data['checklist'] case final List<Object?> steps) {
+
+    final done = ticks.contains(_doneTick);
+    if (done) take(const ['done', 'completedAt']);
+    // Ticking off a repeating task moves it on.
+    if (existing.data['repeat'] != null &&
+        ticks.contains(_dueTick) &&
+        (done || _movesOn(existing.data, theirs))) {
+      take(const ['due', 'remindAt']);
+    }
+    final steps = _steps(theirs);
+    if (existing.data['checklist'] case final List<Object?> list) {
       data['checklist'] = [
-        for (final step in steps)
-          step is Map && ticks.containsKey(step['id'])
-              ? {...step, 'done': ticks[step['id']]}
-              : step,
+        for (final step in list)
+          if (step is Map && ticks.contains('$_stepTick${step['id']}'))
+            {...step, 'done': steps[step['id']]}
+          else
+            step,
       ];
     }
     return incoming.copyWith(data: data);
   }
+
+  static const _doneTick = 'done';
+  static const _dueTick = 'due';
+  static const _stepTick = 'step:';
+
+  /// The ticks of a task that differ between [a] and [b]: whether it is
+  /// done (and when), its due date (and reminder), each step by its id.
+  static Set<String> _tickChanges(
+    Map<String, Object?> a,
+    Map<String, Object?> b,
+  ) {
+    // Missing, null and "" are the same (clients write empty fields).
+    bool differs(String key) =>
+        jsonEncode(a[key] == '' ? null : a[key]) !=
+        jsonEncode(b[key] == '' ? null : b[key]);
+    final before = _steps(a);
+    return {
+      if ((a['done'] == true) != (b['done'] == true) || differs('completedAt'))
+        _doneTick,
+      if (differs('due') || differs('remindAt')) _dueTick,
+      for (final MapEntry(:key, :value) in _steps(b).entries)
+        if (before[key] != value) '$_stepTick$key',
+    };
+  }
+
+  /// Steps of a task's checklist: done or not, by id.
+  static Map<String, bool> _steps(Map<String, Object?> data) => {
+    for (final step in data['checklist'] as List? ?? const [])
+      if (step is Map && step['id'] is String)
+        step['id'] as String: step['done'] == true,
+  };
+
+  /// When the ticks of [taskId] last changed (see [_tickChanges]).
+  Map<String, int> _tickMarks(String taskId) => {
+    for (final row in _db.select(
+      'SELECT field, rev FROM task_marks WHERE task_id = ?',
+      [taskId],
+    ))
+      row['field'] as String: row['rev'] as int,
+  };
+
+  /// Notes at revision [rev] which ticks of task [r] changed against
+  /// [previous], for writes based on an older version ([_guestTaskChange]).
+  void _markTicks(SyncRecord r, SyncRecord? previous, int rev) {
+    if (r.deleted || previous == null || previous.deleted) return;
+    for (final field in _tickChanges(previous.data, r.data)) {
+      _db.execute(
+        'INSERT INTO task_marks (task_id, field, rev) VALUES (?, ?, ?)'
+        ' ON CONFLICT (task_id, field) DO UPDATE SET rev = excluded.rev',
+        [r.id, field, rev],
+      );
+    }
+  }
+
+  /// Whether the due date in [after] is where ticking off the repeating
+  /// task [before] moves it ([Task.completed]): whole periods on, to the
+  /// first not before the day it was ticked off (today, or a little
+  /// earlier on a device that was offline).
+  bool _movesOn(Map<String, Object?> before, Map<String, Object?> after) {
+    final repeat = TaskRepeat.parse(before['repeat']);
+    final to = _dayOf(after['due']);
+    if (repeat == null || to == null) return false;
+    final every = (before['repeatEvery'] as num?)?.toInt().clamp(1, 99) ?? 1;
+    final today = _today();
+    // A device clock may be a little ahead.
+    final latest = DateTime(today.year, today.month, today.day + 1);
+    final from = _dayOf(before['due']);
+    if (from == null) {
+      // Without a due date it moves one period on from the day it was
+      // ticked off.
+      for (var back = 0; back <= 31; back++) {
+        final day = DateTime(latest.year, latest.month, latest.day - back);
+        if (_sameDay(repeat.after(day, every), to)) return true;
+      }
+      return false;
+    }
+    DateTime? previous;
+    var next = repeat.after(from, every);
+    for (var i = 0; i < 10000 && next.isBefore(to); i++) {
+      previous = next;
+      next = repeat.after(next, every);
+    }
+    // It goes on past dates only while they lie before that day.
+    return _sameDay(next, to) &&
+        (previous == null || previous.isBefore(latest));
+  }
+
+  static DateTime? _dayOf(Object? value) {
+    final at = value is String ? DateTime.tryParse(value) : null;
+    return at == null ? null : DateTime(at.year, at.month, at.day);
+  }
+
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   /// Whether [incoming], an entry of [Collections.pointEntries], is covered
   /// by its member's points: an open wish ([PointEntry.reserves]) asks for
@@ -554,6 +665,11 @@ class RecordStore {
       if (purged == null) return;
       _db.execute('DELETE FROM records WHERE deleted = 1 AND rev <= ?', [rev]);
       removed += _db.updatedRows;
+      _db.execute(
+        'DELETE FROM task_marks WHERE task_id NOT IN'
+        ' (SELECT id FROM records WHERE collection = ?)',
+        [Collections.tasks],
+      );
       _db.execute('DELETE FROM revocations WHERE rev <= ?', [rev]);
       removed += _db.updatedRows;
       if (purged > purgedRev) {
@@ -638,6 +754,7 @@ class RecordStore {
       count = rows.length;
       _db.execute('DELETE FROM trash');
       _db.execute('DELETE FROM assignment_reminders');
+      _db.execute('DELETE FROM task_marks');
     });
     resetAt = now;
     return count;
@@ -881,23 +998,46 @@ class RecordStore {
         final prior = existing != null && existing.deleted
             ? _lastLive(change.collection, change.id) ?? existing
             : existing;
-        final wallDisplay =
+        final everyday =
             role == MemberRole.service && access == ServiceAccess.everyday;
-        if ((role == MemberRole.guest || wallDisplay) &&
+        if ((role == MemberRole.guest || everyday) &&
             change.collection == Collections.tasks &&
             !incoming.deleted &&
             prior != null &&
             !prior.deleted &&
-            (wallDisplay || !Task.createdBy(prior.data, userId))) {
+            (everyday || !Task.createdBy(prior.data, userId))) {
           // Someone else's task, also one written again over its deletion:
           // only the guest's ticks count. Their own they change (#365).
           // Who created it is the server's to keep, not part of the ticks.
-          // A wall display only ticks (#556); what else its app sends comes
-          // from writing whole tasks, not from a choice to tell about.
           final sent = _withCreator(incoming, prior, userId);
           incoming = _guestTaskChange(incoming, prior);
           merged = identical(prior, existing);
-          partlyKept = !wallDisplay && !_sameData(sent, incoming);
+          // A wall display only ticks (#556): Famio's apps (they say they
+          // are `resettable`) write whole tasks, and what else they send is
+          // no choice to tell about. Home Assistant and the like are told
+          // what was left out (#550). Written on an older version, what
+          // differs is mostly the family's change meanwhile.
+          final stale = change.rev > 0 && change.rev < prior.rev;
+          partlyKept =
+              !(everyday && request.resettable) &&
+              !stale &&
+              !_sameData(sent, incoming);
+          if (merged && _sameData(incoming, prior)) {
+            // Nothing of theirs is left to store: the device takes the task
+            // as it is.
+            rejected.add(existing!);
+            if (partlyKept) {
+              refused.add(
+                SyncWriteIssue(
+                  collection: change.collection,
+                  id: change.id,
+                  updatedAt: change.updatedAt,
+                  code: 'partly_kept',
+                ),
+              );
+            }
+            continue;
+          }
           if (merged && !incoming.winsOver(prior)) {
             // Ticked before someone changed the task meanwhile: the ticks
             // are put on the task as it is now, so nothing of either is
@@ -1745,6 +1885,7 @@ class RecordStore {
     );
 
     if (trash) _rememberDeletion(r, deletionSnapshot ?? previous, rev);
+    if (r.collection == Collections.tasks) _markTicks(r, previous, rev);
     _assignmentsFollow(r);
     _attachedFollow(r, previous);
     _budgetFollow(r, previous);
