@@ -4,6 +4,30 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.58 – Ubicación, copias de seguridad y muchas correcciones
+
+- Ubicación: fuera del horario la familia ya no ve una posición antigua.
+  Si dos dispositivos de una persona comparten, cuenta el último que se
+  activó en lugar de avisar de llegadas y salidas sin parar. Cerrar sesión
+  termina el uso compartido de ese dispositivo.
+- Las copias de seguridad continúan aunque falte el contenido de un
+  archivo. Se conserva la última copia correcta y la restauración avisa de
+  una defectuosa.
+- Una marca antigua de un invitado o de la pantalla de pared ya no vuelve a
+  abrir una tarea que se completó entretanto. Una solicitud de tarea
+  rechazada se puede volver a enviar.
+- Circulares del colegio: un plazo y una cita en la misma frase se separan
+  correctamente. La búsqueda es más rápida y también encuentra citas
+  suscritas y cumpleaños.
+- Con el bloqueo de la app activado, la cámara y el escáner siguen abiertos
+  en el iPhone. Compartir con Famio comprueba el tamaño antes de leer un
+  archivo entero.
+- Las descargas de páginas web comprueban el destino con más rigor y están
+  limitadas. Las notificaciones por ntfy ya no llevan identificadores en el
+  enlace.
+- Correcciones menores: lista de equipaje, basura por turnos, horario con
+  letra grande, tiempo, despensa, pantalla de pared y paga.
+
 ## 2.0.57 – Importar recetas, copias de seguridad y circulares del colegio
 
 - Si una página de recetas rechaza la solicitud, Famio lo intenta de nuevo

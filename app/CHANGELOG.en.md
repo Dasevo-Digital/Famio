@@ -4,6 +4,27 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.58 – Location, backups and many fixes
+
+- Location: outside the time window the family no longer sees an old
+  position. When two devices of one person share, the one switched on last
+  counts instead of reporting arrival and departure all the time. Signing
+  out ends sharing from that device.
+- Backups go on even when the contents of a file are missing. The last good
+  backup is kept, and restoring warns about a faulty one.
+- An old tick from a guest or the wall display no longer reopens a task
+  that was done in the meantime. A declined request for a chore can be sent
+  again.
+- School letters: a deadline and an appointment in one sentence are split
+  correctly. Search is faster and also finds subscribed appointments and
+  birthdays.
+- With the app lock on, camera and scanner stay open on the iPhone. Share to
+  Famio checks the size before it reads a whole file.
+- Fetching web pages checks the target more strictly and is limited.
+  Notifications through ntfy no longer carry identifiers in their link.
+- Smaller fixes: packing list, bins by turns, timetable with large text,
+  weather, pantry, wall display and pocket money.
+
 ## 2.0.57 – Recipe import, backups and school letters
 
 - If a recipe site turns the request down, Famio tries again and then

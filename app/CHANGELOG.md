@@ -4,6 +4,28 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.58 – Standort, Sicherungen und viele Korrekturen
+
+- Standort: Außerhalb des Zeitfensters sieht die Familie keine alte
+  Position mehr. Teilen zwei Geräte einer Person, zählt das zuletzt
+  eingeschaltete, statt ständig Ankunft und Abfahrt zu melden. Abmelden
+  beendet das Teilen dieses Geräts.
+- Sicherungen gehen weiter, auch wenn der Inhalt einer Datei fehlt. Die
+  letzte intakte Sicherung bleibt erhalten, und das Wiederherstellen warnt
+  vor einer fehlerhaften.
+- Ein alter Haken von Gast oder Wandanzeige setzt eine inzwischen erledigte
+  Aufgabe nicht mehr zurück. Eine abgelehnte Anfrage für ein Amt lässt sich
+  neu einreichen.
+- Schulbriefe: Frist und Termin in einem Satz werden richtig getrennt.
+  Die Suche ist schneller und findet auch abonnierte Termine und
+  Geburtstage.
+- Mit App-Sperre bleiben Kamera und Scanner auf dem iPhone offen. Teilen an
+  Famio prüft die Größe, bevor es eine Datei ganz liest.
+- Abrufe von Webseiten prüfen ihr Ziel strenger und sind begrenzt.
+  Mitteilungen über ntfy tragen keine Kennungen mehr im Link.
+- Kleinere Korrekturen: Packliste, Abfall im Wechsel, Stundenplan bei großer
+  Schrift, Wetter, Vorrat, Wandanzeige und Taschengeld.
+
 ## 2.0.57 – Rezept-Import, Sicherungen und Schulbriefe
 
 - Lehnt eine Rezeptseite den Abruf ab, versucht Famio es noch einmal und
