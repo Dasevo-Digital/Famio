@@ -172,7 +172,10 @@ class OpenedFilesTests: XCTestCase {
 class PrivacyCoverTests: XCTestCase {
   func testPickersStayWhenFamioComesBackLocked() {
     XCTAssertTrue(PrivacyCover.isPicker(UIImagePickerController()))
-    XCTAssertTrue(PrivacyCover.isPicker(VNDocumentCameraViewController()))
+    // Simulators without a camera refuse to create the document camera.
+    if VNDocumentCameraViewController.isSupported {
+      XCTAssertTrue(PrivacyCover.isPicker(VNDocumentCameraViewController()))
+    }
     XCTAssertTrue(PrivacyCover.isPicker(PHPickerViewController(configuration: .init())))
     XCTAssertTrue(
       PrivacyCover.isPicker(UIDocumentPickerViewController(forOpeningContentTypes: [.pdf])))
