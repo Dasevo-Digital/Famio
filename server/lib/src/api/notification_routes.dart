@@ -163,6 +163,22 @@ extension _NotificationRoutes on FamioApi {
     });
   }
 
+  /// What a notification's link from ntfy opens (`famio://open?notice=…`,
+  /// #578): only for the member the notification was for, as long as it is
+  /// kept ([NoticeBox.keep]).
+  Response _noticeLink(Request request, String key) {
+    final member = _auth(request);
+    final target = _box.targetOf(member.id, key);
+    if (target == null) {
+      throw ApiException(
+        404,
+        'not_found',
+        t('Benachrichtigung nicht gefunden'),
+      );
+    }
+    return _json({'target': target.encode()});
+  }
+
   /// A token that can only fetch notifications, for the phone's
   /// background service (it never sees the app's login).
   Future<Response> _noticeDeviceToken(Request request) async {

@@ -1,5 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
+import 'package:famio_shared/famio_shared.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import 'push_service.dart';
@@ -37,6 +40,13 @@ class NoticeBox {
     if (!columns.contains('target')) {
       _db.execute('ALTER TABLE notices ADD COLUMN target TEXT');
     }
+    // The random key of its link in ntfy (#578, see NoticeLink).
+    if (!columns.contains('link')) {
+      _db.execute('ALTER TABLE notices ADD COLUMN link TEXT');
+    }
+    _db.execute(
+      'CREATE UNIQUE INDEX IF NOT EXISTS notices_link ON notices(link)',
+    );
   }
 
   final Database _db;
@@ -50,6 +60,11 @@ class NoticeBox {
 
   final _waiting = <String, Set<Completer<void>>>{};
 
+  /// The link keys [add] gave each notice, per member ([linkFor]).
+  final _links = Expando<Map<String, String>>();
+
+  static final _random = Random.secure();
+
   /// Stores [notice] for [memberIds] and wakes their waiting devices.
   /// Devices show it without sound for those in [quiet].
   void add(
@@ -58,12 +73,14 @@ class NoticeBox {
     Set<String> quiet = const {},
   ]) {
     final now = DateTime.now().millisecondsSinceEpoch;
+    final links = <String, String>{};
     for (final id in memberIds.toSet()) {
+      final link = notice.target == null ? null : _newLink();
       // Records may name members that no longer exist (deleted, imported).
       _db.execute(
         'INSERT INTO notices (member_id, at, title, body, brief, tag, quiet,'
-        ' alarm, target) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9 WHERE EXISTS'
-        ' (SELECT 1 FROM users WHERE id = ?1)',
+        ' alarm, target, link) SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10'
+        ' WHERE EXISTS (SELECT 1 FROM users WHERE id = ?1)',
         [
           id,
           now,
@@ -74,9 +91,11 @@ class NoticeBox {
           if (quiet.contains(id)) 1 else 0,
           if (notice.urgent) 1 else 0,
           notice.target?.encode(),
+          link,
         ],
       );
       if (_db.updatedRows == 0) continue;
+      if (link != null) links[id] = link;
       _db.execute(
         'DELETE FROM notices WHERE member_id = ?1 AND id <= ('
         'SELECT id FROM notices WHERE member_id = ?1'
@@ -87,7 +106,29 @@ class NoticeBox {
         if (!waiter.isCompleted) waiter.complete();
       }
     }
+    if (links.isNotEmpty) _links[notice] = links;
   }
+
+  /// The key of [notice]'s link for [memberId], as [add] stored it; null
+  /// without a target or when it was not stored for this member. Others
+  /// learn nothing from it: see [targetOf].
+  String? linkFor(String memberId, PushNotice notice) =>
+      _links[notice]?[memberId];
+
+  /// What the notice with link [key] opens, for its own member only; null
+  /// for an unknown key, a notice of someone else or one already removed.
+  NoticeTarget? targetOf(String memberId, String key) => NoticeTarget.decode(
+    _db.select('SELECT target FROM notices WHERE link = ? AND member_id = ?', [
+          key,
+          memberId,
+        ]).firstOrNull?['target']
+        as String?,
+  );
+
+  /// 128 random bits: nobody guesses the link of someone else's notice.
+  static String _newLink() => base64Url
+      .encode(List.generate(16, (_) => _random.nextInt(256)))
+      .replaceAll('=', '');
 
   /// Newest id of [memberId] (0 without any): where a new device starts.
   int latest(String memberId) =>

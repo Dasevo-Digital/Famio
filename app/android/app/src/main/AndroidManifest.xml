@@ -82,8 +82,8 @@
                 <data android:mimeType="text/x-vcalendar" />
                 <data android:mimeType="application/ics" />
             </intent-filter>
-            <!-- famio://open?target=…: a notification from ntfy opens what it
-                 is about (#385). -->
+            <!-- famio://open?notice=… (older servers: ?target=…): a
+                 notification from ntfy opens what it is about (#385, #578). -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

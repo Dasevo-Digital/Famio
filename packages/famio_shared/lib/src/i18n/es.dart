@@ -1049,6 +1049,7 @@ const sharedEs = <String, String>{
   "Server|Push nicht verfügbar": "Push no disponible",
   "Server|Nur Erwachsene": "Solo adultos",
   "Server|Benachrichtigungen fehlen": "Faltan las notificaciones",
+  "Server|Benachrichtigung nicht gefunden": "No se encontró la notificación",
   "Server|{device} · Benachrichtigungen": "{device} · Notificaciones",
   "Server|Benachrichtigungen funktionieren 🎉":
       "Las notificaciones funcionan 🎉",
@@ -1093,6 +1094,8 @@ const sharedEs = <String, String>{
       "Los destinos externos necesitan una dirección HTTPS sin credenciales en la dirección.",
   "Server|Die Adresse {host} zeigt in ein privates Netzwerk. Lokale Ziele müssen vom Server ausdrücklich freigegeben werden.":
       "La dirección {host} apunta a una red privada. Los destinos locales deben permitirse expresamente en el servidor.",
+  "Server|Die Adresse {host} wurde nicht gefunden.":
+      "No se encontró la dirección {host}.",
   "Server|Ungültige ID: {id}": "ID no válido: {id}",
   "Server|Eintrag ist zu groß": "La entrada es demasiado grande",
   "Server|Für dieses Konto nicht verfügbar": "No disponible para esta cuenta",
@@ -1224,6 +1227,9 @@ const sharedEs = <String, String>{
   "Server|Das ist kein Bild.": "Eso no es una imagen.",
   "Server|Das Bild ist zu groß.": "La imagen es demasiado grande.",
   "Server|Zu viele Weiterleitungen.": "Demasiadas redirecciones.",
+  "Server|Die Seite ist nicht erreichbar.": "No se puede acceder a la página.",
+  "Server|Gerade werden zu viele Seiten abgerufen. Bitte gleich noch einmal versuchen.":
+      "Ahora mismo se están obteniendo demasiadas páginas. Vuelve a intentarlo en un momento.",
   "Server|Neue Anmeldung bei Famio": "Nuevo inicio de sesión en Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":
       "Sesión iniciada en: {device}. ¿No fuiste tú? Elige «No fui yo» en Ajustes → Mis dispositivos.",

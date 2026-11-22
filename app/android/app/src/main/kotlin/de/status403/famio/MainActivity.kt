@@ -140,8 +140,12 @@ class MainActivity : FlutterFragmentActivity() {
             return pendingTarget != null
         }
         if (action == Intent.ACTION_VIEW && intent.data?.scheme == "famio") {
-            pendingTarget = runCatching { intent.data?.getQueryParameter("target") }
-                .getOrNull()?.take(512)
+            // A link from ntfy names only a stored notification (#578): Dart
+            // asks the server what it opens.
+            pendingTarget = runCatching {
+                intent.data?.getQueryParameter("target")
+                    ?: intent.data?.getQueryParameter("notice")?.let { "notice:$it" }
+            }.getOrNull()?.take(512)
             return pendingTarget != null
         }
         val uris = when (action) {

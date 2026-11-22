@@ -240,14 +240,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     if (!mounted) return;
     final state = AppScope.read(context);
     final engine = state.engine;
-    bool active() =>
-        mounted && engine != null && identical(state.engine, engine);
+    if (engine == null) return;
+    bool active() => mounted && identical(state.engine, engine);
     if (!active()) return;
     _openingFiles = true;
     try {
       do {
         _openFilesAgain = false;
-        final target = await OpenedFiles.takeTarget();
+        final target = await OpenedFiles.takeTarget(
+          resolve: engine.api.noticeTarget,
+        );
         if (target != null && active()) await _open(target);
         if (!active()) return;
         final file = await OpenedFiles.take();

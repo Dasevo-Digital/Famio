@@ -126,6 +126,7 @@ class FamioApi {
     this.metrics,
     this.metricsToken,
     this.selfCheckClient,
+    this.webClient,
     this.hostLookup = InternetAddress.lookup,
     required this.mfa,
     required this.passkeys,
@@ -222,6 +223,15 @@ class FamioApi {
 
   /// Name resolution for the recipe page and the setup checklist.
   final HostLookup hostLookup;
+
+  /// Fetches recipe pages and pictures (`/api/web/*`); by default one that
+  /// only connects to public addresses (see [RemoteUrlPolicy.client]).
+  final http.Client? webClient;
+  late final http.Client _webClient = webClient ?? _webPolicy.client();
+  late final _webPolicy = RemoteUrlPolicy(lookup: hostLookup);
+
+  /// Recipe pages and pictures being fetched, per member (#575).
+  final _webFetches = _WebFetchLimit();
 
   /// Location sharing of the members' phones.
   final LocationService? locations;
@@ -337,6 +347,7 @@ class FamioApi {
       ..get('/api/me/quiet-hours', _quietHours)
       ..put('/api/me/quiet-hours', _setQuietHours)
       ..get('/api/notifications', _notices)
+      ..get('/api/notifications/link/<key>', _noticeLink)
       ..post('/api/notifications/device-token', _noticeDeviceToken)
       ..post('/api/notifications/test', _testNotice)
       ..get('/api/config', _config)

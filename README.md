@@ -193,7 +193,8 @@ Eine Mitteilung antippen öffnet, worum es geht: die Aufgabe, den Termin an
 seinem Tag, den Chat, das Kind, den Notfall oder die passende Seite (Fristen,
 Abos, Verleih, Abfall). Das gilt für Erinnerungen, die eigenen Mitteilungen
 des Servers, Browser-Mitteilungen und ntfy (dort über einen
-`famio://open`-Link). Ist die App-Sperre an, öffnet Famio es nach dem
+`famio://open`-Link mit einer zufälligen Kennung; was sie öffnet, fragt die App
+beim eigenen Server nach). Ist die App-Sperre an, öffnet Famio es nach dem
 Entsperren; was es nicht mehr gibt, öffnet nur den Bereich.
 
 ### Google Kalender, Apple Kalender & Co.

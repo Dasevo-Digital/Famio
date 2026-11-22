@@ -1223,6 +1223,22 @@ class FamioApiClient {
 
   Future<void> testNotice() => _send('POST', 'api/notifications/test');
 
+  /// What a notification's link from ntfy opens (see [NoticeLink]); null
+  /// when the server no longer knows it (or it was for someone else).
+  /// Older servers send their links with the target itself.
+  Future<NoticeTarget?> noticeTarget(String key) async {
+    try {
+      final found = await _send(
+        'GET',
+        'api/notifications/link/${Uri.encodeComponent(key)}',
+      );
+      return NoticeTarget.decode(found['target'] as String?);
+    } on ApiError catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
   /// Raises an emergency (or updates the open one); returns its id.
   Future<String> raiseSos({
     double? latitude,

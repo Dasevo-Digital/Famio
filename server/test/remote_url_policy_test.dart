@@ -26,11 +26,19 @@ void main() {
       expect(asked, ['intern.example']);
     });
 
-    test('a name that does not resolve is left to the request itself', () {
-      final policy = RemoteUrlPolicy(
-        lookup: (host) async => throw const SocketException('unknown'),
-      );
-      expect(policy.check(Uri.parse('https://push.example/x')), completes);
+    test('a name that does not resolve is refused: it cannot be checked '
+        '(#574)', () async {
+      for (final lookup in <HostLookup>[
+        (host) async => throw const SocketException('unknown'),
+        (host) async => const [],
+      ]) {
+        await expectLater(
+          RemoteUrlPolicy(
+            lookup: lookup,
+          ).check(Uri.parse('https://push.example/x')),
+          refused(RemoteUrlPolicy.notFound),
+        );
+      }
     });
 
     test('literal addresses and localhost need no resolver', () async {

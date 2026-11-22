@@ -232,6 +232,7 @@ class FamioServerApp {
             onError: auditLog,
           );
     push.onNotice = notices.add;
+    push.noticeLink = notices.linkFor;
     push.web = WebPush(
       db,
       client: httpClient,
@@ -310,6 +311,7 @@ class FamioServerApp {
       metrics: metrics,
       metricsToken: metricsToken,
       selfCheckClient: httpClient ?? http.Client(),
+      webClient: httpClient,
       hostLookup: lookup,
       compactDatabase: _compact,
       davSteps: DavStepMarks(db),
@@ -342,11 +344,13 @@ class FamioServerApp {
   }
 
   /// In-memory server in the Europe/Berlin zone, for tests. Host names
-  /// resolve to nothing unless [hostLookup] says otherwise: tests must not
-  /// depend on (or hang in) a real resolver.
+  /// resolve to an address of a documentation range unless [hostLookup]
+  /// says otherwise: public for the address checks, but nothing to connect
+  /// to (tests that send pass an [httpClient]). Tests must not depend on
+  /// (or hang in) a real resolver.
   factory FamioServerApp.inMemory({
     http.Client? httpClient,
-    HostLookup hostLookup = _noHosts,
+    HostLookup hostLookup = _testHosts,
     Uri? googleBase,
     WebApp? webApp,
     String? metricsToken,
@@ -369,8 +373,10 @@ class FamioServerApp {
     );
   }
 
-  static Future<List<InternetAddress>> _noHosts(String host) =>
-      throw SocketException('No name resolution in tests', address: null);
+  /// Every name: 203.0.113.10 (TEST-NET-3, RFC 5737).
+  static Future<List<InternetAddress>> _testHosts(String host) async => [
+    InternetAddress('203.0.113.10'),
+  ];
 
   /// Loads the embedded time zone database (idempotent).
   static void initTimeZones() {

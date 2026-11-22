@@ -71,18 +71,30 @@ abstract final class OpenedFiles {
   }
 
   /// What a link or notification asked to open (`famio://open?…`, #385),
-  /// once.
-  static Future<NoticeTarget?> takeTarget() async {
+  /// once. A link from ntfy names only a stored notification
+  /// (`famio://open?notice=…`, #578): [resolve] asks the server what it
+  /// opens; null (offline, removed, someone else's) opens nothing more.
+  static Future<NoticeTarget?> takeTarget({
+    Future<NoticeTarget?> Function(String key)? resolve,
+  }) async {
     if (!_supported) return null;
+    final String? handedOver;
     try {
-      return NoticeTarget.decode(
-        await _channel.invokeMethod<String>('takeTarget'),
-      );
+      handedOver = await _channel.invokeMethod<String>('takeTarget');
     } on MissingPluginException {
       return null;
     } on PlatformException {
       return null;
     }
+    if (NoticeLink.keyIn(handedOver) case final key?) {
+      if (resolve == null) return null;
+      try {
+        return await resolve(key).timeout(const Duration(seconds: 15));
+      } catch (_) {
+        return null;
+      }
+    }
+    return NoticeTarget.decode(handedOver);
   }
 
   /// The waiting file, once.

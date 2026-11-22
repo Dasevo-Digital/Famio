@@ -6,22 +6,32 @@ extension _WebRoutes on FamioApi {
   /// (CORS), and the web app's content policy only lets it talk to a few
   /// hosts. HTML only, at most [_maxPage]; see [_webGet].
   Future<Response> _webPage(Request request) async {
-    _member(request);
-    final (uri, response) = await _webGet(request);
-    if (!(response.headers['content-type'] ?? '').contains('html')) {
-      await response.stream.drain<void>();
-      throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
-    }
-    final bytes = <int>[];
-    await for (final chunk in _webRead(response)) {
-      bytes.addAll(chunk);
-      if (bytes.length > _maxPage) {
-        throw ApiException(413, 'too_large', t('Die Seite ist zu groß.'));
+    final member = _member(request);
+    return _webFetches.run(member.id, () async {
+      final (uri, response) = await _webGet(request);
+      if (!(response.headers['content-type'] ?? '').contains('html')) {
+        await _webDiscard(response);
+        throw ApiException.badRequest('not_html', t('Das ist keine Webseite.'));
       }
-    }
-    return _json({
-      'url': uri.toString(),
-      'html': utf8.decode(bytes, allowMalformed: true),
+      final tooLarge = ApiException(
+        413,
+        'too_large',
+        t('Die Seite ist zu groß.'),
+      );
+      if ((response.contentLength ?? 0) > _maxPage) {
+        await _webDiscard(response);
+        throw tooLarge;
+      }
+      final Uint8List bytes;
+      try {
+        bytes = await readTransferBytes(_webRead(response), maxBytes: _maxPage);
+      } on TransferTooLarge {
+        throw tooLarge;
+      }
+      return _json({
+        'url': uri.toString(),
+        'html': utf8.decode(bytes, allowMalformed: true),
+      });
     });
   }
 
@@ -30,49 +40,59 @@ extension _WebRoutes on FamioApi {
   /// browser; JPEG, PNG, WebP and GIF, at most [_maxImage]; see [_webGet].
   Future<Response> _webImage(Request request) async {
     final member = _member(request);
-    final (uri, response) = await _webGet(request);
-    final mime = (response.headers['content-type'] ?? '')
-        .split(';')
-        .first
-        .trim()
-        .toLowerCase();
-    if (!_webImages.contains(mime)) {
-      await response.stream.drain<void>();
-      throw ApiException.badRequest('not_image', t('Das ist kein Bild.'));
-    }
-    final name = uri.pathSegments.lastOrNull ?? '';
-    var size = 0;
-    final file = await files.save(
-      owner: member.id,
-      name: name.isEmpty ? 'rezept' : name,
-      mime: mime,
-      body: _webRead(response).map((chunk) {
-        size += chunk.length;
-        if (size > _maxImage) {
-          throw ApiException(413, 'too_large', t('Das Bild ist zu groß.'));
-        }
-        return chunk;
-      }),
-    );
-    return _json(file.toJson(), status: 201);
+    return _webFetches.run(member.id, () async {
+      final (uri, response) = await _webGet(request);
+      final mime = (response.headers['content-type'] ?? '')
+          .split(';')
+          .first
+          .trim()
+          .toLowerCase();
+      if (!_webImages.contains(mime)) {
+        await _webDiscard(response);
+        throw ApiException.badRequest('not_image', t('Das ist kein Bild.'));
+      }
+      final tooLarge = ApiException(
+        413,
+        'too_large',
+        t('Das Bild ist zu groß.'),
+      );
+      if ((response.contentLength ?? 0) > _maxImage) {
+        await _webDiscard(response);
+        throw tooLarge;
+      }
+      final name = uri.pathSegments.lastOrNull ?? '';
+      var size = 0;
+      final file = await files.save(
+        owner: member.id,
+        name: name.isEmpty ? 'rezept' : name,
+        mime: mime,
+        body: _webRead(response).map((chunk) {
+          size += chunk.length;
+          if (size > _maxImage) throw tooLarge;
+          return chunk;
+        }),
+      );
+      return _json(file.toJson(), status: 201);
+    });
   }
 
   /// Fetches the `url` of [request]: HTTPS only, never into a private
-  /// network (also not through a redirect). Returns where it ended up.
+  /// network (also not through a redirect, nor when the name points
+  /// elsewhere by the time the server connects: see
+  /// [RemoteUrlPolicy.client]). Returns where it ended up.
   Future<(Uri, http.StreamedResponse)> _webGet(Request request) async {
     final body = await _body(request);
     var uri = Uri.tryParse(body['url'] as String? ?? '');
     if (uri == null || !uri.hasAuthority) {
       throw ApiException.badRequest('invalid_url', t('Ungültige Adresse'));
     }
-    final client = selfCheckClient ?? http.Client();
     for (var hop = 0; hop < 5; hop++) {
-      await RemoteUrlPolicy(lookup: hostLookup).check(uri!);
+      await _webPolicy.check(uri!);
       final http.StreamedResponse response;
       try {
         // 20 seconds until the page answers and between two of its parts.
         response = await sendStreamed(
-          client,
+          _webClient,
           'GET',
           uri,
           headers: {'user-agent': 'Mozilla/5.0 (Famio Rezept-Import)'},
@@ -81,22 +101,21 @@ extension _WebRoutes on FamioApi {
           pause: const Duration(seconds: 20),
         );
       } on TimeoutException {
-        throw ApiException(
-          504,
-          'page_unavailable',
-          t('Die Seite antwortet nicht.'),
-        );
+        throw _webNoAnswer();
+      } on Exception catch (e) {
+        if (_webNetworkError(e)) throw _webUnreachable();
+        rethrow;
       }
       final location = response.headers['location'];
       if (response.statusCode >= 300 &&
           response.statusCode < 400 &&
           location != null) {
-        await response.stream.drain<void>();
+        await _webDiscard(response);
         uri = uri.resolve(location);
         continue;
       }
       if (response.statusCode != 200) {
-        await response.stream.drain<void>();
+        await _webDiscard(response);
         throw ApiException(
           502,
           'page_unavailable',
@@ -108,16 +127,36 @@ extension _WebRoutes on FamioApi {
     throw ApiException(502, 'page_unavailable', t('Zu viele Weiterleitungen.'));
   }
 
-  /// The body of [response]; a stalled download becomes a clean answer.
+  /// The body of [response]; a stalled or broken download becomes a clean
+  /// answer.
   Stream<List<int>> _webRead(http.StreamedResponse response) =>
       response.stream.handleError(
-        (Object _) => throw ApiException(
-          504,
-          'page_unavailable',
-          t('Die Seite antwortet nicht.'),
-        ),
-        test: (e) => e is TimeoutException,
+        (Object e) =>
+            throw e is TimeoutException ? _webNoAnswer() : _webUnreachable(),
+        test: (e) =>
+            e is TimeoutException || (e is Exception && _webNetworkError(e)),
       );
+
+  /// A body nobody reads (a redirect, an error page, the wrong type): the
+  /// connection is closed instead of reading it to its end, however long.
+  Future<void> _webDiscard(http.StreamedResponse response) =>
+      response.stream.listen((_) {}, onError: (Object _) {}).cancel();
+
+  /// No connection, a broken one, no valid TLS.
+  static bool _webNetworkError(Exception e) =>
+      e is http.ClientException ||
+      e is SocketException ||
+      e is TlsException ||
+      e is HttpException;
+
+  static ApiException _webNoAnswer() =>
+      ApiException(504, 'page_unavailable', t('Die Seite antwortet nicht.'));
+
+  static ApiException _webUnreachable() => ApiException(
+    502,
+    'page_unreachable',
+    t('Die Seite ist nicht erreichbar.'),
+  );
 
   static const _maxPage = 3 * 1024 * 1024;
   static const _maxImage = 20 * 1024 * 1024;
@@ -389,5 +428,51 @@ extension _WebRoutes on FamioApi {
     }
     if (tlsPort case final port?) return withPort('https', port);
     return withPort('http', uri.port);
+  }
+}
+
+/// How many recipe pages and pictures one member may have the server fetch
+/// at the same time and per minute, and all members together at the same
+/// time (#575): each holds a few megabytes until it is answered.
+class _WebFetchLimit {
+  static const perMember = 2;
+  static const total = 8;
+  static const perMinute = 20;
+
+  var _running = 0;
+  final _runningFor = <String, int>{};
+  final _recent = <String, List<DateTime>>{};
+
+  Future<T> run<T>(String memberId, Future<T> Function() fetch) async {
+    final now = DateTime.now();
+    final recent = _recent[memberId] ?? [];
+    recent.removeWhere(
+      (at) => now.difference(at) >= const Duration(minutes: 1),
+    );
+    final mine = _runningFor[memberId] ?? 0;
+    if (mine >= perMember || _running >= total || recent.length >= perMinute) {
+      if (recent.isEmpty) _recent.remove(memberId);
+      throw ApiException(
+        429,
+        'too_many_requests',
+        t(
+          'Gerade werden zu viele Seiten abgerufen. Bitte gleich noch einmal versuchen.',
+        ),
+      );
+    }
+    _recent[memberId] = recent..add(now);
+    _runningFor[memberId] = mine + 1;
+    _running++;
+    try {
+      return await fetch();
+    } finally {
+      _running--;
+      final left = _runningFor[memberId]! - 1;
+      if (left == 0) {
+        _runningFor.remove(memberId);
+      } else {
+        _runningFor[memberId] = left;
+      }
+    }
   }
 }

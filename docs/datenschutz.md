@@ -1,6 +1,6 @@
 # Datenschutzinformationen für Famio
 
-Stand: 21. November 2026
+Stand: 22. November 2026
 
 ## Verantwortlichkeit
 
@@ -191,8 +191,11 @@ geheime Thema, die IP-Adresse und mindestens einen knappen Hinweis; auch dieser
 nennt bei manchen Mitteilungen einen Namen („SOS von …“, „… kommt“). Wenn
 „Details“ aktiviert ist, wird die eigentliche Benachrichtigung übertragen, etwa
 Ankünfte an Orten, Fahrtziele mit Ankunftszeit oder Chat-Texte. Dazu kommt ein
-Verweis, was Famio beim Antippen öffnet (eine zufällige Kennung, etwa einer
-Aufgabe oder eines Chats, ohne deren Inhalt). Der öffentliche
+Verweis zum Antippen mit einer zufälligen Kennung der Benachrichtigung, auch
+ohne „Details“. Was Famio damit öffnet (etwa eine Aufgabe oder einen Chat),
+erfährt nur die App des Empfängers von dessen Famio-Server, solange die
+Benachrichtigung dort gespeichert ist; die Kennung verrät weder den Eintrag noch,
+wer wem schreibt. Der öffentliche
 Dienst ntfy.sh hält Nachrichten laut eigener Datenschutzerklärung bis zu zwölf
 Stunden vor und stellt sie auf Handys über Google (FCM) beziehungsweise Apple
 zu. Auf dem iPhone ist ntfy ohne Apple Push der einzige Weg für Mitteilungen im

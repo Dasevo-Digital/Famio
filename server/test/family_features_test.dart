@@ -1529,8 +1529,19 @@ void main() {
         ),
       ]);
       await app.push.idle;
+      // Only a random key goes to ntfy; the phone's Famio asks the server
+      // what it opens (#578).
       final link = Uri.parse(pushed.single['click'] as String);
-      expect(NoticeTarget.fromLink(link), NoticeTarget.chat(ChatIds.family));
+      expect(link.queryParameters.keys, [NoticeLink.parameter]);
+      expect('$link', isNot(contains(ChatIds.family)));
+      final opened = await kind.call(
+        'GET',
+        'api/notifications/link/${NoticeLink.keyOf(link)}',
+      );
+      expect(
+        NoticeTarget.decode(opened['target'] as String?),
+        NoticeTarget.chat(ChatIds.family),
+      );
       expect(jsonEncode(pushed), isNot(contains('Noch was')));
     });
 

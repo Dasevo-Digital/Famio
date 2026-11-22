@@ -39,7 +39,7 @@ class CalDavSync {
     this.interval = const Duration(minutes: 15),
     GoogleOAuth? google,
     RemoteUrlPolicy? urlPolicy,
-  }) : _http = client ?? http.Client() {
+  }) : _http = client ?? (urlPolicy ?? const RemoteUrlPolicy()).client() {
     this.google = google ?? GoogleOAuth(_http);
     this.urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
   }

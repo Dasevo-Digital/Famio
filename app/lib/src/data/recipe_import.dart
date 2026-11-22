@@ -102,6 +102,7 @@ class RecipeImportError implements Exception {
     this.status,
     this.message,
     this.timedOut = false,
+    this.sameAgain = false,
   });
 
   final RecipeImportProblem problem;
@@ -115,6 +116,11 @@ class RecipeImportError implements Exception {
   /// No answer in time: a second try would only wait as long again.
   final bool timedOut;
 
+  /// The device would get the same answer again (a page larger than
+  /// [maxRecipePage], something else than a web page): no second try there,
+  /// the server still gets its turn.
+  final bool sameAgain;
+
   /// The page is not there (any more); nobody gets another answer.
   bool get gone => status == 404 || status == 410;
 
@@ -123,6 +129,11 @@ class RecipeImportError implements Exception {
 }
 
 const _userAgent = 'Mozilla/5.0 (Famio Rezept-Import)';
+
+/// The most of a recipe page the device reads (as the server's
+/// `/api/web/page`, #575): recipe pages are far smaller, and a phone must
+/// not hold an endless "page" in its memory.
+const maxRecipePage = 3 * 1024 * 1024;
 
 /// Downloads [url] and reads its recipe, or throws a [RecipeImportError].
 ///
@@ -154,7 +165,7 @@ Future<ImportedRecipe> importRecipe(
         } on RecipeImportError catch (e) {
           keep(e);
           if (e.gone) rethrow;
-          if (e.timedOut) break;
+          if (e.timedOut || e.sameAgain) break;
         }
       }
     } finally {
@@ -186,36 +197,73 @@ Future<ImportedRecipe> importRecipe(
   throw reason ?? const RecipeImportError(RecipeImportProblem.unreachable);
 }
 
+/// Reads the page at [url] on the device: 20 seconds for all of it, at
+/// most [maxRecipePage], only a web page (or one that does not say what it
+/// is). What is not read is not downloaded either.
 Future<ImportedRecipe> _fetchDirect(
   http.Client client,
   Uri url, {
   required String id,
 }) async {
-  final http.Response response;
+  final String html;
   try {
-    response = await client
-        .get(url, headers: {'user-agent': _userAgent})
-        .timeout(const Duration(seconds: 20));
+    html = await httpTransfer(
+      client: client,
+      method: 'GET',
+      url: url,
+      headers: {'user-agent': _userAgent},
+      timeout: const Duration(seconds: 20),
+      consume: (response, body) async {
+        // Gives the page up unread: its connection is closed, and the
+        // answer comes at once (without waiting for the closing).
+        Never giveUp(Object reason) {
+          unawaited(body.listen(null).cancel());
+          throw reason;
+        }
+
+        if (response.statusCode != 200) {
+          giveUp(
+            RecipeImportError(
+              RecipeImportProblem.refused,
+              status: response.statusCode,
+            ),
+          );
+        }
+        final type = response.headers['content-type'] ?? '';
+        if (type.isNotEmpty && !type.toLowerCase().contains('html')) {
+          giveUp(
+            const RecipeImportError(
+              RecipeImportProblem.noRecipe,
+              sameAgain: true,
+            ),
+          );
+        }
+        if ((response.contentLength ?? 0) > maxRecipePage) {
+          giveUp(TransferTooLarge());
+        }
+        return utf8.decode(
+          await readTransferBytes(body, maxBytes: maxRecipePage),
+          allowMalformed: true,
+        );
+      },
+    );
+  } on RecipeImportError {
+    rethrow;
   } on TimeoutException {
     throw const RecipeImportError(
       RecipeImportProblem.unreachable,
       timedOut: true,
     );
+  } on TransferTooLarge {
+    throw const RecipeImportError(
+      RecipeImportProblem.noRecipe,
+      sameAgain: true,
+    );
   } on Exception {
     // No connection, no name, a broken TLS handshake …
     throw const RecipeImportError(RecipeImportProblem.unreachable);
   }
-  if (response.statusCode != 200) {
-    throw RecipeImportError(
-      RecipeImportProblem.refused,
-      status: response.statusCode,
-    );
-  }
-  final recipe = recipeFromHtml(
-    utf8.decode(response.bodyBytes, allowMalformed: true),
-    id: id,
-    source: url.toString(),
-  );
+  final recipe = recipeFromHtml(html, id: id, source: url.toString());
   if (recipe == null) {
     throw const RecipeImportError(RecipeImportProblem.noRecipe);
   }

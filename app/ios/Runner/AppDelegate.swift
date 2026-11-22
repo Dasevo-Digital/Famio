@@ -275,7 +275,8 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
 
 /// Calendar files opened with Famio from another app ("Öffnen mit" in Mail
 /// or Files), what the share sheet handed over ("Teilen an Famio", see
-/// ShareInbox) and `famio://open?target=…` links (ntfy, #385), all through
+/// ShareInbox) and `famio://open?notice=…` links (ntfy, #385, #578; older
+/// servers send `?target=…`), all through
 /// `famio/open_file`: kept until Dart takes them.
 final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
   static let shared = OpenedFiles()
@@ -345,9 +346,13 @@ final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
     if let link = urls.first(where: { $0.scheme == "famio" }) {
       switch link.host {
       case "open":
-        // Only something to open: Dart checks it and opens nothing else.
-        let target = URLComponents(url: link, resolvingAgainstBaseURL: false)?
-          .queryItems?.first(where: { $0.name == "target" })?.value
+        // Only something to open: Dart checks it and opens nothing else. A
+        // link from ntfy names only a stored notification (#578): Dart asks
+        // the server what it opens.
+        let items = URLComponents(url: link, resolvingAgainstBaseURL: false)?.queryItems
+        let target =
+          items?.first(where: { $0.name == "target" })?.value
+          ?? items?.first(where: { $0.name == "notice" })?.value.map { "notice:" + $0 }
         guard let target, target.count <= 512 else { return false }
         pendingTarget = target
       case "share":

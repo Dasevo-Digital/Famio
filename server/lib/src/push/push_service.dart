@@ -80,7 +80,7 @@ class PushService {
     this.deadline = noticeDeadline,
     this.noticesPerSync = 10,
     this.maxSends = 8,
-  }) : _client = client ?? http.Client(),
+  }) : _client = client ?? (urlPolicy ?? const RemoteUrlPolicy()).client(),
        _ownsClient = client == null,
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
 
@@ -121,6 +121,11 @@ class PushService {
   /// [quiet]: those of [memberIds] in their quiet time.
   void Function(List<String> memberIds, PushNotice notice, Set<String> quiet)?
   onNotice;
+
+  /// The key under which [onNotice] stored a notice for a member
+  /// (NoticeBox.linkFor): ntfy's link carries only that key, so the entry's
+  /// id does not leave the server (#578). Without one there is no link.
+  String? Function(String memberId, PushNotice notice)? noticeLink;
 
   /// Sends still running (tests wait for them).
   final _pending = <Future<void>>{};
@@ -716,7 +721,8 @@ class PushService {
     return PushNotice(
       to: to.toSet(),
       // Confidential: nothing about it leaves the server, also with details
-      // on (ntfy.sh and the like only see what the notice says).
+      // on: ntfy.sh and the like only see what the notice says, and a random
+      // key to open it instead of the appointment's id (#578).
       title: event.confidential
           ? brief
           : t('Kommentar zu „{title}“', {'title': event.title}),
@@ -878,8 +884,11 @@ class PushService {
       allowed,
     );
     for (final row in rows) {
+      final member = row['member_id'] as String;
+      // Taken now: the send may wait for a slot.
+      final link = noticeLink?.call(member, notice);
       _track(
-        () => _send(row, notice, quiet: quiet.contains(row['member_id'])),
+        () => _send(row, notice, quiet: quiet.contains(member), link: link),
         urgent: notice.urgent,
       );
     }
@@ -934,27 +943,31 @@ class PushService {
 
   /// Publishes via ntfy's JSON API, an urgent notice with further tries;
   /// returns the error text, if any.
-  Future<String?> _send(Row row, PushNotice notice, {bool quiet = false}) =>
-      withRetries(
-        () async {
-          // The target may have gone meanwhile.
-          final current = _db.select(
-            'SELECT * FROM push_targets WHERE id = ?',
-            [row['id']],
-          ).firstOrNull;
-          if (current == null) return (null, null);
-          return _sendOnce(current, notice, quiet: quiet);
-        },
-        urgent: notice.urgent,
-        stillValid: notice.stillValid,
-        retries: retries,
-        stopped: _stopped.future,
-      );
+  Future<String?> _send(
+    Row row,
+    PushNotice notice, {
+    bool quiet = false,
+    String? link,
+  }) => withRetries(
+    () async {
+      // The target may have gone meanwhile.
+      final current = _db.select('SELECT * FROM push_targets WHERE id = ?', [
+        row['id'],
+      ]).firstOrNull;
+      if (current == null) return (null, null);
+      return _sendOnce(current, notice, quiet: quiet, link: link);
+    },
+    urgent: notice.urgent,
+    stillValid: notice.stillValid,
+    retries: retries,
+    stopped: _stopped.future,
+  );
 
   Future<(String?, PushAttempt?)> _sendOnce(
     Row row,
     PushNotice notice, {
     bool quiet = false,
+    String? link,
   }) async {
     final uri = Uri.parse(row['url'] as String);
     final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
@@ -979,6 +992,12 @@ class PushService {
           'push_lookup',
           t('Push-Server nicht erreichbar'),
         );
+      } on ApiException catch (e) {
+        // A name server that fails for a moment: an alarm tries again.
+        if (e.code == RemoteUrlPolicy.notFound) {
+          attempt = (status: null, failed: true);
+        }
+        rethrow;
       }
       attempt = await postNotice(
         _client,
@@ -994,7 +1013,10 @@ class PushService {
           'message': details ? notice.body : notice.brief,
           'tags': [notice.tag],
           // Tapped on a phone with Famio: opens what it is about (#385).
-          if (notice.target case final target?) 'click': target.link,
+          // Only a random key: the app asks the server what it opens, so
+          // ntfy learns no ids of chats or appointments (#578).
+          if (notice.target != null && link != null)
+            'click': NoticeLink.of(link),
           // ntfy's "low": no sound, no vibration, no pop-up.
           if (quiet) 'priority': 2,
           // "urgent": long vibration, breaks through on phones.

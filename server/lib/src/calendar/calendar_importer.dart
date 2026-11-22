@@ -26,7 +26,7 @@ class CalendarImporter {
     this.interval = const Duration(minutes: 30),
     this.fetchTimeout = const Duration(seconds: 30),
     RemoteUrlPolicy? urlPolicy,
-  }) : _http = client ?? http.Client(),
+  }) : _http = client ?? (urlPolicy ?? const RemoteUrlPolicy()).client(),
        _urlPolicy = urlPolicy ?? const RemoteUrlPolicy();
 
   final RecordStore records;

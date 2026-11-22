@@ -53,7 +53,7 @@ class WebPush {
     this._urlPolicy = const RemoteUrlPolicy(),
     this.onSent,
     this.retries = urgentRetries,
-  }) : _client = client ?? http.Client(),
+  }) : _client = client ?? _urlPolicy.client(),
        _ownsClient = client == null;
 
   /// Waits before trying an urgent notice again (see [urgentRetries]).

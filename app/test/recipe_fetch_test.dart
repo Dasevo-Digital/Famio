@@ -200,6 +200,88 @@ void main() {
     expect(server.requests, 1);
   });
 
+  group('the device reads at most a page (#575)', () {
+    /// A page of [size] bytes in parts of 64 KiB; counts what was read.
+    ({MockClient client, int Function() read, int Function() requests}) site(
+      int size, {
+      String? type = 'text/html',
+      bool announced = false,
+    }) {
+      var read = 0;
+      var requests = 0;
+      final client = MockClient.streaming((request, _) async {
+        requests++;
+        Stream<List<int>> parts() async* {
+          const part = 64 * 1024;
+          for (var sent = 0; sent < size; sent += part) {
+            final bytes = List.filled(part, 0x61);
+            read += bytes.length;
+            yield bytes;
+          }
+        }
+
+        return http.StreamedResponse(
+          parts(),
+          200,
+          contentLength: announced ? size : null,
+          headers: {'content-type': ?type},
+        );
+      });
+      return (client: client, read: () => read, requests: () => requests);
+    }
+
+    Future<ImportedRecipe> import(MockClient client, _Server server) =>
+        importRecipe(
+          _url,
+          id: 'r1',
+          client: client,
+          api: server.api,
+          retryAfter: Duration.zero,
+        );
+
+    test('a page larger than the server would take is not read further '
+        'nor asked again; the server still gets its turn', () async {
+      final page = site(20 * 1024 * 1024);
+      final server = _Server([() => _Server.page(_recipe)]);
+      final imported = await import(page.client, server);
+      expect(imported.recipe.title, 'Blumenkohl-Bombe');
+      expect(page.requests(), 1);
+      expect(page.read(), lessThanOrEqualTo(maxRecipePage + 64 * 1024));
+      expect(server.requests, 1);
+    });
+
+    test('one that says it is too large is not read at all', () async {
+      final page = site(20 * 1024 * 1024, announced: true);
+      final server = _Server([() => _Server.page(_noRecipe)]);
+      await expectLater(
+        import(page.client, server),
+        _fails(RecipeImportProblem.noRecipe),
+      );
+      expect(page.requests(), 1);
+      expect(page.read(), lessThan(1024 * 1024));
+    });
+
+    test('only web pages', () async {
+      final page = site(1024 * 1024, type: 'application/pdf');
+      final server = _Server([() => _Server.page(_recipe)]);
+      expect(
+        (await import(page.client, server)).recipe.title,
+        'Blumenkohl-Bombe',
+      );
+      expect(page.requests(), 1);
+      expect(page.read(), lessThan(1024 * 1024));
+    });
+
+    test('a page that does not say what it is is still read', () async {
+      final client = MockClient.streaming(
+        (_, _) async =>
+            http.StreamedResponse(Stream.value(utf8.encode(_recipe)), 200),
+      );
+      final server = _Server([() => fail('not needed')]);
+      expect((await import(client, server)).recipe.title, 'Blumenkohl-Bombe');
+    });
+  });
+
   test('the web app asks the server a second time', () async {
     final server = _Server([
       () => _Server.error(502, 'page_unavailable'),

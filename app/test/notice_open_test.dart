@@ -291,6 +291,82 @@ void main() {
       expect(find.byType(BottomSheet), findsNothing);
     });
 
+    group('a link from ntfy (#578)', () {
+      const key = 'R4nd0mKeyOfANotice_123';
+
+      /// The phone hands over [handedOver] once, as from `famio://open?…`;
+      /// the server knows only [key], as a link to the task.
+      Future<List<Uri>> open(WidgetTester tester, String handedOver) async {
+        final asked = <Uri>[];
+        String? pending = handedOver;
+        const channel = MethodChannel('famio/open_file');
+        final messenger = tester.binding.defaultBinaryMessenger;
+        messenger.setMockMethodCallHandler(channel, (call) async {
+          if (call.method != 'takeTarget') return null;
+          final value = pending;
+          pending = null;
+          return value;
+        });
+        addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+        await run(
+          tester,
+          api: FamioApiClient(
+            'https://famio.test',
+            token: 't',
+            httpClient: MockClient((request) async {
+              if (!request.url.path.startsWith('/api/notifications/link/')) {
+                return http.Response('Unavailable', 503);
+              }
+              asked.add(request.url);
+              return request.url.pathSegments.last == key
+                  ? http.Response(
+                      '{"target":"task:t1"}',
+                      200,
+                      headers: {'content-type': 'application/json'},
+                    )
+                  : http.Response(
+                      '{"error":"not_found","message":"nicht gefunden"}',
+                      404,
+                      headers: {'content-type': 'application/json'},
+                    );
+            }),
+          ),
+        );
+        await tester.pumpAndSettle();
+        // The engine's write from the start: its upload waits a moment.
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+        return asked;
+      }
+
+      testWidgets('opens what the server says it is about', (tester) async {
+        final asked = await open(tester, 'notice:$key');
+        expect(asked.single.path, '/api/notifications/link/$key');
+        expect(
+          find.widgetWithText(TextField, 'Rezept abholen'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('a notification the server no longer knows opens only '
+          'the app', (tester) async {
+        final asked = await open(tester, 'notice:UnknownKeyOfANotice_9');
+        expect(asked, hasLength(1));
+        expect(find.byType(TextField), findsNothing);
+        expect(find.byType(BottomSheet), findsNothing);
+      });
+
+      testWidgets('a link with the target itself (older servers) still '
+          'opens it', (tester) async {
+        final asked = await open(tester, 'task:t1');
+        expect(asked, isEmpty);
+        expect(
+          find.widgetWithText(TextField, 'Rezept abholen'),
+          findsOneWidget,
+        );
+      });
+    });
+
     testWidgets('a chat', (tester) async {
       await run(tester);
       await tap(tester, NoticeTarget.chat(ChatIds.direct('m1', 'm2')));

@@ -1020,6 +1020,7 @@ const sharedEn = <String, String>{
   "Server|Push nicht verfügbar": "Push not available",
   "Server|Nur Erwachsene": "Adults only",
   "Server|Benachrichtigungen fehlen": "Notifications missing",
+  "Server|Benachrichtigung nicht gefunden": "Notification not found",
   "Server|{device} · Benachrichtigungen": "{device} · Notifications",
   "Server|Benachrichtigungen funktionieren 🎉": "Notifications work 🎉",
   "Server|Notfallknopf fehlt": "Emergency button missing",
@@ -1063,6 +1064,8 @@ const sharedEn = <String, String>{
       "External targets need an HTTPS address without credentials in the address.",
   "Server|Die Adresse {host} zeigt in ein privates Netzwerk. Lokale Ziele müssen vom Server ausdrücklich freigegeben werden.":
       "The address {host} points into a private network. Local targets must be allowed explicitly by the server.",
+  "Server|Die Adresse {host} wurde nicht gefunden.":
+      "The address {host} was not found.",
   "Server|Ungültige ID: {id}": "Invalid ID: {id}",
   "Server|Eintrag ist zu groß": "Entry is too large",
   "Server|Für dieses Konto nicht verfügbar": "Not available for this account",
@@ -1193,6 +1196,9 @@ const sharedEn = <String, String>{
   "Server|Das ist kein Bild.": "That is not an image.",
   "Server|Das Bild ist zu groß.": "The image is too large.",
   "Server|Zu viele Weiterleitungen.": "Too many redirects.",
+  "Server|Die Seite ist nicht erreichbar.": "The page cannot be reached.",
+  "Server|Gerade werden zu viele Seiten abgerufen. Bitte gleich noch einmal versuchen.":
+      "Too many pages are being fetched right now. Please try again in a moment.",
   "Server|Neue Anmeldung bei Famio": "New sign-in to Famio",
   "Server|Angemeldet auf: {device}. Warst du das nicht? Unter Einstellungen → Meine Geräte „Das war ich nicht“ wählen.":
       "Signed in on: {device}. Not you? Choose “That wasn't me” under Settings → My devices.",
