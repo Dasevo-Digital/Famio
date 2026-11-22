@@ -243,7 +243,9 @@ class _ChoreTile extends StatelessWidget {
   final String? forMember;
 
   Future<void> _toggle(BuildContext context, PointEntry? done) async {
-    if (done != null) {
+    // A declined one is not ticked: ticking asks for the points again
+    // (#581), as the server lets children do with their own.
+    if (done != null && done.status != PointStatus.rejected) {
       // Confirmed points only adults take back.
       if (done.status == PointStatus.approved && !engine.iAmAdult) return;
       engine.undoChore(chore, day);
@@ -275,6 +277,11 @@ class _ChoreTile extends StatelessWidget {
     final canTick =
         !engine.iAmGuest &&
         (engine.iAmAdult || forMember == null || forMember == engine.memberId);
+    // A declined request only its own child asks for again (or an adult).
+    final mayAsk =
+        done?.status != PointStatus.rejected ||
+        engine.iAmAdult ||
+        done!.memberId == engine.memberId;
     final status = switch (done?.status) {
       null => chore.repeat == ChoreRepeat.weekly ? tr.choresWeek : null,
       PointStatus.pending => tr.choresWaitingConfirmation2,
@@ -321,7 +328,7 @@ class _ChoreTile extends StatelessWidget {
                   ? c.inkSoft
                   : c.strong(FamioSection.chores),
               size: 34,
-              onChanged: (_) => _toggle(context, done),
+              onChanged: mayAsk ? (_) => _toggle(context, done) : null,
             ),
         ],
       ),

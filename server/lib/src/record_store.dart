@@ -369,21 +369,26 @@ class RecordStore {
               : jsonEncode(incoming.visibleTo) ==
                     jsonEncode(existing.visibleTo);
         }
-        // Children save for their own goals only.
-        if (collection == Collections.savingsGoals) {
+        // Children save for their own goals only, and tick off their own
+        // routines, not a sibling's.
+        if (collection == Collections.savingsGoals ||
+            collection == Collections.routineRuns) {
           bool own(SyncRecord? r) =>
               r == null || r.deleted || r.data['memberId'] == userId;
           return own(existing) && (incoming.deleted || own(incoming));
         }
         if (collection != Collections.pointEntries) return true;
         // Children ask for points (done chores, wished rewards); adults
-        // decide. Their own open requests they may change or withdraw.
-        bool ownPending(SyncRecord r) =>
-            r.data['memberId'] == userId && r.data['status'] == 'pending';
-        if (existing != null && !existing.deleted && !ownPending(existing)) {
+        // decide. Their own open requests they may change or withdraw, and
+        // a declined one ask for again or take back (#581).
+        bool own(SyncRecord r, Set<String> statuses) =>
+            r.data['memberId'] == userId && statuses.contains(r.data['status']);
+        if (existing != null &&
+            !existing.deleted &&
+            !own(existing, const {'pending', 'rejected'})) {
           return false;
         }
-        return incoming.deleted || ownPending(incoming);
+        return incoming.deleted || own(incoming, const {'pending'});
     }
   }
 
@@ -2436,6 +2441,33 @@ class RecordStore {
         row['id'] as String,
     },
   );
+
+  /// Leaves [ids] of [collection] deleted for good, also where nothing was
+  /// stored yet: a job that writes records under fixed ids then skips them,
+  /// as one an adult deleted (pocket money on a paused payday, #581).
+  /// Returns whether any mark is new.
+  bool markDeletedAsServer(String collection, Iterable<String> ids) {
+    var changed = false;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    _transaction(() {
+      for (final id in {...ids}) {
+        if (_get(collection, id) != null) continue;
+        _put(
+          SyncRecord(
+            collection: collection,
+            id: id,
+            data: const {},
+            deleted: true,
+            updatedAt: now,
+            updatedBy: serverMemberId,
+          ),
+          previous: null,
+        );
+        changed = true;
+      }
+    });
+    return changed;
+  }
 
   /// Stores records on behalf of the server itself (e.g. imported calendar
   /// events), bypassing conflict resolution. Returns true if anything changed.

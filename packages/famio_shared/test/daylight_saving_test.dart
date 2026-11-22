@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:famio_shared/famio_shared.dart';
 import 'package:test/test.dart';
 
@@ -60,4 +62,49 @@ void main() {
       expect(child.ageDate(12.5), plus(15));
     });
   }
+
+  // Israel puts its clocks forward on a Friday (26.03.2027): going back from
+  // Saturday in days of 24 hours ends on Sunday 23:00, the week before. This
+  // only bites in such a zone; the test after it runs it in one (#581).
+  test('one key and one turn for each week', () {
+    final chore = Chore(
+      id: 'bins',
+      title: 'Tonnen',
+      repeat: ChoreRepeat.weekly,
+      memberIds: const ['a', 'b'],
+      rotate: true,
+      start: DateTime(2027, 3, 1),
+    );
+    final days = [for (var d = 22; d <= 28; d++) DateTime(2027, 3, d)];
+    expect({for (final d in days) weekStart(d)}, {DateTime(2027, 3, 22)});
+    expect({for (final d in days) chore.periodKey(d)}, {'w2027-03-22'});
+    expect({for (final d in days) chore.assigneeOn(d)}, hasLength(1));
+    expect(
+      chore.assigneeOn(DateTime(2027, 3, 29)),
+      isNot(chore.assigneeOn(days.first)),
+    );
+  });
+
+  test(
+    'week keys where the clocks change on a Friday',
+    () async {
+      final r = await Process.run(
+        'dart',
+        [
+          'test',
+          'test/daylight_saving_test.dart',
+          '--plain-name',
+          'one key and one turn for each week',
+        ],
+        environment: {'TZ': 'Asia/Jerusalem', _nested: '1'},
+      );
+      expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+    },
+    testOn: '!windows',
+    // Only from the outer run, never again from the one it starts.
+    skip: Platform.environment.containsKey(_nested),
+    timeout: const Timeout(Duration(minutes: 3)),
+  );
 }
+
+const _nested = 'FAMIO_NESTED_ZONE_TEST';

@@ -1,5 +1,7 @@
 import 'package:famio_shared/famio_shared.dart';
 import 'package:test/test.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 void main() {
   final today = DateTime(2026, 10, 4);
@@ -145,4 +147,38 @@ void main() {
       isFalse,
     );
   });
+
+  // The family's zone may not be the server's (often UTC): the reminder
+  // keeps its time of day there, also across a change of the clocks (#581).
+  for (final (zone, before, after) in [
+    // Saturday before the clocks change, the Saturday after.
+    ('Europe/Berlin', DateTime(2027, 3, 27), DateTime(2027, 4, 3)),
+    ('America/New_York', DateTime(2027, 3, 13), DateTime(2027, 3, 20)),
+    ('Europe/Berlin', DateTime(2026, 10, 24), DateTime(2026, 10, 31)),
+  ]) {
+    test('the reminder stays at 18:00 in $zone (${dayKey(before)})', () {
+      tzdata.initializeTimeZones();
+      final location = tz.getLocation(zone);
+      final remind = tz.TZDateTime(
+        location,
+        before.year,
+        before.month,
+        before.day,
+        18,
+      );
+      final next = Task(
+        id: 't',
+        title: 'Müll rausbringen',
+        due: before,
+        remindAt: remind,
+        repeat: TaskRepeat.weekly,
+      ).completed(today: before, location: location);
+      expect(next.due, after);
+      final local = tz.TZDateTime.from(next.remindAt!, location);
+      expect(
+        (local.year, local.month, local.day, local.hour, local.minute),
+        (after.year, after.month, after.day, 18, 0),
+      );
+    });
+  }
 }

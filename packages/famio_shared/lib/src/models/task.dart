@@ -1,3 +1,5 @@
+import 'package:timezone/timezone.dart' as tz;
+
 import '../sync_record.dart';
 import '../texts.dart';
 import 'chat.dart' show FileRef;
@@ -155,7 +157,9 @@ class Task {
 
   /// Ticked off: a repeating task comes back open with its next due date
   /// (and reminder), the next one from [today] on; others are done.
-  Task completed({DateTime? today}) {
+  /// The reminder keeps its time of day in [location] (the family's zone;
+  /// the device's without), also across a change of the clocks (#581).
+  Task completed({DateTime? today, tz.Location? location}) {
     final now = today ?? DateTime.now();
     final r = repeat;
     if (r == null) return copyWith(done: true, completedAt: now);
@@ -165,14 +169,42 @@ class Task {
     while (next.isBefore(day)) {
       next = r.after(next, repeatEvery);
     }
-    final shift = DateTime(
+    final days = DateTime.utc(
       next.year,
       next.month,
       next.day,
-    ).difference(DateTime(from.year, from.month, from.day));
+    ).difference(DateTime.utc(from.year, from.month, from.day)).inDays;
+    DateTime? later(DateTime? at) {
+      if (at == null) return null;
+      final zone = location;
+      if (zone == null) {
+        final w = at.toLocal();
+        return DateTime(
+          w.year,
+          w.month,
+          w.day + days,
+          w.hour,
+          w.minute,
+          w.second,
+          w.millisecond,
+        );
+      }
+      final w = tz.TZDateTime.from(at, zone);
+      return tz.TZDateTime(
+        zone,
+        w.year,
+        w.month,
+        w.day + days,
+        w.hour,
+        w.minute,
+        w.second,
+        w.millisecond,
+      );
+    }
+
     return copyWith(
       due: next,
-      remindAt: remindAt?.add(shift),
+      remindAt: later(remindAt),
       done: false,
       completedAt: null,
       // Next time the list starts over.

@@ -44,14 +44,20 @@ class AllowanceJob {
         if (Vacation.fromRecord(r) case final v when v.allowance) v,
     ];
     final bookings = <SyncRecord>[];
+    final skipped = <String>[];
     for (final r in records.all(Collections.allowances)) {
       final allowance = Allowance.fromRecord(r);
       if (allowance.weeklyCents <= 0 || !members.contains(allowance.memberId)) {
         continue;
       }
       for (final payday in allowance.paydays(day.subtract(catchUp), day)) {
-        if (vacationOn(paused, payday) != null) continue;
         final id = allowance.bookingId(payday);
+        if (vacationOn(paused, payday) != null) {
+          // Left out for good: deleting the holiday later pays nothing
+          // back (#581).
+          skipped.add(id);
+          continue;
+        }
         if (records.get(Collections.moneyEntries, id) != null) continue;
         final entry = MoneyEntry(
           id: id,
@@ -64,8 +70,8 @@ class AllowanceJob {
             payday.day,
             8,
           ),
+          // No note: the apps name the kind in each one's language.
           kind: MoneyKind.allowance,
-          note: 'Taschengeld',
         );
         bookings.add(
           SyncRecord(
@@ -76,6 +82,11 @@ class AllowanceJob {
           ),
         );
       }
+    }
+    // Only a booking that exists stays as it is: a holiday entered
+    // afterwards takes no paid pocket money back.
+    if (skipped.isNotEmpty) {
+      records.markDeletedAsServer(Collections.moneyEntries, skipped);
     }
     if (bookings.isEmpty) return 0;
     records.writeAsServer(bookings);

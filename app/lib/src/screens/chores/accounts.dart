@@ -213,7 +213,7 @@ class MemberAccountScreen extends StatelessWidget {
               for (final e in money.take(50))
                 ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                  title: Text(e.note.isEmpty ? e.kind.label : e.note),
+                  title: Text(e.title),
                   subtitle: Text('${day.format(e.at)} · ${e.kind.label}'),
                   trailing: Text(
                     '${e.cents > 0 ? '+' : '−'}${formatEuro(e.cents.abs())}',
@@ -222,7 +222,7 @@ class MemberAccountScreen extends StatelessWidget {
                   onLongPress: adult
                       ? () => deleteWithUndo(
                           context,
-                          what: e.note.isEmpty ? e.kind.label : e.note,
+                          what: e.title,
                           collections: const {Collections.moneyEntries},
                           delete: () => engine.deleteMoneyEntry(e.id),
                         )

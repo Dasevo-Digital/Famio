@@ -855,7 +855,11 @@ void main() {
           'memberId': kind.id,
           'cents': 100000,
         }),
-        _record(Collections.routineRuns, 'rr1', {'routineId': 'x'}),
+        // Its own routine it ticks off (a sibling's not, #581).
+        _record(Collections.routineRuns, 'rr1', {
+          'routineId': 'x',
+          'memberId': kind.id,
+        }),
       ]);
       expect(response.rejected.map((r) => r.id).toSet(), {'c1', 'r1', 'm1'});
       await mama.sync();

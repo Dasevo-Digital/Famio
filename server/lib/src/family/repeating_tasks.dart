@@ -20,7 +20,9 @@ bool advanceRepeatingTasks(
         r.copyWith(
           data: {
             ...r.data,
-            ...Task.fromRecord(r).completed(today: today).toData(),
+            ...Task.fromRecord(
+              r,
+            ).completed(today: today, location: location).toData(),
           },
         ),
   ]);

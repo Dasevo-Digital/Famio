@@ -8,9 +8,10 @@ String dayKey(DateTime d) =>
 
 DateTime _day(DateTime d) => DateTime(d.year, d.month, d.day);
 
-/// Monday of the week of [d].
+/// Monday of the week of [d], counted in calendar days: subtracting whole
+/// days of 24 hours goes wrong where the clocks change on a weekday (#581).
 DateTime weekStart(DateTime d) =>
-    _day(d).subtract(Duration(days: d.weekday - 1));
+    DateTime(d.year, d.month, d.day - (d.weekday - 1));
 
 /// Whole calendar days from [a] to [b] (DST safe).
 int daysBetween(DateTime a, DateTime b) => DateTime.utc(
@@ -414,6 +415,14 @@ class MoneyEntry {
   final DateTime at;
   final MoneyKind kind;
   final String note;
+
+  /// What a list shows: the note, else the kind in the reader's language.
+  /// The server booked pocket money with the German note "Taschengeld"
+  /// until 2.0.57; that one is the kind as well.
+  String get title =>
+      note.isEmpty || (kind == MoneyKind.allowance && note == 'Taschengeld')
+      ? kind.label
+      : note;
 
   Map<String, Object?> toData() => {
     'memberId': memberId,

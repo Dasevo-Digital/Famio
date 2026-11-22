@@ -443,7 +443,8 @@ jedem Sync durchsetzt:
 - **Erwachsen:** alles, was für das Mitglied sichtbar ist.
 - **Kind:** darf Ämter, Belohnungen, Routinen und Taschengeld nicht
   verwalten; erledigte Ämter und Belohnungswünsche sind Anfragen, die ein
-  Erwachsener bestätigt. Gesundheitsdaten erhält es nur, wenn es dafür
+  Erwachsener bestätigt. Eine abgelehnte eigene Anfrage stellt es erneut oder
+  nimmt sie zurück; Routinen hakt es nur für sich selbst ab. Gesundheitsdaten erhält es nur, wenn es dafür
   ausgewählt ist; es darf dann eintragen und abhaken, aber weder Medikationspläne
   und Kinderprofile ändern noch festlegen, wer etwas sieht. Aus dem
   Familien-Eingang sieht es nur, was beim Ablegen „Auch für Kinder sichtbar“
