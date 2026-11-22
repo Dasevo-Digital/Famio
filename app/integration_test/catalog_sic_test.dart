@@ -2629,16 +2629,26 @@ void main() {
     );
     expect(await api.pushTargets(), isEmpty);
 
-    // SIC-078: an address nobody answers: added with an error, test, remove.
+    // A name that does not exist is refused right away (#574).
     await add('https://ntfy.invalid/famio-x', kitPassword);
+    await waitFor(
+      tester,
+      inDialog(find.text('Die Adresse ntfy.invalid wurde nicht gefunden.')),
+    );
+    expect(await api.pushTargets(), isEmpty);
+
+    // SIC-078: an address nobody answers (TEST-NET-3, RFC 5737): added
+    // with an error, test, remove.
+    await add('https://203.0.113.10/famio-x', kitPassword);
     await dialogClosed(tester);
     await waitFor(
       tester,
       find.text(de.pushAddedButError('Push-Server nicht erreichbar')),
+      timeout: const Duration(seconds: 45),
     );
     final row = tile(
       de.commonPhone,
-      where: (t) => subtitleOf(t)?.contains('ntfy.invalid') ?? false,
+      where: (t) => subtitleOf(t)?.contains('203.0.113.10') ?? false,
     );
     await scrollTo(tester, row);
     expect(
@@ -2657,6 +2667,7 @@ void main() {
     await waitFor(
       tester,
       find.widgetWithText(SnackBar, 'Push-Server nicht erreichbar'),
+      timeout: const Duration(seconds: 45),
     );
     await tap(
       tester,
