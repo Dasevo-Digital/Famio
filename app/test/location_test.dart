@@ -76,6 +76,8 @@ void main() {
           placeId: 'school',
           placeSince: DateTime(now.year, now.month, now.day, 8, 2),
           battery: 64,
+          device: 'iPhone',
+          otherDevice: 'iPad',
         ).toData(),
       ),
       serverRecord(
@@ -111,6 +113,13 @@ void main() {
     expect(find.byType(FlutterMap), findsOneWidget);
     expect(find.textContaining('Bei „Schule“ seit 08:02'), findsOneWidget);
     expect(find.textContaining('64 % Akku'), findsOneWidget);
+    // Mia's iPad shares too, but only the iPhone counts.
+    expect(
+      find.textContaining(
+        'Auch „iPad“ teilt – gezeigt wird das zuletzt eingeschaltete Gerät',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Pausiert'), findsOneWidget);
     expect(find.text('Teilt keinen Standort'), findsOneWidget);
     // On the desktop only the others are shown.
@@ -371,6 +380,31 @@ void main() {
         now: now,
       ),
       'Standortfreigabe ist nach Zeitplan gerade aus',
+    );
+  });
+
+  test('a second sharing device is named', () {
+    MemberLocation located(String? other) => MemberLocation.fromRecord(
+      serverRecord(
+        Collections.memberLocations,
+        'x',
+        MemberLocation(
+          memberId: 'x',
+          state: SharingState.active,
+          device: 'iPhone',
+          otherDevice: other,
+        ).toData(),
+      ),
+    );
+    expect(otherDeviceLabel(null), isNull);
+    expect(otherDeviceLabel(located(null)), isNull);
+    expect(
+      otherDeviceLabel(located('iPad')),
+      'Auch „iPad“ teilt – gezeigt wird das zuletzt eingeschaltete Gerät',
+    );
+    expect(
+      otherDeviceLabel(located('')),
+      'Ein zweites Gerät teilt auch – gezeigt wird das zuletzt eingeschaltete',
     );
   });
 

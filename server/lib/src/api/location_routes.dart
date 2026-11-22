@@ -2,6 +2,9 @@ part of '../api.dart';
 
 const _locationScope = 'location';
 
+/// The longest pause with an end (#577); without one it lasts until resumed.
+const _maxPauseMinutes = 7 * 24 * 60;
+
 /// Location sharing of the members' phones.
 extension _LocationRoutes on FamioApi {
   LocationService get _locations =>
@@ -26,14 +29,25 @@ extension _LocationRoutes on FamioApi {
     }
     _checkWriter(member);
     final body = await _body(request);
-    final fixes = [
-      for (final f in (body['fixes'] as List? ?? const []).take(1000))
-        LocationFix.fromJson((f as Map).cast()),
-    ];
+    final List<LocationFix> fixes;
+    try {
+      fixes = [
+        for (final f in (body['fixes'] as List? ?? const []).take(1000))
+          LocationFix.fromJson((f as Map).cast()),
+      ];
+    } on FormatException {
+      // A time or battery that is no number (JSON allows 1e400, #479).
+      throw ApiException.badRequest(
+        'invalid_fix',
+        t('Ungültige Standortmeldung'),
+      );
+    }
     final state =
         SharingState.values.where((s) => s.name == body['state']).firstOrNull ??
         SharingState.active;
     final device = (body['device'] as String?)?.trim();
+    // Which of the member's devices this is: its session (#576).
+    final session = token == null ? null : accounts.sessionDevice(token);
     final result = _locations.report(
       member,
       fixes: fixes,
@@ -46,14 +60,9 @@ extension _LocationRoutes on FamioApi {
         'android' => 'android',
         _ => null,
       },
+      deviceKey: session == null ? 'ingress' : 's:${session.id}',
+      enabledAt: session?.since,
     );
-    // The stored position is only rewritten after a real move, so the
-    // battery comes from the report itself.
-    final battery = [
-      for (final f in fixes)
-        if (f.battery != null) f.battery,
-    ].lastOrNull;
-    sos?.batteryReported(member, battery);
     // Place notices for this member, so the phone can show them even while
     // the app is closed. Check-ins come through the notifications (they
     // must not wait for the next position report).
@@ -110,10 +119,17 @@ extension _LocationRoutes on FamioApi {
       throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
-    final minutes = body['minutes'] as int?;
+    final minutes = body['minutes'];
+    if (minutes != null &&
+        (minutes is! int || minutes < 1 || minutes > _maxPauseMinutes)) {
+      throw ApiException.badRequest(
+        'invalid_duration',
+        t('Eine Pause dauert 1 Minute bis 7 Tage, oder bis zum Fortsetzen.'),
+      );
+    }
     _locations.pause(
       target,
-      duration: minutes == null ? null : Duration(minutes: minutes),
+      duration: minutes is int ? Duration(minutes: minutes) : null,
       byMember: member.id,
     );
     _audit(

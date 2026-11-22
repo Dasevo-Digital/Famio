@@ -1013,6 +1013,10 @@ const sharedEn = <String, String>{
   "Server|Nur für Eltern (Administratoren)":
       "Only for parents (administrators)",
   "Server|Ungültiger Zeitplan": "Invalid schedule",
+  "Server|Ungültige Standortmeldung": "Invalid location report",
+  "Server|Ungültige Position": "Invalid position",
+  "Server|Eine Pause dauert 1 Minute bis 7 Tage, oder bis zum Fortsetzen.":
+      "A pause lasts from 1 minute to 7 days, or until resumed.",
   "Server|Push nicht verfügbar": "Push not available",
   "Server|Nur Erwachsene": "Adults only",
   "Server|Benachrichtigungen fehlen": "Notifications missing",

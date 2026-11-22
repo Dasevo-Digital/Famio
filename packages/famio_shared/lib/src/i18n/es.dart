@@ -1042,6 +1042,10 @@ const sharedEs = <String, String>{
   "Server|Nur für Eltern (Administratoren)":
       "Solo para padres (administradores)",
   "Server|Ungültiger Zeitplan": "Horario no válido",
+  "Server|Ungültige Standortmeldung": "Informe de ubicación no válido",
+  "Server|Ungültige Position": "Posición no válida",
+  "Server|Eine Pause dauert 1 Minute bis 7 Tage, oder bis zum Fortsetzen.":
+      "Una pausa dura de 1 minuto a 7 días, o hasta reanudarla.",
   "Server|Push nicht verfügbar": "Push no disponible",
   "Server|Nur Erwachsene": "Solo adultos",
   "Server|Benachrichtigungen fehlen": "Faltan las notificaciones",

@@ -251,6 +251,8 @@ class _MySharingCardState extends State<MySharingCard>
             sharingLabel(mine, widget.place),
             style: theme.textTheme.bodySmall,
           ),
+          if (otherDeviceLabel(mine) case final other?)
+            Text(other, style: theme.textTheme.bodySmall),
           const SizedBox(height: 4),
           Text(
             tr.locationScheduleSchedule(scheduleLabel(_schedule)),

@@ -66,7 +66,12 @@ ein Administrator die Rolle festlegt.
   Server keine Positionen an, und die Telefone pausieren das Teilen.
 - Der Standortverlauf ist auf 1 bis 365 Tage einstellbar; Standard sind sieben
   Tage. Die zuletzt gemeldete Position bleibt gespeichert, bis eine neue kommt,
-  das Teilen pausiert oder das Konto gelöscht wird.
+  das Teilen pausiert oder das Konto gelöscht wird. Wird Famio auf dem Telefon
+  abgemeldet, verschwindet sie ebenfalls, sofern kein anderes Gerät des
+  Mitglieds teilt; außerhalb eines Zeitplans für das Teilen ist sie nicht zu
+  sehen. Gerätename und Zeitpunkt der letzten Meldung jedes teilenden Geräts
+  behält der Server so lange wie den Standortverlauf; teilen mehrere Geräte
+  eines Mitglieds, zählt das zuletzt eingeschaltete.
 - Der Server sichert seine Datenbank jede Nacht verschlüsselt und behält sieben
   tägliche und vier wöchentliche Sicherungen. Gelöschte Einträge und ältere
   Positionen sind darin noch bis zu etwa fünf Wochen enthalten.

@@ -568,6 +568,24 @@ class Accounts {
     return _member(rows.first);
   }
 
+  /// The device behind [token]: its session id (as in [DeviceSession.id])
+  /// and since when it is signed in there.
+  ({String id, DateTime since})? sessionDevice(String token) {
+    final hash = _tokenHash(token);
+    final row = _db.select(
+      'SELECT created_at FROM sessions WHERE token_hash = ?',
+      [hash],
+    ).firstOrNull;
+    if (row == null) return null;
+    return (
+      id: hash.substring(0, 16),
+      since: DateTime.fromMillisecondsSinceEpoch(
+        row['created_at'] as int,
+        isUtc: true,
+      ),
+    );
+  }
+
   /// How the session of [token] signed in (password, totp, sso, passkey,
   /// device pairing or null for sessions of older versions).
   String? sessionMethod(String token) =>

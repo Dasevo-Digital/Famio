@@ -181,6 +181,7 @@ class MemberLocation {
     this.battery,
     this.device,
     this.platform,
+    this.otherDevice,
   });
 
   factory MemberLocation.fromRecord(SyncRecord r) => MemberLocation(
@@ -201,6 +202,7 @@ class MemberLocation {
     battery: r.data['battery'] as int?,
     device: r.data['device'] as String?,
     platform: r.data['platform'] as String?,
+    otherDevice: r.data['otherDevice'] as String?,
   );
 
   final String memberId;
@@ -232,7 +234,29 @@ class MemberLocation {
   /// must therefore always show the age of the actual GPS measurement.
   final String? platform;
 
+  /// Another device of the member that shares too, by its name: only
+  /// [device] counts (the one switched on last), the other is ignored.
+  final String? otherDevice;
+
   bool get hasPosition => latitude != null && longitude != null;
+
+  /// The same with [otherDevice] instead (null: none).
+  MemberLocation withOtherDevice(String? otherDevice) => MemberLocation(
+    memberId: memberId,
+    state: state,
+    latitude: latitude,
+    longitude: longitude,
+    accuracy: accuracy,
+    at: at,
+    lastContact: lastContact,
+    pausedUntil: pausedUntil,
+    placeId: placeId,
+    placeSince: placeSince,
+    battery: battery,
+    device: device,
+    platform: platform,
+    otherDevice: otherDevice,
+  );
 
   Map<String, Object?> toData() => {
     'state': state.name,
@@ -247,6 +271,7 @@ class MemberLocation {
     'battery': ?battery,
     'device': ?device,
     'platform': ?platform,
+    'otherDevice': ?otherDevice,
   };
 }
 
@@ -378,16 +403,31 @@ class LocationFix {
     this.battery,
   });
 
-  factory LocationFix.fromJson(Map<String, Object?> json) => LocationFix(
-    latitude: (json['lat'] as num).toDouble(),
-    longitude: (json['lon'] as num).toDouble(),
-    accuracy: (json['acc'] as num?)?.toDouble(),
-    at: DateTime.fromMillisecondsSinceEpoch(
-      (json['at'] as num).toInt(),
-      isUtc: true,
-    ),
-    battery: (json['battery'] as num?)?.toInt(),
-  );
+  /// Throws a [FormatException] for a time or battery that is no finite
+  /// number (JSON allows 1e400) or a time no date has.
+  factory LocationFix.fromJson(Map<String, Object?> json) {
+    final at = json['at'] as num;
+    final battery = json['battery'] as num?;
+    if (!at.isFinite || at.abs() > _maxMilliseconds) {
+      throw const FormatException('Ungültiger Zeitpunkt');
+    }
+    if (battery != null && !battery.isFinite) {
+      throw const FormatException('Ungültiger Akkustand');
+    }
+    return LocationFix(
+      latitude: (json['lat'] as num).toDouble(),
+      longitude: (json['lon'] as num).toDouble(),
+      accuracy: (json['acc'] as num?)?.toDouble(),
+      at: DateTime.fromMillisecondsSinceEpoch(at.toInt(), isUtc: true),
+      // A level no battery has is left out.
+      battery: battery != null && battery >= 0 && battery <= 100
+          ? battery.toInt()
+          : null,
+    );
+  }
+
+  /// The range of [DateTime].
+  static const _maxMilliseconds = 8640000000000000;
 
   final double latitude;
   final double longitude;

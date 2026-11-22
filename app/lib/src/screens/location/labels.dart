@@ -63,6 +63,14 @@ String sharingLabel(MemberLocation? l, Place? place, {DateTime? now}) {
   }
 }
 
+/// Another device of the member shares too; only the one switched on last
+/// counts (the server ignores the other).
+String? otherDeviceLabel(MemberLocation? l) => switch (l?.otherDevice) {
+  null => null,
+  '' => tr.locationSecondDeviceShares,
+  final name => tr.locationOtherDeviceShares(name),
+};
+
 /// A heartbeat only proves that the phone reached the server. It must not
 /// make an older measured coordinate appear current on the family map.
 bool positionStale(MemberLocation l, DateTime now) =>

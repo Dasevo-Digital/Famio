@@ -2084,6 +2084,8 @@
   "locationLastLocationPlaceAgo": "Last location{place} · {ago} · possibly outdated",
   "locationDeviceSilent": "Phone not reporting since {since}{place}",
   "locationDeviceSilentPlace": " · last at “{place}”",
+  "locationOtherDeviceShares": "“{device}” shares too – shown is the device switched on last",
+  "locationSecondDeviceShares": "A second device shares too – shown is the one switched on last",
   "locationPlaceSinceLastConfirmed": "At “{place}”{since} · last confirmed {ago}",
   "locationSinceTime": " since {time}",
   "locationWayLastConfirmedAgo": "On the way · last confirmed {ago}",

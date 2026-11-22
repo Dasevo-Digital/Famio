@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:famio_shared/famio_shared.dart';
+import 'package:sqlite3/sqlite3.dart';
 
 import '../accounts.dart';
 import '../api_exception.dart';
@@ -11,11 +14,20 @@ import '../i18n.dart';
 /// komme", and the phone keeps sending its position for
 /// [SosAlert.live].
 class SosService {
-  SosService({required this.records, required this.accounts, this.push});
+  SosService({
+    required this.records,
+    required this.accounts,
+    this.push,
+    this.db,
+  });
 
   final RecordStore records;
   final Accounts accounts;
   final PushService? push;
+
+  /// Keeps what was told about batteries over a server start; without it
+  /// only in memory.
+  final Database? db;
 
   /// A second press within this time updates the open alert instead of
   /// raising a new one.
@@ -301,14 +313,27 @@ class SosService {
         t('Bitte einen kurzen Text'),
       );
     }
+    if ((latitude == null) != (longitude == null) ||
+        (latitude != null &&
+            (!latitude.isFinite ||
+                !longitude!.isFinite ||
+                latitude.abs() > 90 ||
+                longitude.abs() > 180))) {
+      throw ApiException.badRequest(
+        'invalid_position',
+        t('Ungültige Position'),
+      );
+    }
+    // The nearest of the places it lies in, as for arrivals (#577).
     var place = (id: '', name: '');
     if (latitude != null && longitude != null) {
+      var best = double.infinity;
       for (final r in records.all(Collections.places)) {
         final p = Place.fromRecord(r);
-        if (distanceMeters(latitude, longitude, p.latitude, p.longitude) <=
-            p.radius) {
+        final d = distanceMeters(latitude, longitude, p.latitude, p.longitude);
+        if (d <= p.radius && d < best) {
           place = (id: p.id, name: p.name);
-          break;
+          best = d;
         }
       }
     }
@@ -367,8 +392,58 @@ class SosService {
 
   /// Below this the adults hear about a phone's battery.
   static const lowBattery = 15;
-  final _batteryWarned = <String, DateTime>{};
-  final _battery = <String, int>{};
+  static const _batteryKey = 'batteryWarnings';
+
+  /// Per member: whether the battery was low at the last report, and when
+  /// the adults were told last. Stored, so a server start tells nothing
+  /// again (#577).
+  late final Map<String, ({bool low, DateTime? warned})> _battery =
+      _readBattery();
+
+  Map<String, ({bool low, DateTime? warned})> _readBattery() {
+    final row = db?.select('SELECT value FROM settings WHERE key = ?', [
+      _batteryKey,
+    ]).firstOrNull;
+    final result = <String, ({bool low, DateTime? warned})>{};
+    try {
+      final stored = row == null
+          ? const <String, Object?>{}
+          : (jsonDecode(row.columnAt(0) as String) as Map)
+                .cast<String, Object?>();
+      for (final MapEntry(:key, :value) in stored.entries) {
+        if (value is! Map) continue;
+        result[key] = (
+          low: value['low'] == true,
+          warned: switch (value['warned']) {
+            final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+            _ => null,
+          },
+        );
+      }
+    } on FormatException {
+      // Unreadable: as after the very first start.
+    }
+    return result;
+  }
+
+  void _saveBattery() {
+    final members = {for (final m in accounts.members()) m.id};
+    _battery.removeWhere((id, _) => !members.contains(id));
+    db?.execute(
+      'INSERT INTO settings (key, value) VALUES (?, ?)'
+      ' ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+      [
+        _batteryKey,
+        jsonEncode({
+          for (final MapEntry(:key, :value) in _battery.entries)
+            key: {
+              'low': value.low,
+              'warned': ?value.warned?.millisecondsSinceEpoch,
+            },
+        }),
+      ],
+    );
+  }
 
   /// A position report with [member]'s battery: falling below [lowBattery]
   /// tells the adults once (at most every 6 hours), so a missing position
@@ -376,15 +451,21 @@ class SosService {
   void batteryReported(FamilyMember member, int? now) {
     if (now == null) return;
     final before = _battery[member.id];
-    _battery[member.id] = now;
-    if (now > lowBattery) return;
-    if (before != null && before <= lowBattery) return;
-    final last = _batteryWarned[member.id];
+    final low = now <= lowBattery;
+    if (before?.low != low) {
+      _battery[member.id] = (low: low, warned: before?.warned);
+      if (!low) _saveBattery();
+    }
+    if (!low) return;
+    if (before != null && before.low) return;
+    final last = before?.warned;
     final at = DateTime.now();
     if (last != null && at.difference(last) < const Duration(hours: 6)) {
+      _saveBattery();
       return;
     }
-    _batteryWarned[member.id] = at;
+    _battery[member.id] = (low: true, warned: at);
+    _saveBattery();
     final to = {for (final a in _adults(member.id)) a.id};
     final about = records.get(Collections.memberLocations, member.id);
     push?.deliver(

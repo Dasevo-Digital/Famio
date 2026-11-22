@@ -4967,6 +4967,15 @@
       }
     }
   },
+  "locationOtherDeviceShares": "Auch „{device}“ teilt – gezeigt wird das zuletzt eingeschaltete Gerät",
+  "@locationOtherDeviceShares": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "locationSecondDeviceShares": "Ein zweites Gerät teilt auch – gezeigt wird das zuletzt eingeschaltete",
   "@locationLastLocationPlaceAgo": {
     "placeholders": {
       "place": {

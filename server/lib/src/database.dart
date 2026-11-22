@@ -389,6 +389,20 @@ const _migrations = [
     at INTEGER NOT NULL
   );
   ''',
+  '''
+  -- Devices that share a member's location (#576): the one switched on
+  -- last leads, the others are only counted. The key is the session id
+  -- (a prefix of the token's hash), never the token.
+  CREATE TABLE location_devices (
+    member_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    device_key TEXT NOT NULL,
+    name TEXT,
+    enabled_at INTEGER NOT NULL,
+    last_report INTEGER NOT NULL,
+    sent_fixes INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (member_id, device_key)
+  );
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

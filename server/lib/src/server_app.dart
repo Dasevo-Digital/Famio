@@ -216,7 +216,8 @@ class FamioServerApp {
       onSent: metrics.pushResult,
     );
     notices = NoticeBox(db);
-    sos = SosService(records: records, accounts: accounts, push: push);
+    sos = SosService(records: records, accounts: accounts, push: push, db: db);
+    locations.onBattery = sos.batteryReported;
     invites = Invites(db, accounts);
     backups = backupDir == 'off'
         ? null
@@ -466,10 +467,12 @@ class FamioServerApp {
     invites.collectGarbage();
     backups?.start();
     push.remindAssignments();
-    _assignmentTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => push.remindAssignments(),
-    );
+    locations.followClock();
+    _assignmentTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      push.remindAssignments();
+      // Time windows close and pauses run out without a report (#576).
+      locations.followClock();
+    });
     // Hourly, the first time an hour after the start: after the server was
     // down, devices report again before anybody counts as silent.
     final profiles = ProfileNotices(

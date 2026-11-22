@@ -152,6 +152,7 @@ class _MemberTile extends StatelessWidget {
           sharingLabel(l, place),
           if (l?.battery != null && l!.state != SharingState.paused)
             tr.locationBatteryBattery(l.battery),
+          ?otherDeviceLabel(l),
         ].join(' · '),
         style: warn ? TextStyle(color: c.danger) : null,
       ),
