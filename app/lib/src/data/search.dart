@@ -1,7 +1,8 @@
 import 'package:famio_client/famio_client.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 
 import '../design/palette.dart';
-import 'engine_memo.dart';
+import 'birthdays.dart';
 import 'family_data.dart';
 import 'family_extras.dart';
 import '../l10n.dart';
@@ -94,8 +95,17 @@ String foldForSearch(String s) {
 /// like [foldForSearch]), with … where cut; null if it is not in there.
 String? textSnippet(String text, List<String> words) {
   if (text.isEmpty || words.isEmpty) return null;
-  final flat = text.replaceAll(RegExp(r'\s+'), ' ');
-  final at = foldForSearch(flat).indexOf(words.first);
+  final flat = _flat(text);
+  return _snippet(flat, foldForSearch(flat), words);
+}
+
+String _flat(String text) => text.replaceAll(RegExp(r'\s+'), ' ');
+
+/// [textSnippet] of [flat] (whitespace made single spaces), whose folded
+/// form is [folded].
+String? _snippet(String flat, String folded, List<String> words) {
+  if (flat.isEmpty || words.isEmpty) return null;
+  final at = folded.indexOf(words.first);
   if (at < 0) return null;
   // Folding changes lengths (ß, ae …): the shortest start of the text that
   // folds to at least [at] characters ends where the word begins.
@@ -117,6 +127,26 @@ String? textSnippet(String text, List<String> words) {
   ].join();
 }
 
+/// A long text of a record folded once per version of the record: a
+/// changed record is a new object, so nothing goes stale.
+final _documentTexts = Expando<({String flat, String folded})>('search');
+
+/// A chat message read and folded once per version of its record.
+final _chatTexts =
+    Expando<
+      ({ChatMessage message, String title, String foldedTitle, String folded})
+    >('search chat');
+
+/// How many texts search read and folded (documents, chat messages), for
+/// tests: each version of a record only once.
+@visibleForTesting
+int debugSearchTextsFolded = 0;
+
+/// How many snippets search cut out of documents, for tests: only for
+/// hits.
+@visibleForTesting
+int debugSearchSnippets = 0;
+
 /// Everything on this device that matches all words of [query], best and
 /// newest first. Only what the member sees in the app ([sections]); nothing
 /// leaves the device.
@@ -132,17 +162,24 @@ List<SearchHit> searchFamily(
   if (words.isEmpty) return const [];
 
   final hits = <SearchHit>[];
+
+  /// [foldedTitle] and [folded] are what is already folded; [describe]
+  /// works out the detail only for a hit.
   void consider(
     SearchKind kind,
     String id,
     String title,
     List<String> more, {
     String detail = '',
+    String Function()? describe,
     DateTime? at,
+    String? foldedTitle,
     String folded = '',
   }) {
-    final t = foldForSearch(title);
-    final all = '$t ${foldForSearch(more.join(' '))} $folded';
+    final t = foldedTitle ?? foldForSearch(title);
+    final all = more.isEmpty
+        ? '$t $folded'
+        : '$t ${foldForSearch(more.join(' '))} $folded';
     if (!words.every(all.contains)) return;
     final score = t.startsWith(words.first)
         ? 3
@@ -154,7 +191,7 @@ List<SearchHit> searchFamily(
         kind: kind,
         id: id,
         title: title.isEmpty ? tr.commonUntitled : title,
-        detail: detail,
+        detail: describe?.call() ?? detail,
         at: at,
         score: score,
       ),
@@ -164,14 +201,31 @@ List<SearchHit> searchFamily(
   bool shows(SearchKind k) => sections.contains(k.section);
 
   if (shows(SearchKind.event)) {
-    for (final e in engine.events) {
+    // Own appointments, subscribed and connected calendars, as in the
+    // calendar.
+    for (final e in [...engine.events, ...engine.externalEvents]) {
       consider(
         SearchKind.event,
         e.id,
         e.title,
         [e.location, e.notes],
         detail: e.location,
+        // Else where it comes from: only for a hit.
+        describe: e.location.isEmpty && e.sourceId != null
+            ? () => engine.calendarSubscription(e.sourceId)?.name ?? ''
+            : null,
         at: e.start,
+      );
+    }
+    final today = DateTime.now();
+    for (final b in familyBirthdays(engine)) {
+      consider(
+        SearchKind.event,
+        b.sourceId,
+        '🎂 ${b.name}',
+        [tr.commonBirthday],
+        detail: tr.commonBirthday,
+        at: b.next(today),
       );
     }
   }
@@ -216,35 +270,42 @@ List<SearchHit> searchFamily(
     }
   }
   if (shows(SearchKind.document)) {
-    // Recognised texts are long: folded once until the documents change.
-    final texts = EngineMemo.of(engine).get(
-      'search documents',
-      const {Collections.documents, Collections.externalDocuments},
-      () => {
-        for (final d in engine.documents)
-          if (d.content.isNotEmpty) d.id: foldForSearch(d.content),
-      },
-    );
-    for (final d in engine.documents) {
-      // Found only in its text: where, so one sees why.
-      final snippet = textSnippet(d.content, words);
-      consider(
-        SearchKind.document,
-        d.id,
-        d.title,
-        [d.notes, d.category.label],
-        folded: texts[d.id] ?? '',
-        detail: [
-          d.category.label,
-          if (snippet != null &&
-              !words.every(
-                foldForSearch(
-                  '${d.title} ${d.notes} ${d.category.label}',
-                ).contains,
-              ))
-            snippet,
-        ].join(' · '),
-      );
+    for (final collection in [
+      Collections.documents,
+      Collections.externalDocuments,
+    ]) {
+      for (final r in engine.records(collection)) {
+        final d = FamilyDocument.fromRecord(r);
+        // Recognised texts are long: folded once per version.
+        final text = d.content.isEmpty
+            ? null
+            : _documentTexts[r] ??= () {
+                debugSearchTextsFolded++;
+                final flat = _flat(d.content);
+                return (flat: flat, folded: foldForSearch(flat));
+              }();
+        consider(
+          SearchKind.document,
+          d.id,
+          d.title,
+          [d.notes, d.category.label],
+          folded: text?.folded ?? '',
+          // Found only in its text: where, so one sees why.
+          describe: () {
+            final inMeta = words.every(
+              foldForSearch(
+                '${d.title} ${d.notes} ${d.category.label}',
+              ).contains,
+            );
+            if (inMeta || text == null) return d.category.label;
+            debugSearchSnippets++;
+            return [
+              d.category.label,
+              ?_snippet(text.flat, text.folded, words),
+            ].join(' · ');
+          },
+        );
+      }
     }
   }
   if (shows(SearchKind.contact)) {
@@ -268,13 +329,27 @@ List<SearchHit> searchFamily(
   }
   if (shows(SearchKind.chat)) {
     for (final r in engine.records(Collections.chatMessages)) {
-      final m = ChatMessage.fromRecord(r);
+      // Read and folded once per version, not on every search.
+      final chat = _chatTexts[r] ??= () {
+        debugSearchTextsFolded++;
+        final m = ChatMessage.fromRecord(r);
+        final title = m.text.split('\n').first;
+        return (
+          message: m,
+          title: title,
+          foldedTitle: foldForSearch(title),
+          folded: foldForSearch(m.text),
+        );
+      }();
+      final m = chat.message;
       if (m.text.isEmpty) continue;
       consider(
         SearchKind.chat,
         m.id,
-        m.text.split('\n').first,
-        [m.text],
+        chat.title,
+        const [],
+        foldedTitle: chat.foldedTitle,
+        folded: chat.folded,
         detail: m.chatId,
         at: m.sentAt,
       );

@@ -41,28 +41,32 @@ extension _OverviewRoutes on FamioApi {
             !RecordStore.canSee(wasteRecord, member.id)
         ? null
         : WasteSettings.fromRecord(wasteRecord);
+    final members = accounts.members();
     final adults = [
-      for (final m in accounts.members())
+      for (final m in members)
         if (m.isAdult) m.id,
     ];
-    final pickups = waste == null
+    final upcoming = waste == null
         ? const <WastePickup>[]
-        : waste
-              .pickups([
-                for (final collection in [
-                  Collections.events,
-                  Collections.externalEvents,
-                ])
-                  for (final r in visible(collection))
-                    ...CalendarEvent.fromRecord(r)
-                        .inTimeZone(location.name)
-                        .occurrencesBetween(
-                          calendar.day(today),
-                          calendar.addDays(today, 60),
-                        ),
-              ])
-              .take(5)
-              .toList();
+        : waste.pickups([
+            for (final collection in [
+              Collections.events,
+              Collections.externalEvents,
+            ])
+              for (final r in visible(collection))
+                ...CalendarEvent.fromRecord(r)
+                    .inTimeZone(location.name)
+                    .occurrencesBetween(
+                      calendar.day(today),
+                      calendar.addDays(today, 60),
+                    ),
+          ]);
+    final pickups = upcoming.take(5).toList();
+    // Turns go pickup by pickup, as in the apps.
+    final everyWeeks = WasteSettings.turnWeeks([
+      for (final p in upcoming) p.day,
+    ]);
+    final memberIds = {for (final m in members) m.id};
 
     // --- countdowns -----------------------------------------------------
     final countdowns = <(int, DateTime, Map<String, Object?>)>[];
@@ -127,7 +131,11 @@ extension _OverviewRoutes on FamioApi {
             'labels': [for (final k in p.kinds) k.label],
             'label': p.label,
             'titles': p.titles,
-            'memberIds': switch (waste!.responsibleFor(p.day)) {
+            'memberIds': switch (waste!.responsibleFor(
+              p.day,
+              everyWeeks: everyWeeks,
+              members: memberIds,
+            )) {
               final ids when ids.isEmpty => adults,
               final ids => ids,
             },

@@ -178,6 +178,40 @@ void main() {
     expect(countdowns.single['running'], isFalse);
   });
 
+  test('turns go pickup by pickup, as in the apps', () async {
+    final today = familyToday();
+    DateTime inDays(int n) => DateTime(today.year, today.month, today.day + n);
+    // Someone who left the family is still in the settings.
+    write(
+      Collections.wasteSettings,
+      WasteSettings.recordId,
+      WasteSettings(memberIds: [mama, 'gone', papa], rotate: true).toData(),
+    );
+    for (var n = 0; n < 4; n++) {
+      write(
+        Collections.events,
+        'p$n',
+        CalendarEvent(
+          id: 'p$n',
+          title: 'Altpapier',
+          start: inDays(1 + 14 * n),
+          end: inDays(2 + 14 * n),
+          allDay: true,
+        ).toData(),
+      );
+    }
+    final waste = (await overview())['waste'] as List;
+    final who = [for (final w in waste.cast<Map>()) (w['memberIds'] as List)];
+    expect(who, hasLength(4));
+    for (final ids in who) {
+      expect(ids, hasLength(1));
+      expect([mama, papa], contains(ids.single));
+    }
+    for (var i = 1; i < who.length; i++) {
+      expect(who[i], isNot(who[i - 1]), reason: 'pickup $i');
+    }
+  });
+
   test('without bin settings there are no pickups', () async {
     expect((await overview())['waste'], isEmpty);
   });

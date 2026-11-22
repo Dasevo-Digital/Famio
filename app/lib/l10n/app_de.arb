@@ -7342,5 +7342,11 @@
   "mealsRecipePageRefused": "Die Seite hat den Abruf abgelehnt (Fehler {status}). Bitte später noch einmal versuchen.",
   "@mealsRecipePageRefused": {"placeholders": {"status": {"type": "int"}}},
   "mealsRecipePageTurnedDown": "Die Seite hat den Abruf abgelehnt. Bitte später noch einmal versuchen.",
-  "mealsRecipePageGone": "Diese Seite gibt es nicht (mehr)."
+  "mealsRecipePageGone": "Diese Seite gibt es nicht (mehr).",
+  "weatherWeatherAndClothing": "Wetter & Kleidung",
+  "weatherAsOfTempText": "Stand {time}: {temp} · {text}",
+  "@weatherAsOfTempText": {"placeholders": {"time": {"type": "String"}, "temp": {"type": "String"}, "text": {"type": "String"}}},
+  "weatherTipsNeedCurrentData": "Kleidungstipps gibt es wieder, sobald neue Wetterdaten da sind.",
+  "homeUntilDate": "bis {date}",
+  "@homeUntilDate": {"placeholders": {"date": {"type": "String"}}}
 }

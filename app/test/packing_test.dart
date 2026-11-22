@@ -129,4 +129,57 @@ void main() {
     // Lets the sync debounce run out.
     await tester.pump(const Duration(seconds: 1));
   });
+
+  testWidgets('things of someone who left the family stay visible', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1400, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    SharedPreferences.setMockInitialValues({});
+    FlutterSecureStorage.setMockInitialValues({});
+    const me = FamilyMember(id: 'm1', username: 'mama', displayName: 'Mama');
+    final state = AppState();
+    await state.init();
+    final before = _engine('m1')..saveEvent(_trip);
+    final id = before.packingListFor(
+      _trip,
+      _template,
+      memberIds: ['m1', 'm2', 'k1'],
+    );
+    // Papa's account is gone, his things on the shared list stay.
+    before.store.setMeta(
+      'members',
+      '[{"id":"m1","username":"mama","displayName":"Mama"},'
+          '{"id":"k1","username":"mia","displayName":"Mia","role":"child"}]',
+    );
+    final engine = SyncEngine(
+      store: before.store,
+      api: FamioApiClient('localhost:1'),
+      memberId: 'm1',
+    );
+    expect(engine.shoppingItems(id).where((i) => i.memberId == 'm2'), [
+      isA<ShoppingItem>(),
+    ]);
+    state
+      ..me = me
+      ..engine = engine;
+    await tester.pumpWidget(FamioApp(state: state));
+    await tester.pump();
+    tester
+        .state<NavigatorState>(find.byType(Navigator).first)
+        .push(
+          MaterialPageRoute<void>(
+            builder: (_) => ShoppingListScreen(listId: id),
+          ),
+        );
+    await tester.pumpAndSettle();
+    final count = engine.shoppingItems(id).length;
+    expect(find.text('0 von $count eingepackt'), findsOneWidget);
+    // Mama's, Mia's and Papa's: his under everyone's, to be ticked.
+    expect(find.text('Badesachen'), findsNWidgets(3));
+    expect(find.text('Für alle'), findsOneWidget);
+    expect(find.text('Papa'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+  });
 }

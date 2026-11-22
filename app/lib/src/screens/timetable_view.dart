@@ -102,13 +102,18 @@ class TimetableView extends StatelessWidget {
                     ),
                   ),
                   for (var d = 1; d <= 5; d++)
-                    Padding(
-                      padding: const EdgeInsets.all(2),
-                      child: _Cell(
-                        timetable: t,
-                        lesson: t.lesson(d, p),
-                        place: tr.timetableLesson(_days[d - 1], p + 1),
-                        onTap: () => _editLesson(context, t, d, p),
+                    // A row as tall as its tallest lesson (large text).
+                    TableCell(
+                      verticalAlignment:
+                          TableCellVerticalAlignment.intrinsicHeight,
+                      child: Padding(
+                        padding: const EdgeInsets.all(2),
+                        child: _Cell(
+                          timetable: t,
+                          lesson: t.lesson(d, p),
+                          place: tr.timetableLesson(_days[d - 1], p + 1),
+                          onTap: () => _editLesson(context, t, d, p),
+                        ),
                       ),
                     ),
                 ],
@@ -354,8 +359,9 @@ class _Cell extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
-          child: SizedBox(
-            height: 52,
+          // At least 52, taller when large text needs it.
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: Center(
               child: l == null
                   ? Icon(AppIcons.plus, size: 16, color: c.inkSoft)

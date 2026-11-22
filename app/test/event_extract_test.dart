@@ -157,6 +157,136 @@ void main() {
       expect(extracted.events.single.start.hour, 17);
       expect(extracted.events.single.end.hour, 19);
     });
+
+    test('the deadline is the day right after "bis", not a later date', () {
+      final extracted = extractLetter(
+        'Bitte geben Sie das Formular bis Freitag ab, '
+        'damit wir den Ausflug am 27.11.2026 planen können.',
+        now: now,
+      );
+      final task = extracted.tasks.single;
+      expect(task.due, DateTime(2026, 11, 20));
+      expect(task.title, 'geben Sie das Formular');
+      final event = extracted.events.single;
+      expect(event.title, 'Ausflug');
+      expect(event.start, DateTime(2026, 11, 27));
+      expect(event.allDay, isTrue);
+    });
+
+    test('an appointment after the deadline stays an appointment', () {
+      for (final (text, taskTitle, start, eventTitle) in [
+        (
+          'Bitte unterschreiben und bis 20.11. zurückgeben: '
+              'Theaterbesuch am 4.12.2026 um 10 Uhr',
+          'unterschreiben und zurückgeben',
+          DateTime(2026, 12, 4, 10),
+          'Theaterbesuch',
+        ),
+        (
+          'Bitte bis 20.11. das Geld abgeben und am 27.11.2026 um 8 Uhr '
+              'pünktlich zum Ausflug kommen.',
+          'das Geld abgeben',
+          DateTime(2026, 11, 27, 8),
+          'Ausflug',
+        ),
+        (
+          'Bitte bis 20.11. zurückgeben. Der Ausflug ist am 27.11.2026.',
+          'zurückgeben',
+          DateTime(2026, 11, 27),
+          'Ausflug',
+        ),
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        final task = extracted.tasks.single;
+        expect(task.due, DateTime(2026, 11, 20), reason: text);
+        expect(task.title, taskTitle, reason: text);
+        final event = extracted.events.single;
+        expect(event.start, start, reason: text);
+        expect(event.title, contains(eventTitle), reason: text);
+      }
+    });
+
+    test('transfers with umlauts are actions with a deadline', () {
+      for (final (text, title, due) in [
+        (
+          'Bitte das Geld bis 20.11.2026 überweisen.',
+          'das Geld überweisen',
+          DateTime(2026, 11, 20),
+        ),
+        (
+          'Bitte überweisen Sie 12 € bis zum 1.12. auf das Konto der '
+              'Klassenkasse.',
+          'überweisen Sie 12 € auf das Konto der Klassenkasse',
+          DateTime(2026, 12, 1),
+        ),
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        expect(extracted.events, isEmpty, reason: text);
+        expect(extracted.tasks.single.title, title, reason: text);
+        expect(extracted.tasks.single.due, due, reason: text);
+      }
+    });
+
+    test('"bis zum" leaves no preposition in the title', () {
+      for (final (text, title) in [
+        (
+          'Bitte Einverständnis bis zum 20.11. abgeben.',
+          'Einverständnis abgeben',
+        ),
+        (
+          'Bitte Einverständnis bis zum 20.11.2026 abgeben.',
+          'Einverständnis abgeben',
+        ),
+        (
+          'Bitte geben Sie den Abschnitt bis zum 20. November zurück.',
+          'geben Sie den Abschnitt zurück',
+        ),
+      ]) {
+        final task = extractLetter(text, now: now).tasks.single;
+        expect(task.title, title, reason: text);
+        expect(task.due, DateTime(2026, 11, 20), reason: text);
+      }
+    });
+
+    test('a time or an amount does not cut the deadline apart', () {
+      for (final (text, title) in [
+        (
+          'Bitte das Formular bis 20.11., 12:00 Uhr abgeben.',
+          'das Formular abgeben',
+        ),
+        // The title reads the amount as the quick entry does.
+        ('Bitte bis 20.11. 12,50 € überweisen.', '12 50 € überweisen'),
+      ]) {
+        final extracted = extractLetter(text, now: now);
+        expect(extracted.events, isEmpty, reason: text);
+        expect(extracted.tasks.single.title, title, reason: text);
+        expect(extracted.tasks.single.due, DateTime(2026, 11, 20));
+      }
+    });
+
+    test('"by" without a day is no deadline', () {
+      final extracted = extractLetter(
+        'Pay by card at the Christmas market on 4 December 2026 at 3 pm.',
+        now: now,
+      );
+      expect(extracted.tasks, isEmpty);
+      expect(extracted.events.single.start, DateTime(2026, 12, 4, 15));
+    });
+
+    test('a weekday deadline is joined to its date', () {
+      final task = extractLetter(
+        'Bitte geben Sie die Rückmeldung bis spätestens Freitag, '
+        'den 20.11.2026 ab.',
+        now: now,
+      ).tasks.single;
+      expect(task.due, DateTime(2026, 11, 20));
+      expect(task.title, 'geben Sie die Rückmeldung');
+      final english = extractLetter(
+        'Please return the consent form by November 20, 2026.',
+        now: now,
+      ).tasks.single;
+      expect(english.title, 'return the consent form');
+    });
   });
 
   final now = DateTime(2026, 10, 6);

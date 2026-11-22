@@ -457,19 +457,31 @@ class LetterTaskSuggestion {
   final DateTime? due;
 }
 
+/// Word edges for the letter patterns: `\b` only knows ASCII letters, so
+/// "überweisen" would never start a word.
+const _letterWordStart = r'(?<![a-zäöüßáéíóúñ0-9_])';
+const _letterWordEnd = r'(?![a-zäöüßáéíóúñ0-9_])';
+
 final _letterAction = RegExp(
-  r'\b(?:einverständnis(?:erklärung)?|rückmeldung|anmeldeschluss|abgabefrist'
-  r'|abgeben|zurückgeben|zurücksenden|einreichen|unterschreiben|überweisen'
-  r'|bezahlen|anmelden|bestätigen|mitteilen|geben\s+sie|senden\s+sie'
-  r'|return|submit|sign|pay|register|reply|respond|rsvp'
-  r'|entregar|devolver|firmar|pagar|inscribirse|confirmar|responder'
-  r'|autorización|plazo de entrega)\b',
+  '$_letterWordStart(?:einverständnis(?:erklärung)?|rückmeldung'
+  '|anmeldeschluss|abgabefrist|abgeben|zurückgeben|zurücksenden|einreichen'
+  '|unterschreiben|überweisen|bezahlen|anmelden|bestätigen|mitteilen'
+  r'|geben\s+sie|senden\s+sie'
+  '|return|submit|sign|pay|register|reply|respond|rsvp'
+  '|entregar|devolver|firmar|pagar|inscribirse|confirmar|responder'
+  '|autorización|plazo de entrega)$_letterWordEnd',
   caseSensitive: false,
 );
 
 final _letterDeadline = RegExp(
   r'\b(?:bis(?:\s+spätestens)?|spätestens(?:\s+am)?'
   r'|no later than|due(?:\s+by|\s+on)?|by|antes\s+del?|hasta)\b',
+  caseSensitive: false,
+);
+
+/// The small words between "bis" and its day: "bis zum 20.11.".
+final _letterDueFiller = RegExp(
+  r'\s*(?:(?:zum|zur|den|dem|the)\s+)*',
   caseSensitive: false,
 );
 
@@ -489,11 +501,31 @@ final _letterOptional = RegExp(
 );
 final _letterDayPrefix = RegExp(r'^(?:am|on|el)\s+', caseSensitive: false);
 
+/// What may join a weekday to its date: "Freitag, den 20.11.2026".
+final _letterDayJoin = RegExp(
+  r',?\s*(?:(?:den|dem|the|el)\s+)?',
+  caseSensitive: false,
+);
+
 /// A comma can introduce a request as well as belong to a date.
 final _letterClause = RegExp(
   r';[ \t]+|[,!.?][ \t]+(?=(?:bitte|please|por favor|geben\s+sie'
   r'|reichen\s+sie|senden\s+sie|einverständnis(?:erklärung)?|rückmeldung'
   r'|return|submit|reply|rsvp|entregar|devolver)\b)',
+  caseSensitive: false,
+);
+
+/// Where the deadline after "bis" ends and the line goes on: a reason
+/// ("damit", "so that"), a colon, a comma, "und" before another date or the
+/// end of a sentence.
+final _letterStop = RegExp(
+  r'(?<why>(?:\s*,)?\s+(?:damit|sodass|so\s+dass|weil|so\s+that|because'
+  '|para\\s+que|porque)$_letterWordEnd\\s*)'
+  // Not inside "12:00" or "12,50".
+  r'|(?<hard>\s*;\s*|\s*:(?!\d)\s*)'
+  r'|(?<comma>\s*,(?!\d)\s*|(?<!\d),\s*)'
+  r'|(?<and>\s+(?:und|and|y|sowie)\s+)'
+  r'|(?<end>(?<=[a-zäöüßáéíóúñ]{4})[.!?]\s*)',
   caseSensitive: false,
 );
 
@@ -507,25 +539,76 @@ final _letterPolite = RegExp(
   caseSensitive: false,
 );
 
+/// Where the day [text] starts with ends ("20.11.", "Freitag", "Freitag,
+/// den 20.11.2026"), or null when it starts with none.
+int? _letterDayEnd(String text, DateTime today, String language) {
+  final line = text.trimLeft();
+  final offset = text.length - line.length;
+  final prefixEnd = _letterDayPrefix.matchAsPrefix(line)?.end ?? 0;
+  final dates = _dates(line, today, language).toList();
+  int? dateAt(int index) =>
+      dates.where((date) => date.startIndex == index).firstOrNull?.endIndex;
+  final day = line.substring(prefixEnd);
+  final end =
+      dateAt(prefixEnd) ??
+      [_quickWeekday, _quickShortDay, _quickRelative, _quickIn]
+          .map((pattern) => pattern.matchAsPrefix(day)?.end)
+          .nonNulls
+          .map((end) => prefixEnd + end)
+          .map(
+            (end) =>
+                dateAt(_letterDayJoin.matchAsPrefix(line, end)!.end) ?? end,
+          )
+          .firstOrNull;
+  return end == null ? null : offset + end;
+}
+
 /// An alternative starts with a day. An "or" between two actions does
 /// not make a date elsewhere in the clause an alternative deadline.
-bool _startsWithLetterDay(String text, DateTime today, String language) {
-  final line = text.trimLeft();
-  final prefixEnd = _letterDayPrefix.matchAsPrefix(line)?.end ?? 0;
-  final day = line.substring(prefixEnd);
-  return _dates(
-        line,
-        today,
-        language,
-      ).any((date) => date.startIndex == prefixEnd) ||
-      _quickWeekday.matchAsPrefix(day) != null ||
-      _quickShortDay.matchAsPrefix(day) != null ||
-      _quickRelative.matchAsPrefix(day) != null ||
-      _quickIn.matchAsPrefix(day) != null;
+bool _startsWithLetterDay(String text, DateTime today, String language) =>
+    _letterDayEnd(text, today, language) != null;
+
+/// A piece of the line after a deadline; [why] when a reason introduced it.
+typedef _LetterPiece = ({String text, bool why});
+
+/// [due], the text after "bis" that starts with its day, cut where the
+/// deadline ends. The first piece is the deadline, the others go on with
+/// the line: "bis Freitag ab, damit wir den Ausflug am 27.11. planen".
+List<_LetterPiece> _letterPieces(String due, DateTime today, String language) {
+  bool dated(String text) => _dates(text, today, language).isNotEmpty;
+  final dayEnd = _letterDayEnd(due, today, language) ?? 0;
+  final dates = _dates(due, today, language).toList();
+  bool inDate(Match stop) => dates.any(
+    (date) => stop.start < date.endIndex && stop.end > date.startIndex,
+  );
+  final pieces = <_LetterPiece>[];
+  var from = 0;
+  var why = false;
+  for (final stop in _letterStop.allMatches(due)) {
+    if (stop.start < dayEnd || inDate(stop)) continue;
+    final next = due.substring(stop.end);
+    final cut = switch (stop) {
+      // "und am 27.11. zum Ausflug kommen": another appointment.
+      _ when stop.namedGroup('and') != null => dated(
+        next.split(_letterStop).first,
+      ),
+      _ when stop.namedGroup('end') != null =>
+        next.isEmpty || next[0] != next[0].toLowerCase(),
+      _ => true,
+    };
+    if (!cut) continue;
+    pieces.add((text: due.substring(from, stop.start), why: why));
+    why = stop.namedGroup('why') != null;
+    from = stop.end;
+  }
+  pieces.add((text: due.substring(from), why: why));
+  return pieces;
 }
 
 /// Separates actions with deadlines from appointments so a deadline is
-/// never also offered as an appointment.
+/// never also offered as an appointment. The deadline is what directly
+/// follows "bis", "by" or "hasta"; other dates on its line stay
+/// appointments.
 ({List<EventSuggestion> events, List<LetterTaskSuggestion> tasks})
 extractLetter(String text, {DateTime? now, String? timeZone}) {
   final calendar = FamilyCalendar(timeZone);
@@ -546,44 +629,96 @@ extractLetter(String text, {DateTime? now, String? timeZone}) {
       parseQuickEntry(text, today: today, language: language);
   bool startsWithDay(String text) =>
       _startsWithLetterDay(text, today, language);
+  bool dated(String text) => _dates(text, today, language).isNotEmpty;
+
+  /// The day [text] starts with; dates after it are something else.
+  QuickEntry dueOf(String text) {
+    final dayEnd = _letterDayEnd(text, today, language);
+    var days = text;
+    if (dayEnd != null) {
+      for (final date in _dates(text, today, language)) {
+        if (date.startIndex < dayEnd) continue;
+        days = days.replaceRange(
+          date.startIndex,
+          date.endIndex,
+          ' ' * (date.endIndex - date.startIndex),
+        );
+      }
+    }
+    final entry = parse(days);
+    return QuickEntry(
+      title: parse(text).title,
+      days: entry.days,
+      lastDay: entry.lastDay,
+      time: entry.time,
+    );
+  }
+
+  /// Where the deadline after [marker] starts, or null when no day
+  /// directly follows it ("Pay by card").
+  int? dueStart(String line, Match marker) {
+    final start =
+        _letterDueFiller.matchAsPrefix(line, marker.end)?.end ?? marker.end;
+    return startsWithDay(line.substring(start)) ? start : null;
+  }
 
   final tasks = <LetterTaskSuggestion>[];
   final seen = <(String, DateTime?)>{};
-  final eventLines = [...lines];
+  final reasons = <String>{};
+  final eventLines = [
+    for (final line in lines) [line],
+  ];
   for (final (index, line) in lines.indexed) {
-    final explicit = _letterDeadline.firstMatch(line);
-    final marker = explicit != null && _letterAction.hasMatch(line)
-        ? explicit
-        : _letterHandIn.hasMatch(line) && !_letterOptional.hasMatch(line)
-        ? _letterOn
-              .allMatches(line)
-              .where((m) => startsWithDay(line.substring(m.end)))
-              .firstOrNull
-        : null;
+    final Match? marker;
+    if (_letterAction.hasMatch(line) && _letterDeadline.hasMatch(line)) {
+      marker = _letterDeadline
+          .allMatches(line)
+          .where((m) => dueStart(line, m) != null)
+          .firstOrNull;
+    } else if (_letterHandIn.hasMatch(line) &&
+        !_letterOptional.hasMatch(line)) {
+      marker = _letterOn
+          .allMatches(line)
+          .where((m) => startsWithDay(line.substring(m.end)))
+          .firstOrNull;
+    } else {
+      marker = null;
+    }
     if (marker == null) continue;
-    final after = line.substring(marker.end);
+    final pieces = _letterPieces(
+      line.substring(dueStart(line, marker) ?? marker.end),
+      today,
+      language,
+    );
+    final after = pieces.first.text;
     final options = <QuickEntry>[];
     var offset = 0;
     for (final split in _letterAlternatives.allMatches(after)) {
       if (!startsWithDay(after.substring(split.end))) continue;
-      options.add(parse(after.substring(offset, split.start)));
+      options.add(dueOf(after.substring(offset, split.start)));
       offset = split.end;
     }
-    options.add(parse(after.substring(offset)));
+    options.add(dueOf(after.substring(offset)));
     final alternatives =
         options.length > 1 && options.every((option) => option.days.isNotEmpty);
     final deadline = alternatives
         ? null
         : options.length == 1
         ? options.single
-        : parse(after);
+        : dueOf(after);
     if (deadline != null && deadline.days.isEmpty) continue;
-    final rest =
-        deadline?.title ?? options.map((option) => option.title).join(' ');
-    final title = '${line.substring(0, marker.start)} $rest'
+    final before = line.substring(0, marker.start);
+    final rest = [
+      deadline?.title ?? options.map((option) => option.title).join(' '),
+      // What goes on without a date still says what to do; a reason
+      // ("damit wir planen können") does not.
+      for (final piece in pieces.skip(1))
+        if (!piece.why && !dated(piece.text)) parse(piece.text).title,
+    ].join(' ');
+    final title = '${dated(before) ? _clean(before) : before} $rest'
         .trim()
         .replaceFirst(_letterPolite, '')
-        .replaceFirst(RegExp(r'[.!?;,]+$'), '')
+        .replaceFirst(RegExp(r'[.!?;,:]+$'), '')
         .replaceAll(RegExp(r'\s+'), ' ')
         .trim();
     if (title.isEmpty) continue;
@@ -596,16 +731,47 @@ extractLetter(String text, {DateTime? now, String? timeZone}) {
     if (seen.add((shortTitle, due))) {
       tasks.add(LetterTaskSuggestion(shortTitle, line, due));
     }
-    eventLines[index] = '';
+    // The other dates of the line are appointments.
+    eventLines[index] = [
+      if (dated(before)) before,
+      for (final piece in pieces.skip(1))
+        if (dated(piece.text)) piece.text,
+    ];
+    reasons.addAll([
+      for (final piece in pieces.skip(1))
+        if (piece.why && dated(piece.text)) piece.text,
+    ]);
   }
+  final events = _extractEvents(
+    tasks.isEmpty ? _lines(text) : [for (final l in eventLines) ...l],
+    calendar,
+    today,
+    language,
+  );
   return (
-    events: _extractEvents(
-      tasks.isEmpty ? _lines(text) : eventLines,
-      calendar,
-      today,
-      language,
-    ),
+    events: [
+      for (final event in events)
+        if (reasons.contains(event.line)) _namedAfterEvent(event) else event,
+    ],
     tasks: tasks,
+  );
+}
+
+/// A reason ("damit wir den Ausflug am 27.11. planen können") is named
+/// after the event it mentions.
+EventSuggestion _namedAfterEvent(EventSuggestion event) {
+  final word = event.line
+      .split(RegExp(r'[^\p{L}-]+', unicode: true))
+      .where((word) => word.length > 2 && _namesEvent(word))
+      .firstOrNull;
+  if (word == null) return event;
+  return EventSuggestion(
+    title: '${word[0].toUpperCase()}${word.substring(1)}',
+    start: event.start,
+    end: event.end,
+    allDay: event.allDay,
+    line: event.line,
+    location: event.location,
   );
 }
 

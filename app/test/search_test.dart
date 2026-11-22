@@ -136,4 +136,117 @@ void main() {
     expect(textSnippet('Größe: Straße 5', ['strasse']), 'Größe: Straße 5');
     expect(textSnippet('kurz', ['lang']), isNull);
   });
+
+  test('subscribed calendars and birthdays are found as in the calendar', () {
+    engine
+      ..saveCalendarSubscription(
+        const CalendarSubscription(
+          id: 'sub',
+          name: 'Schule',
+          url: 'https://example.com/s.ics',
+        ),
+      )
+      ..saveContact(
+        const FamilyContact(
+          id: 'c1',
+          name: 'Oma Inge',
+          birthday: Birthday(3, 14, 1950),
+        ),
+      );
+    engine.store.put(
+      SyncRecord(
+        collection: Collections.externalEvents,
+        id: 'x1',
+        data: CalendarEvent(
+          id: 'x1',
+          title: 'Sportfest Klasse 3b',
+          start: DateTime(2026, 12, 3, 9),
+          end: DateTime(2026, 12, 3, 12),
+          sourceId: 'sub',
+        ).toData(),
+        updatedAt: 1,
+        rev: 1,
+      ),
+      dirty: false,
+    );
+    final sport = searchFamily(engine, 'sportfest', sections: all).single;
+    expect(
+      (sport.kind, sport.id, sport.detail),
+      (SearchKind.event, 'x1', 'Schule'),
+    );
+    final birthday = searchFamily(
+      engine,
+      'inge geburtstag',
+      sections: all,
+    ).single;
+    expect(
+      (birthday.kind, birthday.id, birthday.title),
+      (SearchKind.event, 'birthday:contact:c1', '🎂 Oma Inge'),
+    );
+    // Switched off with the calendar.
+    expect(
+      searchFamily(
+        engine,
+        'sportfest',
+        sections: all.difference({FamioSection.calendar}),
+      ),
+      isEmpty,
+    );
+  });
+
+  test('only hits cut a snippet, long texts are folded once', () {
+    for (var i = 0; i < 3; i++) {
+      engine.saveDocument(
+        FamilyDocument(
+          id: 'd$i',
+          title: 'Brief $i',
+          category: DocumentCategory.school,
+          file: null,
+          content:
+              'Liebe Eltern, der Wandertag ist bald. ${'Text ' * 200}'
+              '${i == 1 ? 'Bitte Regenjacke mitgeben.' : ''}',
+        ),
+      );
+    }
+    for (var i = 0; i < 3; i++) {
+      engine.put(
+        Collections.chatMessages,
+        'c$i',
+        ChatMessage(
+          id: 'c$i',
+          chatId: ChatIds.family,
+          authorId: 'm1',
+          sentAt: DateTime(2026, 10, 1, 9, i),
+          text: 'Nachricht $i\nmit zweiter Zeile',
+        ).toData(),
+      );
+    }
+    debugSearchTextsFolded = 0;
+    debugSearchSnippets = 0;
+    final hit = searchFamily(engine, 'regenjacke', sections: all).single;
+    expect(hit.id, 'd1');
+    expect(hit.detail, contains('Regenjacke'));
+    // Three documents and three messages read; one snippet, for the hit.
+    expect(debugSearchTextsFolded, 6);
+    expect(debugSearchSnippets, 1);
+    // The next search folds nothing again.
+    debugSearchTextsFolded = 0;
+    expect(searchFamily(engine, 'zweiter', sections: all), hasLength(3));
+    expect(searchFamily(engine, 'wandertag', sections: all), hasLength(3));
+    expect(debugSearchTextsFolded, 0);
+    // A changed message is read again, only it.
+    engine.put(
+      Collections.chatMessages,
+      'c0',
+      ChatMessage(
+        id: 'c0',
+        chatId: ChatIds.family,
+        authorId: 'm1',
+        sentAt: DateTime(2026, 10, 1, 9),
+        text: 'Geändert',
+      ).toData(),
+    );
+    expect(searchFamily(engine, 'geandert', sections: all).single.id, 'c0');
+    expect(debugSearchTextsFolded, 1);
+  });
 }

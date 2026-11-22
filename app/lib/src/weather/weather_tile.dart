@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -31,10 +34,34 @@ class _WeatherTileState extends State<WeatherTile> {
   var _loading = false;
   String? _placeKey;
 
+  /// The tile stays on screen for hours (start page on a tablet, wall
+  /// display): it looks again now and then and when the app comes back.
+  Timer? _timer;
+  AppLifecycleListener? _lifecycle;
+
   @override
   void initState() {
     super.initState();
     _init();
+    _timer = Timer.periodic(const Duration(minutes: 5), (_) => _loadWhenOld());
+    _lifecycle = AppLifecycleListener(onResume: _loadWhenOld);
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _lifecycle?.dispose();
+    super.dispose();
+  }
+
+  /// Loads again once the forecast is older than [WeatherService.maxAge].
+  void _loadWhenOld() {
+    final f = _forecast;
+    if (!mounted || _loading) return;
+    if (f == null ||
+        clock.now().difference(f.fetched) >= WeatherService.maxAge) {
+      _load();
+    }
   }
 
   Future<void> _init() async {
@@ -78,8 +105,9 @@ class _WeatherTileState extends State<WeatherTile> {
     final c = FamioColors.of(context);
     final service = _service;
     final place = weatherPlace(widget.engine.places);
+    final now = clock.now();
     final kids = widget.engine.children
-        .where((k) => k.ageInMonths(DateTime.now()) < 12 * 12)
+        .where((k) => k.ageInMonths(now) < 12 * 12)
         .toList();
     Widget frame(Widget child, {VoidCallback? onTap, String? badge}) =>
         SoftCard(
@@ -100,7 +128,9 @@ class _WeatherTileState extends State<WeatherTile> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      kids.isEmpty ? tr.weatherWeather : 'Wetter & Kleidung',
+                      kids.isEmpty
+                          ? tr.weatherWeather
+                          : tr.weatherWeatherAndClothing,
                       style: theme.textTheme.titleLarge,
                     ),
                   ),
@@ -156,9 +186,43 @@ class _WeatherTileState extends State<WeatherTile> {
               ),
       );
     }
+    // Weather of hours ago is not "now", and no ground for clothing tips.
+    final outdated = now.difference(f.fetched) > WeatherService.outdatedAfter;
+    if (outdated) {
+      return frame(
+        onTap: () => _showDetails(context, f, place, kids, outdated: true),
+        badge: weatherEmoji(f.now.code),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              tr.weatherAsOfTempText(
+                _asOf(f.fetched, now),
+                _deg(f.now.temperature),
+                weatherText(f.now.code),
+              ),
+              style: theme.textTheme.bodyLarge,
+            ),
+            if (kids.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  tr.weatherTipsNeedCurrentData,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.only(top: 8),
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
+        ),
+      );
+    }
     // In the evening the tile tells what the children sleep in; the
     // details show both.
-    final hour = DateTime.now().hour;
+    final hour = now.hour;
     final night = hour >= 17 || hour < 6
         ? <String, NightAdvice>{for (final k in kids) k.id: ?nightAdvice(k, f)}
         : const <String, NightAdvice>{};
@@ -215,12 +279,19 @@ class _WeatherTileState extends State<WeatherTile> {
     );
   }
 
+  /// "08:30", or with the day when it is not today's.
+  static String _asOf(DateTime fetched, DateTime now) =>
+      DateUtils.isSameDay(fetched, now)
+      ? DateFormat.jm(appLanguage).format(fetched)
+      : DateFormat.MMMd(appLanguage).add_jm().format(fetched);
+
   void _showDetails(
     BuildContext context,
     WeatherForecast f,
     Place place,
-    List<Child> kids,
-  ) {
+    List<Child> kids, {
+    bool outdated = false,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       useRootNavigator: true,
@@ -301,7 +372,14 @@ class _WeatherTileState extends State<WeatherTile> {
                     ],
                   ),
                 ),
-                for (final k in kids) ...[
+                if (outdated && kids.isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    tr.weatherTipsNeedCurrentData,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+                for (final k in outdated ? const <Child>[] : kids) ...[
                   const SizedBox(height: 16),
                   () {
                     final advice = clothingAdvice(k, f);
@@ -327,7 +405,9 @@ class _WeatherTileState extends State<WeatherTile> {
                     );
                   }(),
                 ],
-                if (kids.isNotEmpty && nightAdvice(kids.first, f) != null) ...[
+                if (!outdated &&
+                    kids.isNotEmpty &&
+                    nightAdvice(kids.first, f) != null) ...[
                   const SizedBox(height: 24),
                   Text(
                     tr.weatherNightOutsideDownLow(

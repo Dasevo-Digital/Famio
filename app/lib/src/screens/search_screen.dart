@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/birthdays.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/search.dart';
 import '../design/app_icons.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
+import 'calendar_screen.dart';
 import 'chat_screens.dart';
 import 'contacts_screens.dart';
 import 'event_editor.dart';
@@ -102,7 +104,15 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _open(SyncEngine engine, SearchHit hit) async {
     switch (hit.kind) {
       case SearchKind.event:
-        final e = engine.events.where((e) => e.id == hit.id).firstOrNull;
+        final own = engine.events.where((e) => e.id == hit.id).firstOrNull;
+        // Subscribed and connected calendars and birthdays are read-only.
+        final e =
+            own ??
+            engine.externalEvents.where((e) => e.id == hit.id).firstOrNull ??
+            birthdayEvents(engine)
+                .where((e) => e.id == hit.id)
+                .firstOrNull
+                ?.inTimeZone(engine.familyTimeZone);
         if (e == null) return;
         final now = DateTime.now();
         final next =
@@ -110,7 +120,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 .occurrencesBetween(now, now.add(const Duration(days: 400)))
                 .firstOrNull ??
             Occurrence(e, e.start, e.end);
-        await showEventEditor(context, occurrence: next);
+        if (own != null) {
+          await showEventEditor(context, occurrence: next);
+        } else {
+          // The calendar shows that day when one goes there.
+          CalendarScreen.requestedDay.value = next.start;
+          await showCalendarOccurrence(context, engine, next);
+        }
       case SearchKind.task:
         final t = engine.tasks.where((t) => t.id == hit.id).firstOrNull;
         if (t != null) await showTaskEditor(context, task: t);

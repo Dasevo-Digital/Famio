@@ -2916,5 +2916,9 @@
   "eventWholeFamilyStays": "This appointment is for the whole family. Others decide on single people.",
   "mealsRecipePageRefused": "The page turned the request down (error {status}). Please try again later.",
   "mealsRecipePageTurnedDown": "The page turned the request down. Please try again later.",
-  "mealsRecipePageGone": "This page does not exist (any more)."
+  "mealsRecipePageGone": "This page does not exist (any more).",
+  "weatherWeatherAndClothing": "Weather & clothing",
+  "weatherAsOfTempText": "As of {time}: {temp} · {text}",
+  "weatherTipsNeedCurrentData": "Clothing tips return once new weather data arrives.",
+  "homeUntilDate": "until {date}"
 }

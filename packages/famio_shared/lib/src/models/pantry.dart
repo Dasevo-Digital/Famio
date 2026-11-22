@@ -70,10 +70,15 @@ class PantryItem {
           bestBefore!.day,
         ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
 
+  /// [amount] to a thousandth: counting one more or one less leaves rests
+  /// like 1.2000000000000002 behind.
+  static double tidy(double amount) => (amount * 1000).round() / 1000;
+
   String get amountLabel {
-    final n = amount == amount.roundToDouble()
-        ? amount.toInt().toString()
-        : amount.toString().replaceAll('.', ',');
+    final shown = tidy(amount);
+    final n = shown == shown.roundToDouble()
+        ? shown.toInt().toString()
+        : shown.toString().replaceAll('.', ',');
     return unit.isEmpty ? n : '$n $unit';
   }
 
@@ -89,9 +94,9 @@ class PantryItem {
   }) => PantryItem(
     id: id,
     name: name ?? this.name,
-    amount: amount ?? this.amount,
+    amount: amount == null ? this.amount : tidy(amount),
     unit: unit ?? this.unit,
-    minAmount: minAmount ?? this.minAmount,
+    minAmount: minAmount == null ? this.minAmount : tidy(minAmount),
     place: place ?? this.place,
     bestBefore: bestBefore == _keep ? this.bestBefore : bestBefore as DateTime?,
     barcode: barcode == _keep ? this.barcode : barcode as String?,

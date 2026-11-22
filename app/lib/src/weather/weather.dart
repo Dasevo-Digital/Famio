@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -64,7 +65,7 @@ class WeatherForecast {
     final rain = col('precipitation_probability');
     final uv = col('uv_index');
     return WeatherForecast(
-      fetched: fetched ?? DateTime.now(),
+      fetched: fetched ?? clock.now(),
       now: WeatherHour(
         time: DateTime.parse(current['time'] as String),
         temperature: d(current['temperature_2m']),
@@ -153,6 +154,10 @@ class WeatherService {
   static const _cacheKey = 'weather.cache';
   static const maxAge = Duration(minutes: 30);
 
+  /// Older weather is no longer "now": shown with its time, without
+  /// clothing tips.
+  static const outdatedAfter = Duration(hours: 3);
+
   /// The user agreed to ask Open-Meteo (per device).
   bool get enabled => _prefs.getBool(_enabledKey) ?? false;
 
@@ -186,9 +191,7 @@ class WeatherService {
   /// Open-Meteo (falling back to the cache when offline).
   Future<WeatherForecast?> forecast(Place place, {bool force = false}) async {
     final old = cached(place);
-    if (!force &&
-        old != null &&
-        DateTime.now().difference(old.fetched) < maxAge) {
+    if (!force && old != null && clock.now().difference(old.fetched) < maxAge) {
       return old;
     }
     try {
@@ -213,7 +216,7 @@ class WeatherService {
           .timeout(const Duration(seconds: 15));
       if (response.statusCode != 200) return old;
       final data = (jsonDecode(response.body) as Map).cast<String, Object?>();
-      final now = DateTime.now();
+      final now = clock.now();
       await _prefs.setString(
         _cacheKey,
         jsonEncode({

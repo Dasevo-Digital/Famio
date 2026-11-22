@@ -948,6 +948,23 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
         .occurrences(now, now.add(const Duration(days: 2)))
         .where((o) => !o.event.allDay && o.start.isAfter(now))
         .firstOrNull;
+    // Not today: "Morgen" or the weekday before the time.
+    String? nextDay;
+    if (next != null) {
+      final calendar = widget.engine.calendar;
+      final today = calendar.today(now);
+      final day = calendar.today(next.start);
+      final days = DateTime.utc(
+        day.year,
+        day.month,
+        day.day,
+      ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+      nextDay = switch (days) {
+        0 => null,
+        1 => tr.commonTomorrow,
+        _ => DateFormat.EEEE(appLanguage).format(day),
+      };
+    }
     const shadow = [Shadow(blurRadius: 12, color: Colors.black54)];
     return ColoredBox(
       color: Colors.black,
@@ -984,7 +1001,9 @@ class _PhotoSlideshowState extends State<PhotoSlideshow> {
                 ),
                 if (next != null)
                   Text(
-                    '${DateFormat.jm(appLanguage).format(next.start)} ${widget.engine.wallTitle(next.event)}',
+                    '${nextDay == null ? '' : '$nextDay, '}'
+                    '${DateFormat.jm(appLanguage).format(next.start)} '
+                    '${widget.engine.wallTitle(next.event)}',
                     style: theme.textTheme.titleLarge?.copyWith(
                       color: Colors.white,
                       shadows: shadow,

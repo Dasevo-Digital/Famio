@@ -75,6 +75,53 @@ void main() {
     expect(bins(mia), isEmpty);
   });
 
+  test('paper every two weeks: the turn goes pickup by pickup', () {
+    final mama = _engine('m1');
+    for (var n = 0; n < 8; n++) {
+      mama.saveEvent(_bin('p$n', 'Altpapier', DateTime(2026, 11, 24 + 14 * n)));
+    }
+    mama.saveWasteSettings(
+      const WasteSettings(memberIds: ['m1', 'm2'], rotate: true),
+    );
+    final who = [
+      for (final p in mama.wastePickups(
+        DateTime(2026, 11, 23),
+        DateTime(2027, 3, 15),
+      ))
+        mama.wasteResponsible(p).single.id,
+    ];
+    expect(who, hasLength(8));
+    for (var i = 1; i < who.length; i++) {
+      expect(who[i], isNot(who[i - 1]), reason: 'pickup $i');
+    }
+  });
+
+  test('someone who left the family leaves no week without anyone', () {
+    final mama =
+        SyncEngine(
+          store: LocalStore.open(':memory:')
+            ..setMeta(
+              'members',
+              '[{"id":"m1","username":"mama","displayName":"Mama"},'
+                  '{"id":"k1","username":"mia","displayName":"Mia",'
+                  '"role":"child"}]',
+            ),
+          api: FamioApiClient('localhost:1'),
+          memberId: 'm1',
+        )..saveWasteSettings(
+          const WasteSettings(memberIds: ['m1', 'm2'], rotate: true),
+        );
+    for (var w = 0; w < 4; w++) {
+      final pickup = WastePickup(
+        DateTime(2026, 11, 23 + 7 * w),
+        const [WasteKind.paper],
+        const ['Altpapier'],
+      );
+      expect(mama.wasteResponsible(pickup).map((m) => m.id), ['m1']);
+      expect(mama.wasteIsMine(pickup), isTrue);
+    }
+  });
+
   testWidgets('start page tile and the settings', (tester) async {
     tester.view.physicalSize = const Size(1400, 1000);
     tester.view.devicePixelRatio = 1;

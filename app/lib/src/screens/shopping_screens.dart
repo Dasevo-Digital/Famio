@@ -610,7 +610,8 @@ class _ShoppingListScreenState extends State<ShoppingListScreen> {
 }
 
 /// Open things of a packing list: everyone's first, then per member, each
-/// sorted by category; one group needs no heading.
+/// sorted by category; one group needs no heading. Things of someone no
+/// longer in the family count as everyone's, so they can still be ticked.
 List<(String?, List<ShoppingItem>)> _packingGroups(
   SyncEngine engine,
   List<ShoppingItem> open,
@@ -620,12 +621,13 @@ List<(String?, List<ShoppingItem>)> _packingGroups(
     return c != 0 ? c : a.name.toLowerCase().compareTo(b.name.toLowerCase());
   }
 
+  final members = {for (final m in engine.members) m.id};
   final groups = <(String?, List<ShoppingItem>)>[
     (
       tr.shoppingEveryone,
       [
         for (final i in open)
-          if (i.memberId == null) i,
+          if (i.memberId == null || !members.contains(i.memberId)) i,
       ],
     ),
     for (final m in engine.members)

@@ -412,8 +412,10 @@ class _PantryEditorState extends State<_PantryEditor> {
   late var _place = widget.initial.place;
   late DateTime? _bestBefore = widget.initial.bestBefore;
 
-  static String _num(double v) =>
-      v == v.roundToDouble() ? v.toInt().toString() : decimalMark(v.toString());
+  static String _num(double v) => switch (PantryItem.tidy(v)) {
+    final n when n == n.roundToDouble() => n.toInt().toString(),
+    final n => decimalMark(n.toString()),
+  };
 
   static double? _parse(String t) =>
       double.tryParse(t.trim().replaceAll(',', '.'));

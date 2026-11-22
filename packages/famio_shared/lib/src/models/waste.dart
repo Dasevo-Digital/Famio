@@ -281,13 +281,53 @@ class WasteSettings {
   final int remindHour;
 
   /// Who is in charge of [pickup]: everyone in [memberIds], or the one
-  /// whose turn it is that week (weeks counted from Monday).
-  List<String> responsibleFor(DateTime pickup) {
-    if (!rotate || memberIds.length < 2) return memberIds;
-    final day = DateTime.utc(pickup.year, pickup.month, pickup.day);
-    // 5 January 1970 was a Monday.
-    final week = day.difference(DateTime.utc(1970, 1, 5)).inDays ~/ 7;
-    return [memberIds[week % memberIds.length]];
+  /// whose turn it is. Turns go week by week (weeks counted from Monday);
+  /// with pickups only every [everyWeeks] weeks (see [turnWeeks]) they go
+  /// pickup by pickup, so a bin every two weeks is not always the same
+  /// person's. With [members] (who is in the family now) someone who left
+  /// is skipped instead of reminding nobody in their week.
+  List<String> responsibleFor(
+    DateTime pickup, {
+    int everyWeeks = 1,
+    Set<String>? members,
+  }) {
+    final ids = members == null
+        ? memberIds
+        : [
+            for (final id in memberIds)
+              if (members.contains(id)) id,
+          ];
+    if (!rotate || ids.length < 2) return ids;
+    final turn = _week(pickup) ~/ (everyWeeks < 1 ? 1 : everyWeeks);
+    return [ids[turn % ids.length]];
+  }
+
+  /// The number of the week of [day] (5 January 1970 was a Monday).
+  static int _week(DateTime day) =>
+      DateTime.utc(
+        day.year,
+        day.month,
+        day.day,
+      ).difference(DateTime.utc(1970, 1, 5)).inDays ~/
+      7;
+
+  /// How many weeks usually lie between two weeks with a pickup among
+  /// [pickups]: the most common gap, the shorter one on a tie, 1 with
+  /// fewer than two such weeks. A single pickup moved by a holiday does
+  /// not change it.
+  static int turnWeeks(Iterable<DateTime> pickups) {
+    final weeks = {for (final day in pickups) _week(day)}.toList()..sort();
+    final gaps = <int, int>{};
+    for (var i = 1; i < weeks.length; i++) {
+      final gap = weeks[i] - weeks[i - 1];
+      gaps[gap] = (gaps[gap] ?? 0) + 1;
+    }
+    if (gaps.isEmpty) return 1;
+    final best = gaps.entries.reduce(
+      (a, b) =>
+          b.value > a.value || (b.value == a.value && b.key < a.key) ? b : a,
+    );
+    return best.key;
   }
 
   /// Whether [event] is a pickup day: any entry of the chosen calendar,

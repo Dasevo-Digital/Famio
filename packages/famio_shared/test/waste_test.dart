@@ -155,4 +155,66 @@ void main() {
     expect(back.memberIds, ['papa', 'mama']);
     expect((back.rotate, back.remindHour), (true, 18));
   });
+
+  test('pickups every two weeks take turns pickup by pickup', () {
+    const s = WasteSettings(memberIds: ['papa', 'mama'], rotate: true);
+    final days = [for (var n = 0; n < 6; n++) DateTime(2026, 11, 24 + 14 * n)];
+    expect(WasteSettings.turnWeeks(days), 2);
+    final who = [
+      for (final d in days) s.responsibleFor(d, everyWeeks: 2).single,
+    ];
+    expect(who, ['papa', 'mama', 'papa', 'mama', 'papa', 'mama']);
+    // Also when the pickups fall on the other weeks.
+    final odd = [for (final d in days) d.add(const Duration(days: 7))];
+    expect(
+      {
+        for (var i = 1; i < odd.length; i++)
+          s.responsibleFor(odd[i], everyWeeks: 2) ==
+              s.responsibleFor(odd[i - 1], everyWeeks: 2),
+      },
+      {false},
+    );
+  });
+
+  test('weekly pickups take turns week by week as before', () {
+    const s = WasteSettings(memberIds: ['papa', 'mama'], rotate: true);
+    final days = [for (var n = 0; n < 6; n++) DateTime(2026, 11, 24 + 7 * n)];
+    expect(WasteSettings.turnWeeks(days), 1);
+    for (final d in days) {
+      expect(s.responsibleFor(d, everyWeeks: 1), s.responsibleFor(d));
+    }
+    // Paper every two weeks besides: still a pickup every week.
+    expect(
+      WasteSettings.turnWeeks([
+        ...days,
+        for (var n = 0; n < 3; n++) DateTime(2026, 11, 26 + 14 * n),
+      ]),
+      1,
+    );
+  });
+
+  test('a pickup moved by a holiday keeps the rhythm', () {
+    final days = [for (var n = 0; n < 8; n++) DateTime(2026, 11, 24 + 14 * n)]
+      ..[3] = DateTime(2027, 1, 11); // into the following week
+    expect(WasteSettings.turnWeeks(days), 2);
+    expect(WasteSettings.turnWeeks(const []), 1);
+    expect(WasteSettings.turnWeeks([DateTime(2026, 11, 24)]), 1);
+  });
+
+  test('someone no longer in the family is skipped', () {
+    const s = WasteSettings(memberIds: ['papa', 'mama', 'oma'], rotate: true);
+    final family = {'mama', 'oma'};
+    for (var n = 0; n < 6; n++) {
+      final day = DateTime(2026, 11, 23 + 7 * n);
+      expect(s.responsibleFor(day, members: family), hasLength(1));
+      expect(family, contains(s.responsibleFor(day, members: family).single));
+    }
+    // Without taking turns, only who is left.
+    expect(
+      const WasteSettings(
+        memberIds: ['papa', 'mama'],
+      ).responsibleFor(DateTime(2026, 11, 23), members: {'mama'}),
+      ['mama'],
+    );
+  });
 }

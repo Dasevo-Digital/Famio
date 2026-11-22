@@ -161,6 +161,26 @@ void main() {
     expect(item.copyWith(amount: 1.5, unit: 'l').amountLabel, '1,5 l');
   });
 
+  test('pantry: counting one less leaves no float rests', () {
+    const item = PantryItem(id: 'p', name: 'Mehl', amount: 2.2, unit: 'kg');
+    // What "one less" stores: 2.2 - 1 is 1.2000000000000002 in doubles.
+    final less = item.copyWith(amount: item.amount - 1);
+    expect(less.amountLabel, '1,2 kg');
+    expect(less.amount, 1.2);
+    expect(less.toData()['amount'], 1.2);
+    // Stored with a rest before: shown without it.
+    expect(
+      const PantryItem(
+        id: 'p',
+        name: 'Mehl',
+        amount: 1.2000000000000002,
+        unit: 'kg',
+      ).amountLabel,
+      '1,2 kg',
+    );
+    expect(item.copyWith(minAmount: 0.1 + 0.2).minAmount, 0.3);
+  });
+
   test('polls survive the record round trip', () {
     final message = ChatMessage(
       id: 'x',

@@ -12,6 +12,7 @@ import '../data/birthdays.dart';
 import '../data/health_logic.dart';
 import '../data/kids_logic.dart';
 import '../data/pregnancy_logic.dart';
+import '../data/school_bag.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
 import '../format.dart';
@@ -129,6 +130,8 @@ class HomeScreen extends StatelessWidget {
           Collections.externalPhotos,
           Collections.pregnancies,
           Collections.timetables,
+          // No school, chores or bins on the family's holidays.
+          Collections.vacations,
           Collections.recipes,
           Collections.mealPlan,
           Collections.budgetEntries,
@@ -1055,25 +1058,32 @@ class _KidsTile extends StatelessWidget {
             ),
           for (final k in kids)
             () {
+              final now = clock.now();
               final next = nextDue(k, engine.childEntries(k.id));
               // Babies: what the daily log says right now.
-              final logs = k.ageInMonths(DateTime.now()) < 24
+              final logs = k.ageInMonths(now) < 24
                   ? engine.childLogs(k.id)
                   : const <ChildLog>[];
               final sleeping = logs
                   .where((l) => l.kind == LogKind.sleep && l.running)
                   .firstOrNull;
               final fed = lastFeeding(logs);
-              final now = DateTime.now();
-              final school = now.weekday <= 5
-                  ? engine.timetable(k.id)?.endOf(now.weekday)
-                  : null;
+              // Only on a school day: not on public holidays or the
+              // family's holidays, as for the school bag.
+              final school =
+                  schoolBag(
+                        engine,
+                        k,
+                        DateTime(now.year, now.month, now.day),
+                      ) ==
+                      null
+                  ? null
+                  : engine.timetable(k.id)?.endOf(now.weekday);
               final status = sleeping != null
                   ? tr.homeAsleepSinceTime(timeLabel(sleeping.start))
                   : school != null
                   ? tr.homeSchoolUntilUntil(school)
-                  : fed != null &&
-                        DateTime.now().difference(fed.start).inHours < 12
+                  : fed != null && now.difference(fed.start).inHours < 12
                   ? tr.homeFedSince(sinceLabel(fed.end ?? fed.start))
                   : null;
               return _Line(
@@ -1256,8 +1266,9 @@ class _DocumentsTile extends StatelessWidget {
                 size: 18,
                 color: c.strong(FamioSection.documents),
               ),
-              trailing:
-                  'bis ${DateFormat.yMd(appLanguage).format(d.expiresAt!)}',
+              trailing: tr.homeUntilDate(
+                DateFormat.yMd(appLanguage).format(d.expiresAt!),
+              ),
             ),
         ],
       ),

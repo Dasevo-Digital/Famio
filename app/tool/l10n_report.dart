@@ -18,9 +18,13 @@ void main(List<String> args) {
   final top = topIndex >= 0 ? int.parse(args[topIndex + 1]) : 15;
   final list = args.contains('--list');
   final literal = RegExp(r"'((?:[^'\\\n]|\\.)*)'");
+  // Umlauts, small German words, and capitalised words alone or joined by
+  // "&" ("Wetter & Kleidung").
   final german = RegExp(
-    r'[äöüÄÖÜß]|\b(der|die|das|und|nicht|ist|mit|für|ein|eine|auf|zu|du|dein|deine)\b'
-    r'|^[A-ZÄÖÜ][a-zäöüß]{2,}$',
+    r'[äöüÄÖÜß]|\b(der|die|das|und|nicht|ist|mit|für|ein|eine|auf|zu|du|dein|deine'
+    r'|oder|von|bis|noch|nur|auch|bitte|heute|morgen|wird|sind|kein|keine'
+    r'|mehr)\b'
+    r'|^[A-ZÄÖÜ][a-zäöüß]{2,}(?:\s*&\s*[A-ZÄÖÜ][a-zäöüß]{2,})*$',
   );
   final counts = <String, int>{};
   var kept = 0;

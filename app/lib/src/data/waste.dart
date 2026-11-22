@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 
+import 'engine_memo.dart';
 import 'family_data.dart';
 import 'family_extras.dart';
 import '../l10n.dart';
@@ -34,9 +35,34 @@ extension WasteData on SyncEngine {
     ).firstOrNull;
   }
 
+  /// How many weeks usually lie between pickups around [day] (eight weeks
+  /// back and ahead), so turns go pickup by pickup.
+  int wasteTurnWeeks(DateTime day) {
+    final settings = wasteSettings;
+    final from = DateTime(day.year, day.month, day.day - 56);
+    return EngineMemo.of(this).get(
+      'wasteTurnWeeks|${settings.sourceId}|${from.toIso8601String()}',
+      const {Collections.events, Collections.externalEvents},
+      () => WasteSettings.turnWeeks([
+        for (final p in settings.pickups(
+          occurrencesForDays(from, DateTime(day.year, day.month, day.day + 57)),
+        ))
+          p.day,
+      ]),
+    );
+  }
+
   /// Members in charge of [pickup]; empty settings mean every adult.
+  /// Someone no longer in the family is skipped when taking turns.
   List<FamilyMember> wasteResponsible(WastePickup pickup) {
-    final ids = wasteSettings.responsibleFor(pickup.day);
+    final settings = wasteSettings;
+    final ids = settings.responsibleFor(
+      pickup.day,
+      everyWeeks: settings.rotate && settings.memberIds.length > 1
+          ? wasteTurnWeeks(pickup.day)
+          : 1,
+      members: {for (final m in members) m.id},
+    );
     if (ids.isEmpty) {
       return [
         for (final m in members)
