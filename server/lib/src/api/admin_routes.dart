@@ -262,6 +262,15 @@ extension _AdminRoutes on FamioApi {
                   'Die letzte Sicherung ist älter als einen Tag. Fehler: {error}.',
                   {'error': job.lastError ?? t('keiner gemeldet')},
                 )
+              // Kept despite its fault, e.g. contents the running data
+              // lacks itself (#572): say what is wrong.
+              : newest.check?.ok == false
+              ? [
+                  t('Die Prüfung der letzten Sicherung meldet: {problems}.', {
+                    'problems': newest.check!.problems.join('; '),
+                  }),
+                  ...newest.check!.notes,
+                ].join(' ')
               : t(
                   'Die letzte Sicherung ist noch nicht oder nicht erfolgreich geprüft.',
                 ),

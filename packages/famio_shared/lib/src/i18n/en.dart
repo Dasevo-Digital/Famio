@@ -951,6 +951,14 @@ const sharedEn = <String, String>{
   "Server|keiner gemeldet": "none reported",
   "Server|Die letzte Sicherung ist noch nicht oder nicht erfolgreich geprüft.":
       "The last backup has not been checked yet or not successfully.",
+  "Server|Die Prüfung der letzten Sicherung meldet: {problems}.":
+      "The check of the last backup reports: {problems}.",
+  "Server|In den laufenden Daten fehlt der Inhalt einer Datei.":
+      "The contents of one file are missing in the current data.",
+  "Server|In den laufenden Daten fehlen die Inhalte von {count} Dateien.":
+      "The contents of {count} files are missing in the current data.",
+  "Server|Diese Inhalte fehlen schon in den laufenden Daten. Alles Übrige ist gesichert, und die letzte vollständige Sicherung wird aufbewahrt.":
+      "These contents are already missing in the current data. Everything else is backed up, and the last complete backup is kept.",
   "Server|Server-Verwaltung → Status → Sicherungen":
       "Server administration → Status → Backups",
   "Server|Bundesland für Feiertage": "Federal state for public holidays",

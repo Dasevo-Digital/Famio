@@ -976,6 +976,14 @@ const sharedEs = <String, String>{
   "Server|keiner gemeldet": "ninguno indicado",
   "Server|Die letzte Sicherung ist noch nicht oder nicht erfolgreich geprüft.":
       "La última copia aún no se ha comprobado o la comprobación falló.",
+  "Server|Die Prüfung der letzten Sicherung meldet: {problems}.":
+      "La comprobación de la última copia indica: {problems}.",
+  "Server|In den laufenden Daten fehlt der Inhalt einer Datei.":
+      "En los datos actuales falta el contenido de un archivo.",
+  "Server|In den laufenden Daten fehlen die Inhalte von {count} Dateien.":
+      "En los datos actuales falta el contenido de {count} archivos.",
+  "Server|Diese Inhalte fehlen schon in den laufenden Daten. Alles Übrige ist gesichert, und die letzte vollständige Sicherung wird aufbewahrt.":
+      "Estos contenidos ya faltan en los datos actuales. Todo lo demás está guardado y se conserva la última copia completa.",
   "Server|Server-Verwaltung → Status → Sicherungen":
       "Administración del servidor → Estado → Copias de seguridad",
   "Server|Bundesland für Feiertage": "Estado federado para los festivos",

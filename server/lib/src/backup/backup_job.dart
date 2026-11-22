@@ -7,6 +7,7 @@ import 'package:sqlite3/sqlite3.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../crypto/encrypted_db.dart';
+import '../files/file_store.dart';
 import 'backup_check.dart';
 import '../i18n.dart';
 
@@ -96,6 +97,9 @@ class BackupJob {
   String? lastError;
   var _running = false;
 
+  /// Whether a backup is being written right now.
+  bool get running => _running;
+
   /// The latest test of a backup (see [verify]).
   BackupCheck? lastCheck;
 
@@ -110,6 +114,16 @@ class BackupJob {
   /// night plus the retries of the following day.
   static const freshFor = Duration(hours: 36);
 
+  /// After the same fault twice in a row the nightly run waits this long
+  /// before it tries again, not just half an hour (#572).
+  static const retryAfterSameFault = Duration(hours: 6);
+
+  /// The last fault of [run] (an error, or contents missing in the running
+  /// data), when it happened and whether it came twice in a row.
+  String? _fault;
+  DateTime? _faultAt;
+  var _faultRepeated = false;
+
   void start() {
     _timer ??= Timer.periodic(const Duration(minutes: 30), (_) => _maybe());
     _maybe();
@@ -122,7 +136,8 @@ class BackupJob {
 
   /// Once a day after [hour], if today has none yet.
   void _maybe() {
-    final now = tz.TZDateTime.from(_clock(), location());
+    final at = _clock();
+    final now = tz.TZDateTime.from(at, location());
     if (now.hour < hour) return;
     final today = '${now.year}${_two(now.month)}${_two(now.day)}';
     if (list().any(
@@ -133,8 +148,20 @@ class BackupJob {
     )) {
       return;
     }
-    // Errors are recorded in lastError; tried again in half an hour.
+    // Errors are recorded in lastError; tried again in half an hour, but
+    // a fault that came back unchanged needs more than half an hour.
+    if (_faultRepeated &&
+        _faultAt != null &&
+        at.difference(_faultAt!) < retryAfterSameFault) {
+      return;
+    }
     unawaited(run().then((_) {}, onError: (Object _) {}));
+  }
+
+  void _noteFault(String fault) {
+    _faultRepeated = fault == _fault;
+    _fault = fault;
+    _faultAt = _clock();
   }
 
   static String _two(int n) => n.toString().padLeft(2, '0');
@@ -162,12 +189,12 @@ class BackupJob {
         '${createdAt.toIso8601String()}\n${now.timeZoneOffset.inSeconds}',
         flush: true,
       );
-      final check = await _inspect(
-        partial.path,
-        name: stamp,
-        requireFiles: true,
-      );
-      if (!check.ok) {
+      var check = await _inspect(partial.path, name: stamp, requireFiles: true);
+      // Contents the running data lacks itself are no fault of the copy:
+      // famio.db and the other files are still worth keeping (#572).
+      final inherited = _inherited(check);
+      if (inherited) check = check.withNotes([_inheritedNote()]);
+      if (!check.ok && !inherited) {
         lastCheck = check;
         throw _FailedBackupCheck(check.problems);
       }
@@ -176,11 +203,30 @@ class BackupJob {
       prune(protectedName: name);
       final backup = list().firstWhere((b) => b.name == name);
       lastAt = createdAt;
-      lastError = null;
       lastCheck = backup.check;
+      if (inherited) {
+        final count = check.damagedFiles.length;
+        final fault = count == 1
+            ? t('In den laufenden Daten fehlt der Inhalt einer Datei.')
+            : t(
+                'In den laufenden Daten fehlen die Inhalte von {count} Dateien.',
+                {'count': count},
+              );
+        lastError = fault;
+        _noteFault(fault);
+        onError?.call(
+          '[backup] Sicherung $name ohne $count Dateiinhalte, die schon in '
+          'den laufenden Daten fehlen',
+        );
+      } else {
+        lastError = null;
+        _fault = _faultAt = null;
+        _faultRepeated = false;
+      }
       return backup;
     } catch (e) {
       lastError = '$e';
+      _noteFault('$e');
       onError?.call('[backup] Sicherung fehlgeschlagen: $e');
       if (partial != null && partial.existsSync()) {
         partial.deleteSync(recursive: true);
@@ -248,6 +294,7 @@ class BackupJob {
         !_requiresFiles(d, name)) {
       check = await _inspect(d.path, name: name, requireFiles: false);
     }
+    if (_inherited(check)) check = check.withNotes([_inheritedNote()]);
     check.save(d.path);
     lastCheck = check;
     if (!check.ok) {
@@ -274,6 +321,38 @@ class BackupJob {
     // the file retention window may be legacy data-only copies.
     return list().take(filesKeep).any((backup) => backup.name == name);
   }
+
+  /// Whether all that is wrong with [check] are file contents the running
+  /// data lacks as well (as after restoring an older backup without
+  /// files.db): then the copy is as good as it gets.
+  bool _inherited(BackupCheck check) =>
+      !check.ok &&
+      check.onlyDamagedFiles &&
+      check.damagedFiles.isNotEmpty &&
+      check.damagedFiles.every(_liveLacks);
+
+  /// Whether file [id] has no complete contents in the running data.
+  bool _liveLacks(String id) {
+    final file = db.select('SELECT size FROM files WHERE id = ?', [
+      id,
+    ]).firstOrNull;
+    // Removed since the copy was made: the copy differs from the data.
+    if (file == null) return false;
+    final blocks = blobs.select(
+      'SELECT COUNT(*) AS n, MIN(seq) AS first, MAX(seq) AS last,'
+      ' SUM(length(data)) AS bytes FROM blobs WHERE id = ? AND kind = ?',
+      [id, FileStore.originalKind],
+    ).first;
+    final n = blocks['n'] as int;
+    return n == 0 ||
+        blocks['first'] != 0 ||
+        blocks['last'] != n - 1 ||
+        blocks['bytes'] != file['size'];
+  }
+
+  static String _inheritedNote() => t(
+    'Diese Inhalte fehlen schon in den laufenden Daten. Alles Übrige ist gesichert, und die letzte vollständige Sicherung wird aufbewahrt.',
+  );
 
   Future<BackupCheck> _inspect(
     String path, {
@@ -458,16 +537,49 @@ class BackupJob {
   }
 
   /// Keeps the newest per day for [daily] days and the newest per week
-  /// for [weekly] weeks.
+  /// for [weekly] weeks. Backups whose check failed fill none of these:
+  /// they stay as long as they would were they fine, besides the others.
+  /// The newest fully intact backup (with its files) always stays (#572).
   void prune({String? protectedName}) {
+    final backups = list();
+    final keep = _retained(backups.where((b) => b.check?.ok != false));
+    final term = _retained(backups);
+    for (final b in backups) {
+      if (b.check?.ok == false && term.contains(b.name)) keep.add(b.name);
+    }
+    final intact = backups.where((b) => b.fullyVerified).firstOrNull?.name;
+    if (intact != null) keep.add(intact);
+    // A corrected clock or old metadata may still put the successful
+    // copy behind an existing one. Give it a chance to be restored too.
+    if (protectedName != null) keep.add(protectedName);
+    for (final b in backups) {
+      if (!keep.contains(b.name)) {
+        Directory(p.join(dir, b.name)).deleteSync(recursive: true);
+      }
+    }
+    // Documents and photos only in the newest few.
+    for (final b
+        in backups.where((b) => keep.contains(b.name)).skip(filesKeep)) {
+      if (b.name == protectedName || b.name == intact) continue;
+      final files = File(p.join(dir, b.name, _filesDb));
+      if (!files.existsSync()) continue;
+      // Record the intentional removal first. A missing file alone is
+      // never evidence that retention pruned a full backup.
+      File(
+        p.join(files.parent.path, _fileScope),
+      ).writeAsStringSync(_pruned, flush: true);
+      files.deleteSync();
+    }
+  }
+
+  /// Names of [backups] (newest first) the days and weeks keep.
+  Set<String> _retained(Iterable<BackupInfo> backups) {
     final keep = <String>{};
     final days = <String>{};
     final weeks = <String>{};
     var dailyKept = 0;
     var weeklyKept = 0;
-    final backups = list();
     for (final b in backups) {
-      if (b.check?.ok == false) continue;
       // The name retains the family day in effect when the copy was made.
       final day = b.name.substring(6, 14);
       final date = DateTime.parse('${day}T00:00:00Z');
@@ -484,27 +596,7 @@ class BackupJob {
         keep.add(b.name);
       }
     }
-    // A corrected clock or old metadata may still put the successful
-    // copy behind an existing one. Give it a chance to be restored too.
-    if (protectedName != null) keep.add(protectedName);
-    for (final b in backups) {
-      if (!keep.contains(b.name)) {
-        Directory(p.join(dir, b.name)).deleteSync(recursive: true);
-      }
-    }
-    // Documents and photos only in the newest few.
-    for (final b
-        in backups.where((b) => keep.contains(b.name)).skip(filesKeep)) {
-      if (b.name == protectedName) continue;
-      final files = File(p.join(dir, b.name, _filesDb));
-      if (!files.existsSync()) continue;
-      // Record the intentional removal first. A missing file alone is
-      // never evidence that retention pruned a full backup.
-      File(
-        p.join(files.parent.path, _fileScope),
-      ).writeAsStringSync(_pruned, flush: true);
-      files.deleteSync();
-    }
+    return keep;
   }
 
   /// The directory of backup [name], or null.

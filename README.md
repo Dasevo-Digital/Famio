@@ -871,7 +871,14 @@ prüft der Server jede Sicherung, ohne sie zu verändern: beide Datenbanken mit
 dem Schlüssel öffnen, Integrität, Mitglieder vorhanden, jede Datei mit Inhalt,
 Vergleich mit dem aktuellen Stand (Ergebnis in `check.json` der Sicherung).
 Eine fehlerhafte neue Kopie wird verworfen, bevor die Aufbewahrung alte
-Sicherungen entfernt. Der Sicherungsordner hält fest, ob er vollständig ist
+Sicherungen entfernt. Fehlen Dateiinhalte schon in den laufenden Daten (etwa
+nach dem Wiederherstellen einer älteren Sicherung ohne `files.db`), wird
+trotzdem gesichert: Die Kopie zählt als fehlerhaft, der Fehler steht im
+Status und in der Einrichtungsliste, und der nächtliche Lauf versucht es bei
+gleichem Fehler höchstens alle 6 Stunden erneut. Fehlerhafte Sicherungen
+zählen nicht als Tages- oder Wochenstand, bleiben aber so lange wie eine
+fehlerfreie; die neueste vollständig geprüfte Sicherung bleibt samt Dateien
+immer erhalten. Der Sicherungsordner hält fest, ob er vollständig ist
 oder ob die Aufbewahrung seine Dateiinhalte entfernt hat. Fehlen erwartete
 Dateiinhalte, schlägt die Prüfung fehl. Für den Sicherungsschritt in der
 Einrichtungsliste ist eine aktuelle, vollständig geprüfte Kopie nötig.
@@ -879,7 +886,9 @@ In der Server-Verwaltung unter „Status“ stehen letzte Sicherung, Prüfergebn
 Fehler, „Jetzt sichern“ und „Sicherung prüfen“.
 
 Wiederherstellen (Famio vorher stoppen; die bisherigen Datenbanken werden nur
-beiseitegelegt):
+beiseitegelegt, von diesen Ordnern bleiben die drei neuesten). Ist die letzte
+Prüfung der Sicherung fehlgeschlagen, warnt das Skript und spielt sie nur nach
+Bestätigung im Terminal oder mit `--force` ein:
 
 ```sh
 systemctl stop famio

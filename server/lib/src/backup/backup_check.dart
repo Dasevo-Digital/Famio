@@ -21,6 +21,8 @@ class BackupCheck {
     this.records = 0,
     this.files = 0,
     this.filesChecked = false,
+    this.damagedFiles = const [],
+    this.onlyDamagedFiles = false,
   });
 
   factory BackupCheck.fromJson(Map<String, Object?> json) => BackupCheck(
@@ -54,6 +56,29 @@ class BackupCheck {
 
   /// Whether files.db was there to check (only the newest backups keep it).
   final bool filesChecked;
+
+  /// Files whose contents are missing or incomplete in files.db. Only for
+  /// the server's own decisions, not stored in check.json.
+  final List<String> damagedFiles;
+
+  /// Whether [damagedFiles] are all that is wrong: the databases open, are
+  /// intact and hold the members (#572).
+  final bool onlyDamagedFiles;
+
+  /// The same result with [extra] notes (e.g. where a fault comes from).
+  BackupCheck withNotes(List<String> extra) => BackupCheck(
+    name: name,
+    at: at,
+    ok: ok,
+    problems: problems,
+    notes: [...notes, ...extra],
+    users: users,
+    records: records,
+    files: files,
+    filesChecked: filesChecked,
+    damagedFiles: damagedFiles,
+    onlyDamagedFiles: onlyDamagedFiles,
+  );
 
   Map<String, Object?> toJson() => {
     'name': name,
@@ -106,6 +131,9 @@ BackupCheck checkBackup(
   final notes = <String>[];
   var users = 0, records = 0, files = 0;
   var filesChecked = false;
+  // Problems that are about file contents only, and which files.
+  var contentProblems = 0;
+  final damaged = <String>{};
   final fileIds = <String>{};
   final fileSizes = <String, int>{};
 
@@ -182,27 +210,32 @@ BackupCheck checkBackup(
           ))
             r['id'] as String,
         };
-        final missing = fileIds.difference(stored).length;
-        final incomplete = blobs
-            .select(
-              'SELECT id, COUNT(*) AS n, MIN(seq) AS first, MAX(seq) AS last,'
-              ' SUM(length(data)) AS bytes FROM blobs WHERE kind = ? GROUP BY id',
-              [FileStore.originalKind],
-            )
-            .where(
-              (r) =>
-                  fileSizes.containsKey(r['id']) &&
-                  (r['first'] != 0 ||
-                      r['last'] != (r['n'] as int) - 1 ||
-                      r['bytes'] != fileSizes[r['id']]),
-            )
-            .length;
+        final missingIds = fileIds.difference(stored);
+        final missing = missingIds.length;
+        final incompleteIds = [
+          for (final r in blobs.select(
+            'SELECT id, COUNT(*) AS n, MIN(seq) AS first, MAX(seq) AS last,'
+            ' SUM(length(data)) AS bytes FROM blobs WHERE kind = ? GROUP BY id',
+            [FileStore.originalKind],
+          ))
+            if (fileSizes.containsKey(r['id']) &&
+                (r['first'] != 0 ||
+                    r['last'] != (r['n'] as int) - 1 ||
+                    r['bytes'] != fileSizes[r['id']]))
+              r['id'] as String,
+        ];
+        final incomplete = incompleteIds.length;
+        damaged
+          ..addAll(missingIds)
+          ..addAll(incompleteIds);
         if (incomplete > 0) {
+          contentProblems++;
           problems.add(
             t('Unvollständige Dateiinhalte: {count}', {'count': incomplete}),
           );
         }
         if (missing > 0) {
+          contentProblems++;
           problems.add(
             missing == 1
                 ? t('1 Datei ohne Inhalt in files.db')
@@ -241,5 +274,7 @@ BackupCheck checkBackup(
     records: records,
     files: files,
     filesChecked: filesChecked,
+    damagedFiles: damaged.toList()..sort(),
+    onlyDamagedFiles: problems.isNotEmpty && problems.length == contentProblems,
   );
 }

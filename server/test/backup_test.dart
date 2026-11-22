@@ -150,45 +150,97 @@ void main() {
     expect(await setupDone(), isFalse);
   });
 
-  test(
-    'failed backup keeps the last verified copy and returns an error',
-    () async {
-      final attachment = await app.files.save(
-        owner: app.accounts.members().single.id,
-        name: 'fixture.txt',
-        mime: 'text/plain',
-        body: Stream.value([1, 2, 3]),
-      );
-      final (made, original) = await call(
-        'POST',
-        'api/admin/backups',
-        token: admin,
-      );
-      expect(made, 201);
-      final name = original['name'] as String;
-      final oldFolder = app.backups!.folder(name)!;
-      app.files.blobs.execute('DELETE FROM blobs WHERE id = ?', [
-        attachment.id,
-      ]);
-      expect((await app.backups!.verify(name)).ok, isTrue);
+  test('contents the running data lacks: the database is still backed up, '
+      'the fault is reported and the intact copy stays (#572)', () async {
+    final attachment = await app.files.save(
+      owner: app.accounts.members().single.id,
+      name: 'fixture.txt',
+      mime: 'text/plain',
+      body: Stream.value([1, 2, 3]),
+    );
+    final (made, original) = await call(
+      'POST',
+      'api/admin/backups',
+      token: admin,
+    );
+    expect(made, 201);
+    final name = original['name'] as String;
+    final oldFolder = app.backups!.folder(name)!;
+    // As after restoring an older backup without files.db: famio.db names
+    // a file whose blocks the files of today no longer have.
+    app.files.blobs.execute('DELETE FROM blobs WHERE id = ?', [attachment.id]);
+    expect((await app.backups!.verify(name)).ok, isTrue);
 
-      final (failed, error) = await call(
-        'POST',
-        'api/admin/backups',
-        token: admin,
-      );
-      expect((failed, error['error']), (500, 'backup_failed'));
-      expect(error['message'], contains('1 Datei ohne Inhalt'));
-      final (_, status) = await call('GET', 'api/admin/backups', token: admin);
-      expect((status['backups'] as List).single['name'], name);
-      expect(status['lastAt'], original['at']);
-      expect(status['lastCheck']['ok'], isFalse);
-      expect(status['lastError'], contains('1 Datei ohne Inhalt'));
-      expect(oldFolder.existsSync(), isTrue);
-      expect(Directory(app.backups!.dir).listSync(), hasLength(1));
-      expect((await app.backups!.verify(name)).ok, isTrue);
-    },
-  );
+    final (kept, flawed) = await call(
+      'POST',
+      'api/admin/backups',
+      token: admin,
+    );
+    expect(kept, 201);
+    expect(flawed['check']['ok'], isFalse);
+    expect(flawed['check']['problems'], ['1 Datei ohne Inhalt in files.db']);
+    expect(
+      flawed['check']['notes'].single,
+      contains('fehlen schon in den laufenden Daten'),
+    );
+    final copy = sqlite3.open(
+      p.join(app.backups!.folder(flawed['name'] as String)!.path, 'famio.db'),
+    );
+    expect(
+      copy.select("SELECT id FROM records WHERE collection = 'tasks'"),
+      hasLength(1),
+    );
+    copy.close();
+
+    final (_, status) = await call('GET', 'api/admin/backups', token: admin);
+    expect(
+      [for (final b in status['backups'] as List) b['name']],
+      [flawed['name'], name],
+    );
+    expect(status['lastCheck']['ok'], isFalse);
+    expect(
+      status['lastError'],
+      'In den laufenden Daten fehlt der Inhalt einer Datei.',
+    );
+    final (_, checklist) = await call('GET', 'api/admin/setup', token: admin);
+    final step = (checklist['steps'] as List).singleWhere(
+      (s) => s['id'] == 'backup',
+    );
+    expect(step['done'], isFalse);
+    expect(step['detail'], contains('1 Datei ohne Inhalt in files.db'));
+    expect(oldFolder.existsSync(), isTrue);
+    final intact = await app.backups!.verify(name);
+    expect((intact.ok, intact.filesChecked), (true, true));
+  });
+
+  test('a fault of the copy itself still discards it', () async {
+    final attachment = await app.files.save(
+      owner: app.accounts.members().single.id,
+      name: 'fixture.txt',
+      mime: 'text/plain',
+      body: Stream.value([1, 2, 3]),
+    );
+    final good = await app.backups!.run();
+    // The file database the copy is made from lacks a file that the
+    // running data has: that is the copy's fault, not the data's.
+    final broken = p.join(app.dataDir, 'broken-files.db');
+    app.files.blobs.execute("VACUUM INTO '$broken'");
+    final source = sqlite3.open(broken)
+      ..execute('DELETE FROM blobs WHERE id = ?', [attachment.id]);
+    source.close();
+    final job = BackupJob(
+      db: app.db,
+      blobs: app.files.blobs,
+      blobsPath: broken,
+      dir: app.backups!.dir,
+      location: () => tz.UTC,
+    );
+    await expectLater(job.run(), throwsA(anything));
+    expect(job.lastError, contains('1 Datei ohne Inhalt'));
+    expect(job.lastCheck?.ok, isFalse);
+    expect(job.list().map((b) => b.name), [good.name]);
+    expect(Directory(job.dir).listSync(), hasLength(1));
+  });
 
   BackupJob jobAt(
     DateTime Function() clock, {
@@ -202,6 +254,105 @@ void main() {
     clock: clock,
     filesKeep: filesKeep,
   );
+
+  Future<void> lacking() async {
+    final f = await app.files.save(
+      owner: app.accounts.members().single.id,
+      name: 'alt.txt',
+      mime: 'text/plain',
+      body: Stream.value([1, 2, 3]),
+    );
+    app.files.blobs.execute('DELETE FROM blobs WHERE id = ?', [f.id]);
+  }
+
+  test('the nightly run tries the same fault again only after six hours '
+      '(#572)', () async {
+    var now = DateTime.utc(2026, 11, 20, 4);
+    final job = jobAt(() => now);
+    addTearDown(job.stop);
+    await lacking();
+    // Each start() looks once whether a backup is due, as the timer does.
+    Future<bool> tick() async {
+      job.start();
+      final tried = job.running;
+      while (job.running) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      return tried;
+    }
+
+    expect(await tick(), isTrue);
+    final first = job.list().single;
+    expect(first.check?.ok, isFalse);
+    expect(
+      File(p.join(job.folder(first.name)!.path, 'famio.db')).existsSync(),
+      isTrue,
+    );
+    now = now.add(const Duration(minutes: 30));
+    expect(await tick(), isTrue, reason: 'the first retry after half an hour');
+    final second = now;
+    for (final later in [30, 90, 330]) {
+      now = second.add(Duration(minutes: later));
+      expect(await tick(), isFalse, reason: 'same fault, $later min later');
+    }
+    now = second.add(const Duration(hours: 6));
+    expect(await tick(), isTrue);
+    // Only the newest of the day stays of the flawed ones.
+    expect(job.list(), hasLength(1));
+  });
+
+  test('a failed check counts for no day but the backup stays its term, '
+      'with files.db where it is the only intact one (#572)', () async {
+    var now = DateTime.utc(2026, 11, 17, 9, 10, 11);
+    BackupJob job() => BackupJob(
+      db: app.db,
+      blobs: app.files.blobs,
+      dir: app.backups!.dir,
+      location: () => tz.UTC,
+      clock: () => now,
+      daily: 2,
+      weekly: 0,
+      filesKeep: 1,
+    );
+    Future<BackupInfo> nextDay() {
+      now = now.add(const Duration(days: 1));
+      return job().run();
+    }
+
+    final day1 = await job().run();
+    final day2 = await nextDay();
+    // Its files.db goes missing (disk, by hand); famio.db is still fine.
+    File(p.join(job().folder(day2.name)!.path, 'files.db')).deleteSync();
+    final recheck = await job().verify(day2.name);
+    expect(recheck.ok, isFalse);
+    expect(recheck.problems, ['files.db fehlt']);
+    final day3 = await nextDay();
+    // Day 2 fills no day: days 3 and 1 are the two days, and day 2 stays
+    // as long as it would were it fine.
+    expect(job().list().map((b) => b.name), [day3.name, day2.name, day1.name]);
+    expect((await job().verify(day2.name)).ok, isFalse);
+
+    await lacking();
+    final day4 = await nextDay();
+    expect(day4.check?.ok, isFalse);
+    // Day 2's term (the two newest days of all backups) is over.
+    expect(job().list().map((b) => b.name), [day4.name, day3.name, day1.name]);
+    // Day 3 is the newest fully intact backup: it keeps its files.db,
+    // although otherwise only the newest one does.
+    var intact = await job().verify(day3.name);
+    expect((intact.ok, intact.filesChecked), (true, true));
+
+    final day5 = await nextDay();
+    final day6 = await nextDay();
+    expect(job().list().map((b) => b.name), [
+      day6.name,
+      day5.name,
+      day3.name,
+      day1.name,
+    ]);
+    intact = await job().verify(day3.name);
+    expect((intact.ok, intact.filesChecked), (true, true));
+  });
 
   test(
     'three backups in the same second retain the newest complete copy',
