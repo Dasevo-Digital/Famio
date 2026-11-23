@@ -131,13 +131,17 @@ class _ChildScreenState extends State<ChildScreen> {
                     child: child,
                     items: checkupPlan(child, entries),
                     kind: ChildEntryKind.checkup,
-                    hint: tr.kidsPeriodsGermanChildHealth,
+                    hint: germanRules
+                        ? tr.kidsPeriodsGermanChildHealth
+                        : tr.kidsCheckupsOtherCountry(inFamilyCountry),
                   ),
                   _Tab.vaccinations => _DueList(
                     child: child,
                     items: vaccinationPlan(child, entries),
                     kind: ChildEntryKind.vaccination,
-                    hint: tr.kidsBasedStikoVaccinationCalendar,
+                    hint: germanRules
+                        ? tr.kidsBasedStikoVaccinationCalendar
+                        : tr.kidsVaccinationsOtherCountry(inFamilyCountry),
                   ),
                   _Tab.growth => _GrowthView(
                     child: child,

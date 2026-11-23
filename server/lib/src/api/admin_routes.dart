@@ -279,13 +279,21 @@ extension _AdminRoutes on FamioApi {
       );
     }
 
+    // Swiss school holidays differ by municipality; Famio shows none there.
+    final swiss = settings.country == FamilyCountry.ch;
     steps.add(
       SetupStep(
         id: 'region',
-        title: t('Bundesland für Feiertage'),
+        title: swiss
+            ? t('Kanton für Feiertage')
+            : t('Bundesland für Feiertage'),
         done: s.holidayRegion != null,
         detail: s.holidayRegion != null
-            ? t('Feiertage und Schulferien erscheinen im Kalender.')
+            ? swiss
+                  ? t('Die Feiertage erscheinen im Kalender.')
+                  : t('Feiertage und Schulferien erscheinen im Kalender.')
+            : swiss
+            ? t('Ohne Kanton zeigt der Kalender keine Feiertage.')
             : t(
                 'Ohne Bundesland zeigt der Kalender keine Feiertage und Schulferien.',
               ),
@@ -377,7 +385,8 @@ extension _AdminRoutes on FamioApi {
     );
     // The apps reload their configuration with the member list.
     if (changes.containsKey('hiddenModules') ||
-        changes.containsKey('holidayRegion')) {
+        changes.containsKey('holidayRegion') ||
+        changes.containsKey('country')) {
       hub.notifyMembersChanged();
     }
     if (changes.containsKey('hiddenModules')) locations?.followModule();
@@ -603,6 +612,7 @@ extension _AdminRoutes on FamioApi {
       'mapProvider': settings.effective.mapProvider?.wire,
       'hiddenModules': settings.effective.hiddenModules ?? const [],
       'holidayRegion': settings.effective.holidayRegion,
+      'country': settings.country.code,
     });
   }
 

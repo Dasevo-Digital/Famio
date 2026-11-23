@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/country.dart';
 import '../data/family_data.dart';
 import '../data/kids_logic.dart';
 import '../design/app_icons.dart';
@@ -15,34 +16,96 @@ import 'kids_log_screens.dart';
 import '../format.dart';
 import '../l10n.dart';
 
-/// Numbers that work everywhere in Germany.
-List<(String, String, String)> get emergencyNumbers => [
-  ('112', tr.kidsEmergency, tr.kidsAmbulanceFireBrigade),
-  ('116117', tr.kidsOutHoursMedicalService, tr.kids116117WhenPractice),
-  ('03019240', tr.kidsPoisonControl, tr.kids03019240ReachableNationwide),
-];
+/// A number to call and what it is for. [dial] is null for a service
+/// without one number (the Swiss doctors' service differs by canton).
+typedef EmergencyNumber = ({String? dial, String title, String subtitle});
 
-/// The emergency numbers as large buttons; 112 first and red.
+/// The numbers of the family's country (official lists, see the sources
+/// page); the first one is the emergency number. 112 works in all three.
+List<EmergencyNumber> get emergencyNumbers => switch (familyCountry) {
+  FamilyCountry.de => [
+    (
+      dial: '112',
+      title: '112 – ${tr.kidsEmergency}',
+      subtitle: tr.kidsAmbulanceFireBrigade,
+    ),
+    (
+      dial: '116117',
+      title: tr.kidsOutHoursMedicalService,
+      subtitle: tr.kids116117WhenPractice,
+    ),
+    (
+      dial: '03019240',
+      title: tr.kidsPoisonControl,
+      subtitle: tr.kids03019240ReachableNationwide,
+    ),
+  ],
+  // oesterreich.gv.at, gesundheit.gv.at (Ärztenotdienst, VIZ), 1450.at.
+  FamilyCountry.at => [
+    (
+      dial: '144',
+      title: '144 – ${tr.emergencyRescue}',
+      subtitle: tr.emergencyRescueNote,
+    ),
+    (
+      dial: '1450',
+      title: tr.emergencyHealthLineAt,
+      subtitle: tr.emergencyHealthLineAtNote,
+    ),
+    (
+      dial: '141',
+      title: tr.emergencyDoctorsAt,
+      subtitle: tr.emergencyDoctorsAtNote,
+    ),
+    (
+      dial: '+4314064343',
+      title: tr.emergencyPoisonAt,
+      subtitle: tr.emergencyPoisonAtNote,
+    ),
+  ],
+  // BAKOM (Notrufnummern), Tox Info Suisse.
+  FamilyCountry.ch => [
+    (
+      dial: '144',
+      title: '144 – ${tr.emergencyRescue}',
+      subtitle: tr.emergencyRescueNote,
+    ),
+    // l10n: Name des Dienstes
+    (dial: '145', title: 'Tox Info Suisse', subtitle: tr.emergencyPoisonChNote),
+    (
+      dial: null,
+      title: tr.emergencyDoctorsCh,
+      subtitle: tr.emergencyDoctorsChNote,
+    ),
+  ],
+};
+
+/// The emergency numbers as large buttons; the first one large and red.
 List<Widget> emergencyNumberCards(BuildContext context) {
   final theme = Theme.of(context);
   final danger = theme.colorScheme.error;
+  final numbers = emergencyNumbers;
   return [
-    for (final (number, title, subtitle) in emergencyNumbers)
+    for (final (i, n) in numbers.indexed)
       Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: SoftCard(
-          color: number == '112' ? danger : danger.withValues(alpha: 0.12),
-          onTap: () => callNumber(context, number),
+          color: i == 0 ? danger : danger.withValues(alpha: 0.12),
+          onTap: n.dial == null ? null : () => callNumber(context, n.dial!),
           padding: EdgeInsets.symmetric(
             horizontal: 18,
-            vertical: number == '112' ? 18 : 12,
+            vertical: i == 0 ? 18 : 12,
           ),
           child: Row(
             children: [
               Icon(
-                number == '112' ? AppIcons.siren : AppIcons.phoneCall,
-                color: number == '112' ? Colors.white : danger,
-                size: number == '112' ? 34 : 24,
+                i == 0
+                    ? AppIcons.siren
+                    : n.dial == null
+                    ? AppIcons.info
+                    : AppIcons.phoneCall,
+                color: i == 0 ? Colors.white : danger,
+                size: i == 0 ? 34 : 24,
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -50,19 +113,17 @@ List<Widget> emergencyNumberCards(BuildContext context) {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      number == '112' ? '112 – $title' : title,
+                      n.title,
                       style:
-                          (number == '112'
+                          (i == 0
                                   ? theme.textTheme.headlineSmall
                                   : theme.textTheme.titleMedium)
-                              ?.copyWith(
-                                color: number == '112' ? Colors.white : null,
-                              ),
+                              ?.copyWith(color: i == 0 ? Colors.white : null),
                     ),
                     Text(
-                      subtitle,
+                      n.subtitle,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: number == '112'
+                        color: i == 0
                             ? Colors.white.withValues(alpha: 0.9)
                             : null,
                       ),

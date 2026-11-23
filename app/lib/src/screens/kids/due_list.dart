@@ -17,7 +17,7 @@ class _DueList extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final c = FamioColors.of(context);
-    (String, Color) look(DueState s) => switch (s) {
+    (String, Color)? look(DueState s) => switch (s) {
       DueState.done => (tr.commonDoneLower, const Color(0xFF2A9D6E)),
       DueState.due => (tr.dueDueNow, theme.colorScheme.error),
       DueState.late => (tr.dueCanStillDone, const Color(0xFFE8703A)),
@@ -29,6 +29,8 @@ class _DueList extends StatelessWidget {
       ),
       DueState.upcoming => (tr.pregnancySoon, c.inkSoft),
       DueState.planned => (tr.commonEvent, const Color(0xFF3587D6)),
+      // Outside Germany: no German window, no state to show.
+      DueState.unscheduled => null,
     };
     // Hide far-future items for small children to keep the list short.
     final horizon = DateTime.now().add(const Duration(days: 730));
@@ -97,44 +99,50 @@ class _DueList extends StatelessWidget {
                               : d.title,
                           style: theme.textTheme.titleMedium,
                         ),
-                        Text(
-                          d.appointment != null
-                              ? _appointmentLabel(d.appointment!)
-                              : d.state == DueState.done
-                              ? d.entry!.dateUnknown
-                                    ? tr.dueDoneDateUnknown
-                                    : tr.kidsDate(_date.format(d.entry!.date))
-                              : kind == ChildEntryKind.checkup
-                              ? '${d.subtitle} · ${DateFormat.yMd(appLanguage).format(d.from)} – ${DateFormat.yMd(appLanguage).format(d.to)}'
-                              : tr.dueRecommendedDateNote(
-                                  DateFormat.yMd(appLanguage).format(d.from),
-                                  vaccinationById(d.id)?.note.isNotEmpty ??
-                                          false
-                                      ? ' · ${vaccinationById(d.id)!.note}'
-                                      : '',
-                                ),
-                          style: theme.textTheme.bodySmall,
-                        ),
+                        if (d.state != DueState.unscheduled ||
+                            kind == ChildEntryKind.checkup)
+                          Text(
+                            d.appointment != null
+                                ? _appointmentLabel(d.appointment!)
+                                : d.state == DueState.unscheduled
+                                ? d.subtitle
+                                : d.state == DueState.done
+                                ? d.entry!.dateUnknown
+                                      ? tr.dueDoneDateUnknown
+                                      : tr.kidsDate(_date.format(d.entry!.date))
+                                : kind == ChildEntryKind.checkup
+                                ? '${d.subtitle} · ${DateFormat.yMd(appLanguage).format(d.from)} – ${DateFormat.yMd(appLanguage).format(d.to)}'
+                                : tr.dueRecommendedDateNote(
+                                    DateFormat.yMd(appLanguage).format(d.from),
+                                    vaccinationById(d.id)?.note.isNotEmpty ??
+                                            false
+                                        ? ' · ${vaccinationById(d.id)!.note}'
+                                        : '',
+                                  ),
+                            style: theme.textTheme.bodySmall,
+                          ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: look(d.state).$2.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      look(d.state).$1,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: FamioColors.of(context).text(look(d.state).$2),
+                  if (look(d.state) case (final label, final color)) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        label,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: FamioColors.of(context).text(color),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/country.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
@@ -187,9 +188,9 @@ class _WeekView extends StatelessWidget {
     final (w, d) = p.weekOn(DateTime.now());
     final week = pregnancyWeek(w);
     final next = [
-      for (final t in pregnancyTasks)
+      for (final t in localPregnancyTasks)
         if (taskState(p, t) case DueState.due || DueState.late) t,
-      for (final t in pregnancyTasks)
+      for (final t in localPregnancyTasks)
         if (taskState(p, t) == DueState.upcoming) t,
     ];
     final left = daysToGo(p);
@@ -247,12 +248,16 @@ class _WeekView extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            Chip(
-              avatar: const Icon(AppIcons.calendarBlank, size: 16),
-              label: Text(
-                tr.pregnancyMaternityLeaveDate(_date.format(maternityLeave(p))),
+            // Maternity protection as the German Mutterschutzgesetz has it.
+            if (germanRules)
+              Chip(
+                avatar: const Icon(AppIcons.calendarBlank, size: 16),
+                label: Text(
+                  tr.pregnancyMaternityLeaveDate(
+                    _date.format(maternityLeave(p)),
+                  ),
+                ),
               ),
-            ),
             Chip(
               avatar: const Icon(AppIcons.star, size: 16),
               label: Text(tr.pregnancyDueDate(_date.format(p.dueDate))),
@@ -273,7 +278,9 @@ class _WeekView extends StatelessWidget {
           ),
         const SizedBox(height: 12),
         Text(
-          tr.pregnancySizesAveragesWhatCounts,
+          germanRules
+              ? tr.pregnancySizesAveragesWhatCounts
+              : tr.pregnancySizesAveragesOtherCountry(inFamilyCountry),
           style: theme.textTheme.bodySmall,
         ),
       ],
@@ -358,11 +365,13 @@ class _TasksView extends StatelessWidget {
     padding: EdgeInsets.only(top: 4, bottom: listBottomPadding(context)),
     children: [
       Text(
-        tr.pregnancyAdditionThereRegularCheckups,
+        germanRules
+            ? tr.pregnancyAdditionThereRegularCheckups
+            : tr.pregnancyCheckupsOtherCountry(inFamilyCountry),
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 12),
-      for (final t in pregnancyTasks)
+      for (final t in localPregnancyTasks)
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: _TaskCard(pregnancy: pregnancy, task: t),
@@ -394,12 +403,14 @@ class _ChecklistsView extends StatelessWidget {
                 title: Text(list.title),
                 subtitle: Text(
                   tr.pregnancyDoneTotal(
-                    list.items.where((i) => p.done.contains(i.id)).length,
-                    list.items.length,
+                    localChecklistItems(
+                      list,
+                    ).where((i) => p.done.contains(i.id)).length,
+                    localChecklistItems(list).length,
                   ),
                 ),
                 children: [
-                  for (final item in list.items)
+                  for (final item in localChecklistItems(list))
                     CheckboxListTile(
                       value: p.done.contains(item.id),
                       title: Text(item.title),

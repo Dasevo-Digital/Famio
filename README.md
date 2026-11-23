@@ -65,6 +65,7 @@ und Google Trinkgeld nur über die eigene Bezahlung erlauben.
 | Kinder: Meilensteine von der Geburt bis ins Erwachsenenalter (Sinne, Bewegung, Sprache, Denken, Miteinander, Selbstständigkeit, Körper mit Fontanellen und Zähnen, Pubertät nach Geschlecht), Entwicklungsphasen mit Erklärung, U1–J2 und STIKO-Impfungen abhaken, Erinnerungen, WHO-Wachstumskurven, Fußlänge | ✅ |
 | Baby-Protokoll: Stillen, Fläschchen, Getränke, Schlaf, Spaziergänge, Windeln (Pipi, Kacka, Stuhl mit Menge, Beschaffenheit und Farbe), Fotos an Einträgen, Fieber, Medikamente mit Timern und Diagrammen, Wochen- und Monatsübersicht mit Getränken nach Art | ✅ |
 | Notfall-Seite pro Kind (offline) und Familienkontakte | ✅ |
+| Land der Familie (Deutschland, Österreich, Schweiz): Notruf- und Beratungsnummern, Feiertage je Bundesland oder Kanton, in Österreich die Schulferien; außerhalb Deutschlands keine deutschen Fristen für U-Untersuchungen, Impfungen und Mutterschutz | ✅ |
 | Geburtstage (Mitglieder, Kinder, Kontakte) im Kalender mit Erinnerung | ✅ |
 | Wetter & Kleidungstipps pro Kind (Open-Meteo, opt-in) | ✅ |
 | Schwangerschaft: SSW, Termine, Checklisten, Wehen-Timer | ✅ |
@@ -663,7 +664,7 @@ Administratoren verwalten den Server aus jeder angemeldeten App heraus
   öffentliche Adresse – der Server ruft sich darüber selbst auf –, nur
   HTTPS, Schlüssel getrennt von den Daten, Familie eingeladen, Zwei-Faktor
   für den Admin, Benachrichtigungen erreichen alle, Sicherung aktuell und
-  geprüft, Bundesland für Feiertage; jeweils mit dem Ort, an dem es sich
+  geprüft, Bundesland bzw. Kanton für Feiertage; jeweils mit dem Ort, an dem es sich
   ändern lässt (`GET /api/admin/setup`).
 
 - **Benutzer:** anlegen, Name/Benutzername/Farbe ändern, Admin-Rolle vergeben

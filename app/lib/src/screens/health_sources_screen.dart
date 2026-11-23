@@ -6,8 +6,8 @@ import '../l10n.dart';
 
 /// Where the health content of the app comes from, with its date: the
 /// vaccination calendar, the check-up booklet, the fever hints, the growth
-/// curves and the pregnancy deadlines (#527). Titles are those of the
-/// German sources.
+/// curves and the pregnancy deadlines (#527), and the numbers and holidays
+/// for Austria and Switzerland (#586). Titles are those of the sources.
 class HealthSourcesScreen extends StatelessWidget {
   const HealthSourcesScreen({super.key});
 
@@ -77,6 +77,68 @@ class HealthSourcesScreen extends StatelessWidget {
             'Bundeselterngeld- und Elternzeitgesetz, § 16', // l10n: Titel der Quelle
             'gesetze-im-internet.de',
             'https://www.gesetze-im-internet.de/beeg/__16.html',
+          ),
+        ],
+      ),
+      // Numbers, holidays and school holidays when the family lives in
+      // Austria or Switzerland (#586).
+      (
+        tr.sourcesAustria,
+        const [
+          _Source(
+            'Notrufnummern', // l10n: Titel der Quelle
+            'oesterreich.gv.at, 18.08.2026',
+            'https://www.oesterreich.gv.at/de/themen/notfaelle_unfaelle_und_kriminalitaet/notrufnummern',
+          ),
+          _Source(
+            'Ärztenotdienst 141', // l10n: Titel der Quelle
+            'gesundheit.gv.at, 13.02.2025',
+            'https://www.gesundheit.gv.at/service/notruf/aerztenotdienst.html',
+          ),
+          _Source(
+            'Gesundheitsberatung 1450', // l10n: Titel der Quelle
+            '1450.at',
+            'https://www.1450.at/',
+          ),
+          _Source(
+            'Vergiftungsinformationszentrale', // l10n: Titel der Quelle
+            'gesundheit.gv.at, 23.02.2026',
+            'https://www.gesundheit.gv.at/service/notruf/vergiftungsinformationszentrale.html',
+          ),
+          _Source(
+            'Arbeitsruhegesetz, § 7 Feiertage', // l10n: Titel der Quelle
+            'RIS, 23.11.2026',
+            'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10008541',
+          ),
+          _Source(
+            'Schulzeitgesetz 1985, § 2 Schuljahr und Ferien', // l10n: Titel der Quelle
+            'RIS, 23.11.2026',
+            'https://www.ris.bka.gv.at/GeltendeFassung.wxe?Abfrage=Bundesnormen&Gesetzesnummer=10009575',
+          ),
+          _Source(
+            'Festtage der Landespatrone (schulfrei)', // l10n: Titel der Quelle
+            'BMB',
+            'https://www.bmb.gv.at/Themen/schule/schulpraxis/termine/feiertage.html',
+          ),
+        ],
+      ),
+      (
+        tr.sourcesSwitzerland,
+        const [
+          _Source(
+            'Notrufnummern', // l10n: Titel der Quelle
+            'BAKOM, 22.05.2024',
+            'https://www.bakom.admin.ch/de/weitere-nummern-kostenpflichtig-oder-gratis',
+          ),
+          _Source(
+            'Tox Info Suisse, Notfall 145', // l10n: Titel der Quelle
+            'toxinfo.ch',
+            'https://www.toxinfo.ch/',
+          ),
+          _Source(
+            'Gesetzliche Feiertage der Kantone', // l10n: Titel der Quelle
+            'Bundesamt für Justiz, Stand 1.1.2011', // l10n: Herausgeber und Stand
+            'https://www.bj.admin.ch/dam/de/sd-web/MW4dthCLc4Nv/kant-feiertage.pdf',
           ),
         ],
       ),

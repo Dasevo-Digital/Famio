@@ -25,4 +25,19 @@ void main() {
     }
     expect(wrong, isEmpty);
   });
+
+  test('texts for Austria and Switzerland name no German number (#586)', () {
+    final wrong = <String>[];
+    for (final language in ['de', 'en', 'es']) {
+      for (final MapEntry(:key, :value) in arb(language).entries) {
+        final local =
+            RegExp(r'(At|Ch)$').hasMatch(key) || key.contains('Austria');
+        if (!local || key.startsWith('@')) continue;
+        if ('$value'.contains('116 117') || '$value'.contains('19240')) {
+          wrong.add('$language $key');
+        }
+      }
+    }
+    expect(wrong, isEmpty);
+  });
 }

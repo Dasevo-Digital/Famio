@@ -6,6 +6,7 @@ import '../design/app_icons.dart';
 
 import '../app_state.dart';
 import '../data/birthdays.dart';
+import '../data/country.dart';
 import '../data/holidays.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
@@ -310,6 +311,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
 }
 
 Color eventColor(BuildContext context, SyncEngine engine, CalendarEvent e) {
+  // Like the school holiday calendars German families subscribe to.
+  if (isSchoolHolidaySource(e.sourceId)) return const Color(0xFF5B8DEF);
   if (isHolidaySource(e.sourceId)) return const Color(0xFF7A8796);
   if (isBirthdaySource(e.sourceId)) {
     final color = engine.birthdayOf(e.sourceId)?.color;
@@ -689,7 +692,9 @@ Future<void> showCalendarOccurrence(
                 Expanded(
                   child: Text(
                     isHolidaySource(e.sourceId)
-                        ? tr.calendarAdminsSetFederalState
+                        ? familyCountry == FamilyCountry.ch
+                              ? tr.calendarAdminsSetCanton
+                              : tr.calendarAdminsSetFederalState
                         : isBirthdaySource(e.sourceId)
                         ? tr.calendarWhatChangeProfileChild(
                             engine
@@ -818,7 +823,9 @@ class _OccurrenceTile extends StatelessWidget {
             ),
             if (e.sourceId != null)
               Tooltip(
-                message: isHolidaySource(e.sourceId)
+                message: isSchoolHolidaySource(e.sourceId)
+                    ? tr.calendarSchoolHolidays
+                    : isHolidaySource(e.sourceId)
                     ? tr.calendarPublicHoliday
                     : isBirthdaySource(e.sourceId)
                     ? tr.commonBirthday

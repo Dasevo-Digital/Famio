@@ -42,7 +42,12 @@ class SettingsStore {
     twoFactorRequired: _stored.twoFactorRequired,
     hiddenModules: _stored.hiddenModules,
     holidayRegion: _stored.holidayRegion,
+    country: _stored.country,
   );
+
+  /// The family's country; Germany unless an admin chose another.
+  FamilyCountry get country =>
+      FamilyCountry.parse(_stored.country) ?? FamilyCountry.de;
 
   tz.Location get location => _location;
   String? get publicUrl => effective.publicUrl;
@@ -70,8 +75,31 @@ class SettingsStore {
         'twoFactorRequired' => _policy(value),
         'hiddenModules' => _modules(value),
         'holidayRegion' => _region(value),
+        'country' => _country(value),
         _ => null,
       };
+    }
+    // A federal state or canton always belongs to the family's country.
+    // Changing only the country drops a region of the old one; an older
+    // app that sends a German state for an Austrian family is refused.
+    final country =
+        FamilyCountry.parse(
+          values.containsKey('country') ? values['country'] : _stored.country,
+        ) ??
+        FamilyCountry.de;
+    final region = parseHolidayRegion(
+      values.containsKey('holidayRegion')
+          ? values['holidayRegion']
+          : _stored.holidayRegion,
+    );
+    if (region != null && region.country != country) {
+      if (values.containsKey('holidayRegion')) {
+        throw ApiException.badRequest(
+          'region_country_mismatch',
+          t('Das Bundesland bzw. der Kanton gehört nicht zum gewählten Land'),
+        );
+      }
+      values['holidayRegion'] = null;
     }
     final selectedProvider = values.containsKey('mapProvider')
         ? values['mapProvider'] as MapTileProvider?
@@ -243,13 +271,26 @@ class SettingsStore {
 
   static String? _region(Object? value) {
     if (value == null || value == '') return null;
-    if (GermanState.parse(value) == null) {
+    if (parseHolidayRegion(value) == null) {
       throw ApiException.badRequest(
         'invalid_region',
-        t('Bundesland als Kürzel, z. B. NW, BY oder BE'),
+        t('Bundesland oder Kanton als Kürzel, z. B. NW, AT-9 oder CH-ZH'),
       );
     }
     return value as String;
+  }
+
+  static String? _country(Object? value) {
+    if (value == null || value == '') return null;
+    final country = FamilyCountry.parse(value);
+    if (country == null) {
+      throw ApiException.badRequest(
+        'invalid_country',
+        t('Land als Kürzel: DE, AT oder CH'),
+      );
+    }
+    // Germany is the default; it is stored as no value.
+    return country == FamilyCountry.de ? null : country.code;
   }
 
   static String? _policy(Object? value) {

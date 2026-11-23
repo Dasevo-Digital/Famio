@@ -37,7 +37,10 @@ class _SettingsFormState extends State<_SettingsForm> {
           ? MapTileProvider.openStreetMap
           : MapTileProvider.custom);
   late TwoFactorPolicy? _policy = widget.overview.settings.twoFactorRequired;
-  late GermanState? _region = GermanState.parse(
+  late final _initialCountry =
+      FamilyCountry.parse(widget.overview.settings.country) ?? FamilyCountry.de;
+  late FamilyCountry _country = _initialCountry;
+  late HolidayRegion? _region = parseHolidayRegion(
     widget.overview.settings.holidayRegion,
   );
   var _busy = false;
@@ -107,6 +110,8 @@ class _SettingsFormState extends State<_SettingsForm> {
                 : int.tryParse(_locationHistory.text.trim()) ?? -1,
             'twoFactorRequired': _policy?.name,
             'holidayRegion': _region?.code,
+            // Older servers do not know the setting: only sent when changed.
+            if (_country != _initialCountry) 'country': _country.code,
           });
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -470,10 +475,34 @@ class _SettingsFormState extends State<_SettingsForm> {
                   ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<GermanState?>(
-              initialValue: _region,
+            DropdownButtonFormField<FamilyCountry>(
+              initialValue: _country,
+              isExpanded: true,
               decoration: InputDecoration(
-                labelText: tr.adminFederalState,
+                labelText: tr.adminCountry,
+                helperText: tr.adminCountryHelper,
+                helperMaxLines: 3,
+                prefixIcon: const Icon(AppIcons.globe),
+              ),
+              items: [
+                for (final c in FamilyCountry.values)
+                  DropdownMenuItem(value: c, child: Text(c.label)),
+              ],
+              onChanged: (v) => setState(() {
+                _country = v ?? FamilyCountry.de;
+                if (_region?.country != _country) _region = null;
+              }),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<HolidayRegion?>(
+              // A new country starts without a region.
+              key: ValueKey(_country),
+              initialValue: _region,
+              isExpanded: true,
+              decoration: InputDecoration(
+                labelText: _country == FamilyCountry.ch
+                    ? tr.adminCanton
+                    : tr.adminFederalState,
                 helperText: tr.adminPublicHolidaysCalendar,
                 prefixIcon: Icon(AppIcons.calendarBlank),
               ),
@@ -482,20 +511,36 @@ class _SettingsFormState extends State<_SettingsForm> {
                   value: null,
                   child: Text(tr.adminNoPublicHolidays),
                 ),
-                for (final s in GermanState.values)
-                  DropdownMenuItem(value: s, child: Text(s.label)),
+                for (final r in _country.regions)
+                  DropdownMenuItem(value: r, child: Text(r.label)),
               ],
               onChanged: (v) => setState(() => _region = v),
             ),
-            if (_region != null)
+            if (_region case final GermanState state)
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   icon: const Icon(AppIcons.cloudArrowDown, size: 18),
                   label: Text(
-                    tr.adminSubscribeSchoolHolidaysRegion(_region!.label),
+                    tr.adminSubscribeSchoolHolidaysRegion(state.label),
                   ),
-                  onPressed: () => _subscribeSchoolHolidays(_region!),
+                  onPressed: () => _subscribeSchoolHolidays(state),
+                ),
+              )
+            else if (_region case AustrianState())
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  tr.adminSchoolHolidaysAustria,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              )
+            else if (_country == FamilyCountry.ch)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  tr.adminSchoolHolidaysSwitzerland,
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
             const SizedBox(height: 16),

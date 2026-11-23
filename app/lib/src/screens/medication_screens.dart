@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../app_state.dart';
+import '../data/country.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../design/app_icons.dart';
@@ -103,7 +104,13 @@ class _Disclaimer extends StatelessWidget {
           children: [
             Icon(AppIcons.info, color: c.strong(FamioSection.health)),
             const SizedBox(width: 12),
-            Expanded(child: Text(tr.medsFamioOnlyRemindsYou)),
+            Expanded(
+              child: Text(switch (familyCountry) {
+                FamilyCountry.de => tr.medsFamioOnlyRemindsYou,
+                FamilyCountry.at => tr.medsFamioOnlyRemindsYouAt,
+                FamilyCountry.ch => tr.medsFamioOnlyRemindsYouCh,
+              }),
+            ),
           ],
         ),
       ),

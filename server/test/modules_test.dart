@@ -100,4 +100,40 @@ void main() {
     await call('PATCH', 'api/admin/settings', {'holidayRegion': null});
     expect((await call('GET', 'api/config')).$2['holidayRegion'], isNull);
   });
+
+  test('the country decides which regions are allowed (#586)', () async {
+    Future<Map<String, Object?>> config() async =>
+        (await call('GET', 'api/config')).$2;
+    // Unset means Germany; Germany is stored as no value.
+    expect((await config())['country'], 'DE');
+    final (bad, body) = await call('PATCH', 'api/admin/settings', {
+      'country': 'FR',
+    });
+    expect((bad, body['error']), (400, 'invalid_country'));
+    // Austria with Vienna; a German state does not fit.
+    await call('PATCH', 'api/admin/settings', {
+      'country': 'AT',
+      'holidayRegion': 'AT-9',
+    });
+    expect((await config())['country'], 'AT');
+    expect((await config())['holidayRegion'], 'AT-9');
+    final (mismatch, why) = await call('PATCH', 'api/admin/settings', {
+      'holidayRegion': 'BY',
+    });
+    expect((mismatch, why['error']), (400, 'region_country_mismatch'));
+    expect((await config())['holidayRegion'], 'AT-9');
+    // Changing only the country drops the region of the old one.
+    await call('PATCH', 'api/admin/settings', {'country': 'CH'});
+    expect((await config())['country'], 'CH');
+    expect((await config())['holidayRegion'], isNull);
+    await call('PATCH', 'api/admin/settings', {'holidayRegion': 'CH-BE'});
+    expect((await config())['holidayRegion'], 'CH-BE');
+    // Back to Germany: stored as the default again.
+    await call('PATCH', 'api/admin/settings', {
+      'country': 'DE',
+      'holidayRegion': 'BE',
+    });
+    expect((await config())['country'], 'DE');
+    expect((await config())['holidayRegion'], 'BE');
+  });
 }

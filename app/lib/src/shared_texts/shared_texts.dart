@@ -18,6 +18,9 @@ Map<String, String> collectSharedTexts() {
       ServiceAccess.values,
       TwoFactorPolicy.values,
       GermanState.values,
+      AustrianState.values,
+      SwissCanton.values,
+      FamilyCountry.values,
       MilestoneArea.values,
       ChoreRepeat.values,
       MoneyKind.values,
@@ -71,9 +74,16 @@ Map<String, String> collectSharedTexts() {
         i.title;
       }
     }
-    for (final s in GermanState.values) {
-      for (final h in germanHolidays(2026, s)) {
-        h.name;
+    for (final country in FamilyCountry.values) {
+      for (final region in country.regions) {
+        for (final h in region.holidays(2026)) {
+          h.name;
+        }
+      }
+    }
+    for (final s in AustrianState.values) {
+      for (final p in austrianSchoolHolidays(2026, s)) {
+        p.title;
       }
     }
     for (final c in shoppingCategories) {

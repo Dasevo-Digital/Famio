@@ -1,4 +1,5 @@
 import '../texts.dart';
+import 'holidays.dart';
 
 /// Pregnancy week by week: typical size of the baby (rounded, from common
 /// tables; crown-rump length until week 19, then head to heel) and a
@@ -199,10 +200,19 @@ class PregnancyTask {
     this._title,
     this.fromWeek,
     this.toWeek,
-    this._info,
-  );
+    this._info, {
+    this.countries,
+  });
 
   final String id;
+
+  /// Where it applies; null: everywhere. Screenings, vaccination windows
+  /// and benefits follow German rules (Mutterschafts-Richtlinien, STIKO,
+  /// Mutterschutzgesetz).
+  final Set<FamilyCountry>? countries;
+
+  bool appliesIn(FamilyCountry country) => countries?.contains(country) ?? true;
+
   final String _title;
   String get title => sharedText('PregnancyTask|$_title', _title);
   final int fromWeek;
@@ -227,6 +237,7 @@ const pregnancyTasks = <PregnancyTask>[
     8,
     11,
     'Mutterpass: 8+0 bis 11+6.',
+    countries: {FamilyCountry.de},
   ),
   PregnancyTask(
     'course',
@@ -241,6 +252,7 @@ const pregnancyTasks = <PregnancyTask>[
     18,
     21,
     'Mutterpass: 18+0 bis 21+6.',
+    countries: {FamilyCountry.de},
   ),
   PregnancyTask(
     'ogtt',
@@ -248,6 +260,7 @@ const pregnancyTasks = <PregnancyTask>[
     24,
     27,
     'Test auf Schwangerschaftsdiabetes: 24+0 bis 27+6.',
+    countries: {FamilyCountry.de},
   ),
   PregnancyTask(
     'pertussis',
@@ -255,6 +268,7 @@ const pregnancyTasks = <PregnancyTask>[
     28,
     32,
     'STIKO: zu Beginn des letzten Drittels – schützt das Baby in den ersten Monaten.',
+    countries: {FamilyCountry.de},
   ),
   PregnancyTask(
     'us3',
@@ -262,6 +276,7 @@ const pregnancyTasks = <PregnancyTask>[
     28,
     31,
     'Mutterpass: 28+0 bis 31+6.',
+    countries: {FamilyCountry.de},
   ),
   PregnancyTask(
     'clinic',
@@ -276,6 +291,15 @@ const pregnancyTasks = <PregnancyTask>[
     30,
     36,
     'Für die U2 und die weiteren Vorsorgen.',
+    countries: {FamilyCountry.de},
+  ),
+  PregnancyTask(
+    'pediatrician.other',
+    'Kinderarzt suchen',
+    30,
+    36,
+    'Für die ersten Untersuchungen nach der Geburt und die weiteren Vorsorgen.',
+    countries: {FamilyCountry.at, FamilyCountry.ch},
   ),
   PregnancyTask('bag', 'Kliniktasche packen', 34, 36, 'Siehe Checkliste.'),
   PregnancyTask(
@@ -284,13 +308,20 @@ const pregnancyTasks = <PregnancyTask>[
     33,
     34,
     'Bei der Krankenkasse, mit Bescheinigung über den Termin (frühestens 7 Wochen vor ET). Mutterschutz beginnt 6 Wochen vor ET.',
+    countries: {FamilyCountry.de},
   ),
 ];
 
 class ChecklistItem {
-  const ChecklistItem(this.id, this._title);
+  const ChecklistItem(this.id, this._title, {this.countries});
 
   final String id;
+
+  /// Where it applies; null: everywhere (see [PregnancyTask.countries]).
+  final Set<FamilyCountry>? countries;
+
+  bool appliesIn(FamilyCountry country) => countries?.contains(country) ?? true;
+
   final String _title;
   String get title => sharedText('ChecklistItem|$_title', _title);
 }
@@ -306,7 +337,16 @@ class Checklist {
 
 const pregnancyChecklists = <Checklist>[
   Checklist('bag', 'Kliniktasche', [
-    ChecklistItem('bag.docs', 'Mutterpass, Versichertenkarte, Personalausweis'),
+    ChecklistItem(
+      'bag.docs',
+      'Mutterpass, Versichertenkarte, Personalausweis',
+      countries: {FamilyCountry.de},
+    ),
+    ChecklistItem(
+      'bag.docs.other',
+      'Vorsorgeunterlagen der Schwangerschaft, Versicherungskarte, Ausweis',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
+    ),
     ChecklistItem(
       'bag.family',
       'Familienstammbuch bzw. Geburts-/Heiratsurkunde',
@@ -339,21 +379,58 @@ const pregnancyChecklists = <Checklist>[
     ChecklistItem(
       'after.registry',
       'Geburt beim Standesamt anzeigen (innerhalb einer Woche; oft über die Klinik)',
+      countries: {FamilyCountry.de},
     ),
-    ChecklistItem('after.insurance', 'Baby bei der Krankenkasse anmelden'),
+    ChecklistItem(
+      'after.registry.other',
+      'Geburt beim Standesamt bzw. Zivilstandsamt anzeigen (oft über die Klinik)',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
+    ),
+    ChecklistItem(
+      'after.insurance',
+      'Baby bei der Krankenkasse anmelden',
+      countries: {FamilyCountry.de},
+    ),
+    ChecklistItem(
+      'after.insurance.other',
+      'Krankenversicherung des Babys klären',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
+    ),
     ChecklistItem(
       'after.childbenefit',
       'Kindergeld bei der Familienkasse beantragen',
+      countries: {FamilyCountry.de},
     ),
     ChecklistItem(
       'after.parentalbenefit',
       'Elterngeld beantragen (rückwirkend nur 3 Monate)',
+      countries: {FamilyCountry.de},
+    ),
+    ChecklistItem(
+      'after.benefits.other',
+      'Familienleistungen prüfen und beantragen',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
     ),
     ChecklistItem(
       'after.employer',
       'Arbeitgeber informieren, Elternzeit anmelden (7 Wochen vorher)',
+      countries: {FamilyCountry.de},
     ),
-    ChecklistItem('after.u2', 'Termin für die U2 (3.–10. Lebenstag)'),
+    ChecklistItem(
+      'after.employer.other',
+      'Arbeitgeber informieren',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
+    ),
+    ChecklistItem(
+      'after.u2',
+      'Termin für die U2 (3.–10. Lebenstag)',
+      countries: {FamilyCountry.de},
+    ),
+    ChecklistItem(
+      'after.pediatrician.other',
+      'Ersten Termin beim Kinderarzt vereinbaren',
+      countries: {FamilyCountry.at, FamilyCountry.ch},
+    ),
     ChecklistItem('after.midwife', 'Wochenbett-Hebamme bestätigen'),
   ]),
 ];

@@ -161,6 +161,7 @@ class ServerSettings {
     this.twoFactorRequired,
     this.hiddenModules,
     this.holidayRegion,
+    this.country,
   });
 
   factory ServerSettings.fromJson(Map<String, Object?> json) => ServerSettings(
@@ -173,6 +174,7 @@ class ServerSettings {
     twoFactorRequired: TwoFactorPolicy.parse(json['twoFactorRequired']),
     hiddenModules: (json['hiddenModules'] as List?)?.cast<String>(),
     holidayRegion: json['holidayRegion'] as String?,
+    country: json['country'] as String?,
   );
 
   /// Address under which the server is reachable from the internet.
@@ -201,9 +203,15 @@ class ServerSettings {
   /// Their data stays on the server. Null or empty: all are shown.
   final List<String>? hiddenModules;
 
-  /// Federal state whose public holidays the calendars show
-  /// ([GermanState.code], e.g. `NW`); null: none.
+  /// Federal state or canton whose public holidays the calendars show
+  /// ([HolidayRegion.code], e.g. `NW`, `AT-9`, `CH-ZH`); null: none. It
+  /// always belongs to [country].
   final String? holidayRegion;
+
+  /// The family's country ([FamilyCountry.code]); null: Germany. Decides
+  /// emergency numbers and whether the German check-up, vaccination and
+  /// maternity rules apply.
+  final String? country;
 
   /// Areas that can be hidden (the names of the app's sections); start and
   /// settings always stay.
@@ -272,6 +280,7 @@ class ServerSettings {
     'twoFactorRequired',
     'hiddenModules',
     'holidayRegion',
+    'country',
   ];
 
   Map<String, Object?> toJson() => {
@@ -284,6 +293,7 @@ class ServerSettings {
     'twoFactorRequired': twoFactorRequired?.name,
     'hiddenModules': hiddenModules,
     'holidayRegion': holidayRegion,
+    'country': country,
   };
 }
 

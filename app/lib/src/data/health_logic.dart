@@ -1,5 +1,6 @@
 import 'package:famio_client/famio_client.dart';
 import '../l10n.dart';
+import 'country.dart';
 
 /// What was drunk of one kind: how often, and how much where an amount
 /// was noted.
@@ -290,7 +291,9 @@ List<ChildLog> recentMedications(List<ChildLog> logs) {
 enum FeverLevel { normal, low, raised, fever, doctor, urgent }
 
 /// A cautious hint for a measured temperature. Famio does not diagnose;
-/// the texts point to the pediatrician, 116 117 or 112.
+/// the texts point to the pediatrician and the numbers of the family's
+/// country (116 117 in Germany, 1450/141 in Austria, the cantonal service
+/// in Switzerland) or 112.
 ({FeverLevel level, String text}) feverAdvice(
   Child child,
   double celsius, {
@@ -313,19 +316,31 @@ enum FeverLevel { normal, low, raised, fever, doctor, urgent }
   if (celsius >= 41) {
     return (
       level: FeverLevel.urgent,
-      text: tr.healthVeryHighFeverGet(warnings),
+      text: switch (familyCountry) {
+        FamilyCountry.de => tr.healthVeryHighFeverGet(warnings),
+        FamilyCountry.at => tr.healthVeryHighFeverGetAt(warnings),
+        FamilyCountry.ch => tr.healthVeryHighFeverGetCh(warnings),
+      },
     );
   }
   if (celsius >= 38 && youngerThanMonths(3)) {
     return (
       level: FeverLevel.urgent,
-      text: tr.healthBabiesUnder3Months(warnings),
+      text: switch (familyCountry) {
+        FamilyCountry.de => tr.healthBabiesUnder3Months(warnings),
+        FamilyCountry.at => tr.healthBabiesUnder3MonthsAt(warnings),
+        FamilyCountry.ch => tr.healthBabiesUnder3MonthsCh(warnings),
+      },
     );
   }
   if ((celsius >= 39 && youngerThanMonths(6)) || celsius >= 40) {
     return (
       level: FeverLevel.doctor,
-      text: tr.healthHighFeverContactPediatrician(warnings),
+      text: switch (familyCountry) {
+        FamilyCountry.de => tr.healthHighFeverContactPediatrician(warnings),
+        FamilyCountry.at => tr.healthHighFeverContactPediatricianAt(warnings),
+        FamilyCountry.ch => tr.healthHighFeverContactPediatricianCh(warnings),
+      },
     );
   }
   if (celsius >= 38.5) {
@@ -380,7 +395,11 @@ enum FeverLevel { normal, low, raised, fever, doctor, urgent }
   if (celsius < 35) {
     return (
       level: FeverLevel.doctor,
-      text: tr.healthVeryLowTemperature(warnings),
+      text: switch (familyCountry) {
+        FamilyCountry.de => tr.healthVeryLowTemperature(warnings),
+        FamilyCountry.at => tr.healthVeryLowTemperatureAt(warnings),
+        FamilyCountry.ch => tr.healthVeryLowTemperatureCh(warnings),
+      },
     );
   }
   if (celsius < 36) {

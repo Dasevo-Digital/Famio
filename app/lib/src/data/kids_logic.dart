@@ -2,6 +2,7 @@ import 'package:famio_client/famio_client.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n.dart';
+import 'country.dart';
 
 /// "3 Wochen", "5 Monate", "1 Jahr und 3 Monate", "6 Jahre".
 String ageLabel(Child child, [DateTime? at]) {
@@ -77,6 +78,10 @@ enum DueState {
 
   /// An appointment is booked (check-ups and vaccinations).
   planned,
+
+  /// Outside Germany: the German check-up and vaccination windows do not
+  /// apply, so nothing is due, late or missed. It can still be recorded.
+  unscheduled,
 }
 
 /// The record for one catalog item: a done entry wins over an appointment.
@@ -147,7 +152,9 @@ List<DueItem> checkupPlan(
         final day = DateTime(now.year, now.month, now.day);
         final state = _stateOf(
           entry,
-          () => day.isBefore(from)
+          () => !germanRules
+              ? DueState.unscheduled
+              : day.isBefore(from)
               ? DueState.upcoming
               : !day.isAfter(to)
               ? DueState.due
@@ -280,9 +287,12 @@ List<DueItem> vaccinationPlan(
         }
       }
     }
+    if (!germanRules) tooLate = false;
     final state = _stateOf(
       entry,
-      () => tooLate
+      () => !germanRules
+          ? DueState.unscheduled
+          : tooLate
           ? DueState.missed
           : waiting || day.isBefore(from)
           ? DueState.upcoming

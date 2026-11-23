@@ -5,6 +5,7 @@
 /// https://www.kmk.org/service/ferienregelung/ferienkalender.html
 library;
 
+import '../texts.dart';
 import 'holidays.dart';
 
 enum SchoolHolidayKind {
@@ -196,4 +197,100 @@ GermanState? schoolHolidayState(String url) {
     if (s.schoolHolidaysUrl == trimmed) return s;
   }
   return null;
+}
+
+/// A school holiday or school-free day computed by rule (Austria).
+class SchoolHolidayPeriod {
+  const SchoolHolidayPeriod(this.first, this.last, this._title);
+
+  /// First and last day, local midnight.
+  final DateTime first;
+  final DateTime last;
+  final String _title;
+
+  /// The title in the language of [sharedTexts].
+  String get title => sharedText('SchoolHolidayPeriod|$_title', _title);
+
+  @override
+  String toString() =>
+      '$_title ${first.toIso8601String().substring(0, 10)}–'
+      '${last.toIso8601String().substring(0, 10)}';
+}
+
+/// Semester holidays a ministerial decree moved by one week (Schulzeitgesetz
+/// § 2 Abs. 2a), by the February they fall in. 2027: Salzburg, Tirol and
+/// Vorarlberg (BGBl. II Nr. 297/2025 and the decrees for Salzburg and Tirol;
+/// BMB, Ferientermine 2026/27). Add new decrees here.
+const _semesterMoved = <int, Set<AustrianState>>{
+  2027: {AustrianState.s, AustrianState.t, AustrianState.v},
+};
+
+/// The school holidays and school-free days of [state] that begin in
+/// [year], after the Schulzeitgesetz 1985 § 2 (RIS, as of 23.11.2026):
+/// semester, Easter, Whitsun, summer, autumn and Christmas holidays, All
+/// Souls' Day and the state's patron day (BMB, "Feiertage"). Single schools
+/// may differ; decrees that move the semester holidays are in
+/// [_semesterMoved].
+List<SchoolHolidayPeriod> austrianSchoolHolidays(
+  int year,
+  AustrianState state,
+) {
+  DateTime day(int month, int d) => DateTime(year, month, d);
+  DateTime plus(DateTime date, int days) =>
+      DateTime(date.year, date.month, date.day + days);
+  // The [n]th [weekday] of [month].
+  DateTime nth(int month, int weekday, int n) {
+    final first = day(month, 1);
+    return day(month, 1 + (weekday - first.weekday) % 7 + 7 * (n - 1));
+  }
+
+  final east = {AustrianState.b, AustrianState.n, AustrianState.w};
+  final easter = easterSunday(year);
+  // Semester: one week from the first Monday in February in Lower Austria
+  // and Vienna, the second in Burgenland, Carinthia, Salzburg, Tyrol and
+  // Vorarlberg, the third in Upper Austria and Styria.
+  final week = switch (state) {
+    AustrianState.n || AustrianState.w => 1,
+    AustrianState.o || AustrianState.st => 3,
+    _ => 2,
+  };
+  final moved = _semesterMoved[year]?.contains(state) ?? false;
+  final semester = nth(2, DateTime.monday, week + (moved ? 1 : 0));
+  // Summer: from the Saturday between 28 June and 4 July in the east, 5 to
+  // 11 July elsewhere, until the school year starts on the first (east) or
+  // second Monday in September.
+  final summerFrom = east.contains(state) ? day(6, 28) : day(7, 5);
+  final summerStart = plus(
+    summerFrom,
+    (DateTime.saturday - summerFrom.weekday) % 7,
+  );
+  final schoolStarts = nth(9, DateTime.monday, east.contains(state) ? 1 : 2);
+  final (patronDate, patronName) = switch (state) {
+    AustrianState.b => (day(11, 11), 'Hl. Martin (schulfrei)'),
+    AustrianState.k ||
+    AustrianState.st ||
+    AustrianState.t ||
+    AustrianState.v => (day(3, 19), 'Hl. Josef (schulfrei)'),
+    AustrianState.n ||
+    AustrianState.w => (day(11, 15), 'Hl. Leopold (schulfrei)'),
+    AustrianState.o => (day(5, 4), 'Hl. Florian (schulfrei)'),
+    AustrianState.s => (day(9, 24), 'Hl. Rupert (schulfrei)'),
+  };
+  final list = [
+    SchoolHolidayPeriod(semester, plus(semester, 5), 'Semesterferien'),
+    SchoolHolidayPeriod(plus(easter, -8), plus(easter, 1), 'Osterferien'),
+    SchoolHolidayPeriod(plus(easter, 48), plus(easter, 50), 'Pfingstferien'),
+    SchoolHolidayPeriod(summerStart, plus(schoolStarts, -1), 'Sommerferien'),
+    // Autumn holidays since the school year 2020/21.
+    if (year >= 2020)
+      SchoolHolidayPeriod(day(10, 27), day(10, 31), 'Herbstferien'),
+    SchoolHolidayPeriod(day(11, 2), day(11, 2), 'Allerseelen (schulfrei)'),
+    SchoolHolidayPeriod(patronDate, patronDate, patronName),
+    SchoolHolidayPeriod(
+      day(12, 24),
+      DateTime(year + 1, 1, 6),
+      'Weihnachtsferien',
+    ),
+  ];
+  return list..sort((a, b) => a.first.compareTo(b.first));
 }

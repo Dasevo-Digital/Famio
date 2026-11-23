@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 import '../data/birthdays.dart';
+import '../data/country.dart';
 import '../data/family_data.dart';
 import '../data/family_extras.dart';
 import '../data/kids_logic.dart';
@@ -746,6 +747,7 @@ List<DueReminder> familyReminders(
     ]) {
       if (d.state == DueState.done ||
           d.state == DueState.missed ||
+          d.state == DueState.unscheduled ||
           d.optional) {
         continue;
       }
@@ -822,7 +824,7 @@ List<DueReminder> familyReminders(
       continue;
     }
     final who = p.name.isEmpty ? tr.commonPregnancy : p.name;
-    for (final t in pregnancyTasks) {
+    for (final t in localPregnancyTasks) {
       if (p.done.contains(t.id)) continue;
       add(
         'preg:${p.id}:${t.id}',
@@ -831,12 +833,15 @@ List<DueReminder> familyReminders(
         tr.remindersWeekFromweekToweekInfo(t.fromWeek, t.toWeek, t.info),
       );
     }
-    add(
-      'preg:${p.id}:leave',
-      nineOn(maternityLeave(p), -14),
-      tr.remindersWhoMaternityLeaveStarts(who),
-      tr.remindersDate(DateFormat.yMd(appLanguage).format(maternityLeave(p))),
-    );
+    // Maternity protection as the German Mutterschutzgesetz has it.
+    if (germanRules) {
+      add(
+        'preg:${p.id}:leave',
+        nineOn(maternityLeave(p), -14),
+        tr.remindersWhoMaternityLeaveStarts(who),
+        tr.remindersDate(DateFormat.yMd(appLanguage).format(maternityLeave(p))),
+      );
+    }
   }
   for (final b in familyBirthdays(engine)) {
     final day = b.next(from);
