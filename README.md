@@ -672,7 +672,10 @@ Administratoren verwalten den Server aus jeder angemeldeten App heraus
   Geräte des Mitglieds ab), einzelne Geräte oder alle abmelden, entfernen.
 - **Einstellungen:** öffentliche Adresse, Zeitzone und maximale Dateigröße
   gelten sofort und überschreiben die Umgebungsvariablen bzw. Add-on-Optionen;
-  ein leeres Feld stellt den Standard wieder her. `FAMIO_TRUST_PROXY` und die
+  ein leeres Feld stellt den Standard wieder her. Das Land der Familie
+  (Deutschland, Österreich, Schweiz) bestimmt Notrufnummern, Feiertage und ob
+  die deutschen Fristen für Vorsorge, Impfungen und Mutterschutz gelten; das
+  Bundesland bzw. der Kanton muss zum Land passen. `FAMIO_TRUST_PROXY` und die
   Home-Assistant-Anmeldung bleiben bewusst nur auf dem Host änderbar.
 - **Zurücksetzen** (unten in den Einstellungen):
   - *Einstellungen auf Standard* entfernt alle in der App gesetzten Werte;
