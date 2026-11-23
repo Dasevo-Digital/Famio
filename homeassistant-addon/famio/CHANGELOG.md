@@ -2,6 +2,18 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.60 – Abmelden mit geteiltem Standort
+
+- Wer sich am Handy abmeldet oder dort die Standortfreigabe beendet,
+  braucht weiter den Eltern-Code, pausiert damit aber niemanden mehr. Ein
+  anderes Gerät teilt weiter, eine laufende Pause behält ihr Ende, und die
+  letzte Position dieses Handys verschwindet.
+- Auch auf der Sperrseite und auf der Seite zur Zwei-Faktor-Pflicht fragt
+  Famio vor dem Abmelden nach dem Eltern-Code, wenn das Handy seinen
+  Standort teilt.
+- Lässt sich eine gewählte Datei nicht lesen, sagt Famio das, statt nichts
+  zu melden oder „Server nicht erreichbar“.
+
 ## 2.0.59 – Österreich und die Schweiz
 
 - Neu in der Server-Verwaltung: das Land der Familie (Deutschland,

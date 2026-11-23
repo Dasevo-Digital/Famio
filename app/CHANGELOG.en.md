@@ -4,6 +4,18 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.60 – Signing out while sharing the location
+
+- Signing out on a phone or ending location sharing there still needs the
+  parents' code, but no longer pauses anyone. Another device goes on
+  sharing, a pause keeps its end, and the last position of this phone
+  disappears.
+- The lock screen and the page about the required two-factor sign-in also
+  ask for the parents' code before signing out when the phone shares its
+  location.
+- If a chosen file cannot be read, Famio says so instead of showing nothing
+  or "server not reachable".
+
 ## 2.0.59 – Austria and Switzerland
 
 - New in the server administration: the family's country (Germany, Austria

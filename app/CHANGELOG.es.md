@@ -4,6 +4,18 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.60 – Cerrar sesión con la ubicación compartida
+
+- Cerrar sesión en un móvil o dejar de compartir la ubicación allí sigue
+  pidiendo el código de los padres, pero ya no pausa a nadie. Otro
+  dispositivo sigue compartiendo, una pausa conserva su final y la última
+  posición de este móvil desaparece.
+- La pantalla de bloqueo y la página de la verificación en dos pasos
+  obligatoria también piden el código de los padres antes de cerrar sesión
+  cuando el móvil comparte su ubicación.
+- Si no se puede leer un archivo elegido, Famio lo dice en lugar de no
+  mostrar nada o «servidor no accesible».
+
 ## 2.0.59 – Austria y Suiza
 
 - Nuevo en la administración del servidor: el país de la familia
