@@ -3407,9 +3407,16 @@ void main() {
     );
     await waitGone(tester, find.text(de.adminRole));
     await waitGone(tester, exactly('E2E Weg'));
+    // The member's devices learn why (#560): their app then shows "Dein
+    // Konto wurde vom Server entfernt …" and keeps nothing (GRU-173 in
+    // catalog_gru_c_test.dart plays that on the device).
     await expectLater(
       w.members(),
-      throwsA(isA<ApiError>().having((e) => e.status, 'status', 401)),
+      throwsA(
+        isA<ApiError>()
+            .having((e) => e.status, 'status', 401)
+            .having((e) => e.code, 'code', 'account_removed'),
+      ),
     );
     expect(
       (await api.adminUsers()).map((u) => u.member.username),

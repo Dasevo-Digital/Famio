@@ -6,7 +6,8 @@
 
 Starts a throwaway server and answers the test's `E2E-HOST …` lines: what
 the share extension would leave in the app group (`share-sheet`, written
-with `xcrun simctl get_app_container`), Famio away behind another app and
+with `xcrun simctl get_app_container`; pictures named in "pictures" as
+small PNGs), Famio away behind another app and
 back (`away <seconds>`, keeps the picture iOS took for the app switcher)
 and a screenshot (`screenshot <name>`). Simulators only, never a phone: the
 test signs in to the throwaway server.
@@ -27,7 +28,7 @@ import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from android_review_tests import HostResults, _text, free_port  # noqa: E402
+from android_review_tests import HostResults, _text, free_port, png  # noqa: E402
 
 APP_DIR = Path(__file__).resolve().parent.parent
 SERVER_DIR = APP_DIR.parent / "server"
@@ -172,10 +173,19 @@ def main():
                         f"{int(time.time() * 1000):013d}-{uuid.uuid4()}"
                     )
                     folder.mkdir(parents=True)
+                    # Pictures as Photos hands them over (names in
+                    # "pictures"): small PNGs next to share.json.
+                    files = []
+                    for i, name in enumerate(share.get("pictures", [])):
+                        stored = f"{i}-{name}"
+                        (folder / stored).write_bytes(png())
+                        files.append(
+                            {"file": stored, "name": name, "mime": "image/png"}
+                        )
                     (folder / "share.json").write_text(json.dumps({
                         "text": share.get("text", ""),
                         "subject": share.get("subject", ""),
-                        "files": [],
+                        "files": files,
                     }))
                 elif what == "grant":
                     pass  # The simulator asks nothing the test needs here.

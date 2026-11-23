@@ -3343,6 +3343,17 @@ void main() {
     ]) {
       expect(find.text(stand), findsWidgets, reason: stand);
     }
+    // Austria and Switzerland since #586, further down.
+    for (final group in [de.sourcesAustria, de.sourcesSwitzerland]) {
+      await scrollTo(tester, find.text(group), at: listPoint(tester));
+      expect(find.text(group), findsOneWidget, reason: group);
+    }
+    await scrollTo(
+      tester,
+      find.text('Fieber bei Kindern'),
+      up: true,
+      at: listPoint(tester),
+    );
     await tap(tester, find.text('Fieber bei Kindern'));
     await eventually(
       tester,
@@ -4432,7 +4443,15 @@ void main() {
     final api = await sessionOf(kid);
     await expectLater(
       api.deleteMyAccount(password: kitMemberPassword),
-      throwsA(isA<ApiError>().having((e) => e.status, 'status', 403)),
+      throwsA(
+        isA<ApiError>()
+            .having((e) => e.status, 'status', 403)
+            .having(
+              (e) => e.message,
+              'message',
+              'Kinderkonten entfernt ein Erwachsener in der Server-Verwaltung.',
+            ),
+      ),
     );
     expect(
       (await f.admin.adminUsers()).any((u) => u.member.id == kid.id),

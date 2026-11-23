@@ -79,6 +79,11 @@ void main() {
     final aside = (restored['aside']! as List).cast<String>();
     expect(aside.where((f) => f.endsWith('/famio.db')), hasLength(1));
     expect(aside.where((f) => f.endsWith('/files.db')), hasLength(1));
+    // In a folder named after the time, "before-restore-<Datum-Zeit>".
+    for (final f in aside) {
+      expect(f, matches(RegExp(r'^before-restore-\d{8}-\d{6}(-\d+)?/')));
+    }
+    expect('${restored['output']}', contains('Jetzt Famio wieder starten'));
 
     // The app that kept running is back at the backup's state.
     await eventually(
