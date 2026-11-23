@@ -4,6 +4,19 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.59 – Österreich und die Schweiz
+
+- Neu in der Server-Verwaltung: das Land der Familie (Deutschland,
+  Österreich oder Schweiz). Bundesland bzw. Kanton passen dazu.
+- Notfallseiten und Hinweise zu Fieber und Medikamenten nennen die Nummern
+  des Landes, in Österreich etwa 144, 1450 und 141, in der Schweiz 144 und
+  145.
+- Feiertage für die österreichischen Bundesländer und die Schweizer
+  Kantone, in Österreich auch die Schulferien.
+- Außerhalb Deutschlands zeigt Famio keine deutschen Fristen für
+  U-Untersuchungen, Impfungen, Schwangerschaft und Mutterschutz. Einträge
+  und Termine lassen sich weiter festhalten.
+
 ## 2.0.58 – Standort, Sicherungen und viele Korrekturen
 
 - Standort: Außerhalb des Zeitfensters sieht die Familie keine alte

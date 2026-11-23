@@ -4,6 +4,20 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.59 – Austria y Suiza
+
+- Nuevo en la administración del servidor: el país de la familia
+  (Alemania, Austria o Suiza). El estado federado o el cantón se ajustan a
+  él.
+- Las páginas de emergencia y las indicaciones sobre fiebre y medicamentos
+  nombran los números de ese país, en Austria por ejemplo 144, 1450 y 141,
+  en Suiza 144 y 145.
+- Festivos de los estados austriacos y de los cantones suizos; en Austria,
+  también las vacaciones escolares.
+- Fuera de Alemania, Famio no muestra plazos alemanes para revisiones,
+  vacunas, embarazo y protección de la maternidad. Se pueden seguir
+  anotando entradas y citas.
+
 ## 2.0.58 – Ubicación, copias de seguridad y muchas correcciones
 
 - Ubicación: fuera del horario la familia ya no ve una posición antigua.

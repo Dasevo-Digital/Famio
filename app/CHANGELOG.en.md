@@ -4,6 +4,19 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.59 – Austria and Switzerland
+
+- New in the server administration: the family's country (Germany, Austria
+  or Switzerland). The federal state or canton follows it.
+- Emergency pages and the notes on fever and medicines name the numbers of
+  that country, in Austria for example 144, 1450 and 141, in Switzerland
+  144 and 145.
+- Public holidays for the Austrian states and the Swiss cantons, in Austria
+  also the school holidays.
+- Outside Germany Famio shows no German periods for check-ups,
+  vaccinations, pregnancy and maternity protection. Entries and
+  appointments can still be recorded.
+
 ## 2.0.58 – Location, backups and many fixes
 
 - Location: outside the time window the family no longer sees an old
