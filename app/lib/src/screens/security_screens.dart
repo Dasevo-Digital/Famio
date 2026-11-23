@@ -15,6 +15,7 @@ import '../widgets/sign_out.dart';
 import '../widgets/dispose_with.dart';
 import '../widgets/password_reveal.dart';
 import '../l10n.dart';
+import 'location/pause_dialog.dart';
 
 /// Asks for the code of the authenticator app – or a recovery code.
 /// Returns null if cancelled. [error] is shown above the field (e.g. after
@@ -1105,7 +1106,9 @@ class _TwoFactorGateScreenState extends State<TwoFactorGateScreen> {
         BubbleButton(
           icon: AppIcons.signOut,
           tooltip: tr.settingsSignOut,
-          onPressed: () => signOutAsking(context),
+          // Ends location sharing here too: parents' code first (#337).
+          onPressed: () =>
+              signOutAsking(context, more: () => confirmSharingEnds(context)),
         ),
       ],
       body: ListView(

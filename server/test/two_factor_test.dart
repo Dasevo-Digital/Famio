@@ -298,6 +298,55 @@ void main() {
       expect((await login('mama'))['token'], isNotEmpty);
     });
 
+    test('before setting it up, a phone may still check the parents code to '
+        'sign out (#337)', () async {
+      await call(
+        base,
+        'PUT',
+        'api/admin/location-code',
+        token: admin,
+        body: {'code': '2468'},
+      );
+      await call(
+        base,
+        'PATCH',
+        'api/admin/settings',
+        token: admin,
+        body: {'twoFactorRequired': 'admins'},
+      );
+      final token = (await login('mama'))['token'] as String;
+      expect(
+        (await call(base, 'GET', 'api/members', token: token))['error'],
+        'two_factor_setup_required',
+      );
+      final wrong = await call(
+        base,
+        'POST',
+        'api/location/code',
+        token: token,
+        body: {'code': '1'},
+      );
+      expect(wrong['_status'], 403);
+      expect(wrong['error'], 'wrong_code');
+      final right = await call(
+        base,
+        'POST',
+        'api/location/code',
+        token: token,
+        body: {'code': '2468'},
+      );
+      expect(right['_status'], 200);
+      // Pausing stays behind the second factor.
+      final pause = await call(
+        base,
+        'POST',
+        'api/location/pause',
+        token: token,
+        body: {'code': '2468'},
+      );
+      expect(pause['error'], 'two_factor_setup_required');
+    });
+
     test('mandatory for admins: set up first, then everything works', () async {
       await call(
         base,

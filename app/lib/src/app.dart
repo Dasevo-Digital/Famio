@@ -1,3 +1,4 @@
+import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -6,6 +7,7 @@ import 'design/theme.dart';
 import 'screens/security_screens.dart';
 import 'screens/connect_screen.dart';
 import 'screens/home_shell.dart';
+import 'screens/location/pause_dialog.dart';
 import 'security/app_lock.dart';
 import 'environment.dart';
 import 'l10n.dart';
@@ -72,6 +74,19 @@ class FamioApp extends StatelessWidget {
                 lock: state.lock,
                 active: state.me != null,
                 onSignOut: (proceed) => state.signOut(proceed: proceed),
+                // Also here only with the parents' code (#337).
+                sharingNeedsCode: sharingOnThisPhone,
+                endSharing: (code) async {
+                  final engine = state.engine;
+                  final me = state.me;
+                  if (engine == null || me == null) return null;
+                  try {
+                    await endSharingOnThisPhone(engine.api, me, code);
+                    return null;
+                  } on ApiError catch (e) {
+                    return e.message;
+                  }
+                },
                 child: content,
               ),
             );

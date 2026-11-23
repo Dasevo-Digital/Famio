@@ -20,7 +20,6 @@ import '../data/family_data.dart';
 import '../data/ocr.dart';
 import '../design/components.dart';
 import '../design/palette.dart';
-import '../location/location_sharing.dart';
 import 'location/pause_dialog.dart';
 import '../widgets/sign_out.dart';
 import '../widgets/dispose_with.dart';
@@ -409,22 +408,11 @@ class SettingsScreen extends StatelessWidget {
                     : tr.settingsSignOutSubtitle,
               ),
               // Changes the last sync could not send: asked first (#337).
+              // Signing out would end location sharing: parents' code
+              // first.
               onTap: () => signOutAsking(
                 context,
-                more: () async {
-                  // Signing out would end location sharing: parents' code
-                  // first.
-                  if (!LocationSharing.supported ||
-                      !(await LocationSharing.status()).enabled) {
-                    return true;
-                  }
-                  if (!context.mounted) return false;
-                  return showPauseDialog(
-                    context,
-                    member: state.me!,
-                    stopOnThisDevice: true,
-                  );
-                },
+                more: () => confirmSharingEnds(context),
               ),
             ),
           // A child's account is removed by an adult (GRU-134).

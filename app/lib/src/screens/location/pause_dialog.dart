@@ -21,6 +21,42 @@ Future<void> refreshLocationService(AppState state) => LocationSharing.refresh(
   places: state.engine!.places,
 );
 
+/// Whether this phone shares its location, so that ending it there (also
+/// by signing out) needs the parents' code.
+Future<bool> sharingOnThisPhone() async =>
+    LocationSharing.supported && (await LocationSharing.status()).enabled;
+
+/// Ends sharing on this phone with the parents' [code]: only this phone
+/// stops, nobody is paused, and the server drops what this phone measured
+/// when its location token signs out (#587). Throws [ApiError] for a
+/// wrong code.
+Future<void> endSharingOnThisPhone(
+  FamioApiClient api,
+  FamilyMember member,
+  String code,
+) async {
+  try {
+    await api.checkLocationCode(code);
+  } on ApiError catch (e) {
+    // An older server ("Route not found"): pausing checked the code there.
+    if (e.status != 404) rethrow;
+    await api.pauseLocation(code: code, memberId: member.id);
+  }
+  await LocationSharing.disable(api: api);
+}
+
+/// Before signing out: true if this phone shares nothing or the parents'
+/// code ended it (#337), false stays signed in.
+Future<bool> confirmSharingEnds(BuildContext context) async {
+  if (!await sharingOnThisPhone()) return true;
+  if (!context.mounted) return false;
+  return showPauseDialog(
+    context,
+    member: AppScope.read(context).me!,
+    stopOnThisDevice: true,
+  );
+}
+
 /// Asks for the parents' code and how long, then pauses [member].
 /// Returns whether it was paused.
 Future<bool> showPauseDialog(
@@ -86,18 +122,7 @@ Future<bool> showPauseDialog(
         ],
         onSubmit: () async {
           if (stopOnThisDevice) {
-            // Only this phone stops: the code is checked, nobody is paused,
-            // and the server drops what this phone measured when its
-            // location token signs out (#587).
-            try {
-              await api.checkLocationCode(code.text);
-            } on ApiError catch (e) {
-              // An older server ("Route not found"): pausing checked the
-              // code there.
-              if (e.status != 404) rethrow;
-              await api.pauseLocation(code: code.text, memberId: member.id);
-            }
-            await LocationSharing.disable(api: api);
+            await endSharingOnThisPhone(api, member, code.text);
           } else {
             await api.pauseLocation(
               code: code.text,

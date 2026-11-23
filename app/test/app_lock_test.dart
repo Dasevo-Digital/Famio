@@ -355,11 +355,15 @@ void main() {
       bool active = true,
       VoidCallback? signOut,
       Future<void> Function(Future<bool> Function(int unsent) proceed)? asking,
+      Future<bool> Function()? sharing,
+      Future<String?> Function(String code)? endSharing,
     }) => MaterialApp(
       builder: (_, child) => AppLockGate(
         lock: l,
         active: active,
         onSignOut: asking ?? (_) async => signOut?.call(),
+        sharingNeedsCode: sharing,
+        endSharing: endSharing,
         child: child!,
       ),
       home: const Text('Medikamente'),
@@ -437,6 +441,71 @@ void main() {
       await tester.tap(find.text('Trotzdem abmelden'));
       await tester.pumpAndSettle();
       expect(answers, [false, true]);
+    });
+
+    testWidgets('sharing its location, the phone signs out there only with '
+        'the parents code (#337)', (tester) async {
+      final l = await tester.runAsync(lock);
+      device.works = false;
+      final answers = <bool>[];
+      final codes = <String>[];
+      await tester.pumpWidget(
+        gate(
+          l!,
+          asking: (proceed) async => answers.add(await proceed(0)),
+          sharing: () async => true,
+          endSharing: (code) async {
+            codes.add(code);
+            return code == '2468' ? null : 'Der Eltern-Code stimmt nicht';
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      // Right there, as no dialog shows above the lock.
+      expect(find.text('Standortfreigabe beenden'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), '1');
+      await tester.ensureVisible(find.text('Beenden'));
+      await tester.tap(find.text('Beenden'));
+      await tester.pumpAndSettle();
+      expect(find.text('Der Eltern-Code stimmt nicht'), findsOneWidget);
+      expect(answers, isEmpty, reason: 'still signed in');
+      await tester.enterText(find.byType(TextField), '2468');
+      await tester.ensureVisible(find.text('Beenden'));
+      await tester.tap(find.text('Beenden'));
+      await tester.pumpAndSettle();
+      expect(codes, ['1', '2468']);
+      expect(answers, [true]);
+      expect(find.text('Standortfreigabe beenden'), findsNothing);
+    });
+
+    testWidgets('without the parents code it stays signed in (#337)', (
+      tester,
+    ) async {
+      final l = await tester.runAsync(lock);
+      device.works = false;
+      final answers = <bool>[];
+      await tester.pumpWidget(
+        gate(
+          l!,
+          asking: (proceed) async => answers.add(await proceed(1)),
+          sharing: () async => true,
+          endSharing: (_) async => fail('no code was entered'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      // First the change it would lose, then the code.
+      await tester.tap(find.text('Trotzdem abmelden'));
+      await tester.pumpAndSettle();
+      expect(find.text('Standortfreigabe beenden'), findsOneWidget);
+      await tester.ensureVisible(find.text('Abbrechen'));
+      await tester.tap(find.text('Abbrechen'));
+      await tester.pumpAndSettle();
+      expect(answers, [false]);
+      expect(find.text('Abmelden'), findsOneWidget);
     });
 
     testWidgets('nothing that would be lost: it signs out without asking', (

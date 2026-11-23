@@ -801,6 +801,9 @@ const _twoFactorFree = {
   'api/me/sso',
   'api/auth/logout',
   'api/auth/sso/start',
+  // Signing out on a phone that shares its location asks the parents'
+  // code, also before the second factor is set up (#337).
+  'api/location/code',
 };
 
 final _random = Random.secure();
