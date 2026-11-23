@@ -20,6 +20,9 @@ Future<Uint8List> readUploadBytes({
     return await readTransferBytes(openRead(), maxBytes: maxBytes);
   } on TransferTooLarge {
     throw ApiError(413, 'too_large', ClientTexts.transferTooLarge);
+  } on IOException {
+    // Gone, no access, or still in a cloud folder (#588).
+    throw ApiError(422, 'file_unreadable', ClientTexts.fileUnreadable);
   }
 }
 

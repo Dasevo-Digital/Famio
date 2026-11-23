@@ -1097,11 +1097,6 @@ void main() {
     }
   });
 
-  // Befund (SIC-052, GRU-050, SIC-185 1): signing out with the parents'
-  // code pauses the member until resumed before signing out
-  // (pause_dialog.dart:88–93); deviceSignedOut then keeps the record with
-  // the last position because a pause runs (location_service.dart). The
-  // family goes on seeing it as "Pausiert".
   androidTest('SIC-052 GRU-050 SIC-185 a waiting change and the parents\' '
       'code before signing out; afterwards no position; a computer\'s '
       'sign-out changes nothing', (tester) async {
@@ -1188,14 +1183,8 @@ void main() {
       await admin.setLocationCode(null);
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
-  // Befund (SIC-185 3): signing out on one phone with the parents' code
-  // ("Standortfreigabe beenden", pause_dialog.dart:88–93) first pauses the
-  // member's sharing until resumed (api.pauseLocation, duration null), then
-  // signs this phone's location token out. The child's other phone, which
-  // went on sharing on the server (location_devices_test), is paused with it:
-  // the family sees "Pausiert" instead of its position.
   androidTest('SIC-185 the other phone of the child goes on sharing after '
       'signing out on one', (tester) async {
     await hostOk('grant');
@@ -1252,12 +1241,8 @@ void main() {
       await admin.setLocationCode(null);
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
-  // Befund (SIC-185 1): with a pause running, signing out on the phone
-  // turns it into one until resumed (pause_dialog.dart:88–93), and
-  // deviceSignedOut keeps the last position while paused
-  // (location_service.dart): the family still sees it.
   androidTest('SIC-185 a pause running stays when the child signs out on the '
       'phone', (tester) async {
     await hostOk('grant');
@@ -1297,7 +1282,7 @@ void main() {
       await admin.setLocationCode(null);
       await finish(tester, state);
     }
-  }, skip: true);
+  });
 
   // --- the emergency ---------------------------------------------------------
 

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:famio/src/app.dart';
@@ -37,6 +38,22 @@ final class _Picked extends PlatformFile {
   Stream<Uint8List> readAsByteStream() => Stream.value(bytes);
 }
 
+/// A file the picker hands over but that cannot be read (gone, no access,
+/// still in a cloud folder, #588).
+final class _Unreadable extends _Picked {
+  _Unreadable() : super(Uint8List(500));
+
+  @override
+  Future<Uint8List> readAsBytes() =>
+      throw const FileSystemException('Operation not permitted', '/x.pdf');
+  @override
+  Stream<Uint8List> readAsByteStream() =>
+      Stream.error(const FileSystemException('Operation not permitted'));
+}
+
+/// What the picker hands out next.
+PlatformFile Function() _pick = () => _Picked(Uint8List(5000));
+
 class _Picker extends FilePickerPlatform {
   @override
   Future<List<PlatformFile>> pickFiles({
@@ -51,7 +68,7 @@ class _Picker extends FilePickerPlatform {
     WindowsOptions windowsOptions = const WindowsOptions(),
     LinuxOptions linuxOptions = const LinuxOptions(),
     WebOptions webOptions = const WebOptions(),
-  }) async => [_Picked(Uint8List(5000))];
+  }) async => [_pick()];
 }
 
 const _members =
@@ -103,6 +120,8 @@ void main() {
     expect(find.byType(AlertDialog), findsNothing);
   }
 
+  tearDown(() => _pick = () => _Picked(Uint8List(5000)));
+
   testWidgets('documents: a file over the limit', (tester) async {
     await open(tester);
     await push(tester, const DocumentsScreen());
@@ -133,6 +152,31 @@ void main() {
     await tester.pumpAndSettle();
     await expectTold(tester);
     // The editor is still open, nothing attached.
+    expect(find.text('Speichern'), findsOneWidget);
+    expect(engine.tasks.single.photos, isEmpty);
+  });
+
+  testWidgets('task editor: a file that cannot be read (#588)', (tester) async {
+    final engine = await open(tester);
+    _pick = _Unreadable.new;
+    engine.saveTask(Task(id: 't', title: 'Steuer', createdAt: DateTime(2026)));
+    await push(tester, const TasksScreen());
+    await tester.tap(find.text('Steuer'));
+    await tester.pumpAndSettle();
+    final more = find.text('Checkliste, Dateien, Sichtbarkeit');
+    if (more.evaluate().isNotEmpty) {
+      await tester.tap(more);
+      await tester.pumpAndSettle();
+    }
+    await tester.tap(
+      find.byTooltip('Foto oder Datei anhängen').first,
+      warnIfMissed: false,
+    );
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    expect(find.text(ClientTexts.fileUnreadable), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
     expect(find.text('Speichern'), findsOneWidget);
     expect(engine.tasks.single.photos, isEmpty);
   });

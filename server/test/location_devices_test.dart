@@ -279,9 +279,27 @@ void main() {
     test('a pause stays when sharing ends on the phone', () async {
       final token = await deviceToken('Pixel');
       await report(token, home);
-      app.locations.pause(teen.id, byMember: parent.id);
+      app.locations.pause(
+        teen.id,
+        duration: const Duration(hours: 1),
+        byMember: parent.id,
+      );
+      final until = locationOf(teen.id)!.pausedUntil;
+      expect(until, isNotNull);
       await call(token, 'api/auth/logout');
-      expect(locationOf(teen.id)?.state, SharingState.paused);
+      final l = locationOf(teen.id)!;
+      expect(l.state, SharingState.paused);
+      expect(l.pausedUntil, until);
+      // Nothing of what this phone measured stays visible (#587).
+      expect(l.hasPosition, isFalse);
+      expect(l.placeId, isNull);
+      expect(l.device, isNull);
+      expect(l.battery, isNull);
+      // Resumed, the family sees no place without a position.
+      app.locations.resume(teen.id);
+      final resumed = locationOf(teen.id)!;
+      expect(resumed.hasPosition, isFalse);
+      expect(resumed.placeId, isNull);
     });
 
     test('another phone of the member goes on sharing', () async {
@@ -297,10 +315,30 @@ void main() {
       final l = locationOf(teen.id)!;
       expect(l.state, SharingState.active);
       expect(l.otherDevice, isNull);
+      // Where the signed-out phone was is not shown as the member's (#587).
+      expect(l.hasPosition, isFalse);
+      expect(l.device, isNull);
       // The tablet counts now.
       await report(tablet, home, device: 'Tablet');
       expect(locationOf(teen.id)!.placeId, 'home');
     });
+
+    test(
+      'signing out a phone that does not count keeps the position',
+      () async {
+        final phone = await deviceToken('Pixel');
+        await report(phone, school);
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        final tablet = await deviceToken('Tablet');
+        await report(tablet, home, device: 'Tablet');
+        expect(locationOf(teen.id)?.device, 'Tablet');
+        await call(phone, 'api/auth/logout');
+        final l = locationOf(teen.id)!;
+        expect(l.device, 'Tablet');
+        expect(l.placeId, 'home');
+        expect(l.hasPosition, isTrue);
+      },
+    );
 
     test('signing out the app session leaves sharing alone', () async {
       final token = await deviceToken('Pixel');

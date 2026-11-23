@@ -1342,6 +1342,11 @@ class FamioApiClient {
     'minutes': ?duration?.inMinutes,
   });
 
+  /// Checks the parents' code before sharing ends on this phone (signing
+  /// out there); pauses nobody (#587). Servers before 2.0.60 answer 404.
+  Future<void> checkLocationCode(String code) =>
+      _send('POST', 'api/location/code', {'code': code});
+
   Future<void> resumeLocation({String? memberId}) =>
       _send('POST', 'api/location/resume', {'memberId': ?memberId});
 

@@ -14,6 +14,19 @@ extension _Transfers on FamioApiClient {
     required Duration timeout,
     TransferCancellation? cancellation,
   }) async {
+    // A file that cannot be read while it is sent is told as such, not as
+    // a network failure (#588).
+    var sourceFailed = false;
+    final source = bodyStream?.transform(
+      StreamTransformer<List<int>, List<int>>.fromHandlers(
+        handleError: (error, stack, sink) {
+          if (error is! TransferTooLarge && error is! TransferCancelled) {
+            sourceFailed = true;
+          }
+          sink.addError(error, stack);
+        },
+      ),
+    );
     try {
       return await httpTransfer(
         client: _http,
@@ -22,7 +35,7 @@ extension _Transfers on FamioApiClient {
         headers: headers ?? authHeaders,
         body: body,
         bodyBytes: bodyBytes,
-        bodyStream: bodyStream,
+        bodyStream: source,
         bodyLength: bodyLength,
         timeout: timeout,
         cancellation: cancellation,
@@ -35,6 +48,9 @@ extension _Transfers on FamioApiClient {
     } on TransferCancelled {
       throw ApiError(499, 'cancelled', ClientTexts.transferCancelled);
     } catch (e) {
+      if (sourceFailed) {
+        throw ApiError(422, 'file_unreadable', ClientTexts.fileUnreadable);
+      }
       if (isTlsFailure(e) ||
           e.toString().contains('CERTIFICATE_VERIFY_FAILED')) {
         throw ApiError(0, 'tls', FamioApiClient.tlsRejected);

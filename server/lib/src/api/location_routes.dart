@@ -103,14 +103,12 @@ extension _LocationRoutes on FamioApi {
     return _json({'token': token}, status: 201);
   }
 
-  /// Pausing needs the parents' code, whoever asks.
-  Future<Response> _locationPause(Request request) async {
-    final member = _member(request);
-    final body = await _body(request);
-    final target = body['memberId'] as String? ?? member.id;
-    if (accounts.byId(target) == null) {
-      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
-    }
+  /// The parents' code of [body], throttled per member and address.
+  Future<void> _checkLocationCode(
+    Request request,
+    FamilyMember member,
+    Map<String, Object?> body,
+  ) async {
     final address = clientAddress.of(request);
     final key = '#loccode:${member.id}';
     _checkThrottle(address, key);
@@ -119,6 +117,26 @@ extension _LocationRoutes on FamioApi {
       throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
+  }
+
+  /// Ending sharing on a phone (signing out there) needs the parents' code
+  /// too, but pauses nobody: the phone signs its location token out after
+  /// this, and another phone of the member goes on sharing (#587).
+  Future<Response> _locationCheckCode(Request request) async {
+    final member = _member(request);
+    await _checkLocationCode(request, member, await _body(request));
+    return _json({'ok': true});
+  }
+
+  /// Pausing needs the parents' code, whoever asks.
+  Future<Response> _locationPause(Request request) async {
+    final member = _member(request);
+    final body = await _body(request);
+    final target = body['memberId'] as String? ?? member.id;
+    if (accounts.byId(target) == null) {
+      throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
+    }
+    await _checkLocationCode(request, member, body);
     final minutes = body['minutes'];
     if (minutes != null &&
         (minutes is! int || minutes < 1 || minutes > _maxPauseMinutes)) {

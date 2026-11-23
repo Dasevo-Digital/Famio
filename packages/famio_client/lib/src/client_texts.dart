@@ -38,6 +38,13 @@ abstract final class ClientTexts {
   static String get transferTooLarge =>
       _t('Die Datei überschreitet die Größenbegrenzung für diese Übertragung.');
   static String get transferCancelled => _t('Übertragung abgebrochen');
+
+  /// The chosen file could not be read on this device (gone, no access,
+  /// not downloaded from a cloud folder), not a network failure (#588).
+  static String get fileUnreadable => _t(
+    'Die Datei lässt sich nicht lesen. Ist sie noch vorhanden? Bitte noch '
+    'einmal auswählen.',
+  );
   static String get fileStorageFailed => _t(
     'Die Datei konnte nicht gespeichert oder geöffnet werden. Bitte Speicherplatz und Zugriffsrechte prüfen.',
   );
@@ -100,6 +107,7 @@ abstract final class ClientTexts {
     notFamio,
     transferTooLarge,
     transferCancelled,
+    fileUnreadable,
     fileStorageFailed,
     uploadFailed(''),
     unreachable(''),

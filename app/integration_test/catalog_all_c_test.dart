@@ -2886,14 +2886,9 @@ void main() {
     await resetChores();
   });
 
-  // Befund (zweimal nachgestellt, 23.11.2026): Eine Datei, die sich beim
-  // Hochladen nicht lesen lässt (über 8 MiB, gestreamt), meldet „Server
-  // nicht erreichbar (FileSystemException: …)“. Der Lesefehler der Quelle
-  // landet in packages/famio_client/lib/src/api_transfers.dart:42 als
-  // Netzfehler (ClientTexts.unreachable); erwartet ist bei einem
-  // unerwarteten Fehler „Die Datei konnte nicht hochgeladen werden. Bitte
-  // noch einmal versuchen.“ (ALL-219).
-  testWidgets('ALL-219 hint: an unreadable file is told as such', skip: true, (
+  // ALL-219: a file that cannot be read while it is uploaded (over 8 MiB,
+  // streamed) is told as such, not as "Server nicht erreichbar" (#588).
+  testWidgets('ALL-219 hint: an unreadable file is told as such', (
     tester,
   ) async {
     await resetTasks();
@@ -2912,20 +2907,13 @@ void main() {
     );
     final said = snackTexts().join(' ');
     debugPrint('E2E-INFO ALL-219 unreadable, streamed: $said');
-    expect(said, de.filesUploadFailed);
+    expect(said, ClientTexts.fileUnreadable);
     await finish(tester, state);
   });
 
-  // Befund (zweimal nachgestellt, 23.11.2026): Eine kleine Datei (bis
-  // 8 MiB) liest die App schon beim Auswählen ganz
-  // (app/lib/src/widgets/files.dart:79 pickedFromSource → readUploadBytes).
-  // Lässt sie sich nicht lesen, fliegt die FileSystemException aus pickFile
-  // heraus (files.dart:105 fängt nur ApiError) und aus _addPhoto
-  // (app/lib/src/screens/tasks_screen.dart:615, ebenso nur ApiError): keine
-  // Meldung, ein unbehandelter Fehler in der App.
-  testWidgets('ALL-219 hint: a small file that cannot be read', skip: true, (
-    tester,
-  ) async {
+  // ALL-219: a small file (up to 8 MiB) is read when it is chosen; one
+  // that cannot be read is told in a dialog, the editor stays (#588).
+  testWidgets('ALL-219 hint: a small file that cannot be read', (tester) async {
     await resetTasks();
     final picker = fakeFilePicker();
     final state = await start(tester);
@@ -2953,7 +2941,7 @@ void main() {
         ?(e.widget as Text).data,
     ];
     debugPrint('E2E-INFO ALL-219 small unreadable file: $said');
-    expect(said, isNotEmpty, reason: 'a message says it failed');
+    expect(said, contains(ClientTexts.fileUnreadable));
     expect(sheet(), findsOneWidget);
     await finish(tester, state);
   });

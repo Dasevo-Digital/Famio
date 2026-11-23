@@ -85,12 +85,26 @@ Future<bool> showPauseDialog(
           ),
         ],
         onSubmit: () async {
-          await api.pauseLocation(
-            code: code.text,
-            memberId: member.id,
-            duration: stopOnThisDevice ? null : duration,
-          );
-          if (stopOnThisDevice) await LocationSharing.disable(api: api);
+          if (stopOnThisDevice) {
+            // Only this phone stops: the code is checked, nobody is paused,
+            // and the server drops what this phone measured when its
+            // location token signs out (#587).
+            try {
+              await api.checkLocationCode(code.text);
+            } on ApiError catch (e) {
+              // An older server ("Route not found"): pausing checked the
+              // code there.
+              if (e.status != 404) rethrow;
+              await api.pauseLocation(code: code.text, memberId: member.id);
+            }
+            await LocationSharing.disable(api: api);
+          } else {
+            await api.pauseLocation(
+              code: code.text,
+              memberId: member.id,
+              duration: duration,
+            );
+          }
           done = true;
           // Show the new state at once instead of with the next sync.
           unawaited(state.engine?.sync());

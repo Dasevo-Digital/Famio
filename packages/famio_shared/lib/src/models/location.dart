@@ -258,6 +258,15 @@ class MemberLocation {
     otherDevice: otherDevice,
   );
 
+  /// The same without what the device measured: position, place, battery
+  /// and the device itself (it signed out, #587).
+  MemberLocation withoutPosition() => MemberLocation(
+    memberId: memberId,
+    state: state,
+    pausedUntil: pausedUntil,
+    otherDevice: otherDevice,
+  );
+
   Map<String, Object?> toData() => {
     'state': state.name,
     'latitude': ?latitude,

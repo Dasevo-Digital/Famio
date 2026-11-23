@@ -562,11 +562,12 @@ class LocationService {
   /// device, nothing of their location stays visible and nobody is told
   /// two days later that the phone is silent (#577); a pause stays.
   void deviceSignedOut(String memberId, String key) {
+    final now = _clock().toUtc();
+    final wasLead = _lead(memberId, now)?.key == key;
     db.execute(
       'DELETE FROM location_devices WHERE member_id = ? AND device_key = ?',
       [memberId, key],
     );
-    final now = _clock().toUtc();
     final previous = _current(memberId);
     if (previous == null) return;
     final others = db.select(
@@ -576,15 +577,16 @@ class LocationService {
     ).isNotEmpty;
     final bool changed;
     if (others || _state(memberId).paused) {
-      changed = _write(
-        memberId,
-        previous.withOtherDevice(
-          previous.state == SharingState.scheduled ||
-                  !_window(memberId).activeAt(_clock())
-              ? null
-              : _otherDevice(memberId, _lead(memberId, now)?.key, now),
-        ),
+      var next = previous.withOtherDevice(
+        previous.state == SharingState.scheduled ||
+                !_window(memberId).activeAt(_clock())
+            ? null
+            : _otherDevice(memberId, _lead(memberId, now)?.key, now),
       );
+      // What this phone measured is no longer shown (#587): another phone
+      // reports its own soon, and a pause stays without a position.
+      if (wasLead || !others) next = next.withoutPosition();
+      changed = _write(memberId, next);
     } else {
       changed = records.writeAsServer([
         SyncRecord(
@@ -1075,8 +1077,14 @@ class LocationService {
           at: scheduledOff ? null : previous?.at,
           lastContact: scheduledOff ? null : previous?.lastContact,
           pausedUntil: s.paused ? s.pausedUntil : null,
-          placeId: scheduledOff ? null : s.placeId,
-          placeSince: scheduledOff ? null : s.placeSince,
+          // No place without a position (the phone that measured it
+          // signed out, #587).
+          placeId: scheduledOff || previous?.hasPosition != true
+              ? null
+              : s.placeId,
+          placeSince: scheduledOff || previous?.hasPosition != true
+              ? null
+              : s.placeSince,
           battery: scheduledOff ? null : previous?.battery,
           device: scheduledOff ? null : previous?.device,
           platform: scheduledOff ? null : previous?.platform,

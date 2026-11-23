@@ -138,19 +138,29 @@ void main() {
   }
 
   testWidgets('loads again while it stays on screen', (tester) async {
-    await show(tester);
-    expect(requests, 1);
-    expect(find.text('4° · Bewölkt · gefühlt 2°'), findsOneWidget);
-    expect(find.text('Wetter & Kleidung'), findsOneWidget);
-    // Fresh for 30 minutes: no new request.
-    await tester.pump(const Duration(minutes: 20));
-    await settle(tester);
-    expect(requests, 1);
-    // Then the tile asks again on its own.
-    await tester.pump(const Duration(minutes: 15));
-    await settle(tester);
-    expect(requests, 2);
-    await tester.pump(const Duration(seconds: 1));
+    // At noon: from 17 o'clock on the tile tells what the children sleep in
+    // instead of how it feels outside.
+    final outer = clock;
+    final start = outer.now();
+    final noon = DateTime(start.year, start.month, start.day, 12);
+    await withClock(
+      Clock(() => noon.add(outer.now().difference(start))),
+      () async {
+        await show(tester);
+        expect(requests, 1);
+        expect(find.text('4° · Bewölkt · gefühlt 2°'), findsOneWidget);
+        expect(find.text('Wetter & Kleidung'), findsOneWidget);
+        // Fresh for 30 minutes: no new request.
+        await tester.pump(const Duration(minutes: 20));
+        await settle(tester);
+        expect(requests, 1);
+        // Then the tile asks again on its own.
+        await tester.pump(const Duration(minutes: 15));
+        await settle(tester);
+        expect(requests, 2);
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
   });
 
   testWidgets('loads again when the app comes back', (tester) async {

@@ -520,6 +520,24 @@ void main() {
     );
   });
 
+  test(
+    'ending sharing on a phone checks the code, pauses nobody (#587)',
+    () async {
+      var r = await call('POST', 'api/location/code', kidToken, {'code': '1'});
+      expect(r.statusCode, 409);
+      await ok('PUT', 'api/admin/location-code', parentToken, {'code': '4711'});
+      await ok('POST', 'api/location/report', kidToken, {
+        'fixes': [fix(home, DateTime.now().toUtc())],
+      });
+      r = await call('POST', 'api/location/code', kidToken, {'code': '1234'});
+      expect(r.statusCode, 403);
+      await ok('POST', 'api/location/code', kidToken, {'code': '4711'});
+      final mia = locationOf(kidId)!;
+      expect(mia.state, SharingState.active);
+      expect(mia.hasPosition, isTrue);
+    },
+  );
+
   test('pausing needs the parents code; resuming does not', () async {
     // No code set yet.
     var r = await call('POST', 'api/location/pause', kidToken, {'code': '1'});

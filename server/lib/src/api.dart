@@ -404,6 +404,7 @@ class FamioApi {
       ..post('/api/location/report', _locationReport)
       ..post('/api/location/device-token', _locationDeviceToken)
       ..post('/api/location/pause', _locationPause)
+      ..post('/api/location/code', _locationCheckCode)
       ..post('/api/location/resume', _locationResume)
       ..get('/api/location/history', _locationHistory)
       ..get('/api/location/schedule', _locationSchedule)
