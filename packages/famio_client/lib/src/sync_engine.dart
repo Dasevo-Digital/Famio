@@ -505,12 +505,36 @@ class SyncEngine {
   /// Why the last sync failed, e.g. `two_factor_required`.
   ApiError? lastError;
 
-  Iterable<SyncRecord> get _pushable => store.dirty
-      .map((r) => r.record)
-      .where(
-        (r) =>
-            !_unsupported.contains(r.collection) && _valid(r) && !_isBlocked(r),
-      );
+  Iterable<SyncRecord> get _pushable {
+    // Within a level, the order stays as before.
+    final levels = [<SyncRecord>[], <SyncRecord>[], <SyncRecord>[]];
+    for (final r in store.dirty.map((l) => l.record)) {
+      if (_mayPush(r)) levels[_level(r)].add(r);
+    }
+    return levels.expand((l) => l);
+  }
+
+  /// What [sync] sends, in this order.
+  Iterable<SyncRecord> get pushOrder => _pushable;
+
+  bool _mayPush(SyncRecord r) =>
+      !_unsupported.contains(r.collection) && _valid(r) && !_isBlocked(r);
+
+  /// Parents first (#492): the server takes an item, comment, answer or
+  /// log only for a list, appointment, task, child or medication it
+  /// already has. Sent in a later batch, or later in the same one, the
+  /// parent came too late and the child was refused. A packing list hangs
+  /// on an appointment and has items of its own.
+  static int _level(SyncRecord r) => switch (r.collection) {
+    Collections.shoppingLists => 1,
+    Collections.shoppingItems ||
+    Collections.eventComments ||
+    Collections.assignmentResponses ||
+    Collections.childEntries ||
+    Collections.childLogs ||
+    Collections.medicationIntakes => 2,
+    _ => 0,
+  };
 
   void _apply(List<SyncRecord> pushed, SyncResponse response) {
     final changed = <String>{};
@@ -538,8 +562,20 @@ class SyncEngine {
           store.markClean(p.collection, p.id);
         }
       }
+      final sent = {for (final p in pushed) (p.collection, p.id): p.updatedAt};
       for (final remote in [...response.rejected, ...response.changes]) {
         final local = store.get(remote.collection, remote.id);
+        // Waits for a later batch, or was changed again while this one was
+        // on its way: the server decides when it gets it, and keeps the
+        // losing version as a conflict. Taking the server's version here
+        // marked the edit as sent, and it was lost without a conflict
+        // (#492).
+        if (local != null &&
+            local.dirty &&
+            sent[(remote.collection, remote.id)] != local.record.updatedAt &&
+            _mayPush(local.record)) {
+          continue;
+        }
         // A full download (after every server restart) brings mostly what
         // is here already: not written again, nothing to redraw.
         if (local != null && !local.dirty && _same(local.record, remote)) {
