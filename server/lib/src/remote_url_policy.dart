@@ -202,6 +202,9 @@ Future<ConnectionTask<Socket>> connectToAddresses(
 }) async {
   final port = uri.port;
   final won = Completer<Socket>();
+  // Cancelling after [connect] gave up (no address) completes [won] with
+  // nobody waiting; that must not surface as an uncaught error.
+  won.future.ignore();
   final pending = <ConnectionTask<Socket>>{};
   var next = 0;
   var running = 0;
