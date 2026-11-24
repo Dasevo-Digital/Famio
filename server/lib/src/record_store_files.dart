@@ -53,7 +53,7 @@ extension RecordFiles on RecordStore {
           final next = _canonicalFiles(old);
           if (identical(old, next)) continue;
           _keepAssignmentReplies(old, next);
-          _put(next, previous: old);
+          _put(next, previous: old, rewrite: true);
           repaired++;
         }
       });

@@ -103,6 +103,12 @@ Future<void> _keepPrivate(String dir) async {
 
 class _SqliteRecords implements RecordBackend {
   _SqliteRecords(this._db) {
+    // Every tick or keystroke is a write of its own. With the rollback
+    // journal each one waited for the disk: 2000 took half a second on the
+    // UI isolate (#493). A crash never corrupts the file with a log; a
+    // power cut may lose the last writes, as on the server.
+    _db.execute('PRAGMA journal_mode = WAL');
+    _db.execute('PRAGMA synchronous = NORMAL');
     _db.execute('''
       CREATE TABLE IF NOT EXISTS records (
         collection TEXT NOT NULL,

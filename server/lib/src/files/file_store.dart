@@ -151,6 +151,9 @@ class FileStore {
         .whenComplete(() => completed.complete());
   }
 
+  /// Uploads still arriving: their blocks have no entry in `files` yet.
+  final _uploading = <String>{};
+
   Future<StoredFile> save({
     required String owner,
     required String name,
@@ -158,6 +161,7 @@ class FileStore {
     required Stream<List<int>> body,
   }) async {
     final id = newId();
+    _uploading.add(id);
     final existingBytes = usage().$2;
     final completedAtStart = _completedBytes;
     var reserved = 0;
@@ -227,6 +231,7 @@ class FileStore {
       rethrow;
     } finally {
       _uploadBytes -= reserved;
+      _uploading.remove(id);
     }
   }
 
@@ -328,7 +333,37 @@ class FileStore {
       _deleteBlocks(id);
       removed++;
     }
+    for (String? next = ''; next != null;) {
+      next = _deleteStrayBlocks(next);
+    }
     return removed;
+  }
+
+  /// Deletes blocks without an upload, from the next ids after [after];
+  /// returns where to go on, or null at the end (#493). An upload cut off
+  /// by a stop or crash of the server left its blocks behind, and so did a
+  /// preview written while its file was being deleted. Uploads still
+  /// arriving have no entry yet and are left alone.
+  String? _deleteStrayBlocks(String after) {
+    final ids = [
+      for (final row in blobs.select(
+        'SELECT DISTINCT id FROM blobs WHERE id > ? ORDER BY id LIMIT 200',
+        [after],
+      ))
+        row['id'] as String,
+    ];
+    if (ids.isEmpty) return null;
+    final known = {
+      for (final row in _db.select(
+        'SELECT id FROM files WHERE id IN (${List.filled(ids.length, '?').join(', ')})',
+        ids,
+      ))
+        row['id'] as String,
+    };
+    for (final id in ids) {
+      if (!known.contains(id) && !_uploading.contains(id)) _deleteBlocks(id);
+    }
+    return ids.last;
   }
 
   Future<int>? _garbageRun;
@@ -349,7 +384,7 @@ class FileStore {
         'SELECT id FROM files WHERE created_at < ? AND id > ? ORDER BY id LIMIT 50',
         [cutoff, cursor],
       );
-      if (rows.isEmpty) return removed;
+      if (rows.isEmpty) break;
       for (final row in rows) {
         final id = row['id'] as String;
         cursor = id;
@@ -360,6 +395,11 @@ class FileStore {
       }
       await Future<void>.delayed(Duration.zero);
     }
+    for (String? next = ''; next != null;) {
+      next = _deleteStrayBlocks(next);
+      await Future<void>.delayed(Duration.zero);
+    }
+    return removed;
   }
 
   /// Deletes every upload and gives the space back. Returns their number.

@@ -493,7 +493,12 @@ class FamioApi {
     final member = _auth(request);
     final syncRequest = SyncRequest.fromJson(await _body(request));
     final before = records.currentRev;
-    final response = records.sync(syncRequest, member.id);
+    final token = _bearer(request);
+    final response = records.sync(
+      syncRequest,
+      member.id,
+      session: token == null ? null : accounts.sessionIdOf(token),
+    );
     metrics?.syncRequests++;
     advanceRepeatingTasks(records, [
       for (final c in syncRequest.changes)

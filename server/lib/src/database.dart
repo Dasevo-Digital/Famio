@@ -421,6 +421,14 @@ const _migrations = [
   ALTER TABLE location_state ADD COLUMN place_unknown INTEGER NOT NULL
     DEFAULT 0;
   ''',
+  '''
+  -- Where a record's content last came from, for conflicts (#493): the
+  -- revision a member last changed it at, and the session of that device.
+  -- Rewrites by the server (audiences, substitutes, file references) keep
+  -- both. Empty in older rows: there the revision counts, as before.
+  ALTER TABLE records ADD COLUMN content_rev INTEGER;
+  ALTER TABLE records ADD COLUMN session TEXT;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

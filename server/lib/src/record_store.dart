@@ -774,7 +774,9 @@ class RecordStore {
 
   /// Applies [request] for [userId] and returns the pull part of the answer.
   /// Runs synchronously, so concurrent requests cannot interleave.
-  SyncResponse sync(SyncRequest request, String userId) {
+  /// [session]: the device's session ([DeviceSession.id]), to tell two
+  /// devices of the same member apart (#493).
+  SyncResponse sync(SyncRequest request, String userId, {String? session}) {
     final now = DateTime.now().millisecondsSinceEpoch;
     final role = _role(userId);
     final access = role == MemberRole.service
@@ -1091,8 +1093,11 @@ class RecordStore {
           _keepConflict(
             lost: incoming,
             kept: existing,
+            stored: existing,
+            origin: _origin(existing),
             base: change.rev,
             userId: userId,
+            session: session,
             now: now,
           );
           rejected.add(existing);
@@ -1243,7 +1248,13 @@ class RecordStore {
             },
           );
         }
-        _put(incoming, previous: existing, deletionSnapshot: localDeletion);
+        final origin = existing == null ? null : _origin(existing);
+        _put(
+          incoming,
+          previous: existing,
+          deletionSnapshot: localDeletion,
+          session: session,
+        );
         _itemsFollowList(incoming, existing);
         stored.add((incoming, existing));
         if (partlyKept) {
@@ -1261,8 +1272,11 @@ class RecordStore {
           _keepConflict(
             lost: existing,
             kept: incoming,
+            stored: existing,
+            origin: origin,
             base: change.rev,
             userId: userId,
+            session: session,
             now: now,
           );
         }
@@ -1406,7 +1420,9 @@ class RecordStore {
     _transaction(() {
       if (members.any((m) => _role(m) == MemberRole.guest)) {
         for (final r in all(Collections.tasks)) {
-          if (r.visibleTo == null) _put(r, previous: r, before: members);
+          if (r.visibleTo == null) {
+            _put(r, previous: r, before: members, rewrite: true);
+          }
         }
       }
       _db.execute(
@@ -1446,21 +1462,35 @@ class RecordStore {
 
   /// Keeps the version that lost as a conflict when [userId] changed the
   /// record without having seen the server's version (their [base]
-  /// revision is older) and that version came from another member. Both
-  /// authors see it (if they may see the record) and decide.
+  /// revision is older) and that version came from another member, or
+  /// from another device of the same member. Both authors see it (if they
+  /// may see the record) and decide.
+  ///
+  /// [stored] is the server's version (one of [lost] and [kept]), as it was
+  /// before this write; [origin] where its content came from. Until #493,
+  /// a rewrite by the server (substitutes, audiences) counted as a change
+  /// the member had not seen, and the other device of the same member as
+  /// the member themselves: an edit lost there left no trace.
   void _keepConflict({
     required SyncRecord lost,
     required SyncRecord kept,
+    required SyncRecord stored,
+    required ({int rev, String? session})? origin,
     required int base,
     required String userId,
+    required String? session,
     required int now,
   }) {
-    final server = lost.updatedBy == userId ? kept : lost;
-    final other = server.updatedBy;
+    final other = stored.updatedBy;
+    // The same member: only from another device that is known as such.
+    final otherDevice =
+        session != null &&
+        origin?.session != null &&
+        origin!.session != session;
     if (!Collections.conflictTracked.contains(lost.collection) ||
-        base >= server.rev ||
+        base >= (origin?.rev ?? stored.rev) ||
         other == null ||
-        other == userId ||
+        (other == userId && !otherDevice) ||
         other == serverMemberId ||
         (lost.deleted && kept.deleted) ||
         _sameContent(lost, kept)) {
@@ -1511,7 +1541,7 @@ class RecordStore {
         [collection, id],
       )) {
         final r = _record(row);
-        _put(r, previous: r, before: members);
+        _put(r, previous: r, before: members, rewrite: true);
         if (r.collection == Collections.shoppingLists) {
           rewrite(Collections.shoppingItems, 'listId', r.id);
         }
@@ -1855,12 +1885,19 @@ class RecordStore {
   /// Writes [r] with the next revision and updates revocations: members who
   /// could see [previous] but not [r] get a tombstone, members who regain
   /// access lose their revocation.
+  ///
+  /// [rewrite]: the server only adjusts it (who sees it, substitutes, file
+  /// references), so it keeps where its content came from (see
+  /// [_keepConflict]). Otherwise the content counts as new from now on,
+  /// from [session] if a member's device wrote it.
   void _put(
     SyncRecord r, {
     required SyncRecord? previous,
     List<String>? before,
     SyncRecord? deletionSnapshot,
     bool trash = true,
+    bool rewrite = false,
+    String? session,
   }) {
     r = _canonicalFiles(r);
     if (deletionSnapshot != null) {
@@ -1873,10 +1910,12 @@ class RecordStore {
     }
     final rev = currentRev + 1;
     final stored = r.visibleTo;
+    final origin = rewrite && previous != null ? _origin(previous) : null;
     _db.execute(
       'INSERT OR REPLACE INTO records'
-      ' (collection, id, data, deleted, updated_at, updated_by, rev, visible_to)'
-      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      ' (collection, id, data, deleted, updated_at, updated_by, rev, visible_to,'
+      ' content_rev, session)'
+      ' VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         r.collection,
         r.id,
@@ -1886,6 +1925,8 @@ class RecordStore {
         r.updatedBy,
         rev,
         stored == null ? null : jsonEncode(stored),
+        origin?.rev ?? rev,
+        origin == null ? session : origin.session,
       ],
     );
 
@@ -2185,7 +2226,7 @@ class RecordStore {
       final item = _record(row);
       final next = _itemAudience(item);
       if (jsonEncode(next.visibleTo) != jsonEncode(item.visibleTo)) {
-        _put(next, previous: item);
+        _put(next, previous: item, rewrite: true);
       }
     }
   }
@@ -2244,7 +2285,7 @@ class RecordStore {
         }
         final next = _withSubstitutes(task, task);
         if (jsonEncode(next.data) == jsonEncode(task.data)) continue;
-        _put(next, previous: task);
+        _put(next, previous: task, rewrite: true);
         changed = true;
       }
     });
@@ -2523,6 +2564,23 @@ class RecordStore {
       [collection, id],
     );
     return rows.isEmpty ? null : _record(rows.first);
+  }
+
+  /// Where the content of [r] as stored came from: the revision a member
+  /// last changed it at and their session (see [_put]). Rows from before
+  /// #493 know neither: their revision counts.
+  ({int rev, String? session})? _origin(SyncRecord r) {
+    final rows = _db.select(
+      'SELECT rev, content_rev, session FROM records'
+      ' WHERE collection = ? AND id = ?',
+      [r.collection, r.id],
+    );
+    if (rows.isEmpty) return null;
+    final row = rows.first;
+    return (
+      rev: (row['content_rev'] ?? row['rev']) as int,
+      session: row['session'] as String?,
+    );
   }
 
   static SyncRecord _record(Row row) => SyncRecord(

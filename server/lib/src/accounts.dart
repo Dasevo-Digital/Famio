@@ -845,6 +845,9 @@ class Accounts {
   String _tokenHash(String token) =>
       sha256.convert(utf8.encode(token)).toString();
 
+  /// The [DeviceSession.id] of [token].
+  String sessionIdOf(String token) => _tokenHash(token).substring(0, 16);
+
   Future<String> _hash(String password) async {
     final salt = Uint8List.fromList(
       List<int>.generate(16, (_) => _random.nextInt(256)),
