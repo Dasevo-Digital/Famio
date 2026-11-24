@@ -7401,5 +7401,9 @@
   "@healthVeryLowTemperatureCh": {"placeholders": {"warnings": {"type": "Object?"}}},
   "medsFamioOnlyRemindsYouCh": "Famio erinnert nur. Dosierung immer nach ärztlicher Verordnung oder Beipackzettel. Bei Fragen: Apotheke oder ärztlicher Notfalldienst des Kantons – im Notfall 144.",
   "sourcesAustria": "Österreich: Notrufnummern, Feiertage und Schulferien",
-  "sourcesSwitzerland": "Schweiz: Notrufnummern und Feiertage"
+  "sourcesSwitzerland": "Schweiz: Notrufnummern und Feiertage",
+  "locationSharingNotEnded": "Die Standortfreigabe ließ sich auf diesem Handy nicht beenden. Bitte noch einmal versuchen.",
+  "devicesLocationSession": "Nur Standortfreigabe",
+  "devicesLocationSignOutBody": "Danach teilt {device} keinen Standort mehr. Dafür braucht es den Eltern-Code.",
+  "@devicesLocationSignOutBody": {"placeholders": {"device": {"type": "String"}}}
 }

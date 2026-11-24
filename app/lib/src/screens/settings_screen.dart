@@ -712,11 +712,35 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
     _sessions = AppScope.read(context).engine!.api.mySessions();
   }
 
+  /// Signs [session] out. A phone's location sharing needs the parents'
+  /// code when the family set one (#594): it goes without first and asks
+  /// only when the server wants the code, so a family without one and
+  /// older servers are not asked for it.
+  Future<bool> _signOut(DeviceSession session) async {
+    final api = AppScope.read(context).engine!.api;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await api.deleteMySession(session.id);
+      return true;
+    } on ApiError catch (e) {
+      if (!session.location || e.code != 'wrong_code') {
+        messenger.showSnackBar(SnackBar(content: Text(e.message)));
+        return false;
+      }
+    }
+    if (!mounted) return false;
+    return signOutLocationSession(
+      context,
+      api: api,
+      sessionId: session.id,
+      device: DeviceTile.deviceLabel(session.device ?? tr.adminUnknownDevice),
+    );
+  }
+
   /// Someone else signed in with this account: sign that device out, then
   /// change the password, which signs out every other device too and keeps
   /// whoever knows the old one from coming back.
   Future<void> _notMe(DeviceSession session) async {
-    final api = AppScope.read(context).engine!.api;
     final device = DeviceTile.deviceLabel(
       session.device ?? tr.adminUnknownDevice,
     );
@@ -739,13 +763,7 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
     );
     if (ok != true || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      await api.deleteMySession(session.id);
-    } on ApiError catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
-      return;
-    }
-    if (!mounted) return;
+    if (!await _signOut(session) || !mounted) return;
     setState(_load);
     messenger.showSnackBar(
       SnackBar(content: Text(tr.devicesNotMeSignedOut(device))),
@@ -756,7 +774,6 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final api = AppScope.engineOf(context).api;
     return SectionPage(
       maxBodyWidth: 960,
       section: FamioSection.settings,
@@ -787,8 +804,7 @@ class _MyDevicesScreenState extends State<MyDevicesScreen> {
                   onSignOut: s.current
                       ? null
                       : () async {
-                          await api.deleteMySession(s.id);
-                          setState(_load);
+                          if (await _signOut(s) && mounted) setState(_load);
                         },
                   onNotMe: () => _notMe(s),
                 ),

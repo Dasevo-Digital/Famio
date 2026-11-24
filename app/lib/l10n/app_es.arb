@@ -2959,5 +2959,8 @@
   "healthVeryLowTemperatureCh": "Temperatura muy baja: vuelve a medirla enseguida. Si sigue por debajo de 35 °C, busca ayuda médica de inmediato (pediatra o servicio médico de urgencias del cantón en Suiza; 144 si hay signos de alarma). {warnings}",
   "medsFamioOnlyRemindsYouCh": "Famio solo recuerda. La dosis, siempre según la prescripción médica o el prospecto. Dudas: farmacia o servicio médico de urgencias del cantón (Suiza); en una emergencia, 144.",
   "sourcesAustria": "Austria: números de emergencia, festivos y vacaciones escolares",
-  "sourcesSwitzerland": "Suiza: números de emergencia y festivos"
+  "sourcesSwitzerland": "Suiza: números de emergencia y festivos",
+  "locationSharingNotEnded": "No se pudo terminar el uso compartido de la ubicación en este móvil. Inténtalo de nuevo.",
+  "devicesLocationSession": "Solo para compartir la ubicación",
+  "devicesLocationSignOutBody": "Después, {device} ya no compartirá la ubicación. Para ello hace falta el código de los padres."
 }

@@ -95,7 +95,11 @@ class LocationSharing {
   static const _channel = MethodChannel('famio/location');
 
   static bool get supported =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      debugSupported ?? (!kIsWeb && (Platform.isAndroid || Platform.isIOS));
+
+  /// Tests act as a phone with it (the channel answered by a mock).
+  @visibleForTesting
+  static bool? debugSupported;
 
   static Future<DeviceSharingStatus> status() async {
     if (!supported) return const DeviceSharingStatus();

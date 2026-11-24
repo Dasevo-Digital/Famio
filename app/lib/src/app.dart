@@ -74,8 +74,9 @@ class FamioApp extends StatelessWidget {
                 lock: state.lock,
                 active: state.me != null,
                 onSignOut: (proceed) => state.signOut(proceed: proceed),
-                // Also here only with the parents' code (#337).
-                sharingNeedsCode: sharingOnThisPhone,
+                // Also here only with the parents' code (#337), when one
+                // is needed (#595).
+                sharingNeedsCode: () => endingSharingNeedsCode(state),
                 endSharing: (code) async {
                   final engine = state.engine;
                   final me = state.me;
@@ -85,6 +86,8 @@ class FamioApp extends StatelessWidget {
                     return null;
                   } on ApiError catch (e) {
                     return e.message;
+                  } catch (_) {
+                    return tr.locationSharingNotEnded;
                   }
                 },
                 child: content,

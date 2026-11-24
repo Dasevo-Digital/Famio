@@ -316,12 +316,9 @@ class _MySharingCardState extends State<MySharingCard>
                 label: Text(tr.commonEnd2),
                 onPressed: _busy
                     ? null
+                    // With the parents' code only when one is needed (#595).
                     : () => _run(() async {
-                        await showPauseDialog(
-                          context,
-                          member: me,
-                          stopOnThisDevice: true,
-                        );
+                        await endSharingAsking(context);
                       }),
               ),
             ],

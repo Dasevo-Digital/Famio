@@ -2959,5 +2959,8 @@
   "healthVeryLowTemperatureCh": "Very low temperature – please measure again right away. If it stays below 35 °C, get medical help at once (pediatrician or the canton's medical emergency service in Switzerland, 144 with warning signs). {warnings}",
   "medsFamioOnlyRemindsYouCh": "Famio only reminds you. Dosage always as prescribed by the doctor or in the package leaflet. Questions: pharmacy or the canton's medical emergency service (Switzerland) – in an emergency 144.",
   "sourcesAustria": "Austria: emergency numbers, public and school holidays",
-  "sourcesSwitzerland": "Switzerland: emergency numbers and public holidays"
+  "sourcesSwitzerland": "Switzerland: emergency numbers and public holidays",
+  "locationSharingNotEnded": "Location sharing could not be ended on this phone. Please try again.",
+  "devicesLocationSession": "Location sharing only",
+  "devicesLocationSignOutBody": "After that, {device} no longer shares its location. This needs the parents' code."
 }

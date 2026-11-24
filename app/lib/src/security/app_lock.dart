@@ -542,6 +542,7 @@ class _LockScreenState extends State<_LockScreen> {
   /// here as well, as no dialog shows above this screen.
   Completer<bool>? _codeAnswer;
   final _code = TextEditingController();
+  final _codeFocus = FocusNode();
   String? _codeError;
   var _checking = false;
 
@@ -564,6 +565,10 @@ class _LockScreenState extends State<_LockScreen> {
           _code.clear();
           _codeError = null;
         });
+        // Its own focus scope above the navigator: typing right away.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _codeAnswer != null) _codeFocus.requestFocus();
+        });
         return answer.future;
       });
     } finally {
@@ -572,9 +577,14 @@ class _LockScreenState extends State<_LockScreen> {
   }
 
   void _answered(bool signOut) {
-    _answer?.complete(signOut);
+    _complete(_answer, signOut);
     _answer = null;
     if (mounted) setState(() => _unsent = null);
+  }
+
+  /// Once only: unlocking or leaving may have answered already (#337).
+  static void _complete(Completer<bool>? answer, bool value) {
+    if (answer != null && !answer.isCompleted) answer.complete(value);
   }
 
   Future<void> _endSharing() async {
@@ -591,13 +601,16 @@ class _LockScreenState extends State<_LockScreen> {
       } else if (mounted) {
         setState(() => _codeError = error);
       }
+    } catch (_) {
+      // Not only the server's answers: the phone may fail to stop (#337).
+      if (mounted) setState(() => _codeError = tr.locationSharingNotEnded);
     } finally {
       if (mounted) setState(() => _checking = false);
     }
   }
 
   void _codeAnswered(bool signOut) {
-    _codeAnswer?.complete(signOut);
+    _complete(_codeAnswer, signOut);
     _codeAnswer = null;
     if (mounted) setState(() => _codeError = null);
   }
@@ -612,9 +625,12 @@ class _LockScreenState extends State<_LockScreen> {
   @override
   void dispose() {
     widget.lock.removeListener(_changed);
-    _answer?.complete(false);
-    _codeAnswer?.complete(false);
+    _complete(_answer, false);
+    _answer = null;
+    _complete(_codeAnswer, false);
+    _codeAnswer = null;
     _code.dispose();
+    _codeFocus.dispose();
     super.dispose();
   }
 
@@ -631,120 +647,129 @@ class _LockScreenState extends State<_LockScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final lock = widget.lock;
-    return Material(
-      color: theme.colorScheme.surface,
-      child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  AppIcons.lockKey,
-                  size: 56,
-                  color: theme.colorScheme.primary,
-                ),
-                if (lock.locked) ...[
-                  const SizedBox(height: 16),
-                  Text(tr.appLockLocked, style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: lock.unlock,
-                    child: Text(tr.appLockUnlock),
-                  ),
-                  if (_unsent case final unsent?) ...[
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Text(
-                        tr.signOutUnsentBody(unsent),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: () => _answered(false),
-                          child: Text(tr.commonCancel),
-                        ),
-                        TextButton(
-                          onPressed: () => _answered(true),
-                          child: Text(tr.signOutAnyway),
-                        ),
-                      ],
-                    ),
-                  ] else if (_codeAnswer != null) ...[
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        children: [
-                          Text(
-                            tr.locationEndLocationSharing,
-                            style: theme.textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            tr.locationLocationNoLongerShared,
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 8),
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 360),
-                            child: PasswordReveal(
-                              builder: (_, obscure, toggle) => TextField(
-                                controller: _code,
-                                autofocus: true,
-                                obscureText: obscure,
-                                contextMenuBuilder: PasswordReveal.contextMenu,
-                                keyboardType: TextInputType.visiblePassword,
-                                onSubmitted: (_) => _endSharing(),
-                                decoration: InputDecoration(
-                                  suffixIcon: toggle,
-                                  labelText: tr.adminParentsCode,
-                                  prefixIcon: Icon(AppIcons.lockKey),
-                                  errorText: _codeError,
-                                  errorMaxLines: 3,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: _checking
-                              ? null
-                              : () => _codeAnswered(false),
-                          child: Text(tr.commonCancel),
-                        ),
-                        TextButton(
-                          onPressed: _checking ? null : _endSharing,
-                          child: Text(tr.commonEnd2),
-                        ),
-                      ],
-                    ),
-                  ] else if (lock.failed) ...[
-                    const SizedBox(height: 8),
-                    TextButton(
-                      onPressed: _signOut,
-                      child: Text(tr.settingsSignOut),
-                    ),
-                  ],
-                ],
-              ],
-            ),
+    // Above the navigator: no page here makes room for the keyboard, and
+    // no focus scope of a route takes the code field's focus (#337).
+    return FocusScope(
+      child: Material(
+        color: theme.colorScheme.surface,
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
+          child: SafeArea(child: Center(child: _content(theme, lock))),
         ),
       ),
     );
   }
+
+  Widget _content(ThemeData theme, AppLock lock) => SingleChildScrollView(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(AppIcons.lockKey, size: 56, color: theme.colorScheme.primary),
+        if (lock.locked) ...[
+          const SizedBox(height: 16),
+          Text(tr.appLockLocked, style: theme.textTheme.titleLarge),
+          const SizedBox(height: 24),
+          FilledButton(
+            // Not while the code is checked: the answer would come
+            // after the screen went (#337).
+            onPressed: _checking ? null : lock.unlock,
+            child: Text(tr.appLockUnlock),
+          ),
+          if (_unsent case final unsent?) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                tr.signOutUnsentBody(unsent),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: () => _answered(false),
+                  child: Text(tr.commonCancel),
+                ),
+                TextButton(
+                  onPressed: () => _answered(true),
+                  child: Text(tr.signOutAnyway),
+                ),
+              ],
+            ),
+          ] else if (_codeAnswer != null) ...[
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  Text(
+                    tr.locationEndLocationSharing,
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    tr.locationLocationNoLongerShared,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 360),
+                    child: PasswordReveal(
+                      builder: (_, obscure, toggle) => TextField(
+                        controller: _code,
+                        focusNode: _codeFocus,
+                        autofocus: true,
+                        // With the error and the buttons below it
+                        // above the keyboard.
+                        scrollPadding: const EdgeInsets.fromLTRB(
+                          20,
+                          20,
+                          20,
+                          160,
+                        ),
+                        obscureText: obscure,
+                        contextMenuBuilder: PasswordReveal.contextMenu,
+                        keyboardType: TextInputType.visiblePassword,
+                        onSubmitted: (_) => _endSharing(),
+                        decoration: InputDecoration(
+                          suffixIcon: toggle,
+                          labelText: tr.adminParentsCode,
+                          prefixIcon: Icon(AppIcons.lockKey),
+                          errorText: _codeError,
+                          errorMaxLines: 3,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                TextButton(
+                  onPressed: _checking ? null : () => _codeAnswered(false),
+                  child: Text(tr.commonCancel),
+                ),
+                TextButton(
+                  onPressed: _checking ? null : _endSharing,
+                  child: Text(tr.commonEnd2),
+                ),
+              ],
+            ),
+          ] else if (lock.failed) ...[
+            const SizedBox(height: 8),
+            TextButton(onPressed: _signOut, child: Text(tr.settingsSignOut)),
+          ],
+        ],
+      ],
+    ),
+  );
 }

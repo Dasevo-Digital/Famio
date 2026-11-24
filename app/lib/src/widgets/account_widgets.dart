@@ -42,11 +42,24 @@ class DeviceTile extends StatelessWidget {
     final mobile = RegExp('android|ios', caseSensitive: false).hasMatch(device);
     final notMe = onNotMe != null && isNewSignIn;
     final tile = ListTile(
-      leading: Icon(mobile ? AppIcons.smartphone : AppIcons.laptop),
+      leading: Icon(
+        session.location
+            ? AppIcons.mapPin
+            : mobile
+            ? AppIcons.smartphone
+            : AppIcons.laptop,
+      ),
       title: Text(deviceLabel(device)),
       subtitle: Text.rich(
         TextSpan(
           children: [
+            // A phone's background service: signing it out ends sharing
+            // there (#594).
+            if (session.location)
+              TextSpan(
+                text: '${tr.devicesLocationSession}\n',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
             TextSpan(
               text: session.current
                   ? tr.settingsThisDevice
@@ -109,9 +122,12 @@ class DeviceTile extends StatelessWidget {
     );
   }
 
-  /// `macos (Familien-MacBook)` → `macOS · Familien-MacBook`.
+  /// `macos (Familien-MacBook)` → `macOS · Familien-MacBook`; a phone's
+  /// location sharing keeps what the server added (`… · Standort`).
   static String deviceLabel(String device) {
-    final match = RegExp(r'^(\w+) \((.*)\)$').firstMatch(device);
+    final match =
+        RegExp(r'^(\w+) \((.*)\)$').firstMatch(device) ??
+        RegExp(r'^(\w+) \(([^()]*)\)( · .*)$').firstMatch(device);
     if (match == null) return device;
     final os = switch (match[1]!.toLowerCase()) {
       'macos' => 'macOS',
@@ -121,7 +137,7 @@ class DeviceTile extends StatelessWidget {
       'linux' => 'Linux',
       final other => other,
     };
-    return '$os · ${match[2]}';
+    return '$os · ${match[2]}${match.groupCount > 2 ? match[3] : ''}';
   }
 }
 

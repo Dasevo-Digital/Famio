@@ -508,6 +508,117 @@ void main() {
       expect(find.text('Abmelden'), findsOneWidget);
     });
 
+    /// Locked, "Abmelden" tapped: the parents' code field shows.
+    Future<List<bool>> askCode(
+      WidgetTester tester,
+      Future<String?> Function(String code) endSharing,
+    ) async {
+      final l = await tester.runAsync(lock);
+      device.works = false;
+      final answers = <bool>[];
+      await tester.pumpWidget(
+        gate(
+          l!,
+          asking: (proceed) async => answers.add(await proceed(0)),
+          sharing: () async => true,
+          endSharing: endSharing,
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Abmelden'));
+      await tester.pumpAndSettle();
+      expect(find.text('Standortfreigabe beenden'), findsOneWidget);
+      return answers;
+    }
+
+    Future<void> end(WidgetTester tester, String code) async {
+      await tester.enterText(find.byType(TextField), code);
+      await tester.ensureVisible(find.text('Beenden'));
+      await tester.tap(find.text('Beenden'));
+    }
+
+    testWidgets('no unlocking while the code is checked (#337)', (
+      tester,
+    ) async {
+      final check = Completer<String?>();
+      final answers = await askCode(tester, (_) => check.future);
+      await end(tester, '2468');
+      await tester.pump();
+      final unlock = find.widgetWithText(FilledButton, 'Entsperren');
+      expect(tester.widget<FilledButton>(unlock).onPressed, isNull);
+      check.complete(null);
+      await tester.pumpAndSettle();
+      expect(answers, [true]);
+      expect(tester.widget<FilledButton>(unlock).onPressed, isNotNull);
+    });
+
+    testWidgets('unlocked all the same while the code is checked: the late '
+        'answer changes nothing (#337)', (tester) async {
+      final check = Completer<String?>();
+      final answers = await askCode(tester, (_) => check.future);
+      await end(tester, '2468');
+      await tester.pump();
+      // The system's unlock, from wherever: the screen goes.
+      device.works = true;
+      final lock = tester.widget<AppLockGate>(find.byType(AppLockGate)).lock;
+      await lock.unlock();
+      await tester.pumpAndSettle();
+      expect(find.text('Famio ist gesperrt'), findsNothing);
+      expect(answers, [false], reason: 'unlocking stays signed in');
+      check.complete(null);
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(answers, [false]);
+    });
+
+    testWidgets('the code field has the focus and stays above the keyboard '
+        '(#337)', (tester) async {
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await askCode(tester, (_) async => 'Der Eltern-Code stimmt nicht');
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.focusNode.hasFocus, isTrue);
+
+      await tester.enterText(find.byType(TextField), '1');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('Der Eltern-Code stimmt nicht'), findsOneWidget);
+
+      // The keyboard takes the lower 336 of 844 pixels.
+      tester.view.viewInsets = const FakeViewPadding(bottom: 336);
+      await tester.pumpAndSettle();
+      for (final shown in [
+        find.byType(TextField),
+        find.text('Der Eltern-Code stimmt nicht'),
+        find.text('Beenden'),
+      ]) {
+        final rect = tester.getRect(shown);
+        expect(rect.top, greaterThanOrEqualTo(0), reason: '$shown');
+        expect(rect.bottom, lessThanOrEqualTo(844 - 336), reason: '$shown');
+      }
+    });
+
+    testWidgets('the phone failing to stop sharing says so (#337)', (
+      tester,
+    ) async {
+      final answers = await askCode(
+        tester,
+        (_) async => throw PlatformException(code: 'error'),
+      );
+      await end(tester, '2468');
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Die Standortfreigabe ließ sich auf diesem Handy nicht beenden. '
+          'Bitte noch einmal versuchen.',
+        ),
+        findsOneWidget,
+      );
+      expect(answers, isEmpty, reason: 'still signed in');
+      expect(find.text('Standortfreigabe beenden'), findsOneWidget);
+    });
+
     testWidgets('nothing that would be lost: it signs out without asking', (
       tester,
     ) async {
