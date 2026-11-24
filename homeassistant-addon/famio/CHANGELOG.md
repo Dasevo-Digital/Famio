@@ -2,6 +2,22 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.61 – Abmelden, Feiertage und Verbindungen
+
+- Wird die Standort-Sitzung eines Handys anders beendet als am Handy
+  selbst, etwa unter „Meine Geräte“ oder durch einen Administrator,
+  verschwindet die alte Position jetzt ebenfalls, und ein anderes Gerät
+  zählt sofort. „Meine Geräte“ fragt dafür nach dem Eltern-Code.
+- Ist kein Eltern-Code festgelegt oder der Standort ausgeblendet, lässt
+  sich ein Handy jetzt immer abmelden.
+- Sperrseite: Das Feld für den Eltern-Code bleibt über der Tastatur.
+- Feiertage im Kanton Freiburg ergänzt, im Aargau nur noch die
+  kantonsweiten; in Kärnten ist der 10. Oktober schulfrei, und die
+  Weihnachtsferien in Österreich beginnen an einem Montag, 23. Dezember,
+  schon dann.
+- Abrufe des Servers nach außen klappen auch, wenn die erste Adresse
+  einer Seite nicht antwortet.
+
 ## 2.0.60 – Abmelden mit geteiltem Standort
 
 - Wer sich am Handy abmeldet oder dort die Standortfreigabe beendet,

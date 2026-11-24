@@ -4,6 +4,23 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.61 – Cerrar sesión, festivos y conexiones
+
+- Si la sesión de ubicación de un móvil termina de otra forma que en el
+  propio móvil, por ejemplo en «Mis dispositivos» o por un administrador,
+  su posición anterior también desaparece y otro dispositivo cuenta al
+  momento. «Mis dispositivos» pide para ello el código de los padres.
+- Sin código de los padres, o con la ubicación oculta, un móvil siempre
+  puede cerrar sesión.
+- Pantalla de bloqueo: el campo del código de los padres queda por encima
+  del teclado.
+- Festivos añadidos para el cantón de Friburgo, Argovia muestra solo los
+  de todo el cantón; en Carintia el 10 de octubre no hay clase, y las
+  vacaciones de Navidad en Austria empiezan el 23 de diciembre cuando cae
+  en lunes.
+- Las consultas del servidor a otras páginas funcionan también cuando la
+  primera dirección de una página no responde.
+
 ## 2.0.60 – Cerrar sesión con la ubicación compartida
 
 - Cerrar sesión en un móvil o dejar de compartir la ubicación allí sigue

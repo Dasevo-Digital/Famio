@@ -4,6 +4,21 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.61 – Signing out, holidays and connections
+
+- When a phone's location session ends other than on the phone itself,
+  e.g. under "My devices" or by an administrator, its old position now
+  disappears too and another device counts at once. "My devices" asks for
+  the parents' code for this.
+- Without a parents' code, or with location hidden, a phone can now always
+  be signed out.
+- Lock screen: the parents' code field stays above the keyboard.
+- Holidays added for the canton of Fribourg, Aargau shows only the
+  canton-wide ones; in Carinthia 10 October is a school-free day, and
+  Austrian Christmas holidays start on 23 December when that is a Monday.
+- The server's fetches from other sites also work when the first address
+  of a site does not answer.
+
 ## 2.0.60 – Signing out while sharing the location
 
 - Signing out on a phone or ending location sharing there still needs the
