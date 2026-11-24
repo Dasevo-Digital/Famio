@@ -174,49 +174,134 @@ class RemoteUrlPolicy {
   );
 }
 
+/// Starts a TCP connection; [Socket.startConnect] outside of tests.
+typedef StartConnect =
+    Future<ConnectionTask<Socket>> Function(InternetAddress address, int port);
+
+/// How long an address may stay silent before the next one is tried as
+/// well, as the SDK does for the names it resolves itself (RFC 8305).
+const connectionStagger = Duration(milliseconds: 250);
+
 /// Opens a connection for [uri] to the first of [addresses] that answers,
 /// for `https` with TLS for the name of [uri] (certificate check and SNI).
+///
+/// Only [addresses] are used, in their order. The next one starts when the
+/// attempt before it fails or has not answered after [stagger]; the first
+/// TCP connection wins and every other attempt is cancelled, so an address
+/// that never answers (a broken IPv6 route) does not use up the time for
+/// the connection. TLS runs on the winner only. When all fail, the first
+/// failure is thrown. Cancelling the returned task stops every attempt.
+///
 /// [context]: trusted certificates other than the system's (tests).
 Future<ConnectionTask<Socket>> connectToAddresses(
   Uri uri,
   List<InternetAddress> addresses, {
   SecurityContext? context,
+  Duration stagger = connectionStagger,
+  StartConnect startConnect = Socket.startConnect,
 }) async {
+  final port = uri.port;
+  final won = Completer<Socket>();
+  final pending = <ConnectionTask<Socket>>{};
+  var next = 0;
+  var running = 0;
   var cancelled = false;
-  ConnectionTask<Socket>? connecting;
+  Timer? timer;
+  (Object, StackTrace)? failure;
   Socket? open;
-  Future<Socket> connect() async {
-    Object? failure;
-    for (final address in addresses) {
-      if (cancelled) break;
-      try {
-        final task = connecting = await Socket.startConnect(address, uri.port);
-        if (cancelled) {
-          task.cancel();
-          break;
-        }
-        final socket = open = await task.socket;
-        if (!uri.isScheme('https')) return socket;
-        try {
-          return await SecureSocket.secure(
-            socket,
-            host: uri.host,
-            context: context,
-          );
-        } catch (_) {
-          socket.destroy();
-          rethrow;
-        }
-      } on SocketException catch (e) {
-        failure = e;
-      }
+
+  bool over() => cancelled || won.isCompleted;
+
+  void stopAttempts() {
+    timer?.cancel();
+    for (final task in pending.toList()) {
+      task.cancel();
     }
-    throw failure ?? SocketException('Connection cancelled', port: uri.port);
+    pending.clear();
+  }
+
+  late final void Function() start;
+
+  void failed(Object error, StackTrace trace) {
+    running--;
+    failure ??= (error, trace);
+    if (over()) return;
+    if (next < addresses.length) {
+      start();
+    } else if (running == 0) {
+      won.completeError(failure!.$1, failure!.$2);
+    }
+  }
+
+  void attempt(ConnectionTask<Socket> task) {
+    if (over()) {
+      // Not needed any more.
+      running--;
+      task.cancel();
+      task.socket.then((socket) => socket.destroy(), onError: (_) {});
+      return;
+    }
+    pending.add(task);
+    task.socket.then(
+      (socket) {
+        pending.remove(task);
+        running--;
+        if (over()) {
+          socket.destroy();
+          return;
+        }
+        open = socket;
+        stopAttempts();
+        won.complete(socket);
+      },
+      onError: (Object e, StackTrace s) {
+        pending.remove(task);
+        failed(e, s);
+      },
+    );
+  }
+
+  start = () {
+    timer?.cancel();
+    if (over() || next >= addresses.length) return;
+    final address = addresses[next++];
+    running++;
+    if (next < addresses.length) timer = Timer(stagger, start);
+    Future.sync(
+      () => startConnect(address, port),
+    ).then(attempt, onError: failed);
+  };
+
+  Future<Socket> connect() async {
+    if (addresses.isEmpty) {
+      throw SocketException('No address to connect to', port: port);
+    }
+    start();
+    final socket = await won.future;
+    if (cancelled) {
+      socket.destroy();
+      throw SocketException('Connection cancelled', port: port);
+    }
+    if (!uri.isScheme('https')) return socket;
+    try {
+      return await SecureSocket.secure(
+        socket,
+        host: uri.host,
+        context: context,
+      );
+    } catch (_) {
+      socket.destroy();
+      rethrow;
+    }
   }
 
   return ConnectionTask.fromSocket(connect(), () {
+    if (cancelled) return;
     cancelled = true;
-    connecting?.cancel();
+    stopAttempts();
     open?.destroy();
+    if (!won.isCompleted) {
+      won.completeError(SocketException('Connection cancelled', port: port));
+    }
   });
 }

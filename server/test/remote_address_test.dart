@@ -218,6 +218,235 @@ void main() {
         client.getUrl(Uri.parse('https://anders.example:${server.port}/')),
         throwsA(isA<HandshakeException>()),
       );
+
+      // Also when the winner is not the first address: TLS for the name
+      // runs on the connection that answered (TEST-NET-1 never does).
+      final second = HttpClient()
+        ..connectionFactory = (uri, _, _) => connectToAddresses(uri, [
+          InternetAddress('192.0.2.1'),
+          InternetAddress.loopbackIPv4,
+        ], context: trusted);
+      addTearDown(second.close);
+      final again = await (await second.getUrl(
+        Uri.parse('https://rezepte.example:${server.port}/'),
+      )).close().timeout(const Duration(seconds: 5));
+      expect(await utf8.decodeStream(again), 'host rezepte.example');
+      await expectLater(
+        second.getUrl(Uri.parse('https://anders.example:${server.port}/')),
+        throwsA(isA<HandshakeException>()),
+      );
+    });
+  });
+
+  // Several addresses (#574): one that does not answer must not use up the
+  // time, as with the SDK's own connections, and nothing else is reached.
+  group('several addresses', () {
+    late ServerSocket listener;
+    late List<Socket> accepted;
+    late List<Future<void>> closed;
+
+    setUp(() async {
+      accepted = [];
+      closed = [];
+      listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      listener.listen((socket) {
+        accepted.add(socket);
+        final done = Completer<void>();
+        closed.add(done.future);
+        socket.listen(
+          (_) {},
+          onDone: done.complete,
+          onError: (_) {
+            if (!done.isCompleted) done.complete();
+          },
+        );
+      });
+    });
+    tearDown(() async {
+      for (final s in accepted) {
+        s.destroy();
+      }
+      await listener.close();
+    });
+
+    Uri url() => Uri.parse('http://kalender.example:${listener.port}/x');
+    final silentAddress = InternetAddress('192.0.2.1');
+    final otherSilent = InternetAddress('192.0.2.2');
+
+    test('a silent first address does not hold up the second', () async {
+      final silent = _Silent();
+      final started = <String>[];
+      final clock = Stopwatch()..start();
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, InternetAddress.loopbackIPv4],
+        startConnect: (address, port) {
+          started.add(address.address);
+          return address == silentAddress
+              ? Future.value(silent.task)
+              : Socket.startConnect(address, port);
+        },
+      );
+      final socket = await task.socket.timeout(const Duration(seconds: 2));
+      clock.stop();
+      addTearDown(socket.destroy);
+      expect(socket.remotePort, listener.port);
+      expect(started, ['192.0.2.1', '127.0.0.1']);
+      // After the stagger, well before any connection timeout.
+      expect(clock.elapsed, greaterThan(const Duration(milliseconds: 200)));
+      expect(clock.elapsed, lessThan(const Duration(seconds: 2)));
+      expect(silent.cancelled, isTrue);
+    });
+
+    test('also with the system\'s connect and a real silent address', () async {
+      // 192.0.2.1 (TEST-NET-1) either never answers or, without a route,
+      // fails at once; both times the second address must connect quickly.
+      final clock = Stopwatch()..start();
+      final task = await connectToAddresses(url(), [
+        silentAddress,
+        InternetAddress.loopbackIPv4,
+      ]);
+      final socket = await task.socket.timeout(const Duration(seconds: 2));
+      addTearDown(socket.destroy);
+      expect(clock.elapsed, lessThan(const Duration(seconds: 2)));
+      expect(socket.remotePort, listener.port);
+    });
+
+    test('an address that fails gives way at once', () async {
+      final clock = Stopwatch()..start();
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, otherSilent, InternetAddress.loopbackIPv4],
+        // Far longer than the test may take.
+        stagger: const Duration(seconds: 30),
+        startConnect: (address, port) {
+          if (address == silentAddress) {
+            return Future.error(const SocketException('refused'));
+          }
+          if (address == otherSilent) {
+            return Future.value(
+              ConnectionTask.fromSocket(
+                // Fails a moment after it started, as a real one does.
+                Future<Socket>.delayed(
+                  Duration.zero,
+                  () => throw const SocketException('unreachable'),
+                ),
+                () {},
+              ),
+            );
+          }
+          return Socket.startConnect(address, port);
+        },
+      );
+      final socket = await task.socket.timeout(const Duration(seconds: 2));
+      addTearDown(socket.destroy);
+      expect(clock.elapsed, lessThan(const Duration(seconds: 2)));
+    });
+
+    test('when every address fails, the first failure is thrown', () async {
+      var n = 0;
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, otherSilent],
+        startConnect: (address, port) =>
+            Future.error(SocketException('failure ${++n}')),
+      );
+      await expectLater(
+        task.socket,
+        throwsA(
+          isA<SocketException>().having(
+            (e) => e.message,
+            'message',
+            'failure 1',
+          ),
+        ),
+      );
+      expect(n, 2);
+      // A real refusal comes back as such.
+      final free = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final port = free.port;
+      await free.close();
+      final refused = await connectToAddresses(
+        Uri.parse('http://kalender.example:$port/x'),
+        [InternetAddress.loopbackIPv4],
+      );
+      await expectLater(refused.socket, throwsA(isA<SocketException>()));
+    });
+
+    test('cancelling stops every attempt, also those to come', () async {
+      final attempts = <_Silent>[];
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, otherSilent, InternetAddress('192.0.2.3')],
+        stagger: const Duration(milliseconds: 100),
+        startConnect: (address, port) async =>
+            (attempts..add(_Silent())).last.task,
+      );
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      expect(attempts, hasLength(2));
+      task.cancel();
+      await expectLater(
+        task.socket.timeout(const Duration(seconds: 1)),
+        throwsA(isA<SocketException>()),
+      );
+      expect([for (final a in attempts) a.cancelled], [true, true]);
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      expect(attempts, hasLength(2));
+      expect(accepted, isEmpty);
+    });
+
+    test('a connection that answers after the winner is closed', () async {
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, InternetAddress.loopbackIPv4],
+        stagger: const Duration(milliseconds: 50),
+        startConnect: (address, port) {
+          if (address != silentAddress) {
+            return Socket.startConnect(address, port);
+          }
+          // Connects late, whatever cancelling says.
+          return Future.value(
+            ConnectionTask.fromSocket(
+              Future.delayed(
+                const Duration(milliseconds: 300),
+                () => Socket.connect(InternetAddress.loopbackIPv4, port),
+              ),
+              () {},
+            ),
+          );
+        },
+      );
+      final socket = await task.socket.timeout(const Duration(seconds: 2));
+      addTearDown(socket.destroy);
+      Future<void> lateOneClosed() async {
+        while (closed.length < 2) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+        }
+        await closed[1];
+      }
+
+      await lateOneClosed().timeout(const Duration(seconds: 3));
+      // The winner stays open.
+      var winnerClosed = false;
+      unawaited(closed[0].then((_) => winnerClosed = true));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(winnerClosed, isFalse);
+      expect(accepted, hasLength(2));
+    });
+
+    test('only the given addresses are tried', () async {
+      final started = <InternetAddress>[];
+      final task = await connectToAddresses(
+        url(),
+        [silentAddress, otherSilent],
+        stagger: Duration.zero,
+        startConnect: (address, port) async {
+          started.add(address);
+          throw const SocketException('down');
+        },
+      );
+      await expectLater(task.socket, throwsA(isA<SocketException>()));
+      expect(started, [silentAddress, otherSilent]);
     });
   });
 
@@ -331,6 +560,20 @@ void main() {
       expect(got, 502);
       expect(body['error'], 'page_unreachable');
     });
+  });
+}
+
+/// A connection attempt that never answers until it is cancelled, like a
+/// route that swallows the packets.
+class _Silent {
+  final _socket = Completer<Socket>();
+  var cancelled = false;
+
+  late final task = ConnectionTask.fromSocket(_socket.future, () {
+    cancelled = true;
+    if (!_socket.isCompleted) {
+      _socket.completeError(const SocketException('cancelled'));
+    }
   });
 }
 
