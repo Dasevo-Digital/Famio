@@ -15,10 +15,49 @@ void main() {
     File('${web.path}/index.html').writeAsStringSync('<html>Famio</html>');
     File('${web.path}/main.dart.js').writeAsStringSync('main();');
     File('${web.path}/secret.txt').writeAsStringSync('no');
+    File('${web.path}/assets/README')
+      ..createSync(recursive: true)
+      ..writeAsStringSync('no');
   });
   tearDown(() => web.deleteSync(recursive: true));
 
   group('web app', () {
+    // The license page and "Was ist neu?" in the browser (#599): Flutter
+    // loads them as text from its asset bundle, which came back 404.
+    test('text from the asset bundle is served', () async {
+      File('${web.path}/assets/NOTICES').writeAsStringSync('Lizenzen');
+      File('${web.path}/assets/CHANGELOG.en.md').writeAsStringSync('# 2.0.61');
+      File('${web.path}/assets/assets/fonts/OFL-Nunito.txt')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('OFL');
+      File(
+        '${web.path}/assets/NOTICES.gz',
+      ).writeAsBytesSync(gzip.encode('Lizenzen'.codeUnits));
+      final app = FamioServerApp.inMemory(webApp: WebApp(web.path));
+      Future<Response> get(String path, [Map<String, String>? headers]) async =>
+          app.handler(
+            Request(
+              'GET',
+              Uri.parse('http://famio.local$path'),
+              headers: headers,
+            ),
+          );
+      for (final (path, body) in [
+        ('/app/assets/NOTICES', 'Lizenzen'),
+        ('/app/assets/CHANGELOG.en.md', '# 2.0.61'),
+        ('/app/assets/assets/fonts/OFL-Nunito.txt', 'OFL'),
+      ]) {
+        final r = await get(path);
+        expect(r.statusCode, 200, reason: path);
+        expect(r.headers['content-type'], 'text/plain; charset=utf-8');
+        expect(await r.readAsString(), body);
+      }
+      final packed = await get('/app/assets/NOTICES', {
+        'accept-encoding': 'gzip',
+      });
+      expect(packed.headers['content-encoding'], 'gzip');
+    });
+
     test('served below /app/ with its own policy', () async {
       final app = FamioServerApp.inMemory(webApp: WebApp(web.path));
       addTearDown(app.close);
@@ -90,6 +129,7 @@ void main() {
       expect(await again.readAsString(), isEmpty);
       // Unknown types and paths outside the folder are not served.
       expect((await get('/app/secret.txt')).statusCode, 404);
+      expect((await get('/app/assets/README')).statusCode, 404);
       expect((await get('/app/..%2F..%2Fetc%2Fpasswd')).statusCode, 404);
       // Outside Home Assistant the start page stays the landing page.
       final landing = await get('/');

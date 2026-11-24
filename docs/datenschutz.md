@@ -1,6 +1,6 @@
 # Datenschutzinformationen für Famio
 
-Stand: 22. November 2026
+Stand: 24. November 2026 · [English](datenschutz.en.md) · [Español](datenschutz.es.md)
 
 ## Verantwortlichkeit
 
@@ -150,7 +150,7 @@ einmal bei Google Fonts und hält sie danach selbst vor; Google sieht dabei
 nur die Adresse des Servers, nicht die der Familie.
 
 **Open-Meteo.** Wetter ist pro Gerät opt-in. Übertragen werden auf 0,01 Grad
-gerundete Koordinaten des Orts „Zuhause“ (ohne ihn des ersten Orts) sowie die
+gerundete Koordinaten des Orts „Zuhause“ (ohne ihn die des ersten Orts) sowie die
 technisch notwendige IP-Adresse. Der Anbieter kann Anfragen nach seinen eigenen
 Regeln protokollieren.
 

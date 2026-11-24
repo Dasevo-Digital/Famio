@@ -455,7 +455,19 @@ class SettingsScreen extends StatelessWidget {
             title: Text(context.l10n.settingsWhatsNew),
             subtitle: Text(context.l10n.settingsWhatsNewSubtitle),
             onTap: () async {
-              final entries = await loadChangelog();
+              final List<ChangelogEntry> entries;
+              try {
+                entries = await loadChangelog();
+              } catch (_) {
+                // Not shipped or not served (#599): say so instead of
+                // doing nothing.
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(context.l10n.commonLoadingFailed)),
+                  );
+                }
+                return;
+              }
               if (context.mounted) {
                 await showWhatsNew(context, entries.take(5).toList());
               }
@@ -467,7 +479,7 @@ class SettingsScreen extends StatelessWidget {
             subtitle: Text(tr.settingsPrivacySubtitle),
             trailing: const Icon(AppIcons.arrowSquareOut, size: 18),
             onTap: () => launchUrl(
-              Uri.parse(AppEnv.privacyUrl),
+              Uri.parse(AppEnv.privacyUrlFor(appLanguage)),
               mode: LaunchMode.externalApplication,
             ),
           ),

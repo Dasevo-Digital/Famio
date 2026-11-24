@@ -41,7 +41,8 @@ RUN --mount=type=cache,id=famio-sqlite3-hook,sharing=locked,target=/src/server/.
          cp -R web /out/bundle/web; \
          find /out/bundle/web -type f \( -name '*.js' -o -name '*.mjs' \
            -o -name '*.wasm' -o -name '*.json' -o -name '*.html' \
-           -o -name '*.css' -o -name '*.ttf' -o -name '*.otf' \) \
+           -o -name '*.css' -o -name '*.ttf' -o -name '*.otf' \
+           -o -name '*.md' -o -name '*.txt' -o -name NOTICES \) \
            -exec brotli -q 11 -k {} \; ; \
        fi
 

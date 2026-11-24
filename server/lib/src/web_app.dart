@@ -98,6 +98,15 @@ class WebApp {
     '.frag': 'application/octet-stream',
   };
 
+  /// Text from Flutter's asset bundle: the licenses (`NOTICES`, the fonts'
+  /// `.txt`) and the release notes (`.md`) for "Was ist neu?". Without
+  /// them the license page and "Was ist neu?" failed in the browser
+  /// (#599). Text elsewhere in the folder stays unserved.
+  static bool _isTextAsset(String relative) =>
+      relative.startsWith('assets/') &&
+      (const {'.md', '.txt'}.contains(p.extension(relative).toLowerCase()) ||
+          p.basename(relative) == 'NOTICES');
+
   /// [path] below `app/` ('' for the start page).
   ///
   /// Nothing is cached blindly: an add-on or server update replaces the
@@ -108,7 +117,9 @@ class WebApp {
     final file = p.normalize(p.join(dir, relative));
     // Nothing outside the web app's folder.
     if (!p.isWithin(dir, file)) return Response.notFound('Not found');
-    final type = _types[p.extension(file).toLowerCase()];
+    final type =
+        _types[p.extension(file).toLowerCase()] ??
+        (_isTextAsset(relative) ? 'text/plain; charset=utf-8' : null);
     final plain = File(file);
     if (type == null || !await plain.exists()) {
       if (type != null && relative.startsWith('fonts/')) {

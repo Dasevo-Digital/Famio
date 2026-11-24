@@ -499,7 +499,7 @@ class _ConnectScreenState extends State<ConnectScreen> {
                         Center(
                           child: TextButton(
                             onPressed: () => launchUrl(
-                              Uri.parse(AppEnv.privacyUrl),
+                              Uri.parse(AppEnv.privacyUrlFor(appLanguage)),
                               mode: LaunchMode.externalApplication,
                             ),
                             child: Text(tr.settingsPrivacy),

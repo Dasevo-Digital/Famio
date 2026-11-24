@@ -58,6 +58,13 @@ abstract final class AppEnv {
   static const privacyUrl =
       'https://github.com/Dasevo-Digital/Famio/blob/main/docs/datenschutz.md';
 
+  /// [privacyUrl] in the app's [language], where there is a translation
+  /// (#502).
+  static String privacyUrlFor(String language) => switch (language) {
+    'en' || 'es' => privacyUrl.replaceFirst('.md', '.$language.md'),
+    _ => privacyUrl,
+  };
+
   /// iPhone and iPad: Apple's rules keep other platforms and their stores
   /// out of what the app shows (App Review 2.3.10).
   static bool get onIos =>

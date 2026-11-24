@@ -126,7 +126,8 @@ open(main, 'w').write(text)
 # Compressed copies: the server sends them to browsers that accept gzip.
 for root, _, files in os.walk(web):
     for name in files:
-        if re.search(r'\.(js|mjs|wasm|json|ttf|otf|html|css|bin|frag)$', name):
+        # NOTICES (the licenses) is the largest file after the code.
+        if re.search(r'(\.(js|mjs|wasm|json|ttf|otf|html|css|bin|frag|md|txt)|^NOTICES)$', name):
             path = os.path.join(root, name)
             data = open(path, 'rb').read()
             packed = gzip.compress(data, 9, mtime=0)
