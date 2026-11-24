@@ -21,6 +21,7 @@ class DeviceSession {
     this.appVersion,
     this.outdated = false,
     this.profileExpires,
+    this.location = false,
   });
 
   factory DeviceSession.fromJson(Map<String, Object?> json) => DeviceSession(
@@ -35,6 +36,7 @@ class DeviceSession {
       final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
       _ => null,
     },
+    location: json['location'] as bool? ?? false,
   );
 
   /// The end in [header] ([appProfileHeader]) if it is a sensible date.
@@ -81,6 +83,11 @@ class DeviceSession {
   /// [appProfileHeader]); null for all others.
   final DateTime? profileExpires;
 
+  /// The token of a phone's background service that only reports its
+  /// position. Signing it out ends sharing there and needs the parents'
+  /// code (#594).
+  final bool location;
+
   Map<String, Object?> toJson() => {
     'id': id,
     'device': device,
@@ -90,6 +97,7 @@ class DeviceSession {
     'appVersion': ?appVersion,
     if (outdated) 'outdated': true,
     'profileExpires': ?profileExpires?.millisecondsSinceEpoch,
+    if (location) 'location': true,
   };
 }
 

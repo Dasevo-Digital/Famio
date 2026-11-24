@@ -544,8 +544,13 @@ class FamioApiClient {
     ];
   }
 
-  Future<void> deleteMySession(String sessionId) =>
-      _send('DELETE', 'api/me/sessions/$sessionId');
+  /// Signs one of the own sessions out. A phone's location session needs
+  /// the parents' [code] when one is set (#594).
+  Future<void> deleteMySession(String sessionId, {String? code}) => _send(
+    'DELETE',
+    'api/me/sessions/$sessionId',
+    code == null ? null : {'code': code},
+  );
 
   /// Approves one new device of the current account for five minutes.
   Future<DevicePairing> createDevicePairing() async =>
