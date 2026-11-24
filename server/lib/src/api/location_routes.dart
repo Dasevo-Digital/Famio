@@ -1,6 +1,6 @@
 part of '../api.dart';
 
-const _locationScope = 'location';
+const _locationScope = Accounts.locationScope;
 
 /// The longest pause with an end (#577); without one it lasts until resumed.
 const _maxPauseMinutes = 7 * 24 * 60;
@@ -103,7 +103,9 @@ extension _LocationRoutes on FamioApi {
     return _json({'token': token}, status: 201);
   }
 
-  /// The parents' code of [body], throttled per member and address.
+  /// The parents' code of [body], throttled per member and address. A
+  /// missing or empty code is refused but not counted as a wrong guess:
+  /// apps ask that way whether a code is needed at all (#595).
   Future<void> _checkLocationCode(
     Request request,
     FamilyMember member,
@@ -112,19 +114,34 @@ extension _LocationRoutes on FamioApi {
     final address = clientAddress.of(request);
     final key = '#loccode:${member.id}';
     _checkThrottle(address, key);
-    if (!await _locations.checkCode(body['code'] as String? ?? '')) {
+    final code = body['code'] is String ? body['code'] as String : '';
+    if (code.isEmpty && _locations.codeSet) {
+      throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
+    }
+    if (!await _locations.checkCode(code)) {
       throttle.failed(address, key);
       throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
     }
     throttle.succeeded(address, key);
   }
 
+  /// Whether ending sharing on a phone needs the parents' code: only if
+  /// one is set and the family shares locations at all (#595).
+  bool get _sharingNeedsCode {
+    final service = locations;
+    return service != null && service.enabled && service.codeSet;
+  }
+
   /// Ending sharing on a phone (signing out there) needs the parents' code
   /// too, but pauses nobody: the phone signs its location token out after
-  /// this, and another phone of the member goes on sharing (#587).
+  /// this, and another phone of the member goes on sharing (#587). Without
+  /// a code set, or with location hidden, nothing to check: the phone can
+  /// always be signed out (#595).
   Future<Response> _locationCheckCode(Request request) async {
     final member = _member(request);
-    await _checkLocationCode(request, member, await _body(request));
+    final body = await _body(request);
+    if (!_sharingNeedsCode) return _json({'ok': true, 'noCode': true});
+    await _checkLocationCode(request, member, body);
     return _json({'ok': true});
   }
 
@@ -237,14 +254,7 @@ extension _LocationRoutes on FamioApi {
     if (accounts.byId(target) == null) {
       throw ApiException(404, 'not_found', t('Mitglied nicht gefunden'));
     }
-    final address = clientAddress.of(request);
-    final key = '#loccode:${member.id}';
-    _checkThrottle(address, key);
-    if (!await _locations.checkCode(body['code'] as String? ?? '')) {
-      throttle.failed(address, key);
-      throw ApiException(403, 'wrong_code', t('Der Eltern-Code stimmt nicht'));
-    }
-    throttle.succeeded(address, key);
+    await _checkLocationCode(request, member, body);
     final raw = body['schedule'];
     LocationSchedule? schedule;
     if (raw != null) {

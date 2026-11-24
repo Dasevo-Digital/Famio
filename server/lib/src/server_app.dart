@@ -341,6 +341,9 @@ class FamioServerApp {
       webApp: webApp,
       onEventsChanged: caldav.eventsChanged,
     );
+    // However a phone's location token is signed out, sharing ends there
+    // (#594).
+    accounts.onLocationSessionEnded = api.locationSessionEnded;
   }
 
   /// In-memory server in the Europe/Berlin zone, for tests. Host names
@@ -356,10 +359,12 @@ class FamioServerApp {
     String? metricsToken,
     String releaseKey = famioReleaseKey,
     LoginThrottle? throttle,
+    void Function(String line)? auditLog,
   }) {
     initTimeZones();
     return FamioServerApp(
       releaseKey: releaseKey,
+      auditLog: auditLog,
       db: openFamioDatabase(':memory:'),
       metricsToken: metricsToken,
       location: tz.getLocation('Europe/Berlin'),

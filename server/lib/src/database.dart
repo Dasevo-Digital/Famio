@@ -414,6 +414,13 @@ const _migrations = [
     PRIMARY KEY (task_id, field)
   );
   ''',
+  '''
+  -- The member's place is not known: the phone that measured it signed
+  -- out. The next precise position of another phone tells it without
+  -- arrival or departure notices (#594).
+  ALTER TABLE location_state ADD COLUMN place_unknown INTEGER NOT NULL
+    DEFAULT 0;
+  ''',
 ];
 
 /// Opens (and migrates) the SQLite database at [path]; `:memory:` for tests.

@@ -582,7 +582,12 @@ extension _AdminRoutes on FamioApi {
     accounts.deleteAppPasswords(id);
     var signedOut = 0;
     if (body['signOut'] as bool? ?? true) {
-      signedOut = accounts.deleteSessions(id, exceptToken: _bearer(request));
+      // The phones' location tokens too: parents need no code (#594).
+      signedOut = accounts.deleteSessions(
+        id,
+        exceptToken: _bearer(request),
+        by: admin.id,
+      );
     }
     _audit(admin, 'hat das Passwort von ${_who(target)} zurückgesetzt');
     return _json({'ok': true, 'signedOut': signedOut});
@@ -595,6 +600,7 @@ extension _AdminRoutes on FamioApi {
       sessionId: sid,
       // "Sign out everywhere" on yourself keeps this device signed in.
       exceptToken: sid == null ? _bearer(request) : null,
+      by: admin.id,
     );
     _audit(
       admin,

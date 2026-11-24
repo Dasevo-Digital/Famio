@@ -545,6 +545,28 @@ class FamioApi {
   void _audit(FamilyMember actor, String action) =>
       auditLog?.call('[audit] ${_who(actor)} $action');
 
+  /// A phone's location-only session ended, however it was signed out
+  /// (see [Accounts.onLocationSessionEnded]): sharing ended on that phone,
+  /// nothing it measured stays visible (#594).
+  void locationSessionEnded(
+    String userId,
+    String sessionId, {
+    String? device,
+    required String by,
+  }) {
+    final name = locations?.deviceSignedOut(userId, 's:$sessionId');
+    final member = accounts.byId(userId);
+    final actor = accounts.byId(by) ?? member;
+    if (actor == null) return;
+    final on = name ?? device ?? '?';
+    _audit(
+      actor,
+      actor.id == userId
+          ? 'hat das Teilen des Standorts auf $on beendet'
+          : 'hat das Teilen des Standorts von ${_who(member)} auf $on beendet',
+    );
+  }
+
   Response _session(FamilyMember member, String? device, {String? method}) {
     final known = accounts.hasSessions(member.id);
     final token = accounts.createSession(
@@ -891,6 +913,14 @@ Future<Map<String, Object?>> _body(Request request) async {
     // Fall through.
   }
   throw ApiException.badRequest('invalid_json', t('Ungültiger JSON-Body'));
+}
+
+/// The JSON body of a request that may come without one (older apps send
+/// DELETE without a body): empty then. Only for methods a browser always
+/// asks before sending cross-site (CORS preflight), e.g. DELETE.
+Future<Map<String, Object?>> _optionalBody(Request request) async {
+  if (request.headers['content-type'] == null) return const {};
+  return _body(request);
 }
 
 Response _json(Object body, {int status = 200}) => Response(

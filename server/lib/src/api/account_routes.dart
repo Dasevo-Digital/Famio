@@ -197,9 +197,15 @@ extension _AccountRoutes on FamioApi {
     });
   }
 
-  Response _deleteMySession(Request request, String sid) {
+  /// Signs one of the own devices out. A phone's location token ends
+  /// sharing there: that needs the parents' code like a pause (#594).
+  Future<Response> _deleteMySession(Request request, String sid) async {
     final member = _auth(request);
-    accounts.deleteSessions(member.id, sessionId: sid);
+    if (accounts.isLocationSession(member.id, sid) && _sharingNeedsCode) {
+      // Older apps send no body: then the code is missing.
+      await _checkLocationCode(request, member, await _optionalBody(request));
+    }
+    accounts.deleteSessions(member.id, sessionId: sid, by: member.id);
     return _json({'ok': true});
   }
 
@@ -225,10 +231,14 @@ extension _AccountRoutes on FamioApi {
     throttle.succeeded(address, '#pw:${member.id}');
     await accounts.setPassword(member.id, body['newPassword'] as String? ?? '');
     // A new password also locks out whoever may know the old one, on the
-    // calendar apps as well.
+    // calendar apps as well. The phones' location tokens stay: they only
+    // report positions, belong to the phone and not to the password, and
+    // ending sharing there takes the parents' code (#594).
     final signedOut = accounts.deleteSessions(
       member.id,
       exceptToken: _bearer(request),
+      keepLocation: true,
+      by: member.id,
     );
     accounts.deleteAppPasswords(member.id);
     return _json({'ok': true, 'signedOut': signedOut});

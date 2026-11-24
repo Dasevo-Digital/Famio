@@ -259,10 +259,12 @@ class MemberLocation {
   );
 
   /// The same without what the device measured: position, place, battery
-  /// and the device itself (it signed out, #587).
-  MemberLocation withoutPosition() => MemberLocation(
+  /// and the device itself (it signed out, #587). [lastContact] is the one
+  /// of a device that goes on sharing, if any (#594).
+  MemberLocation withoutPosition({DateTime? lastContact}) => MemberLocation(
     memberId: memberId,
     state: state,
+    lastContact: lastContact,
     pausedUntil: pausedUntil,
     otherDevice: otherDevice,
   );

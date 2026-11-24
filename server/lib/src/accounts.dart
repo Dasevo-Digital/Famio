@@ -11,6 +11,15 @@ import 'api_exception.dart';
 import 'auth/password_rules.dart';
 import 'i18n.dart';
 
+/// See [Accounts.onLocationSessionEnded].
+typedef LocationSessionEnded =
+    void Function(
+      String userId,
+      String sessionId, {
+      String? device,
+      required String by,
+    });
+
 /// User accounts and login sessions.
 class Accounts {
   final _ingressPairingEpochs = <String, int>{};
@@ -23,6 +32,15 @@ class Accounts {
 
   final Database _db;
   final _random = Random.secure();
+
+  /// The scope of a phone's location-only token (see [createSession]).
+  static const locationScope = 'location';
+
+  /// Hears that a phone's location-only session ended in [deleteSession] or
+  /// [deleteSessions]: sharing ended on that phone, whoever signed it out
+  /// (#594). [sessionId] as in [DeviceSession.id], [device] its stored
+  /// name, [by] the member who signed it out.
+  LocationSessionEnded? onLocationSessionEnded;
 
   /// PBKDF2 rounds for new hashes; older hashes are upgraded at login.
   static const iterations = 310000;
@@ -398,6 +416,7 @@ class Accounts {
             row['last_seen'] as int,
           ),
           current: hash == current,
+          location: row['scope'] == locationScope,
           appVersion: row['app_version'] as String?,
           profileExpires: switch (row['profile_expires']) {
             final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
@@ -437,23 +456,57 @@ class Accounts {
       _db.select('SELECT COUNT(*) FROM sessions').first.columnAt(0) as int;
 
   /// Signs a member out on one device ([sessionId]) or on all devices,
-  /// optionally keeping the session of [exceptToken]. Returns the count.
-  int deleteSessions(String userId, {String? sessionId, String? exceptToken}) {
+  /// optionally keeping the session of [exceptToken] and, with
+  /// [keepLocation], the phones' location-only tokens. Returns the count.
+  /// [by] signs them out, the member themselves if null (see
+  /// [onLocationSessionEnded]).
+  int deleteSessions(
+    String userId, {
+    String? sessionId,
+    String? exceptToken,
+    bool keepLocation = false,
+    String? by,
+  }) {
     if (sessionId == null) invalidateIngressPairings(userId);
-    _db.execute(
-      'DELETE FROM sessions WHERE user_id = ?'
-      ' AND (? IS NULL OR substr(token_hash, 1, 16) = ?)'
-      ' AND (? IS NULL OR token_hash != ?)',
-      [
+    final except = exceptToken == null ? null : _tokenHash(exceptToken);
+    final where =
+        'user_id = ? AND (? IS NULL OR substr(token_hash, 1, 16) = ?)'
+        ' AND (? IS NULL OR token_hash != ?)'
+        '${keepLocation ? ' AND scope IS NOT ?' : ''}';
+    final args = [
+      userId,
+      sessionId,
+      sessionId,
+      except,
+      except,
+      if (keepLocation) locationScope,
+    ];
+    final ended = keepLocation
+        ? const <Row>[]
+        : _db.select(
+            'SELECT substr(token_hash, 1, 16) AS id, device FROM sessions'
+            ' WHERE $where AND scope = ?',
+            [...args, locationScope],
+          );
+    _db.execute('DELETE FROM sessions WHERE $where', args);
+    final count = _db.updatedRows;
+    for (final row in ended) {
+      onLocationSessionEnded?.call(
         userId,
-        sessionId,
-        sessionId,
-        exceptToken == null ? null : _tokenHash(exceptToken),
-        exceptToken == null ? null : _tokenHash(exceptToken),
-      ],
-    );
-    return _db.updatedRows;
+        row['id'] as String,
+        device: row['device'] as String?,
+        by: by ?? userId,
+      );
+    }
+    return count;
   }
+
+  /// Whether [sessionId] of [userId] is a phone's location-only token.
+  bool isLocationSession(String userId, String sessionId) => _db.select(
+    'SELECT 1 FROM sessions WHERE user_id = ? AND scope = ?'
+    ' AND substr(token_hash, 1, 16) = ? LIMIT 1',
+    [userId, locationScope, sessionId],
+  ).isNotEmpty;
 
   /// Returns the member if [password] matches, otherwise null.
   Future<FamilyMember?> verify(String username, String password) async {
@@ -639,10 +692,23 @@ class Accounts {
   int get _idleCutoff =>
       DateTime.now().subtract(sessionIdleTimeout).millisecondsSinceEpoch;
 
+  /// Signs the session of [token] out (the device itself signs out).
   void deleteSession(String token) {
-    _db.execute('DELETE FROM sessions WHERE token_hash = ?', [
-      _tokenHash(token),
-    ]);
+    final hash = _tokenHash(token);
+    final row = _db.select(
+      'SELECT user_id, device, scope FROM sessions WHERE token_hash = ?',
+      [hash],
+    ).firstOrNull;
+    _db.execute('DELETE FROM sessions WHERE token_hash = ?', [hash]);
+    if (row != null && row['scope'] == locationScope) {
+      final userId = row['user_id'] as String;
+      onLocationSessionEnded?.call(
+        userId,
+        hash.substring(0, 16),
+        device: row['device'] as String?,
+        by: userId,
+      );
+    }
   }
 
   // --- app passwords (CalDAV) ---------------------------------------------

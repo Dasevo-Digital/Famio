@@ -685,14 +685,8 @@ extension _AuthRoutes on FamioApi {
     }
     final token = _bearer(request);
     if (token != null) {
-      // The phone's location token: Famio was signed out there, or sharing
-      // ended there (#577).
-      if (accounts.userForToken(token, scope: _locationScope)
-          case final member?) {
-        if (accounts.sessionDevice(token) case final device?) {
-          locations?.deviceSignedOut(member.id, 's:${device.id}');
-        }
-      }
+      // Signing out a phone's location token ends sharing there (#577,
+      // see [FamioApi.locationSessionEnded]).
       accounts.deleteSession(token);
     }
     return _json({'ok': true});

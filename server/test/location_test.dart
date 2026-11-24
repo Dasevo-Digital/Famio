@@ -523,8 +523,10 @@ void main() {
   test(
     'ending sharing on a phone checks the code, pauses nobody (#587)',
     () async {
+      // Without a code set the phone can always be signed out (#595).
       var r = await call('POST', 'api/location/code', kidToken, {'code': '1'});
-      expect(r.statusCode, 409);
+      expect(r.statusCode, 200);
+      expect(jsonDecode(r.body), {'ok': true, 'noCode': true});
       await ok('PUT', 'api/admin/location-code', parentToken, {'code': '4711'});
       await ok('POST', 'api/location/report', kidToken, {
         'fixes': [fix(home, DateTime.now().toUtc())],

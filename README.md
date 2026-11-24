@@ -420,8 +420,15 @@ selbst. Mitglieder ohne Handy (etwa kleine Kinder) blenden Erwachsene über
 (`location_settings`); unter „Ausgeblendet“ am Ende der Liste kommen sie
 zurück. Notruf und Check-ins betrifft das nicht.
 
-Pausieren und Beenden – auch Abmelden auf einem teilenden Handy – geht nur
-mit dem **Eltern-Code** (Einstellungen → Server-Verwaltung → Einstellungen).
+Pausieren und Beenden – auch Abmelden auf einem teilenden Handy oder seiner
+Standort-Sitzung unter „Meine Geräte“ – geht nur mit dem **Eltern-Code**
+(Einstellungen → Server-Verwaltung → Einstellungen). Ist keiner festgelegt
+oder der Standort ausgeblendet, lässt sich ein Handy ohne Code abmelden.
+Eltern, die ein Mitglied in der Server-Verwaltung abmelden, brauchen keinen
+Code; ein neues Passwort lässt das Teilen auf den Handys bestehen. Wie auch
+immer ein Handy abgemeldet wird: Was es gemessen hat, ist danach nicht mehr
+zu sehen, und ein anderes Handy des Mitglieds zählt sofort, ohne Hinweise
+auf eine Ankunft oder ein Verlassen, die es nicht gab.
 Technisch verhindern lässt sich das Abschalten auf einem Handy nicht (App
 deinstallieren, Berechtigung entziehen); Famio zeigt den Eltern aber an,
 wenn ein Handy keine Positionen mehr schickt, die Berechtigung fehlt oder

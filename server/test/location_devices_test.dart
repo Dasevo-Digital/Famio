@@ -295,11 +295,10 @@ void main() {
       expect(l.placeId, isNull);
       expect(l.device, isNull);
       expect(l.battery, isNull);
-      // Resumed, the family sees no place without a position.
+      // Resumed, no phone shares any more: nothing stays, also no entry
+      // without a position that would never fall silent (#587).
       app.locations.resume(teen.id);
-      final resumed = locationOf(teen.id)!;
-      expect(resumed.hasPosition, isFalse);
-      expect(resumed.placeId, isNull);
+      expect(locationOf(teen.id), isNull);
     });
 
     test('another phone of the member goes on sharing', () async {

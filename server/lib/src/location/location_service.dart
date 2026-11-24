@@ -56,6 +56,9 @@ class LocationService {
   /// The administrator-controlled retention, bounded by [SettingsStore].
   Duration get retention => _retention();
 
+  /// False while an admin has hidden the location module.
+  bool get enabled => _enabled();
+
   /// How often phones report while sharing.
   static const reportInterval = Duration(minutes: 2);
 
@@ -277,6 +280,7 @@ class LocationService {
     // Places: every precise fix may enter or leave one, in order.
     var placeId = status.placeId;
     var placeSince = status.placeSince;
+    var placeUnknown = status.placeUnknown;
     final places = {
       for (final r in records.all(Collections.places))
         r.id: Place.fromRecord(r),
@@ -292,6 +296,17 @@ class LocationService {
       }
       final accuracy = f.accuracy ?? 0;
       final precise = accuracy <= _placeAccuracy;
+      if (placeUnknown) {
+        // The phone that measured where the member was signed out: the
+        // first precise position of this one tells where they are, it is
+        // no arrival or departure – nobody moved (#594).
+        if (!precise) continue;
+        final here = _placeAt(f, places.values);
+        placeId = here?.id;
+        placeSince = here == null ? null : f.at;
+        placeUnknown = false;
+        continue;
+      }
       final current = placeId == null ? null : places[placeId];
       if (current != null) {
         final distance = distanceMeters(
@@ -322,20 +337,7 @@ class LocationService {
         placeSince = null;
       }
       if (!precise) continue;
-      Place? nearest;
-      var best = double.infinity;
-      for (final p in places.values) {
-        final d = distanceMeters(
-          f.latitude,
-          f.longitude,
-          p.latitude,
-          p.longitude,
-        );
-        if (d <= p.radius && d < best) {
-          nearest = p;
-          best = d;
-        }
-      }
+      final nearest = _placeAt(f, places.values);
       if (nearest != null) {
         alerts.add(_alert(member.id, nearest, arrived: true, at: f.at));
         placeId = nearest.id;
@@ -344,20 +346,24 @@ class LocationService {
     }
     final lastFix = valid.lastOrNull?.at;
     if (placeId != status.placeId ||
+        placeUnknown != status.placeUnknown ||
         (lastFix != null &&
             (status.lastFix == null || lastFix.isAfter(status.lastFix!)))) {
       db.execute(
         'INSERT INTO location_state'
-        ' (member_id, place_id, place_since, last_fix) VALUES (?, ?, ?, ?)'
+        ' (member_id, place_id, place_since, last_fix, place_unknown)'
+        ' VALUES (?, ?, ?, ?, ?)'
         ' ON CONFLICT(member_id) DO UPDATE SET'
         ' place_id = excluded.place_id, place_since = excluded.place_since,'
-        ' last_fix = MAX(COALESCE(last_fix, 0), excluded.last_fix)',
+        ' last_fix = MAX(COALESCE(last_fix, 0), excluded.last_fix),'
+        ' place_unknown = excluded.place_unknown',
         [
           member.id,
           placeId,
           placeSince?.millisecondsSinceEpoch,
           lastFix?.millisecondsSinceEpoch ??
               status.lastFix?.millisecondsSinceEpoch,
+          placeUnknown ? 1 : 0,
         ],
       );
     }
@@ -420,6 +426,25 @@ class LocationService {
       if (battery != null) onBattery?.call(member, battery);
     }
     return result;
+  }
+
+  /// The place of [places] that holds [f] with the nearest centre, if any.
+  Place? _placeAt(LocationFix f, Iterable<Place> places) {
+    Place? nearest;
+    var best = double.infinity;
+    for (final p in places) {
+      final d = distanceMeters(
+        f.latitude,
+        f.longitude,
+        p.latitude,
+        p.longitude,
+      );
+      if (d <= p.radius && d < best) {
+        nearest = p;
+        best = d;
+      }
+    }
+    return nearest;
   }
 
   /// The nearest place smaller than [current] that lies within it and
@@ -558,18 +583,38 @@ class LocationService {
   }
 
   /// [key] of [memberId] stopped sharing: Famio was signed out on that phone
-  /// (it signs its location token out). Was it the member's last sharing
-  /// device, nothing of their location stays visible and nobody is told
-  /// two days later that the phone is silent (#577); a pause stays.
-  void deviceSignedOut(String memberId, String key) {
+  /// (it signs its location token out), or the session was signed out
+  /// elsewhere (#594). Was it the member's last sharing device, nothing of
+  /// their location stays visible and nobody is told two days later that
+  /// the phone is silent (#577); a pause stays. Returns the name the
+  /// device reported, if known.
+  String? deviceSignedOut(String memberId, String key) {
     final now = _clock().toUtc();
     final wasLead = _lead(memberId, now)?.key == key;
+    final name =
+        db.select(
+              'SELECT name FROM location_devices'
+              ' WHERE member_id = ? AND device_key = ?',
+              [memberId, key],
+            ).firstOrNull?['name']
+            as String?;
     db.execute(
       'DELETE FROM location_devices WHERE member_id = ? AND device_key = ?',
       [memberId, key],
     );
+    if (wasLead) {
+      // Where the member is was measured by this phone: another one tells
+      // it with its next precise position, without notices of an arrival
+      // or departure nobody made (#594).
+      db.execute(
+        'INSERT INTO location_state (member_id, place_unknown) VALUES (?, 1)'
+        ' ON CONFLICT(member_id) DO UPDATE SET place_id = NULL,'
+        ' place_since = NULL, place_unknown = 1',
+        [memberId],
+      );
+    }
     final previous = _current(memberId);
-    if (previous == null) return;
+    if (previous == null) return name;
     final others = db.select(
       'SELECT 1 FROM location_devices WHERE member_id = ? AND sent_fixes = 1'
       ' AND last_report > ? LIMIT 1',
@@ -577,28 +622,29 @@ class LocationService {
     ).isNotEmpty;
     final bool changed;
     if (others || _state(memberId).paused) {
+      final lead = _lead(memberId, now);
+      // Outside the window nothing of the devices is shown.
+      final outside =
+          previous.state == SharingState.scheduled ||
+          !_window(memberId).activeAt(_clock());
       var next = previous.withOtherDevice(
-        previous.state == SharingState.scheduled ||
-                !_window(memberId).activeAt(_clock())
-            ? null
-            : _otherDevice(memberId, _lead(memberId, now)?.key, now),
+        outside ? null : _otherDevice(memberId, lead?.key, now),
       );
       // What this phone measured is no longer shown (#587): another phone
-      // reports its own soon, and a pause stays without a position.
-      if (wasLead || !others) next = next.withoutPosition();
+      // reports its own soon, and a pause stays without a position. The
+      // last contact is the one of the device that counts now, so the
+      // family hears when that one falls silent too (#594).
+      if (wasLead || !others) {
+        next = next.withoutPosition(
+          lastContact: outside ? null : lead?.lastReport,
+        );
+      }
       changed = _write(memberId, next);
     } else {
-      changed = records.writeAsServer([
-        SyncRecord(
-          collection: Collections.memberLocations,
-          id: memberId,
-          data: const {},
-          deleted: true,
-          updatedAt: 0,
-        ),
-      ]);
+      changed = _delete(memberId);
     }
     if (changed) onChanged();
+    return name;
   }
 
   /// Where the map shows the member after [latest], the newest of [fixes].
@@ -780,15 +826,19 @@ class LocationService {
       } else if (!paused && previous.state == SharingState.scheduled) {
         // Sharing again, but no position before the phone sends one; its
         // last contact (also outside the window) tells whether it runs.
+        // Without any phone left there is nothing to share (#587).
+        final lead = _lead(id, at);
         changed =
-            _write(
-              id,
-              MemberLocation(
-                memberId: id,
-                state: SharingState.active,
-                lastContact: _lead(id, at)?.lastReport,
-              ),
-            ) ||
+            (lead == null
+                ? _delete(id)
+                : _write(
+                    id,
+                    MemberLocation(
+                      memberId: id,
+                      state: SharingState.active,
+                      lastContact: lead.lastReport,
+                    ),
+                  )) ||
             changed;
       }
     }
@@ -804,6 +854,16 @@ class LocationService {
     if (changed) onChanged();
     return changed;
   }
+
+  bool _delete(String memberId) => records.writeAsServer([
+    SyncRecord(
+      collection: Collections.memberLocations,
+      id: memberId,
+      data: const {},
+      deleted: true,
+      updatedAt: 0,
+    ),
+  ]);
 
   bool _write(String memberId, MemberLocation location) =>
       records.writeAsServer([
@@ -1057,6 +1117,14 @@ class LocationService {
     final scheduledOff = !_window(
       memberId,
     ).activeAt(at == null ? _clock() : _onClock(at));
+    final lead = _lead(memberId, (at ?? _clock()).toUtc());
+    if (!s.paused && lead == null) {
+      // No phone of the member shares any more (the last one signed out
+      // during the pause): nothing to show, and no "sharing" entry that
+      // never falls silent (#587).
+      if (previous != null && _delete(memberId)) onChanged();
+      return;
+    }
     records.writeAsServer([
       SyncRecord(
         collection: Collections.memberLocations,
@@ -1075,7 +1143,10 @@ class LocationService {
           longitude: scheduledOff ? null : previous?.longitude,
           accuracy: scheduledOff ? null : previous?.accuracy,
           at: scheduledOff ? null : previous?.at,
-          lastContact: scheduledOff ? null : previous?.lastContact,
+          // Without one (its phone signed out), the one that counts now.
+          lastContact: scheduledOff
+              ? null
+              : previous?.lastContact ?? lead?.lastReport,
           pausedUntil: s.paused ? s.pausedUntil : null,
           // No place without a position (the phone that measured it
           // signed out, #587).
@@ -1109,6 +1180,7 @@ class LocationService {
       pausedSince: time(row?['paused_at']),
       placeId: row?['place_id'] as String?,
       placeSince: time(row?['place_since']),
+      placeUnknown: row?['place_unknown'] == 1,
       lastFix: time(row?['last_fix']),
     );
   }
@@ -1265,6 +1337,7 @@ class _State {
     this.pausedSince,
     this.placeId,
     this.placeSince,
+    this.placeUnknown = false,
     this.lastFix,
   });
 
@@ -1278,6 +1351,10 @@ class _State {
   final DateTime? pausedSince;
   final String? placeId;
   final DateTime? placeSince;
+
+  /// The phone that measured [placeId] signed out: the next precise
+  /// position tells it without notices (#594).
+  final bool placeUnknown;
 }
 
 typedef _Pin = ({double latitude, double longitude, double? accuracy});
