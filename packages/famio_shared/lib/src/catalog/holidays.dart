@@ -342,17 +342,32 @@ enum SwissCanton implements HolidayRegion {
 /// canton, after the Federal Office of Justice's list "Gesetzliche Feiertage
 /// und Tage, die in der Schweiz wie gesetzliche Feiertage behandelt werden"
 /// (Stand 1.1.2011, both recognised and treated-like days). Days only some
-/// municipalities keep (Fronleichnam etc. in parts of Fribourg, Josefstag in
-/// some Solothurn villages, Mauritiustag in Appenzell's inner part) and the
-/// half day on 1 May in Solothurn are left out, as are holidays that always
-/// fall on a Sunday. Glarus follows its Ruhetagsgesetz of 2012, which no
-/// longer has Berchtoldstag.
+/// municipalities keep (Josefstag in some Solothurn villages, Mauritiustag in
+/// Appenzell's inner part) and the half day on 1 May in Solothurn are left
+/// out, as are holidays that always fall on a Sunday. Glarus follows its
+/// Ruhetagsgesetz of 2012, which no longer has Berchtoldstag.
+///
+/// Fribourg keeps Fronleichnam, Mariä Himmelfahrt, Allerheiligen and Mariä
+/// Empfängnis in the whole canton except its reformed municipalities (BJ
+/// list p. 14, note 2: 21 municipalities of the Seebezirk; the canton's
+/// "Feiertage" page also names Flamatt and Sensebrügg). These exceptions are
+/// not modelled. Berchtoldstag, Ostermontag, Pfingstmontag and Stephanstag
+/// are statutory only in the reformed part and treated like holidays in the
+/// rest (BJ list, b).
+///
+/// Aargau has no canton-wide list any more: its Einführungsgesetz zum
+/// Arbeitsrecht (EG ArR, SAR 961.200, § 6, Stand 1.9.2025) sets the
+/// holidays per district and municipality, and days it does not name (such
+/// as 1 May) are no holidays (Amt für Wirtschaft und Arbeit, "Gesetzliche
+/// Feiertage im Kanton Aargau"). Only the days every district keeps are
+/// listed, like the SECO's list (Stand 12.12.2024).
 List<Holiday> swissHolidays(int year, SwissCanton canton) {
   final easter = easterSunday(year);
   DateTime fromEaster(int days) =>
       DateTime(easter.year, easter.month, easter.day + days);
   bool inCanton(Set<SwissCanton> cantons) => cantons.contains(canton);
-  // Catholic holidays in the cantons that keep them throughout.
+  // Catholic holidays in the cantons that keep them throughout (Fribourg
+  // apart from its reformed municipalities, see above).
   const catholic = {
     SwissCanton.lu,
     SwissCanton.ur,
@@ -360,20 +375,26 @@ List<Holiday> swissHolidays(int year, SwissCanton canton) {
     SwissCanton.ow,
     SwissCanton.nw,
     SwissCanton.zg,
+    SwissCanton.fr,
     SwissCanton.so,
     SwissCanton.ai,
-    SwissCanton.ag,
     SwissCanton.ti,
     SwissCanton.vs,
     SwissCanton.ju,
   };
   final christmas = DateTime(year, 12, 25);
   final newYear = DateTime(year);
-  // Stephanstag: not in Vaud, Geneva and Jura. Uri and the two Appenzell
-  // skip it when Christmas is a Monday or Friday; Neuchâtel only keeps it
-  // when Christmas is a Sunday (the same goes for 2 January).
+  // Stephanstag: not in Aargau (only some districts), Vaud, Geneva and
+  // Jura. Uri and the two Appenzell skip it when Christmas is a Monday or
+  // Friday; Neuchâtel only keeps it when Christmas is a Sunday (the same
+  // goes for 2 January).
   final stephen =
-      !inCanton({SwissCanton.vd, SwissCanton.ge, SwissCanton.ju}) &&
+      !inCanton({
+        SwissCanton.ag,
+        SwissCanton.vd,
+        SwissCanton.ge,
+        SwissCanton.ju,
+      }) &&
       !(inCanton({SwissCanton.ur, SwissCanton.ar, SwissCanton.ai}) &&
           (christmas.weekday == DateTime.monday ||
               christmas.weekday == DateTime.friday)) &&
@@ -390,7 +411,6 @@ List<Holiday> swissHolidays(int year, SwissCanton canton) {
         SwissCanton.so,
         SwissCanton.sh,
         SwissCanton.sg,
-        SwissCanton.ag,
         SwissCanton.tg,
         SwissCanton.vd,
         SwissCanton.vs,
@@ -422,13 +442,13 @@ List<Holiday> swissHolidays(int year, SwissCanton canton) {
       Holiday(_nafelserFahrt(year), 'Näfelser Fahrt'),
     if (!inCanton({SwissCanton.ti, SwissCanton.vs}))
       Holiday(fromEaster(-2), 'Karfreitag'),
-    if (canton != SwissCanton.ne) Holiday(fromEaster(1), 'Ostermontag'),
+    if (!inCanton({SwissCanton.ne, SwissCanton.ag}))
+      Holiday(fromEaster(1), 'Ostermontag'),
     if (inCanton({
       SwissCanton.zh,
       SwissCanton.bs,
       SwissCanton.bl,
       SwissCanton.sh,
-      SwissCanton.ag,
       SwissCanton.tg,
       SwissCanton.ti,
       SwissCanton.ne,
@@ -436,7 +456,8 @@ List<Holiday> swissHolidays(int year, SwissCanton canton) {
     }))
       Holiday(DateTime(year, 5, 1), 'Tag der Arbeit'),
     Holiday(fromEaster(39), 'Auffahrt'),
-    if (canton != SwissCanton.ne) Holiday(fromEaster(50), 'Pfingstmontag'),
+    if (!inCanton({SwissCanton.ne, SwissCanton.ag}))
+      Holiday(fromEaster(50), 'Pfingstmontag'),
     if (inCanton(catholic)) Holiday(fromEaster(60), 'Fronleichnam'),
     if (canton == SwissCanton.ju)
       Holiday(DateTime(year, 6, 23), 'Gedenktag des Jura-Plebiszits'),

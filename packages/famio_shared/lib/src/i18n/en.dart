@@ -1513,6 +1513,8 @@ const sharedEn = <String, String>{
   "Holiday|Wiederherstellung der Republik Genf":
       "Restoration of the Geneva Republic",
   "SchoolHolidayPeriod|Semesterferien": "Semester holidays",
+  "SchoolHolidayPeriod|Semesterferien (vorläufig)":
+      "Semester holidays (provisional)",
   "SchoolHolidayPeriod|Osterferien": "Easter holidays",
   "SchoolHolidayPeriod|Pfingstferien": "Whitsun holidays",
   "SchoolHolidayPeriod|Sommerferien": "Summer holidays",
@@ -1524,4 +1526,6 @@ const sharedEn = <String, String>{
   "SchoolHolidayPeriod|Hl. Leopold (schulfrei)": "St. Leopold (no school)",
   "SchoolHolidayPeriod|Hl. Florian (schulfrei)": "St. Florian (no school)",
   "SchoolHolidayPeriod|Hl. Rupert (schulfrei)": "St. Rupert (no school)",
+  "SchoolHolidayPeriod|Tag der Volksabstimmung (schulfrei an Pflichtschulen)":
+      "Carinthian Plebiscite Day (no school at compulsory schools)",
 };

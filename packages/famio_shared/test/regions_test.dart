@@ -84,12 +84,42 @@ void main() {
         expect(days(c)['Josefstag'], DateTime(2026, 3, 19), reason: c.code);
       }
       expect(days(SwissCanton.ti)['Peter und Paul'], DateTime(2026, 6, 29));
-      // Partial days are left out: Fribourg's catholic days, Solothurn's
-      // half day on 1 May and its 8 December.
-      expect(days(SwissCanton.fr).containsKey('Fronleichnam'), isFalse);
+      // Partial days are left out: Solothurn's half day on 1 May and its
+      // 8 December.
       expect(days(SwissCanton.so).containsKey('Tag der Arbeit'), isFalse);
       expect(days(SwissCanton.so).containsKey('Mariä Empfängnis'), isFalse);
       expect(days(SwissCanton.so).containsKey('Fronleichnam'), isTrue);
+    });
+
+    test('Fribourg: the catholic days in the whole canton (BJ, note 2)', () {
+      expect(days(SwissCanton.fr, 2028), {
+        'Neujahr': DateTime(2028),
+        'Berchtoldstag': DateTime(2028, 1, 2),
+        'Karfreitag': DateTime(2028, 4, 14),
+        'Ostermontag': DateTime(2028, 4, 17),
+        'Auffahrt': DateTime(2028, 5, 25),
+        'Pfingstmontag': DateTime(2028, 6, 5),
+        'Fronleichnam': DateTime(2028, 6, 15),
+        'Bundesfeier': DateTime(2028, 8),
+        'Mariä Himmelfahrt': DateTime(2028, 8, 15),
+        'Allerheiligen': DateTime(2028, 11),
+        'Mariä Empfängnis': DateTime(2028, 12, 8),
+        'Weihnachten': DateTime(2028, 12, 25),
+        'Stephanstag': DateTime(2028, 12, 26),
+      });
+    });
+
+    test('Aargau: only the days every district keeps (EG ArR § 6)', () {
+      for (final year in [2026, 2027, 2028]) {
+        expect(days(SwissCanton.ag, year).keys.toSet(), {
+          'Neujahr',
+          'Karfreitag',
+          'Auffahrt',
+          'Bundesfeier',
+          'Weihnachten',
+        }, reason: '$year');
+      }
+      expect(days(SwissCanton.ag)['Karfreitag'], DateTime(2026, 4, 3));
     });
 
     test('the French-speaking cantons', () {
@@ -183,7 +213,7 @@ void main() {
     });
 
     test('2028 by the law (Salzburg, Tyrol and Vorarlberg not moved)', () {
-      expect(periods(AustrianState.t, 2028)['Semesterferien'], (
+      expect(periods(AustrianState.t, 2028)['Semesterferien (vorläufig)'], (
         DateTime(2028, 2, 14),
         DateTime(2028, 2, 19),
       ));
@@ -195,6 +225,47 @@ void main() {
         DateTime(2028, 4, 8),
         DateTime(2028, 4, 17),
       ));
+    });
+
+    test('semester holidays without a known decree are provisional', () {
+      for (final s in AustrianState.values) {
+        expect(periods(s, 2027).keys, contains('Semesterferien'));
+        for (final year in [2028, 2029, 2030]) {
+          final y = periods(s, year);
+          expect(y.keys, contains('Semesterferien (vorläufig)'));
+          expect(y.keys, isNot(contains('Semesterferien')));
+        }
+      }
+    });
+
+    test('Christmas holidays start on 23 December when it is a Monday', () {
+      for (final s in AustrianState.values) {
+        expect(periods(s, 2030)['Weihnachtsferien'], (
+          DateTime(2030, 12, 23),
+          DateTime(2031, 1, 6),
+        ), reason: s.code);
+        // 23 December 2031 is a Tuesday.
+        expect(
+          periods(s, 2031)['Weihnachtsferien']!.$1,
+          DateTime(2031, 12, 24),
+          reason: s.code,
+        );
+      }
+    });
+
+    test('Carinthia: 10 October is school-free at compulsory schools', () {
+      const title = 'Tag der Volksabstimmung (schulfrei an Pflichtschulen)';
+      for (final (year, date) in [
+        (2028, DateTime(2028, 10, 10)), // Tuesday
+        (2029, DateTime(2029, 10, 10)), // Wednesday
+        (2030, DateTime(2030, 10, 10)), // Thursday
+      ]) {
+        expect(periods(AustrianState.k, year)[title], (date, date));
+        for (final s in AustrianState.values) {
+          if (s == AustrianState.k) continue;
+          expect(periods(s, year).containsKey(title), isFalse, reason: s.code);
+        }
+      }
     });
 
     test('All Souls\' Day and the patron day are school-free', () {

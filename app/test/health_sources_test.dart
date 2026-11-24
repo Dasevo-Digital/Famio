@@ -23,5 +23,15 @@ void main() {
       200,
     );
     expect(find.text('Mutterschafts-Richtlinien'), findsOneWidget);
+    // The rules behind the Austrian school-free days and the Swiss
+    // cantons that differ from the federal list (#596).
+    for (final text in [
+      'Kärntner Schulgesetz, § 74 Schuljahr für Pflichtschulen',
+      'Feiertage im Kanton Freiburg',
+      'Einführungsgesetz zum Arbeitsrecht, § 6 Kantonale Feiertage',
+    ]) {
+      await tester.scrollUntilVisible(find.text(text), 200);
+      expect(find.text(text), findsOneWidget, reason: text);
+    }
   });
 }

@@ -225,12 +225,21 @@ const _semesterMoved = <int, Set<AustrianState>>{
   2027: {AustrianState.s, AustrianState.t, AustrianState.v},
 };
 
+/// The last February whose decrees are in [_semesterMoved]. A decree only
+/// has to be issued before the calendar year that precedes the semester
+/// holidays (§ 2 Abs. 2a), so later ones may still move and are titled
+/// "Semesterferien (vorläufig)". Raise this once a year's deadline has
+/// passed and its decrees, if any, are entered.
+const _semesterKnownUntil = 2027;
+
 /// The school holidays and school-free days of [state] that begin in
-/// [year], after the Schulzeitgesetz 1985 § 2 (RIS, as of 23.11.2026):
-/// semester, Easter, Whitsun, summer, autumn and Christmas holidays, All
-/// Souls' Day and the state's patron day (BMB, "Feiertage"). Single schools
-/// may differ; decrees that move the semester holidays are in
-/// [_semesterMoved].
+/// [year], after the Schulzeitgesetz 1985 § 2 (RIS, as of 24.11.2026):
+/// semester, Easter, Whitsun, summer, autumn and Christmas holidays (from
+/// 23 December when that is a Monday, § 2 Abs. 4 Z 3), All Souls' Day and
+/// the state's patron day (BMB, "Feiertage"). Carinthia's compulsory
+/// schools are also closed on 10 October (Kärntner Schulgesetz § 74 Abs. 4
+/// lit. a). Single schools may differ; decrees that move the semester
+/// holidays are in [_semesterMoved].
 List<SchoolHolidayPeriod> austrianSchoolHolidays(
   int year,
   AustrianState state,
@@ -256,6 +265,9 @@ List<SchoolHolidayPeriod> austrianSchoolHolidays(
   };
   final moved = _semesterMoved[year]?.contains(state) ?? false;
   final semester = nth(2, DateTime.monday, week + (moved ? 1 : 0));
+  final christmasFrom = day(12, 23).weekday == DateTime.monday
+      ? day(12, 23)
+      : day(12, 24);
   // Summer: from the Saturday between 28 June and 4 July in the east, 5 to
   // 11 July elsewhere, until the school year starts on the first (east) or
   // second Monday in September.
@@ -277,7 +289,13 @@ List<SchoolHolidayPeriod> austrianSchoolHolidays(
     AustrianState.s => (day(9, 24), 'Hl. Rupert (schulfrei)'),
   };
   final list = [
-    SchoolHolidayPeriod(semester, plus(semester, 5), 'Semesterferien'),
+    SchoolHolidayPeriod(
+      semester,
+      plus(semester, 5),
+      year > _semesterKnownUntil
+          ? 'Semesterferien (vorläufig)'
+          : 'Semesterferien',
+    ),
     SchoolHolidayPeriod(plus(easter, -8), plus(easter, 1), 'Osterferien'),
     SchoolHolidayPeriod(plus(easter, 48), plus(easter, 50), 'Pfingstferien'),
     SchoolHolidayPeriod(summerStart, plus(schoolStarts, -1), 'Sommerferien'),
@@ -286,8 +304,15 @@ List<SchoolHolidayPeriod> austrianSchoolHolidays(
       SchoolHolidayPeriod(day(10, 27), day(10, 31), 'Herbstferien'),
     SchoolHolidayPeriod(day(11, 2), day(11, 2), 'Allerseelen (schulfrei)'),
     SchoolHolidayPeriod(patronDate, patronDate, patronName),
+    // The anniversary of the 1920 plebiscite, at compulsory schools.
+    if (state == AustrianState.k)
+      SchoolHolidayPeriod(
+        day(10, 10),
+        day(10, 10),
+        'Tag der Volksabstimmung (schulfrei an Pflichtschulen)',
+      ),
     SchoolHolidayPeriod(
-      day(12, 24),
+      christmasFrom,
       DateTime(year + 1, 1, 6),
       'Weihnachtsferien',
     ),

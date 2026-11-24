@@ -82,8 +82,11 @@ Map<String, String> collectSharedTexts() {
       }
     }
     for (final s in AustrianState.values) {
-      for (final p in austrianSchoolHolidays(2026, s)) {
-        p.title;
+      // Later years too: their semester holidays are still provisional.
+      for (var year = 2026; year <= 2030; year++) {
+        for (final p in austrianSchoolHolidays(year, s)) {
+          p.title;
+        }
       }
     }
     for (final c in shoppingCategories) {

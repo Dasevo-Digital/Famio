@@ -120,6 +120,11 @@ class HealthSourcesScreen extends StatelessWidget {
             'BMB',
             'https://www.bmb.gv.at/Themen/schule/schulpraxis/termine/feiertage.html',
           ),
+          _Source(
+            'Kärntner Schulgesetz, § 74 Schuljahr für Pflichtschulen', // l10n: Titel der Quelle
+            'RIS, 24.11.2026',
+            'https://www.ris.bka.gv.at/Dokumente/Landesnormen/LKT40016992/LKT40016992.html',
+          ),
         ],
       ),
       (
@@ -139,6 +144,16 @@ class HealthSourcesScreen extends StatelessWidget {
             'Gesetzliche Feiertage der Kantone', // l10n: Titel der Quelle
             'Bundesamt für Justiz, Stand 1.1.2011', // l10n: Herausgeber und Stand
             'https://www.bj.admin.ch/dam/de/sd-web/MW4dthCLc4Nv/kant-feiertage.pdf',
+          ),
+          _Source(
+            'Feiertage im Kanton Freiburg', // l10n: Titel der Quelle
+            'Kanton Freiburg, 2026', // l10n: Herausgeber und Stand
+            'https://www.fr.ch/de/arbeit-und-unternehmen/arbeitnehmer/feiertage',
+          ),
+          _Source(
+            'Einführungsgesetz zum Arbeitsrecht, § 6 Kantonale Feiertage', // l10n: Titel der Quelle
+            'Kanton Aargau, Stand 1.9.2025', // l10n: Herausgeber und Stand
+            'https://gesetzessammlungen.ag.ch/app/de/texts_of_law/961.200',
           ),
         ],
       ),
