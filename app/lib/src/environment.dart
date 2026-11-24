@@ -69,4 +69,9 @@ abstract final class AppEnv {
   /// out of what the app shows (App Review 2.3.10).
   static bool get onIos =>
       !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// The App Store build on iPhone and iPad: Famio comes from there, not
+  /// from the release page (App Review 2.3.10). An own installation
+  /// (Xcode, ad hoc) still compares its version with the releases (#496).
+  static bool get appStoreOnIos => onIos && storeBuild;
 }

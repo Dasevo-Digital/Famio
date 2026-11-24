@@ -93,7 +93,7 @@ class _AppUpdateBannerState extends State<AppUpdateBanner> {
                       ),
                       Text(
                         offer == null
-                            ? (AppEnv.onIos && AppEnv.storeBuild
+                            ? (AppEnv.appStoreOnIos
                                   ? tr.appOutdatedTextStore(
                                       notice.app,
                                       notice.server,

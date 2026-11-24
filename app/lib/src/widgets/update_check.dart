@@ -53,8 +53,9 @@ Future<LatestRelease> fetchLatestRelease({http.Client? client}) async {
 Future<void> showUpdateCheck(
   BuildContext context, {
   required String serverVersion,
+  http.Client? client,
 }) async {
-  final release = fetchLatestRelease();
+  final release = fetchLatestRelease(client: client);
   final app = PackageInfo.fromPlatform()
       .then<String?>((i) => i.version)
       .catchError((_) => null);
@@ -75,9 +76,12 @@ Future<void> showUpdateCheck(
           );
         } else {
           latest = snapshot.data![0] as LatestRelease;
-          // An iPhone gets Famio through the App Store, not from the release
-          // page (App Review 2.3.10): only the server is compared there.
-          final appVersion = AppEnv.onIos ? null : snapshot.data![1] as String?;
+          // From the App Store, Famio is not updated from the release page
+          // (App Review 2.3.10): only the server is compared there. Until
+          // #496 this held for every iPhone, also for own installations.
+          final appVersion = AppEnv.appStoreOnIos
+              ? null
+              : snapshot.data![1] as String?;
           final serverOld = compareVersions(serverVersion, latest.version) < 0;
           final appOld =
               appVersion != null &&
@@ -113,7 +117,9 @@ Future<void> showUpdateCheck(
               if (serverOld || appOld) ...[
                 const SizedBox(height: 8),
                 Text(
-                  AppEnv.onIos ? tr.updateServerHow : tr.updateWhatSNewHow,
+                  AppEnv.appStoreOnIos
+                      ? tr.updateServerHow
+                      : tr.updateWhatSNewHow,
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -124,7 +130,7 @@ Future<void> showUpdateCheck(
           title: Text(tr.updateFamioVersion),
           content: body,
           actions: [
-            if (latest != null && !AppEnv.onIos)
+            if (latest != null && !AppEnv.appStoreOnIos)
               TextButton(
                 onPressed: () => launchUrl(
                   latest!.url,
