@@ -1590,7 +1590,7 @@ void main() {
       // SIC-024: the switches work and reach the child.
       for (final (title, read) in [
         (de.sosSirenPhone, (SosSettings x) => x.siren),
-        (de.sosTextMessageWithoutInternet, (SosSettings x) => x.sms),
+        (de.sosTextMessageWithoutInternetShort, (SosSettings x) => x.sms),
       ]) {
         final sw = find.widgetWithText(SwitchListTile, title);
         await scrollTo(tester, sw, up: true);
@@ -1792,7 +1792,7 @@ void main() {
     final siren = find.widgetWithText(SwitchListTile, de.sosSirenPhone);
     final sms = find.widgetWithText(
       SwitchListTile,
-      de.sosTextMessageWithoutInternet,
+      de.sosTextMessageWithoutInternetShort,
     );
     expect(tester.widget<SwitchListTile>(siren).onChanged, isNull);
     expect(tester.widget<SwitchListTile>(sms).onChanged, isNull);

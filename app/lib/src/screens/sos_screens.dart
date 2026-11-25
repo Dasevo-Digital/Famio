@@ -802,11 +802,7 @@ class SosSettingsScreen extends StatelessWidget {
               ),
               SwitchListTile(
                 secondary: const Icon(AppIcons.chatsCircle),
-                title: Text(
-                  AppEnv.onIos
-                      ? tr.sosTextMessageWithoutInternetShort
-                      : tr.sosTextMessageWithoutInternet,
-                ),
+                title: Text(tr.sosTextMessageWithoutInternetShort),
                 subtitle: Text(
                   AppEnv.onIos
                       ? tr.sosIfPhoneOfflineTextApple
@@ -815,6 +811,14 @@ class SosSettingsScreen extends StatelessWidget {
                 value: s.sms,
                 onChanged: mayEdit ? (v) => save(s.copyWith(sms: v)) : null,
               ),
+              // Apple's own emergency call texts the location too, without
+              // a tap and without Famio; Famio cannot start it (#605).
+              if (AppEnv.onIos)
+                ListTile(
+                  leading: const Icon(AppIcons.info),
+                  title: Text(tr.sosAppleEmergencySos),
+                  subtitle: Text(tr.sosAppleEmergencySosHow),
+                ),
               if (mayEdit) ...[
                 ListHeading(tr.sosWhoGetsAlarms, color: accent),
                 _Reachability(members: others),

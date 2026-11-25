@@ -5,6 +5,7 @@ import PhotosUI
 import Vision
 import CryptoKit
 import Flutter
+import MessageUI
 import Security
 import UIKit
 import UserNotifications
@@ -250,7 +251,8 @@ final class DocumentScanner: NSObject, VNDocumentCameraViewControllerDelegate {
     result?(value)
   }
 
-  private static func topController() -> UIViewController? {
+  /// What is shown on top in the key window (also for the emergency text).
+  static func topController() -> UIViewController? {
     let window = UIApplication.shared.connectedScenes
       .compactMap { $0 as? UIWindowScene }
       .flatMap { $0.windows }
@@ -418,15 +420,20 @@ final class OpenedFiles: NSObject, FlutterSceneLifeCycleDelegate {
 
 /// The emergency button's phone side (`famio/sos`): one fresh position and
 /// a siren that also sounds with the ring/silent switch on silent (the
-/// "playback" audio category). Calls go through the phone app (tel:) and
-/// texts are not possible without asking, so those stay in Dart.
-final class SosBridge: NSObject, CLLocationManagerDelegate {
+/// "playback" audio category). Calls go through the phone app (tel:) in
+/// Dart. iOS lets no app text on its own: without internet `composeSms`
+/// shows the prepared text and the person taps "Send" (#605).
+final class SosBridge: NSObject, CLLocationManagerDelegate,
+  MFMessageComposeViewControllerDelegate
+{
   static let shared = SosBridge()
 
   private let manager = CLLocationManager()
   private var fixResults: [FlutterResult] = []
   private var timeout: DispatchWorkItem?
   private var player: AVAudioPlayer?
+  /// Answered when the person sent or cancelled the emergency text.
+  private var smsResult: FlutterResult?
 
   func register(with registrar: FlutterPluginRegistrar) {
     manager.delegate = self
@@ -447,10 +454,41 @@ final class SosBridge: NSObject, CLLocationManagerDelegate {
       case "stopSiren":
         self.stopSiren()
         result(nil)
+      case "composeSms":
+        self.composeSms(
+          numbers: args?["numbers"] as? [String] ?? [], text: args?["text"] as? String ?? "",
+          result: result)
       default:
         result(FlutterMethodNotImplemented)
       }
     }
+  }
+
+  /// Shows the prepared text to [numbers]; answers true once it was sent,
+  /// false when cancelled, failed or not possible here (no SIM or iMessage,
+  /// the simulator, a text already open).
+  private func composeSms(numbers: [String], text: String, result: @escaping FlutterResult) {
+    guard smsResult == nil, !numbers.isEmpty, MFMessageComposeViewController.canSendText(),
+      let top = DocumentScanner.topController()
+    else {
+      result(false)
+      return
+    }
+    let composer = MFMessageComposeViewController()
+    composer.messageComposeDelegate = self
+    composer.recipients = numbers
+    composer.body = text
+    smsResult = result
+    top.present(composer, animated: true)
+  }
+
+  func messageComposeViewController(
+    _ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult
+  ) {
+    controller.dismiss(animated: true)
+    let answer = smsResult
+    smsResult = nil
+    answer?(result == .sent)
   }
 
   private func currentFix(timeoutMs: Int, result: @escaping FlutterResult) {
@@ -1427,10 +1465,12 @@ final class PrivacyCover: NSObject {
   /// The camera, the scanner, the photo and the file picker: they show
   /// nothing of Famio's, and they answer Famio only when the person is
   /// done with them. Closed from here, they would not answer at all, and
-  /// Famio would wait for good (#568).
+  /// Famio would wait for good (#568). The same holds for the emergency
+  /// text: the call waits for its answer (#605).
   static func isPicker(_ controller: UIViewController) -> Bool {
     controller is UIImagePickerController || controller is VNDocumentCameraViewController
       || controller is PHPickerViewController || controller is UIDocumentPickerViewController
+      || controller is MFMessageComposeViewController
   }
 
   /// Famio came back locked: closes, in each window, what iOS shows over

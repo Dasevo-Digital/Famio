@@ -1,6 +1,6 @@
 # Privacy information for Famio
 
-As of: 24 November 2026 · [Deutsch](datenschutz.md) · [Español](datenschutz.es.md)
+As of: 25 November 2026 · [Deutsch](datenschutz.md) · [Español](datenschutz.es.md)
 
 This is a translation of the German version. If the two differ, the German
 version applies.
@@ -168,10 +168,13 @@ the images or the recognised texts. The document scanner always comes from
 Google Play services. On iPhone and iPad Apple's Vision recognises text and
 barcodes on the device without sending anything.
 
-**Text message for an emergency call (Android).** If "Text message without
-internet" is switched on and the phone has no connection, the emergency call
-goes as a text message with name and position through the mobile operator
-to the chosen numbers.
+**Text message for an emergency call.** If "Text message without internet"
+is switched on and the phone has no connection, the emergency call goes as a
+text message with name and position through the mobile operator to the
+chosen numbers. Android sends it itself; on iPhone and iPad Famio opens the
+iOS message window with the prepared text, and it only goes out after a tap
+on "Send". iOS decides whether it sends it as a text message or as an
+iMessage through Apple.
 
 **Open Food Facts.** A barcode search in the pantry sends the scanned
 barcode, the search for nutrition values (after agreeing once per device)

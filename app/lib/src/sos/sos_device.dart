@@ -27,8 +27,9 @@ class SosFix {
 
 /// What the phone does when the emergency button is pressed: measure the
 /// position once, sound a siren (also on silent), call and text. Natively
-/// on Android (all of it) and iOS (position, siren while open, call);
-/// desktops only open the phone app for a call.
+/// on Android (all of it) and iOS (position, siren while open, call, a
+/// prepared text the person sends); desktops only open the phone app for a
+/// call.
 class SosDevice {
   static const _channel = MethodChannel('famio/sos');
 
@@ -56,8 +57,17 @@ class SosDevice {
     }
   }
 
-  /// Android can text without asking each time.
-  static bool get canSms => !kIsWeb && Platform.isAndroid;
+  /// Phones text without internet: Android on its own, an iPhone opens
+  /// the prepared text and the person taps "Send" (iOS lets no app text by
+  /// itself). By the target platform, which tests can set.
+  static bool get canSms =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS);
+
+  /// Whether the text still needs a tap on "Send" (iPhone, iPad).
+  static bool get smsNeedsTap =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   /// The position service exists on Android only (by the target platform,
   /// which tests can set).
@@ -152,16 +162,21 @@ class SosDevice {
     await launchUrl(Uri(scheme: 'tel', path: clean));
   }
 
-  /// Texts [text] to [numbers] (Android); false if that was not possible.
+  /// Texts [text] to [numbers]: Android sends it, an iPhone shows it ready
+  /// to send and answers once the person sent or cancelled it. False if it
+  /// was not sent (no SIM, cancelled, not possible).
   static Future<bool> sendSms(List<String> numbers, String text) async {
     if (!canSms || numbers.isEmpty) return false;
     try {
-      return await _channel.invokeMethod<bool>('sendSms', {
-            'numbers': [
-              for (final n in numbers) n.replaceAll(RegExp(r'[^0-9+]'), ''),
-            ],
-            'text': text,
-          }) ??
+      return await _channel.invokeMethod<bool>(
+            smsNeedsTap ? 'composeSms' : 'sendSms',
+            {
+              'numbers': [
+                for (final n in numbers) n.replaceAll(RegExp(r'[^0-9+]'), ''),
+              ],
+              'text': text,
+            },
+          ) ??
           false;
     } catch (e) {
       debugPrint(tr.sosTextMessageNotPossible(e));

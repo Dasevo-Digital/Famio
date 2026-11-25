@@ -1,6 +1,6 @@
 # Datenschutzinformationen für Famio
 
-Stand: 24. November 2026 · [English](datenschutz.en.md) · [Español](datenschutz.es.md)
+Stand: 25. November 2026 · [English](datenschutz.en.md) · [Español](datenschutz.es.md)
 
 ## Verantwortlichkeit
 
@@ -169,9 +169,12 @@ die Bilder oder erkannten Texte. Der Dokumentenscanner kommt immer von den
 Google-Play-Diensten. Auf iPhone und iPad erkennt Apples Vision Text und
 Barcodes auf dem Gerät, ohne etwas zu senden.
 
-**SMS beim Notruf (Android).** Ist „SMS ohne Internet“ eingeschaltet und das
-Handy ohne Verbindung, geht der Notruf mit Name und Position als SMS über den
-Mobilfunkanbieter an die gewählten Nummern.
+**SMS beim Notruf.** Ist „SMS ohne Internet“ eingeschaltet und das Handy ohne
+Verbindung, geht der Notruf mit Name und Position als SMS über den
+Mobilfunkanbieter an die gewählten Nummern. Android schickt sie selbst; auf
+iPhone und iPad öffnet Famio das Nachrichtenfenster von iOS mit der fertigen
+SMS, und sie geht erst nach einem Tipp auf „Senden“ hinaus. Ob iOS sie als
+SMS oder als iMessage über Apple verschickt, entscheidet iOS.
 
 **Open Food Facts.** Eine Barcode-Suche im Vorrat überträgt den gescannten
 Barcode, die Suche nach Nährwerten (nach einmaliger Zustimmung je Gerät) die

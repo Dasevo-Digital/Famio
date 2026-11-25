@@ -1,6 +1,6 @@
 # Información sobre privacidad de Famio
 
-Versión: 24 de noviembre de 2026 · [Deutsch](datenschutz.md) · [English](datenschutz.en.md)
+Versión: 25 de noviembre de 2026 · [Deutsch](datenschutz.md) · [English](datenschutz.en.md)
 
 Esta es una traducción de la versión alemana. Si ambas difieren, prevalece
 la versión alemana.
@@ -188,10 +188,13 @@ documentos procede siempre de los servicios de Google Play. En iPhone y iPad,
 Vision de Apple reconoce texto y códigos de barras en el dispositivo sin
 enviar nada.
 
-**SMS en una llamada de emergencia (Android).** Si «SMS sin internet» está
-activado y el teléfono no tiene conexión, la llamada de emergencia se envía
-como SMS con el nombre y la posición, a través del operador de telefonía
-móvil, a los números elegidos.
+**SMS en una llamada de emergencia.** Si «SMS sin internet» está activado y
+el teléfono no tiene conexión, la llamada de emergencia se envía como SMS con
+el nombre y la posición, a través del operador de telefonía móvil, a los
+números elegidos. Android lo envía por sí mismo; en el iPhone y el iPad
+Famio abre la ventana de mensajes de iOS con el SMS ya preparado, que solo
+sale tras pulsar «Enviar». iOS decide si lo envía como SMS o como iMessage a
+través de Apple.
 
 **Open Food Facts.** Una búsqueda por código de barras en la despensa envía
 el código escaneado, y la búsqueda de valores nutricionales (tras un único
