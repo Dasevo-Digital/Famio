@@ -4,6 +4,24 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.62 – SMS de emergencia en el iPhone y sincronización más segura
+
+- Alarma de emergencia sin internet en el iPhone: con «SMS sin internet»
+  activado se abre un SMS ya preparado con la ubicación para los padres.
+  Solo hay que pulsar «Enviar»; después llega la llamada. Los ajustes de
+  emergencia explican además «Emergencia SOS» de Apple.
+- Los cambios hechos sin conexión ya no se pierden si antes de enviarlos
+  llega una versión más reciente del servidor. Famio envía una lista antes
+  que sus elementos.
+- Si la misma persona edita una entrada en dos dispositivos a la vez, la
+  otra versión se conserva como copia de conflicto. Los ajustes del
+  servidor, por ejemplo en las sustituciones, ya no crean copias de
+  conflicto sin motivo.
+- Las indicaciones de privacidad también están en inglés y español. En la
+  app web funcionan «Licencias» y «¿Qué hay de nuevo?».
+- El servidor elimina partes de archivos que ya no se necesitan y la app
+  guarda en local más rápido.
+
 ## 2.0.61 – Cerrar sesión, festivos y conexiones
 
 - Si la sesión de ubicación de un móvil termina de otra forma que en el

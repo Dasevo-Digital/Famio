@@ -4,6 +4,24 @@ Je Version das Wichtigste in wenigen Zeilen. Die App zeigt den Abschnitt
 ihrer Version nach einem Update einmal an; die ausführlichen Release-Texte
 stehen bei den Releases.
 
+## 2.0.62 – Notruf-SMS auf dem iPhone und sichererer Abgleich
+
+- Notruf ohne Internet auf dem iPhone: Ist „SMS ohne Internet“
+  eingeschaltet, öffnet sich eine fertige SMS mit dem Standort an die
+  Eltern. Man tippt nur noch auf „Senden“, danach kommt der Anruf. Die
+  Notruf-Einstellungen erklären zusätzlich Apples „Notruf SOS“.
+- Offline gemachte Änderungen gehen nicht mehr verloren, wenn vor ihrem
+  Senden ein neuerer Stand vom Server kommt. Eine Liste sendet Famio vor
+  ihren Einträgen.
+- Bearbeitet dieselbe Person einen Eintrag auf zwei Geräten gleichzeitig,
+  bleibt die andere Fassung als Konfliktkopie erhalten. Nach Anpassungen
+  durch den Server, etwa bei Vertretungen, gibt es keine Konfliktkopien
+  ohne Grund mehr.
+- Die Datenschutzhinweise gibt es auch auf Englisch und Spanisch. In der
+  Web-App funktionieren „Lizenzen“ und „Was ist neu?“.
+- Der Server räumt nicht mehr benötigte Dateiteile auf, und die App
+  speichert lokal schneller.
+
 ## 2.0.61 – Abmelden, Feiertage und Verbindungen
 
 - Wird die Standort-Sitzung eines Handys anders beendet als am Handy

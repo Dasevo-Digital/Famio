@@ -4,6 +4,23 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.62 – Emergency text on iPhone and safer syncing
+
+- Emergency alarm without internet on iPhone: with "Text message without
+  internet" switched on, a prepared text message with the location to the
+  parents opens. You only tap "Send", then the call follows. The emergency
+  settings also explain Apple's "Emergency SOS".
+- Changes made offline are no longer lost when a newer version arrives
+  from the server before they are sent. Famio sends a list before its
+  items.
+- When the same person edits an entry on two devices at once, the other
+  version is kept as a conflict copy. Adjustments by the server, e.g. for
+  substitutes, no longer create needless conflict copies.
+- The privacy notes are also available in English and Spanish. In the web
+  app, "Licences" and "What's new?" work.
+- The server cleans up file parts that are no longer needed, and the app
+  saves locally faster.
+
 ## 2.0.61 – Signing out, holidays and connections
 
 - When a phone's location session ends other than on the phone itself,
