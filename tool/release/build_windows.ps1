@@ -5,7 +5,9 @@
 # folder.
 param([string]$V, [string]$Flutter)
 $ErrorActionPreference = 'Stop'
-if ($Flutter -and -not ("$(flutter --version | Select-Object -First 1)".StartsWith("Flutter $Flutter "))) {
+# Flutter may print a notice about a newer version before its version
+# line, so any line may carry it (#606).
+if ($Flutter -and -not (flutter --version | Select-String -SimpleMatch -Quiet "Flutter $Flutter ")) {
   throw "Flutter ist nicht $Flutter"
 }
 # Built outside the user folder: the compiled app keeps the path of a

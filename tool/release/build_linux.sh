@@ -6,11 +6,13 @@
 set -eu
 V="$1"
 cd ~
+# Flutter may print a notice about a newer version before its version
+# line, so any line may carry it (#606).
 if [ -n "${2:-}" ]; then
-  case "$(~/flutter/bin/flutter --version 2>&1)" in
-    "Flutter $2 "*) ;;
-    *) echo "Flutter in ~/flutter ist nicht $2" >&2; exit 1 ;;
-  esac
+  if ! ~/flutter/bin/flutter --version 2>&1 | grep -F -q -e "Flutter $2 "; then
+    echo "Flutter in ~/flutter ist nicht $2" >&2
+    exit 1
+  fi
 fi
 # Built outside the home folder: the compiled app keeps paths of the build,
 # and the package is public (no account name in it).
