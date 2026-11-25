@@ -99,7 +99,8 @@ table inet famio {
 }
 ```
 
-Dazu in `/etc/famio/famio.env`: `FAMIO_TRUST_PROXY=true`,
+Dazu in `/etc/famio/famio.env`: `FAMIO_TRUSTED_PROXIES=<NPM-IP>` (schaltet
+`FAMIO_TRUST_PROXY` mit ein),
 `FAMIO_REQUIRE_TLS=true` und `FAMIO_PUBLIC_URL=https://famio.example.de/`,
 dann `systemctl restart famio`. Port 8766 (Famios eigenes HTTPS) bleibt fürs
 Heimnetz offen.
@@ -113,7 +114,15 @@ Heimnetz offen.
   Fremder niemanden aussperren kann. Hinter NPM braucht es dafür
   `FAMIO_TRUST_PROXY=true`, sonst sähe Famio nur die IP von NPM.
 - `FAMIO_TRUST_PROXY` nur setzen, wenn Port 8765 **nicht** direkt erreichbar
-  ist – sonst könnten Clients ihre Adresse fälschen.
+  ist – sonst könnten Clients ihre Adresse fälschen. Famio glaubt den
+  weitergeleiteten Angaben ohnehin nur von Proxys im Heimnetz, in Docker oder
+  auf demselben Rechner. Enger geht es mit `FAMIO_TRUSTED_PROXIES` (z. B.
+  `FAMIO_TRUSTED_PROXIES=192.168.1.50` für NPM im Heimnetz, mehrere mit
+  Komma, auch Netze wie `172.16.0.0/12`); Angaben anderer Absender ignoriert
+  Famio dann und nennt deren Adresse einmal im Protokoll.
+- Dass eine Anfrage über HTTPS kam, glaubt Famio einem Proxy im Heimnetz auch
+  ohne `FAMIO_TRUST_PROXY` (Home-Assistant-Add-on mit NPM), einem Absender
+  aus dem Internet nie.
 - Famio nimmt den letzten Eintrag aus `X-Forwarded-For`, also die Adresse,
   die NPM selbst angehängt hat; was der Client mitschickt, zählt nicht.
   Steht vor NPM noch ein weiterer Proxy (z. B. Cloudflare), sieht Famio

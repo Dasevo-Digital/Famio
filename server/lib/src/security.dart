@@ -1,21 +1,73 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:shelf/shelf.dart';
+
+/// Set on requests that arrived on Famio's own HTTPS port (see [overTls]).
+/// The scheme of a request cannot tell: dart:io takes it from an
+/// `X-Forwarded-Proto` header when there is one, whoever sent it.
+const tlsConnectionKey = 'famio.tls';
+
+/// [handler] for a listener with TLS: its requests are encrypted.
+Handler overTls(Handler handler) =>
+    (request) => handler(request.change(context: {tlsConnectionKey: true}));
 
 /// Determines the client address, honouring `X-Forwarded-For` only when the
 /// server runs behind a trusted reverse proxy (e.g. Nginx Proxy Manager).
 class ClientAddress {
-  const ClientAddress({required this.trustProxy});
+  const ClientAddress({
+    required this.trustProxy,
+    this.proxies = const [],
+    this.onIgnored,
+  });
 
   final bool trustProxy;
+
+  /// The proxies whose forwarded headers count (`FAMIO_TRUSTED_PROXIES`).
+  /// Empty: this computer and the private networks (home network, Docker,
+  /// Tailscale) – a proxy is practically always there, so a mistakenly
+  /// open port does not let the whole internet fake addresses.
+  final List<AddressRange> proxies;
+
+  /// Told about forwarded headers from a peer that is no trusted proxy
+  /// (they are ignored), for a hint in the log.
+  final void Function(String peer)? onIgnored;
+
+  /// Whether [request] came through a trusted reverse proxy, so its
+  /// `X-Forwarded-*` headers count. Requests without a peer (only within
+  /// the process, never over the network) do not.
+  bool viaProxy(Request request) {
+    if (!trustProxy) return false;
+    final peer = _peer(request);
+    if (peer == null) return false;
+    final trusted = proxies.isEmpty
+        ? isPrivate(peer)
+        : proxies.any((r) => r.contains(peer));
+    if (!trusted && _forwards(request)) onIgnored?.call(peer.address);
+    return trusted;
+  }
+
+  /// Whether a proxy in front of Famio says the client connected with
+  /// HTTPS (`X-Forwarded-Proto: https`). With [trustProxy] only the
+  /// [viaProxy] ones count; without it one in the private network does too
+  /// (Home Assistant with the Nginx Proxy Manager add-on), never a peer on
+  /// the internet: what it claims proves nothing.
+  bool forwardedHttps(Request request) {
+    if (request.headers['x-forwarded-proto']?.toLowerCase() != 'https') {
+      return false;
+    }
+    if (trustProxy) return viaProxy(request);
+    final peer = _peer(request);
+    return peer != null && isPrivate(peer);
+  }
 
   /// Behind the proxy, the address is the *last* `X-Forwarded-For` entry:
   /// the proxy appends the peer it saw, while everything before it comes
   /// from the client and may be made up. `X-Real-IP` is only a fallback,
   /// as some proxies pass a client's own value through unchanged.
   String of(Request request) {
-    if (trustProxy) {
+    if (viaProxy(request)) {
       final hops = [
         for (final hop
             in request.headers['x-forwarded-for']?.split(',') ??
@@ -31,14 +83,16 @@ class ClientAddress {
 
   /// True for requests from the local network that did not pass a proxy.
   bool isLocalDirect(Request request) {
-    if (request.headers.containsKey('x-forwarded-for') ||
-        request.headers.containsKey('x-real-ip') ||
-        request.headers.containsKey('forwarded')) {
-      return false;
-    }
+    if (_forwards(request)) return false;
     final peer = _peer(request);
     return peer != null && isPrivate(peer);
   }
+
+  static bool _forwards(Request request) =>
+      request.headers.containsKey('x-forwarded-for') ||
+      request.headers.containsKey('x-forwarded-proto') ||
+      request.headers.containsKey('x-real-ip') ||
+      request.headers.containsKey('forwarded');
 
   static InternetAddress? _peer(Request request) =>
       (request.context['shelf.io.connection_info'] as HttpConnectionInfo?)
@@ -61,6 +115,73 @@ class ClientAddress {
             b[10] == 0xff &&
             b[11] == 0xff);
     return mapped && isPrivate(InternetAddress.fromRawAddress(b.sublist(12)));
+  }
+}
+
+/// One address or a network in CIDR notation (`192.168.10.50`,
+/// `172.16.0.0/12`, `fd00::/8`), as in `FAMIO_TRUSTED_PROXIES`.
+class AddressRange {
+  AddressRange._(this._bytes, this.prefix);
+
+  final List<int> _bytes;
+
+  /// The number of leading bits that must match.
+  final int prefix;
+
+  /// The range, or null if [text] is none.
+  static AddressRange? tryParse(String text) {
+    final parts = text.trim().split('/');
+    if (parts.length > 2) return null;
+    final address = InternetAddress.tryParse(parts.first);
+    if (address == null) return null;
+    final bytes = address.rawAddress;
+    final bits = bytes.length * 8;
+    final prefix = parts.length == 2 ? int.tryParse(parts[1]) : bits;
+    if (prefix == null || prefix < 0 || prefix > bits) return null;
+    return AddressRange._(bytes, prefix);
+  }
+
+  /// The ranges in a list separated by commas or spaces, and the entries
+  /// that are none.
+  static (List<AddressRange>, List<String>) parseList(String? text) {
+    final ranges = <AddressRange>[];
+    final invalid = <String>[];
+    for (final entry in (text ?? '').split(RegExp(r'[,\s]+'))) {
+      if (entry.isEmpty) continue;
+      switch (tryParse(entry)) {
+        case final range?:
+          ranges.add(range);
+        case null:
+          invalid.add(entry);
+      }
+    }
+    return (ranges, invalid);
+  }
+
+  bool contains(InternetAddress address) {
+    var b = address.rawAddress;
+    // An IPv4 peer on a dual-stack socket arrives as ::ffff:a.b.c.d.
+    if (b.length == 16 && _bytes.length == 4 && _mapped(b)) {
+      b = b.sublist(12);
+    }
+    if (b.length != _bytes.length) return false;
+    for (var bit = 0; bit < prefix; bit += 8) {
+      final left = prefix - bit;
+      final mask = left >= 8 ? 0xff : (0xff << (8 - left)) & 0xff;
+      if ((b[bit ~/ 8] & mask) != (_bytes[bit ~/ 8] & mask)) return false;
+    }
+    return true;
+  }
+
+  static bool _mapped(List<int> b) =>
+      b.sublist(0, 10).every((x) => x == 0) && b[10] == 0xff && b[11] == 0xff;
+
+  @override
+  String toString() {
+    final address = InternetAddress.fromRawAddress(Uint8List.fromList(_bytes));
+    return prefix == _bytes.length * 8
+        ? address.address
+        : '${address.address}/$prefix';
   }
 }
 

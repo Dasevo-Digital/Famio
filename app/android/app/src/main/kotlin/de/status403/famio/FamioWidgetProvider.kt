@@ -1,20 +1,29 @@
 package de.status403.famio
 
 import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.SharedPreferences
 import android.view.View
 import android.widget.RemoteViews
 import es.antonborri.home_widget.HomeWidgetLaunchIntent
-import es.antonborri.home_widget.HomeWidgetProvider
 
 /**
  * "Famio heute" on the home screen: next events, today's meal, open
  * shopping items and tasks, each as a row tinted in its section's color.
- * The app writes the rows whenever data changes; the widget itself never
- * talks to the server.
+ * The app writes the rows whenever data changes (see [WidgetData]); the
+ * widget itself never talks to the server.
  */
-class FamioWidgetProvider : HomeWidgetProvider() {
+class FamioWidgetProvider : AppWidgetProvider() {
+    companion object {
+        /** Draws [ids] again from [WidgetData]. */
+        fun show(context: Context, ids: IntArray) {
+            if (ids.isEmpty()) return
+            runCatching {
+                FamioWidgetProvider().draw(context, AppWidgetManager.getInstance(context), ids)
+            }
+        }
+    }
+
     private data class Row(val row: Int, val lead: Int, val text: Int)
 
     private val rows = listOf(
@@ -39,40 +48,60 @@ class FamioWidgetProvider : HomeWidgetProvider() {
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray,
-        widgetData: SharedPreferences,
     ) {
-        for (id in appWidgetIds) {
+        runCatching { WidgetData.migrate(context) }
+        draw(context, appWidgetManager, appWidgetIds)
+    }
+
+    /** The last widget was removed: its rows are not kept. */
+    override fun onDisabled(context: Context) {
+        runCatching { WidgetData.clear(context) }
+    }
+
+    private fun draw(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        // Not readable (keystore): empty rather than nothing at all.
+        val (date, lines) = runCatching { WidgetData.read(context) }
+            .getOrDefault(null to emptyList())
+        for (id in ids) {
             val views = RemoteViews(context.packageName, R.layout.famio_widget).apply {
-                setTextViewText(R.id.widget_date, widgetData.getString("date", null) ?: "")
-                var any = false
+                setTextViewText(R.id.widget_date, date ?: "")
                 rows.forEachIndexed { i, r ->
-                    // "line$i": written by apps before 2.0.5, until the app
-                    // runs again after the update.
-                    val text = widgetData.getString("text$i", null)
-                        ?: widgetData.getString("line$i", null)
-                    if (text.isNullOrEmpty()) {
+                    val line = lines.getOrNull(i)
+                    if (line == null) {
                         setViewVisibility(r.row, View.GONE)
                         return@forEachIndexed
                     }
-                    any = true
-                    val lead = widgetData.getString("lead$i", null)
                     setViewVisibility(r.row, View.VISIBLE)
-                    setTextViewText(r.text, text)
-                    setTextViewText(r.lead, lead ?: "")
-                    setViewVisibility(r.lead, if (lead.isNullOrEmpty()) View.GONE else View.VISIBLE)
+                    setTextViewText(r.text, line.text)
+                    setTextViewText(r.lead, line.lead ?: "")
+                    setViewVisibility(
+                        r.lead,
+                        if (line.lead.isNullOrEmpty()) View.GONE else View.VISIBLE,
+                    )
                     setInt(
                         r.row,
                         "setBackgroundResource",
-                        backgrounds[widgetData.getString("kind$i", null)] ?: R.drawable.widget_row_event,
+                        backgrounds[line.kind] ?: R.drawable.widget_row_event,
                     )
                 }
-                setViewVisibility(R.id.widget_empty, if (any) View.GONE else View.VISIBLE)
+                setViewVisibility(
+                    R.id.widget_empty,
+                    if (lines.isEmpty()) View.VISIBLE else View.GONE,
+                )
+                // Placed while Famio was not running: it fills the rows
+                // when it is opened.
+                setTextViewText(
+                    R.id.widget_empty,
+                    context.getString(
+                        if (date == null) R.string.widget_open_famio else R.string.widget_nothing_today,
+                    ),
+                )
                 setOnClickPendingIntent(
                     R.id.widget_root,
                     HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java),
                 )
             }
-            appWidgetManager.updateAppWidget(id, views)
+            manager.updateAppWidget(id, views)
         }
     }
 }

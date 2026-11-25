@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 
+import 'security.dart';
+
 class ServerConfig {
   const ServerConfig({
     this.port = 8765,
@@ -12,6 +14,8 @@ class ServerConfig {
     this.timeZone = 'Europe/Berlin',
     this.publicUrl,
     this.trustProxy = false,
+    this.trustedProxies = const [],
+    this.invalidProxies = const [],
     this.maxUploadMb = 100,
     this.locationHistoryDays = 7,
     this.maxStorageMb = 5120,
@@ -58,6 +62,7 @@ class ServerConfig {
       options = (jsonDecode(optionsFile.readAsStringSync()) as Map).cast();
     }
 
+    final proxies = AddressRange.parseList(env['FAMIO_TRUSTED_PROXIES']);
     return ServerConfig(
       port: int.parse(parsed.option('port') ?? env['FAMIO_PORT'] ?? '8765'),
       dataDir:
@@ -72,7 +77,9 @@ class ServerConfig {
           _ianaZone(env['TZ']) ??
           'Europe/Berlin',
       publicUrl: _nonEmpty(env['FAMIO_PUBLIC_URL']),
-      trustProxy: _flag(env['FAMIO_TRUST_PROXY']),
+      trustProxy: _flag(env['FAMIO_TRUST_PROXY']) || proxies.$1.isNotEmpty,
+      trustedProxies: proxies.$1,
+      invalidProxies: proxies.$2,
       maxUploadMb: int.tryParse(env['FAMIO_MAX_UPLOAD_MB'] ?? '') ?? 100,
       locationHistoryDays: _boundedInt(
         env['FAMIO_LOCATION_HISTORY_DAYS'],
@@ -149,9 +156,18 @@ class ServerConfig {
   final String? publicUrl;
 
   /// Behind a reverse proxy: take the client address from X-Forwarded-For
-  /// (for login throttling). Only enable if the port is not reachable
-  /// directly, otherwise clients could fake their address.
+  /// (for login throttling) and HTTPS from X-Forwarded-Proto, but only from
+  /// [trustedProxies] or, without them, from this computer and private
+  /// networks. Only enable if the port is not reachable directly.
   final bool trustProxy;
+
+  /// `FAMIO_TRUSTED_PROXIES`: addresses or networks of the reverse proxy
+  /// (comma separated). Setting it switches [trustProxy] on.
+  final List<AddressRange> trustedProxies;
+
+  /// Entries of `FAMIO_TRUSTED_PROXIES` that are no address: the server
+  /// does not start with them.
+  final List<String> invalidProxies;
 
   /// Maximum upload size (documents, photos).
   final int maxUploadMb;

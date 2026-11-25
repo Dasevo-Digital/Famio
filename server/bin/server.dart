@@ -30,6 +30,14 @@ Future<void> _start(List<String> args) async {
     stderr.writeln('FEHLER: $problem');
     exit(77); // EX_NOPERM
   }
+  if (config.invalidProxies.isNotEmpty) {
+    stderr.writeln(
+      'FEHLER: FAMIO_TRUSTED_PROXIES enthält keine gültige Adresse: '
+      '${config.invalidProxies.join(', ')} (z. B. 192.168.1.50 oder '
+      '172.16.0.0/12, mehrere mit Komma getrennt).',
+    );
+    exit(78); // EX_CONFIG
+  }
   final webApp = WebApp.locate(config.webDir);
   if (config.clientMode && config.upstream == null) {
     stderr.writeln(
@@ -78,6 +86,7 @@ Future<void> _start(List<String> args) async {
     publicUrl: config.publicUrl,
     ingressAuth: config.ingressAuth,
     trustProxy: config.trustProxy,
+    trustedProxies: config.trustedProxies,
     maxUploadMb: config.maxUploadMb,
     locationHistoryDays: config.locationHistoryDays,
     maxStorageMb: config.maxStorageMb,
@@ -124,7 +133,7 @@ Future<void> _start(List<String> args) async {
     poweredByHeader: null,
   );
   Future<HttpServer> serveTls(TlsIdentity identity) => io.serve(
-    handler,
+    overTls(handler),
     InternetAddress.anyIPv4,
     config.tlsPort,
     securityContext: identity.context,
@@ -144,7 +153,8 @@ Future<void> _start(List<String> args) async {
     'Famio server $serverVersion listening on :${server.port} '
     '${secure == null ? '' : '(https :${secure!.port}) '}'
     '(data: ${p.absolute(config.dataDir)}, time zone: ${app.location.name}, '
-    'ingress auth: ${config.ingressAuth}, trust proxy: ${config.trustProxy}, '
+    'ingress auth: ${config.ingressAuth}, trust proxy: ${config.trustProxy}'
+    '${config.trustProxy ? ' (${config.trustedProxies.isEmpty ? 'private networks' : config.trustedProxies.join(', ')})' : ''}, '
     'require tls: ${config.requireTls})',
   );
   stdout.writeln(

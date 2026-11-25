@@ -18,7 +18,8 @@ import io.flutter.plugin.common.MethodChannel
 
 /**
  * Hosts Flutter and the channels `famio/location` (location sharing),
- * `famio/notify` (Famio's own push), `famio/sos` (emergency button) and
+ * `famio/notify` (Famio's own push), `famio/widget` ("Famio heute"),
+ * `famio/sos` (emergency button) and
  * `famio/open_file` (calendar files opened with Famio and text or files
  * shared to Famio from other apps) and `famio/privacy` (the app lock).
  * A FragmentActivity, as the fingerprint dialog of the app lock needs one.
@@ -443,9 +444,40 @@ class MainActivity : FlutterFragmentActivity() {
                 }
                 result.success(null)
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/widget")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "save" -> {
+                        val rows = call.argument<List<Map<String, String?>>>("rows").orEmpty()
+                            .map { WidgetData.Row(it["kind"], it["lead"], it["text"] ?: "") }
+                        result.success(
+                            WidgetData.save(this, call.argument<String>("date") ?: "", rows),
+                        )
+                    }
+                    "clear" -> {
+                        WidgetData.clear(this)
+                        result.success(null)
+                    }
+                    "placed" -> result.success(WidgetData.ids(this).isNotEmpty())
+                    "read" -> {
+                        val (date, rows) = WidgetData.read(this)
+                        result.success(
+                            mapOf(
+                                "date" to date,
+                                "rows" to rows.map {
+                                    mapOf("kind" to it.kind, "lead" to it.lead, "text" to it.text)
+                                },
+                            ),
+                        )
+                    }
+                    else -> result.notImplemented()
+                }
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "famio/notify")
             .setMethodCallHandler { call, result ->
                 val notify = getSharedPreferences(NotifyService.PREFS, Context.MODE_PRIVATE)
+                NotifySecrets.migrate(this)
+                val secrets = NotifySecrets.prefs(this)
                 when (call.method) {
                     "status" -> result.success(
                         mapOf(
@@ -465,12 +497,14 @@ class MainActivity : FlutterFragmentActivity() {
                         result.success(null)
                     }
                     "start" -> {
-                        val sameServer = notify.getString("url", null) == call.argument<String>("url")
-                        notify.edit()
-                            .putBoolean("enabled", true)
+                        val sameServer = secrets.getString("url", null) == call.argument<String>("url")
+                        secrets.edit()
                             .putString("url", call.argument<String>("url"))
                             .putString("token", call.argument<String>("token"))
                             .putString("pin", call.argument<String>("pin"))
+                            .commit()
+                        notify.edit()
+                            .putBoolean("enabled", true)
                             .putBoolean("details", call.argument<Boolean>("details") ?: true)
                             .apply {
                                 // Another server: start at its newest notification.
@@ -482,10 +516,11 @@ class MainActivity : FlutterFragmentActivity() {
                     }
                     "stop" -> {
                         notify.edit().clear().apply()
+                        secrets.edit().clear().apply()
                         NotifyService.stop(this)
                         result.success(null)
                     }
-                    "token" -> result.success(notify.getString("token", null))
+                    "token" -> result.success(secrets.getString("token", null))
                     else -> result.notImplemented()
                 }
             }

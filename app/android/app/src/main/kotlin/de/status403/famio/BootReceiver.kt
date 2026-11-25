@@ -10,6 +10,11 @@ class BootReceiver : BroadcastReceiver() {
         // After an update the emergency widgets get the button that starts
         // the alarm again (see MainActivity.isOwnSos).
         MainActivity.refreshSosWidgets(context)
+        // "Famio heute" of an older Famio: its rows into the encrypted store.
+        runCatching {
+            WidgetData.migrate(context)
+            FamioWidgetProvider.show(context, WidgetData.ids(context))
+        }
         val prefs = context.getSharedPreferences(LocationService.PREFS, Context.MODE_PRIVATE)
         if (prefs.getBoolean("enabled", false)) {
             try {

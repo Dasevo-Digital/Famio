@@ -68,6 +68,7 @@ class NotifyService : Service() {
     private var worker: Thread? = null
 
     private val prefs get() = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    private val secrets get() = NotifySecrets.prefs(this)
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -132,6 +133,13 @@ class NotifyService : Service() {
             return START_NOT_STICKY
         }
         try {
+            NotifySecrets.migrate(this)
+        } catch (e: Exception) {
+            // No access to the encrypted store: nothing to connect with.
+            stopSelf()
+            return START_NOT_STICKY
+        }
+        try {
             if (Build.VERSION.SDK_INT >= 34) {
                 startForeground(
                     NOTIFICATION_ID,
@@ -169,10 +177,10 @@ class NotifyService : Service() {
     private fun loop() {
         var delayMs = 2_000L
         while (running) {
-            val url = prefs.getString("url", null)
-            val token = prefs.getString("token", null)
+            val url = secrets.getString("url", null)
+            val token = secrets.getString("token", null)
             if (url == null || token == null) break
-            val pin = prefs.getString("pin", null)
+            val pin = secrets.getString("pin", null)
             val last = prefs.getLong("last", -1)
             try {
                 val path = if (last < 0) {
@@ -305,7 +313,8 @@ class NotifyService : Service() {
 
     /** The token was signed out (e.g. in the device list): stop for good. */
     private fun revoked() {
-        prefs.edit().putBoolean("enabled", false).remove("token").apply()
+        prefs.edit().putBoolean("enabled", false).apply()
+        secrets.edit().remove("token").apply()
         getSystemService(NotificationManager::class.java).notify(
             NOTIFICATION_ID + 1,
             builder(MESSAGES)

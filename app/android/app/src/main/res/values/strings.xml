@@ -7,6 +7,7 @@
     <string name="sos_widget_name">Famio emergency</string>
     <string name="today_widget_name">Famio today</string>
     <string name="widget_nothing_today">Nothing planned today 🌈</string>
+    <string name="widget_open_famio">Open Famio to show your day here.</string>
     <string name="sos_short">Emergency</string>
     <string name="sos_shortcut_long">Trigger Famio emergency call</string>
     <string name="permission_busy">Request already running</string>

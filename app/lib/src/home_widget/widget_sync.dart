@@ -3,7 +3,8 @@ import 'dart:io';
 
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/foundation.dart';
-import 'package:home_widget/home_widget.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 import '../data/family_data.dart';
@@ -81,17 +82,29 @@ typedef WidgetLine = ({String kind, String lead, String text});
 }
 
 /// Keeps the Android home screen widget up to date while the app runs.
+///
+/// The rows go to Android's encrypted store of "Famio heute" (see
+/// `WidgetData.kt`), and only while such a widget is on the home screen:
+/// they name appointments, meals and a sleeping child. A widget placed
+/// meanwhile gets them when Famio is back in front.
 class HomeWidgetSync {
   HomeWidgetSync._(this._engine);
 
   static HomeWidgetSync? _current;
+  static const _channel = MethodChannel('famio/widget');
 
   final SyncEngine _engine;
   StreamSubscription<Set<String>>? _sub;
+  AppLifecycleListener? _lifecycle;
   Timer? _debounce;
   Timer? _midnight;
 
-  static bool get supported => !kIsWeb && Platform.isAndroid;
+  static bool get supported =>
+      debugSupported ?? (!kIsWeb && Platform.isAndroid);
+
+  /// Tests on another platform: as if it were Android.
+  @visibleForTesting
+  static bool? debugSupported;
 
   static void attach(SyncEngine engine) {
     if (!supported) return;
@@ -99,21 +112,49 @@ class HomeWidgetSync {
     _current = HomeWidgetSync._(engine).._start();
   }
 
-  /// Signed out: the widget shows nothing.
+  /// Signed out: the widget shows nothing, and nothing is kept for it.
   static Future<void> clear() async {
     _current?._stop();
     _current = null;
     if (!supported) return;
-    await _write('', const []);
+    try {
+      await _channel.invokeMethod<void>('clear');
+    } catch (_) {
+      // No widget support on this device.
+    }
+  }
+
+  /// Whether a "Famio heute" widget is on the home screen.
+  @visibleForTesting
+  static Future<bool> placed() async =>
+      await _channel.invokeMethod<bool>('placed') ?? false;
+
+  /// What the widget shows now: its date (null: not filled) and rows.
+  @visibleForTesting
+  static Future<(String?, List<WidgetLine>)> stored() async {
+    final data = await _channel.invokeMapMethod<String, Object?>('read');
+    return (
+      data?['date'] as String?,
+      [
+        for (final row in (data?['rows'] as List?) ?? const [])
+          (
+            kind: (row as Map)['kind'] as String? ?? '',
+            lead: row['lead'] as String? ?? '',
+            text: row['text'] as String? ?? '',
+          ),
+      ],
+    );
   }
 
   void _start() {
     _sub = _engine.changes.listen((_) => _schedule());
+    _lifecycle = AppLifecycleListener(onResume: _schedule);
     _schedule();
   }
 
   void _stop() {
     _sub?.cancel();
+    _lifecycle?.dispose();
     _debounce?.cancel();
     _midnight?.cancel();
   }
@@ -137,19 +178,13 @@ class HomeWidgetSync {
 
   static Future<void> _write(String date, List<WidgetLine> lines) async {
     try {
-      await HomeWidget.saveWidgetData<String>('date', date);
-      for (var i = 0; i < 5; i++) {
-        final line = i < lines.length ? lines[i] : null;
-        await HomeWidget.saveWidgetData<String>('kind$i', line?.kind);
-        await HomeWidget.saveWidgetData<String>('lead$i', line?.lead);
-        await HomeWidget.saveWidgetData<String>('text$i', line?.text);
-        // The single line of apps before 2.0.5.
-        await HomeWidget.saveWidgetData<String>('line$i', null);
-      }
-      // Qualified: "Famio Dev" has another application id than the package.
-      await HomeWidget.updateWidget(
-        qualifiedAndroidName: 'de.status403.famio.FamioWidgetProvider',
-      );
+      await _channel.invokeMethod<bool>('save', {
+        'date': date,
+        'rows': [
+          for (final l in lines)
+            {'kind': l.kind, 'lead': l.lead, 'text': l.text},
+        ],
+      });
     } catch (_) {
       // No widget support on this device.
     }

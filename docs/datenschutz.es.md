@@ -32,6 +32,10 @@ de archivos para el uso sin conexión. Su clave permanece en el llavero del
 dispositivo; en iPhone y iPad ambas quedan excluidas de la copia de seguridad
 del dispositivo. En Linux sin llavero, la clave se guarda en los ajustes de la
 app tras el consentimiento.
+En Android, las filas del widget de la pantalla de inicio «Famio hoy» y el
+acceso de los servicios en segundo plano (notificaciones propias, compartir
+ubicación) se guardan cifrados con una clave del Android Keystore; las filas
+del widget, solo mientras está en la pantalla de inicio.
 
 Sin cifrar en el dispositivo quedan:
 
@@ -44,6 +48,9 @@ Sin cifrar en el dispositivo quedan:
   para los avisos de lugares y las coordenadas del lugar del tiempo;
 - los textos de los avisos mostrados, si «Mostrar contenido» está activado;
   en los recordatorios de medicamentos y de niños incluyen nombres;
+- en Android, los textos de los recordatorios programados, para que Android
+  los vuelva a programar tras un reinicio; con «Mostrar contenido» también
+  incluyen nombres, sin él solo «Famio»;
 - en iPhone y iPad, lo que llega a Famio desde otra app mediante «Compartir»,
   hasta que Famio lo recoge, como máximo un día.
 

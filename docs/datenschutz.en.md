@@ -29,6 +29,10 @@ database, also encrypted, and a file cache for offline use. Their key stays
 in the device's keychain; on iPhone and iPad both are excluded from the
 device backup. On Linux without a keychain the key is kept in the app's
 settings once the user agrees.
+On Android, the rows of the home screen widget "Famio today" and the access
+of the background services (own notifications, location sharing) are
+encrypted with a key from the Android Keystore; the widget's rows are only
+kept while the widget is on the home screen.
 
 Not encrypted on the device are:
 
@@ -40,6 +44,9 @@ Not encrypted on the device are:
   notifications and the coordinates of the weather location;
 - the texts of notifications shown, if "Show contents" is switched on; for
   reminders about medication and children they include names;
+- on Android, the texts of planned reminders, so that Android can plan them
+  again after a restart; with "Show contents" they include names as well,
+  without it only "Famio";
 - on iPhone and iPad, what is sent to Famio from another app via "Share",
   until Famio takes it over, for one day at most.
 

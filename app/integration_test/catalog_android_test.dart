@@ -24,6 +24,7 @@ import 'package:famio/src/data/week_preview.dart';
 import 'package:famio/src/design/palette.dart' show FamioSection;
 import 'package:famio/src/environment.dart';
 import 'package:famio/src/format.dart';
+import 'package:famio/src/home_widget/widget_sync.dart';
 import 'package:famio/src/l10n.dart';
 import 'package:famio/src/location/location_sharing.dart';
 import 'package:famio/src/screens/location/labels.dart';
@@ -112,6 +113,32 @@ Future<String> hostOk(String command, {Duration? timeout}) async {
 
 /// What the test found beyond pass/fail, for the results file.
 void note(String text) => debugPrint('E2E-RESULT $text');
+
+/// "Famio heute" on the home screen: Famio fills it only while one is there
+/// (#607). Android keeps it until Famio Dev is uninstalled after the run.
+Future<void> placeTodayWidget() async {
+  if (await HomeWidgetSync.placed()) return;
+  await HomeWidget.requestPinWidget(
+    qualifiedAndroidName: 'de.status403.famio.FamioWidgetProvider',
+  );
+  final placed = await host(
+    'tap-text ${b64('Add to home screen|Add automatically|Add|Hinzufügen')} 15',
+  );
+  note('"Famio heute" placed: ${placed.ok} ${placed.out}');
+  await hostOk('front');
+  if (!await HomeWidgetSync.placed()) {
+    throw TestFailure('"Famio heute" is not on the home screen');
+  }
+}
+
+/// What "Famio heute" shows: its date, then its five rows (null: none).
+Future<List<String?>> todayWidget() async {
+  final (date, rows) = await HomeWidgetSync.stored();
+  return [
+    date,
+    for (var i = 0; i < 5; i++) i < rows.length ? rows[i].text : null,
+  ];
+}
 
 /// Pumps while Famio is visible; in the background Android draws no frames
 /// and a pump would wait for one forever.
@@ -1349,6 +1376,7 @@ void main() {
     final engine = state.engine!;
     final me = state.me!.id;
     try {
+      await placeTodayWidget();
       await clean(engine, {
         Collections.events,
         Collections.children,
@@ -1419,11 +1447,7 @@ void main() {
       );
       await engine.sync();
 
-      Future<List<String?>> widget() async => [
-        await HomeWidget.getWidgetData<String>('date'),
-        for (var i = 0; i < 5; i++)
-          await HomeWidget.getWidgetData<String>('text$i'),
-      ];
+      Future<List<String?>> widget() => todayWidget();
       final date = DateFormat.MMMEd('de').format(now);
       final lines = await untilAsync(tester, 'widget filled', () async {
         final w = await widget();
@@ -1508,7 +1532,8 @@ void main() {
       await idle(tester, const Duration(seconds: 2));
       final empty = await widget();
       note('GRU-151 after sign-out: $empty');
-      expect(empty.first, '');
+      // Nothing kept for it either (#607).
+      expect(empty.first, isNull);
       expect(empty.skip(1), everyElement(isNull));
       if (onHome.isNotEmpty) {
         await hostOk('home');
@@ -1536,6 +1561,7 @@ void main() {
     final engine = state.engine!;
     final me = state.me!.id;
     try {
+      await placeTodayWidget();
       await clean(engine, {Collections.events});
       final at = DateTime.now().add(const Duration(minutes: 20));
       final mine = CalendarEvent(
@@ -1551,7 +1577,7 @@ void main() {
       final shown = await untilAsync(
         tester,
         'widget filled',
-        () => HomeWidget.getWidgetData<String>('text0'),
+        () async => (await todayWidget())[1],
       );
       note('GRU-150 hint: "$shown"');
       expect(shown, de.eventBusy);
@@ -3615,11 +3641,8 @@ void main() {
       expect(alarms, greaterThanOrEqualTo(2), reason: 'AlarmManager');
 
       // The widget shows the day of this account.
-      Future<List<String?>> widget() async => [
-        await HomeWidget.getWidgetData<String>('date'),
-        for (var i = 0; i < 5; i++)
-          await HomeWidget.getWidgetData<String>('text$i'),
-      ];
+      await placeTodayWidget();
+      Future<List<String?>> widget() => todayWidget();
       final filled = await untilAsync(tester, 'the widget filled', () async {
         final w = await widget();
         return (w.first ?? '').isNotEmpty &&
@@ -3667,7 +3690,8 @@ void main() {
       final alarmsAfter = int.parse(await hostOk('alarms'));
       expect(alarmsAfter, 0, reason: 'nothing left with AlarmManager');
       final cleared = await widget();
-      expect(cleared.first, isEmpty, reason: 'the widget\'s date');
+      // Nothing kept for it either (#607).
+      expect(cleared.first, isNull, reason: 'the widget\'s date');
       expect(cleared.skip(1), everyElement(isNull));
       final stillShown = (await shown()).where(
         (n) => ours(n.title) || ours(n.body),
@@ -3838,6 +3862,7 @@ void main() {
       final hidden = at('E2E Klinik', next, allDay: true, confidential: true);
       final beas = at('E2E Bea Reise', next, allDay: true, who: [f.bea.id]);
       // GRU-151: something tonight, so the widget changes at midnight.
+      await placeTodayWidget();
       final tonight = at('E2E Spaet heute', on(sunday, 23, 0));
       for (final e in [...week, camping, hidden, beas, tonight]) {
         engine.saveEvent(e);
@@ -3956,11 +3981,8 @@ void main() {
       await jump(on(sunday, 23, 59, 15), const Duration(seconds: 2));
       engine.saveTask(Task(id: uid('task'), title: 'E2E Mitternacht'));
       await idle(tester, const Duration(seconds: 5));
-      final evening = await HomeWidget.getWidgetData<String>('date');
-      final eveningLines = [
-        for (var i = 0; i < 5; i++)
-          await HomeWidget.getWidgetData<String>('text$i'),
-      ];
+      final evening = (await todayWidget()).first;
+      final eveningLines = (await todayWidget()).skip(1).toList();
       note('GRU-151 23:59: $evening $eveningLines');
       expect(evening, DateFormat.MMMEd('de').format(sunday));
       expect(eveningLines, contains('E2E Spaet heute'));
@@ -3968,13 +3990,10 @@ void main() {
       await untilAsync(
         tester,
         'widget on the new day',
-        () async => await HomeWidget.getWidgetData<String>('date') == newDay,
+        () async => (await todayWidget()).first == newDay,
         timeout: const Duration(minutes: 3),
       );
-      final morningLines = [
-        for (var i = 0; i < 5; i++)
-          await HomeWidget.getWidgetData<String>('text$i'),
-      ];
+      final morningLines = (await todayWidget()).skip(1).toList();
       note('GRU-151 after midnight at ${DateTime.now()}: $morningLines');
       expect(morningLines, isNot(contains('E2E Spaet heute')));
       expect(

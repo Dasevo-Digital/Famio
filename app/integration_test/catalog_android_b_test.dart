@@ -18,6 +18,7 @@ import 'package:famio/src/data/deadlines.dart';
 import 'package:famio/src/data/family_data.dart';
 import 'package:famio/src/data/family_extras.dart';
 import 'package:famio/src/data/loans.dart';
+import 'package:famio/src/home_widget/widget_sync.dart';
 import 'package:famio/src/design/palette.dart' show FamioSection;
 import 'package:famio/src/screens/calendar_screen.dart';
 import 'package:famio/src/screens/chat_screens.dart';
@@ -38,8 +39,10 @@ import 'package:famio/src/screens/tasks_screen.dart';
 import 'package:famio/src/location/location_sharing.dart';
 import 'package:famio_client/famio_client.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -60,11 +63,13 @@ import 'catalog_android_test.dart'
         notification,
         openAlertOf,
         phoneScroll,
+        placeTodayWidget,
         quietSos,
         resolveAll,
         section,
         seed,
         shown,
+        todayWidget,
         until,
         untilAsync,
         waitUi;
@@ -252,6 +257,95 @@ Future<void> shareOnPhone(WidgetTester tester) async {
 void main() {
   deviceLanguage = () => 'de';
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  // --- what lies readable in the app's preferences -------------------------
+
+  // Was a Befund (#607, #519): the rows of "Famio heute" (a sleeping child
+  // among them) and the own push's server access lay in plain text in
+  // Famio's preferences, the rows even without a widget.
+  androidTest('#607 #519 the widget\'s rows and the own push\'s token are '
+      'not readable on the phone', (tester) async {
+    await hostOk('grant');
+    Future<String> plain(String text) async =>
+        (await hostOk('prefs-grep ${b64(text)}')).split('|').first;
+    // As Famio 2.0.62 left them, through home_widget.
+    await HomeWidget.saveWidgetData<String>('date', 'E2E Alter Tag');
+    await HomeWidget.saveWidgetData<String>('text0', 'E2E Alter Klartext');
+    expect(await plain('E2E Alter Klartext'), 'HomeWidgetPreferences.xml');
+    final state = await startApp(tester);
+    final engine = state.engine!;
+    try {
+      await clean(engine, {
+        Collections.events,
+        Collections.children,
+        Collections.childLogs,
+        Collections.mealPlan,
+        Collections.tasks,
+        Collections.shoppingLists,
+        Collections.shoppingItems,
+      });
+      final now = DateTime.now();
+      final child = Child(
+        id: uid('child'),
+        name: 'E2E Schlafkind',
+        birthDate: DateTime(now.year - 1, 4, 4),
+        guardianIds: [state.me!.id],
+      );
+      engine.saveChild(child);
+      engine.saveChildLog(
+        ChildLog(
+          id: uid('log'),
+          childId: child.id,
+          kind: LogKind.sleep,
+          start: now.subtract(const Duration(minutes: 25)),
+        ),
+      );
+      await idle(tester, const Duration(seconds: 6));
+      if (!await HomeWidgetSync.placed()) {
+        final (date, rows) = await HomeWidgetSync.stored();
+        note('#607 without a widget: $date $rows');
+        expect(date, isNull, reason: 'nothing is kept without a widget');
+      }
+      expect(await plain('E2E Alter Klartext'), isEmpty);
+
+      await placeTodayWidget();
+      final rows = await untilAsync(tester, 'the widget filled', () async {
+        final w = await todayWidget();
+        return w.any((t) => (t ?? '').contains('E2E Schlafkind')) ? w : null;
+      });
+      note('#607 widget: $rows');
+      final onHome = await hostOk('home-text ${b64('E2E Schlafkind')} 10');
+      note('#607 on the home screen: "$onHome"');
+      expect(onHome, contains('E2E Schlafkind'));
+      await hostOk('front');
+      await idle(tester, const Duration(seconds: 2));
+      final files = await hostOk('prefs-grep ${b64('E2E Schlafkind')}');
+      note('#607 plain text in shared_prefs: "$files"');
+      // Not the widget's: the notification plugin keeps planned reminders
+      // ("U6 für …") readable to plan them again after a restart (#609).
+      expect(
+        files.split('|').first.split(',').where((f) => f.isNotEmpty),
+        everyElement('scheduled_notifications.xml'),
+      );
+
+      // #519: the own push's token, as the service uses it.
+      await ownPush(tester, state);
+      final token = await const MethodChannel(
+        'famio/notify',
+      ).invokeMethod<String>('token');
+      expect(token, isNotEmpty);
+      expect(await plain(token!), isEmpty);
+      expect(
+        await const MethodChannel(
+          'famio/notify',
+        ).invokeMapMethod<String, Object?>('status'),
+        containsPair('enabled', true),
+      );
+    } finally {
+      await state.ownPush?.setEnabled(false);
+      await finish(tester, state);
+    }
+  });
 
   // --- the own push: what tapping its notifications opens ------------------
 

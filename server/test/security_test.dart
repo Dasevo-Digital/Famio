@@ -508,10 +508,16 @@ void main() {
     });
 
     test('behind a proxy, the address the proxy appended counts', () {
+      // The proxy (Nginx Proxy Manager) in the home network.
       String of(Map<String, String> headers, {bool trust = true}) =>
-          ClientAddress(
-            trustProxy: trust,
-          ).of(Request('GET', Uri.parse('http://famio/'), headers: headers));
+          ClientAddress(trustProxy: trust).of(
+            Request(
+              'GET',
+              Uri.parse('http://famio/'),
+              headers: headers,
+              context: {'shelf.io.connection_info': _Peer('192.168.10.50')},
+            ),
+          );
       // The client sent its own header; NPM appended the real address.
       expect(of({'x-forwarded-for': '10.9.9.9, 203.0.113.9'}), '203.0.113.9');
       expect(of({'x-forwarded-for': '203.0.113.9'}), '203.0.113.9');
@@ -522,7 +528,23 @@ void main() {
       );
       expect(of({'x-real-ip': '198.51.100.7'}), '198.51.100.7');
       // Without a trusted proxy, headers are ignored.
-      expect(of({'x-forwarded-for': '10.9.9.9'}, trust: false), 'unknown');
+      expect(
+        of({'x-forwarded-for': '10.9.9.9'}, trust: false),
+        '192.168.10.50',
+      );
     });
   });
+}
+
+class _Peer implements HttpConnectionInfo {
+  _Peer(String address) : remoteAddress = InternetAddress(address);
+
+  @override
+  final InternetAddress remoteAddress;
+
+  @override
+  int get remotePort => 40000;
+
+  @override
+  int get localPort => 8765;
 }

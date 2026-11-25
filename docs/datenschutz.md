@@ -27,6 +27,10 @@ ebenfalls verschlüsselte lokale Datenbank und einen Dateicache für den
 Offlinebetrieb. Ihr Schlüssel bleibt im Schlüsselbund des Geräts; auf iPhone
 und iPad sind beide von der Gerätesicherung ausgenommen. Unter Linux ohne
 Schlüsselbund liegt der Schlüssel nach Zustimmung in den App-Einstellungen.
+Auf Android liegen die Zeilen des Startbildschirm-Widgets „Famio heute“ und
+die Zugänge der Hintergrunddienste (eigene Mitteilungen, Standort teilen)
+verschlüsselt, mit einem Schlüssel aus dem Android-Keystore; die Zeilen des
+Widgets nur, solange es auf dem Startbildschirm liegt.
 
 Unverschlüsselt auf dem Gerät bleiben:
 
@@ -38,6 +42,9 @@ Unverschlüsselt auf dem Gerät bleiben:
   Ortsmeldungen und die Koordinaten des Wetterorts;
 - Texte angezeigter Mitteilungen, wenn „Inhalte anzeigen“ eingeschaltet ist;
   bei Erinnerungen an Medikamente und Kinder nennen sie Namen;
+- auf Android die Texte geplanter Erinnerungen, damit Android sie nach einem
+  Neustart wieder einplant; mit „Inhalte anzeigen“ nennen sie ebenfalls
+  Namen, ohne nur „Famio“;
 - auf iPhone und iPad, was über „Teilen“ aus einer anderen App an Famio geht,
   bis Famio es übernimmt, höchstens einen Tag.
 

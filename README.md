@@ -785,7 +785,8 @@ Wegwerf-Server ein. Der CI-Lauf nutzt es unter Linux.
 |---|---|
 | `TZ` / `FAMIO_TIMEZONE` | Zeitzone der Familie (Standard `Europe/Berlin`) |
 | `FAMIO_PUBLIC_URL` | Öffentliche HTTPS-Adresse (für Google/iCloud-Kalenderabos) |
-| `FAMIO_TRUST_PROXY` | Client-IP aus `X-Forwarded-For` (nur hinter Reverse-Proxy) |
+| `FAMIO_TRUST_PROXY` | Client-IP aus `X-Forwarded-For` (nur hinter Reverse-Proxy); ohne `FAMIO_TRUSTED_PROXIES` nur von Proxys im Heimnetz, in Docker oder auf diesem Rechner |
+| `FAMIO_TRUSTED_PROXIES` | Adressen oder Netze des Reverse-Proxys, z. B. `192.168.1.50` oder `172.16.0.0/12` (mit Komma getrennt); schaltet `FAMIO_TRUST_PROXY` ein, Angaben anderer Absender zählen nicht |
 | `FAMIO_MAX_UPLOAD_MB` | Maximale Dateigröße (Standard 100) |
 | `FAMIO_MAX_STORAGE_MB` | Gesamtes Upload-Speicherbudget der Familie in MB (Standard 5120) |
 | `FAMIO_MAX_EXPORT_MB` | Maximale unkomprimierte Datenmenge je Export (1–16384, Standard 4096) |

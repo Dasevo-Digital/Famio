@@ -33,6 +33,8 @@ services:
     environment:
       TZ: Europe/Berlin
       FAMIO_PUBLIC_URL: https://famio.example.de/
+      # Forwarded headers only from private networks (here: NPM in Docker);
+      # narrower with FAMIO_TRUSTED_PROXIES, e.g. the Docker network.
       FAMIO_TRUST_PROXY: "true"
       FAMIO_KEY_FILE: /keys/famio.key
       # Only NPM (HTTPS) and port 8766 – no plain HTTP from the network.

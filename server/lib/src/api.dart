@@ -747,9 +747,11 @@ class FamioApi {
 
   /// Whether the request reached Famio encrypted (directly or via proxy).
   bool _encrypted(Request request) =>
-      request.requestedUri.scheme == 'https' ||
-      (trustProxy &&
-          request.headers['x-forwarded-proto']?.toLowerCase() == 'https');
+      request.context[tlsConnectionKey] == true ||
+      // Only without the header is the scheme the connection's own.
+      (request.requestedUri.scheme == 'https' &&
+          !request.headers.containsKey('x-forwarded-proto')) ||
+      clientAddress.forwardedHttps(request);
 
   Handler _tlsGuard(Handler inner) => (request) {
     final path = request.url.path;

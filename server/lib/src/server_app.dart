@@ -58,6 +58,7 @@ class FamioServerApp {
     String? publicUrl,
     bool ingressAuth = false,
     bool trustProxy = false,
+    List<AddressRange> trustedProxies = const [],
     int maxUploadMb = 100,
     int locationHistoryDays = 7,
     int maxStorageMb = 5120,
@@ -300,7 +301,11 @@ class FamioServerApp {
       hub: hub,
       feeds: CalendarFeeds(db),
       files: files,
-      clientAddress: ClientAddress(trustProxy: trustProxy),
+      clientAddress: ClientAddress(
+        trustProxy: trustProxy,
+        proxies: trustedProxies,
+        onIgnored: _ignoredProxy,
+      ),
       throttle: throttle,
       setupCode: setupCode,
       importer: importer,
@@ -395,6 +400,20 @@ class FamioServerApp {
   final String dataDir;
   final bool trustProxy;
   final bool ingressAuth;
+
+  /// Peers whose forwarded headers were ignored, each named once in the log.
+  final _ignoredPeers = <String>{};
+
+  void _ignoredProxy(String peer) {
+    if (_ignoredPeers.length >= 20 || !_ignoredPeers.add(peer)) return;
+    stderr.writeln(
+      'WARNUNG: Weitergeleitete Angaben (X-Forwarded-*) von $peer ignoriert: '
+      'kein vertrauenswürdiger Proxy. Ist das der Reverse-Proxy, seine '
+      'Adresse in FAMIO_TRUSTED_PROXIES eintragen; sonst ist Port 8765 von '
+      'außen erreichbar und sollte gesperrt werden.',
+    );
+  }
+
   final hub = ChangeHub();
   late final SettingsStore settings;
   late final Accounts accounts;

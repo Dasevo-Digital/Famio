@@ -630,6 +630,35 @@ def _cmd_home_tap(device, rest, changed):
     return node["desc"] or node["text"]
 
 
+def _cmd_home_text(device, rest, changed):
+    """Something on the home screen (a widget), found without tapping it."""
+    texts = _text(rest[0]).split("|")
+    seconds = float(rest[1]) if len(rest) > 1 else 10
+    device.shell("input keyevent KEYCODE_HOME")
+    time.sleep(2.5)
+    node = device.find_any(texts, seconds, exact_first=False)
+    if node is None:
+        raise RuntimeError(f"nicht auf dem Startbildschirm: {texts}")
+    return node["text"] or node["desc"]
+
+
+def _cmd_prefs_grep(device, rest, changed):
+    """The files in Famio's shared_prefs that hold a text in plain form
+    (comma separated, empty: none), and how many files there are."""
+    text = _text(rest[0])
+    escaped = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    names = [n for n in device.shell(f"run-as {PACKAGE} ls shared_prefs").split()
+             if n.endswith(".xml")]
+    if not names:
+        raise RuntimeError("keine shared_prefs gefunden")
+    hits = []
+    for name in names:
+        xml = device.shell(f"run-as {PACKAGE} cat shared_prefs/{name}")
+        if text in xml or escaped in xml:
+            hits.append(name)
+    return f"{','.join(hits)}|{len(names)}"
+
+
 def _cmd_focus(device, rest, changed):
     return device.shell("dumpsys window | grep mCurrentFocus").strip()
 
@@ -777,6 +806,8 @@ CATALOG_COMMANDS = {
     "recents": _cmd_recents,
     "services": _cmd_services,
     "home-tap": _cmd_home_tap,
+    "home-text": _cmd_home_text,
+    "prefs-grep": _cmd_prefs_grep,
     "view-link": _cmd_view_link,
     "tap-notification": _cmd_tap_notification,
 }
