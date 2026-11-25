@@ -4,6 +4,17 @@ Lo más importante de cada versión en pocas líneas. La app muestra una vez
 el apartado de su versión tras una actualización; las notas detalladas
 están en las versiones publicadas.
 
+## 2.0.63 – Más protección para los datos en Android y tras el proxy
+
+- Android: el widget «Famio hoy» guarda sus filas cifradas, y solo mientras
+  está en la pantalla de inicio. Un widget recién colocado se rellena en
+  cuanto se vuelve a abrir Famio.
+- Android: el acceso de las notificaciones propias de Famio se guarda
+  cifrado en el teléfono.
+- Servidor: los datos que reenvía un proxy inverso solo cuentan desde donde
+  puede estar un proxy (red doméstica, Docker, el mismo equipo).
+  `FAMIO_TRUSTED_PROXIES` fija su dirección con exactitud.
+
 ## 2.0.62 – SMS de emergencia en el iPhone y sincronización más segura
 
 - Alarma de emergencia sin internet en el iPhone: con «SMS sin internet»

@@ -4,6 +4,17 @@ The most important things of each version in a few lines. The app shows
 its version's section once after an update; the detailed release notes are
 with the releases.
 
+## 2.0.63 – More protection for data on Android and behind the proxy
+
+- Android: the widget "Famio today" keeps its rows encrypted, and only
+  while it is on the home screen. A widget placed anew fills in as soon as
+  Famio is opened again.
+- Android: the access of Famio's own notifications is stored encrypted on
+  the phone.
+- Server: details passed on by a reverse proxy only count where a proxy can
+  be (home network, Docker, the same computer). `FAMIO_TRUSTED_PROXIES`
+  sets its address exactly.
+
 ## 2.0.62 – Emergency text on iPhone and safer syncing
 
 - Emergency alarm without internet on iPhone: with "Text message without

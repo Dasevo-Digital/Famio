@@ -2,6 +2,17 @@
 
 Was sich je Version ändert. Die ausführlichen Release-Texte stehen bei den Releases.
 
+## 2.0.63 – Mehr Schutz für Daten auf Android und hinter dem Proxy
+
+- Android: Das Widget „Famio heute“ speichert seine Zeilen verschlüsselt
+  und nur, solange es auf dem Startbildschirm liegt. Ein neu gesetztes
+  Widget füllt sich, sobald Famio wieder geöffnet wird.
+- Android: Der Zugang der eigenen Mitteilungen liegt verschlüsselt auf dem
+  Handy.
+- Server: Angaben eines Reverse-Proxys zählen nur noch von dort, wo ein
+  Proxy steht (Heimnetz, Docker, derselbe Rechner). Mit
+  `FAMIO_TRUSTED_PROXIES` lässt sich seine Adresse genau festlegen.
+
 ## 2.0.62 – Notruf-SMS auf dem iPhone und sichererer Abgleich
 
 - Notruf ohne Internet auf dem iPhone: Ist „SMS ohne Internet“
